@@ -430,6 +430,33 @@ export const useMqttStore = defineStore("mqtt", {
         );
       };
     },
+    getChargepointTagState(state) {
+      return (chargePointId) => {
+        let tagState = 0;
+        if (
+          state.topics[
+            `openWB/chargepoint/${chargePointId}/set/rfid`
+          ] !== null &&
+          state.topics[
+            `openWB/chargepoint/${chargePointId}/set/rfid`
+          ] !== ""
+        ) {
+          tagState = 2;
+        } else {
+          if (
+            state.topics[
+              `openWB/chargepoint/${chargePointId}/get/rfid`
+            ] !== null &&
+            state.topics[
+              `openWB/chargepoint/${chargePointId}/get/rfid`
+            ] !== ""
+          ) {
+            tagState = 1;
+          }
+        }
+        return tagState;
+      };
+    },
     getChargePointVehicleChangePermitted(state) {
       return (chargePointId) => {
         if (
@@ -721,6 +748,12 @@ export const useMqttStore = defineStore("mqtt", {
         return state.topics["openWB/system/version"];
       }
       return undefined;
+    },
+
+    /* rfid */
+
+    getRfidEnabled(state) {
+      return this.getValueBool("openWB/optional/rfid/active");
     },
   },
   actions: {
