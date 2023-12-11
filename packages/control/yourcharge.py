@@ -13,7 +13,7 @@ yc_root_topic = 'yourCharge'
 yc_status_topic = yc_root_topic + '/status'
 yc_control_topic = yc_root_topic + '/control'
 yc_config_topic = yc_root_topic + '/config'
-yc_socket_activated_topic = yc_status_topic + '/socket_activated'
+yc_socket_activated_topic = yc_control_topic + '/socket_activated'
 yc_socket_requested_topic = yc_control_topic + '/socket_request'
 
 
@@ -98,6 +98,8 @@ class YcControlData:
     imbalance_current_consumption: List[float] = field(default_factory=three_zero_floatss_factory)
     standard_socket_action: StandardSocketActions = StandardSocketActions.Uninitialized
     socket_request: SocketRequestStates = SocketRequestStates.Uninitialized
+    cp_enabled: bool = False
+    socket_activated: bool = False
 
     @property
     def fixed_charge_current(self) -> float:

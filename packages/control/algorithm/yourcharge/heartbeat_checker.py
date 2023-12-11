@@ -11,7 +11,7 @@ class HeartbeatChecker:
         self._timeout_detection_time = None
         self._previous_lcs_publish = -1
 
-    def is_heartbeat_timeout(self) -> bool:
+    def is_heartbeat_ok(self) -> bool:
 
         now_it_is = datetime.utcnow()
 

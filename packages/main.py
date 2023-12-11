@@ -153,7 +153,7 @@ class HandlerAlgorithm:
             log.exception("Fehler im Main-Modul")
 
     # enable time guarding after completing integration (it makes debugging much harder)
-    def handler_yc(self):
+    def handler5Sec_yc(self):
         """ führt den YourCharge Algorithmus durch.
         """
         try:
@@ -175,7 +175,7 @@ class HandlerAlgorithm:
                 if self.control_yc is None:
                     # we need lazy instantiation here so general_internal_chargepoint_handler is safely assigned
                     self.control_yc = algorithm_yc.AlgorithmYc(general_internal_chargepoint_handler)
-                self.control_yc.calc_current()
+                self.control_yc.perform_load_control()
                 changed_values_handler.pub_changed_values()
             log.info("# ***Start*** ")
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp_unix())
@@ -201,7 +201,7 @@ def check_secondary_control_algorithm():
         if sub.yc_data.data.yc_config.active:
             if len(schedule.get_jobs("yc")) == 0:
                 log.critical("Enabling YourCharge algorithm")
-                [schedule.every().minute.at(f":{i:02d}").do(handler.handler_yc).tag("yc") for i in range(0, 60, 5)]
+                [schedule.every().minute.at(f":{i:02d}").do(handler.handler5Sec_yc).tag("yc") for i in range(0, 60, 5)]
         else:
             if len(schedule.get_jobs("yc")) > 0:
                 log.critical("Disabling YourCharge algorithm")
@@ -296,8 +296,9 @@ except Exception:
 
 while True:
     try:
-        if event_jobs_running.is_set() and len(schedule.get_jobs("algorithm")) == 0:
-            schedule_jobs()
+        if event_jobs_running.is_set():
+            if len(schedule.get_jobs("algorithm")) == 0:
+                schedule_jobs()
             if len(schedule.get_jobs("yc")) > 0:
                 schedule.clear("yc")
         elif event_jobs_running.is_set() is False:
