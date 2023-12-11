@@ -4,6 +4,7 @@ import DashBoardCard from "@/components/DashBoardCard.vue";
 import SparkLine from "@/components/SparkLine.vue";
 import ChargePointPlugBadge from "@/components/ChargePointPlugBadge.vue";
 import ChargePointLockButton from "@/components/ChargePointLockButton.vue";
+import ChargePointCodeButton from "@/components/ChargePointCodeButton.vue";
 import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
 import ManualSocInput from "@/components/ChargePoints/ManualSocInput.vue";
 
@@ -80,6 +81,7 @@ export default {
     SparkLine,
     ChargePointPlugBadge,
     ChargePointLockButton,
+    ChargePointCodeButton,
     ExtendedNumberInput,
     ManualSocInput,
     FontAwesomeIcon,
@@ -361,6 +363,10 @@ export default {
           <i-column>
             <i-row>
               <i-column class="_padding-left:0 _padding-right:0">
+                <charge-point-code-button
+                  v-if="mqttStore.getRfidEnabled"
+                  :chargePointId="id"
+                />
                 <charge-point-lock-button
                   :chargePointId="id"
                   :changesLocked="changesLocked"

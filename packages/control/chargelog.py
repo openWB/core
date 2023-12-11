@@ -10,7 +10,7 @@ from helpermodules.pub import Pub
 from helpermodules import timecheck
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
-# Lademodus, RFID-Tag
+# Lademodus, ID-Tag
 # json-Objekt: {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
 # "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
 # "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34",
@@ -200,7 +200,7 @@ def get_log_data(request: Dict):
                     entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["rfid"]
                 ):
                     log.debug(
-                        "Verwerfe Eintrag wegen RFID Tag: %s != %s" %
+                        "Verwerfe Eintrag wegen ID Tag: %s != %s" %
                         (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["rfid"]))
                     )
                     continue

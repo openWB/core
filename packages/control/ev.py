@@ -818,13 +818,13 @@ class ChargeTemplate:
         return 0, "stop", "Keine Ladung, da der Lademodus Stop aktiv ist."
 
 
-def get_ev_to_rfid(rfid):
-    """ sucht zur übergebenen RFID-ID das EV.
+def get_ev_to_rfid(rfid: str):
+    """ ermittelt zum übergebenen ID-Tag das Fahrzeug
 
     Parameter
     ---------
-    rfid: int
-        Tag-ID
+    rfid: string
+        ID-Tag
 
     Return
     ------
