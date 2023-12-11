@@ -535,6 +535,8 @@ class SetData:
                     self._validate_value(msg, float, [(6, 32), (0, 0)])
                 elif "/control_parameter/phases" in msg.topic:
                     self._validate_value(msg, int, [(0, 3)])
+                elif "/control_parameter/failed_phase_switches" in msg.topic:
+                    self._validate_value(msg, int, [(0, 4)])
                 elif ("/control_parameter/submode" in msg.topic or
                         "/control_parameter/limit" in msg.topic or
                         "/control_parameter/chargemode" in msg.topic):
@@ -583,7 +585,7 @@ class SetData:
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
         elif "/get/evse_current" in msg.topic:
-            self._validate_value(msg, int, [(0, 0), (6, 32), (600, 3200)])
+            self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
                 "/get/heartbeat" in msg.topic):
@@ -653,7 +655,8 @@ class SetData:
         """
         try:
             if ("openWB/set/bat/config/configured" in msg.topic or
-                    "openWB/set/bat/set/switch_on_soc_reached" in msg.topic):
+                    "openWB/set/bat/set/switch_on_soc_reached" in msg.topic or
+                    "openWB/set/bat/set/regulate_up" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)
@@ -714,7 +717,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
-            elif "openWB/set/general/chargemode_config/unbalanced_load" in msg.topic:
+            elif ("openWB/set/general/chargemode_config/unbalanced_load" in msg.topic or
+                  "openWB/set/general/chargemode_config/retry_failed_phase_switches" in msg.topic):
                 self._validate_value(msg, bool)
             elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or

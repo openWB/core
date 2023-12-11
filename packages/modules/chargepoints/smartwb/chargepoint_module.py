@@ -1,4 +1,5 @@
 
+import time
 from helpermodules.utils.error_counter import ErrorCounterContext
 from modules.chargepoints.smartwb.config import SmartWB
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -91,6 +92,15 @@ class ChargepointModule(AbstractChargepoint):
                 ip_address = self.config.configuration.ip_address
                 timeout = self.config.configuration.timeout
                 req.get_http_session().get('http://'+ip_address+'/clearRfid', timeout=(timeout, None))
+
+    def interrupt_cp(self, duration: int) -> None:
+        with SingleComponentUpdateContext(self.component_info, False):
+            with self.__client_error_context:
+                ip_address = self.config.configuration.ip_address
+                timeout = self.config.configuration.timeout
+                req.get_http_session().get(
+                    f'http://{ip_address}/interruptCp?duration={duration*1000}', timeout=(timeout, None))
+                time.sleep(duration)
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=SmartWB)

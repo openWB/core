@@ -172,7 +172,7 @@ class MigrateData:
         5: Dauer als Text "xx H yy Min"
         6: Ladepunktnummer
         7: Lademodus als Zahl
-        8: RFID Token
+        8: ID-Tag
         9: Kosten
         """
         def conv_1_9_datetimes(datetime_str):

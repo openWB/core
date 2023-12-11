@@ -93,8 +93,8 @@ class CpTemplate:
                     if self.data.rfid_enabling:
                         num = -1
                         message = (
-                            f"Keine Ladung, da dem RFID-Tag {rfid} kein Fahrzeug-Profil zugeordnet werden kann. Eine "
-                            "Freischaltung ist nur per RFID/Fahrzeugerkennung möglich.")
+                            f"Keine Ladung, da dem ID-Tag {rfid} kein Fahrzeug-Profil zugeordnet werden kann. Eine "
+                            "Freischaltung ist nur mit gültigen ID-Tag möglich.")
                     else:
                         num = assigned_ev
                 else:

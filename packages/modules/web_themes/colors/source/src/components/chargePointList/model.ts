@@ -38,8 +38,9 @@ export class ChargePoint {
 	chargedSincePlugged = 0
 	stateStr = ''
 	current = 0
+	currents = [0, 0, 0]
 	phasesToUse = 0
-	soc = 0
+	// soc = 0
 	isSocConfigured = true
 	isSocManual = false
 	waitingForSoc = false
@@ -76,6 +77,18 @@ export class ChargePoint {
 	}
 	updateConnectedVehicle(id: number) {
 		this._connectedVehicle = id
+	}
+	get soc() {
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].soc
+		} else {
+			return 0
+		}
+	}
+	set soc(newSoc: number) {
+		if (vehicles[this.connectedVehicle]) {
+			vehicles[this.connectedVehicle].soc = newSoc
+		}
 	}
 	get chargeMode() {
 		return this._chargeMode
@@ -199,6 +212,21 @@ export class ChargePoint {
 	updatePvMinSocCurrent(a: number) {
 		this._pvMinSocCurrent = a
 	}
+	get realCurrent() {
+		switch (this.phasesInUse) {
+			case 0:
+				return 0
+			case 1:
+				return this.currents[0]
+			case 2:
+				return (this.currents[0] + this.currents[1]) / 2
+			case 3:
+				return (this.currents[0] + this.currents[1] + this.currents[2]) / 3
+			default:
+				return 0
+		}
+	}
+
 	toPowerItem(): PowerItem {
 		return {
 			name: this.name,
@@ -218,6 +246,7 @@ export class Vehicle {
 	private _chargeTemplateId = 0
 	private _evTemplateId = 0
 	tags: Array<string> = []
+	config = {}
 	soc = 0
 	range = 0
 	constructor(index: number) {

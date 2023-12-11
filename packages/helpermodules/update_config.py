@@ -9,6 +9,7 @@ import subprocess
 import time
 from typing import List
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
+from control.general import ChargemodeConfig
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -180,6 +181,7 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/pv_charging/rundown_soc$",
         "^openWB/general/chargemode_config/pv_charging/rundown_power$",
         "^openWB/general/chargemode_config/pv_charging/charging_power_reserve$",
+        "^openWB/general/chargemode_config/retry_failed_phase_switches$",
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
         "^openWB/general/chargemode_config/time_charging/phases_to_use$",
@@ -277,12 +279,14 @@ class UpdateConfig:
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_finishTime$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_homeConsumtion$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_idmnav$",
+        "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_idmueb$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_ip$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_lambdaueb$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_leistungurl$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_manual_control$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_manwatt$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_maxeinschaltdauer$",
+        "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_maxueb$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_mindayeinschaltdauer$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_mineinschaltdauer$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measchan$",
@@ -400,6 +404,8 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 15000),
         ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
         ("openWB/general/chargemode_config/pv_charging/phases_to_use", 1),
+        ("openWB/general/chargemode_config/retry_failed_phase_switches",
+         ChargemodeConfig().retry_failed_phase_switches),
         ("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 0),
         ("openWB/general/chargemode_config/time_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/unbalanced_load", False),

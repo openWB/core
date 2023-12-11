@@ -82,6 +82,10 @@ export function formatTime(seconds: number) {
 		return minutes + ' min'
 	}
 }
+export function formatCurrentTime(d: Date) {
+	return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 export function formatDate(d: Date, mode: string = 'day') {
 	switch (mode) {
 		case 'day':

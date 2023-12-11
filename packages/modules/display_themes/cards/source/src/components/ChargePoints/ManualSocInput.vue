@@ -1,5 +1,6 @@
 <script>
 import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
+import NumberPad from "../NumberPad.vue";
 
 /* fontawesome */
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -27,12 +28,13 @@ export default {
   },
   components: {
     ExtendedNumberInput,
+    NumberPad,
     FontAwesomeIcon,
   },
   emits: ["update:modelValue"],
   methods: {
     enter(digit) {
-      let tempSoc = this.newSoc * 10 + digit;
+      let tempSoc = this.newSoc * 10 + parseInt(digit);
       if (tempSoc >= 0 && tempSoc <= 100) {
         this.newSoc = tempSoc;
       }
@@ -49,7 +51,7 @@ export default {
     },
     updateManualSoc() {
       this.$root.sendTopicToBroker(
-        `openWB/vehicle/${this.vehicleId}/soc_module/general_config/soc_start`,
+        `openWB/vehicle/${this.vehicleId}/soc_module/calculated_soc_state/manual_soc`,
         this.newSoc
       );
       this.close();
@@ -82,80 +84,11 @@ export default {
             />
           </i-column>
         </i-row>
-        <i-row center class="_padding-bottom:1">
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(1)"
-              >1</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(2)"
-              >2</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(3)"
-              >3</i-button
-            >
-          </i-column>
-        </i-row>
-      </i-container>
-      <i-container>
-        <i-row center class="_padding-bottom:1">
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(4)"
-              >4</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(5)"
-              >5</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(6)"
-              >6</i-button
-            >
-          </i-column>
-        </i-row>
-      </i-container>
-      <i-container>
-        <i-row center class="_padding-bottom:1">
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(7)"
-              >7</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(8)"
-              >8</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(9)"
-              >9</i-button
-            >
-          </i-column>
-        </i-row>
-      </i-container>
-      <i-container>
-        <i-row center class="_padding-bottom:1">
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="clear()">
-              <FontAwesomeIcon fixed-width :icon="['fas', 'fa-eraser']" />
-            </i-button>
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="enter(0)"
-              >0</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="numberButton" @click="removeDigit()">
-              <FontAwesomeIcon fixed-width :icon="['fas', 'fa-delete-left']" />
-            </i-button>
-          </i-column>
-        </i-row>
+        <NumberPad
+          @key:digit="enter($event)"
+          @key:clear="clear()"
+          @key:delete="removeDigit()"
+        />
       </i-container>
       <template #footer>
         <i-container>
@@ -177,8 +110,4 @@ export default {
 </template>
 
 <style scoped>
-.numberButton {
-  min-width: 3em;
-  min-height: 3em;
-}
 </style>

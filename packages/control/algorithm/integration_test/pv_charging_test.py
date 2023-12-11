@@ -113,7 +113,7 @@ def assert_counter_set(params: ParamsExpectedCounterSet):
 def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch):
     # alle 3 im PV-laden, keine Ladung -> bei zweien die Verz starten, für den 3 reichts nicht
     # setup
-    data.data.counter_data["counter0"].data.set.raw_power_left = 31200
+    data.data.counter_data["counter0"].data.set.raw_power_left = 31775
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16, 12, 14]
     data.data.counter_data["counter0"].data.set.reserved_surplus = 0
@@ -132,8 +132,8 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
         "cp4"].data.control_parameter.timestamp_switch_on_off == "05/16/2022, 08:40:52"
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
-    assert data.data.counter_data["counter0"].data.set.raw_power_left == 31200
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9315
+    assert data.data.counter_data["counter0"].data.set.raw_power_left == 31775
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9200
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 9000
 
 
@@ -172,7 +172,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 24300
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2415
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 1725
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 0
 
 
@@ -186,31 +186,31 @@ cases_limit = [
                   expected_current_cp4=8,
                   expected_current_cp5=8,
                   expected_raw_power_left=34820,
-                  expected_surplus_power_left=6035.0,
+                  expected_surplus_power_left=7125.0,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
     ParamsSurplus(name="reduce current",
                   power=-1090,
-                  raw_power_left=38560,
+                  raw_power_left=39650,
                   raw_currents_left_counter0=[40]*3,
                   raw_currents_left_counter6=[16]*3,
-                  expected_current_cp3=10.722222222222221,
-                  expected_current_cp4=6.722222222222222,
-                  expected_current_cp5=6.722222222222223,
-                  expected_raw_power_left=23380,
-                  expected_surplus_power_left=-2.2737367544323206e-13,
+                  expected_current_cp3=11.77536231884058,
+                  expected_current_cp4=7.77536231884058,
+                  expected_current_cp5=7.775362318840579,
+                  expected_raw_power_left=24470,
+                  expected_surplus_power_left=2.2737367544323206e-13,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
     ParamsSurplus(name="switch off delay for two of three charging",
                   power=8200,
-                  raw_power_left=28900,
+                  raw_power_left=20815,
                   raw_currents_left_counter0=[40]*3,
                   raw_currents_left_counter6=[16]*3,
                   expected_current_cp3=10,
                   expected_current_cp4=6,
                   expected_current_cp5=6,
-                  expected_raw_power_left=13720,
-                  expected_surplus_power_left=0,
+                  expected_raw_power_left=5635,
+                  expected_surplus_power_left=-24450.0,
                   expected_reserved_surplus=0,
                   expected_released_surplus=11040),
 ]
@@ -246,7 +246,7 @@ cases_phase_switch = [
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=17400,
-                      expected_surplus_power_left=0,
+                      expected_surplus_power_left=-5175,
                       expected_reserved_surplus=0,
                       expected_released_surplus=0),
     ParamsPhaseSwitch(name="phase switch 1p->3p",
@@ -260,7 +260,7 @@ cases_phase_switch = [
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=37520.0,
-                      expected_surplus_power_left=10575.0,
+                      expected_surplus_power_left=13575.0,
                       expected_reserved_surplus=460,
                       expected_released_surplus=0)
 ]

@@ -67,6 +67,7 @@ def get_factory() -> Get:
 @dataclass
 class Set:
     charging_power_left: float = 0
+    regulate_up: bool = False
     switch_on_soc_reached: bool = False
     switch_on_soc_state = SwitchOnBatState = SwitchOnBatState.SWITCH_ON_SOC_NOT_REACHED
 
@@ -180,6 +181,7 @@ class BatAll:
                 self.data.get.power = 0
             Pub().pub("openWB/set/bat/set/charging_power_left", self.data.set.charging_power_left)
             Pub().pub("openWB/set/bat/set/switch_on_soc_reached", self.data.set.switch_on_soc_reached)
+            Pub().pub("openWB/set/bat/set/regulate_up", self.data.set.regulate_up)
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
@@ -189,6 +191,7 @@ class BatAll:
         try:
             config = data.data.general_data.data.chargemode_config.pv_charging
             self.data.set.charging_power_left = self.data.get.power
+            self.data.set.regulate_up = False
             if config.bat_prio:
                 # Speicher-Vorrang
                 # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden,
@@ -204,10 +207,10 @@ class BatAll:
                             config.rundown_power)
                     log.debug(f"Erlaubte Entlade-Leistung nutzen {self.data.set.charging_power_left}W")
                 else:
+                    self.data.set.charging_power_left = min(0, self.data.get.power)
                     # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
-                    # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher
-                    # schneller regelt als die LP, würde sonst der Speicher reduziert werden.
-                    self.data.set.charging_power_left = min(0, self.data.get.power) - 50
+                    # Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher reduziert werden.
+                    self.data.set.regulate_up = True
             else:
                 # Fahrzeug-Vorrang
                 log.debug(f'Verbleibende Speicher-Leistung: {self.data.set.charging_power_left}W')

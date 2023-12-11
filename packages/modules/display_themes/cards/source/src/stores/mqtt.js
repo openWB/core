@@ -104,13 +104,27 @@ export const useMqttStore = defineStore("mqtt", {
       };
     },
     getValueString: (state) => {
-      return (topic, unit = "W", inverted = false, defaultString = "---") => {
-        var unitPrefix = "";
+      return (
+        topic,
+        unit = "W",
+        unitPrefix = "",
+        scale = true,
+        inverted = false,
+        defaultString = "---",
+        topicElement = undefined
+      ) => {
+        var scaled = false;
         var value = state.topics[topic];
-        if (value === undefined) {
+        if (
+          value === undefined ||
+          (topicElement !== undefined && value[topicElement] === undefined)
+        ) {
           console.warn("topic not found! using default", topic, defaultString);
           textValue = defaultString;
         } else {
+          if (topicElement !== undefined) {
+            value = value[topicElement];
+          }
           if (inverted) {
             value *= -1;
           }
@@ -118,20 +132,25 @@ export const useMqttStore = defineStore("mqtt", {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
           });
-          if (value > 999 || value < -999) {
-            textValue = (value / 1000).toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            });
-            unitPrefix = "k";
-            if (value > 999999 || value < -999999) {
-              textValue = (value / 1000000).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              });
-              unitPrefix = "M";
+          while (scale && (value > 999 || value < -999)) {
+            value = value / 1000;
+            scaled = true;
+            switch (unitPrefix) {
+              case "":
+                unitPrefix = "k";
+                break;
+              case "k":
+                unitPrefix = "M";
+                break;
+              case "M":
+                unitPrefix = "G";
+                break;
             }
           }
+          textValue = value.toLocaleString(undefined, {
+            minimumFractionDigits: scaled ? 2 : 0,
+            maximumFractionDigits: scaled ? 2 : 0,
+          });
         }
         return `${textValue} ${unitPrefix}${unit}`;
       };
@@ -143,6 +162,9 @@ export const useMqttStore = defineStore("mqtt", {
         }
         return state.chartData[topic];
       };
+    },
+    getDisplayStandby: (state) => {
+      return state.topics["openWB/optional/int_display/standby"];
     },
 
     /* theme getters */
@@ -269,7 +291,7 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getChartData("openWB/bat/get/power");
     },
     getBatterySoc(state) {
-      return state.getValueString("openWB/bat/get/soc", "%");
+      return state.getValueString("openWB/bat/get/soc", "%", "", false);
     },
     getBatterySocChartData(state) {
       return state.getChartData("openWB/bat/get/soc");
@@ -278,7 +300,7 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getValueBool("openWB/pv/config/configured");
     },
     getPvPower(state) {
-      return state.getValueString("openWB/pv/get/power", "W", true);
+      return state.getValueString("openWB/pv/get/power", "W", "", true, true);
     },
     getPvPowerChartData(state) {
       return state.getChartData("openWB/pv/get/power").map((point) => {
@@ -320,8 +342,33 @@ export const useMqttStore = defineStore("mqtt", {
     getChargePointPower(state) {
       return (chargePointId) => {
         return state.getValueString(
-          `openWB/chargepoint/${chargePointId}/get/power`
+          `openWB/chargepoint/${chargePointId}/get/power`,
+          "W"
         );
+      };
+    },
+    getChargePointImportedSincePlugged(state) {
+      return (chargePointId) => {
+        return {
+          energy: state.getValueString(
+            `openWB/chargepoint/${chargePointId}/set/log`,
+            "Wh",
+            "",
+            true,
+            false,
+            "---",
+            "imported_since_plugged"
+          ),
+          range: state.getValueString(
+            `openWB/chargepoint/${chargePointId}/set/log`,
+            "m",
+            "k",
+            false,
+            false,
+            "---",
+            "range_charged"
+          ),
+        };
       };
     },
     getChargePointPowerChartData(state) {
@@ -383,6 +430,26 @@ export const useMqttStore = defineStore("mqtt", {
         );
       };
     },
+    getChargepointTagState(state) {
+      return (chargePointId) => {
+        if (
+          ![undefined, null, ""].includes(state.topics[
+            `openWB/chargepoint/${chargePointId}/set/rfid`
+          ])
+        ) {
+          return 2;
+        } else {
+          if (
+            ![undefined, null, ""].includes(state.topics[
+              `openWB/chargepoint/${chargePointId}/get/rfid`
+            ])
+            ) {
+            return 1;
+          }
+        }
+        return 0;
+      };
+    },
     getChargePointVehicleChangePermitted(state) {
       return (chargePointId) => {
         if (
@@ -409,9 +476,9 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleChargeMode(state) {
       return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleConfig(chargePointId)) {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
           return state.translateChargeMode(
-            state.getChargePointConnectedVehicleConfig(chargePointId).chargemode
+            state.getChargePointConnectedVehicleChargeTemplate(chargePointId).chargemode.selected
           );
         }
         return undefined;
@@ -419,9 +486,9 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehiclePriority(state) {
       return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleConfig(chargePointId)) {
-          return state.getChargePointConnectedVehicleConfig(chargePointId)
-            .priority;
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(chargePointId)
+            .prio;
         }
         return undefined;
       };
@@ -674,6 +741,12 @@ export const useMqttStore = defineStore("mqtt", {
         return state.topics["openWB/system/version"];
       }
       return undefined;
+    },
+
+    /* rfid */
+
+    getRfidEnabled(state) {
+      return this.getValueBool("openWB/optional/rfid/active");
     },
   },
   actions: {
