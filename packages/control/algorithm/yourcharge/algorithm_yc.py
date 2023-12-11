@@ -1,8 +1,8 @@
 import datetime
-from enum import Enum
 import logging
 import dataclasses
 
+from enum import Enum
 from datetime import timedelta
 
 from control import data, yourcharge
@@ -34,12 +34,15 @@ class AlgorithmYc():
         self._status_handler: YcStatusHandler = YcStatusHandler()
         self._internal_cp = value
         self._internal_cp_key = key
-        self._load_control_state = LoadControlState.Startup
         self._wait_for_socket_idle = False
+        self._last_rfid_data = None
+        self._valid_standard_socket_tag_found = False
         self._general_cp_handler = general_chargepoint_handler
         self._heartbeat_checker: HeartbeatChecker = HeartbeatChecker(timedelta(seconds=25))
         self._last_control_run = datetime.datetime(1, 1, 1, 0, 0, 0)
         self._standard_socket_handler: StandardSocketHandler = StandardSocketHandler(general_chargepoint_handler, self._status_handler)
+        self._current_control_state = LoadControlState.Startup
+        self._wait_for_plugin_entered = None
         log.critical(f"YC algorithm active: Internal CP found as '{self._internal_cp_key}'")
 
 
@@ -56,8 +59,14 @@ class AlgorithmYc():
             self._status_handler.update_cp_enabled(data.data.yc_data.data.yc_control.cp_enabled)
 
             # get data that we need
-            rfid_data: RfidData = SubData.internal_chargepoint_data["rfid_data"]
-            log.info(f"rfid_data = {rfid_data}")
+            self._last_rfid_data = SubData.internal_chargepoint_data["rfid_data"]
+            if self._last_rfid_data is not None and self._last_rfid_data.last_tag != "":
+                self._status_handler.update_rfid_scan(rfid=self._last_rfid_data.last_tag)
+                self._valid_standard_socket_tag_found = self._standard_socket_handler.valid_socket_rfid_scanned(self._last_rfid_data)
+            else:
+                self._valid_standard_socket_tag_found = False
+
+            log.info(f"Entering with load control state {self._current_control_state.name}, last RFID data {self._last_rfid_data}, valid standard socket tag {self._valid_standard_socket_tag_found}")
 
             if not self._status_handler.get_heartbeat_ok():
                 # unconditional early exit in case of heartbeat timeout: charge current --> 0 and socket --> off
@@ -83,6 +92,9 @@ class AlgorithmYc():
                 log.critical(f"Unknown state '{self._current_control_state.name}': Resetting to Idle")
                 self._current_control_state = LoadControlState.Idle
 
+            log.info(f"Leaving with load control state {self._current_control_state.name}")
+
+            return
 
             # handle standard socket control statemachine
             valid_standard_socket_tag_found = self._standard_socket_handler.handle_socket_algorithm(rfid_data)
@@ -101,83 +113,139 @@ class AlgorithmYc():
                 self._status_handler.update_cp_enabled(True)
                 self._wait_for_socket_idle = False
 
-            # handle supersede or regular control
-            if not self._standard_socket_handler.can_ev_charge():
-                self._set_current("EV chargepoint disabled", 0.0, yourcharge.LmStatus.DownForSocket)
-            elif not self._status_handler.get_cp_enabled():
-                self._set_current("EV chargepoint disabled", 0.0, yourcharge.LmStatus.DownByDisable)
-                return
-            elif data.data.yc_data.data.yc_control.fixed_charge_current is None:
-                log.info(f"Regular load control requested by yc_data.data.yc_control.fixed_charge_current == {data.data.yc_data.datayc_control.fixed_charge_current}")
-                self._do_load_control()
-            else:
-                # handling of superseded, fixed charge current
-                if data.data.yc_data.data.yc_control.fixed_charge_current < 0.0:
-                    # invalid or default value < 0.0
-                    self._set_current("Charging disapproved by yc_data.data.yc_control.fixed_charge_current", 0.0, yourcharge.LmStatus.DownByError)
-                else:
-                    # fixed value >= 0.0 provided
-                    log.info(f": Setting CP '{self._internal_cp_key}' charge current to {data.data.yc_data.data.yc_control.fixed_charge_current} A")
-                    self._set_current("Fixed current requested by yc_data.data.yc_control.fixed_charge_current", data.data.yc_data.data.yc_control.fixed_charge_current, yourcharge.LmStatus.Superseded)
-
         finally:
+            self._valid_standard_socket_tag_found = False
             self._send_status()
             SubData.internal_chargepoint_data["rfid_data"].last_tag = ""
 
 
     ### transition checks ###
-    def _check_idle_transitions(self):
+    def _check_idle_transitions(self) -> None:
+        # first check for socket activation
+        if self._check_transition_for_standard_socket():
+            return
+
+        if self._valid_ev_rfid_scanned(self._last_rfid_data):
+            if self._internal_cp.data.get.plug_state:
+                self._current_control_state = LoadControlState.EvActive
+            else:
+                self._current_control_state = LoadControlState.WaitingForPlugin
+
+
+    def _check_wait_for_plugin_transitions(self) -> None:
+        # first check for socket activation
+        if self._check_transition_for_standard_socket():
+            self._wait_for_plugin_entered = None
+            return
+
+        if not self._status_handler.get_cp_enabled():
+            log.info(f"Chargepoint got disabled while waiting for plugin")
+            self._wait_for_plugin_entered = None
+            self._current_control_state = LoadControlState.Idle
+
+        if self._internal_cp.data.get.plug_state:
+            self._wait_for_plugin_entered = None
+            self._current_control_state = LoadControlState.EvActive
+
+        # then check for expired wait time
+        if self._wait_for_plugin_entered is None:
+            self._wait_for_plugin_entered = datetime.datetime.utcnow()
+            return
+        else:
+            elapsed = datetime.datetime.utcnow() - self._wait_for_plugin_entered
+            if elapsed.total_seconds() >= data.data.yc_data.data.yc_config.max_plugin_wait_time_s:
+                log.warning(f"Waiting for plugin timed out after {elapsed.total_seconds()} s")
+                self._wait_for_plugin_entered = None
+                self._status_handler.update_cp_enabled(False)
+                self._current_control_state = LoadControlState.Idle
+
+
+    def _check_socket_active_transitions(self) -> None:
+        # first check for socket activation
+        if self._valid_ev_rfid_scanned(self._last_rfid_data):
+            self._standard_socket_handler.socket_off()
+            self._wait_for_socket_idle = True
+            # no transition yet - only transit once EV can charge is signaled again
+            return
+
+        if self._wait_for_socket_idle and self._standard_socket_handler.can_ev_charge():
+            self._wait_for_socket_idle = False
+            self._status_handler.update_cp_enabled(True)
+            self._current_control_state = LoadControlState.Idle
+
+
+    def _check_transition_for_standard_socket(self) -> bool:
+        if self._standard_socket_handler.handle_socket_algorithm(self._last_rfid_data):
+            if self._standard_socket_handler.can_ev_charge():
+                return False
+            else:
+                self._transition_to_standard_socket()
+                return True
+        else:
+            return False
+
+
+    def _check_ev_active_transitions(self) -> None:
         pass
 
 
-    def _check_disabled_transitions(self):
+    def _check_disabled_transitions(self) -> None:
         # handle re-activation
         if data.data.yc_data.data.yc_config.active:
             log.critical(f"Controller heartbeat returned: Trying to restore previous state")
             self._standard_socket_handler.restore_previous()
-            self._load_control_state = LoadControlState.Idle
+            self._current_control_state = LoadControlState.Idle
 
 
-    def _check_startup_transitions(self):
+    def _check_startup_transitions(self) -> None:
+        self._status_handler.update_rfid_scan(None)
         self._standard_socket_handler.restore_previous()
-        self._load_control_state = self._derive_state()
+        self._current_control_state = self._derive_state()
 
 
-    def _check_heartbeat_timeout_transitions(self):
+    def _check_heartbeat_timeout_transitions(self) -> None:
         # handle re-appearing heartbeat
         if self._status_handler.has_changed_heartbeat():
             log.critical(f"Controller heartbeat returned: Trying to restore previous state")
             self._standard_socket_handler.restore_previous()
-            self._load_control_state = self._derive_state()
+            self._current_control_state = self._derive_state()
 
 
     def _derive_state(self) -> LoadControlState:
+        return_state = LoadControlState.Startup
         if data.data.yc_data.data.yc_control.cp_enabled:
             if self._standard_socket_handler.can_ev_charge():
                 if self._internal_cp.data.get.plug_state:
-                    self._load_control_state = LoadControlState.EvActive
+                    return_state = LoadControlState.EvActive
                 else:
-                    self._load_control_state = LoadControlState.WaitingForPlugin
+                    return_state = LoadControlState.WaitingForPlugin
             else:
-                self._load_control_state = LoadControlState.SocketActive
+                return_state = LoadControlState.SocketActive
         else:
             if self._standard_socket_handler.can_ev_charge():
-                self._load_control_state = LoadControlState.Idle
+                return_state = LoadControlState.Idle
             else:
-                self._load_control_state = LoadControlState.SocketActive
+                return_state = LoadControlState.SocketActive
+        return return_state
 
 
     ### transition actions ###
+    def _transition_to_standard_socket(self):
+        # immediately disable CP when valid standard socket tag has been found
+        self._status_handler.update_cp_enabled(False)
+        self._set_current("Standard socket activated: Disabling charge immediately", 0.0, yourcharge.LmStatus.DownForSocket)
+        self._current_control_state = LoadControlState.SocketActive
+
     def _transition_to_disabled(self):
         self._set_current("Box is administratively disabled: Disabling charge immediately", 0.0, yourcharge.LmStatus.DownByDisable)
         self._standard_socket_handler._socket_off()
-        self._load_control_state = LoadControlState.Disabled
+        self._current_control_state = LoadControlState.Disabled
 
 
     def _transition_to_heartbeat_timeout(self):
         self._set_current("Detected controller heartbeat timeout: Disabling charge immediately", 0.0, yourcharge.LmStatus.DownByError)
         self._standard_socket_handler._socket_off()
-        self._load_control_state = LoadControlState.HeartbeatTimeout
+        self._current_control_state = LoadControlState.HeartbeatTimeout
 
 
     ### other, non-statemachine, methods
@@ -196,7 +264,18 @@ class AlgorithmYc():
 
 
     def _do_load_control(self):
-        log.info(f"Regular load control NOT YET IMPLEMENTED")
+        if data.data.yc_data.data.yc_control.fixed_charge_current is None:
+            log.info(f"Regular load control requested by yc_data.data.yc_control.fixed_charge_current == {data.data.yc_data.datayc_control.fixed_charge_current}")
+            self._do_load_control()
+        else:
+            # handling of superseded, fixed charge current
+            if data.data.yc_data.data.yc_control.fixed_charge_current < 0.0:
+                # invalid or default value < 0.0
+                self._set_current("Charging disapproved by yc_data.data.yc_control.fixed_charge_current", 0.0, yourcharge.LmStatus.DownByError)
+            else:
+                # fixed value >= 0.0 provided
+                log.info(f": Setting CP '{self._internal_cp_key}' charge current to {data.data.yc_data.data.yc_control.fixed_charge_current} A")
+                self._set_current("Fixed current requested by yc_data.data.yc_control.fixed_charge_current", data.data.yc_data.data.yc_control.fixed_charge_current, yourcharge.LmStatus.Superseded)
 
         # check if control interval is actuall due
         now_it_is = datetime.datetime.utcnow()
@@ -204,6 +283,10 @@ class AlgorithmYc():
             log.info(f"Control loop not yet due")
             return
         self._last_control_run = now_it_is
+
+        # now we can start with actual load control calculation
+        log.info("Regular load control NOT YET IMPLEMENTED")
+        pass
 
 
     def _valid_ev_rfid_scanned(self, rfid_data: RfidData) -> bool:

@@ -4,6 +4,7 @@ import logging
 
 from typing import List
 from enum import Enum
+from datetime import timedelta
 
 from dataclasses import dataclass, field
 from dataclass_utils.factories import empty_list_factory
@@ -86,6 +87,7 @@ class YcConfig:
     standard_socket_installed: bool = None
     use_last_charging_phase: bool = None
     box_id: str = None
+    max_plugin_wait_time_s: float = 60.0
 
 @dataclass
 class YcControlData:

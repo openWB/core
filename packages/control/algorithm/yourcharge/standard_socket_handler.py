@@ -111,14 +111,14 @@ class StandardSocketHandler:
 
 
     # returns True if there's any RFID tag in the passed rfid_data and that tag is among the list of valid standard-socket RFID tags
-    def valid_socket_rfid_scanned(self, rfid_data: RfidData) -> bool:
-        if rfid_data.last_tag is not None and rfid_data.last_tag != "":
-            log.info(f"Detected RFID scan: {rfid_data.last_tag}: Still need to check if it's a valid standard-socket tag ...")
-            if rfid_data.last_tag in data.data.yc_data.data.yc_config.allowed_rfid_std_socket:
-                log.info(f"!!! Detected RFID scan: {rfid_data.last_tag}: VALID SOCKET TAG !!!")
+    def valid_socket_rfid_scanned(self, rfid_info: RfidData) -> bool:
+        if rfid_info.last_tag is not None and rfid_info.last_tag != "":
+            log.info(f"Detected RFID scan: {rfid_info.last_tag}: Still need to check if it's a valid standard-socket tag ...")
+            if rfid_info.last_tag in data.data.yc_data.data.yc_config.allowed_rfid_std_socket:
+                log.info(f"!!! Detected RFID scan: {rfid_info.last_tag}: VALID SOCKET TAG !!!")
                 return True
             else:
-                log.info(f"Detected RFID scan: {rfid_data.last_tag}: Is not a valid standard-socket RFID tag")
+                log.info(f"Detected RFID scan: {rfid_info.last_tag}: Is not a valid standard-socket RFID tag")
         return False
 
 
