@@ -206,7 +206,7 @@ class Ev:
                 else:
                     interval = self.soc_module.general_config.request_interval_not_charging
                 # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-                if timecheck.check_timestamp(self.data.get.soc_timestamp, interval*60-5) is False:
+                if timecheck.check_timestamp(self.data.get.soc_timestamp, interval-5) is False:
                     # Zeit ist abgelaufen
                     request_soc = True
         return request_soc
@@ -771,7 +771,7 @@ class ChargeTemplate:
             phases = control_parameter_phases
         elif limit.selected == "amount" and used_amount >= limit.amount:
             message = self.SCHEDULED_CHARGING_REACHED_AMOUNT
-        elif 0 - soc_request_intervall_offset*60 < plan_data.remaining_time < 300 + soc_request_intervall_offset*60:
+        elif 0 - soc_request_intervall_offset < plan_data.remaining_time < 300 + soc_request_intervall_offset:
             # 5 Min vor spätestem Ladestart
             if limit.selected == "soc":
                 limit_string = self.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(limit.soc_scheduled)
@@ -783,7 +783,7 @@ class ChargeTemplate:
             mode = "instant_charging"
         # weniger als die berechnete Zeit verfügbar
         # Ladestart wurde um maximal 20 Min verpasst.
-        elif plan_data.remaining_time <= 0 - soc_request_intervall_offset*60:
+        elif plan_data.remaining_time <= 0 - soc_request_intervall_offset:
             current = min(plan_data.missing_amount/(plan_data.duration +
                           plan_data.remaining_time/3600)/(phases*230), plan_data.max_current)
             message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(round(current, 2))
