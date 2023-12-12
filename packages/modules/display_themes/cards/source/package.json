@@ -18,7 +18,7 @@
     "@inkline/inkline": "^3.2.0",
     "buffer": "^6.0.3",
     "events": "^3.3.0",
-    "mqtt": "^4.3.7",
+    "mqtt": "^5.3.3",
     "node-stdlib-browser": "^1.2.0",
     "pinia": "^2.0.28",
     "vue": "^3.2.45",
