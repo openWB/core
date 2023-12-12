@@ -28,7 +28,7 @@ export default defineConfig(({ command, mode }) => {
         nodePolyfills({
           // Whether to polyfill `node:` protocol imports.
           protocolImports: true,
-        })
+        }),
       );
       myConfiguration.server = {
         proxy: {
@@ -44,7 +44,7 @@ export default defineConfig(({ command, mode }) => {
       nodePolyfills({
         // Whether to polyfill `node:` protocol imports.
         protocolImports: true,
-      })
+      }),
     );
     myConfiguration.build = {
       rollupOptions: {
