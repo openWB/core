@@ -92,13 +92,13 @@ echo -n "replacing apache default page..."
 cp "${OPENWBBASEDIR}/index.html" /var/www/html/index.html
 echo "done"
 echo -n "fix upload limit..."
-if [ -d "/etc/php/7.3/" ]; then
-	echo "upload_max_filesize = 300M" > /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini
-	echo "post_max_size = 300M" >> /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini
-	echo "done (OS Buster)"
-elif [ -d "/etc/php/7.4/" ]; then
+if [ -d "/etc/php/7.4/" ]; then
 	echo "upload_max_filesize = 300M" > /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini
 	echo "post_max_size = 300M" >> /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini
+	echo "done (OS Buster)"
+elif [ -d "/etc/php/8.2/" ]; then
+	echo "upload_max_filesize = 300M" > /etc/php/8.2/apache2/conf.d/20-uploadlimit.ini
+	echo "post_max_size = 300M" >> /etc/php/8.2/apache2/conf.d/20-uploadlimit.ini
 	echo "done (OS Bullseye)"
 fi
 echo -n "enabling apache ssl module..."
@@ -112,8 +112,14 @@ echo -n "restarting apache..."
 systemctl restart apache2
 echo "done"
 
+echo "create virtualvenv openwb-venv"
+python3 -m venv /home/openwb/openwb-venv
+
+echo "setze Rechte für User"
+sudo chown -R openwb:openwb /home/openwb/openwb-venv
+
 echo "installing python requirements..."
-sudo -u "$OPENWB_USER" pip install -r "${OPENWBBASEDIR}/requirements.txt"
+sudo -u "$OPENWB_USER" /home/openwb/openwb-venv/bin/pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
 
 echo "installing openwb2 system service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
