@@ -1,4 +1,4 @@
-jq
+jq==1.7
 paho_mqtt
 pymodbus==2.5.2
 pytest
