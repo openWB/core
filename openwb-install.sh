@@ -11,7 +11,7 @@ fi
 echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
 # install packages by pre-downloading our script so we only have one file to maintain
-curl -s "https://raw.githubusercontent.com/Xerolux/core/debian12/runs/install_packages.sh" | bash -s
+curl -s "https://raw.githubusercontent.com/openWB/core/master/runs/install_packages.sh" | bash -s
 
 echo "create group $OPENWB_GROUP"
 # Will do nothing if group already exists:
@@ -33,7 +33,7 @@ echo "check for initial git clone..."
 if [ ! -d "${OPENWBBASEDIR}/web" ]; then
 	mkdir "$OPENWBBASEDIR"
 	chown "$OPENWB_USER:$OPENWB_GROUP" "$OPENWBBASEDIR"
-	sudo -u "$OPENWB_USER" git clone https://github.com/Xerolux/core.git --branch debian12 "$OPENWBBASEDIR"
+	sudo -u "$OPENWB_USER" git clone https://github.com/openWB/core.git --branch master "$OPENWBBASEDIR"
 	echo "git cloned"
 else
 	echo "ok"
