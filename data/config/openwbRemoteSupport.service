@@ -5,7 +5,7 @@ Description="Remote Support Handler openWB 2.0"
 [Service]
 User=openwb
 WorkingDirectory=/var/www/html/openWB
-ExecStart=/var/www/html/openWB/runs/remoteSupport/remoteSupport.py
+ExecStart=/home/openwb/openwb-venv/bin/python3 /var/www/html/openWB/runs/remoteSupport/remoteSupport.py
 Restart=always
 
 [Install]
