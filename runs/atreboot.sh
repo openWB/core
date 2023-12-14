@@ -312,7 +312,7 @@ chmod 666 "$LOGFILE"
 
 	# check for python dependencies
 	echo "install required python packages with 'pip3'..."
-	if pip3 install -r "${OPENWBBASEDIR}/requirements.txt"; then
+	if /home/openwb/openwb-venv/bin/pip3 install -r "${OPENWBBASEDIR}/requirements.txt"; then
 		echo "done"
 	else
 		echo "failed!"
