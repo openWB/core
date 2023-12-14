@@ -52,7 +52,7 @@ export default {
         return this.calculateCoordinates(
           this.slicedData,
           this.lowestPoint,
-          this.highestPoint
+          this.highestPoint,
         );
       }
       return undefined;

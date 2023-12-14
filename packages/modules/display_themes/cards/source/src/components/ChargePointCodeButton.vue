@@ -2,14 +2,12 @@
 /* fontawesome */
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-  faCalculator as fasCalculator,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCalculator as fasCalculator } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
 library.add(fasCalculator);
 
 import { useMqttStore } from "@/stores/mqtt.js";
-import CodeInputModal from "./CodeInputModal.vue"
+import CodeInputModal from "./CodeInputModal.vue";
 
 export default {
   name: "ChargePointCodeButton",
@@ -51,7 +49,7 @@ export default {
         default:
           return "";
       }
-    }
+    },
   },
   methods: {
     toggleIdTagModal() {
@@ -60,7 +58,7 @@ export default {
     sendIdTag(event) {
       this.$root.sendTopicToBroker(
         `openWB/chargepoint/${this.chargePointId}/get/rfid`,
-        event
+        event,
       );
       this.modalIdTagEntryVisible = false;
     },
@@ -90,11 +88,8 @@ export default {
     :minLength="4"
     :maxLength="20"
   >
-    <template #header>
-      Bitte einen ID-Tag eingeben.
-    </template>
+    <template #header> Bitte einen ID-Tag eingeben. </template>
   </CodeInputModal>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -92,7 +92,7 @@ export default {
       this.client.on("connect", () => {
         console.debug(
           "Connection succeeded! ClientId: ",
-          this.client.options.clientId
+          this.client.options.clientId,
         );
       });
       this.client.on("error", (error) => {
@@ -182,7 +182,7 @@ export default {
       this.doPublish(
         "openWB/set/command/" + this.client.options.clientId + "/todo",
         event,
-        false
+        false,
       );
     },
     /**

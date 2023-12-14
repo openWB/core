@@ -36,35 +36,53 @@ export default {
   <i-container>
     <i-row center class="_padding-bottom:1">
       <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('1')">1</i-button>
+        <i-button size="lg" class="pinButton" @click="emitDigit('1')">
+          1
+        </i-button>
       </i-column>
       <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('2')">2</i-button>
+        <i-button size="lg" class="pinButton" @click="emitDigit('2')">
+          2
+        </i-button>
       </i-column>
       <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('3')">3</i-button>
-      </i-column>
-    </i-row>
-    <i-row center class="_padding-bottom:1">
-      <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('4')">4</i-button>
-      </i-column>
-      <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('5')">5</i-button>
-      </i-column>
-      <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('6')">6</i-button>
+        <i-button size="lg" class="pinButton" @click="emitDigit('3')">
+          3
+        </i-button>
       </i-column>
     </i-row>
     <i-row center class="_padding-bottom:1">
       <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('7')">7</i-button>
+        <i-button size="lg" class="pinButton" @click="emitDigit('4')">
+          4
+        </i-button>
       </i-column>
       <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('8')">8</i-button>
+        <i-button size="lg" class="pinButton" @click="emitDigit('5')">
+          5
+        </i-button>
       </i-column>
       <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('9')">9</i-button>
+        <i-button size="lg" class="pinButton" @click="emitDigit('6')">
+          6
+        </i-button>
+      </i-column>
+    </i-row>
+    <i-row center class="_padding-bottom:1">
+      <i-column class="_flex-grow:0">
+        <i-button size="lg" class="pinButton" @click="emitDigit('7')">
+          7
+        </i-button>
+      </i-column>
+      <i-column class="_flex-grow:0">
+        <i-button size="lg" class="pinButton" @click="emitDigit('8')">
+          8
+        </i-button>
+      </i-column>
+      <i-column class="_flex-grow:0">
+        <i-button size="lg" class="pinButton" @click="emitDigit('9')">
+          9
+        </i-button>
       </i-column>
     </i-row>
     <i-row center>
@@ -74,7 +92,9 @@ export default {
         </i-button>
       </i-column>
       <i-column class="_flex-grow:0">
-        <i-button size="lg" class="pinButton" @click="emitDigit('0')">0</i-button>
+        <i-button size="lg" class="pinButton" @click="emitDigit('0')">
+          0
+        </i-button>
       </i-column>
       <i-column class="_flex-grow:0">
         <i-button size="lg" class="pinButton" @click="emitDelete()">

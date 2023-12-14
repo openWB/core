@@ -2,16 +2,6 @@
 import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
 import NumberPad from "../NumberPad.vue";
 
-/* fontawesome */
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-  faDeleteLeft as fasDeleteLeft,
-  faEraser as fasEraser,
-} from "@fortawesome/free-solid-svg-icons";
-/* add icons to the library */
-library.add(fasDeleteLeft, fasEraser);
-
 import { useMqttStore } from "@/stores/mqtt.js";
 
 export default {
@@ -29,7 +19,6 @@ export default {
   components: {
     ExtendedNumberInput,
     NumberPad,
-    FontAwesomeIcon,
   },
   emits: ["update:modelValue"],
   methods: {
@@ -52,7 +41,7 @@ export default {
     updateManualSoc() {
       this.$root.sendTopicToBroker(
         `openWB/vehicle/${this.vehicleId}/soc_module/calculated_soc_state/manual_soc`,
-        this.newSoc
+        this.newSoc,
       );
       this.close();
     },
@@ -109,5 +98,4 @@ export default {
   </Teleport>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
