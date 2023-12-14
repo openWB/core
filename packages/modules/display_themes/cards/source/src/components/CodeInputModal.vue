@@ -1,14 +1,4 @@
 <script>
-/* fontawesome */
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-  faDeleteLeft as fasDeleteLeft,
-  faEraser as fasEraser,
-} from "@fortawesome/free-solid-svg-icons";
-/* add icons to the library */
-library.add(fasDeleteLeft, fasEraser);
-
 import NumberPad from "./NumberPad.vue";
 
 export default {
@@ -16,7 +6,13 @@ export default {
   props: {
     modelValue: { type: Boolean, required: true },
     backgroundColor: { type: String, default: "warning" },
-    placeholderCharacter: { type: String, default: "*", validator(value) { return value.length == 1 } },
+    placeholderCharacter: {
+      type: String,
+      default: "*",
+      validator(value) {
+        return value.length == 1;
+      },
+    },
     inputVisible: { type: Boolean, default: false },
     minLength: { type: Number, default: 4 },
     maxLength: { type: Number, default: 4 },
@@ -28,7 +24,6 @@ export default {
     };
   },
   components: {
-    FontAwesomeIcon,
     NumberPad,
   },
   emits: ["update:modelValue", "update:inputValue"],
@@ -37,8 +32,11 @@ export default {
       return this.placeholderCharacter.repeat(this.minLength);
     },
     enableSubmit() {
-      return this.number.length >= this.minLength && this.number.length <= this.maxLength;
-    }
+      return (
+        this.number.length >= this.minLength &&
+        this.number.length <= this.maxLength
+      );
+    },
   },
   watch: {
     modelValue(newValue, oldValue) {
@@ -85,17 +83,25 @@ export default {
 
 <template>
   <Teleport to="body">
-    <i-modal :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)" :color="modalBackground">
+    <i-modal
+      :modelValue="modelValue"
+      @update:modelValue="$emit('update:modelValue', $event)"
+      :color="modalBackground"
+    >
       <template #header>
-        <slot name="header">
-          **HEADER**
-        </slot>
+        <slot name="header"> **HEADER** </slot>
       </template>
       <i-container>
         <i-row center class="_padding-bottom:1">
           <i-column>
-            <i-input v-model="number" :placeholder="placeholder" readonly size="lg"
-              :type="inputVisible ? 'text' : 'password'" class="_text-align:center" />
+            <i-input
+              v-model="number"
+              :placeholder="placeholder"
+              readonly
+              size="lg"
+              :type="inputVisible ? 'text' : 'password'"
+              class="_text-align:center"
+            />
           </i-column>
         </i-row>
         <NumberPad
@@ -109,16 +115,12 @@ export default {
           <i-row>
             <i-column>
               <i-button color="danger" @click="abort">
-                <slot name="abort">
-                  Zurück
-                </slot>
+                <slot name="abort"> Zurück </slot>
               </i-button>
             </i-column>
             <i-column class="_text-align:right">
               <i-button v-if="enableSubmit" color="success" @click="submit">
-                <slot name="submit">
-                  OK
-                </slot>
+                <slot name="submit"> OK </slot>
               </i-button>
             </i-column>
           </i-row>
@@ -128,5 +130,4 @@ export default {
   </Teleport>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

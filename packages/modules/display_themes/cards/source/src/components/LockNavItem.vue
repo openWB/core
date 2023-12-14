@@ -12,7 +12,7 @@ import {
 library.add(fasLock, fasLockOpen, fasDeleteLeft, fasEraser);
 
 import { useMqttStore } from "@/stores/mqtt.js";
-import CodeInputModal from "./CodeInputModal.vue"
+import CodeInputModal from "./CodeInputModal.vue";
 
 export default {
   name: "LockNavItem",
@@ -140,5 +140,4 @@ export default {
   </CodeInputModal>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

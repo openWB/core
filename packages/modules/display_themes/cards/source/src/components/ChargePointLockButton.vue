@@ -46,8 +46,8 @@ export default {
         this.$root.sendTopicToBroker(
           `openWB/chargepoint/${this.chargePointId}/set/manual_lock`,
           !this.mqttStore.getValueBool(
-            `openWB/chargepoint/${this.chargePointId}/set/manual_lock`
-          )
+            `openWB/chargepoint/${this.chargePointId}/set/manual_lock`,
+          ),
         );
       }
     },
