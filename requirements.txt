@@ -19,4 +19,4 @@ python-dateutil
 umodbus
 pysmb
 typing-extensions
-RPi.GPIO
+# RPi.GPIO #only for RPI
