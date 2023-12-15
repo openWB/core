@@ -28,7 +28,7 @@ class SungrowInverter:
 
     def update(self) -> float:
         unit = self.__device_modbus_id
-        power = self.__tcp_client.read_input_registers(5016,
+        power = self.__tcp_client.read_input_registers(13007,
                                                        ModbusDataType.UINT_32,
                                                        wordorder=Endian.Little,
                                                        unit=unit) * -1
