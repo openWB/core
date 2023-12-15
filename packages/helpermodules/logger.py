@@ -30,7 +30,7 @@ def setup_logging() -> None:
     # appears in terminal or debug console (e.g. in VSCode)
     if sys.gettrace() is not None:
         console_handler_detailed = logging.StreamHandler()
-        console_handler_detailed.setLevel(level=logging.DEBUG)
+        console_handler_detailed.setLevel(level=logging.INFO)
         console_handler_detailed.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
         console_handler_detailed.addFilter(functools.partial(filter_neg, "smarthome"))
 

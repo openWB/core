@@ -46,7 +46,7 @@ class Sdm630(Sdm):
         return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, unit=self.id)
 
     def get_model(self) -> str:
-        return "EASTRON Sdm630"
+        return "EASTRON SDM630"
 
 
 class Sdm120(Sdm):
@@ -68,4 +68,4 @@ class Sdm120(Sdm):
         return [self.client.read_input_registers(0x1E, ModbusDataType.FLOAT_32, unit=self.id), 0.0, 0.0]
 
     def get_model(self) -> str:
-        return "EASTRON Sdm120"
+        return "EASTRON SDM120"

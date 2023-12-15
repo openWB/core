@@ -26,7 +26,7 @@ from control import prepare
 from control import data
 from control import process
 from control.algorithm import algorithm
-from control.algorithm.yourcharge import algorithm_yc
+from control.algorithm.yourcharge import statmachine_yc
 from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
@@ -42,7 +42,6 @@ class HandlerAlgorithm:
     def __init__(self):
         self.interval_counter = 1
         self.current_day = None
-        self.control = algorithm.Algorithm()
         self.control_yc = None
 
     def handler10Sec(self):
@@ -67,7 +66,7 @@ class HandlerAlgorithm:
                         log.info("Regelung pausiert, da ein Update durchgeführt wird.")
                     event_global_data_initialized.set()
                     prep.setup_algorithm()
-                    self.control.calc_current()
+                    control.calc_current()
                     proc.process_algorithm_results()
                     data.data.graph_data.pub_graph_data()
                     changed_values_handler.pub_changed_values()
@@ -174,7 +173,7 @@ class HandlerAlgorithm:
                 event_global_data_initialized.set()
                 if self.control_yc is None:
                     # we need lazy instantiation here so general_internal_chargepoint_handler is safely assigned
-                    self.control_yc = algorithm_yc.AlgorithmYc(general_internal_chargepoint_handler)
+                    self.control_yc = statmachine_yc.StatemachineYc(general_internal_chargepoint_handler)
                 self.control_yc.perform_load_control()
                 changed_values_handler.pub_changed_values()
             log.info("# ***Start*** ")
@@ -220,7 +219,7 @@ try:
     t_smarthome.join()
 
     proc = process.Process()
-
+    control = algorithm.Algorithm()
     handler = HandlerAlgorithm()
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
@@ -285,7 +284,6 @@ try:
     threading.Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
-
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     changed_values_handler.store_inital_values()

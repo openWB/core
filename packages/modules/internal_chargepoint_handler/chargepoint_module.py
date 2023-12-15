@@ -39,7 +39,6 @@ class ChargepointModule(AbstractChargepoint):
         self.old_plug_state = False
         self.old_phases_in_use = 0
         self.__client = client_handler
-        log.info(f"Constructing ChargepointModule with ID for CP {local_charge_point_num}: {id(self)}")
         self.standard_socket_handler = None
         version = self.__client.evse_client.get_firmware_version()
         if version < 17:

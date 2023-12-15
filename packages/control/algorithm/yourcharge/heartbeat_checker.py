@@ -21,7 +21,8 @@ class HeartbeatChecker:
             # very first run: just store the last_controller_publish
             log.info(f"LCS heartbeat initialized to: {data.data.yc_data.data.last_controller_publish}")
             self._previous_lcs_publish = data.data.yc_data.data.last_controller_publish
-            return True
+            self._timeout_detection_time = datetime.utcnow() - self.heartbeat_timeout
+            return False
 
         if self._previous_lcs_publish == data.data.yc_data.data.last_controller_publish:
             # no new controller timestamp seen

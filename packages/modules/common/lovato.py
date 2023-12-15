@@ -41,4 +41,4 @@ class Lovato(AbstractCounter):
         return "n/a"
 
     def get_model(self) -> str:
-        return "Lovato MPM3PM"
+        return "Lovato DMED301/DMED330"
