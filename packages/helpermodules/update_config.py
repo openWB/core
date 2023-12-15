@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 29
+    DATASTORE_VERSION = 30
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1053,3 +1053,14 @@ class UpdateConfig:
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 29)
+
+    def upgrade_datastore_29(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/general_config", topic) is not None:
+                payload = decode_payload(payload)
+                # Zeitangabe in s
+                payload["request_interval_charging"] = payload["request_interval_charging"]*60
+                payload["request_interval_not_charging"] = payload["request_interval_not_charging"]*60
+                Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 30)
