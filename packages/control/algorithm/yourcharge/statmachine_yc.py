@@ -43,7 +43,8 @@ class StatemachineYc():
         self._standard_socket_handler: StandardSocketHandler = StandardSocketHandler(general_chargepoint_handler, self._status_handler)
         self._current_control_state = LoadControlState.Startup
         self._wait_for_plugin_entered = None
-        self._control_algorithm = ControlAlgorithmYc(key, value)
+        self._control_algorithm = ControlAlgorithmYc(key, value, self._status_handler)
+        self._previous_plug_state = None
         log.critical(f"YC algorithm active: Internal CP found as '{self._internal_cp_key}'")
 
 
@@ -58,6 +59,16 @@ class StatemachineYc():
             # current status implictly updates control when changed
             # this way the cp-enabled status gets persisted in MQTT server
             self._status_handler.update_cp_enabled(data.data.yc_data.data.yc_control.cp_enabled)
+
+            # detect plugin (for accounting and engery since plugged)
+            if self._previous_plug_state is not None and self._previous_plug_state and self._internal_cp.data.get.plug_state:
+                # transition from unplugged -> plugged -> update meter value at plugin
+                self._status_handler.update_cp_meter_at_last_plugin(self._internal_cp.data.get.imported)
+                self._status_handler.new_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported, self._internal_cp.data.get.charge_state, self._internal_cp.data.get.plug_state)
+
+            # calculate charged-since-plugged and charged-today
+            if data.data.yc_data.data.yc_control.cp_meter_at_last_plugin is not None:
+                self._status_handler.update_energy_charged_since_last_plugin(self._internal_cp.data.get.imported - data.data.yc_data.data.yc_control.cp_meter_at_last_plugin)
 
             # get data that we need
             self._last_rfid_data = SubData.internal_chargepoint_data["rfid_data"]
@@ -97,6 +108,8 @@ class StatemachineYc():
 
         finally:
             self._valid_standard_socket_tag_found = False
+            self._previous_plug_state = self._internal_cp.data.get.plug_state
+            self._status_handler.update_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported, self._internal_cp.data.get.charge_state, self._internal_cp.data.get.plug_state)
             self._send_status()
             SubData.internal_chargepoint_data["rfid_data"].last_tag = ""
 

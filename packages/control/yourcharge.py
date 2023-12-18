@@ -4,7 +4,6 @@ import logging
 
 from typing import List
 from enum import Enum
-from datetime import timedelta
 
 from dataclasses import dataclass, field
 from dataclass_utils.factories import empty_list_factory
@@ -16,6 +15,7 @@ yc_control_topic = yc_root_topic + '/control'
 yc_config_topic = yc_root_topic + '/config'
 yc_socket_activated_topic = yc_control_topic + '/socket_activated'
 yc_socket_requested_topic = yc_control_topic + '/socket_request'
+yc_accounting_control_topic = yc_control_topic + '/accounting'
 
 
 # load management states that we can be in
@@ -66,11 +66,25 @@ class SocketRequestStates(str, Enum):
 
 log = logging.getLogger(__name__)
 
+def three_false_bool_factory() -> List[bool]:
+    return [ False, False, False ]
+
 def three_zero_ints_factory() -> List[int]:
     return [ 0, 0, 0 ]
 
 def three_zero_floatss_factory() -> List[float]:
     return [ 0.0, 0.0, 0.0 ]
+
+@dataclass
+class AccountingInfo:
+    charge_start: str = None
+    starting_rfid: str = None
+    meter_at_start: float = None
+    currrent_time: str = None
+    plugged_in: bool = None
+    charging: bool = None
+    current_meter: float = None
+
 
 @dataclass
 class YcConfig:
@@ -88,6 +102,8 @@ class YcConfig:
     use_last_charging_phase: bool = None
     box_id: str = None
     max_plugin_wait_time_s: float = 60.0
+    min_current_for_charge_detect: float = 1.0
+    energy_limit: float = 0.0
 
 @dataclass
 class YcControlData:
@@ -102,6 +118,9 @@ class YcControlData:
     socket_request: SocketRequestStates = SocketRequestStates.Uninitialized
     cp_enabled: bool = False
     socket_activated: bool = False
+    cp_meter_at_last_plugin: float = None
+    accounting: AccountingInfo = None
+
 
     @property
     def fixed_charge_current(self) -> float:
