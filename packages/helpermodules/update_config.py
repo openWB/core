@@ -392,6 +392,7 @@ class UpdateConfig:
         "^openWB/system/lastlivevaluesJson$",
         "^openWB/system/messages/[0-9]+$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
+        "^openWB/system/mqtt/valid_partner_ids$",
         "^openWB/system/release_train$",
         "^openWB/system/time$",
         "^openWB/system/update_in_progress$",
@@ -474,6 +475,7 @@ class UpdateConfig:
         ("openWB/system/debug_level", 30),
         ("openWB/system/device/module_update_completed", True),
         ("openWB/system/ip_address", "unknown"),
+        ("openWB/system/mqtt/valid_partner_ids", []),
         ("openWB/system/release_train", "master"),
     )
     invalid_topic = (

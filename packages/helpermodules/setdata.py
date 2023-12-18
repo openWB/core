@@ -1010,6 +1010,9 @@ class SetData:
                 self._validate_value(msg, str)
             elif "openWB/set/system/mqtt/bridge/" in msg.topic:
                 self._validate_value(msg, "json")
+            elif "openWB/set/system/mqtt/valid_partner_ids" == msg.topic:
+                # ToDo: find a way to validate json string arrays (python list of str)
+                self._validate_value(msg, "json")
             elif "configurable" in msg.topic:
                 self._validate_value(msg, None)
             elif "device" in msg.topic:
