@@ -70,12 +70,12 @@ def get_lt_executable() -> Optional[Path]:
 def on_connect(client: mqtt.Client, userdata, flags: dict, rc: int):
     """connect to broker and subscribe to set topics"""
     log.info("Connected")
-    client.subscribe(
+    client.subscribe([
         (REMOTE_SUPPORT_TOPIC, 2),
         (CLOUD_TOPIC, 2),
         (REMOTE_PARTNER_TOPIC, 2),
         (REMOTE_PARTNER_IDS_TOPIC, 2)
-    )
+    ])
     publish_as_json(client, API_TOPIC, API_VERSION)
     publish_as_json(client, STATE_TOPIC, "online")
 
@@ -212,22 +212,22 @@ client.on_connect = on_connect
 client.on_message = on_message
 client.will_set(STATE_TOPIC, json.dumps("offline"), 2, True)
 
-print("connecting to broker")
+log.debug("connecting to broker")
 client.connect(mqtt_broker_host, 1883)
-print("starting loop")
+log.debug("starting loop")
 client.loop_start()
 try:
     while True:
         sleep(1)
 except (Exception, KeyboardInterrupt) as e:
-    print(e)
-    print("terminated")
+    log.debug(e)
+    log.debug("terminated")
 finally:
-    print("publishing state 'offline'")
+    log.debug("publishing state 'offline'")
     publish_as_json(client, STATE_TOPIC, "offline", 2, True)
     sleep(0.5)
-    print("stopping loop")
+    log.debug("stopping loop")
     client.loop_stop()
     client.disconnect()
-    print("disconnected")
-print("exit")
+    log.debug("disconnected")
+log.debug("exit")
