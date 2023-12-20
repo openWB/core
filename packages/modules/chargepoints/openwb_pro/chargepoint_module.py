@@ -7,7 +7,8 @@ from modules.chargepoints.openwb_pro.config import OpenWBPro
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.hardware_check import check_meter_values
 from modules.common.store import get_chargepoint_value_store
 from modules.common.component_state import ChargepointState
 from modules.common import req
@@ -19,14 +20,14 @@ class ChargepointModule(AbstractChargepoint):
     def __init__(self, config: OpenWBPro) -> None:
         self.config = config
         self.store = get_chargepoint_value_store(self.config.id)
-        self.component_info = ComponentInfo(
+        self.fault_state = FaultState(ComponentInfo(
             self.config.id,
-            "Ladepunkt", "chargepoint")
+            "Ladepunkt", "chargepoint"))
         self.__session = req.get_http_session()
         self.__client_error_context = ErrorCounterContext(
             "Anhaltender Fehler beim Auslesen des Ladepunkts. Sollstromstärke wird zurückgesetzt.")
 
-        with SingleComponentUpdateContext(self.component_info, False):
+        with SingleComponentUpdateContext(self.fault_state, False):
             with self.__client_error_context:
                 self.__session.post(
                     'http://' + self.config.configuration.ip_address + '/connect.php',
@@ -35,13 +36,13 @@ class ChargepointModule(AbstractChargepoint):
     def set_current(self, current: float) -> None:
         if self.__client_error_context.error_counter_exceeded():
             current = 0
-        with SingleComponentUpdateContext(self.component_info, False):
+        with SingleComponentUpdateContext(self.fault_state, False):
             with self.__client_error_context:
                 ip_address = self.config.configuration.ip_address
                 self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': current})
 
     def get_values(self) -> None:
-        with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state):
             with self.__client_error_context:
                 ip_address = self.config.configuration.ip_address
                 json_rsp = self.__session.get('http://'+ip_address+'/connect.php').json()
@@ -60,6 +61,9 @@ class ChargepointModule(AbstractChargepoint):
                 )
 
                 if json_rsp.get("voltages"):
+                    meter_msg = check_meter_values(json_rsp["voltages"])
+                    if meter_msg:
+                        self.fault_state.warning(meter_msg)
                     chargepoint_state.voltages = json_rsp["voltages"]
                 if json_rsp.get("soc_value"):
                     chargepoint_state.soc = json_rsp["soc_value"]
@@ -76,7 +80,7 @@ class ChargepointModule(AbstractChargepoint):
                 self.__client_error_context.reset_error_counter()
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
-        with SingleComponentUpdateContext(self.component_info, False):
+        with SingleComponentUpdateContext(self.fault_state, False):
             with self.__client_error_context:
                 ip_address = self.config.configuration.ip_address
                 response = self.__session.get('http://'+ip_address+'/connect.php')

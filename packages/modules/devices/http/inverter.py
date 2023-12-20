@@ -7,7 +7,7 @@ from dataclass_utils import dataclass_from_dict
 from helpermodules import compatibility
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.http.api import create_request_function
@@ -20,7 +20,7 @@ class HttpInverter:
         self.component_config = dataclass_from_dict(HttpInverterSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
         self.__get_power = create_request_function(url, self.component_config.configuration.power_path)
         self.__get_exported = create_request_function(url, self.component_config.configuration.exported_path)
