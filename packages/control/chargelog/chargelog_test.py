@@ -62,9 +62,9 @@ EXPECTED_ENTRY_YESTERDAYS_DAILY = {"timestamp": 1698879000, "date": "23:50", "cp
 
 @pytest.mark.parametrize(
     "start_charging, create_log_entry, expected_timestamp",
-    (pytest.param("05/16/2022, 07:42:52", False, ReferenceTime.START, id="innerhalb der letzten Stunde angesteckt"),
-     pytest.param("05/16/2022, 06:40:52", False, ReferenceTime.MIDDLE, id="vor mehr als einer Stunde angesteckt"),
-     pytest.param("05/16/2022, 06:40:52", True, ReferenceTime.END,
+    (pytest.param(1652679772, False, ReferenceTime.START, id="innerhalb der letzten Stunde angesteckt"),
+     pytest.param(1652676052, False, ReferenceTime.MIDDLE, id="vor mehr als einer Stunde angesteckt"),
+     pytest.param(1652676052, True, ReferenceTime.END,
                   id="vor mehr als einer Stunde angesteckt, Ladevorgang beenden"),
      )
 )
@@ -82,10 +82,10 @@ def test_get_reference_position(start_charging: str, create_log_entry: bool, exp
 
 @pytest.mark.parametrize(
     "reference_position, start_charging, expected_timestamp",
-    (pytest.param(ReferenceTime.START, "05/16/2022, 07:42:52", 1652679772,
+    (pytest.param(ReferenceTime.START, 1652679772, 1652679772,
                   id="innerhalb der letzten Stunde angesteckt"),
-     pytest.param(ReferenceTime.MIDDLE, "05/16/2022, 06:40:52", 1652679652, id="vor mehr als einer Stunde angesteckt"),
-     pytest.param(ReferenceTime.END, "05/16/2022, 06:40:52", 1652680800,
+     pytest.param(ReferenceTime.MIDDLE, 1652676052, 1652679652, id="vor mehr als einer Stunde angesteckt"),
+     pytest.param(ReferenceTime.END, 1652676052, 1652680800,
                   id="vor mehr als einer Stunde angesteckt, Ladevorgang beenden"),
      )
 )
@@ -143,7 +143,7 @@ def test_calc(et_active, expected_costs, monkeypatch):
 def test_calculate_charge_cost(monkeypatch):
     # integration test
     # setup
-    data.data.cp_data["cp3"].data.set.log.timestamp_start_charging = "11/01/2023, 08:12:40"
+    data.data.cp_data["cp3"].data.set.log.timestamp_start_charging = 1698822760
     data.data.cp_data["cp3"].data.set.log.imported_since_plugged = 1000
     data.data.cp_data["cp3"].data.set.log.imported_since_mode_switch = 1000
     # Mock today() to values in log-file
