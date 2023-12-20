@@ -25,7 +25,7 @@ from control.chargelog import chargelog
 from control import cp_interruption
 from control import data
 from control.chargemode import Chargemode
-from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get
+from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter
 from control.chargepoint.rfid import ChargepointRfidMixin
