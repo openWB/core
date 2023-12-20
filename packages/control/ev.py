@@ -157,7 +157,7 @@ def set_factory() -> Set:
 @dataclass
 class Get:
     soc: int = 0
-    soc_timestamp: Optional[str] = None
+    soc_timestamp: float = 0
     force_soc_update: bool = False
     range: float = 0
     fault_state: int = 0

@@ -119,8 +119,8 @@ class Log:
     imported_since_mode_switch: float = 0
     imported_since_plugged: float = 0
     range_charged: float = 0
-    time_charged: str = "00:00"
-    timestamp_start_charging: Optional[str] = None
+    time_charged: float = 0
+    timestamp_start_charging: Optional[float] = None
 
 
 def connected_vehicle_factory() -> ConnectedVehicle:
@@ -142,7 +142,7 @@ class Get:
     phases_in_use: int = 0
     plug_state: bool = False
     power: float = 0
-    rfid_timestamp: Optional[str] = None
+    rfid_timestamp: Optional[float] = None
     rfid: Optional[str] = None
     soc: Optional[float] = None
     soc_timestamp: Optional[int] = None
@@ -170,7 +170,7 @@ class Set:
     manual_lock: bool = False
     phases_to_use: int = 0
     plug_state_prev: bool = False
-    plug_time: Optional[str] = None
+    plug_time: Optional[float] = None
     required_power: float = 0
     rfid: Optional[str] = None
     target_current: float = 0  # Sollstrom aus fest vorgegebener Stromstärke
