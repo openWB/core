@@ -96,7 +96,7 @@ class ChargepointModule(AbstractChargepoint):
                 req.get_http_session().get('http://'+ip_address+'/clearRfid', timeout=(timeout, None))
 
     def interrupt_cp(self, duration: int) -> None:
-        with SingleComponentUpdateContext(self.component_info, False):
+        with SingleComponentUpdateContext(self.fault_state, False):
             with self.__client_error_context:
                 ip_address = self.config.configuration.ip_address
                 timeout = self.config.configuration.timeout
