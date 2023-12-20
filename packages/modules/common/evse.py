@@ -53,8 +53,6 @@ class Evse:
     def get_firmware_version(self) -> int:
         time.sleep(0.1)
         version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
-        with ModifyLoglevelContext(log, logging.DEBUG):
-            log.debug("FW-Version: "+str(version))
         return version
 
     def is_precise_current_active(self) -> bool:

@@ -2,6 +2,7 @@ import logging
 
 import time
 from typing import Tuple
+from helpermodules.logger import ModifyLoglevelContext
 
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
@@ -40,6 +41,8 @@ class ChargepointModule(AbstractChargepoint):
         self.old_phases_in_use = 0
         self.__client = client_handler
         version = self.__client.evse_client.get_firmware_version()
+        with ModifyLoglevelContext(log, logging.DEBUG):
+            log.debug(f"Firmware-Version der EVSE: {version}")
         if version < 17:
             self._precise_current = False
         else:
