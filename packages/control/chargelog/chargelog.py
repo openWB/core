@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from enum import Enum
 import json
 import logging
@@ -155,8 +155,8 @@ def save_data(chargepoint, charging_ev, immediately: bool = True):
         },
         "time":
         {
-            "begin": datetime.fromtimestamp(log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S"),
-            "end": datetime.fromtimestamp(timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S"),
+            "begin": datetime.datetime.fromtimestamp(log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S"),
+            "end": datetime.datetime.fromtimestamp(timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S"),
             "time_charged": log_data.time_charged
         },
         "data":

@@ -97,6 +97,9 @@ class Optional:
                 return True
             else:
                 return False
+        except KeyError:
+            log.exception("Fehler beim strompreisbasierten Laden")
+            self.et_get_prices()
         except Exception:
             log.exception("Fehler im Optional-Modul")
             return False

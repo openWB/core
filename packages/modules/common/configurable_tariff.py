@@ -17,18 +17,18 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
         self.__component_updater = component_updater
         self.config = config
         self.store = store.get_electricity_tariff_value_store()
-        self.component_info = ComponentInfo(None, self.config.name, ComponentType.ELECTRICITY_TARIFF.value)
+        self.fault_state = FaultState(ComponentInfo(None, self.config.name, ComponentType.ELECTRICITY_TARIFF.value))
 
     def update(self):
-        with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state):
             tariff_state = self.__component_updater()
             current_hour = create_unix_timestamp_current_full_hour()
             self.store.set(tariff_state)
             self.store.update()
             for timestamp in tariff_state.prices.keys():
                 if timestamp < current_hour:
-                    raise FaultState.warning('Die Preisliste startet nicht mit der aktuellen Stunde.')
+                    self.fault_state.warning('Die Preisliste startet nicht mit der aktuellen Stunde.')
             if len(tariff_state.prices) < 24:
-                raise FaultState.no_error(f'Die Preisliste hat nicht 24, sondern {len(tariff_state.prices)} Einträge. '
+                self.fault_state.no_error(f'Die Preisliste hat nicht 24, sondern {len(tariff_state.prices)} Einträge. '
                                           'Die Strompreise werden vom Anbieter erst um 14:00 für den Folgetag '
                                           'aktualisiert.')

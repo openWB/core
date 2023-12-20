@@ -55,7 +55,6 @@ class FaultState(Exception):
                 topic_prefix = f"openWB/set/{topic}"
             else:
                 topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
-            topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
             pub.Pub().pub(f"{topic_prefix}/get/fault_str", self.fault_str)
             pub.Pub().pub(f"{topic_prefix}/get/fault_state", self.fault_state.value)
             if (self.component_info.parent_hostname and
@@ -75,8 +74,11 @@ class FaultState(Exception):
         self.fault_str = message
         self.fault_state = FaultStateLevel.WARNING
 
-    def no_error(self) -> None:
-        self.fault_str = NO_ERROR
+    def no_error(self, message: Optional[str] = None) -> None:
+        if message:
+            self.fault_str = message
+        else:
+            self.fault_str = NO_ERROR
         self.fault_state = FaultStateLevel.NO_ERROR
 
     def from_exception(self, exception: Optional[Exception] = None) -> None:
