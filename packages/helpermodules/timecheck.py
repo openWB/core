@@ -3,6 +3,7 @@
 import copy
 import logging
 import datetime
+from dateutil.relativedelta import relativedelta
 from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
 from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
@@ -238,6 +239,12 @@ def create_timestamp_YYYYMM() -> str:
 def create_timestamp_YYYYMMDD() -> str:
     stamp = datetime.datetime.today().strftime("%Y%m%d")
     return stamp
+
+
+def get_relative_date_string(date_string: str, day_offset: int = 0, month_offset: int = 0, year_offset: int = 0) -> str:
+    print_format = "%Y%m%d" if len(date_string) > 6 else "%Y%m"
+    my_date = datetime.datetime.strptime(date_string, print_format)
+    return (my_date + relativedelta(years=year_offset, months=month_offset, days=day_offset)).strftime(print_format)
 
 
 def get_difference_to_now(timestamp_begin: float) -> Tuple[str, int]:
