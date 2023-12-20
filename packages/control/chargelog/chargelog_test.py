@@ -62,14 +62,17 @@ EXPECTED_ENTRY_YESTERDAYS_DAILY = {"timestamp": 1698879000, "date": "23:50", "cp
 
 @pytest.mark.parametrize(
     "start_charging, create_log_entry, expected_timestamp",
-    (pytest.param(1652679772, False, ReferenceTime.START, id="innerhalb der letzten Stunde angesteckt"),
-     pytest.param(1652676052, False, ReferenceTime.MIDDLE, id="vor mehr als einer Stunde angesteckt"),
+    (pytest.param(1652679772, False, ReferenceTime.START,
+                  id="innerhalb der letzten Stunde angesteckt"),  # "05/16/2022, 07:42:52"
+     pytest.param(1652676052, False, ReferenceTime.MIDDLE,
+                  id="vor mehr als einer Stunde angesteckt"),  # "05/16/2022, 06:40:52"
      pytest.param(1652676052, True, ReferenceTime.END,
-                  id="vor mehr als einer Stunde angesteckt, Ladevorgang beenden"),
+                  id="vor mehr als einer Stunde angesteckt, Ladevorgang beenden"),  # "05/16/2022, 06:40:52"
      )
 )
 def test_get_reference_position(start_charging: str, create_log_entry: bool, expected_timestamp: float):
     # setup
+    # jetzt ist "05/16/2022, 08:40:52"
     cp = Chargepoint(0, Mock())
     cp.data.set.log.timestamp_start_charging = start_charging
 
@@ -83,14 +86,16 @@ def test_get_reference_position(start_charging: str, create_log_entry: bool, exp
 @pytest.mark.parametrize(
     "reference_position, start_charging, expected_timestamp",
     (pytest.param(ReferenceTime.START, 1652679772, 1652679772,
-                  id="innerhalb der letzten Stunde angesteckt"),
-     pytest.param(ReferenceTime.MIDDLE, 1652676052, 1652679652, id="vor mehr als einer Stunde angesteckt"),
+                  id="innerhalb der letzten Stunde angesteckt"),  # "05/16/2022, 07:42:52"
+     pytest.param(ReferenceTime.MIDDLE, 1652676052, 1652679652,
+                  id="vor mehr als einer Stunde angesteckt"),  # "05/16/2022, 06:40:52"
      pytest.param(ReferenceTime.END, 1652676052, 1652680800,
-                  id="vor mehr als einer Stunde angesteckt, Ladevorgang beenden"),
+                  id="vor mehr als einer Stunde angesteckt, Ladevorgang beenden"),  # "05/16/2022, 06:40:52"
      )
 )
 def test_get_reference_time(reference_position: ReferenceTime, start_charging: str, expected_timestamp: float):
     # setup
+    # jetzt ist "05/16/2022, 08:40:52"
     cp = Chargepoint(0, Mock())
     cp.data.set.log.timestamp_start_charging = start_charging
 

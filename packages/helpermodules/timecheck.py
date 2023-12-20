@@ -238,7 +238,7 @@ def create_timestamp_YYYYMMDD() -> str:
 
 
 def create_unix_timestamp_current_full_hour() -> int:
-    full_hour = datetime.datetime.today().strftime("%m/%d/%Y, %H")
+    full_hour = datetime.datetime.fromtimestamp(create_timestamp()).strftime("%m/%d/%Y, %H")
     return int(datetime.datetime.strptime(full_hour, "%m/%d/%Y, %H").timestamp())
 
 
