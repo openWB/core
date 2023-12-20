@@ -58,7 +58,8 @@ class TestSmartWb:
         imported=54350.0,
         plug_state=True,
         charge_state=True,
-        rfid="0a1b2c3d"
+        rfid="0a1b2c3d",
+        rfid_timestamp=1652683252
     )
     SAMPLE_V2 = {
         "type": "parameters",
@@ -95,6 +96,7 @@ class TestSmartWb:
         plug_state=True,
         charge_state=True,
         rfid="0a1b2c3d",
+        rfid_timestamp=1652683252,
         phases_in_use=1
     )
     SAMPLE_NOT_CHARGING_V2 = {

@@ -7,7 +7,8 @@ import pytest
 from control import data
 from control.algorithm import filter_chargepoints
 from control.chargemode import Chargemode
-from control.chargepoint.chargepoint import Chargepoint, ChargepointData, Log, Set
+from control.chargepoint.chargepoint import Chargepoint, ChargepointData
+from control.chargepoint.chargepoint_data import Log, Set
 from control.counter_all import CounterAll
 from control.ev import ControlParameter, Ev, EvData, Get
 

@@ -4,7 +4,8 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from control.chargepoint.chargepoint import Chargepoint, Get, Log, Set
+from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_data import Get, Log, Set
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.ev import Ev, EvTemplate, EvTemplateData
 from helpermodules.subdata import SubData

@@ -1,5 +1,6 @@
 import logging
 from typing import List, Optional, Tuple
+from helpermodules import timecheck
 
 from helpermodules.auto_str import auto_str
 
@@ -131,10 +132,12 @@ class ChargepointState:
                  charge_state: bool = False,
                  plug_state: bool = False,
                  rfid: Optional[str] = None,
+                 rfid_timestamp: Optional[float] = None,
                  frequency: float = 50,
                  soc: Optional[float] = None,
                  soc_timestamp: Optional[int] = None,
-                 evse_current: Optional[float] = None):
+                 evse_current: Optional[float] = None,
+                 vehicle_id: Optional[str] = None):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
@@ -144,9 +147,14 @@ class ChargepointState:
         self.charge_state = charge_state
         self.plug_state = plug_state
         self.rfid = rfid
+        if self.rfid and rfid_timestamp is None:
+            self.rfid_timestamp = timecheck.create_timestamp()
+        else:
+            self.rfid_timestamp = rfid_timestamp
         if power_factors is None:
             power_factors = [0.0]*3
         self.power_factors = power_factors
         self.soc = soc
         self.soc_timestamp = soc_timestamp
         self.evse_current = evse_current
+        self.vehicle_id = vehicle_id
