@@ -1,6 +1,5 @@
-import datetime
 import json
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
 from control import data
@@ -10,6 +9,7 @@ from control.chargelog.chargelog import (ReferenceTime, _calc, _get_reference_en
 from control.chargepoint.chargepoint import Chargepoint
 from control.general import General
 from control.optional import Optional
+from helpermodules import timecheck
 
 
 @pytest.fixture(autouse=True)
@@ -147,10 +147,9 @@ def test_calculate_charge_cost(monkeypatch):
     data.data.cp_data["cp3"].data.set.log.imported_since_plugged = 1000
     data.data.cp_data["cp3"].data.set.log.imported_since_mode_switch = 1000
     # Mock today() to values in log-file
-    datetime_mock = MagicMock(wraps=datetime.datetime)
     # Thu Nov 02 2023 07:00:51
-    datetime_mock.today.return_value = datetime.datetime(2023, 11, 2, 7, 0, 52)
-    monkeypatch.setattr(datetime, "datetime", datetime_mock)
+    mock_today_timestamp = Mock(return_value=1698904851)
+    monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
     with open("packages/control/chargelog/sample_daily_yesterday.json", "r") as json_file:
         content_yesterday = json.load(json_file)
     monkeypatch.setattr(chargelog, "_get_yesterdays_daily_log", Mock(return_value=content_yesterday))

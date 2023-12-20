@@ -345,7 +345,7 @@ def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
         # Ladekosten für angefangene Stunde ermitteln
         return ReferenceTime.END
     else:
-        one_hour_back = (datetime.datetime.today()-datetime.timedelta(hours=1)).timestamp()
+        one_hour_back = timecheck.create_timestamp() - 3600
         if (one_hour_back - cp.data.set.log.timestamp_start_charging) < 0:
             return ReferenceTime.START
         else:
@@ -356,7 +356,7 @@ def get_reference_time(cp, reference_position):
     if reference_position == ReferenceTime.START:
         return cp.data.set.log.timestamp_start_charging
     elif reference_position == ReferenceTime.MIDDLE:
-        return (datetime.datetime.today()-datetime.timedelta(hours=1)).timestamp()
+        return timecheck.create_timestamp() - 3600
     elif reference_position == ReferenceTime.END:
         return timecheck.create_unix_timestamp_current_full_hour()
     else:
