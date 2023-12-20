@@ -247,8 +247,8 @@ class HandlerChargepoint:
             self.update_state.update_state(data, heartbeat_expired)
 
     def _check_heartbeat_expired(self, heartbeat) -> bool:
-        if heartbeat+80 < timecheck.create_timestamp_unix():
-            log.error(f"Heartbeat Fehler seit {timecheck.create_timestamp_unix()-heartbeat}"
+        if heartbeat+80 < timecheck.create_timestamp():
+            log.error(f"Heartbeat Fehler seit {timecheck.create_timestamp()-heartbeat}"
                       "s keine Verbindung. Stoppe Ladung.")
             return True
         else:

@@ -2,7 +2,8 @@ from unittest.mock import Mock
 import pytest
 
 from control.algorithm import additional_current
-from control.chargepoint.chargepoint import Chargepoint, ChargepointData, Set
+from control.chargepoint.chargepoint import Chargepoint, ChargepointData
+from control.chargepoint.chargepoint_data import Set
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev import ChargeTemplate, Ev
 from control.loadmanagement import LimitingValue

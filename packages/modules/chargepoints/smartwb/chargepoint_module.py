@@ -66,6 +66,14 @@ class ChargepointModule(AbstractChargepoint):
                 else:
                     voltages = None
 
+                if json_rsp.get("RFIDUID"):
+                    if json_rsp["RFIDUID"] == "":
+                        tag = None
+                    else:
+                        tag = json_rsp["RFIDUID"]
+                else:
+                    tag = None
+
                 chargepoint_state = ChargepointState(
                     power=json_rsp["actualPower"] * 1000,
                     currents=currents,
@@ -73,15 +81,9 @@ class ChargepointModule(AbstractChargepoint):
                     plug_state=plug_state,
                     charge_state=charge_state,
                     phases_in_use=self.phases_in_use,
-                    voltages=voltages
+                    voltages=voltages,
+                    rfid=tag
                 )
-
-                if json_rsp.get("RFIDUID"):
-                    if json_rsp["RFIDUID"] == "":
-                        tag = None
-                    else:
-                        tag = json_rsp["RFIDUID"]
-                    chargepoint_state.rfid = tag
 
                 self.store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()

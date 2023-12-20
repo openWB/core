@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import logging
 import math
@@ -53,7 +54,7 @@ def collect_data(chargepoint):
                           f"counter {chargepoint.data.get.imported}")
                 log_data.range_charged = log_data.imported_since_mode_switch / \
                     charging_ev.ev_template.data.average_consump * 100
-                log_data.time_charged, _ = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
+                log_data.time_charged = timecheck.get_difference_to_now(log_data.timestamp_start_charging)[0]
             Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
@@ -111,8 +112,8 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
             },
             "time":
             {
-                "begin": log_data.timestamp_start_charging,
-                "end": timecheck.create_timestamp(),
+                "begin": datetime.fromtimestamp(log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S"),
+                "end": datetime.fromtimestamp(timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S"),
                 "time_charged": log_data.time_charged
             },
             "data":

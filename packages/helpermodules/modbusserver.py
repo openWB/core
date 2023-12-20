@@ -86,7 +86,7 @@ try:
         """" Return value of address. """
         if address > 10099:
             Pub().pub("openWB/set/internal_chargepoint/global_data",
-                      {"heartbeat": timecheck.create_timestamp_unix(), "parent_ip": None})
+                      {"heartbeat": timecheck.create_timestamp(), "parent_ip": None})
             chargepoint = SubData.internal_chargepoint_data[f"cp{_get_pos(address, 2)}"]
             askedvalue = int(str(address)[-2:])
             if askedvalue == 00:

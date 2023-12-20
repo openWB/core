@@ -123,7 +123,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
     def _is_soc_timestamp_valid(self, vehicle_update_data: VehicleUpdateData) -> bool:
         if vehicle_update_data.timestamp_soc_from_cp:
             soc_ts = vehicle_update_data.timestamp_soc_from_cp + 60
-            now_ts = timecheck.create_timestamp_unix()
+            now_ts = timecheck.create_timestamp()
             return soc_ts > now_ts
         else:
             return False

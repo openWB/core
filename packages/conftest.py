@@ -12,7 +12,7 @@ def mock_today(monkeypatch) -> None:
     datetime_mock.today.return_value = datetime.datetime(2022, 5, 16, 8, 40, 52)
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
     mock_today_timestamp = Mock(return_value=1652683252)
-    monkeypatch.setattr(timecheck, "create_timestamp_unix", mock_today_timestamp)
+    monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
 
 
 @pytest.fixture(autouse=True)

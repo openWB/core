@@ -19,7 +19,9 @@ SAMPLE_CHARGEPOINT_STATE = ChargepointState(
     plug_state=True,
     charge_state=True,
     phases_in_use=3,
-    rfid="98:ED:5C:B4:EE:8D",
+    rfid="001180644",
+    rfid_timestamp=1700839714,
+    vehicle_id="98:ED:5C:B4:EE:8D",
     evse_current=6
 )
 
@@ -39,7 +41,9 @@ SAMPLE = {'charge_state': True,
           'serial': '823950',
           'timestamp': 1675104511,
           'v2g_ready': 0,
-          'vehicle_id': '98:ED:5C:B4:EE:8D'}
+          'vehicle_id': '98:ED:5C:B4:EE:8D',
+          'rfid_tag': "001180644",
+          "rfid_timestamp": 1700839714}
 
 SAMPLE_CHARGEPOINT_STATE_EXTENDED = ChargepointState(
     power=0,
