@@ -195,7 +195,7 @@ class InternalChargepointHandler:
                 if self.cp1:
                     self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
                 time.sleep(1.1)
-        with SingleComponentUpdateContext(self.cp0.module.component_info):
+        with SingleComponentUpdateContext(self.cp0.module.fault_state):
             # Allgemeine Fehlermeldungen an LP 1:
             if self.cp1_client_handler is None:
                 with self.cp0_client_handler.client:

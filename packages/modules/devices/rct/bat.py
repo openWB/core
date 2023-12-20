@@ -39,7 +39,7 @@ class RctBat:
         self.store.set(bat_state)
         if (stat1.value + stat2.value + stat3.value) > 0:
             # Werte werden trotz Fehlercode übermittelt.
-            self.component_info.fault_state.warning(
+            self.fault_state.warning(
                 f"Alarm Status Speicher ist ungleich 0. Status 1: {stat1.value}, Status 2: {stat2.value}, "
                 f"Status 3: {stat3.value}")
 
