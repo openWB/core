@@ -5,10 +5,10 @@ Hagen */
 	<div class="container-fluid px-2 m-0 theme-colors">
 		<!-- Theme settings -->
 		<div id="themesettings" class="collapse">
-			<ThemeSettings />
+			<ThemeSettings @reset-arcs="resetArcs"></ThemeSettings>
 		</div>
 		<!-- Button Bar -->
-		<ButtonBar />
+		<ButtonBar v-if="globalConfig.showButtonBar" />
 
 		<!-- Main Widgets -->
 		<div v-if="false" class="row py-0 px-0 m-0">
@@ -135,7 +135,7 @@ Hagen */
 					<SmartHomeList />
 				</div>
 			</div>
-			<!-- 		<div
+			<!-- <div
 				id="etPricing"
 				class="tab-pane"
 				role="tabpanel"
@@ -148,14 +148,14 @@ Hagen */
 		</div>
 	</div>
 	<!-- Footer -->
-	<div class="row p-2 mt-5">
+	<div v-if="globalConfig.debug" class="row p-2 mt-5">
 		<div class="col p-2">
 			<hr />
 			<div class="d-flex justify-content-between">
 				<p class="mx-4">Screen Width: {{ screensize.x }}</p>
-				<!--      <button class="btn btn-sm btn-secondary mx-4" @click="toggleSetup">
-          System Setup
-        </button> -->
+				<!-- <button class="btn btn-sm btn-secondary mx-4" @click="toggleSetup">
+					System Setup
+				</button> -->
 				<button class="btn btn-sm btn-secondary mx-4" @click="toggleMqViewer">
 					MQ Viewer
 				</button>
@@ -185,6 +185,7 @@ import CarouselFix from '@/components/shared/CarouselFix.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import MQTTViewer from '@/components/mqttViewer/MQTTViewer.vue'
 import ThemeSettings from '@/views/ThemeSettings.vue'
+import { resetArcs } from '@/assets/js/themeConfig'
 import {
 	globalConfig,
 	updateDimensions,
@@ -217,8 +218,15 @@ function toggleMqViewer() {
 onMounted(() => {
 	init()
 	window.addEventListener('resize', updateDimensions)
+	window.document.addEventListener('visibilitychange', visibilityChange)
 	msgInit()
 })
+
+function visibilityChange() {
+	if (!document.hidden) {
+		msgInit()
+	}
+}
 </script>
 
 <style scoped>
@@ -226,10 +234,12 @@ onMounted(() => {
 	border-bottom: 0.5px solid var(--color-menu);
 	background-color: var(--color-bg);
 }
+
 .nav-tabs .nav-link {
 	color: var(--color-menu);
 	opacity: 0.5;
 }
+
 .nav-tabs .nav-link.disabled {
 	color: var(--color-axis);
 	border: 0.5px solid var(--color-axis);
@@ -243,18 +253,23 @@ onMounted(() => {
 	border-bottom: 0px solid var(--color-menu);
 	box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
+
 .fa-circle-info {
 	color: var(--color-fg);
 }
+
 .fa-charging-station {
 	color: var(--color-charging);
 }
+
 .fa-car-battery {
 	color: var(--color-battery);
 }
+
 .fa-plug {
 	color: var(--color-devices);
 }
+
 .fa-money-bill-1-wave {
 	color: var(--color-pv);
 }

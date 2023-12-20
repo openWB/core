@@ -74,7 +74,7 @@ class Device(AbstractDevice):
             with self.client:
                 for component in self.components.values():
                     # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                    with SingleComponentUpdateContext(component.component_info):
+                    with SingleComponentUpdateContext(component.fault_state):
                         component.update()
         else:
             log.warning(
@@ -150,7 +150,7 @@ def read_inverter(ip1: str,
     # Since openWB 2 does not have a limitation on the number of inverters we do not implement this there. However
     # we still need to implement this for the read_legacy-bridge.
     # Here we act like we only update the first inverter, while we actually query all inverters and sum them up:
-    with SingleComponentUpdateContext(inverter1.component_info):
+    with SingleComponentUpdateContext(inverter1.fault_state):
         if isinstance(inverter1, SmaWebboxInverter):
             state = inverter1.read()
             total_power = state.power

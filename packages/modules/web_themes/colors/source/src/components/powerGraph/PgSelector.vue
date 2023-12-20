@@ -46,7 +46,7 @@
 			<span
 				v-if="editmode < 2"
 				type="button"
-				class="p-2 px-3 badge rounded-pill datebadge"
+				class="btn-outline-secondary p-2 px-3 badge rounded-pill datebadge"
 				@click="toggleEdit"
 			>
 				{{ displayDate }}
@@ -202,6 +202,7 @@ function todayButtonClicked() {
 	if (graphData.graphMode != 'today') {
 		graphData.graphMode = 'today'
 		setGraphDate(new Date())
+		initGraph()
 	}
 }
 function monthButtonClicked() {
@@ -247,9 +248,10 @@ const row2layout = computed(() => {
 	border: 0;
 }
 .datebadge {
-	background-color: var(--color-menu);
-	color: var(--color-bg);
-	font-size: var(--font-medium);
+	background-color: var(--color-bg);
+	color: var(--color-menu);
+	border: 1px solid var(--color-menu);
+	font-size: var(--font-small);
 	font-weight: normal;
 }
 .arrowButton {

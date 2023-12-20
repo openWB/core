@@ -40,6 +40,10 @@ export function formatWattH(
 	useMWh = false,
 ) {
 	let wattResult
+	if (wattH > 1000000) {
+		useMWh = true
+		wattH = wattH / 1000
+	}
 	if (wattH >= 1000 && decimalPlaces < 4) {
 		switch (decimalPlaces) {
 			case 0:
@@ -78,6 +82,10 @@ export function formatTime(seconds: number) {
 		return minutes + ' min'
 	}
 }
+export function formatCurrentTime(d: Date) {
+	return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 export function formatDate(d: Date, mode: string = 'day') {
 	switch (mode) {
 		case 'day':

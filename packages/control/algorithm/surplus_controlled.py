@@ -111,7 +111,7 @@ class SurplusControlled:
         genutzten Sollstrom hochgeregelt werden."""
         evse_current = chargepoint.data.get.evse_current
         if evse_current:
-            formatted_evse_current = evse_current if evse_current < 32 else evse_current / 1000
+            formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
             current_with_offset = limited_current + max(formatted_evse_current - max(chargepoint.data.get.currents), 0)
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
             if current != limited_current:

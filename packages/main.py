@@ -30,6 +30,7 @@ from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
+from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
 
 logger.setup_logging()
@@ -50,6 +51,9 @@ class HandlerAlgorithm:
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
                     loadvars_.get_values()
+                    changed_values_handler.pub_changed_values()
+                    wait_for_module_update_completed(loadvars_.event_module_update_completed,
+                                                     "openWB/set/system/device/module_update_completed")
                     data.data.copy_data()
                     changed_values_handler.store_inital_values()
                     self.heartbeat = True
@@ -68,7 +72,7 @@ class HandlerAlgorithm:
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
-            Pub().pub("openWB/set/system/time", timecheck.create_timestamp_unix())
+            Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
@@ -81,11 +85,13 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
+            changed_values_handler.store_inital_values()
             totals = save_log("daily")
             update_daily_yields(totals)
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
             data.data.counter_all_data.validate_hierarchy()
+            changed_values_handler.pub_changed_values()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -231,6 +237,7 @@ try:
     event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
+    changed_values_handler.store_inital_values()
     schedule_jobs()
 except Exception:
     log.exception("Fehler im Main-Modul")

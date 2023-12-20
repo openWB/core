@@ -3,7 +3,7 @@ from helpermodules.scale_metric import scale_metric
 from modules.devices.fems.config import FemsBatSetup
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_bat_value_store
 
 
@@ -12,7 +12,7 @@ class FemsBat:
         self.ip_address = ip_address
         self.component_config = component_config
         self.store = get_bat_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, session: Session) -> None:
         if self.component_config.configuration.num == 1:

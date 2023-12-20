@@ -51,26 +51,31 @@
 				</g>
 			</svg>
 		</figure>
+		<p v-if="noData">No data</p>
 	</WBWidget>
 </template>
 <script setup lang="ts">
 import { scaleBand, scaleLinear } from 'd3'
 import { max } from 'd3'
 import type { PowerItem } from '@/assets/js/types'
-import { sourceSummary, historicSummary } from '@/assets/js/model'
+import {
+	sourceSummary,
+	historicSummary,
+	energyMeterNeedsRedraw,
+} from '@/assets/js/model'
 import EMBarGraph from './EMBarGraph.vue'
 import EMYAxis from './EMYAxis.vue'
 import EMLabels from './EMLabels.vue'
 import WBWidget from '../shared/WBWidget.vue'
 import PgSelector from '../powerGraph/PgSelector.vue'
-import { globalConfig, setInitializeEnergyGraph } from '@/assets/js/themeConfig'
+import { globalConfig } from '@/assets/js/themeConfig'
 import {
 	shiftLeft,
 	shiftRight,
 	shiftUp,
 	shiftDown,
 } from '@/components/powerGraph/model'
-import { graphData } from '@/components/powerGraph/model'
+import { graphData, noData } from '@/components/powerGraph/model'
 import { computed } from 'vue'
 // props
 const props = defineProps<{
@@ -90,9 +95,21 @@ const axisFontsize = 12
 const plotdata = computed(() => {
 	let sources = Object.values(sourceSummary)
 	let usage = props.usageDetails
-	let historic = Object.values(historicSummary)
+	let historic = historicSummary.values()
 	let result: PowerItem[] = []
-	setInitializeEnergyGraph(true)
+
+	if (globalConfig.debug) {
+		console.debug('----------------------- source summary -----------------')
+		console.debug(sourceSummary)
+		console.debug('----------------------- usage details ------------------')
+		console.debug(props.usageDetails)
+		console.debug('----------------------- historic summary ---------------')
+		console.debug(historicSummary)
+		console.debug('--------------------------------------------------------')
+	}
+	if (energyMeterNeedsRedraw.value == true) {
+		energyMeterNeedsRedraw.value = false
+	}
 	switch (graphData.graphMode) {
 		default:
 		case 'live':
@@ -102,7 +119,12 @@ const plotdata = computed(() => {
 		case 'day':
 		case 'month':
 		case 'year':
-			result = historic.filter((row) => row.energy > 0)
+			if (historic.length == 0) {
+				noData.value = true
+			} else {
+				noData.value = false
+				result = historic.filter((row) => row.energy > 0)
+			}
 	}
 	return result
 })

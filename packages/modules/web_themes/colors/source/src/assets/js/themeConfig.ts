@@ -9,20 +9,25 @@ import { select } from 'd3'
 import type { ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
 import { ChargeMode } from '@/components/chargePointList/model'
+import { sourceSummary } from './model'
 export class Config {
-	private _showRelativeArcs: boolean = false
-	showTodayGraph: boolean = true
-	private _graphPreference: string = 'today'
-	private _usageStackOrder: number = 0
-	private _displayMode: string = 'dark'
-	private _showGrid: boolean = false
-	private _smartHomeColors: string = 'normal'
-	private _decimalPlaces: number = 1
+	private _showRelativeArcs = false
+	showTodayGraph = true
+	private _graphPreference = 'today'
+	private _usageStackOrder = 0
+	private _displayMode = 'dark'
+	private _showGrid = false
+	private _smartHomeColors = 'normal'
+	private _decimalPlaces = 1
 	private _showQuickAccess = true
 	private _simpleCpList = false
 	private _showAnimations = true
 	private _preferWideBoxes = false
-	private _maxPower: number = 4000
+	private _maxPower = 4000
+	private _fluidDisplay = false
+	private _showClock = 'no'
+	private _showButtonBar = true
+	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
 	showRightButton = true
@@ -30,6 +35,7 @@ export class Config {
 	// graphMode = ''
 	animationDuration = 300
 	animationDelay = 100
+	zoomGraph = false
 	constructor() {}
 	get showRelativeArcs() {
 		return this._showRelativeArcs
@@ -153,6 +159,45 @@ export class Config {
 	setMaxPower(max: number) {
 		this._maxPower = max
 	}
+	get fluidDisplay() {
+		return this._fluidDisplay
+	}
+	set fluidDisplay(on: boolean) {
+		this._fluidDisplay = on
+		savePrefs()
+	}
+	setFluidDisplay(on: boolean) {
+		this._fluidDisplay = on
+	}
+	get showClock() {
+		return this._showClock
+	}
+	set showClock(mode: string) {
+		this._showClock = mode
+		savePrefs()
+	}
+	setShowClock(mode: string) {
+		this._showClock = mode
+	}
+	get debug() {
+		return this._debug
+	}
+	set debug(on: boolean) {
+		this._debug = on
+	}
+	setDebug(on: boolean) {
+		this._debug = on
+	}
+	get showButtonBar() {
+		return this._showButtonBar
+	}
+	set showButtonBar(show: boolean) {
+		this._showButtonBar = show
+		savePrefs()
+	}
+	setShowButtonBar(show: boolean) {
+		this._showButtonBar = show
+	}
 }
 export const globalConfig = reactive(new Config())
 export function initConfig() {
@@ -166,13 +211,6 @@ export function initConfig() {
 	doc.classed('shcolors-standard', globalConfig.smartHomeColors == 'standard')
 	doc.classed('shcolors-advanced', globalConfig.smartHomeColors == 'advanced')
 	doc.classed('shcolors-normal', globalConfig.smartHomeColors == 'normal')
-}
-export let initializeEnergyGraph = true
-export function energyGraphInitialized() {
-	initializeEnergyGraph = false
-}
-export function setInitializeEnergyGraph(val: boolean) {
-	initializeEnergyGraph = val
 }
 export let animateEnergyGraph = true
 export function setAnimateEnergyGraph(val: boolean) {
@@ -246,8 +284,11 @@ export function toggleFixArcs() {
 	globalConfig.showRelativeArcs = !globalConfig.showRelativeArcs
 	savePrefs()
 }
-export function resetArcs(maxp: number = 4000) {
-	globalConfig.maxPower = maxp
+export function resetArcs() {
+	globalConfig.maxPower =
+		sourceSummary.evuIn.power +
+		sourceSummary.pv.power +
+		sourceSummary.batOut.power
 	savePrefs()
 }
 export function switchDecimalPlaces() {
@@ -290,6 +331,9 @@ interface Preferences {
 	simpleCP?: boolean
 	animation?: boolean
 	wideB?: boolean
+	fluidD?: boolean
+	clock?: string
+	showButtonBar?: boolean
 }
 
 function writeCookie() {
@@ -309,6 +353,9 @@ function writeCookie() {
 	prefs.simpleCP = globalConfig.simpleCpList
 	prefs.animation = globalConfig.showAnimations
 	prefs.wideB = globalConfig.preferWideBoxes
+	prefs.fluidD = globalConfig.fluidDisplay
+	prefs.clock = globalConfig.showClock
+	prefs.showButtonBar = globalConfig.showButtonBar
 	document.cookie =
 		'openWBColorTheme=' + JSON.stringify(prefs) + '; max-age=16000000'
 }
@@ -363,6 +410,15 @@ function readCookie() {
 		}
 		if (prefs.wideB != undefined) {
 			globalConfig.setPreferWideBoxes(prefs.wideB)
+		}
+		if (prefs.fluidD != undefined) {
+			globalConfig.setFluidDisplay(prefs.fluidD)
+		}
+		if (prefs.clock != undefined) {
+			globalConfig.setShowClock(prefs.clock)
+		}
+		if (prefs.showButtonBar !== undefined) {
+			globalConfig.setShowButtonBar(prefs.showButtonBar)
 		}
 	}
 }

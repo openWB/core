@@ -12,7 +12,6 @@ import type { Selection, BaseType } from 'd3'
 import {
 	select,
 	stack,
-	scaleBand,
 	scaleLinear,
 	extent,
 	axisLeft,
@@ -20,7 +19,12 @@ import {
 	easeLinear,
 } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
-import { graphData, animateUsageGraph, usageGraphIsInitialized } from './model'
+import {
+	graphData,
+	animateUsageGraph,
+	usageGraphIsInitialized,
+	xScaleMonth,
+} from './model'
 const props = defineProps<{
 	width: number
 	height: number
@@ -30,19 +34,18 @@ const props = defineProps<{
 
 //state
 const keys = [
-	['house', 'charging', 'devices', 'batIn', 'inverter'],
-	['charging', 'devices', 'house', 'batIn', 'inverter'],
-	['devices', 'house', 'charging', 'batIn', 'inverter'],
+	['house', 'charging', 'devices', 'batIn'],
+	['charging', 'devices', 'house', 'batIn'],
+	['devices', 'house', 'charging', 'batIn'],
 ]
 const colors: { [key: string]: string } = {
 	house: 'var(--color-house)',
 	charging: 'var(--color-charging)',
 	batIn: 'var(--color-battery)',
-	inverter: 'var(--color-pv)',
 	batOut: 'var(--color-battery)',
 	selfUsage: 'var(--color-pv)',
-	gridPush: 'var(--color-export)',
-	gridPull: 'var(--color-evu)',
+	evuOut: 'var(--color-export)',
+	evuIn: 'var(--color-evu)',
 	cp0: 'var(--color-cp0)',
 	cp1: 'var(--color-cp1)',
 	cp2: 'var(--color-cp2)',
@@ -62,31 +65,29 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 
 // computed:
 const draw = computed(() => {
-	if (graphData.data.length > 0) {
-		const graph = select('g#pgUsageGraph')
+	const graph = select('g#pgUsageGraph')
 
-		if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
-			drawMonthGraph(graph)
-		} else {
-			drawGraph(graph)
-		}
-
-		const yAxis = graph.append('g').attr('class', 'axis')
-		yAxis.call(yAxisGenerator.value)
-		yAxis
-			.selectAll('.tick')
-			.attr('font-size', 12)
-			.attr('color', 'var(--color-axis)')
-		if (globalConfig.showGrid) {
-			yAxis
-				.selectAll('.tick line')
-				.attr('stroke', 'var(--color-grid)')
-				.attr('stroke-width', '0.5')
-		} else {
-			yAxis.selectAll('.tick line').attr('stroke', 'var(--color-bg)')
-		}
-		yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
+		drawBarGraph(graph)
+	} else {
+		drawGraph(graph)
 	}
+
+	const yAxis = graph.append('g').attr('class', 'axis')
+	yAxis.call(yAxisGenerator.value)
+	yAxis
+		.selectAll('.tick')
+		.attr('font-size', 12)
+		.attr('color', 'var(--color-axis)')
+	if (globalConfig.showGrid) {
+		yAxis
+			.selectAll('.tick line')
+			.attr('stroke', 'var(--color-grid)')
+			.attr('stroke-width', '0.5')
+	} else {
+		yAxis.selectAll('.tick line').attr('stroke', 'var(--color-bg)')
+	}
+	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	return 'pgUsageGraph.vue'
 })
 const stackGen = computed(() => stack().keys(keys[props.stackOrder]))
@@ -98,12 +99,12 @@ const iScale = computed(() => {
 		.range([0, props.width])
 })
 
-const iScaleMonth = computed(() =>
+/* const iScaleMonth = computed(() =>
 	scaleBand<number>()
 		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
 		.range([0, props.width + props.margin.right])
 		.paddingInner(0.4),
-)
+) */
 
 const yScale = computed(() => {
 	return scaleLinear()
@@ -118,9 +119,13 @@ const yScale = computed(() => {
 const vrange = computed(() => {
 	let result = extent(
 		graphData.data,
-		(d) => d.house + d.charging + d.batIn + d.inverter + d.devices,
+		(d) => d.house + d.charging + d.batIn + d.devices,
 	)
 	if (result[0] != undefined && result[1] != undefined) {
+		if (graphData.graphMode == 'year') {
+			result[0] = result[0] / 1000
+			result[1] = result[1] / 1000
+		}
 		return result
 	} else {
 		return [0, 0]
@@ -185,9 +190,7 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.attr('fill', (d, i: number) => colors[keys[props.stackOrder][i]])
 	}
 }
-function drawMonthGraph(
-	graph: Selection<BaseType, unknown, HTMLElement, never>,
-) {
+function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	if (animateUsageGraph) {
 		graph.selectAll('*').remove()
 		rects = graph
@@ -201,18 +204,26 @@ function drawMonthGraph(
 			.enter()
 			.append('rect')
 			.attr('x', (d, i) => {
-				return iScaleMonth.value(i) ?? 0
+				return xScaleMonth.value(graphData.data[i].date) ?? 0
 			})
 			.attr('y', () => yScale.value(0))
 			.attr('height', 0)
-			.attr('width', iScaleMonth.value.bandwidth())
+			.attr('width', xScaleMonth.value.bandwidth())
 		rects
 			.transition()
 			.duration(duration)
 			.delay(delay)
 			.ease(easeLinear)
-			.attr('y', (d) => yScale.value(d[0]))
-			.attr('height', (d) => yScale.value(d[1]) - yScale.value(d[0]))
+			.attr('y', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[0] / 1000)
+					: yScale.value(d[0]),
+			)
+			.attr('height', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[1] / 1000) - yScale.value(d[0] / 1000)
+					: yScale.value(d[1]) - yScale.value(d[0]),
+			)
 		usageGraphIsInitialized()
 	} else {
 		graph.selectAll('*').remove()
@@ -227,11 +238,19 @@ function drawMonthGraph(
 			.enter()
 			.append('rect')
 			.attr('x', (d, i) => {
-				return iScaleMonth.value(i) ?? 0
+				return xScaleMonth.value(graphData.data[i].date) ?? 0
 			})
-			.attr('y', (d) => yScale.value(d[0]))
-			.attr('height', (d) => yScale.value(d[1]) - yScale.value(d[0]))
-			.attr('width', iScaleMonth.value.bandwidth())
+			.attr('y', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[0] / 1000)
+					: yScale.value(d[0]),
+			)
+			.attr('height', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[1] / 1000) - yScale.value(d[0] / 1000)
+					: yScale.value(d[1]) - yScale.value(d[0]),
+			)
+			.attr('width', xScaleMonth.value.bandwidth())
 	}
 }
 </script>

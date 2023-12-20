@@ -1,8 +1,14 @@
 <template>
 	<!-- Fixed navbar -->
-	<nav class="navbar navbar-expand-lg px-3 mb-0">
-		<div class="container-lg">
+	<nav class="navbar navbar-expand-lg px-0 mb-0">
+		<div :class="containerclass">
 			<a href="/" class="navbar-brand"><span>openWB</span></a>
+			<span
+				v-if="globalConfig.showClock == 'navbar'"
+				class="position-absolute-50 navbar-text ms-4 navbar-time"
+				:style="{ color: 'var(--color-menu)' }"
+				>{{ formatCurrentTime(currentTime) }}</span
+			>
 			<button
 				class="navbar-toggler togglebutton ps-5"
 				type="button"
@@ -16,10 +22,7 @@
 			</button>
 			<div id="mainNavbar" class="collapse navbar-collapse justify-content-end">
 				<div class="nav navbar-nav">
-					<a
-						id="navStatus"
-						class="nav-link"
-						href="../../settings/#/Status"
+					<a id="navStatus" class="nav-link" href="../../settings/#/Status"
 						>Status</a
 					>
 					<div class="nav-item dropdown">
@@ -33,14 +36,10 @@
 							>Auswertungen <i class="fa-solid fa-caret-down" />
 						</a>
 						<div class="dropdown-menu" aria-labelledby="loggingDropdown">
-							<a
-								href="../../settings/#/Logging/ChargeLog"
-								class="dropdown-item"
+							<a href="../../settings/#/Logging/ChargeLog" class="dropdown-item"
 								>Ladeprotokoll</a
 							>
-							<a
-								href="../../settings/#/Logging/Chart"
-								class="dropdown-item"
+							<a href="../../settings/#/Logging/Chart" class="dropdown-item"
 								>Diagramme</a
 							>
 						</div>
@@ -79,10 +78,32 @@
 			</div>
 		</div>
 	</nav>
-	<hr class="m-0 p-0 mb-2" />
+	<div :class="containerclass">
+		<hr class="m-0 p-0 mb-2" />
+	</div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { globalConfig } from '@/assets/js/themeConfig'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { formatCurrentTime } from '@/assets/js/helpers'
+import { currentTime } from '@/assets/js/model'
+
+let interval: ReturnType<typeof setInterval>
+
+const containerclass = computed(() => {
+	return globalConfig.fluidDisplay ? 'container-fluid' : 'container-lg'
+})
+
+onMounted(() => {
+	interval = setInterval(() => {
+		currentTime.value = new Date()
+	}, 1000)
+})
+onBeforeUnmount(() => {
+	clearInterval(interval)
+})
+</script>
 
 <style scoped>
 .navbar {
@@ -111,6 +132,7 @@
 .navbar-brand {
 	font-weight: bold;
 	color: var(--color-fg);
+	font-size: var(--font-normal);
 }
 
 .nav-link {
@@ -122,5 +144,11 @@
 .navbar-toggler {
 	color: var(--color-fg);
 	border-color: var(--color-bg);
+}
+
+.navbar-time {
+	font-weight: bold;
+	color: var(--color-menu);
+	font-size: var(--font-normal);
 }
 </style>

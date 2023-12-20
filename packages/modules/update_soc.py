@@ -12,7 +12,7 @@ from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules.utils import thread_handler
 from modules.common.abstract_vehicle import VehicleUpdateData
-from modules.utils import ModuleUpdateCompletedContext
+from modules.utils import wait_for_module_update_completed
 
 log = logging.getLogger(__name__)
 
@@ -28,12 +28,11 @@ class UpdateSoc:
             topic = "openWB/set/vehicle/set/vehicle_update_completed"
             try:
                 threads_update, threads_store = self._get_threads()
-                with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
-                    threads_update, threads_store = self._get_threads()
-                    thread_handler(threads_update, 300)
-                with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
-                    # threads_store = self._filter_failed_store_threads(threads_store)
-                    thread_handler(threads_store, data.data.general_data.data.control_interval/3)
+                thread_handler(threads_update, 300)
+                wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
+                # threads_store = self._filter_failed_store_threads(threads_store)
+                thread_handler(threads_store, data.data.general_data.data.control_interval/3)
+                wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
                 # Don't request faster than control interval
                 if len(threads_update) > 0:
                     time.sleep(5)
@@ -94,8 +93,10 @@ class UpdateSoc:
                 efficiency = data.data.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
                 if data.data.ev_data[f"ev{ev_num}"].soc_module.general_config.use_soc_from_cp:
                     soc_from_cp = cp.data.get.soc
+                    timestamp_soc_from_cp = cp.data.get.soc_timestamp
                 else:
                     soc_from_cp = None
+                    timestamp_soc_from_cp = None
                 break
         else:
             plug_state = False
@@ -104,12 +105,14 @@ class UpdateSoc:
             battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
             efficiency = data.data.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
             soc_from_cp = None
+            timestamp_soc_from_cp = None
         return VehicleUpdateData(plug_state=plug_state,
                                  charge_state=charge_state,
                                  efficiency=efficiency,
                                  imported=imported,
                                  battery_capacity=battery_capacity,
-                                 soc_from_cp=soc_from_cp)
+                                 soc_from_cp=soc_from_cp,
+                                 timestamp_soc_from_cp=timestamp_soc_from_cp)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)

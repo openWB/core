@@ -3,6 +3,7 @@ import logging
 from socketserver import TCPServer
 from collections import defaultdict
 import struct
+from typing import Optional
 from umodbus import conf
 from umodbus.server.tcp import RequestHandler, get_server
 from umodbus.utils import log_to_stream
@@ -51,25 +52,28 @@ def _form_int16(value, startreg):
         data_store[startreg] = -1
 
 
-def _form_str(value: str, startreg):
-    bytes = value.encode("utf-8")
-    length = len(bytes)
-    if length > 20:
-        raise ValueError("String darf max 20 Zeichen enthalten.")
-    register_offset = 0
-    for i in range(0, length, 2):
-        try:
-            if i < length-1:
-                stream_two_bytes = struct.pack(">bb", bytes[i], bytes[i+1])
-                stream_one_word = struct.unpack(">h", stream_two_bytes)[0]
-            else:
-                stream_two_bytes = struct.pack(">bb", bytes[i], 0)
-                stream_one_word = struct.unpack(">h", stream_two_bytes)[0]
-            data_store[startreg+register_offset] = stream_one_word
-        except Exception:
-            data_store[startreg+register_offset] = -1
-        finally:
-            register_offset += 1
+def _form_str(value: Optional[str], startreg):
+    if value is None or len(value) == 0:
+        data_store[startreg] = 0
+    else:
+        bytes = value.encode("utf-8")
+        length = len(bytes)
+        if length > 20:
+            raise ValueError("String darf max 20 Zeichen enthalten.")
+        register_offset = 0
+        for i in range(0, length, 2):
+            try:
+                if i < length-1:
+                    stream_two_bytes = struct.pack(">bb", bytes[i], bytes[i+1])
+                    stream_one_word = struct.unpack(">h", stream_two_bytes)[0]
+                else:
+                    stream_two_bytes = struct.pack(">bb", bytes[i], 0)
+                    stream_one_word = struct.unpack(">h", stream_two_bytes)[0]
+                data_store[startreg+register_offset] = stream_one_word
+            except Exception:
+                data_store[startreg+register_offset] = -1
+            finally:
+                register_offset += 1
 
 
 def _get_pos(number, n):
@@ -82,7 +86,7 @@ try:
         """" Return value of address. """
         if address > 10099:
             Pub().pub("openWB/set/internal_chargepoint/global_data",
-                      {"heartbeat": timecheck.create_timestamp_unix(), "parent_ip": None})
+                      {"heartbeat": timecheck.create_timestamp(), "parent_ip": None})
             chargepoint = SubData.internal_chargepoint_data[f"cp{_get_pos(address, 2)}"]
             askedvalue = int(str(address)[-2:])
             if askedvalue == 00:

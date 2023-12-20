@@ -679,21 +679,9 @@
 								</div>
 								<div class="chargemode-options chargemode-option-pv_charging">
 									<h3>Einstellungen für "PV"</h3>
-									<div class="form-row mb-1">
-										<div class="col">
-											Einspeisegrenze beachten
-										</div>
-										<div class="col-md-8 text-right">
-											<input class="charge-point-pv-charge-feed-in-limit" type="checkbox"
-												data-toggle="toggle"
-												data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/feed_in_limit"
-												data-on="Ja" data-off="Nein" data-onstyle="success"
-												data-offstyle="danger" data-size="sm" data-style="w-100">
-										</div>
-									</div>
 									<div class="form-row vaRow mb-0">
 										<div class="col">
-											Minimal Stromstärke
+											Minimaler Dauerstrom
 										</div>
 										<div class="col-md-8">
 											<div class="form-row form-group mb-1 vaRow">
@@ -712,7 +700,7 @@
 									</div>
 									<div class="form-row vaRow mb-0">
 										<div class="col">
-											Minimal SoC
+											Mindest-SoC
 										</div>
 										<div class="col-md-8">
 											<div class="form-row form-group mb-1 vaRow">
@@ -730,7 +718,7 @@
 									</div>
 									<div class="form-row vaRow mb-0">
 										<div class="col">
-											Minimal SoC Stromstärke
+											Mindest-SoC-Strom
 										</div>
 										<div class="col-md-8">
 											<div class="form-row form-group mb-1 vaRow">
@@ -748,7 +736,7 @@
 									</div>
 									<div class="form-row vaRow mb-0">
 										<div class="col">
-											Maximal SoC
+											SoC-Limit
 										</div>
 										<div class="col-md-8">
 											<div class="form-row form-group mb-1 vaRow">
@@ -762,6 +750,18 @@
 												<label for="maxSocPvCpT" class="col-form-label valueLabel"
 													data-suffix="%">-- %</label>
 											</div>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<div class="col">
+											Einspeisegrenze beachten
+										</div>
+										<div class="col-md-8 text-right">
+											<input class="charge-point-pv-charge-feed-in-limit" type="checkbox"
+												data-toggle="toggle"
+												data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/feed_in_limit"
+												data-on="Ja" data-off="Nein" data-onstyle="success"
+												data-offstyle="danger" data-size="sm" data-style="w-100">
 										</div>
 									</div>
 								</div>

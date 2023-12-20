@@ -49,7 +49,7 @@ REGISTERS = (
     Register(10143, Actions.READ_NUMBER, 1, ModbusDataType.INT_16, name="Type of Hardware", expected=(1, 1)),
     Register(10150, Actions.READ_STR, 10, ModbusDataType.INT_16,
              name="Serial Number of Chargepoint", expected="noSerialNumber"),
-    Register(10160, Actions.READ_STR, 10, ModbusDataType.INT_16, name="RFID Tag", expected="0004141661"),
+    Register(10160, Actions.READ_STR, 10, ModbusDataType.INT_16, name="ID-Tag", expected='0004141661'),
 )
 
 
@@ -124,7 +124,7 @@ def evaluate_reg(reg):
             for word in resp:
                 if word != 0:
                     string += struct.pack(">h", word).decode("utf-8")
-        if string in reg.expected:
+        if string == reg.expected:
             return string
         else:
             raise Exception(
@@ -136,11 +136,13 @@ def read_all_registers():
     heartbeat_read()
     for reg in REGISTERS:
         if reg.reg == 10160:
-            resp = evaluate_reg(reg)
-            while resp == "":
-                print("Bitte RFID Tag scannen")
-                time.sleep(1)
-                resp = evaluate_reg(reg)
+            while True:
+                try:
+                    if evaluate_reg(reg):
+                        break
+                except Exception:
+                    print("Bitte ID-Tag erfassen")
+                    time.sleep(1)
         else:
             evaluate_reg(reg)
     else:

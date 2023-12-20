@@ -3,7 +3,8 @@
 	<table class="table table-borderless">
 		<thead>
 			<tr>
-				<th class="tableheader">Ziel-SoC</th>
+				<th class="tableheader">Ziel</th>
+				<th class="tableheader">Limit</th>
 				<th class="tableheader">Zeit</th>
 				<th class="tableheader">Wiederholung</th>
 				<th class="tableheader" />
@@ -11,7 +12,8 @@
 		</thead>
 		<tbody>
 			<tr v-for="(plan, i) in plans" :key="i" :style="cellStyle(i)">
-				<td class="tablecell">{{ plan.limit.soc_limit }} %</td>
+				<td class="tablecell">{{ plan.limit.soc_scheduled }}%</td>
+				<td class="tablecell">{{ plan.limit.soc_limit }}%</td>
 				<td class="tablecell">
 					{{ timeString(i) }}
 				</td>
@@ -41,7 +43,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { scheduledChargingPlans } from '../model'
+import { scheduledChargingPlans, type ChargeSchedule } from '../model'
 
 const freqNames: { [key: string]: string } = {
 	daily: 'Täglich',
@@ -54,8 +56,11 @@ const props = defineProps<{
 
 //computed
 const plans = computed(() => {
-	let result = Object.values(scheduledChargingPlans[props.chargeTemplateId])
-	return result ?? []
+	let result: ChargeSchedule[] = []
+	if (scheduledChargingPlans[props.chargeTemplateId]) {
+		result = Object.values(scheduledChargingPlans[props.chargeTemplateId])
+	}
+	return result
 })
 //methods
 function timeString(key: number) {

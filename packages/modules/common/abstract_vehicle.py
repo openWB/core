@@ -9,14 +9,15 @@ class VehicleUpdateData:
     imported: float = 0
     battery_capacity: float = 82
     efficiency: float = 90
-    soc_from_cp: float = 0
+    soc_from_cp: Optional[float] = None
+    timestamp_soc_from_cp: Optional[int] = None
 
 
 @dataclass
 class GeneralVehicleConfig:
     use_soc_from_cp: bool = False
-    request_interval_charging: int = 5
-    request_interval_not_charging: int = 720
+    request_interval_charging: int = 300
+    request_interval_not_charging: int = 43200
     request_only_plugged: bool = False
 
 
@@ -24,5 +25,4 @@ class GeneralVehicleConfig:
 class CalculatedSocState:
     imported_start: Optional[float] = 0  # don't show in UI
     manual_soc: Optional[int] = None  # don't show in UI
-    request_start_soc: bool = True  # don't show in UI
     soc_start: float = 0  # don't show in UI

@@ -5,7 +5,7 @@
 * [Fahrzeuge](https://github.com/openWB/core/wiki/Fahrzeuge)
 * [Lastmanagement und kaskadierte Zähler](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler)
 * Szenarien
-  * [RFID/Ladung nur nach Freischaltung](https://github.com/openWB/core/wiki/Ladung-nur-nach-Freischaltung)
+  * [ID-Tag/Ladung nur nach Freischaltung](https://github.com/openWB/core/wiki/Ladung-nur-nach-Freischaltung)
   * [Hybrid-System aus Wechselrichter und Speicher](https://github.com/openWB/core/wiki/Hybrid-System-aus-Wechselrichter-und-Speicher)
 * Mitarbeit am Projekt
   * [Wiki-Eintrag erstellen](https://github.com/openWB/core/wiki/Wiki-Eintrag_erstellen)
@@ -16,4 +16,5 @@
 * Konfiguration
   * [Cloud-Sicherung](https://github.com/openWB/core/wiki/Cloud-Sicherung)
     * [NextCloud](https://github.com/openWB/core/wiki/NextCloud-als-Sicherungs-Cloud-einrichten)
+    * [Samba](https://github.com/openWB/core/wiki/Samba-als-Sicherung-einrichten)
   * [Hierarchie mit Hausverbrauchs-Zähler](https://github.com/openWB/core/wiki/Hausverbrauchs-Zähler)

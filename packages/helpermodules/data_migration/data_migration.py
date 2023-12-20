@@ -78,16 +78,23 @@ class MigrateData:
 
     def migrate(self):
         try:
+            log.info("Datenmigration gestartet")
+            log.info("Sicherungsdatei wird entpackt...")
             self._extract()
+            log.info("Version wird geprüft...")
             self._check_version()
+            log.info("Logdateien werden importiert...")
             thread_handler(self.convert_csv_to_json_chargelog(), None)
             thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
             thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
+            log.info("Seriennummer wird übernommen...")
             self._migrate_settings_from_openwb_conf()
         except Exception as e:
             raise e
         finally:
+            log.info("Temporäre Dateien werden entfernt...")
             self._remove_migration_data()
+        log.info("Datenmigration beendet")
 
     def _check_version(self):
         with open("./data/data_migration/var/www/html/openWB/web/version") as f:
@@ -165,14 +172,16 @@ class MigrateData:
         5: Dauer als Text "xx H yy Min"
         6: Ladepunktnummer
         7: Lademodus als Zahl
-        8: RFID Token
+        8: ID-Tag
         9: Kosten
         """
         def conv_1_9_datetimes(datetime_str):
-            """ konvertiert Datum-Uhrzeit alt: %d.%m.%y-%H:%M 05.03.21-11:16; neu: %m/%d/%Y, %H:%M 08/04/2021, 15:50
+            """ konvertiert Datum-Uhrzeit
+                alt: %d.%m.%y-%H:%M 05.03.21-11:16
+                neu: %m/%d/%Y, %H:%M:%S 08/04/2021, 15:50:00
             """
             str_date = datetime.datetime.strptime(datetime_str, '%d.%m.%y-%H:%M')
-            return datetime.datetime.strftime(str_date, "%m/%d/%Y, %H:%M")
+            return datetime.datetime.strftime(str_date, "%m/%d/%Y, %H:%M:%S")
 
         entries = []
         with open(f"{self.BACKUP_DATA_PATH}/ladelog/{file}") as csv_file:

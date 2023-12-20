@@ -5,7 +5,7 @@ from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
@@ -22,7 +22,7 @@ class SaxpowerBat:
         self.__tcp_client = tcp_client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
         with self.__tcp_client:
