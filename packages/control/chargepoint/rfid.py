@@ -35,7 +35,7 @@ class ChargepointRfidMixin:
         self.data.get.rfid_timestamp = None
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
 
-    def __validate_rfid(self) -> None:
+    def _validate_rfid(self) -> None:
         """Prüft, dass der Tag an diesem Ladepunkt gültig ist und  dass dieser innerhalb von 5 Minuten einem EV
         zugeordnet wird.
         """
