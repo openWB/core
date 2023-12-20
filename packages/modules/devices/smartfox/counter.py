@@ -7,7 +7,7 @@ from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.devices.smartfox.config import SmartfoxCounterSetup
 
@@ -21,7 +21,7 @@ class SmartfoxCounter:
         self.__device_address = device_address
         self.component_config = dataclass_from_dict(SmartfoxCounterSetup, component_config)
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
         def get_xml_text(attribute_value: str) -> str:

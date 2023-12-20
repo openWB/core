@@ -4,7 +4,7 @@ from typing import Dict, Tuple, Union
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.common import req
 from modules.devices.kostal_piko.config import KostalPikoInverterSetup
@@ -18,7 +18,7 @@ class KostalPikoInverter:
         self.component_config = dataclass_from_dict(KostalPikoInverterSetup, component_config)
         self.ip_address = ip_address
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> Tuple[float, float]:
         # Die Differenz der Einträge entspricht nicht der Batterieleistung.

@@ -4,7 +4,7 @@ from typing import Dict, Union
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.store import get_bat_value_store
 from modules.devices.sma_sunny_boy.config import SmaSunnyBoyBatSetup
@@ -18,7 +18,7 @@ class SunnyBoyBat:
         self.component_config = dataclass_from_dict(SmaSunnyBoyBatSetup, component_config)
         self.__tcp_client = tcp_client
         self.store = get_bat_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def read(self) -> BatState:
         unit = 3
