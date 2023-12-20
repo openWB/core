@@ -20,7 +20,7 @@ class IndependentComponentUpdater(Generic[T_COMPONENT]):
 
     def __call__(self, components: Iterable[T_COMPONENT]) -> None:
         for component in components:
-            with SingleComponentUpdateContext(component.component_info):
+            with SingleComponentUpdateContext(component.fault_state):
                 self.__updater(component)
 
 

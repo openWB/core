@@ -39,7 +39,7 @@ def create_device(device_config: Huawei):
             bat_soc_reg = c.read_holding_registers(37760, ModbusDataType.INT_16, unit=modbus_id)  # Int 16 37760
 
             for component in components:
-                with SingleComponentUpdateContext(component.component_info):
+                with SingleComponentUpdateContext(component.fault_state):
                     if isinstance(component, HuaweiBat):
                         component.update(bat_power_reg, bat_soc_reg)
                     elif isinstance(component, HuaweiCounter):

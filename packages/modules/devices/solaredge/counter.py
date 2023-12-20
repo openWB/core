@@ -6,7 +6,7 @@ from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.store import get_counter_value_store
 from modules.devices.solaredge.config import SolaredgeCounterSetup
@@ -25,7 +25,7 @@ class SolaredgeCounter:
         self.__tcp_client = tcp_client
         self.registers = SolaredgeMeterRegisters()
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self._read_scaled_int16 = create_scaled_reader(
             self.__tcp_client, self.component_config.configuration.modbus_id, ModbusDataType.INT_16
         )
