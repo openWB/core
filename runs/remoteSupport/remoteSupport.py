@@ -76,8 +76,8 @@ def on_connect(client: mqtt.Client, userdata, flags: dict, rc: int):
         (REMOTE_PARTNER_TOPIC, 2),
         (REMOTE_PARTNER_IDS_TOPIC, 2)
     ])
-    publish_as_json(client, API_TOPIC, API_VERSION)
-    publish_as_json(client, STATE_TOPIC, "online")
+    publish_as_json(client, API_TOPIC, API_VERSION, qos=2, retain=True)
+    publish_as_json(client, STATE_TOPIC, "online", qos=2, retain=True)
 
 
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
@@ -201,7 +201,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                 log.info("unknown message: " + payload)
             clear_topic = True
         # clear topic
-        if clear_topic:
+        if clear_topic and msg.retain:
             client.publish(msg.topic, "", qos=2, retain=True)
 
 
@@ -210,7 +210,7 @@ mqtt_broker_host = "localhost"
 client = mqtt.Client("openWB-remote-" + get_serial())
 client.on_connect = on_connect
 client.on_message = on_message
-client.will_set(STATE_TOPIC, json.dumps("offline"), 2, True)
+client.will_set(STATE_TOPIC, json.dumps("offline"), qos=2, retain=True)
 
 log.debug("connecting to broker")
 client.connect(mqtt_broker_host, 1883)
@@ -224,7 +224,7 @@ except (Exception, KeyboardInterrupt) as e:
     log.debug("terminated")
 finally:
     log.debug("publishing state 'offline'")
-    publish_as_json(client, STATE_TOPIC, "offline", 2, True)
+    publish_as_json(client, STATE_TOPIC, "offline", qos=2, retain=True)
     sleep(0.5)
     log.debug("stopping loop")
     client.loop_stop()
