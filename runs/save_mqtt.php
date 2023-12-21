@@ -200,7 +200,7 @@ if ($configuration == "" || $configuration->active != true) {
 		fwrite(
 			$configFile,
 			<<<EOS
-			topic openWB-remote/partner out 2 "" {$configuration->remote->prefix}
+			topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
 			topic openWB-remote/valid_partner_ids out 2 "" {$configuration->remote->prefix}
 			
 			EOS
