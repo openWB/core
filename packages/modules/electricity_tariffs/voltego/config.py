@@ -3,10 +3,10 @@ from typing import Optional
 
 class VoltegoToken():
     def __init__(self,
-                 token: Optional[str] = None,
+                 access_token: Optional[str] = None,
                  expires_in: Optional[str] = None,
                  created_at: Optional[str] = None) -> None:
-        self.token = token  # don't show in UI
+        self.access_token = access_token  # don't show in UI
         self.expires_in = expires_in  # don't show in UI
         self.created_at = created_at  # don't show in UI
 

@@ -32,7 +32,7 @@ def _refresh_token(config: VoltegoTariff):
         data={"grant_type": "client_credentials", "scope": 'market_data:read'},
         auth=(config.configuration.client_id, config.configuration.client_secret),
     ).json()
-    config.configuration.token = VoltegoToken(token=response["access_token"],
+    config.configuration.token = VoltegoToken(access_token=response["access_token"],
                                               expires_in=response["expires_in"],
                                               created_at=timecheck.create_timestamp_unix())
     Pub().pub("openWB/set/optional/et/provider", asdict(config))
@@ -52,7 +52,7 @@ def fetch(config: VoltegoTariff) -> None:
     raw_prices = req.get_http_session().get(
         "https://api.voltego.de/market_data/day_ahead/DE_LU/60",
         headers={"Content-Type": "application/json;charset=UTF-8",
-                 "Authorization": f'Bearer {config.configuration.token.token}'},
+                 "Authorization": f'Bearer {config.configuration.token.access_token}'},
         params={"from": start_date, "tz": timezone}
     ).json()["elements"]
     prices: Dict[int, float] = {}
