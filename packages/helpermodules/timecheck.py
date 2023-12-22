@@ -232,11 +232,7 @@ def create_timestamp() -> float:
 
 
 def create_timestamp_YYYY() -> str:
-    try:
-        stamp = datetime.datetime.today().strftime("%Y")
-        return stamp
-    except Exception:
-        raise
+    return datetime.datetime.today().strftime("%Y")
 
 
 def create_timestamp_YYYYMM() -> str:
