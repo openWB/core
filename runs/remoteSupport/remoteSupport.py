@@ -137,7 +137,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                     partner_tunnel.terminate()
                     partner_tunnel.wait(timeout=3)
                     partner_tunnel = None
-            elif re.match(r'^([^;]+)(?:;([1-9][0-9]+)(?:;([a-zA-Z0-9]+))?)?$', payload):
+            elif re.match(r'^([^;]+)(?:;((?:cnode)?[0-9]+)(?:;([\wäöüÄÖÜ-]+))?)?$', payload):
                 if is_tunnel_closed(partner_tunnel):
                     splitted = payload.split(";")
                     if len(splitted) != 3:
