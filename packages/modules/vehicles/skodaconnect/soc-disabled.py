@@ -6,10 +6,10 @@ from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import AbstractSoc
+from modules.common.abstract_vehicle import AbstractSoc
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import CarState
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.vehicles.skodaconnect.api import SkodaConnectApi
 from modules.vehicles.skodaconnect.config import SkodaConnect, SkodaConnectConfiguration
 
@@ -22,10 +22,10 @@ class Soc(AbstractSoc):
         self.config = dataclass_from_dict(SkodaConnect, device_config)
         self.vehicle = vehicle
         self.store = store.get_car_value_store(self.vehicle)
-        self.component_info = ComponentInfo(self.vehicle, self.config.name, "vehicle")
+        self.fault_state = FaultState(ComponentInfo(self.vehicle, self.config.name, "vehicle"))
 
     def update(self, charge_state: bool = False) -> None:
-        with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state):
             soc, range = SkodaConnectApi(self.config, self.vehicle).fetch_soc()
             self.store.set(CarState(soc, range))
 

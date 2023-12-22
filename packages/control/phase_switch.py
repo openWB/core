@@ -29,6 +29,7 @@ def thread_phase_switch(cp) -> None:
             phase_switch_threads["thread_cp"+str(cp.num)] = threading.Thread(
                 target=_perform_phase_switch,
                 args=(cp.chargepoint_module,
+                      cp.data.control_parameter.phases,
                       cp.data.set.charging_ev_data,
                       cp.data.get.charge_state),
                 name=f"phase switch cp{cp.chargepoint_module.config.id}")
@@ -38,7 +39,7 @@ def thread_phase_switch(cp) -> None:
         log.exception("Fehler im Phasenumschaltungs-Modul")
 
 
-def _perform_phase_switch(chargepoint_module: AbstractChargepoint, ev: Ev, charge_state: bool) -> None:
+def _perform_phase_switch(chargepoint_module: AbstractChargepoint, phases: int, ev: Ev, charge_state: bool) -> None:
     """ ruft das Modul zur Phasenumschaltung für das jeweilige Modul auf.
     """
     # Stoppen der Ladung wird in start_charging bei gesetztem phase_switch_timestamp durchgeführt.
@@ -47,7 +48,7 @@ def _perform_phase_switch(chargepoint_module: AbstractChargepoint, ev: Ev, charg
         if charge_state:
             time.sleep(5)
         # Phasenumschaltung entsprechend Modul
-        chargepoint_module.switch_phases(ev.data.control_parameter.phases, ev.ev_template.data.phase_switch_pause)
+        chargepoint_module.switch_phases(phases, ev.ev_template.data.phase_switch_pause)
         # Die Ladung wird in start_charging wieder gestartet, wenn phase_switch_timestamp wieder auf None gesetzt wird.
         time.sleep(ev.ev_template.data.keep_charge_active_duration)
     except Exception:

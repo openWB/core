@@ -5,7 +5,7 @@ import pytest
 
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
-from control.counter import Counter
+from control.counter import Counter, CounterData, Get
 from control.ev import ChargeTemplate, Ev
 from control.general import General
 from control.chargepoint.chargepoint_state import ChargepointState
@@ -102,23 +102,23 @@ class Params:
 
 cases = [
     Params("Einschaltschwelle wurde unterschritten, Timer zurücksetzen", False, 1500, -119,
-           1500, '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY,
+           1500, 1652683250.0, ChargepointState.SWITCH_ON_DELAY,
            Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
     Params("Timer starten", False, 0, 1501, 1500, None, ChargepointState.NO_CHARGING_ALLOWED,
-           Counter.SWITCH_ON_WAITING.format(30), '05/16/2022, 08:40:52', 1500),
+           Counter.SWITCH_ON_WAITING.format(30), 1652683252.0, 1500),
     Params("Einschaltschwelle nicht erreicht", False, 0, 1499, 1500,
            None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
     Params("Einschaltschwelle läuft", False, 1500, 121, 1500,
-           '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY, None, '05/16/2022, 08:40:50', 1500),
+           1652683250.0, ChargepointState.SWITCH_ON_DELAY, None, 1652683250.0, 1500),
     Params("Feed_in_limit, Einschaltschwelle wurde unterschritten, Timer zurücksetzen", True, 1500,
-           -681, 15000, '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY,
+           -681, 15000, 1652683250.0, ChargepointState.SWITCH_ON_DELAY,
            Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
     Params("Feed_in_limit, Timer starten", True, 0, 15001, 15000, None, ChargepointState.NO_CHARGING_ALLOWED,
-           Counter.SWITCH_ON_WAITING.format(30), '05/16/2022, 08:40:52', 1500),
+           Counter.SWITCH_ON_WAITING.format(30), 1652683252.0, 1500),
     Params("Feed_in_limit, Einschaltschwelle nicht erreicht", True, 0, 14999,
            15000, None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
     Params("Feed_in_limit, Einschaltschwelle läuft", True, 1500, 15001,
-           15000, '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY, None, '05/16/2022, 08:40:50', 1500),
+           15000, 1652683250.0, ChargepointState.SWITCH_ON_DELAY, None, 1652683250.0, 1500),
 ]
 
 
@@ -129,9 +129,9 @@ def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixtur
     c.data.set.reserved_surplus = params.reserved_surplus
     cp = Chargepoint(0, None)
     ev = Ev(0)
-    ev.data.control_parameter.phases = 1
-    ev.data.control_parameter.state = params.state
-    ev.data.control_parameter.timestamp_switch_on_off = params.timestamp_switch_on_off
+    cp.data.control_parameter.phases = 1
+    cp.data.control_parameter.state = params.state
+    cp.data.control_parameter.timestamp_switch_on_off = params.timestamp_switch_on_off
     ev.data.charge_template = ChargeTemplate(0)
     ev.data.charge_template.data.chargemode.pv_charging.feed_in_limit = params.feed_in_limit
     cp.data.set.charging_ev_data = ev
@@ -143,22 +143,30 @@ def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixtur
 
     # evaluation
     assert c.data.set.reserved_surplus == params.expected_reserved_surplus
-    assert params.expected_msg is None or params.expected_msg in caplog.text
-    assert (cp.data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off ==
+    assert cp.data.get.state_str is None or cp.data.get.state_str == params.expected_msg
+    assert (cp.data.control_parameter.timestamp_switch_on_off ==
             params.expected_timestamp_switch_on_off)
 
 
-@pytest.mark.parametrize("control_range, expected_available_power",
-                         [pytest.param([0, 230], 1115, id="Bezug"),
-                          pytest.param([-230, 0], 885, id="Einspeisung")],
+@pytest.mark.parametrize("control_range, evu_power, expected_range_offset",
+                         [pytest.param([0, 230], 200, 0, id="Bezug, im Regelbereich"),
+                          pytest.param([0, 230], 290, -175, id="Bezug, über Regelbereich"),
+                          pytest.param([0, 230], -100, 215, id="Bezug, unter Regelbereich"),
+                          pytest.param([-230, 0], -104, 0, id="Einspeisung, im Regelbereich"),
+                          pytest.param([-230, 0], 80, -195, id="Einspeisung, über Regelbereich"),
+                          pytest.param([-230, 0], -300, 185, id="Einspeisung, unter Regelbereich"),
+                          ],
                          )
-def test_control_range(control_range, expected_available_power, general_data_fixture):
+def test_control_range(control_range, evu_power, expected_range_offset, general_data_fixture, monkeypatch):
     # setup
+    get_evu_counter_mock = Mock(return_value=Mock(spec=Counter, data=Mock(
+        spec=CounterData, get=Mock(spec=Get, power=evu_power))))
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
     data.data.general_data.data.chargemode_config.pv_charging.control_range = control_range
     c = Counter(0)
 
     # execution
-    available_power = c._control_range(1000)
+    range_offset = c._control_range()
 
     # evaluation
-    assert available_power == expected_available_power
+    assert range_offset == expected_range_offset

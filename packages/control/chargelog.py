@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import logging
 import math
@@ -10,7 +11,7 @@ from helpermodules.pub import Pub
 from helpermodules import timecheck
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
-# Lademodus, RFID-Tag
+# Lademodus, ID-Tag
 # json-Objekt: {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
 # "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
 # "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34",
@@ -44,16 +45,16 @@ def collect_data(chargepoint):
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
-                    if charging_ev.data.control_parameter.submode == "time_charging":
+                    if chargepoint.data.control_parameter.submode == "time_charging":
                         log_data.chargemode_log_entry = "time_charging"
                     else:
-                        log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode.value
+                        log_data.chargemode_log_entry = chargepoint.data.control_parameter.chargemode.value
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
                 log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
                           f"counter {chargepoint.data.get.imported}")
                 log_data.range_charged = log_data.imported_since_mode_switch / \
                     charging_ev.ev_template.data.average_consump * 100
-                log_data.time_charged, _ = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
+                log_data.time_charged = timecheck.get_difference_to_now(log_data.timestamp_start_charging)[0]
             Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
@@ -106,13 +107,13 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
                 "id": charging_ev.num,
                 "name": charging_ev.data.name,
                 "chargemode": log_data.chargemode_log_entry,
-                "prio": charging_ev.data.control_parameter.prio,
+                "prio": chargepoint.data.control_parameter.prio,
                 "rfid": chargepoint.data.set.rfid
             },
             "time":
             {
-                "begin": log_data.timestamp_start_charging,
-                "end": timecheck.create_timestamp(),
+                "begin": datetime.fromtimestamp(log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S"),
+                "end": datetime.fromtimestamp(timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S"),
                 "time_charged": log_data.time_charged
             },
             "data":
@@ -200,7 +201,7 @@ def get_log_data(request: Dict):
                     entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["rfid"]
                 ):
                     log.debug(
-                        "Verwerfe Eintrag wegen RFID Tag: %s != %s" %
+                        "Verwerfe Eintrag wegen ID Tag: %s != %s" %
                         (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["rfid"]))
                     )
                     continue

@@ -5,10 +5,10 @@ Hagen */
 	<div class="container-fluid px-2 m-0 theme-colors">
 		<!-- Theme settings -->
 		<div id="themesettings" class="collapse">
-			<ThemeSettings />
+			<ThemeSettings @reset-arcs="resetArcs"></ThemeSettings>
 		</div>
 		<!-- Button Bar -->
-		<ButtonBar />
+		<ButtonBar v-if="globalConfig.showButtonBar" />
 
 		<!-- Main Widgets -->
 		<div v-if="false" class="row py-0 px-0 m-0">
@@ -37,8 +37,8 @@ Hagen */
 		>
 			<ChargePointList />
 			<BatteryList />
-			<SmartHomeList />
-			<PriceChart />
+			<SmartHomeList v-if="showSH"></SmartHomeList>
+			<!-- <PriceChart /> -->
 		</div>
 		<!-- Tabbed area -->
 		<nav
@@ -67,11 +67,16 @@ Hagen */
 				<i class="fa-solid fa-lg fa-car-battery" />
 				<span class="d-none d-md-inline ms-2">Speicher</span>
 			</a>
-			<a class="nav-link" data-bs-toggle="tab" data-bs-target="#smarthomelist">
+			<a
+				v-if="showSH"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#smarthomelist"
+			>
 				<i class="fa-solid fa-lg fa-plug" />
 				<span class="d-none d-md-inline ms-2">Smart Home</span>
 			</a>
-			<a
+			<!-- <a
 				v-if="etData.isEtEnabled"
 				class="nav-link"
 				data-bs-toggle="tab"
@@ -79,7 +84,7 @@ Hagen */
 			>
 				<i class="fa-solid fa-lg fa-money-bill-1-wave" />
 				<span class="d-none d-md-inline ms-2">Strompreis</span>
-			</a>
+			</a> -->
 		</nav>
 		<!-- Tab panes -->
 		<div
@@ -96,7 +101,7 @@ Hagen */
 				<div class="row py-0 m-0 d-flex justify-content-center">
 					<ChargePointList />
 					<BatteryList />
-					<SmartHomeList />
+					<SmartHomeList v-if="showSH" />
 					<PriceChart />
 				</div>
 			</div>
@@ -126,14 +131,11 @@ Hagen */
 				role="tabpanel"
 				aria-labelledby="smarthome-tab"
 			>
-				<div
-					v-if="Object.keys(shDevices).length > 0"
-					class="row py-0 m-0 d-flex justify-content-center"
-				>
+				<div v-if="showSH" class="row py-0 m-0 d-flex justify-content-center">
 					<SmartHomeList />
 				</div>
 			</div>
-			<div
+			<!-- <div
 				id="etPricing"
 				class="tab-pane"
 				role="tabpanel"
@@ -142,25 +144,22 @@ Hagen */
 				<div class="row py-0 m-0 d-flex justify-content-center">
 					<PriceChart />
 				</div>
-			</div>
+			</div> -->
 		</div>
 	</div>
 	<!-- Footer -->
-	<div class="row p-2 mt-5">
+	<div v-if="globalConfig.debug" class="row p-2 mt-5">
 		<div class="col p-2">
 			<hr />
 			<div class="d-flex justify-content-between">
 				<p class="mx-4">Screen Width: {{ screensize.x }}</p>
-				<!--      <button class="btn btn-sm btn-secondary mx-4" @click="toggleSetup">
-          System Setup
-        </button> -->
+				<!-- <button class="btn btn-sm btn-secondary mx-4" @click="toggleSetup">
+					System Setup
+				</button> -->
 				<button class="btn btn-sm btn-secondary mx-4" @click="toggleMqViewer">
 					MQ Viewer
 				</button>
 			</div>
-			<!--   <hr v-if="showSetup" />
-      <Setup v-if="showSetup"></Setup> -->
-
 			<hr v-if="showMQ" />
 			<MQTTViewer v-if="showMQ" />
 		</div>
@@ -169,9 +168,10 @@ Hagen */
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { usageSummary, shDevices, globalData } from '../assets/js/model'
+import { usageSummary, globalData } from '../assets/js/model'
+import { shDevices } from '@/components/smartHome/model'
 import { chargePoints } from '@/components/chargePointList/model'
-import { etData } from '@/components/priceChart/model'
+// import { etData } from '@/components/priceChart/model'
 import { initConfig } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
@@ -185,6 +185,7 @@ import CarouselFix from '@/components/shared/CarouselFix.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import MQTTViewer from '@/components/mqttViewer/MQTTViewer.vue'
 import ThemeSettings from '@/views/ThemeSettings.vue'
+import { resetArcs } from '@/assets/js/themeConfig'
 import {
 	globalConfig,
 	updateDimensions,
@@ -203,6 +204,9 @@ const usageDetails = computed(() => {
 		.concat([usageSummary.batIn, usageSummary.house])
 })
 const showMQ = ref(false)
+const showSH = computed(() => {
+	return Object.values(shDevices).filter((dev) => dev.configured).length > 0
+})
 // methods
 function init() {
 	initConfig()
@@ -214,8 +218,15 @@ function toggleMqViewer() {
 onMounted(() => {
 	init()
 	window.addEventListener('resize', updateDimensions)
+	window.document.addEventListener('visibilitychange', visibilityChange)
 	msgInit()
 })
+
+function visibilityChange() {
+	if (!document.hidden) {
+		msgInit()
+	}
+}
 </script>
 
 <style scoped>
@@ -223,10 +234,12 @@ onMounted(() => {
 	border-bottom: 0.5px solid var(--color-menu);
 	background-color: var(--color-bg);
 }
+
 .nav-tabs .nav-link {
 	color: var(--color-menu);
 	opacity: 0.5;
 }
+
 .nav-tabs .nav-link.disabled {
 	color: var(--color-axis);
 	border: 0.5px solid var(--color-axis);
@@ -240,18 +253,23 @@ onMounted(() => {
 	border-bottom: 0px solid var(--color-menu);
 	box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
+
 .fa-circle-info {
 	color: var(--color-fg);
 }
+
 .fa-charging-station {
 	color: var(--color-charging);
 }
+
 .fa-car-battery {
 	color: var(--color-battery);
 }
+
 .fa-plug {
 	color: var(--color-devices);
 }
+
 .fa-money-bill-1-wave {
 	color: var(--color-pv);
 }

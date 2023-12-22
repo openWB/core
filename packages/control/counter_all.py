@@ -189,7 +189,10 @@ class CounterAll:
                 self.data.get.hierarchy[0],
                 int(counter[7:]),
                 self.__get_entry_of_element)
-        self._get_all_cp_connected_to_counter(counter_object)
+        try:
+            self._get_all_cp_connected_to_counter(counter_object)
+        except KeyError:
+            log.debug(f"Kein Ladepunkt unter Zähler {counter}.")
         return self.connected_chargepoints
 
     def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
@@ -409,7 +412,18 @@ class CounterAll:
                     if break_flag:
                         break
                 else:
-                    self.hierarchy_add_item_below(entry_num, type_name, self.get_evu_counter().num)
+                    try:
+                        self.hierarchy_add_item_below(entry_num, type_name, self.get_evu_counter().num)
+                    except (TypeError, IndexError):
+                        # es gibt noch keinen EVU-Zähler
+                        hierarchy = [{
+                            "id": entry_num,
+                            "type": ComponentType.COUNTER.value,
+                            "children": data.data.counter_all_data.data.get.hierarchy
+                        }]
+                        Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
+                        data.data.counter_all_data.data.get.hierarchy = hierarchy
+
                     pub_system_message({}, f"{component_type_to_readable_text(type_name)} mit ID {element['id']} wurde"
                                        " in der Hierarchie hinzugefügt, da kein Eintrag in der Hierarchie gefunden "
                                        "wurde. Bitte prüfe die Anordnung der Komponenten in der Hierarchie.",

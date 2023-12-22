@@ -7,7 +7,7 @@ from typing import List
 from dataclass_utils import asdict, dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import SocUpdateData
+from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.common.fault_state import FaultState
@@ -17,9 +17,9 @@ from modules.vehicles.tesla.config import TeslaSoc, TeslaSocConfiguration, Tesla
 log = logging.getLogger(__name__)
 
 
-def fetch(vehicle_config: TeslaSoc, soc_update_data: SocUpdateData) -> CarState:
+def fetch(vehicle_config: TeslaSoc, vehicle_update_data: VehicleUpdateData) -> CarState:
     vehicle_config.configuration.token = api.validate_token(vehicle_config.configuration.token)
-    if soc_update_data.charge_state is False:
+    if vehicle_update_data.charge_state is False:
         _wake_up_car(vehicle_config)
     soc, range = api.request_soc_range(
         vehicle=vehicle_config.configuration.tesla_ev_num, token=vehicle_config.configuration.token)
@@ -44,9 +44,11 @@ def _wake_up_car(vehicle_config: TeslaSoc):
 
 
 def create_vehicle(vehicle_config: TeslaSoc, vehicle: int):
-    def updater(soc_update_data: SocUpdateData) -> CarState:
-        return fetch(vehicle_config, soc_update_data)
-    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
+    def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
+        return fetch(vehicle_config, vehicle_update_data)
+    return ConfigurableVehicle(vehicle_config=vehicle_config,
+                               component_updater=updater,
+                               vehicle=vehicle)
 
 
 def read_legacy(id: int,
@@ -63,7 +65,7 @@ def read_legacy(id: int,
         token = json.load(f)
     soc = create_vehicle(TeslaSoc(configuration=TeslaSocConfiguration(
         tesla_ev_num=tesla_ev_num, token=dataclass_from_dict(TeslaSocToken, token))), id)
-    soc.update(SocUpdateData(charge_state=charge_state))
+    soc.update(VehicleUpdateData(charge_state=charge_state))
     with open(token_file, "w") as f:
         f.write(json.dumps(asdict(soc.vehicle_config.configuration.token)))
 

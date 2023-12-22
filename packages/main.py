@@ -9,10 +9,10 @@ import time
 import threading
 import traceback
 from threading import Thread
+
+from helpermodules.changed_values_handler import ChangedValuesHandler
 from helpermodules.measurement_logging.update_daily_yields import update_daily_yields
 from helpermodules.measurement_logging.write_log import save_log
-from helpermodules.pub import Pub
-
 from modules import loadvars
 from modules import configuration
 from helpermodules import timecheck, update_config
@@ -20,6 +20,8 @@ from helpermodules import subdata
 from helpermodules import setdata
 from helpermodules import logger
 from helpermodules import command
+from helpermodules.modbusserver import start_modbus_server
+from helpermodules.pub import Pub
 from control import prepare
 from control import data
 from control import process
@@ -28,6 +30,7 @@ from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
+from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
 
 logger.setup_logging()
@@ -48,7 +51,11 @@ class HandlerAlgorithm:
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
                     loadvars_.get_values()
+                    changed_values_handler.pub_changed_values()
+                    wait_for_module_update_completed(loadvars_.event_module_update_completed,
+                                                     "openWB/set/system/device/module_update_completed")
                     data.data.copy_data()
+                    changed_values_handler.store_inital_values()
                     self.heartbeat = True
                     if data.data.system_data["system"].data["perform_update"]:
                         data.data.system_data["system"].perform_update()
@@ -60,11 +67,12 @@ class HandlerAlgorithm:
                     control.calc_current()
                     proc.process_algorithm_results()
                     data.data.graph_data.pub_graph_data()
+                    changed_values_handler.pub_changed_values()
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
-            Pub().pub("openWB/set/system/time", timecheck.create_timestamp_unix())
+            Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
@@ -77,11 +85,13 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
+            changed_values_handler.store_inital_values()
             totals = save_log("daily")
             update_daily_yields(totals)
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
             data.data.counter_all_data.validate_hierarchy()
+            changed_values_handler.pub_changed_values()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -167,8 +177,8 @@ try:
     handler = HandlerAlgorithm()
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
-    rfid0 = RfidReader("event0")
-    rfid1 = RfidReader("event1")
+    rfid = RfidReader()
+    changed_values_handler = ChangedValuesHandler(loadvars_.event_module_update_completed)
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
@@ -188,6 +198,7 @@ try:
     event_command_completed.set()
     event_subdata_initialized = threading.Event()
     event_update_config_completed = threading.Event()
+    event_modbus_server = threading.Event()
     event_jobs_running = threading.Event()
     event_jobs_running.set()
     prep = prepare.Prepare()
@@ -204,7 +215,7 @@ try:
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,
                           event_soc,
-                          event_jobs_running)
+                          event_jobs_running, event_modbus_server)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
@@ -212,22 +223,21 @@ try:
     t_soc = Thread(target=soc.update, args=(), name="SoC")
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
-    if hasattr(rfid0, "input_device"):
-        t_rfid0 = Thread(target=rfid0.loop, args=(), name="Internal Chargepoint")
-        t_rfid0.start()
-    if hasattr(rfid1, "input_device"):
-        t_rfid1 = Thread(target=rfid1.loop, args=(), name="Internal Chargepoint")
-        t_rfid1.start()
+    if rfid.keyboards_detected:
+        t_rfid = Thread(target=rfid.run, args=(), name="Internal Chargepoint")
+        t_rfid.start()
 
     t_sub.start()
     t_set.start()
     t_comm.start()
     t_soc.start()
     t_internal_chargepoint.start()
+    threading.Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
+    changed_values_handler.store_inital_values()
     schedule_jobs()
 except Exception:
     log.exception("Fehler im Main-Modul")

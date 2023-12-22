@@ -33,7 +33,6 @@ export const batterySummary = reactive(new BatterySummary())
 export function addBattery(index: number) {
 	if (!(index in batteries)) {
 		batteries[index] = new Battery(index)
-		console.info('Added battery ' + index)
 	} else {
 		console.info('Duplicate battery message: ' + index)
 	}

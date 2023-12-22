@@ -2,6 +2,7 @@ import threading
 import pytest
 from typing import List, Optional
 from unittest.mock import Mock
+from control.chargepoint.control_parameter import ControlParameter
 from control.counter import Counter, CounterData, Set
 
 from control.pv_all import PvAll
@@ -30,7 +31,7 @@ class Params:
     def __init__(self,
                  name: str,
                  max_current_single_phase: int,
-                 timestamp_auto_phase_switch: Optional[str],
+                 timestamp_auto_phase_switch: Optional[float],
                  phases_to_use: int,
                  required_current: float,
                  evu_surplus: int,
@@ -42,7 +43,7 @@ class Params:
                  expected_current: float,
                  expected_state: ChargepointState,
                  expected_message: Optional[str] = None,
-                 expected_timestamp_auto_phase_switch: Optional[str] = None) -> None:
+                 expected_timestamp_auto_phase_switch: Optional[float] = None) -> None:
         self.name = name
         self.max_current_single_phase = max_current_single_phase
         self.timestamp_auto_phase_switch = timestamp_auto_phase_switch
@@ -65,28 +66,28 @@ cases = [
            phases_to_use=1, required_current=6, evu_surplus=-800, reserved_evu_overhang=0, get_currents=[15.6, 0, 0],
            get_power=3450, state=ChargepointState.CHARGING_ALLOWED, expected_phases_to_use=1, expected_current=6,
            expected_message="Umschaltverzögerung von 1 auf 3 Phasen für 7.0 Min aktiv.",
-           expected_timestamp_auto_phase_switch="05/16/2022, 08:40:52",
+           expected_timestamp_auto_phase_switch=1652683252.0,
            expected_state=ChargepointState.PHASE_SWITCH_DELAY),
     Params("1to3, not enough power, start timer", max_current_single_phase=16, timestamp_auto_phase_switch=None,
            phases_to_use=1, required_current=6, evu_surplus=-300, reserved_evu_overhang=0, get_currents=[15.6, 0, 0],
            get_power=3450, state=ChargepointState.CHARGING_ALLOWED, expected_phases_to_use=1, expected_current=6,
            expected_state=ChargepointState.CHARGING_ALLOWED),
     Params("1to3, enough power, timer not expired", max_current_single_phase=16,
-           timestamp_auto_phase_switch="05/16/2022, 08:35:52", phases_to_use=1, required_current=6,
+           timestamp_auto_phase_switch=1652682952.0, phases_to_use=1, required_current=6,
            evu_surplus=-1200, reserved_evu_overhang=460, get_currents=[15.6, 0, 0], get_power=3450,
            state=ChargepointState.PHASE_SWITCH_DELAY, expected_phases_to_use=1, expected_current=6,
            expected_message="Umschaltverzögerung von 1 auf 3 Phasen für 7.0 Min aktiv.",
-           expected_timestamp_auto_phase_switch="05/16/2022, 08:40:52",
+           expected_timestamp_auto_phase_switch=1652683252.0,
            expected_state=ChargepointState.PHASE_SWITCH_DELAY),
     Params("1to3, not enough power, timer not expired", max_current_single_phase=16,
-           timestamp_auto_phase_switch="05/16/2022, 08:35:52", phases_to_use=1, required_current=6,
+           timestamp_auto_phase_switch=1652682952.0, phases_to_use=1, required_current=6,
            evu_surplus=0, reserved_evu_overhang=460, get_currents=[15.6, 0, 0], get_power=3450,
            state=ChargepointState.PHASE_SWITCH_DELAY, expected_phases_to_use=1, expected_current=6,
            expected_message=f"Umschaltverzögerung von 1 auf 3 Phasen abgebrochen{Ev.NOT_ENOUGH_POWER}",
-           expected_timestamp_auto_phase_switch="05/16/2022, 08:40:52",
+           expected_timestamp_auto_phase_switch=1652683252.0,
            expected_state=ChargepointState.CHARGING_ALLOWED),
     Params("1to3, enough power, timer expired", max_current_single_phase=16,
-           timestamp_auto_phase_switch="05/16/2022, 08:32:52", phases_to_use=1, required_current=6,
+           timestamp_auto_phase_switch=1652682772.0, phases_to_use=1, required_current=6,
            evu_surplus=-1200, reserved_evu_overhang=460, get_currents=[15.6, 0, 0], get_power=3450,
            state=ChargepointState.PHASE_SWITCH_DELAY,
            expected_phases_to_use=3, expected_current=6, expected_state=ChargepointState.PHASE_SWITCH_DELAY_EXPIRED),
@@ -96,25 +97,25 @@ cases = [
            get_currents=[4.5, 4.4, 5.8], get_power=3381, state=ChargepointState.CHARGING_ALLOWED,
            expected_phases_to_use=3, expected_current=6,
            expected_message="Umschaltverzögerung von 3 auf 1 Phasen für 9.0 Min aktiv.",
-           expected_timestamp_auto_phase_switch="05/16/2022, 08:40:52",
+           expected_timestamp_auto_phase_switch=1652683252.0,
            expected_state=ChargepointState.PHASE_SWITCH_DELAY),
     Params("3to1, not enough power, timer not expired", max_current_single_phase=16,
-           timestamp_auto_phase_switch="05/16/2022, 08:35:52",
+           timestamp_auto_phase_switch=1652682952.0,
            phases_to_use=3, required_current=6, evu_surplus=0, reserved_evu_overhang=-460,
            get_currents=[4.5, 4.4, 5.8], get_power=3381, state=ChargepointState.PHASE_SWITCH_DELAY,
            expected_phases_to_use=3, expected_current=6,
            expected_message="Umschaltverzögerung von 3 auf 1 Phasen für 9.0 Min aktiv.",
-           expected_timestamp_auto_phase_switch="05/16/2022, 08:40:52",
+           expected_timestamp_auto_phase_switch=1652683252.0,
            expected_state=ChargepointState.PHASE_SWITCH_DELAY),
     Params("3to1, enough power, timer not expired", max_current_single_phase=16,
-           timestamp_auto_phase_switch="05/16/2022, 08:35:52", phases_to_use=3, required_current=6,
+           timestamp_auto_phase_switch=1652682952.0, phases_to_use=3, required_current=6,
            evu_surplus=-860, reserved_evu_overhang=0, get_currents=[4.5, 4.4, 5.8],
            get_power=3381, state=ChargepointState.PHASE_SWITCH_DELAY, expected_phases_to_use=3, expected_current=6,
            expected_message=f"Umschaltverzögerung von 3 auf 1 Phasen abgebrochen{Ev.ENOUGH_POWER}",
-           expected_timestamp_auto_phase_switch="05/16/2022, 08:40:52",
+           expected_timestamp_auto_phase_switch=1652683252.0,
            expected_state=ChargepointState.CHARGING_ALLOWED),
     Params("3to1, not enough power, timer expired", max_current_single_phase=16,
-           timestamp_auto_phase_switch="05/16/2022, 08:29:52", phases_to_use=3, required_current=6,
+           timestamp_auto_phase_switch=1652682592.0, phases_to_use=3, required_current=6,
            evu_surplus=0, reserved_evu_overhang=-460, get_currents=[4.5, 4.4, 5.8],
            get_power=3381, state=ChargepointState.PHASE_SWITCH_DELAY, expected_phases_to_use=1, expected_current=16,
            expected_state=ChargepointState.PHASE_SWITCH_DELAY_EXPIRED),
@@ -133,16 +134,23 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     monkeypatch.setattr(mock_evu, "calc_surplus", mock_evu_counter_surplus)
 
     vehicle.ev_template.data.max_current_single_phase = params.max_current_single_phase
-    vehicle.data.control_parameter.timestamp_auto_phase_switch = params.timestamp_auto_phase_switch
-    vehicle.data.control_parameter.phases = params.phases_to_use
-    vehicle.data.control_parameter.required_current = params.required_current
-    vehicle.data.control_parameter.state = params.state
+    control_parameter = ControlParameter()
+    control_parameter.timestamp_auto_phase_switch = params.timestamp_auto_phase_switch
+    control_parameter.phases = params.phases_to_use
+    control_parameter.required_current = params.required_current
+    control_parameter.state = params.state
 
     # execution
-    phases_to_use, current, message = vehicle.auto_phase_switch(0, params.get_currents, params.get_power, 32, 3)
+    phases_to_use, current, message = vehicle.auto_phase_switch(control_parameter,
+                                                                0,
+                                                                params.get_currents,
+                                                                params.get_power,
+                                                                32,
+                                                                3,
+                                                                None)
 
     # evaluation
     assert phases_to_use == params.expected_phases_to_use
     assert current == params.expected_current
     assert message == params.expected_message
-    assert vehicle.data.control_parameter.state == params.expected_state
+    assert control_parameter.state == params.expected_state

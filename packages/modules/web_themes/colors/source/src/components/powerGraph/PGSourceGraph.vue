@@ -8,12 +8,22 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import * as d3 from 'd3'
+import type { Selection, BaseType } from 'd3'
+import {
+	select,
+	scaleLinear,
+	stack,
+	extent,
+	axisLeft,
+	area,
+	easeLinear,
+} from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
 	graphData,
-	initializeSourceGraph,
+	animateSourceGraph,
 	sourceGraphIsInitialized,
+	xScaleMonth,
 } from './model'
 const props = defineProps<{
 	width: number
@@ -28,11 +38,11 @@ const colors: { [key: string]: string } = {
 	inverter: 'var(--color-pv)',
 	batOut: 'var(--color-battery)',
 	selfUsage: 'var(--color-pv)',
-	gridPush: 'var(--color-export)',
-	gridPull: 'var(--color-evu)',
+	evuOut: 'var(--color-export)',
+	evuIn: 'var(--color-evu)',
 }
-var paths: d3.Selection<SVGPathElement, [number, number][], d3.BaseType, never>
-var rects: d3.Selection<SVGRectElement, [number, number], d3.BaseType, never>
+var paths: Selection<SVGPathElement, [number, number][], BaseType, never>
+var rects: Selection<SVGRectElement, [number, number], BaseType, never>
 const duration = globalConfig.showAnimations
 	? globalConfig.animationDuration
 	: 0
@@ -40,62 +50,61 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 
 // computed:
 const draw = computed(() => {
-	if (graphData.data.length > 0) {
-		const graph = d3.select('g#pgSourceGraph')
-		if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
-			drawMonthGraph(graph)
-		} else {
-			drawGraph(graph)
-		}
-		const yAxis = graph.append('g').attr('class', 'axis')
-		yAxis.call(yAxisGenerator.value)
-		yAxis.selectAll('.tick').attr('font-size', 12)
-		yAxis
-			.selectAll('.tick line')
-			.attr('stroke', ticklineColor.value)
-			.attr('stroke-width', ticklineWidth.value)
-		yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+	const graph = select('g#pgSourceGraph')
+	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
+		drawBarGraph(graph)
+	} else {
+		drawGraph(graph)
 	}
+	const yAxis = graph.append('g').attr('class', 'axis')
+	yAxis.call(yAxisGenerator.value)
+	yAxis.selectAll('.tick').attr('font-size', 12)
+	yAxis
+		.selectAll('.tick line')
+		.attr('stroke', ticklineColor.value)
+		.attr('stroke-width', ticklineWidth.value)
+	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	return 'pgSourceGraph.vue'
 })
 const keys = computed(() => {
 	return graphData.graphMode == 'month' || graphData.graphMode == 'year'
-		? ['gridPull', 'batOut', 'selfUsage', 'gridPush']
-		: ['selfUsage', 'gridPush', 'batOut', 'gridPull']
+		? ['evuIn', 'batOut', 'selfUsage', 'evuOut']
+		: ['selfUsage', 'evuOut', 'batOut', 'evuIn']
 })
 const iScale = computed(() => {
-	return d3
-		.scaleLinear()
+	return scaleLinear()
 		.domain([0, graphData.data.length - 1])
 		.range([0, props.width])
 })
 
-const iScaleMonth = computed(() =>
-	d3
-		.scaleBand<number>()
+/* const iScaleMonth = computed(() =>
+	scaleBand<number>()
 		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
 		.range([0, props.width + props.margin.right])
 		.paddingInner(0.4),
-)
-const stackGen = computed(() => d3.stack().keys(keys.value))
+) */
+const stackGen = computed(() => stack().keys(keys.value))
 const stackedSeries = computed(() => stackGen.value(graphData.data))
 
 const yScale = computed(() => {
-	return d3
-		.scaleLinear()
+	return scaleLinear()
 		.range([props.height - 10, 0])
 		.domain(
 			graphData.graphMode == 'year'
-				? [0, Math.ceil(extent.value[1] * 10) / 10]
-				: [0, Math.ceil(extent.value[1])],
+				? [0, Math.ceil(vrange.value[1] * 10) / 10]
+				: [0, Math.ceil(vrange.value[1])],
 		)
 })
 
-const extent = computed(() => {
-	let result = d3.extent(graphData.data, (d) =>
-		Math.max(d.solarPower + d.gridPull + d.batOut, d.selfUsage + d.gridPush),
+const vrange = computed(() => {
+	let result = extent(graphData.data, (d) =>
+		Math.max(d.pv + d.evuIn + d.batOut, d.selfUsage + d.evuOut),
 	)
 	if (result[0] != undefined && result[1] != undefined) {
+		if (graphData.graphMode == 'year') {
+			result[0] = result[0] / 1000
+			result[1] = result[1] / 1000
+		}
 		return result
 	} else {
 		return [0, 0]
@@ -104,12 +113,11 @@ const extent = computed(() => {
 const ticklength = computed(
 	() => graphData.graphMode == 'month' || graphData.graphMode == 'year',
 )
-	? -props.width - props.margin.right
+	? -props.width - props.margin.right - 22
 	: -props.width
 
 const yAxisGenerator = computed(() => {
-	return d3
-		.axisLeft<number>(yScale.value)
+	return axisLeft<number>(yScale.value)
 		.tickSizeInner(ticklength)
 		.ticks(4)
 		.tickFormat((d: number) =>
@@ -127,19 +135,15 @@ const ticklineColor = computed(() => {
 	return globalConfig.showGrid ? 'var(--color-grid)' : 'var(--color-bg)'
 })
 
-function drawGraph(
-	graph: d3.Selection<d3.BaseType, unknown, HTMLElement, never>,
-) {
-	const area0 = d3
-		.area()
+function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+	const area0 = area()
 		.x((d, i) => iScale.value(i))
 		.y(yScale.value(0))
-	const area = d3
-		.area()
+	const area1 = area()
 		.x((d, i) => iScale.value(i))
-		.y0((d) => yScale.value(d[0]))
-		.y1((d) => yScale.value(d[1]))
-	if (initializeSourceGraph) {
+		.y0((d) => yScale.value(graphData.graphMode == 'year' ? d[0] / 1000 : d[0]))
+		.y1((d) => yScale.value(graphData.graphMode == 'year' ? d[1] / 1000 : d[1]))
+	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
 		paths = graph
 			.selectAll('.sourceareas')
@@ -152,22 +156,20 @@ function drawGraph(
 			.transition()
 			.duration(duration)
 			.delay(delay)
-			.ease(d3.easeLinear)
-			.attr('d', (series) => area(series))
+			.ease(easeLinear)
+			.attr('d', (series) => area1(series))
 		sourceGraphIsInitialized()
 	} else {
 		paths
 			.data(stackedSeries.value as [number, number][][])
 			.transition()
 			.duration(0)
-			.ease(d3.easeLinear)
-			.attr('d', (series) => area(series))
+			.ease(easeLinear)
+			.attr('d', (series) => area1(series))
 	}
 }
-function drawMonthGraph(
-	graph: d3.Selection<d3.BaseType, unknown, HTMLElement, never>,
-) {
-	if (initializeSourceGraph) {
+function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
 		rects = graph
 			.selectAll('.sourcebar')
@@ -180,18 +182,26 @@ function drawMonthGraph(
 			.enter()
 			.append('rect')
 			.attr('x', (d, i) => {
-				return iScaleMonth.value(i) ?? 0
+				return xScaleMonth.value(graphData.data[i].date) ?? 0
 			})
 			.attr('y', () => yScale.value(0))
 			.attr('height', 0)
-			.attr('width', iScaleMonth.value.bandwidth())
+			.attr('width', xScaleMonth.value.bandwidth())
 		rects
 			.transition()
 			.duration(duration)
 			.delay(delay)
-			.ease(d3.easeLinear)
-			.attr('height', (d) => yScale.value(d[0]) - yScale.value(d[1]))
-			.attr('y', (d) => yScale.value(d[1])),
+			.ease(easeLinear)
+			.attr('height', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[0] / 1000) - yScale.value(d[1] / 1000)
+					: yScale.value(d[0]) - yScale.value(d[1]),
+			)
+			.attr('y', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[1] / 1000)
+					: yScale.value(d[1]),
+			),
 			sourceGraphIsInitialized()
 	} else {
 		graph.selectAll('*').remove()
@@ -206,11 +216,19 @@ function drawMonthGraph(
 			.enter()
 			.append('rect')
 			.attr('x', (d, i) => {
-				return iScaleMonth.value(i) ?? 0
+				return xScaleMonth.value(graphData.data[i].date) ?? 0
 			})
-			.attr('y', (d) => yScale.value(d[1]))
-			.attr('width', iScaleMonth.value.bandwidth())
-			.attr('height', (d) => yScale.value(d[0]) - yScale.value(d[1]))
+			.attr('y', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[1] / 1000)
+					: yScale.value(d[1]),
+			)
+			.attr('width', xScaleMonth.value.bandwidth())
+			.attr('height', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[0] / 1000) - yScale.value(d[1] / 1000)
+					: yScale.value(d[0]) - yScale.value(d[1]),
+			)
 	}
 }
 </script>

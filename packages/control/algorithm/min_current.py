@@ -22,8 +22,11 @@ class MinCurrent:
                     missing_currents, counts = common.get_min_current(cp)
                     if max(missing_currents) > 0:
                         available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
+                        cp.data.control_parameter.limit = limit
                         available_for_cp = common.available_current_for_cp(
                             cp, counts, available_currents, missing_currents)
+                        current = common.get_current_to_set(
+                            cp.data.set.current, available_for_cp, cp.data.set.target_current)
                         if common.consider_not_charging_chargepoint_in_loadmanagement(cp):
                             cp.data.set.current = cp.data.set.charging_ev_data.ev_template.data.min_current
                             log.debug(
@@ -31,14 +34,17 @@ class MinCurrent:
                                 "A. Zuteilung ohne Berücksichtigung im Lastmanagement, da kein Ladestart zu erwarten "
                                 "ist und Reserve für nicht-ladende inaktiv.")
                         else:
-                            if available_for_cp < cp.data.set.charging_ev_data.ev_template.data.min_current:
-                                common.set_current_counterdiff(-cp.data.set.current, 0, cp)
-                                cp.set_state_and_log(
-                                    f"Ladung kann nicht gestartet werden{limit.value.format(counter.num)}")
+                            if current < cp.data.set.charging_ev_data.ev_template.data.min_current:
+                                common.set_current_counterdiff(-(cp.data.set.current or 0), 0, cp)
+                                if limit:
+                                    cp.set_state_and_log(
+                                        f"Ladung kann nicht gestartet werden{limit.value.format(counter.num)}")
                             else:
                                 common.set_current_counterdiff(
                                     (cp.data.set.charging_ev_data.ev_template.data.min_current
                                      - cp.data.set.target_current),
                                     cp.data.set.charging_ev_data.ev_template.data.min_current,
                                     cp)
+                    else:
+                        cp.data.set.current = 0
                     preferenced_chargepoints.pop(0)

@@ -2,6 +2,7 @@
   "name": "openwb-display-cards",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build --out-dir=../web/ --emptyOutDir",
@@ -18,7 +19,7 @@
     "@inkline/inkline": "^3.2.0",
     "buffer": "^6.0.3",
     "events": "^3.3.0",
-    "mqtt": "^4.3.7",
+    "mqtt": "^5.3.3",
     "node-stdlib-browser": "^1.2.0",
     "pinia": "^2.0.28",
     "vue": "^3.2.45",
@@ -27,18 +28,18 @@
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.1.4",
     "@vitejs/plugin-vue": "^4.0.0",
-    "@vue/eslint-config-prettier": "^7.0.0",
+    "@vue/eslint-config-prettier": "^8.0.0",
     "@vue/test-utils": "^2.2.4",
     "eslint": "^8.30.0",
     "eslint-plugin-vue": "^9.3.0",
-    "jsdom": "^22.1.0",
-    "postcss": "^8.4.21",
+    "jsdom": "^23.0.1",
+    "postcss": "^8.4.31",
     "postcss-preset-env": "^9.0.0",
-    "prettier": "^2.8.1",
-    "rollup-plugin-node-polyfills": "^0.2.1",
+    "prettier": "^3.1.1",
+    "rollup-plugin-polyfill-node": "^0.13.0",
     "sass": "^1.57.1",
-    "vite": "^4.0.3",
-    "vite-plugin-node-polyfills": "^0.9.0",
-    "vitest": "^0.32.4"
+    "vite": "^5.0.8",
+    "vite-plugin-node-polyfills": "^0.17.0",
+    "vitest": "^1.0.4"
   }
 }

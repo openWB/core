@@ -45,7 +45,7 @@ class Evse:
         state = EvseState(state_number)
         if state == EvseState.FAILURE:
             raise FaultState.error("Unbekannter Zustand der EVSE: State " +
-                                   str(state)+", Sollstromstärke: "+str(set_current))
+                                   str(state)+", Soll-Stromstärke: "+str(set_current))
         plugged = state.plugged
         charging = set_current > 0 if state.charge_enabled else False
         return plugged, charging, set_current
@@ -53,8 +53,6 @@ class Evse:
     def get_firmware_version(self) -> int:
         time.sleep(0.1)
         version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
-        with ModifyLoglevelContext(log, logging.DEBUG):
-            log.debug("FW-Version: "+str(version))
         return version
 
     def is_precise_current_active(self) -> bool:

@@ -1,10 +1,15 @@
 import { mqttRegister, mqttSubscribe } from './mqttClient'
 import type { Hierarchy } from './types'
-import { globalData, sourceSummary, usageSummary } from './model'
+import {
+	correctHouseConsumption,
+	globalData,
+	sourceSummary,
+	usageSummary,
+} from './model'
 import { processLiveGraphMessages } from '../../components/powerGraph/processLiveGraphData'
 import { processDayGraphMessages } from '../../components/powerGraph/processDayGraphData'
-import { processMonthGraphMessages } from '../../components/powerGraph/processMonthGraphData'
-import { processYearGraphMessages } from '../../components/powerGraph/processYearGraphData'
+import { processMonthGraphMessages } from '../../components/powerGraph/processMonthYearGraphData'
+import { processYearGraphMessages } from '../../components/powerGraph/processMonthYearGraphData'
 import { initGraph } from '@/components/powerGraph/model'
 import { processBatteryMessages } from '@/components/batteryList/processMessages'
 import { processEtProviderMessages } from '@/components/priceChart/processMessages'
@@ -84,7 +89,7 @@ function processCounterMessages(topic: string, message: string) {
 	if (+elements[2] == globalData.evuId) {
 		processEvuMessages(topic, message)
 	} else if (elements[3] == 'config') {
-		console.warn('Ignored counter config message')
+		// console.warn('Ignored counter config message')
 	} else {
 		switch (elements[4]) {
 			case 'power':
@@ -113,17 +118,18 @@ function processGlobalCounterMessages(topic: string, message: string) {
 			for (const element of hierarchy) {
 				if (element.type == 'counter') {
 					globalData.evuId = element.id
-					console.info('EVU counter is ' + globalData.evuId)
+					// console.info('EVU counter is ' + globalData.evuId)
 				}
 			}
 			processHierarchy(hierarchy[0])
 		}
 	} else if (topic.match(/^openwb\/counter\/set\/home_consumption$/i)) {
 		usageSummary.house.power = +message
+		correctHouseConsumption()
 	} else if (
 		topic.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)
 	) {
-		usageSummary.house.energy = +message / 1000
+		usageSummary.house.energy = +message
 	} else {
 		// console.warn('Ignored GLOBAL COUNTER message: ' + topic)
 	}
@@ -131,7 +137,7 @@ function processGlobalCounterMessages(topic: string, message: string) {
 function processHierarchy(hierarchy: Hierarchy) {
 	switch (hierarchy.type) {
 		case 'counter':
-			console.info('counter in hierachy: ' + hierarchy.id)
+			// console.info('counter in hierachy: ' + hierarchy.id)
 			break
 		case 'cp':
 			addChargePoint(hierarchy.id)
@@ -141,10 +147,10 @@ function processHierarchy(hierarchy: Hierarchy) {
 			break
 		case 'inverter':
 			// addInverter (todo)
-			console.info('inverter id ' + hierarchy.id)
+			// console.info('inverter id ' + hierarchy.id)
 			break
 		default:
-			console.warn('Ignored Hierarchy type: ' + hierarchy.type)
+		// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
 	}
 	// recursively process the hierarchy
 	hierarchy.children.forEach((element) => processHierarchy(element))
@@ -156,7 +162,7 @@ function processPvMessages(topic: string, message: string) {
 			sourceSummary.pv.power = -message
 			break
 		case 'openWB/pv/get/daily_exported':
-			sourceSummary.pv.energy = +message / 1000
+			sourceSummary.pv.energy = +message
 			break
 		default:
 		// console.warn('Ignored PV msg: [' + topic + '] ' + message)
@@ -189,10 +195,10 @@ function processEvuMessages(topic: string, message: string) {
 			}
 			break
 		case 'daily_imported':
-			sourceSummary.evuIn.energy = +message / 1000
+			sourceSummary.evuIn.energy = +message
 			break
 		case 'daily_exported':
-			usageSummary.evuOut.energy = +message / 1000
+			usageSummary.evuOut.energy = +message
 			break
 		default:
 	}

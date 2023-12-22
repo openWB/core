@@ -6,14 +6,15 @@
 	>
 		<template #title>
 			<span :style="cpNameStyle" @click="configmode = !configmode">
-				<span class="fas fa-charging-station">&nbsp;</span>
+				<span class="fa-solid fa-charging-station">&nbsp;</span>
 				{{ props.chargepoint.name }}</span
 			>
 		</template>
 
 		<template #buttons>
 			<span
-				class="ms-2 pt-1"
+				type="button"
+				class="ms-2 ps-5 pt-1"
 				:style="modePillStyle"
 				@click="configmode = !configmode"
 			>
@@ -35,7 +36,7 @@
 
 					<!-- Ladung -->
 					<InfoItem heading="Geladen:">
-						<FormatWattH :watt-h="chargepoint.chargedSincePlugged" />
+						<FormatWattH :watt-h="chargepoint.dailyYield" />
 					</InfoItem>
 					<InfoItem heading="gel. Reichw.:">
 						{{ chargedRangeString }}
@@ -51,17 +52,20 @@
 					<InfoItem heading="Leistung:">
 						<FormatWatt :watt="props.chargepoint.power" />
 					</InfoItem>
-					<InfoItem heading="Stromstärke:">
-						{{ chargeAmpereString }}
+					<InfoItem heading="Strom:">
+						{{ realChargeAmpereString }}
 					</InfoItem>
 					<InfoItem heading="Phasen:">
 						{{ props.chargepoint.phasesInUse }}
 					</InfoItem>
+					<InfoItem heading="Sollstrom:">
+						<span class="targetCurrent">{{ chargeAmpereString }}</span>
+					</InfoItem>
 				</div>
 			</div>
 			<!-- Chargemode buttons -->
-			<div class="row m-0 p-1 mt-3 mb-0">
-				<div class="col d-flex justify-content-center">
+			<div class="row m-0 p-0 mt-3 mb-0">
+				<div class="col d-flex justify-content-center p-0 m-0">
 					<RadioBarInput
 						:id="'chargemode-' + chargepoint.name"
 						v-model="chargeMode"
@@ -107,45 +111,68 @@
 					<!-- Car info -->
 
 					<div class="m-0 p-0 d-flex justify-content-between">
-						<InfoItem heading="Ladestand:">
-							<BatterySymbol
-								v-if="chargepoint.isSocConfigured"
-								:soc="soc"
-								class="me-2"
-							/>
+						<InfoItem v-if="chargepoint.isSocConfigured" heading="Ladestand:">
+							<BatterySymbol :soc="soc" class="me-2" />
 							<i
-								v-if="chargepoint.isSocManual"
+								v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
 								class="fa-solid fa-sm fas fa-edit"
 								:style="{ color: 'var(--color-menu)' }"
+								@click="editSoc = !editSoc"
 							/>
+
 							<i
-								v-if="!chargepoint.isSocManual"
-								class="fa-solid fa-sm fa-sync"
+								v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual"
+								type="button"
+								class="fa-solid fa-sm"
+								:class="
+									chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
+								"
 								:style="{ color: 'var(--color-menu)' }"
+								@click="loadSoc"
 							/>
 						</InfoItem>
-						<!--  <InfoItem heading="Priorität:">
-            <span
-              v-if="chargepoint.hasPriority"
-              class="me-1 fa-solid fa-xs fa-star ps-1"
-            ></span>
-            {{ props.chargepoint.hasPriority ? 'Ja' : 'Nein' }}
-          </InfoItem> -->
-						<InfoItem heading="Reichweite:">
+						<InfoItem v-if="chargepoint.isSocConfigured" heading="Reichweite:">
 							{{
 								vehicles[props.chargepoint.connectedVehicle]
-									? Math.round(vehicles[1].range)
+									? Math.round(
+											vehicles[props.chargepoint.connectedVehicle].range,
+									  )
 									: 0
 							}}
 							km
 						</InfoItem>
 						<InfoItem heading="Zeitplan:">
 							<span
-								v-if="chargepoint.scheduledCharging"
+								v-if="chargepoint.timedCharging"
 								class="me-1 fa-solid fa-xs fa-clock ps-1"
 							/>
-							{{ props.chargepoint.scheduledCharging ? 'Ja' : 'Nein' }}
+							{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
 						</InfoItem>
+					</div>
+					<div
+						v-if="editSoc"
+						class="socEditor rounded mt-2 d-flex flex-column align-items-center"
+					>
+						<span class="d-flex m-1 p-0 socEditTitle"
+							>Ladestand einstellen:</span
+						>
+						<span class="d-flex justify-content-stretch align-items-center">
+							<span>
+								<RangeInput
+									id="manualSoc"
+									v-model="manualSoc"
+									:min="0"
+									:max="100"
+									:step="1"
+									unit="%"
+								/>
+							</span>
+						</span>
+						<span
+							type="button"
+							class="fa-solid d-flex fa-lg me-2 mb-3 align-self-end fa-circle-check"
+							@click="setSoc"
+						/>
 					</div>
 				</div>
 			</div>
@@ -187,13 +214,13 @@ import FormatWatt from '@/components/shared/FormatWatt.vue'
 import FormatWattH from '../shared/FormatWattH.vue'
 import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
+import { updateServer } from '@/assets/js/sendMessages'
+import RangeInput from '../shared/RangeInput.vue'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
 	fullWidth?: boolean
 }>()
-// state
-
 // computed
 const chargeMode = computed({
 	get() {
@@ -206,6 +233,13 @@ const chargeMode = computed({
 const chargeAmpereString = computed(() => {
 	return (
 		(Math.round(props.chargepoint.current * 10) / 10).toLocaleString(
+			undefined,
+		) + ' A'
+	)
+})
+const realChargeAmpereString = computed(() => {
+	return (
+		(Math.round(props.chargepoint.realCurrent * 10) / 10).toLocaleString(
 			undefined,
 		) + ' A'
 	)
@@ -268,7 +302,23 @@ const cpNameStyle = computed(() => {
 	// return { color: 'var(--color-fg)' }
 })
 const configmode = ref(false)
-
+const editSoc = ref(false)
+function loadSoc() {
+	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
+	chargePoints[props.chargepoint.id].waitingForSoc = true
+}
+function setSoc() {
+	updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
+	editSoc.value = false
+}
+const manualSoc = computed({
+	get() {
+		return props.chargepoint.soc
+	},
+	set(s: number) {
+		chargePoints[props.chargepoint.id].soc = s
+	},
+})
 // methods
 </script>
 
@@ -276,16 +326,19 @@ const configmode = ref(false)
 .modeIndicator {
 	color: white;
 }
+
 .outlinePill {
 	border: 1px solid;
 	background: var(--color-bg);
 	vertical-align: bottom;
 	font-size: var(--font-verysmall);
 }
+
 .statusIndicator {
 	border: 1px solid;
 	background: 'var(--bg) ';
 }
+
 .buttonIcon {
 	color: var(--color-menu);
 }
@@ -293,9 +346,11 @@ const configmode = ref(false)
 .fa-star {
 	color: var(--color-evu);
 }
+
 .fa-clock {
 	color: var(--color-battery);
 }
+
 .fa-sliders {
 	color: var(--color-menu);
 }
@@ -303,29 +358,44 @@ const configmode = ref(false)
 .energylabel {
 	color: var(--color-menu);
 }
+
 .vehicleName {
 	color: var(--color-fg);
 }
+
 .longline {
 	color: var(--color-menu);
 	padding: 3;
 	margin-left: 5;
 }
+
 .fa-car {
 	color: var(--color-menu);
 }
+
 .fa-ellipsis-vertical {
 	color: var(--color-menu);
 }
+
 .fa-circle-check {
 	color: var(--color-menu);
 }
+
 .heading {
 	color: var(--color-menu);
 	font-size: var(--font-small);
 }
+
 .content {
 	font-size: var(--font-normal);
 	font-weight: bold;
+}
+
+.socEditor {
+	border: 1px solid var(--color-menu);
+}
+
+.targetCurrent {
+	color: var(--color-menu);
 }
 </style>

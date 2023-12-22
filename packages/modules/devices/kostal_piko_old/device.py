@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import re
 from typing import Iterable, Optional, List
 
 from helpermodules.cli import run_using_positional_cli_args
@@ -18,7 +19,7 @@ def create_device(device_config: KostalPikoOld):
         return KostalPikoOldInverter(component_config)
 
     def update_components(components: Iterable[KostalPikoOldInverter]):
-        response = req.get_http_session().get(device_config.configuration.ip_address, verify=False, auth=(
+        response = req.get_http_session().get(device_config.configuration.url, verify=False, auth=(
             device_config.configuration.user, device_config.configuration.password), timeout=5).text
         for component in components:
             component.update(response)
@@ -38,8 +39,12 @@ COMPONENT_TYPE_TO_MODULE = {
 
 
 def read_legacy(component_type: str, ip_address: str, user: str, password: str, num: Optional[int]) -> None:
+    url = ip_address
+    # add protocol "http://" if not already specified
+    if not re.search("^https?://", ip_address, re.IGNORECASE):
+        url = f"http://{ip_address}"
     device_config = KostalPikoOld(
-        configuration=KostalPikoOldConfiguration(ip_address=ip_address, user=user, password=password))
+        configuration=KostalPikoOldConfiguration(url=url, user=user, password=password))
     dev = create_device(device_config)
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
@@ -51,7 +56,7 @@ def read_legacy(component_type: str, ip_address: str, user: str, password: str, 
     component_config.id = num
     dev.add_component(component_config)
 
-    log.debug('KostalPikoOld IP-Adresse: ' + ip_address)
+    log.debug('KostalPikoOld URL: ' + url)
     log.debug('KostalPikoOld user: ' + user)
     log.debug('KostalPikoOld Passwort: ' + password)
 

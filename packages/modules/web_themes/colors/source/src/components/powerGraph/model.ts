@@ -1,7 +1,21 @@
-import { reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import { extent, scaleBand } from 'd3'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
-import { globalConfig, setInitializeEnergyGraph } from '@/assets/js/themeConfig'
+import { globalConfig } from '@/assets/js/themeConfig'
+import {
+	energyMeterNeedsRedraw,
+	historicSummary,
+	usageSummary,
+} from '@/assets/js/model'
+import { shDevices } from '../smartHome/model'
+import { chargePoints } from '../chargePointList/model'
+
+export const width = 500
+export const height = 500
+export const margin = { top: 10, right: 20, bottom: 10, left: 25 }
+
+export const consumerCategories = ['charging', 'house', 'batIn', 'devices']
 
 export interface GraphDataItem {
 	[key: string]: number
@@ -13,8 +27,28 @@ export interface RawDayGraphDataItem {
 	timestamp: number
 	date: string
 	counter: object
-	pv: object
-	bat: object
+	pv: {
+		all: { power_exported: number; energy_exported: number; exported: number }
+	}
+	hc: {
+		all: {
+			power_imported: number
+			energy_imported: number
+			energy_exported: number
+			imported: number
+		}
+	}
+	bat: {
+		all: {
+			power_imported: number
+			power_exported: number
+			energy_imported: number
+			energy_exported: number
+			imported: number
+			exported: number
+			soc: number
+		}
+	}
 	cp: object
 	ev: object
 	sh: object
@@ -22,7 +56,7 @@ export interface RawDayGraphDataItem {
 
 export class GraphData {
 	data: GraphDataItem[] = []
-	private _graphMode = 'today'
+	private _graphMode = ''
 
 	get graphMode() {
 		return this._graphMode
@@ -33,52 +67,54 @@ export class GraphData {
 }
 
 export const graphData = reactive(new GraphData())
-export let initializeSourceGraph = true
-export let initializeUsageGraph = true
+export let animateSourceGraph = true
+export let animateUsageGraph = true
 export function sourceGraphIsInitialized() {
-	initializeSourceGraph = false
+	animateSourceGraph = false
 }
 export function sourceGraphIsNotInitialized() {
-	initializeSourceGraph = true
+	animateSourceGraph = true
 }
 
 export function usageGraphIsInitialized() {
-	initializeUsageGraph = false
+	animateUsageGraph = false
 }
 export function usageGraphIsNotInitialized() {
-	initializeUsageGraph = true
+	animateUsageGraph = true
 }
 export function setInitializeUsageGraph(val: boolean) {
-	initializeUsageGraph = val
-}
-export function setInitializeSourceGraph(val: boolean) {
-	initializeSourceGraph = val
+	animateUsageGraph = val
 }
 export function setGraphData(d: GraphDataItem[]) {
 	graphData.data = d
 	// graphData.graphMode = graphData.graphMode
 }
-export const liveGraph = {
+export const liveGraph = reactive({
 	refreshTopicPrefix: 'openWB/graph/' + 'alllivevaluesJson',
 	updateTopic: 'openWB/graph/lastlivevaluesJson',
+	configTopic: 'openWB/graph/config/#',
 	initialized: false,
 	initCounter: 0,
 	graphRefreshCounter: 0,
 	rawDataPacks: [] as RawGraphDataItem[][],
+	duration: 0,
 
 	activate() {
 		graphData.data = []
 		this.unsubscribeUpdates()
 		this.subscribeRefresh()
+		mqttSubscribe(this.configTopic)
 		this.initialized = false
 		this.initCounter = 0
 		this.graphRefreshCounter = 0
-		this.subscribeRefresh()
 		this.rawDataPacks = []
+		resetPvValues()
+		energyMeterNeedsRedraw.value = true
 	},
 	deactivate() {
 		this.unsubscribeRefresh()
 		this.unsubscribeUpdates()
+		mqttUnsubscribe(this.configTopic)
 	},
 	subscribeRefresh() {
 		for (let segment = 1; segment < 17; segment++) {
@@ -96,21 +132,26 @@ export const liveGraph = {
 	unsubscribeUpdates() {
 		mqttUnsubscribe(this.updateTopic)
 	},
-}
+})
 export const dayGraph = reactive({
 	topic: 'openWB/log/daily/#',
 	date: new Date(),
 	activate() {
-		const dateString =
-			this.date.getFullYear().toString() +
-			(this.date.getMonth() + 1).toString().padStart(2, '0') +
-			this.date.getDate().toString().padStart(2, '0')
-		graphData.data = []
-		mqttSubscribe(this.topic)
-		sendCommand({
-			command: 'getDailyLog',
-			data: { day: dateString },
-		})
+		if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
+			if (graphData.graphMode == 'today') {
+				this.date = new Date()
+			}
+			const dateString =
+				this.date.getFullYear().toString() +
+				(this.date.getMonth() + 1).toString().padStart(2, '0') +
+				this.date.getDate().toString().padStart(2, '0')
+			graphData.data = []
+			mqttSubscribe(this.topic)
+			sendCommand({
+				command: 'getDailyLog',
+				data: { day: dateString },
+			})
+		}
 	},
 	deactivate() {
 		mqttUnsubscribe(this.topic)
@@ -173,7 +214,6 @@ export const yearGraph = reactive({
 	year: new Date().getFullYear(),
 	activate() {
 		const dateString = this.year.toString()
-
 		graphData.data = []
 		mqttSubscribe(this.topic)
 		sendCommand({
@@ -185,20 +225,12 @@ export const yearGraph = reactive({
 		mqttUnsubscribe(this.topic)
 	},
 	back() {
-		this.month -= 1
-		if (this.month < 1) {
-			this.month = 12
-			this.year -= 1
-		}
+		this.year -= 1
 		this.activate()
 	},
 	forward() {
-		if (this.month - 1 < new Date().getMonth()) {
-			this.month = this.month + 1
-			if (this.month > 12) {
-				this.month = 1
-				this.year += 1
-			}
+		if (this.year < new Date().getFullYear()) {
+			this.year = this.year + 1
 			this.activate()
 		}
 	},
@@ -206,12 +238,18 @@ export const yearGraph = reactive({
 		return new Date(this.year, this.month)
 	},
 })
-export function initGraph() {
+export function initGraph(reloadOnly = false) {
 	if (graphData.graphMode == '') {
 		setGraphMode(globalConfig.graphPreference)
+	} else if (graphData.graphMode == 'live') {
+		globalConfig.graphPreference = 'live'
+	} else {
+		globalConfig.graphPreference = 'today'
 	}
-	initializeSourceGraph = true
-	initializeUsageGraph = true
+	if (!reloadOnly) {
+		animateSourceGraph = true
+		animateUsageGraph = true
+	}
 	switch (graphData.graphMode) {
 		case 'live':
 			dayGraph.deactivate()
@@ -244,20 +282,134 @@ export function initGraph() {
 			yearGraph.activate()
 			break
 	}
-	setInitializeEnergyGraph(true)
 }
 export function setGraphMode(mode: string) {
 	graphData.graphMode = mode
 }
 export function calculateAutarchy(cat: string, values: GraphDataItem) {
-	values[cat + 'Pv'] =
-		(values[cat] * (values.solarPower - values.gridPush)) /
-		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
-	values[cat + 'Bat'] =
-		(values[cat] * values.batOut) /
-		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
+	if (values[cat] > 0) {
+		historicSummary.items[cat].energyPv +=
+			((1000 / 12) * (values[cat] * (values.pv - values.evuOut))) /
+			(values.pv - values.evuOut + values.evuIn + values.batOut)
+		historicSummary.items[cat].energyBat +=
+			((1000 / 12) * (values[cat] * values.batOut)) /
+			(values.pv - values.evuOut + values.evuIn + values.batOut)
+	}
+}
+const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
+export const noData = ref(false)
+export function updateEnergyValues(
+	totals: RawDayGraphDataItem,
+	gridCounters: string[],
+) {
+	if (Object.entries(totals).length > 0) {
+		noData.value = false
+		Object.entries(totals.counter).forEach(([id, values]) => {
+			if (gridCounters.length == 0 || gridCounters.includes(id)) {
+				historicSummary.items.evuIn.energy += values.imported
+				historicSummary.items.evuOut.energy += values.exported
+			}
+		})
+		historicSummary.items.pv.energy = totals.pv.all.exported
+		if (totals.bat.all) {
+			historicSummary.items.batIn.energy = totals.bat.all.imported
+			historicSummary.items.batOut.energy = totals.bat.all.exported
+		}
+		Object.entries(totals.cp).forEach(([id, values]) => {
+			if (id == 'all') {
+				historicSummary.setEnergy('charging', values.imported)
+			} else {
+				historicSummary.setEnergy(id, values.imported)
+			}
+		})
+		historicSummary.setEnergy('devices', 0)
+		Object.entries(totals.sh).forEach(([id, values]) => {
+			historicSummary.setEnergy(id, values.imported)
+			const idNumber = id.substring(2)
+			if (!shDevices[+idNumber].countAsHouse) {
+				historicSummary.items.devices.energy += values.imported
+			}
+		})
+		if (totals.hc && totals.hc.all) {
+			historicSummary.setEnergy('house', totals.hc.all.imported)
+		} else {
+			historicSummary.calculateHouseEnergy()
+		}
+		historicSummary.keys().map((cat) => {
+			if (!nonPvCategories.includes(cat)) {
+				historicSummary.setPvPercentage(
+					cat,
+					Math.round(
+						((historicSummary.items[cat].energyPv +
+							historicSummary.items[cat].energyBat) /
+							historicSummary.items[cat].energy) *
+							100,
+					),
+				)
+				if (consumerCategories.includes(cat)) {
+					usageSummary[cat].energy = historicSummary.items[cat].energy
+					usageSummary[cat].energyPv = historicSummary.items[cat].energyPv
+					usageSummary[cat].energyBat = historicSummary.items[cat].energyBat
+					usageSummary[cat].pvPercentage =
+						historicSummary.items[cat].pvPercentage
+				}
+			}
+		})
+		if (graphData.graphMode == 'today') {
+			Object.values(chargePoints).map((cp) => {
+				const hcp = historicSummary.items['cp' + cp.id]
+				if (hcp) {
+					cp.energyPv = hcp.energyPv
+					cp.energyBat = hcp.energyBat
+					cp.pvPercentage = hcp.pvPercentage
+				}
+			})
+			Object.values(shDevices).map((device) => {
+				const hDevice = historicSummary.items['sh' + device.id]
+				if (hDevice) {
+					device.energyPv = hDevice.energyPv
+					device.energyBat = hDevice.energyBat
+					device.pvPercentage = hDevice.pvPercentage
+				}
+			})
+		}
+	} else {
+		noData.value = true
+	}
+	energyMeterNeedsRedraw.value = true
+}
+function resetPvValues() {
+	historicSummary.keys().map((cat) => {
+		if (consumerCategories.includes(cat)) {
+			usageSummary[cat].energy = historicSummary.items[cat].energy
+			usageSummary[cat].energyPv = 0
+			usageSummary[cat].energyBat = 0
+			usageSummary[cat].pvPercentage = 0
+		}
+	})
+	Object.values(chargePoints).map((cp) => {
+		cp.energyPv = 0
+		cp.energyBat = 0
+		cp.pvPercentage = 0
+	})
+	Object.values(shDevices).map((device) => {
+		device.energyPv = 0
+		device.energyBat = 0
+		device.pvPercentage = 0
+	})
 }
 
+export const xScaleMonth = computed(() => {
+	const e = extent(graphData.data, (d) => d.date)
+	if (e[1]) {
+		return scaleBand<number>()
+			.domain(Array.from({ length: e[1] }, (v, k) => k + 1))
+			.paddingInner(0.4)
+			.range([0, width - margin.left - 2])
+	} else {
+		return scaleBand<number>().range([0, 0])
+	}
+})
 export function shiftLeft() {
 	switch (graphData.graphMode) {
 		case 'live':
@@ -277,7 +429,9 @@ export function shiftLeft() {
 			break
 		case 'month':
 			monthGraph.back()
-
+			break
+		case 'year':
+			yearGraph.back()
 			break
 		default:
 			break
@@ -306,6 +460,9 @@ export function shiftRight() {
 			break
 		case 'month':
 			monthGraph.forward()
+			break
+		case 'year':
+			yearGraph.forward()
 			break
 		default:
 			break
@@ -336,7 +493,7 @@ export function shiftDown() {
 			initGraph()
 			break
 		case 'month':
-			graphData.graphMode = 'day'
+			graphData.graphMode = 'today'
 			initGraph()
 			break
 		case 'today':

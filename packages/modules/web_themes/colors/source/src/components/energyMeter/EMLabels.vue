@@ -18,10 +18,10 @@
 
 <script setup lang="ts">
 import * as d3 from 'd3'
-import type { PowerItem, MarginType } from '@/assets/js/types'
 import { graphData } from '../powerGraph/model'
 import { historicSummary, sourceSummary, usageSummary } from '@/assets/js/model'
 import EmLabel from './EmLabel.vue'
+import type { MarginType, PowerItem } from '@/assets/js/types'
 const props = defineProps<{
 	plotdata: PowerItem[]
 	xScale: d3.ScaleBand<string>
@@ -36,11 +36,11 @@ function autPct(item: PowerItem) {
 		const src =
 			graphData.graphMode == 'live' || graphData.graphMode == 'day'
 				? sourceSummary
-				: historicSummary
+				: historicSummary.items
 		const usg =
 			graphData.graphMode == 'live' || graphData.graphMode == 'day'
 				? usageSummary
-				: historicSummary
+				: historicSummary.items
 		const exportedEnergy = usg.evuOut.energy
 		const generatedEnergy = src.pv.energy
 		return Math.round(
@@ -50,11 +50,11 @@ function autPct(item: PowerItem) {
 		const src =
 			graphData.graphMode == 'live' || graphData.graphMode == 'day'
 				? sourceSummary
-				: historicSummary
+				: historicSummary.items
 		const usg =
 			graphData.graphMode == 'live' || graphData.graphMode == 'day'
 				? usageSummary
-				: historicSummary
+				: historicSummary.items
 		const exportedEnergy = usg.evuOut.energy
 		const importedEnergy = src.evuIn.energy
 		const generatedEnergy = src.pv.energy

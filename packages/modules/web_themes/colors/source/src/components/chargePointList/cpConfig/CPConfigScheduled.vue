@@ -3,73 +3,47 @@
 	<table class="table table-borderless">
 		<thead>
 			<tr>
-				<th class="tableheader">Ziel-SoC</th>
+				<th class="tableheader">Ziel</th>
+				<th class="tableheader">Limit</th>
 				<th class="tableheader">Zeit</th>
 				<th class="tableheader">Wiederholung</th>
 				<th class="tableheader" />
 			</tr>
 		</thead>
 		<tbody>
-			<tr v-for="key in Object.keys(plans)" :key="key">
-				<td class="tablecell">{{ plans[key].soc }} %</td>
+			<tr v-for="(plan, i) in plans" :key="i" :style="cellStyle(i)">
+				<td class="tablecell">{{ plan.limit.soc_scheduled }}%</td>
+				<td class="tablecell">{{ plan.limit.soc_limit }}%</td>
 				<td class="tablecell">
-					{{ timeString(key) }}
+					{{ timeString(i) }}
 				</td>
 				<td class="tablecell">
-					{{ freqNames[plans[key].frequency.selected] }}
+					{{ freqNames[plan.frequency.selected] }}
 				</td>
 				<td class="tablecell left">
-					<span
-						class="editButton"
-						data-bs-toggle="modal"
-						:data-bs-target="'#' + modalId"
-						@click="setPlanToEdit(key)"
+					<a
+						:href="
+							'../../settings/#/VehicleConfiguration/charge_template/' +
+							props.chargeTemplateId
+						"
 					>
-						<i class="fas fa-lg fa-pen ms-2" />
-					</span>
-				</td>
-			</tr>
-			<tr>
-				<td class="emptycell" />
-				<td class="emptycell" />
-				<td class="emptycell" />
-				<td class="right">
-					<span
-						class="addButton"
-						:data-bs-target="'#' + modalId"
-						@click="addPlan"
-					>
-						<i class="fa-solid fa-xl fa-square-plus ms-2" />
-					</span>
+						<span
+							:class="plan.active ? 'fa-toggle-on' : 'fa-toggle-off'"
+							:style="switchStyle(i)"
+							class="fa"
+							type="button"
+						>
+						</span
+					></a>
 				</td>
 			</tr>
 		</tbody>
 	</table>
-
-	<ModalComponent
-		v-for="planId in plansToEdit"
-		:key="planId"
-		:modal-id="modalId"
-	>
-		<template #title> Zielladen - Parameter </template>
-		<CPEditSchedule
-			:charge-template-id="chargeTemplateId"
-			:plan-id="planId"
-			@save-plan="savePlan"
-			@delete-plan="deletePlan"
-			@abort="abortEdit"
-		/>
-	</ModalComponent>
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
-import { Modal } from 'bootstrap'
-import type { ChargeTemplate, ChargeSchedule } from '../model'
-import { chargeTemplates, createChargeSchedule } from '../model'
-import ModalComponent from '@/components/shared/ModalComponent.vue'
-import CPEditSchedule from './CPEditSchedule.vue'
-import { updateChargeTemplate } from '@/assets/js/sendMessages'
+import { computed } from 'vue'
+import { scheduledChargingPlans, type ChargeSchedule } from '../model'
 
 const freqNames: { [key: string]: string } = {
 	daily: 'Täglich',
@@ -77,98 +51,52 @@ const freqNames: { [key: string]: string } = {
 	weekly: 'Wöchentlich',
 }
 const props = defineProps<{
-	chargeTemplate: ChargeTemplate
 	chargeTemplateId: number
 }>()
 
-const modalId = 'schedulesettingmodal' + props.chargeTemplateId
-// const planIdToEdit = (Object.keys(props.chargeTemplate.time_charging.plans).length >0) ? ref(Object.keys(props.chargeTemplate.time_charging.plans)[0]) : ref('0')
-const plansToEdit: string[] = reactive(['0'])
 //computed
 const plans = computed(() => {
-	let result = props.chargeTemplate.chargemode.scheduled_charging.plans
-	return result ? result : {}
+	let result: ChargeSchedule[] = []
+	if (scheduledChargingPlans[props.chargeTemplateId]) {
+		result = Object.values(scheduledChargingPlans[props.chargeTemplateId])
+	}
+	return result
 })
 //methods
-function timeString(key: string) {
-	return plans.value[key].timed ? plans.value[key].time : '-'
+function timeString(key: number) {
+	return plans.value[key].time
 }
-function setPlanToEdit(key: string) {
-	plansToEdit[0] = key
+function switchStyle(key: number) {
+	const style = plans.value[key].active
+		? 'var(--color-switchGreen)'
+		: 'var(--color-switchRed)'
+	return { color: style }
 }
-function savePlansToServer() {
-	updateChargeTemplate(props.chargeTemplateId)
-}
-function savePlan() {
-	savePlansToServer()
-}
-function abortEdit() {
-	console.log('abort edit')
-}
-function deletePlan(id: string) {
-	delete chargeTemplates[props.chargeTemplateId].chargemode.scheduled_charging
-		.plans[id]
-	savePlansToServer()
-}
-function addPlan() {
-	let p: ChargeSchedule = createChargeSchedule()
-	if (!props.chargeTemplate.chargemode.scheduled_charging.plans) {
-		chargeTemplates[
-			props.chargeTemplateId
-		].chargemode.scheduled_charging.plans = {}
-	}
-	let max = 0
-	Object.keys(plans.value).forEach((k) => {
-		if (+k > max) {
-			max = +k
-		}
-	})
-	max = max + 1
-	chargeTemplates[props.chargeTemplateId].chargemode.scheduled_charging.plans[
-		max.toString()
-	] = p
-	setPlanToEdit(max.toString())
-	console.log(plans.value)
-	showModal()
-}
-function showModal() {
-	let element = document.getElementById(modalId)
-	if (element) {
-		let modal = new Modal(element)
-		modal.show()
-	} else {
-		console.log('NO MODAL ELEMENT')
-	}
+function cellStyle(key: number) {
+	const style = plans.value[key].active ? 'bold' : 'regular'
+	return { 'font-weight': style }
 }
 </script>
 
 <style scoped>
 .tablecell {
 	color: var(--color-fg);
+	background-color: var(--color-bg);
 	text-align: center;
+	font-size: var(--font-medium);
 }
-.emptycell {
-	border-left: 0;
-	border-right: 0;
-	border-bottom: 0;
-}
+
 .tableheader {
 	color: var(--color-menu);
+	background-color: var(--color-bg);
 	text-align: center;
+	font-style: normal;
 }
 .heading {
 	color: var(--color-battery);
 }
-.editButton {
-	color: var(--color-menu);
-}
-.addButton {
-	color: var(--color-menu);
-}
+
 .left {
 	text-align: left;
-}
-.right {
-	text-align: right;
 }
 </style>

@@ -1,11 +1,6 @@
 <template>
 	<WBWidget :full-width="true">
 		<template #title> Aktuelle Leistung </template>
-		<!-- <template v-slot:buttons>
-      <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#themeconfig">
-      <span class="fa-solid fa-bars px-0"></span>
-    </button>
-      </template> -->
 		<figure id="powermeter" class="p-0 m-0">
 			<svg :viewBox="'0 0 ' + width + ' ' + height">
 				<g :transform="'translate(' + width / 2 + ',' + height / 2 + ')'">
@@ -28,7 +23,7 @@
 					<!-- Show the values for the different categories -->
 					<PMLabel
 						:x="0"
-						:y="-height / 5"
+						:y="(-height / 10) * 2"
 						:data="sourceSummary.pv"
 						:props="masterData.pv"
 						:anchor="'middle'"
@@ -36,18 +31,18 @@
 					/>
 					<PMLabel
 						:x="0"
-						:y="((-height / 2) * 3) / 5"
+						:y="(-height / 10) * 3"
 						:data="sourceSummary.evuIn"
 						:props="masterData.evuIn"
 						:anchor="'middle'"
 						:config="globalConfig"
 					/>
 					<PMLabel
-						:x="-height / 2 / 5"
-						:y="height / 2 - margin + 15"
+						:x="0"
+						:y="-height / 10"
 						:data="sourceSummary.batOut"
 						:props="masterData.batOut"
-						:anchor="'end'"
+						:anchor="'middle'"
 						:config="globalConfig"
 					/>
 					<!-- iterate over all usage items-->
@@ -65,22 +60,34 @@
 
 					<!-- Show the SoC for the first two cars -->
 					<PMLabel
-						v-if="chargepoints.length > 0 && chargepoints[0].isSocConfigured"
+						v-if="
+							chargepoints.length > 0 &&
+							vehicles[chargepoints[0].connectedVehicle]
+						"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
-							trimName(chargepoints[0].vehicleName) + ': ' + soc(0) + '%'
+							trimName(vehicles[chargepoints[0].connectedVehicle].name) +
+							': ' +
+							soc(0) +
+							'%'
 						"
 						:labelcolor="chargepoints[0].color"
 						:anchor="'start'"
 						:config="globalConfig"
 					/>
 					<PMLabel
-						v-if="chargepoints.length > 1 && chargepoints[1].isSocConfigured"
+						v-if="
+							chargepoints.length > 1 &&
+							vehicles[chargepoints[1].connectedVehicle]
+						"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
-							trimName(chargepoints[1].vehicleName) + ': ' + soc(1) + '%'
+							trimName(vehicles[chargepoints[1].connectedVehicle].name) +
+							': ' +
+							soc(1) +
+							'%'
 						"
 						:labelcolor="chargepoints[1].color"
 						:anchor="'end'"
@@ -120,9 +127,9 @@
 			</svg>
 		</figure>
 		<!-- <ModalComponent modal-id="themeconfig">
-      <template v-slot:title>Look & Feel</template>
-    <ThemeSettings @resetArcs="resetArcs"></ThemeSettings>
-    </ModalComponent> -->
+			<template v-slot:title>Look & Feel</template>
+			<ThemeSettings @resetArcs="resetArcs"></ThemeSettings>
+		</ModalComponent> -->
 	</WBWidget>
 </template>
 
@@ -131,12 +138,12 @@ import { computed } from 'vue'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
 	globalData,
-	shDevices,
 	sourceSummary,
 	usageSummary,
 	masterData,
 } from '@/assets/js/model'
-import { chargePoints } from '@/components/chargePointList/model'
+import { shDevices } from '../smartHome/model'
+import { chargePoints, vehicles } from '@/components/chargePointList/model'
 import PMSourceArc from './PMSourceArc.vue'
 import PMUsageArc from './PMUsageArc.vue'
 import PMLabel from './PMLabel.vue'

@@ -173,12 +173,25 @@ if ($configuration == "" || $configuration->active != true) {
 
 	// Keine Daten außer Uhrzeit an den Server senden, solange die Cloud nicht implementiert ist.
 	// always allow triggering remote support
-	fwrite($configFile, <<<EOS
+	fwrite(
+		$configFile,
+		<<<EOS
 		topic openWB/system/time out 2 "" {$configuration->remote->prefix}
 		topic openWB-remote/support both 2 "" {$configuration->remote->prefix}
 		
 		EOS
 	);
+
+	// allow user access for openWB cloud
+	if ($configuration->remote->is_openwb_cloud) {
+		fwrite(
+			$configFile,
+			<<<EOS
+			topic openWB-remote/cloud both 2 "" {$configuration->remote->prefix}
+			
+			EOS
+		);
+	}
 
 	// allow partner access
 	if ($configuration->access->partner) {
@@ -190,48 +203,51 @@ if ($configuration == "" || $configuration->active != true) {
 			EOS
 		);
 	}
-	if ($configuration->data_transfer->status) {
-		fwrite(
-			$configFile,
-			<<<EOS
-			# export general data to remote
-			topic openWB/general/# out 2 "" {$configuration->remote->prefix}
 
-			# export system data to remote
-			topic openWB/system/# out 2 "" {$configuration->remote->prefix}
+	if (!$configuration->remote->is_openwb_cloud) {
+		if ($configuration->data_transfer->status) {
+			fwrite(
+				$configFile,
+				<<<EOS
+				# export general data to remote
+				topic openWB/general/# out 2 "" {$configuration->remote->prefix}
 
-			# export all counter data to remote
-			topic openWB/counter/# out 2 "" {$configuration->remote->prefix}
+				# export system data to remote
+				topic openWB/system/# out 2 "" {$configuration->remote->prefix}
 
-			# export all charge point data to remote
-			topic openWB/chargepoint/# out 2 "" {$configuration->remote->prefix}
+				# export all counter data to remote
+				topic openWB/counter/# out 2 "" {$configuration->remote->prefix}
 
-			# export all battery data to remote
-			topic openWB/bat/# out 2 "" {$configuration->remote->prefix}
+				# export all charge point data to remote
+				topic openWB/chargepoint/# out 2 "" {$configuration->remote->prefix}
 
-			# export all pv data to remote
-			topic openWB/pv/# out 2 "" {$configuration->remote->prefix}
+				# export all battery data to remote
+				topic openWB/bat/# out 2 "" {$configuration->remote->prefix}
 
-			# export all vehicle data to remote
-			topic openWB/vehicle/# out 2 "" {$configuration->remote->prefix}
+				# export all pv data to remote
+				topic openWB/pv/# out 2 "" {$configuration->remote->prefix}
 
-			# export all optional data to remote
-			topic openWB/optional/# out 2 "" {$configuration->remote->prefix}
+				# export all vehicle data to remote
+				topic openWB/vehicle/# out 2 "" {$configuration->remote->prefix}
 
-			EOS
-		);
-	}
+				# export all optional data to remote
+				topic openWB/optional/# out 2 "" {$configuration->remote->prefix}
 
-	if ($configuration->data_transfer->graph) {
-		fwrite(
-			$configFile,
-			<<<EOS
+				EOS
+			);
+		}
 
-			# export graph data to remote
-			topic openWB/graph/# out 2 "" {$configuration->remote->prefix}
+		if ($configuration->data_transfer->graph) {
+			fwrite(
+				$configFile,
+				<<<EOS
 
-			EOS
-		);
+				# export graph data to remote
+				topic openWB/graph/# out 2 "" {$configuration->remote->prefix}
+
+				EOS
+			);
+		}
 	}
 
 	fwrite(
@@ -246,16 +262,18 @@ if ($configuration == "" || $configuration->active != true) {
 	EOS
 	);
 
-	if ($configuration->data_transfer->configuration) {
-		fwrite(
-			$configFile,
-			<<<EOS
+	if (!$configuration->remote->is_openwb_cloud) {
+		if ($configuration->data_transfer->configuration) {
+			fwrite(
+				$configFile,
+				<<<EOS
 
-			# allow configuration
-			topic openWB/set/# both 2 "" {$configuration->remote->prefix}
+				# allow configuration
+				topic openWB/set/# both 2 "" {$configuration->remote->prefix}
 
-			EOS
-		);
+				EOS
+			);
+		}
 	}
 
 	fwrite(
@@ -329,7 +347,7 @@ if ($configuration == "" || $configuration->active != true) {
 }
 
 if (!$debug) {
-	echo "Bitte die openWB neu starten, damit die Änderungen übernommen werden.\n";
+	echo "Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">neu starten</a>, damit die Änderungen übernommen werden.";
 	// restart or reload of broker in normal operation has several side effects and should be avoided!
 	// exec("sudo service mosquitto restart");
 }

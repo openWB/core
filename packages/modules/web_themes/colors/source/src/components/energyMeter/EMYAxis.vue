@@ -4,24 +4,24 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import * as d3 from 'd3'
+import type { AxisScale, AxisContainerElement } from 'd3'
+import { axisLeft, select } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 const props = defineProps<{
-	yScale: d3.AxisScale<number>
+	yScale: AxisScale<number>
 	width: number
 	fontsize: number
 }>()
 
 // computed
 const yAxisGenerator = computed(() => {
-	return d3
-		.axisLeft<number>(props.yScale)
-		.tickFormat((d) => (d > 0 ? d.toString() : ''))
+	return axisLeft<number>(props.yScale)
+		.tickFormat((d) => (d > 0 ? (d / 1000).toString() : ''))
 		.ticks(6)
 		.tickSizeInner(-props.width)
 })
 const drawYAxis = computed(() => {
-	const yAxis = d3.select<d3.AxisContainerElement, number>('g#emYAxis')
+	const yAxis = select<AxisContainerElement, number>('g#emYAxis')
 	yAxis.attr('class', 'axis').call(yAxisGenerator.value)
 
 	yAxis

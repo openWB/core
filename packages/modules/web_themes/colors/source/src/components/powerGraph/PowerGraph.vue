@@ -4,15 +4,25 @@
 			{{ heading }}
 		</template>
 		<template #buttons>
-			<PgSelector
-				widgetid="graphsettings"
-				:show-left-button="true"
-				:show-right-button="true"
-				@shift-left="shiftLeft"
-				@shift-right="shiftRight"
-				@shift-up="shiftUp"
-				@shift-down="shiftDown"
-			/>
+			<div class="d-flex justify-content-end">
+				<PgSelector
+					widgetid="graphsettings"
+					:show-left-button="true"
+					:show-right-button="true"
+					@shift-left="shiftLeft"
+					@shift-right="shiftRight"
+					@shift-up="shiftUp"
+					@shift-down="shiftDown"
+				/>
+				<span
+					v-if="widescreen"
+					type="button"
+					class="ms-1 p-0 pt-1"
+					@click="zoomGraph"
+				>
+					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
+				</span>
+			</div>
 		</template>
 
 		<figure id="powergraph" class="p-0 m-0" @click="changeStackOrder">
@@ -40,7 +50,7 @@
 						v-if="
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today') &&
-							Object.values(vehicles).length > 0
+							Object.values(chargePoints).length > 0
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -51,12 +61,23 @@
 						v-if="
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today') &&
-							Object.values(vehicles).length > 1
+							Object.values(chargePoints).length > 1
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
 						:margin="margin"
 						:order="1"
+					/>
+					<PgSoc
+						v-if="
+							(graphData.graphMode == 'day' ||
+								graphData.graphMode == 'today') &&
+							globalData.isBatteryConfigured
+						"
+						:width="width - margin.left - 2 * margin.right"
+						:height="(height - margin.top - margin.bottom) / 2"
+						:margin="margin"
+						:order="2"
 					/>
 					<PgSocAxis
 						v-if="
@@ -89,6 +110,7 @@ import WBWidget from '../shared/WBWidget.vue'
 import PGSourceGraph from './PGSourceGraph.vue'
 import PGUsageGraph from './PGUsageGraph.vue'
 import PGXAxis from './PGXAxis.vue'
+import { globalData } from '@/assets/js/model'
 import {
 	graphData,
 	setInitializeUsageGraph,
@@ -96,17 +118,17 @@ import {
 	shiftRight,
 	shiftUp,
 	shiftDown,
+	width,
+	height,
+	margin,
 } from './model'
-import { globalConfig } from '@/assets/js/themeConfig'
+import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
-import { vehicles } from '../chargePointList/model'
+import { chargePoints } from '../chargePointList/model'
 import PgSelector from './PgSelector.vue'
 
 // state
-const width = 500
-const height = 500
-const margin = { top: 10, right: 20, bottom: 10, left: 25 }
 const stackOrderMax = 2
 const heading = 'Leistung / Ladestand '
 
@@ -118,10 +140,13 @@ function changeStackOrder() {
 	globalConfig.usageStackOrder = newOrder
 	setInitializeUsageGraph(true)
 }
+function zoomGraph() {
+	globalConfig.zoomGraph = !globalConfig.zoomGraph
+}
 </script>
 
 <style scoped>
-.fa-ellipsis-vertical {
+.fa-magnifying-glass {
 	color: var(--color-menu);
 }
 

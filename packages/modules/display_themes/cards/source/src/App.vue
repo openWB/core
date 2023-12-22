@@ -31,28 +31,38 @@ export default {
         reconnectPeriod: 4000,
       },
       mqttTopicsToSubscribe: [
-        "openWB/optional/int_display/theme",
-        "openWB/counter/get/hierarchy",
-        "openWB/counter/set/home_consumption",
-        "openWB/counter/+/get/power",
         "openWB/bat/config/configured",
         "openWB/bat/get/power",
         "openWB/bat/get/soc",
-        "openWB/chargepoint/get/power",
-        "openWB/pv/config/configured",
-        "openWB/pv/get/power",
-        "openWB/chargepoint/+/get/power",
-        "openWB/chargepoint/+/get/plug_state",
+        "openWB/chargepoint/+/config",
         "openWB/chargepoint/+/get/charge_state",
+        "openWB/chargepoint/+/get/connected_vehicle/+",
         "openWB/chargepoint/+/get/phases_in_use",
+        "openWB/chargepoint/+/get/plug_state",
+        "openWB/chargepoint/+/get/power",
+        "openWB/chargepoint/+/get/rfid",
+        "openWB/chargepoint/+/set/change_ev_permitted",
         "openWB/chargepoint/+/set/current",
         "openWB/chargepoint/+/set/manual_lock",
-        "openWB/chargepoint/+/set/change_ev_permitted",
-        "openWB/chargepoint/+/config",
-        "openWB/chargepoint/+/get/connected_vehicle/+",
+        "openWB/chargepoint/+/set/log",
+        "openWB/chargepoint/+/set/rfid",
+        "openWB/chargepoint/get/power",
+        "openWB/counter/+/get/power",
+        "openWB/counter/get/hierarchy",
+        "openWB/counter/set/home_consumption",
+        "openWB/optional/int_display/theme",
+        "openWB/optional/int_display/standby",
+        "openWB/optional/rfid/active",
+        "openWB/pv/config/configured",
+        "openWB/pv/get/power",
+        "openWB/system/current_branch",
+        "openWB/system/current_commit",
+        "openWB/system/ip_address",
+        "openWB/system/time",
+        "openWB/system/version",
+        "openWB/vehicle/+/get/fault_state",
         "openWB/vehicle/+/name",
         "openWB/vehicle/+/soc_module/config",
-        "openWB/vehicle/+/get/fault_state",
         "openWB/vehicle/template/charge_template/#",
       ],
       mqttStore: useMqttStore(),
@@ -82,7 +92,7 @@ export default {
       this.client.on("connect", () => {
         console.debug(
           "Connection succeeded! ClientId: ",
-          this.client.options.clientId
+          this.client.options.clientId,
         );
       });
       this.client.on("error", (error) => {
@@ -104,6 +114,10 @@ export default {
         }
       });
     },
+    /**
+     * expects an array of topic patterns (strings) to subscribe
+     * @param {Array} topics - array of strings
+     */
     doSubscribe(topics) {
       topics.forEach((topic) => {
         this.mqttStore.initTopic(topic);
@@ -115,6 +129,10 @@ export default {
         }
       });
     },
+    /**
+     * expects an array of topic patterns (strings) to unsubscribe
+     * @param {Array} topics - array of strings
+     */
     doUnsubscribe(topics) {
       topics.forEach((topic) => {
         this.mqttStore.removeTopic(topic);
@@ -125,6 +143,13 @@ export default {
         }
       });
     },
+    /**
+     * publishes the payload to the provided topic
+     * @param {String} topic - topic to send
+     * @param {*} payload - data to send, should be a valid JSON string
+     * @param {Boolean} retain - send message as retained
+     * @param {Int} qos - quality of service to use (0, 1, 2)
+     */
     doPublish(topic, payload, retain = true, qos = 2) {
       console.debug("doPublish", topic, payload);
       let options = {
@@ -137,6 +162,11 @@ export default {
         }
       });
     },
+    /**
+     * replaces "openWB/" with "openWB/set/" and publishes this topic
+     * @param {String} topic - topic to send
+     * @param {*} payload - payload, should be a valid JSON string
+     */
     sendTopicToBroker(topic, payload = undefined) {
       let setTopic = topic.replace("openWB/", "openWB/set/");
       if (payload === undefined) {
@@ -144,12 +174,34 @@ export default {
       }
       this.doPublish(setTopic, payload);
     },
+    /**
+     * Sends a command via broker to the backend
+     * @param {Object} event - Command object to send
+     */
+    sendCommand(event) {
+      this.doPublish(
+        "openWB/set/command/" + this.client.options.clientId + "/todo",
+        event,
+        false,
+      );
+    },
+    /**
+     * prepares a valid command from a system event
+     * @param {String} command - command to send
+     * @param {Object} data - optional data to send
+     */
+    sendSystemCommand(command, data = {}) {
+      this.sendCommand({
+        command: command,
+        data: data,
+      });
+    },
   },
   created() {
     this.createConnection();
   },
   mounted() {
-    // add url parameters to store
+    // parse and add url parameters to store
     let uri = window.location.search;
     if (uri != "") {
       console.debug("search", uri);

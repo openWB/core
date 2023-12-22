@@ -2,7 +2,7 @@
 import logging
 
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import SocUpdateData
+from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.tronity.config import TronityVehicleSoc
@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 
 
 def create_vehicle(vehicle_config: TronityVehicleSoc, vehicle: int):
-    def updater(soc_update_data: SocUpdateData) -> CarState:
-        return fetch_soc(vehicle_config.configuration, soc_update_data, vehicle)
+    def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
+        return fetch_soc(vehicle_config.configuration, vehicle_update_data, vehicle)
     return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
 
 

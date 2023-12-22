@@ -71,6 +71,7 @@ def time_charging_factory() -> TimeCharging:
 class ChargemodeConfig:
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
+    retry_failed_phase_switches = False
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = 18
@@ -102,7 +103,7 @@ class GeneralData:
     grid_protection_active: bool = False
     grid_protection_configured: bool = True
     grid_protection_random_stop: int = 0
-    grid_protection_timestamp: Optional[str] = ""
+    grid_protection_timestamp: Optional[float] = ""
     mqtt_bridge: bool = False
     price_kwh: float = 0.3
     range_unit: str = "km"

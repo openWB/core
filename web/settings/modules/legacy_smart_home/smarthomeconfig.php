@@ -280,6 +280,7 @@ $numDevices = 9;
 												<option value="0" data-option="0">N4Dac02</option>
 												<option value="1" data-option="1">DA02</option>
 												<option value="2" data-option="2">M120T von Pigeon</option>
+												<option value="3" data-option="3">AA02B</option>													
 											</select>
 											<span class="form-text small">
 												Hier ist das installierte Modell auszuwählen.
@@ -375,6 +376,24 @@ $numDevices = 9;
 									</div>
 								</div>
 							</div>
+							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-idm hide">
+								<hr class="border-secondary">
+								<div class="form-group">
+									<div class="form-row mb-1">
+										<label for="device_maxuebDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">Maximale Leistungsaufnahme/Überschuss bei PV Betrieb</label>
+										<div class="col">
+											<input id="device_maxuebDevices<?php echo $devicenum; ?>" name="device_maxueb" class="form-control" type="number" min="0" max="30000" step="1" required="required" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
+											<span class="form-text small">
+												Hier ist die maximale Leistungsaufnahme anzugeben, die idm bei PV Betrieb nicht überschreiten soll. Bei 0 gibt es keine Limitierung bezüglich dem maximal zu übergebenen Überschuss. <br>
+												Sonst wird der zu übergebene Überschuss wie folgt gerechnet: 										
+												maximal zu übergeber Überschuss = maximale Leistungsaufnahme - aktuelle Leistungsaufnahme
+												<br>
+												Sofern die aktuelle Leistungsaufnahme bereits grösser als die maximale Leistungsaufnahme ist, wird gar kein Überschuss mehr übergeben im PV Betrieb.
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
 							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-acthor hide">
 								<hr class="border-secondary">
 								<div class="form-group">
@@ -398,6 +417,25 @@ $numDevices = 9;
 											<input id="device_acthorpowerDevices<?php echo $devicenum; ?>" name="device_acthorpower" class="form-control" type="number" min="0" max="18000" step="100" required="required" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 											<span class="form-text small">
 												Hier bitte die an den Acthor angeschlossene Leistung in Watt angeben.
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-idm hide">
+								<hr class="border-secondary">
+								<div class="form-group">
+									<div class="form-row mb-1">
+										<label for="device_idmuebDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">Überschuss...</label>
+										<div class="col">
+											<select class="form-control" name="device_idmueb" id="device_idmuebDevices<?php echo $devicenum; ?>" data-default="UZ" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
+												<option value="UP" data-option="UP">Überschuss als positive Zahl übertragen, Bezug negativ</option>
+												<option value="UZ" data-option="UZ">Überschuss als positive Zahl übertragen, Bezug als 0</option>
+											</select>
+											<span class="form-text small">
+												Bezieht sich auf die Modbusadresse 74, wie ist Überschuss zu übertragen.<br>
+												Neue Möglichkeit  -> Überschuss als positive Zahl übertragen, Bezug negativ <br>
+												bisheriges Verhalten -> Überschuss als positive Zahl übertragen, Bezug als 0<br>
 											</span>
 										</div>
 									</div>
@@ -535,7 +573,7 @@ $numDevices = 9;
 											</div>
 										</div>
 									</div>
-									<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-http device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom hide">
+									<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-mqtt device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-http device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom hide">
 										<hr class="border-secondary">
 										<div class="form-group">
 											<div class="form-row mb-1">
@@ -729,8 +767,10 @@ $numDevices = 9;
 															<input type="range" class="form-control-range rangeInput" id="device_speichersocbeforestartDevices<?php echo $devicenum; ?>" name="device_speichersocbeforestart" min="0" max="100" step="5" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 														</div>
 													</div>
-													<span class="form-text small">Parameter in % Ladezustand. 0% deaktiviert die Funktion. Bei deaktivierter Funktion oder wenn der Ladezustand grösser gleich dem Parameter ist, wird die Speicherleistung bei der Berechnung der Ein- und Ausschaltschwelle berücksichtigt.<br>
-													Unterhalb dieses Wertes ist für die Berechnung der Ein und Ausschaltschwelle nur die aktuelle Leisung am EVU Punkt und die maximal mögliche Speicherladung (als Offset) relevant.</span>
+													<span class="form-text small">Parameter in % Ladezustand. 0% deaktiviert die Funktion. Bei deaktivierter Funktion oder wenn der Ladezustand grösser gleich dem Parameter ist, wird die Speicherleistung bei der Berechnung der Ein- und Ausschaltschwelle berücksichtigt<br> 
+													Uberschuss = evu + speicherleistung, wobei evu - > Bezug(-)/Einspeisung(+) und speicherleistung Entladung(-)/Ladung(+) ist .<br>
+													Unterhalb dieses Wertes ist für die Berechnung der obige Überschuss und die maximal mögliche Speicherladung (als Offset) relevant <br>Uberschussoffset = Uberschuss - maxspeicher<br>
+													Bei überschussgesteuerten Geräten wird dann der Ueberschuss oder der Ueberschuss mit Offset übertragen.</span>
 												</div>
 											</div>
 										</div>

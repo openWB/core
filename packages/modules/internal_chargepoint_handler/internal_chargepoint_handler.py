@@ -11,14 +11,14 @@ from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store._util import get_rounding_function_by_digits
 from modules.common.component_state import ChargepointState
 from modules.internal_chargepoint_handler import chargepoint_module
 from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory
 from modules.internal_chargepoint_handler.socket import Socket
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
-    GlobalHandlerData, InternalChargepointHandlerData, RfidData)
+    GlobalHandlerData, InternalChargepoint, InternalChargepointData, RfidData)
 log = logging.getLogger(__name__)
 
 try:
@@ -28,7 +28,11 @@ except ImportError:
 
 
 class UpdateValues:
-    def __init__(self, local_charge_point_num: int, parent_ip: str, parent_cp: str, hierarchy_id: int) -> None:
+    def __init__(self,
+                 local_charge_point_num: int,
+                 parent_ip: Optional[str],
+                 parent_cp: str,
+                 hierarchy_id: int) -> None:
         self.local_charge_point_num_str = str(local_charge_point_num)
         self.old_chargepoint_state = None
         self.parent_ip = parent_ip
@@ -36,20 +40,21 @@ class UpdateValues:
         self.hierarchy_id = hierarchy_id
 
     def update_values(self, chargepoint_state: ChargepointState, heartbeat_expired: bool) -> None:
-        if self.old_chargepoint_state:
-            # iterate over counter state
-            vars_old_counter_state = vars(self.old_chargepoint_state)
-            for key, value in vars(chargepoint_state).items():
-                # Zählerstatus immer veröffentlichen für Ladelog-Einträge
-                if value != vars_old_counter_state[key] or key == "imported":
+        if self.parent_ip is not None:
+            if self.old_chargepoint_state:
+                # iterate over counter state
+                vars_old_counter_state = vars(self.old_chargepoint_state)
+                for key, value in vars(chargepoint_state).items():
+                    # Zählerstatus immer veröffentlichen für Ladelog-Einträge
+                    if value != vars_old_counter_state[key] or key == "imported":
+                        self._pub_values_to_2(key, value)
+            else:
+                # Bei Neustart alles veröffentlichen
+                for key, value in vars(chargepoint_state).items():
                     self._pub_values_to_2(key, value)
-        else:
-            # Bei Neustart alles veröffentlichen
-            for key, value in vars(chargepoint_state).items():
-                self._pub_values_to_2(key, value)
-        if heartbeat_expired is False:
-            # Nur wenn eine Verbindung zum Master besteht, die veröffentlichten Werte speichern.
-            self.old_chargepoint_state = chargepoint_state
+            if heartbeat_expired is False:
+                # Nur wenn eine Verbindung zum Master besteht, die veröffentlichten Werte speichern.
+                self.old_chargepoint_state = chargepoint_state
 
     def _pub_values_to_2(self, topic: str, value) -> None:
         rounding = get_rounding_function_by_digits(2)
@@ -64,10 +69,10 @@ class UpdateValues:
                 payload = [rounding(v) for v in value]
             else:
                 payload = rounding(value)
-            pub_single(f"openWB/set/chargepoint/{self.parent_cp}/get/{topic}", payload=payload, hostname=self.parent_ip)
-            if self.parent_ip != "localhost":
-                pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/get/state_str",
-                           payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
+        pub_single(f"openWB/set/chargepoint/{self.parent_cp}/get/{topic}", payload=payload, hostname=self.parent_ip)
+        if self.parent_ip != "localhost":
+            pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/get/state_str",
+                       payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
 
 
 class UpdateState:
@@ -80,7 +85,7 @@ class UpdateState:
         self.cp_module = cp_module
         self.hierarchy_id = hierarchy_id
 
-    def update_state(self, data: InternalChargepointHandlerData, heartbeat_expired: bool) -> None:
+    def update_state(self, data: InternalChargepoint, heartbeat_expired: bool) -> None:
         if heartbeat_expired:
             set_current = 0
         else:
@@ -102,7 +107,9 @@ class UpdateState:
         if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))
             self.__thread_phase_switch(data.phases_to_use)
-            pub.pub_single("openWB/set/internal_chargepoint/0/data/trigger_phase_switch", False)
+            pub.pub_single(
+                f"openWB/set/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/trigger_phase_switch",
+                False)
             pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=data.phases_to_use)
 
         if data.cp_interruption_duration > 0:
@@ -139,15 +146,20 @@ class InternalChargepointHandler:
         self.event_start = event_start
         self.event_stop = event_stop
         self.heartbeat = False
-        with SingleComponentUpdateContext(
+        fault_state_info_cp0 = FaultState(
             ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
-                          parent_hostname=global_data.parent_ip)):
+                          parent_hostname=global_data.parent_ip))
+        fault_state_info_cp1 = FaultState(
+            ComponentInfo(hierarchy_id_cp1, "Interner Ladepunkt 1", "chargepoint", parent_id=parent_cp1,
+                          parent_hostname=global_data.parent_ip))
+        with SingleComponentUpdateContext(fault_state_info_cp0):
             # Allgemeine Fehlermeldungen an LP 1:
-            self.cp0_client_handler = client_factory(0)
+            self.cp0_client_handler = client_factory(0, fault_state_info_cp0)
             self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode, global_data, parent_cp0, hierarchy_id_cp0)
+        with SingleComponentUpdateContext(fault_state_info_cp1):
             if mode == InternalChargepointMode.DUO.value:
                 log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
-                self.cp1_client_handler = client_factory(1, self.cp0_client_handler)
+                self.cp1_client_handler = client_factory(1, fault_state_info_cp1, self.cp0_client_handler)
                 self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
                                               global_data, parent_cp1, hierarchy_id_cp1)
             else:
@@ -179,11 +191,11 @@ class InternalChargepointHandler:
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
                 log.debug(data)
                 log.setLevel(SubData.system_data["system"].data["debug_level"])
-                self.cp0.update(data["global_data"], data["cp0"], data["rfid_data"])
+                self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
                 if self.cp1:
-                    self.cp1.update(data["global_data"], data["cp1"], data["rfid_data"])
+                    self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
                 time.sleep(1.1)
-        with SingleComponentUpdateContext(self.cp0.module.component_info):
+        with SingleComponentUpdateContext(self.cp0.module.fault_state):
             # Allgemeine Fehlermeldungen an LP 1:
             if self.cp1_client_handler is None:
                 with self.cp0_client_handler.client:
@@ -216,18 +228,18 @@ class HandlerChargepoint:
         else:
             self.module = chargepoint_module.ChargepointModule(
                 local_charge_point_num, client_handler, global_data.parent_ip, parent_cp, hierarchy_id)
-        with SingleComponentUpdateContext(self.module.component_info):
+        with SingleComponentUpdateContext(self.module.fault_state):
             self.update_values = UpdateValues(local_charge_point_num, global_data.parent_ip, parent_cp, hierarchy_id)
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
 
-    def update(self, global_data: GlobalHandlerData, data: InternalChargepointHandlerData, rfid_data: RfidData) -> None:
+    def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> None:
         def __thread_active(thread: Optional[threading.Thread]) -> bool:
             if thread:
                 return thread.is_alive()
             else:
                 return False
-        with SingleComponentUpdateContext(self.module.component_info):
+        with SingleComponentUpdateContext(self.module.fault_state):
             if self.local_charge_point_num == 1:
                 time.sleep(0.1)
             phase_switch_cp_active = __thread_active(self.update_state.cp_interruption_thread) or __thread_active(
@@ -240,8 +252,8 @@ class HandlerChargepoint:
             self.update_state.update_state(data, heartbeat_expired)
 
     def _check_heartbeat_expired(self, heartbeat) -> bool:
-        if heartbeat+80 < timecheck.create_timestamp_unix():
-            log.error(f"Heartbeat Fehler seit {timecheck.create_timestamp_unix()-heartbeat}"
+        if heartbeat+80 < timecheck.create_timestamp():
+            log.error(f"Heartbeat Fehler seit {timecheck.create_timestamp()-heartbeat}"
                       "s keine Verbindung. Stoppe Ladung.")
             return True
         else:
@@ -276,9 +288,9 @@ class GeneralInternalChargepointHandler:
                     self.internal_chargepoint_handler = InternalChargepointHandler(
                         mode,
                         data["global_data"],
-                        data["cp0"].parent_cp,
+                        data["cp0"].data.parent_cp,
                         hierarchy_id_cp0,
-                        data["cp1"].parent_cp,
+                        data["cp1"].data.parent_cp,
                         hierarchy_id_cp1,
                         self.event_start,
                         self.event_stop)

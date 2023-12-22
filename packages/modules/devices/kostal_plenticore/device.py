@@ -36,34 +36,11 @@ def update(
     bat_state = battery.read_state(reader) if battery else None
     for component in components:
         if isinstance(component, KostalPlenticoreInverter):
+            # Fürs erste nur die WR-Werte nutzen ohne Verlustberechnung.
+            # power: R575(inverter generation power (actual))
+            # exported: R320 (Total yield)
             inverter_state = component.read_state(reader)
-            if bat_state:
-                dc_in = component.dc_in_string_1_2(reader)
-                if dc_in >= 0:
-                    # Wird PV-DC-Leistung erzeugt, müssen die Wandlungsverluste betrachtet werden.
-                    # Kostal liefert nur DC-seitige Werte.
-                    if bat_state.power < 0:
-                        # Wird die Batterie entladen, werden die Wandlungsverluste anteilig an der DC-Leistung auf PV
-                        # und Batterie verteilt. Dazu muss der Divisor Total_DC_power != 0 sein.
-                        power_gross = dc_in - bat_state.power
-                        pv_state = InverterState(power=dc_in / power_gross * inverter_state.power,
-                                                 exported=inverter_state.exported)
-                    else:
-                        # Wenn die Batterie geladen wird, dann ist PV-Leistung die Wechselrichter-AC-Leistung + die
-                        # Ladeleistung der Batterie. Die PV-Leistung ist die Summe aus verlustbehafteter
-                        # AC-Leistungsabgabe des WR und der DC-Ladeleistung. Die Wandlungsverluste werden also nur
-                        # in der PV-Leistung ersichtlich.
-                        pv_state = InverterState(power=inverter_state.power - bat_state.power,
-                                                 exported=inverter_state.exported)
-                    # https://github.com/snaptec/openWB/pull/2440#discussion_r996275286
-                    # power_gross = bat_state.power + dc_in
-                    # bat_state_gross = BatteryState(power=bat_state_net.power / power_gross * inverter_state.power)
-                    # pv_state = InverterState(power=inverter_state.power - bat_state_gross.power)
-                else:
-                    inverter_state.power = 0
-                    pv_state = inverter_state
-            else:
-                pv_state = inverter_state
+            pv_state = inverter_state
             if set_inverter_state:
                 component.update(pv_state)
         elif isinstance(component, KostalPlenticoreCounter):

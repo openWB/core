@@ -68,7 +68,7 @@ class CpTemplate:
         else:
             return False
 
-    def get_ev(self, rfid, assigned_ev):
+    def get_ev(self, rfid: str, vehicle_id: str, assigned_ev: int) -> int:
         """ermittelt das dem Ladepunkt zugeordnete EV
 
         Parameter
@@ -87,12 +87,16 @@ class CpTemplate:
         num = -1
         message = None
         try:
-            if data.data.optional_data.data.rfid.active and rfid is not None:
-                vehicle = ev_module.get_ev_to_rfid(rfid)
+            if data.data.optional_data.data.rfid.active and (rfid is not None or vehicle_id is not None):
+                vehicle = ev_module.get_ev_to_rfid(rfid, vehicle_id)
                 if vehicle is None:
-                    num = -1
-                    message = "Keine Ladung, da dem RFID-Tag " + \
-                        str(rfid)+" kein Fahrzeug-Profil zugeordnet werden kann."
+                    if self.data.rfid_enabling:
+                        num = -1
+                        message = (
+                            f"Keine Ladung, da dem ID-Tag {rfid} kein Fahrzeug-Profil zugeordnet werden kann. Eine "
+                            "Freischaltung ist nur mit gültigen ID-Tag möglich.")
+                    else:
+                        num = assigned_ev
                 else:
                     num = vehicle
             else:

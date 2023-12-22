@@ -7,7 +7,8 @@ import pytest
 from control import data
 from control.algorithm import filter_chargepoints
 from control.chargemode import Chargemode
-from control.chargepoint.chargepoint import Chargepoint, ChargepointData, Log, Set
+from control.chargepoint.chargepoint import Chargepoint, ChargepointData
+from control.chargepoint.chargepoint_data import Log, Set
 from control.counter_all import CounterAll
 from control.ev import ControlParameter, Ev, EvData, Get
 
@@ -64,11 +65,11 @@ def test_get_preferenced_chargepoint(params: PreferencedParams):
     # setup
     def mock_cp(cp: Chargepoint, num: int):
         ev = Ev(0)
-        ev.data = EvData(control_parameter=ControlParameter(
-            required_current=getattr(params, f"required_current_{num}")),
-            get=Get(soc=getattr(params, f"soc_{num}")))
+        ev.data = EvData(get=Get(soc=getattr(params, f"soc_{num}")))
         cp.data = ChargepointData(set=Set(plug_time=getattr(params, f"plug_time_{num}"), log=Log(
-            imported_since_plugged=getattr(params, f"imported_since_plugged_{num}")), charging_ev_data=ev))
+            imported_since_plugged=getattr(params, f"imported_since_plugged_{num}")), charging_ev_data=ev),
+            control_parameter=ControlParameter(
+            required_current=getattr(params, f"required_current_{num}")))
         cp.num = num
         return cp
 
@@ -124,10 +125,9 @@ def test_get_chargepoints_by_mode(set_mode_tuple: Tuple[Optional[str], str, bool
     # setup
     def setup_cp(cp: Chargepoint, charging_ev: int, mode_tuple: Tuple[str, str, bool]) -> Chargepoint:
         cp.data.set.charging_ev = charging_ev
-        charging_ev_data = cp.data.set.charging_ev_data
-        charging_ev_data.data.control_parameter.prio = mode_tuple[2]
-        charging_ev_data.data.control_parameter.chargemode = mode_tuple[0]
-        charging_ev_data.data.control_parameter.submode = mode_tuple[1]
+        cp.data.control_parameter.prio = mode_tuple[2]
+        cp.data.control_parameter.chargemode = mode_tuple[0]
+        cp.data.control_parameter.submode = mode_tuple[1]
         return cp
     data.data.cp_data = {"cp1": setup_cp(mock_cp1, charging_ev_1, mode_tuple_1),
                          "cp2": setup_cp(mock_cp2, charging_ev_2, mode_tuple_2)}
@@ -178,8 +178,7 @@ def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
     # setup
     def setup_cp(cp: Chargepoint, submode: str) -> Chargepoint:
         cp.data.set.charging_ev = Ev(0)
-        charging_ev_data = cp.data.set.charging_ev_data
-        charging_ev_data.data.control_parameter.submode = submode
+        cp.data.control_parameter.submode = submode
         return cp
     data.data.cp_data = {"cp1": setup_cp(mock_cp1, submode_1),
                          "cp2": setup_cp(mock_cp2, submode_2)}

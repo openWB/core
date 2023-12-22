@@ -13,24 +13,62 @@ body {
 	color: var(--color-fg);
 	background: var(--color-bg);
 }
-body > .container {
+
+body>.container {
 	padding: 55px 15px 0 15px;
 }
+
+/* RESPONSIVE FONT SIZES */
 
 /* Extra small devices (portrait phones, less than 576px) */
 /* No media query since this is the default in Bootstrap */
 html {
 	font-size: 12px;
 }
+@media screen and (min-width: 240px) {
+	html {
+		font-size: 13px;
+	}
+}
+@media screen and (min-width: 330px) {
+	html {
+		font-size: 14px;
+	}
+}
 @media screen and (min-width: 400px) {
 	html {
 		font-size: 15px;
+	}
+}
+@media screen and (min-width: 435px) {
+	html {
+		font-size: 16px;
+	}
+}
+@media screen and (min-width: 470px) {
+	html {
+		font-size: 17px;
+	}
+}
+@media screen and (min-width: 505px) {
+	html {
+		font-size: 18px;
+	}
+}
+@media screen and (min-width: 540px) {
+	html {
+		font-size: 19px;
 	}
 }
 /* Small devices (landscape phones, 576px and up) */
 @media screen and (min-width: 576px) {
 	html {
 		font-size: 20px;
+	}
+}
+@media screen and (min-width: 672px) {
+	html {
+		font-size: 21px;
 	}
 }
 /* Medium devices (tablets, 768px and up) */
@@ -48,10 +86,9 @@ html {
 /* Extra large devices (very large desktops, 1200px and up) */
 @media screen and (min-width: 1200px) {
 	html {
-		font-size: 14px;
+		font-size: 13px;
 	}
 }
-
 /* Extra extra large devices (very large desktops, 1400px and up) */
 @media screen and (min-width: 1400px) {
 	html {
@@ -64,10 +101,14 @@ html {
 		font-size: 16px;
 	}
 }
+
 .verySmallTextSize {
 	font-size: var(--font-verysmall);
 }
 .smallTextSize {
+	font-size: var(--font-small);
+}
+.mediumTextSize {
 	font-size: var(--font-medium);
 }
 .regularTextSize {
@@ -79,7 +120,6 @@ html {
 .buttonTextSize {
 	font-size: var(--font-large);
 }
-
 h3 {
 	font-size: var(--font-extralarge);
 	color: var(--color-title);
@@ -89,7 +129,7 @@ h4 {
 	color: var(--color-axis);
 }
 
-body > .container-fluid {
+body>.container-fluid {
 	padding: 55px 15px 0 15px;
 }
 
@@ -104,6 +144,9 @@ body > .container-fluid {
 .maxPrice {
 	text-align: center;
 }
+
+/* DEFINITION OF COLOR SCHEMES */
+
 /* Overarching colors and fonts*/
 :root {
 	--fontCol: rgba(160, 160, 160, 0.82);
@@ -185,6 +228,8 @@ body > .container-fluid {
 	--padding-widget: 0px;
 }
 
+/* Smart Home Device color sets */
+
 .shcolors-normal {
 	--color-devices: #f16913;
 	--color-sh1: #fd8d3c;
@@ -232,6 +277,7 @@ body > .container-fluid {
 .colormenu {
 	background-color: var(--color-frame);
 }
+
 .wb-widget {
 	background-color: var(--color-bg);
 	border: 0.1px dotted var(--color-frame);
@@ -244,19 +290,24 @@ body > .container-fluid {
 	border: 0px solid var(--color-subframe);
 	padding: var(--padding-widget);
 }
+
 th {
 	color: var(--color-axis);
 }
+
 .table-borderless td {
 	border: 0;
 }
+
 .popup-header {
 	color: midnightblue;
 }
+
 .axis text {
 	color: var(--color-axis);
 	stroke-width: 0;
 }
+
 .phasesInUse {
 	font-family: monospace;
 	color: white;
@@ -273,6 +324,7 @@ th {
 .swiper-slide-active {
 	display: flex;
 }
+
 .swiper-slide {
 	display: flex;
 }

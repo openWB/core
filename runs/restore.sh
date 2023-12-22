@@ -48,6 +48,11 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 	echo "Step 4: restore contents of backup"
 	# we use cp not mv because of not empty directories in destination
 	sudo cp -v -p -r "${WORKING_DIR}/openWB/." "${OPENWB_BASE_DIR}/"
+	if [[ -f "$WORKING_DIR/configuration.json" ]]; then
+		sudo mv -v -f "${WORKING_DIR}/configuration.json" "/home/openwb/"
+	else
+		echo "Backup does not contain configuration. Skipping restore."
+	fi
 	echo "****************************************"
 	echo "Step 5: restore mosquitto db"
 	if [[ -f "${WORKING_DIR}/mosquitto/mosquitto.db" ]]; then

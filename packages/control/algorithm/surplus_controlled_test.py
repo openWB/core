@@ -4,7 +4,9 @@ import pytest
 
 from control.algorithm import surplus_controlled
 from control.algorithm.surplus_controlled import SurplusControlled
-from control.chargepoint.chargepoint import Chargepoint, ChargepointData, Get, Set
+from control.chargepoint.chargepoint import Chargepoint, ChargepointData
+from control.chargepoint.chargepoint_data import Get, Set
+from control.chargepoint.control_parameter import ControlParameter
 from control.ev import ChargeTemplate, Ev
 
 
@@ -78,9 +80,9 @@ def test_set_required_current_to_max(phases: int,
                                      monkeypatch):
     # setup
     ev = Ev(0)
-    ev.data.control_parameter.phases = phases
-    ev.data.control_parameter.required_currents = required_currents
-    mock_cp1.data = ChargepointData(set=Set(charging_ev_data=ev))
+    mock_cp1.data = ChargepointData(set=Set(charging_ev_data=ev),
+                                    control_parameter=ControlParameter(phases=phases,
+                                                                       required_currents=required_currents))
     mock_get_chargepoints_surplus_controlled = Mock(return_value=[mock_cp1])
     monkeypatch.setattr(surplus_controlled, "get_chargepoints_surplus_controlled",
                         mock_get_chargepoints_surplus_controlled)
@@ -89,4 +91,27 @@ def test_set_required_current_to_max(phases: int,
     SurplusControlled().set_required_current_to_max()
 
     # evaluation
-    assert mock_cp1.data.set.charging_ev_data.data.control_parameter.required_currents == expected_currents
+    assert mock_cp1.data.control_parameter.required_currents == expected_currents
+
+
+@pytest.mark.parametrize(
+    "evse_current, limited_current, expected_current",
+    [
+        pytest.param(None, 6, 6, id="Kein Sollstrom aus der EVSE ausgelesen"),
+        pytest.param(15, 15, 15, id="Auto lädt mit Sollstromstärke"),
+        pytest.param(15.5, 15.5, 16, id="Auto lädt mit weniger als Sollstromstärke"),
+        pytest.param(16, 16, 16,
+                     id="Auto lädt mit weniger als Sollstromstärke, aber EVSE-Begrenzung ist erreicht.")
+    ])
+def test_add_unused_evse_current(evse_current: float, limited_current: float, expected_current: float):
+    # setup
+    c = Chargepoint(0, None)
+    c.data.get.currents = [15]*3
+    c.data.get.evse_current = evse_current
+    c.data.control_parameter.required_current = 16
+
+    # execution
+    current = SurplusControlled()._add_unused_evse_current(limited_current, c)
+
+    # evaluation
+    assert current == expected_current

@@ -38,12 +38,14 @@ export class ChargePoint {
 	chargedSincePlugged = 0
 	stateStr = ''
 	current = 0
+	currents = [0, 0, 0]
 	phasesToUse = 0
-	soc = 0
+	// soc = 0
 	isSocConfigured = true
 	isSocManual = false
+	waitingForSoc = false
 	color = 'white'
-	private _scheduledCharging = false
+	private _timedCharging = false
 	private _instantChargeLimitMode = ''
 	private _instantTargetCurrent = 0
 	private _instantTargetSoc = 0
@@ -76,6 +78,18 @@ export class ChargePoint {
 	updateConnectedVehicle(id: number) {
 		this._connectedVehicle = id
 	}
+	get soc() {
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].soc
+		} else {
+			return 0
+		}
+	}
+	set soc(newSoc: number) {
+		if (vehicles[this.connectedVehicle]) {
+			vehicles[this.connectedVehicle].soc = newSoc
+		}
+	}
 	get chargeMode() {
 		return this._chargeMode
 	}
@@ -96,15 +110,17 @@ export class ChargePoint {
 	updateCpPriority(prio: boolean) {
 		this._hasPriority = prio
 	}
-	get scheduledCharging() {
-		return this._scheduledCharging
+	get timedCharging() {
+		if (chargeTemplates[this.chargeTemplate]) {
+			return chargeTemplates[this.chargeTemplate].time_charging.active
+		} else {
+			return false
+		}
 	}
-	set scheduledCharging(setting: boolean) {
-		this._scheduledCharging = setting
-		updateServer('cpScheduledCharging', setting, this.id)
-	}
-	updateScheduledCharging(setting: boolean) {
-		this._scheduledCharging = setting
+	set timedCharging(setting: boolean) {
+		// chargeTemplates[this.chargeTemplate].time_charging.active = false
+		chargeTemplates[this.chargeTemplate].time_charging.active = setting
+		updateServer('cpTimedCharging', setting, this.chargeTemplate)
 	}
 	get instantTargetCurrent() {
 		return this._instantTargetCurrent
@@ -196,6 +212,21 @@ export class ChargePoint {
 	updatePvMinSocCurrent(a: number) {
 		this._pvMinSocCurrent = a
 	}
+	get realCurrent() {
+		switch (this.phasesInUse) {
+			case 0:
+				return 0
+			case 1:
+				return this.currents[0]
+			case 2:
+				return (this.currents[0] + this.currents[1]) / 2
+			case 3:
+				return (this.currents[0] + this.currents[1] + this.currents[2]) / 3
+			default:
+				return 0
+		}
+	}
+
 	toPowerItem(): PowerItem {
 		return {
 			name: this.name,
@@ -215,6 +246,7 @@ export class Vehicle {
 	private _chargeTemplateId = 0
 	private _evTemplateId = 0
 	tags: Array<string> = []
+	config = {}
 	soc = 0
 	range = 0
 	constructor(index: number) {
@@ -257,6 +289,7 @@ export enum ChargeMode {
 	stop = 'stop',
 }
 export interface ChargeTimePlan {
+	active: boolean
 	frequency: {
 		once: Array<Date>
 		selected: string
@@ -266,49 +299,27 @@ export interface ChargeTimePlan {
 	time: Array<string>
 	current: number
 }
-export function createChargeTimePlan(): ChargeTimePlan {
-	return {
-		frequency: {
-			once: [new Date('2022-02-02'), new Date('2022-02-22')],
-			selected: 'daily',
-			weekly: [false, false, false, false, false, false, false],
-		},
-		name: 'Neuer Plan',
-		time: ['10:00', '16:00'],
-		current: 16,
-	}
-}
 export interface ChargeSchedule {
 	name: string
+	active: boolean
 	timed: boolean
 	time: string
-	soc: number
+	current: number
+	limit: {
+		selected: string
+		amount: number
+		soc_limit: number
+		soc_scheduled: number
+	}
 	frequency: {
 		once: Array<Date>
 		selected: string
 		weekly: boolean[]
 	}
 }
-export function createChargeSchedule(): ChargeSchedule {
-	return {
-		name: 'Neuer Plan',
-		timed: false,
-		time: '12:00',
-		soc: 80,
-		frequency: {
-			once: [new Date('2022-02-02'), new Date('2022-02-22')],
-			selected: 'daily',
-			weekly: [false, false, false, false, false, false, false],
-		},
-	}
-}
 export interface ChargeTemplate {
 	name: string
 	prio: boolean
-	time_charging: {
-		active: boolean
-		plans: { [key: string]: ChargeTimePlan }
-	}
 	chargemode: {
 		selected: ChargeMode
 		instant_charging: {
@@ -326,9 +337,9 @@ export interface ChargeTemplate {
 			min_soc: number
 			min_soc_current: number
 		}
-		scheduled_charging: {
-			plans: { [key: string]: ChargeSchedule }
-		}
+	}
+	time_charging: {
+		active: boolean
 	}
 	disable_after_unplug: boolean
 	load_default: boolean
@@ -353,6 +364,12 @@ export interface EvTemplate {
 export const chargePoints: { [key: number]: ChargePoint } = reactive({})
 export const vehicles: { [key: number]: Vehicle } = reactive({}) // the list of vehicles, key is the vehicle ID
 export const chargeTemplates: { [key: number]: ChargeTemplate } = reactive({})
+export const scheduledChargingPlans: { [key: number]: ChargeSchedule[] } =
+	reactive({})
+export const timeChargingPlans: { [key: number]: ChargeTimePlan[] } = reactive(
+	{},
+)
+
 export const evTemplates: { [key: number]: EvTemplate } = reactive({})
 
 export function addChargePoint(chargePointIndex: number) {
@@ -360,9 +377,9 @@ export function addChargePoint(chargePointIndex: number) {
 		chargePoints[chargePointIndex] = new ChargePoint(chargePointIndex)
 		chargePoints[chargePointIndex].color =
 			'var(--color-cp' + Object.values(chargePoints).length + ')'
-		console.info('Added chargepoint ' + chargePointIndex)
+		// console.info('Added chargepoint ' + chargePointIndex)
 	} else {
-		console.info('Duplicate chargepoint message: ' + chargePointIndex)
+		// console.info('Duplicate chargepoint message: ' + chargePointIndex)
 	}
 }
 export function resetChargePoints() {

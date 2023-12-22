@@ -108,13 +108,6 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
         return state
 
 
-def _calc_begin(end: datetime.datetime, hours: int) -> datetime.datetime:
-    """ berechnet den Zeitpunkt, der die angegebenen Stunden vor dem Endzeitpunkt liegt.
-    """
-    prev = datetime.timedelta(hours)
-    return end - prev
-
-
 def check_duration(plan: ScheduledChargingPlan, duration: float, buffer: int) -> Tuple[Optional[float], bool]:
     """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
     Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit
@@ -188,6 +181,7 @@ def _get_remaining_time(now: datetime.datetime, duration: float, end: datetime.d
     """
     delta = datetime.timedelta(hours=int(duration), minutes=((duration % 1) * 60))
     start_time = end-delta
+    log.debug(f"delta {delta} start_time {start_time} end {end} now {now}")
     return (start_time-now).total_seconds()
 
 
@@ -219,77 +213,32 @@ def is_list_valid(hour_list: List[int]) -> bool:
         return False
 
 
-def check_timestamp(timestamp: str, duration: int) -> bool:
+def check_timestamp(timestamp: int, duration: int) -> bool:
     """ prüft, ob der Zeitstempel innerhalb der angegebenen Zeit liegt
-
-    Parameter
-    ---------
-    timestamp: str
-        Zeitstempel, der geprüft werden soll
-    duration:
-        Zeitspanne in s, in der der Zeitstempel gültig ist
 
     Return
     ------
     True: Zeit ist noch nicht abgelaufen
     False: Zeit ist abgelaufen
     """
-    stamp = datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S")
-    now = datetime.datetime.today()
-    delta = datetime.timedelta(seconds=duration)
-    if (now - delta) > stamp:
+    if (create_timestamp() - duration) > timestamp:
         return False
     else:
         return True
 
 
-def create_timestamp() -> str:
-    try:
-        stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
-        return stamp
-    except Exception:
-        raise
-
-
-def create_timestamp_unix() -> int:
-    """ Unix Zeitstempel
-    """
-    try:
-        return int(datetime.datetime.now().timestamp())
-    except Exception:
-        raise
+def create_timestamp() -> float:
+    return datetime.datetime.today().timestamp()
 
 
 def create_timestamp_YYYYMM() -> str:
-    try:
-        stamp = datetime.datetime.today().strftime("%Y%m")
-        return stamp
-    except Exception:
-        raise
+    stamp = datetime.datetime.today().strftime("%Y%m")
+    return stamp
 
 
 def create_timestamp_YYYYMMDD() -> str:
-    try:
-        stamp = datetime.datetime.today().strftime("%Y%m%d")
-        return stamp
-    except Exception:
-        raise
-
-
-def create_timestamp_time() -> str:
-    try:
-        stamp = datetime.datetime.today().strftime("%H:%M")
-        return stamp
-    except Exception:
-        raise
-
-
-def convert_YYYYMM_to_unix_timestamp(date: str) -> float:
-    return datetime.datetime.strptime(date, "%Y%m").timestamp()
-
-
-def convert_to_unix_timestamp(timestamp: str) -> float:
-    return datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S").timestamp()
+    stamp = datetime.datetime.today().strftime("%Y%m%d")
+    return stamp
 
 
 def get_relative_date_string(date_string: str, day_offset: int = 0, month_offset: int = 0, year_offset: int = 0) -> str:
@@ -298,14 +247,8 @@ def get_relative_date_string(date_string: str, day_offset: int = 0, month_offset
     return (my_date + relativedelta(years=year_offset, months=month_offset, days=day_offset)).strftime(print_format)
 
 
-def get_difference_to_now(timestamp_begin: str) -> Tuple[str, int]:
+def get_difference_to_now(timestamp_begin: float) -> Tuple[str, int]:
     """ ermittelt den Abstand zwischen zwei Zeitstempeln.
-
-    Parameter
-    ---------
-    timestamp_begin: str %m/%d/%Y, %H:%M:%S
-        Anfangszeitpunkt
-
     Return
     ------
     diff: [str, int]
@@ -313,25 +256,21 @@ def get_difference_to_now(timestamp_begin: str) -> Tuple[str, int]:
         int: Differenz in Sekunden
     """
     try:
-        begin = datetime.datetime.strptime(timestamp_begin[:-3], "%m/%d/%Y, %H:%M")
-        now = datetime.datetime.today()
-        diff = (now - begin)
-        return [__convert_timedelta_to_time_string(diff), int(diff.total_seconds())]
+        diff = datetime.timedelta(seconds=create_timestamp()-timestamp_begin)
+        return (convert_timedelta_to_time_string(diff), int(diff.total_seconds()))
     except Exception:
         log.exception("Fehler im System-Modul")
-        return ["00:00", 0]
+        return ("00:00", 0)
 
 
 def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[int]:
     """ ermittelt den Abstand zwischen zwei Zeitstempeln in absoluten Sekunden.
-
     Parameter
     ---------
     timestamp_begin: str %m/%d/%Y, %H:%M:%S
         Anfangszeitpunkt
     timestamp_end: str %m/%d/%Y, %H:%M:%S
-        Anfangszeitpunkt
-
+        Endzeitpunkt
     Return
     ------
     diff: int
@@ -340,7 +279,7 @@ def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[int]:
     try:
         begin = datetime.datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
         end = datetime.datetime.strptime(timestamp_end, "%m/%d/%Y, %H:%M:%S")
-        diff = (begin - end)
+        diff = (end - begin)
         return int(diff.total_seconds())
     except Exception:
         log.exception("Fehler im System-Modul")
@@ -349,7 +288,6 @@ def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[int]:
 
 def duration_sum(first: str, second: str) -> str:
     """ addiert zwei Zeitstrings und gibt das Ergebnis als String zurück.
-
     Parameter
     ---------
     first, second: str
@@ -361,7 +299,7 @@ def duration_sum(first: str, second: str) -> str:
     """
     try:
         sum = __get_timedelta_obj(first) + __get_timedelta_obj(second)
-        return __convert_timedelta_to_time_string(sum)
+        return convert_timedelta_to_time_string(sum)
     except Exception:
         log.exception("Fehler im System-Modul")
         return "00:00"
@@ -369,7 +307,6 @@ def duration_sum(first: str, second: str) -> str:
 
 def __get_timedelta_obj(time: str) -> datetime.timedelta:
     """ erstellt aus einem String ein timedelta-Objekt.
-
     Parameter
     ---------
     time: str
@@ -388,7 +325,7 @@ def __get_timedelta_obj(time: str) -> datetime.timedelta:
     return delta
 
 
-def __convert_timedelta_to_time_string(timedelta_obj: datetime.timedelta) -> str:
+def convert_timedelta_to_time_string(timedelta_obj: datetime.timedelta) -> str:
     diff_hours = int(timedelta_obj.total_seconds() / 3600)
     diff_minutes = int((timedelta_obj.total_seconds() % 3600) / 60)
     return f"{diff_hours}:{diff_minutes:02d}"

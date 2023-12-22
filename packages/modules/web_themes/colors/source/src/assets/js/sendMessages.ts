@@ -5,21 +5,17 @@
  */
 
 import { mqttPublish, mqttClientId } from './mqttClient'
-import {
-	chargePoints,
-	chargeTemplates,
-} from '@/components/chargePointList/model'
+import { chargePoints } from '@/components/chargePointList/model'
 
 const topics: { [topic: string]: string } = {
 	cpLock: 'openWB/set/chargepoint/%/set/manual_lock',
 	chargeMode:
 		'openWB/set/vehicle/template/charge_template/%/chargemode/selected',
 	cpPriority: 'openWB/set/vehicle/template/charge_template/%/prio',
-	cpScheduledCharging:
+	cpTimedCharging:
 		'openWB/set/vehicle/template/charge_template/%/time_charging/active',
 	pvBatteryPriority:
 		'openWB/set/general/chargemode_config/pv_charging/bat_prio',
-	chargeTemplate: 'openWB/set/vehicle/template/charge_template/%',
 	cpVehicle: 'openWB/set/chargepoint/%/config/ev',
 	cpInstantChargeLimitMode:
 		'openWB/set/vehicle/template/charge_template/%/chargemode/instant_charging/limit/selected',
@@ -42,11 +38,11 @@ const topics: { [topic: string]: string } = {
 	etMaxPrice: 'openWB/set/optional/et/max_price',
 	vhChargeTemplateId: 'openWB/set/vehicle/%/charge_template',
 	vhEvTemplateId: 'openWB/set/vehicle/%/ev_template',
-	// SmartHome
-	// shSetManual: 'openWB/config/set/SmartHome/Devices/%/mode',
 	shSetManual: 'openWB/set/LegacySmartHome/config/set/Devices/%/mode',
 	shSwitchOn:
 		'openWB/set/LegacySmartHome/config/set/Devices/%/device_manual_control',
+	socUpdate: 'openWB/set/vehicle/%/get/force_soc_update',
+	setSoc: 'openWB/set/vehicle/%/soc_module/calculated_soc_state/manual_soc',
 }
 export function updateServer(
 	item: string,
@@ -89,13 +85,6 @@ export function updateServer(
 	}
 }
 
-export function updateChargeTemplate(templateId: number) {
-	const template = chargeTemplates[templateId]
-	if (template) {
-		const topic = 'openWB/set/vehicle/template/charge_template/' + templateId
-		mqttPublish(topic, JSON.stringify(template))
-	}
-}
 export function sendCommand(event: object) {
 	// console.log ("SENDCOMMAND " + JSON.stringify(event))
 	mqttPublish(

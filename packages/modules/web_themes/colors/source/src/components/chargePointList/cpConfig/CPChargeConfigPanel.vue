@@ -41,7 +41,7 @@
 				<i class="fa-solid fa-bullseye me-1" />
 			</a>
 			<a
-				v-if="chargepoint.scheduledCharging"
+				v-if="chargepoint.timedCharging"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#timeSettings' + cpid"
@@ -100,7 +100,6 @@
 			>
 				<CPConfigScheduled
 					v-if="chargeTemplate != undefined"
-					:charge-template="chargeTemplate"
 					:charge-template-id="cp.chargeTemplate"
 				/>
 			</div>
@@ -112,7 +111,6 @@
 			>
 				<CPConfigTimed
 					v-if="chargeTemplate != undefined"
-					:charge-template="chargeTemplate"
 					:charge-template-id="cp.chargeTemplate"
 				/>
 			</div>

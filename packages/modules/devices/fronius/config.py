@@ -92,3 +92,17 @@ class FroniusInverterSetup(ComponentSetup[FroniusInverterConfiguration]):
                  id: int = 0,
                  configuration: FroniusInverterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or FroniusInverterConfiguration())
+
+
+class FroniusSecondaryInverterConfiguration:
+    def __init__(self, id: int = 1):
+        self.id = id
+
+
+class FroniusSecondaryInverterSetup(ComponentSetup[FroniusSecondaryInverterConfiguration]):
+    def __init__(self,
+                 name: str = "Sekundärer Wechselrichter",
+                 type: str = "inverter_secondary",
+                 id: int = 0,
+                 configuration: FroniusSecondaryInverterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or FroniusSecondaryInverterConfiguration())

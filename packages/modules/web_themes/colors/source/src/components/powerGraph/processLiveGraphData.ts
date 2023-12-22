@@ -1,4 +1,4 @@
-import * as d3 from 'd3'
+import { timeParse } from 'd3'
 import { globalData } from '../../assets/js/model'
 import {
 	type GraphDataItem,
@@ -17,9 +17,9 @@ export function processLiveGraphMessages(topic: string, message: string) {
 	} else if (topic == 'openWB/graph/lastlivevaluesJson') {
 		updateLiveGraph(topic, message)
 	} else if (topic == 'openWB/graph/config/duration') {
-		//  updateGlobal("liveGraphDuration", JSON.parse(message));
+		liveGraph.duration = JSON.parse(message)
 	} else {
-		console.warn('Ignored GRAPH message: [' + topic + '](' + message + ')')
+		//console.warn('Ignored GRAPH message: [' + topic + '](' + message + ')')
 	}
 }
 // initial/refresh delivery of all graph data
@@ -72,20 +72,20 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 	const values: GraphDataItem = {}
 	values.date = fullDate(data.time).valueOf()
 	if (+data.grid > 0) {
-		values.gridPull = +data.grid
-		values.gridPush = 0
+		values.evuIn = +data.grid
+		values.evuOut = 0
 	} else if (+data.grid <= 0) {
-		values.gridPull = 0
-		values.gridPush = -data.grid
+		values.evuIn = 0
+		values.evuOut = -data.grid
 	} else {
-		values.gridPull = 0
-		values.gridPush = 0
+		values.evuIn = 0
+		values.evuOut = 0
 	}
 	if (+data['pv-all'] >= 0) {
-		values.solarPower = +data['pv-all']
+		values.pv = +data['pv-all']
 		values.inverter = 0
 	} else {
-		values.solarPower = 0
+		values.pv = 0
 		values.inverter = -data['pv-all']
 	}
 	values.house = +data['house-power']
@@ -108,13 +108,10 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 	values.charging = +data['charging-all']
 	// charge points - we only show a maximum of 10 chargepoints in the graph
 	for (let i = 0; i < 10; i++) {
-		if (data['cp' + i + '-power']) {
-			values['cp' + i] = +data['cp' + i + '-power']
-		} else {
-			values['cp' + i] = 0
-		}
+		const idx = 'cp' + i
+		values[idx] = +data[idx + '-power'] ?? 0
 	}
-	values.selfUsage = values.solarPower - values.gridPush
+	values.selfUsage = values.pv - values.evuOut
 	if (values.selfUsage < 0) {
 		values.selfUsage = 0
 	}
@@ -125,7 +122,7 @@ function fullDate(timeString: string) {
 	const now = new Date(Date.now())
 	const mSecondsPerDay = 86400000 // milliseconds in a day
 	let date = new Date()
-	const parsedDate = d3.timeParse('%H:%M:%S')(timeString)
+	const parsedDate = timeParse('%H:%M:%S')(timeString)
 	if (parsedDate) {
 		date = parsedDate
 		date.setDate(now.getDate())

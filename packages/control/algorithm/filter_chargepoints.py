@@ -5,7 +5,6 @@ from typing import List, Optional, Tuple
 from control import data
 from control.algorithm import common
 from control.chargepoint.chargepoint import Chargepoint
-from helpermodules.timecheck import convert_to_unix_timestamp
 
 log = logging.getLogger(__name__)
 
@@ -28,11 +27,10 @@ def get_chargepoints_by_mode(mode_tuple: Tuple[Optional[str], str, bool]) -> Lis
     valid_chargepoints = []
     for cp in data.data.cp_data.values():
         if cp.data.set.charging_ev != -1:
-            charging_ev = cp.data.set.charging_ev_data
-            if ((charging_ev.data.control_parameter.prio == prio) and
-                (charging_ev.data.control_parameter.chargemode == mode or
+            if ((cp.data.control_parameter.prio == prio) and
+                (cp.data.control_parameter.chargemode == mode or
                     mode is None) and
-                    (charging_ev.data.control_parameter.submode == submode)):
+                    (cp.data.control_parameter.submode == submode)):
                 valid_chargepoints.append(cp)
     return valid_chargepoints
 
@@ -90,13 +88,13 @@ def _get_preferenced_chargepoint(valid_chargepoints: List[Chargepoint]) -> List:
                 # entsprechend der Bedingung die Values im Dictionary füllen
                 if condition_types[condition] == "min_current":
                     chargepoints.update(
-                        (cp, cp.data.set.charging_ev_data.data.control_parameter.required_current)
+                        (cp, cp.data.control_parameter.required_current)
                         for cp in chargepoints.keys())
                 elif condition_types[condition] == "soc":
                     chargepoints.update(
                         (cp, cp.data.set.charging_ev_data.data.get.soc) for cp in chargepoints.keys())
                 elif condition_types[condition] == "plug_in":
-                    chargepoints.update((cp, convert_to_unix_timestamp(cp.data.set.plug_time))
+                    chargepoints.update((cp, cp.data.set.plug_time)
                                         for cp in chargepoints.keys())
                 elif condition_types[condition] == "imported_since_plugged":
                     chargepoints.update((cp, cp.data.set.log.imported_since_plugged) for cp in chargepoints.keys())
