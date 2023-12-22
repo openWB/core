@@ -19,8 +19,8 @@ log = logging.getLogger(__name__)
 
 
 def get_counter_default_config():
-    return {"max_currents": [16, 16, 16],
-            "max_total_power": 11000}
+    return {"max_currents": [35]*3,
+            "max_total_power": 24000}
 
 
 @dataclass
