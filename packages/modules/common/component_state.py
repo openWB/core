@@ -19,7 +19,11 @@ def _calculate_powers_and_currents(currents: Optional[List[float]],
         else:
             powers = [currents[i]*voltages[i] for i in range(0, 3)]
     if currents is None and powers:
-        currents = [powers[i]/voltages[i] for i in range(0, 3)]
+        try:
+            currents = [powers[i]/voltages[i] for i in range(0, 3)]
+        except ZeroDivisionError:
+            # some inverters (Sungrow) report 0V if in standby
+            currents = [0.0]*3
     if currents and powers:
         currents = [currents[i]*-1 if powers[i] < 0 and currents[i] > 0 else currents[i] for i in range(0, 3)]
     return currents, powers, voltages
