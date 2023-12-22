@@ -34,7 +34,7 @@ def _refresh_token(config: VoltegoTariff):
     ).json()
     config.configuration.token = VoltegoToken(access_token=response["access_token"],
                                               expires_in=response["expires_in"],
-                                              created_at=timecheck.create_timestamp_unix())
+                                              created_at=timecheck.create_timestamp())
     Pub().pub("openWB/set/optional/et/provider", asdict(config))
 
 
