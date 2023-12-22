@@ -107,15 +107,7 @@ def _pub_configurable_display_themes() -> None:
 
 def _pub_configurable_electricity_tariffs() -> None:
     try:
-        electricity_tariffs: List[Dict] = [
-            {
-                "value": None,
-                "text": "kein Anbieter",
-                "defaults": {
-                    "type": None,
-                    "configuration": {}
-                }
-            }]
+        electricity_tariffs: List[Dict] = []
         path_list = Path(_get_packages_path()/"modules"/"electricity_tariffs").glob('**/tariff.py')
         for path in path_list:
             try:
@@ -133,6 +125,17 @@ def _pub_configurable_electricity_tariffs() -> None:
             except Exception:
                 log.exception("Fehler im configuration-Modul")
         electricity_tariffs = sorted(electricity_tariffs, key=lambda d: d['text'].upper())
+        # "leeren" Eintrag an erster Stelle einfügen
+        electricity_tariffs.insert(0,
+                                   {
+                                       "value": None,
+                                       "text": "- kein Anbieter -",
+                                       "defaults": {
+                                           "type": None,
+                                           "configuration": {}
+                                       }
+                                   })
+
         Pub().pub("openWB/set/system/configurable/electricity_tariffs", electricity_tariffs)
     except Exception:
         log.exception("Fehler im configuration-Modul")
