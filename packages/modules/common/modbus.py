@@ -50,9 +50,9 @@ class ModbusClient:
         try:
             self.delegate.__enter__()
         except pymodbus.exceptions.ConnectionException as e:
-            raise Exception(
-                "Modbus-Client konnte keine Verbindung zu " + str(self.address) + ":" + str(self.port) +
-                " aufbauen. Bitte Einstellungen (IP-Adresse, Ladepunkt-Typ, ..) und Hardware-Anschluss prüfen.") from e
+            e.args += ((f"Modbus-Client konnte keine Verbindung zu {self.address}:{self.port} aufbauen. Bitte "
+                "Einstellungen (IP-Adresse, Ladepunkt-Typ, ..) und Hardware-Anschluss prüfen."),)
+            raise e
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -91,14 +91,16 @@ class ModbusClient:
                       ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in types]
             return result if multi_request else result[0]
         except pymodbus.exceptions.ConnectionException as e:
-            raise Exception(
+            e.args += ((
                 "TCP-Client konnte keine Verbindung zu " + str(self.address) + ":" + str(self.port) +
-                " aufbauen. Bitte Einstellungen (IP-Adresse, ..) und " + "Hardware-Anschluss prüfen.") from e
+                " aufbauen. Bitte Einstellungen (IP-Adresse, ..) und " + "Hardware-Anschluss prüfen."),)
+            raise e
         except pymodbus.exceptions.ModbusIOException as e:
-            raise Exception(
+            e.args += ((
                 "TCP-Client " + str(self.address) + ":" + str(self.port) +
                 " konnte keinen Wert abfragen. Falls vorhanden, parallele Verbindungen, zB. node red," +
-                "beenden und bei anhaltender Fehlermeldung Zähler neu starten.") from e
+                "beenden und bei anhaltender Fehlermeldung Zähler neu starten."),)
+            raise e
         except Exception as e:
             raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
