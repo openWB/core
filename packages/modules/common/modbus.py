@@ -51,7 +51,7 @@ class ModbusClient:
             self.delegate.__enter__()
         except pymodbus.exceptions.ConnectionException as e:
             e.args += ((f"Modbus-Client konnte keine Verbindung zu {self.address}:{self.port} aufbauen. Bitte "
-                "Einstellungen (IP-Adresse, Ladepunkt-Typ, ..) und Hardware-Anschluss prüfen."),)
+                        "Einstellungen (IP-Adresse, Ladepunkt-Typ, ..) und Hardware-Anschluss prüfen."),)
             raise e
         return self
 

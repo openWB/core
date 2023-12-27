@@ -4,7 +4,7 @@ import pytest
 from modules.common import sdm
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, METER_BROKEN, METER_PROBLEM, USB_ADAPTER_BROKEN, check_meter_values)
+    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_PROBLEM, USB_ADAPTER_BROKEN, check_meter_values)
 from modules.internal_chargepoint_handler.clients import ClientHandler
 
 
@@ -13,7 +13,11 @@ from modules.internal_chargepoint_handler.clients import ClientHandler
     [pytest.param(Exception("Modbus"), None, None, [230]*3, EVSE_BROKEN, id="EVSE defekt"),
      pytest.param(None, 18, Exception("Modbus"), None, METER_PROBLEM, id="Zähler verkonfiguriert"),
      pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, USB_ADAPTER_BROKEN,
-                  id="USB-Adapter defekt")
+                  id="USB-Adapter defekt"),
+     pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, LAN_ADAPTER_BROKEN,
+                  id="LAN-Adapter defekt"),
+     # pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, ,
+     #               id="LAN-Adapter nicht erreichbar"),
      ]
 )
 def test_hardware_check_fails(evse_side_effect,

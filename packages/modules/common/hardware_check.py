@@ -11,8 +11,8 @@ OPEN_TICKET = " Bitte nehme über die Support-Funktion in den Einstellungen Kont
 RS485_ADPATER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist {} defekt oder zwei "
                         f"Busteilnehmer haben die gleiche Modbus-ID. Bitte die Zähler-ID prüfen. {OPEN_TICKET}")
 USB_ADAPTER_BROKEN = RS485_ADPATER_BROKEN.format('der USB-Adapter')
-LAN_ADAPTER_BROKEN = (
-    f"{RS485_ADPATER_BROKEN.format('der LAN-Konverter abgestürzt,')} Bitte den openWB series2 satellit stromlos machen.")
+LAN_ADAPTER_BROKEN = (f"{RS485_ADPATER_BROKEN.format('der LAN-Konverter abgestürzt,')} "
+                      "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
                  f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
 METER_BROKEN = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
