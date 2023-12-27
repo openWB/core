@@ -59,7 +59,7 @@ class SeriesHardwareCheckMixin:
             evse_check_passed = False
         meter_check_passed, meter_error_msg = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
-            if isinstance(self.evse_client.client, ModbusTcpClient_):
+            if isinstance(self.client, ModbusTcpClient_):
                 raise Exception(LAN_ADAPTER_BROKEN)
             else:
                 raise Exception(USB_ADAPTER_BROKEN)
