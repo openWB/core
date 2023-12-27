@@ -2,7 +2,6 @@ import socket
 import struct
 from typing import Iterator, Optional
 
-from modules.common.fault_state import FaultState
 from modules.devices.sma_shm.speedwiredecoder import decode_speedwire
 
 
@@ -22,9 +21,10 @@ class SpeedwireListener:
             sock.bind(('', multicast_port))
             mreq = struct.pack("4s4s", socket.inet_aton(multicast_group), socket.inet_aton(ip_bind))
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-        except BaseException:
+        except BaseException as e:
             sock.close()
-            raise FaultState.error("could not connect to multicast group or bind to given interface")
+            e.args += ("could not connect to multicast group or bind to given interface",)
+            raise e
         self.__socket = sock
 
         def generator() -> Iterator[dict]:

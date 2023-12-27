@@ -10,7 +10,6 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
-from modules.common.fault_state import FaultState
 from modules.vehicles.tesla import api
 from modules.vehicles.tesla.config import TeslaSoc, TeslaSocConfiguration, TeslaSocToken
 
@@ -40,7 +39,7 @@ def _wake_up_car(vehicle_config: TeslaSoc):
         log.debug("Loop: "+str(counter)+", State: "+str(state))
     log.info("Status nach Aufwecken: "+str(state))
     if state != "online":
-        raise FaultState.error("EV konnte nicht geweckt werden.")
+        raise Exception("EV konnte nicht geweckt werden.")
 
 
 def create_vehicle(vehicle_config: TeslaSoc, vehicle: int):

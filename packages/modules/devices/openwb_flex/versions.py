@@ -3,7 +3,6 @@ from typing import Type, Union
 from modules.common import lovato
 from modules.common import mpm3pm
 from modules.common import sdm
-from modules.common.fault_state import FaultState
 
 
 def kit_counter_version_factory(
@@ -15,8 +14,7 @@ def kit_counter_version_factory(
     elif version == 2:
         return sdm.Sdm630
     else:
-        raise FaultState.error("Version "+str(version) +
-                               " unbekannt.")
+        raise ValueError("Version "+str(version) + " unbekannt.")
 
 
 def kit_inverter_version_factory(
@@ -30,8 +28,7 @@ def kit_inverter_version_factory(
     elif version == 3:
         return sdm.Sdm120
     else:
-        raise FaultState.error("Version "+str(version) +
-                               " unbekannt.")
+        raise ValueError("Version "+str(version) + " unbekannt.")
 
 
 def kit_bat_version_factory(version: int) -> Type[Union[mpm3pm.Mpm3pm, sdm.Sdm630, sdm.Sdm120]]:
@@ -42,5 +39,4 @@ def kit_bat_version_factory(version: int) -> Type[Union[mpm3pm.Mpm3pm, sdm.Sdm63
     elif version == 2:
         return sdm.Sdm630
     else:
-        raise FaultState.error("Version "+str(version) +
-                               " unbekannt.")
+        raise ValueError("Version "+str(version) + " unbekannt.")

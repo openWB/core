@@ -60,7 +60,7 @@ class SmaSunnyBoyInverter:
             # Aus kompatibilitätsgründen wird dc_power auf den Wert der AC-Wirkleistung gesetzt.
             dc_power = power_total
         else:
-            raise FaultState.error("Unbekannte Version "+str(self.component_config.configuration.version))
+            raise ValueError("Unbekannte Version "+str(self.component_config.configuration.version))
         if power_total == self.SMA_INT32_NAN:
             power_total = 0
 

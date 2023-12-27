@@ -29,7 +29,7 @@ class EnphaseInverter:
 
         if meter is None:
             # configuration wrong or error
-            raise FaultState.error("Es konnten keine Daten vom Messgerät gelesen werden.")
+            raise ValueError("Es konnten keine Daten vom Messgerät gelesen werden.")
 
         power = meter['activePower']
 
