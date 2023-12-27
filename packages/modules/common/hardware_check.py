@@ -51,19 +51,23 @@ class SeriesHardwareCheckMixin:
     def __init__(self) -> None:
         pass
 
+    def handle_exception(self: ClientHandlerProtocol, exception: Exception):
+        # separated for test purposes
+        if (isinstance(self.client, ModbusTcpClient_) and
+                isinstance(exception, pymodbus.exceptions.ConnectionException)):
+            raise exception
+        else:
+            return False
+
     def check_hardware(self: ClientHandlerProtocol):
+
         try:
             if self.evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
                 evse_check_passed = True
             else:
                 evse_check_passed = False
-        except pymodbus.exceptions.ConnectionException as e:
-            if isinstance(self.client, ModbusTcpClient_):
-                raise e
-            else:
-                evse_check_passed = False
-        except Exception:
-            evse_check_passed = False
+        except Exception as e:
+            evse_check_passed = self.handle_exception(e)
         meter_check_passed, meter_error_msg = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
             if isinstance(self.client, ModbusTcpClient_):

@@ -6,11 +6,10 @@ import requests_mock
 from dataclass_utils import dataclass_from_dict
 from helpermodules import compatibility
 from modules.common.store._api import LoggingValueStore
+from modules.conftest import SAMPLE_IP
 from modules.devices.fronius import counter_s0
 from modules.devices.fronius.config import FroniusConfiguration, FroniusS0CounterSetup
 from test_utils.mock_ramdisk import MockRamdisk
-
-SAMPLE_IP = "1.1.1.1"
 
 
 @pytest.fixture
