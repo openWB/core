@@ -6,8 +6,11 @@ from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
 EVSE_MIN_FIRMWARE = 7
 
 OPEN_TICKET = " Bitte nehme über die Support-Funktion in den Einstellungen Kontakt mit uns auf."
-USB_ADAPTER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der USB-Adapter defekt oder zwei "
-                      f"Busteilnehmer haben die gleiche Modbus-ID. Bitte die Zähler-ID prüfen. {OPEN_TICKET}")
+RS485_ADPATER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der {} defekt oder zwei "
+                        f"Busteilnehmer haben die gleiche Modbus-ID. Bitte die Zähler-ID prüfen. {OPEN_TICKET}")
+USB_ADAPTER_BROKEN = RS485_ADPATER_BROKEN.format('der USB-Adapter')
+LAN_ADAPTER_BROKEN = (
+    f"{RS485_ADPATER_BROKEN.format('der LAN-Konverter')} Auf keinen Fall den RS485/LAN-Konverter zurücksetzen!")
 METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
                  f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
 METER_BROKEN = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
@@ -56,7 +59,10 @@ class SeriesHardwareCheckMixin:
             evse_check_passed = False
         meter_check_passed, meter_error_msg = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
-            raise Exception(USB_ADAPTER_BROKEN)
+            if isinstance(self.evse_client.client, ModbusTcpClient_):
+                raise Exception(LAN_ADAPTER_BROKEN)
+            else:
+                raise Exception(USB_ADAPTER_BROKEN)
         if meter_check_passed is False:
             raise Exception(meter_error_msg)
         elif meter_check_passed and meter_error_msg == METER_BROKEN:
