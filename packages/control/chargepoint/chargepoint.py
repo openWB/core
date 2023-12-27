@@ -46,7 +46,7 @@ def get_chargepoint_config_default() -> dict:
         "ev": 0,
         "template": 0,
         "connected_phases": 3,
-        "phase_1": 0,
+        "phase_1": 1,
         "auto_phase_switch_hw": False,
         "control_pilot_interruption_hw": False
     }
