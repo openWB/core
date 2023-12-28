@@ -7,9 +7,12 @@ from typing import List, Optional
 
 from control import data
 from helpermodules import hardware_configuration
+from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
-from modules import ripple_control_receiver
+from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
+from modules.ripple_control_receivers.gpio.config import GpioRcr
+from modules.ripple_control_receivers.gpio.ripple_control_receiver import create_ripple_control_receiver
 
 log = logging.getLogger(__name__)
 
@@ -83,10 +86,26 @@ def chargemode_config_factory() -> ChargemodeConfig:
 
 
 @dataclass
+class RippleControlReceiverGet:
+    fault_state: int = 0
+    fault_str: str = NO_ERROR
+    r1_blocking: bool = False
+    r2_blocking: bool = False
+
+
+def rcr_get_factory() -> RippleControlReceiverGet:
+    return RippleControlReceiverGet()
+
+
+def gpio_rcr_factory() -> ConfigurableRcr:
+    return create_ripple_control_receiver(GpioRcr())
+
+
+@dataclass
 class RippleControlReceiver:
     configured: bool = False
-    r1_active: bool = False
-    r2_active: bool = False
+    get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
+    module: ConfigurableRcr = field(default_factory=gpio_rcr_factory)
 
 
 def ripple_control_receiver_factory() -> RippleControlReceiver:
@@ -195,14 +214,8 @@ class General:
         except Exception:
             log.exception("Fehler im General-Modul")
 
-    def check_ripple_control_receiver(self):
+    def set_ripple_control_receiver(self):
         configured = hardware_configuration.get_hardware_configuration_setting(
             "ripple_control_receiver_configured")
         Pub().pub("openWB/set/general/ripple_control_receiver/configured", configured)
         self.data.ripple_control_receiver.configured = configured
-        if configured:
-            r1_active, r2_active = ripple_control_receiver.read()
-            self.data.ripple_control_receiver.r1_active = r1_active
-            Pub().pub("openWB/set/general/ripple_control_receiver/r1_active", r1_active)
-            self.data.ripple_control_receiver.r2_active = r2_active
-            Pub().pub("openWB/set/general/ripple_control_receiver/r2_active", r2_active)

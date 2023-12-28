@@ -1,5 +1,11 @@
+#!/usr/bin/env python3
 import logging
 from typing import Tuple
+
+from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_state import RcrState
+from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
+from modules.ripple_control_receivers.gpio.config import GpioRcr
 
 log = logging.getLogger(__name__)
 has_gpio = True
@@ -24,8 +30,16 @@ def read() -> Tuple[bool, bool]:
         try:
             rse1 = GPIO.input(24) == GPIO.LOW
             rse2 = GPIO.input(21) == GPIO.LOW
-        except Exception:
+        except Exception as e:
             GPIO.cleanup()
-            log.exception("Fehler beim Auslesen der Rundsteuer-Kontakte.")
-    log.debug(f"RSE1-Status: {rse1}, RSE2-Status: {rse2}")
-    return rse1, rse2
+            raise e
+    return RcrState(rse1, rse2)
+
+
+def create_ripple_control_receiver(config: GpioRcr):
+    def updater():
+        return read()
+    return ConfigurableRcr(config=config, component_updater=updater)
+
+
+device_descriptor = DeviceDescriptor(configuration_factory=GpioRcr)

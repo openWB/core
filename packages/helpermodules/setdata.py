@@ -786,10 +786,15 @@ class SetData:
             elif "openWB/set/general/range_unit" in msg.topic:
                 self._validate_value(msg, str)
             elif ("openWB/set/general/ripple_control_receiver/configured" in msg.topic or
-                    "openWB/set/general/ripple_control_receiver/r1_active" in msg.topic or
-                    "openWB/set/general/ripple_control_receiver/r2_active" in msg.topic):
+                    "openWB/set/general/ripple_control_receiver/get/r1_blocking" in msg.topic or
+                    "openWB/set/general/ripple_control_receiver/get/r2_blocking" in msg.topic):
                 self._validate_value(msg, bool)
-            elif "openWB/set/general/web_theme" in msg.topic:
+            elif "openWB/set/general/ripple_control_receiver/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/general/ripple_control_receiver/get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
+            elif ("openWB/set/general/web_theme" in msg.topic or
+                  "openWB/set/general/ripple_control_receiver/module" in msg.topic):
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)

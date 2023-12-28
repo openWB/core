@@ -169,3 +169,11 @@ class TariffState:
     def __init__(self,
                  prices: Optional[Dict[int, float]] = None) -> None:
         self.prices = prices
+
+
+class RcrState:
+    def __init__(self, r1_blocking: bool, r2_blocking: bool) -> None:
+        """Wenn der Kontakt aktiv ist == True, wird die Ladung unterbrochen.
+        """
+        self.r1_blocking = r1_blocking
+        self.r2_blocking = r2_blocking

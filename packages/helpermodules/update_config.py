@@ -27,6 +27,7 @@ from control import ev
 from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 
 log = logging.getLogger(__name__)
@@ -169,8 +170,11 @@ class UpdateConfig:
         "^openWB/general/notifications/plug$",
         "^openWB/general/notifications/smart_home$",
         "^openWB/general/ripple_control_receiver/configured$",
-        "^openWB/general/ripple_control_receiver/r1_active$",
-        "^openWB/general/ripple_control_receiver/r2_active$",
+        "^openWB/general/ripple_control_receiver/module$",
+        "^openWB/general/ripple_control_receiver/get/fault_state$",
+        "^openWB/general/ripple_control_receiver/get/fault_str$",
+        "^openWB/general/ripple_control_receiver/get/r1_blocking$",
+        "^openWB/general/ripple_control_receiver/get/r2_blocking$",
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
         "^openWB/general/chargemode_config/pv_charging/feed_in_yield$",
@@ -363,6 +367,7 @@ class UpdateConfig:
         "^openWB/system/configurable/devices_components$",
         "^openWB/system/configurable/electricity_tariffs$",
         "^openWB/system/configurable/display_themes$",
+        "^openWB/system/configurable/ripple_control_receivers$",
         "^openWB/system/configurable/soc_modules$",
         "^openWB/system/configurable/web_themes$",
         "^openWB/system/current_branch",
@@ -444,6 +449,7 @@ class UpdateConfig:
         ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
         ("openWB/general/ripple_control_receiver/configured", False),
+        ("openWB/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr())),
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
