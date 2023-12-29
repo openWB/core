@@ -177,7 +177,7 @@ class HandlerAlgorithm:
                 self.control_yc.perform_load_control()
                 changed_values_handler.pub_changed_values()
             log.info("# ***Start*** ")
-            Pub().pub("openWB/set/system/time", timecheck.create_timestamp_unix())
+            Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
