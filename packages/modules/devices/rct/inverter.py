@@ -2,7 +2,7 @@
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.devices.rct.config import RctInverterSetup
 from modules.devices.rct.rct_lib import RCT
@@ -12,7 +12,7 @@ class RctInverter:
     def __init__(self, component_config: RctInverterSetup) -> None:
         self.component_config = dataclass_from_dict(RctInverterSetup, component_config)
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, rct_client: RCT) -> None:
         my_tab = []

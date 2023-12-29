@@ -18,6 +18,7 @@ from control import ev
 from control import general
 from control import yourcharge
 from control.chargepoint.chargepoint_all import AllChargepoints
+from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from helpermodules import graph
@@ -418,7 +419,7 @@ class SubData:
                     if re.search("/chargepoint/[0-9]+/set/", msg.topic) is not None:
                         if re.search("/chargepoint/[0-9]+/set/log$", msg.topic) is not None:
                             var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
-                                chargepoint.Log, decode_payload(msg.payload))
+                                Log, decode_payload(msg.payload))
                         else:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:

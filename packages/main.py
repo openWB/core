@@ -74,7 +74,7 @@ class HandlerAlgorithm:
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
-            Pub().pub("openWB/set/system/time", timecheck.create_timestamp_unix())
+            Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())

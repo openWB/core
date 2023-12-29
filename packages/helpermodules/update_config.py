@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 30
+    DATASTORE_VERSION = 31
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -387,7 +387,7 @@ class UpdateConfig:
         ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
-        ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData())),
+        ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData(min_current=10))),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),
@@ -1064,3 +1064,13 @@ class UpdateConfig:
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 30)
+
+    def upgrade_datastore_30(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/get/soc_timestamp", topic) is not None:
+                payload = decode_payload(payload)
+                if payload:
+                    updated_payload = datetime.datetime.strptime(payload, "%m/%d/%Y, %H:%M:%S").timestamp()
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 31)

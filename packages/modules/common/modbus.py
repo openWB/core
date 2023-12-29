@@ -15,8 +15,6 @@ from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder
 from urllib3.util import parse_url
 
-from modules.common.fault_state import FaultState
-
 log = logging.getLogger(__name__)
 
 
@@ -52,7 +50,7 @@ class ModbusClient:
         try:
             self.delegate.__enter__()
         except pymodbus.exceptions.ConnectionException as e:
-            raise FaultState.error(
+            raise Exception(
                 "Modbus-Client konnte keine Verbindung zu " + str(self.address) + ":" + str(self.port) +
                 " aufbauen. Bitte Einstellungen (IP-Adresse, Ladepunkt-Typ, ..) und Hardware-Anschluss prüfen.") from e
         return self
@@ -65,8 +63,8 @@ class ModbusClient:
             log.debug("Close Modbus TCP connection")
             self.delegate.close()
         except Exception as e:
-            raise FaultState.error(__name__+" "+str(type(e))+" " +
-                                   str(e)) from e
+            raise Exception(__name__+" "+str(type(e))+" " +
+                            str(e)) from e
 
     def __read_registers(self, read_register_method: Callable,
                          address: int,
@@ -87,23 +85,22 @@ class ModbusClient:
             response = read_register_method(
                 address, number_of_addresses, **kwargs)
             if response.isError():
-                raise FaultState.error(__name__+" "+str(response))
+                raise Exception(__name__+" "+str(response))
             decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
             result = [struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint())) if t ==
                       ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in types]
             return result if multi_request else result[0]
         except pymodbus.exceptions.ConnectionException as e:
-            raise FaultState.error(
+            raise Exception(
                 "TCP-Client konnte keine Verbindung zu " + str(self.address) + ":" + str(self.port) +
                 " aufbauen. Bitte Einstellungen (IP-Adresse, ..) und " + "Hardware-Anschluss prüfen.") from e
         except pymodbus.exceptions.ModbusIOException as e:
-            raise FaultState.warning(
+            raise Exception(
                 "TCP-Client " + str(self.address) + ":" + str(self.port) +
                 " konnte keinen Wert abfragen. Falls vorhanden, parallele Verbindungen, zB. node red," +
                 "beenden und bei anhaltender Fehlermeldung Zähler neu starten.") from e
         except Exception as e:
-            raise FaultState.error(__name__+" "+str(type(e))+" " +
-                                   str(e)) from e
+            raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
     @overload
     def read_holding_registers(self, address: int, types: Iterable[ModbusDataType], byteorder: Endian = Endian.Big,

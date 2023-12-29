@@ -18,7 +18,7 @@ class StuderInverter:
         self.component_config = dataclass_from_dict(StuderInverterSetup, component_config)
         self.__tcp_client = tcp_client
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
         vc_count = self.component_config.configuration.vc_count

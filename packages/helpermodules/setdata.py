@@ -129,12 +129,21 @@ class SetData:
                 if self._validate_collection_value(msg, data_type, ranges, collection):
                     valid = True
             elif data_type == str:
-                if isinstance(value, str) or value is None:
+                if isinstance(value, str) or isinstance(value, type(None)):
                     valid = True
                 else:
                     log.error(f"Payload ungültig: Topic {msg.topic}, Payload {value} sollte ein String sein.")
+            elif isinstance(data_type, Tuple):
+                if int in data_type:
+                    if self._validate_min_max_value(value, msg, int, ranges):
+                        valid = True
+                if float in data_type:
+                    if self._validate_min_max_value(value, msg, float, ranges):
+                        valid = True
+                if None in data_type and isinstance(value, type(None)):
+                    valid = True
             elif data_type == int or data_type == float:
-                if self._validate_min_max_value(value, msg, data_type, ranges) or isinstance(value, type(None)):
+                if isinstance(value, type(None)) or self._validate_min_max_value(value, msg, data_type, ranges):
                     valid = True
             elif data_type == bool:
                 valid, value = self._validate_bool_value(value, msg)
@@ -412,7 +421,7 @@ class SetData:
                     "/ev_template" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "/get/soc_timestamp" in msg.topic:
-                self._validate_value(msg, str)
+                self._validate_value(msg, float)
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
             elif "/get/range" in msg.topic:
@@ -521,7 +530,7 @@ class SetData:
                     self._validate_value(msg, int, [(0, 4)])
                 elif ("/set/rfid" in msg.topic or
                         "/set/plug_time" in msg.topic):
-                    self._validate_value(msg, str)
+                    self._validate_value(msg, float)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/set/change_ev_permitted" in msg.topic:
@@ -543,13 +552,13 @@ class SetData:
                     self._validate_value(msg, str)
                 elif "/control_parameter/prio" in msg.topic:
                     self._validate_value(msg, bool)
-                elif ("/control_parameter/timestamp_switch_on_off" in msg.topic or
-                        "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
-                        "/control_parameter/timestamp_perform_phase_switch" in msg.topic or
-                        "/control_parameter/current_plan" in msg.topic):
+                elif "/control_parameter/current_plan" in msg.topic:
                     self._validate_value(msg, str)
                 elif ("/control_parameter/imported_instant_charging" in msg.topic or
-                        "/control_parameter/imported_at_plan_start" in msg.topic):
+                        "/control_parameter/imported_at_plan_start" in msg.topic or
+                        "/control_parameter/timestamp_switch_on_off" in msg.topic or
+                        "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
+                        "/control_parameter/timestamp_perform_phase_switch" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
                     self._validate_value(msg, int, [(0, 7)])
@@ -586,13 +595,16 @@ class SetData:
             self._validate_value(msg, int, [(0, 2)])
         elif "/get/evse_current" in msg.topic:
             self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
+        elif "/get/rfid_timestamp" in msg.topic:
+            self._validate_value(msg, float)
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
-                "/get/heartbeat" in msg.topic):
+                "/get/heartbeat" in msg.topic or
+                "/get/rfid" in msg.topic or
+                "/get/vehicle_id" in msg.topic):
             self._validate_value(msg, str)
-        elif ("/get/rfid" in msg.topic or
-                "/get/rfid_timestamp" in msg.topic):
-            self._validate_value(msg, str)
+        elif "/get/rfid_timestamp" in msg.topic:
+            self._validate_value(msg, float)
         elif ("/get/soc" in msg.topic):
             self._validate_value(msg, float, [(0, 100)])
         else:
@@ -749,7 +761,7 @@ class SetData:
                     "openWB/set/general/mqtt_bridge" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/grid_protection_timestamp" in msg.topic:
-                self._validate_value(msg, str)
+                self._validate_value(msg, float)
             elif "openWB/set/general/grid_protection_random_stop" in msg.topic:
                 self._validate_value(msg, int, [(0, 90)])
             elif "openWB/set/general/notifications/selected" in msg.topic:
@@ -966,7 +978,7 @@ class SetData:
             elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/system/time" in msg.topic:
-                self._validate_value(msg, int)
+                self._validate_value(msg, float)
             elif "openWB/set/system/datastore_version" in msg.topic:
                 self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)])
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:

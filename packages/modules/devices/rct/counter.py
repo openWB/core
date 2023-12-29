@@ -15,7 +15,7 @@ class RctCounter:
     def __init__(self, component_config: RctCounterSetup) -> None:
         self.component_config = dataclass_from_dict(RctCounterSetup, component_config)
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, rct_client: RCT):
         # generate id list for fast bulk read
@@ -49,7 +49,7 @@ class RctCounter:
         self.store.set(counter_state)
         if (stat1.value + stat2.value + stat3.value + stat4.value) > 0:
             # Werte werden trotz Fehlercode übermittelt.
-            raise FaultState.warning(
+            self.fault_state.warning(
                 f"Alarm Status Speicher ist ungleich 0. Status 1: {stat1.value}, Status 2: {stat2.value}, "
                 f"Status 3: {stat3.value}, Status 4: {stat4.value},")
 

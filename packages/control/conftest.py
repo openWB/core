@@ -6,7 +6,8 @@ import pytest
 from control import data
 from control.bat import Bat, BatData
 from control.bat import Get as BatGet
-from control.chargepoint.chargepoint import Chargepoint, ChargepointData, Config, Get, Set
+from control.chargepoint.chargepoint import Chargepoint, ChargepointData
+from control.chargepoint.chargepoint_data import Config, Get, Set
 from control.counter import CounterData
 from control.counter import Config as CounterConfig
 from control.counter import Get as CounterGet

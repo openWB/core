@@ -1,14 +1,12 @@
 import logging
 from typing import Union, Tuple
 
-from modules.common.fault_state import exceptions_to_fault_state
 
 Number = Union[int, float]
 
 log = logging.getLogger(__name__)
 
 
-@exceptions_to_fault_state(__name__)
 def calculate_import_export(time_since_previous: Number, power1: Number, power2: Number) -> Tuple[float, float]:
     log.debug("time passed: %g, power1: %g, power2: %g", time_since_previous, power1, power2)
     power_low = min(power1, power2)

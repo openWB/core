@@ -51,7 +51,7 @@ class Device(AbstractDevice):
             if len(self.components) == 1:
                 for component in self.components:
                     if isinstance(self.components[component], inverter.PowerdogInverter):
-                        with SingleComponentUpdateContext(self.components[component].component_info):
+                        with SingleComponentUpdateContext(self.components[component].fault_state):
                             self.components[component].update()
                     else:
                         raise Exception(

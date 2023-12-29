@@ -2,12 +2,14 @@ import logging
 
 import time
 from typing import Tuple
+from helpermodules.logger import ModifyLoglevelContext
 from control.algorithm.yourcharge.standard_socket_meter_handler import SocketMeterHandler
 
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.hardware_check_context import SeriesHardwareCheckContext
 from modules.common.store import get_internal_chargepoint_value_store, get_chargepoint_value_store
 from modules.internal_chargepoint_handler.clients import ClientHandler
 
@@ -28,12 +30,12 @@ class ChargepointModule(AbstractChargepoint):
                  parent_cp: int,
                  hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
-        self.component_info = ComponentInfo(
+        self.fault_state = FaultState(ComponentInfo(
             hierarchy_id,
             "Ladepunkt "+str(local_charge_point_num),
             "chargepoint",
             parent_id=parent_cp,
-            parent_hostname=parent_hostname)
+            parent_hostname=parent_hostname))
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
         self.store = get_chargepoint_value_store(hierarchy_id)
         self.old_plug_state = False
@@ -41,6 +43,8 @@ class ChargepointModule(AbstractChargepoint):
         self.__client = client_handler
         self.standard_socket_handler = None
         version = self.__client.evse_client.get_firmware_version()
+        with ModifyLoglevelContext(log, logging.DEBUG):
+            log.debug(f"Firmware-Version der EVSE: {version}")
         if version < 17:
             self._precise_current = False
         else:
@@ -49,7 +53,7 @@ class ChargepointModule(AbstractChargepoint):
             self._precise_current = self.__client.evse_client.is_precise_current_active()
 
     def set_current(self, current: float) -> None:
-        with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state):
             formatted_current = int(current*100) if self._precise_current else int(current)
             if self.set_current_evse != formatted_current:
                 self.__client.evse_client.set_current(formatted_current)
@@ -61,25 +65,23 @@ class ChargepointModule(AbstractChargepoint):
             self.store_internal.set(chargepoint_state)
             self.store_internal.update()
         try:
-            powers, power = self.__client.meter_client.get_power()
-            if power < self.PLUG_STANDBY_POWER_THRESHOLD:
-                power = 0
-            voltages = self.__client.meter_client.get_voltages()
-            meter_check_passed, meter_error_msg = self.__client.check_meter()
-            if meter_check_passed is False:
-                raise ValueError(meter_error_msg)
-            currents = self.__client.meter_client.get_currents()
-            imported = self.__client.meter_client.get_imported()
-            power_factors = self.__client.meter_client.get_power_factors()
-            frequency = self.__client.meter_client.get_frequency()
-            phases_in_use = sum(1 for current in currents if current > 3)
-            if phases_in_use == 0:
-                phases_in_use = self.old_phases_in_use
-            else:
-                self.old_phases_in_use = phases_in_use
+            with SeriesHardwareCheckContext(self.__client):
+                powers, power = self.__client.meter_client.get_power()
+                if power < self.PLUG_STANDBY_POWER_THRESHOLD:
+                    power = 0
+                voltages = self.__client.meter_client.get_voltages()
+                currents = self.__client.meter_client.get_currents()
+                imported = self.__client.meter_client.get_imported()
+                power_factors = self.__client.meter_client.get_power_factors()
+                frequency = self.__client.meter_client.get_frequency()
+                phases_in_use = sum(1 for current in currents if current > 3)
+                if phases_in_use == 0:
+                    phases_in_use = self.old_phases_in_use
+                else:
+                    self.old_phases_in_use = phases_in_use
 
-            time.sleep(0.1)
-            plug_state, charge_state, self.set_current_evse = self.__client.evse_client.get_plug_charge_state()
+                time.sleep(0.1)
+                plug_state, charge_state, self.set_current_evse = self.__client.evse_client.get_plug_charge_state()
             self.__client.read_error = 0
 
             if phase_switch_cp_active:
@@ -128,7 +130,6 @@ class ChargepointModule(AbstractChargepoint):
                 store_state(chargepoint_state)
                 raise FaultState.error(msg)
             else:
-                self.__client.check_hardware()
                 raise FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)) from e
 
         store_state(chargepoint_state)
@@ -136,7 +137,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:
         gpio_cp, gpio_relay = self.__client.get_pins_phase_switch(phases_to_use)
-        with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state):
             self.__client.evse_client.set_current(0)
         time.sleep(1)
         GPIO.output(gpio_cp, GPIO.HIGH)  # CP off
@@ -149,7 +150,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def perform_cp_interruption(self, duration: int) -> None:
         gpio_cp = self.__client.get_pins_cp_interruption()
-        with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state):
             self.__client.evse_client.set_current(0)
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)

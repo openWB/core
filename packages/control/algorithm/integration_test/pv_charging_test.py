@@ -127,9 +127,9 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
     for i in range(3, 6):
         assert data.data.cp_data[f"cp{i}"].data.set.current == 0
     assert data.data.cp_data[
-        "cp3"].data.control_parameter.timestamp_switch_on_off == "05/16/2022, 08:40:52"
+        "cp3"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
     assert data.data.cp_data[
-        "cp4"].data.control_parameter.timestamp_switch_on_off == "05/16/2022, 08:40:52"
+        "cp4"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 31775
@@ -145,12 +145,12 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16, 12, 14]
     data.data.counter_data["counter0"].data.set.reserved_surplus = 9000
     data.data.cp_data[
-        "cp3"].data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:39:45"
+        "cp3"].data.control_parameter.timestamp_switch_on_off = 1652683185.0
     data.data.cp_data[
         "cp3"].data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
     # nicht genug Überschuss für beide
     data.data.cp_data[
-        "cp4"].data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:40:52"
+        "cp4"].data.control_parameter.timestamp_switch_on_off = 1652683252.0
     data.data.cp_data[
         "cp4"].data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
     data.data.cp_data[
@@ -239,7 +239,7 @@ cases_phase_switch = [
                       raw_power_left=32580,
                       raw_currents_left_counter0=[40]*3,
                       raw_currents_left_counter6=[16]*3,
-                      expected_timestamp_auto_phase_switch_cp3="05/16/2022, 08:40:52",
+                      expected_timestamp_auto_phase_switch_cp3=1652683252.0,
                       expected_timestamp_auto_phase_switch_cp4=None,
                       expected_timestamp_auto_phase_switch_cp5=None,
                       expected_current_cp3=10,
@@ -253,7 +253,7 @@ cases_phase_switch = [
                       raw_power_left=42580,
                       raw_currents_left_counter0=[40]*3,
                       raw_currents_left_counter6=[16]*3,
-                      expected_timestamp_auto_phase_switch_cp3="05/16/2022, 08:40:52",
+                      expected_timestamp_auto_phase_switch_cp3=1652683252.0,
                       expected_timestamp_auto_phase_switch_cp4=None,
                       expected_timestamp_auto_phase_switch_cp5=None,
                       expected_current_cp3=32,

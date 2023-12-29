@@ -103,7 +103,7 @@ class GeneralData:
     grid_protection_active: bool = False
     grid_protection_configured: bool = True
     grid_protection_random_stop: int = 0
-    grid_protection_timestamp: Optional[str] = ""
+    grid_protection_timestamp: Optional[float] = ""
     mqtt_bridge: bool = False
     price_kwh: float = 0.3
     range_unit: str = "km"
