@@ -1,14 +1,13 @@
 from typing import Optional, Union
 
 from modules.common import req
-from modules.common.fault_state import FaultState
 
 _SOC_PROPERTY = "soc_display"
 
 
 def fetch_soc(akey: Optional[str] = None, token: Optional[str] = None) -> Union[int, float]:
     if akey is None or token is None:
-        raise FaultState.error("Konfiguration des evNotify SoC unvollständig! Keine Anmeldeinformationen vorhanden.")
+        raise Exception("Konfiguration des evNotify SoC unvollständig! Keine Anmeldeinformationen vorhanden.")
     response = req.get_http_session().get("https://app.evnotify.de/soc", params={"akey": akey, "token": token})
     try:
         soc_display = response.json()[_SOC_PROPERTY]

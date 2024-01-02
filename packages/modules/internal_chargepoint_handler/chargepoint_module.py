@@ -121,9 +121,10 @@ class ChargepointModule(AbstractChargepoint):
                     phases_in_use=0
                 )
                 store_state(chargepoint_state)
-                raise FaultState.error(msg)
+                e.args += (msg,)
+                raise e
             else:
-                raise FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)) from e
+                raise e
 
         store_state(chargepoint_state)
         return chargepoint_state, self.set_current_evse

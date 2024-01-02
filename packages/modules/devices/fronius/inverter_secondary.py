@@ -31,8 +31,8 @@ class FroniusSecondaryInverter:
                 if secondary_data["Category"] == "METER_CAT_WR":
                     power = float(secondary_data["P"]) * -1
                 else:
-                    raise FaultState.error(f"Sekundäres Gerät {self.component_config.configuration.id} "
-                                           "ist kein Wechselrichter.")
+                    raise ValueError(f"Sekundäres Gerät {self.component_config.configuration.id} "
+                                     "ist kein Wechselrichter.")
             except TypeError:
                 # Ohne PV Produktion liefert der WR 'null', ersetze durch Zahl 0
                 power = 0
