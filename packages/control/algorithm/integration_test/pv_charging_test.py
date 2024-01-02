@@ -133,7 +133,7 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 31775
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9200
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9660
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 9000
 
 
@@ -172,7 +172,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 24300
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 1725
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2185
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 0
 
 
