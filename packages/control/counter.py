@@ -241,9 +241,9 @@ class Counter:
         control_range_center = control_range_high - (control_range_high - control_range_low) / 2
         control_range_state = self.get_control_range_state(0)
         if control_range_state == ControlRangeState.BELOW:
-            range_offset = control_range_center
+            range_offset = abs(control_range_center)
         elif control_range_state == ControlRangeState.ABOVE:
-            range_offset = - control_range_center
+            range_offset = - abs(control_range_center)
         else:
             range_offset = 0
         log.debug(f"Anpassen des Regelbereichs {range_offset}W")
