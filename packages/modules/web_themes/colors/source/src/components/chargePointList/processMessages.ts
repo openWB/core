@@ -87,7 +87,7 @@ export function processChargepointMessages(topic: string, message: string) {
 		} else if (topic.match(/^openwb\/chargepoint\/[0-9]+\/set\/log/i)) {
 			const obj = JSON.parse(message)
 			chargePoints[index].chargedSincePlugged = obj.imported_since_plugged
-		} /* if (
+		} else if (
 			topic.match(/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/soc$/i)
 		) {
 			// console.warn('Ignored Connected Vehicle SOC ' + topic + ' : ' + message)
@@ -96,7 +96,7 @@ export function processChargepointMessages(topic: string, message: string) {
 			chargePoints[index].waitingForSoc = false
 			chargePoints[index].rangeCharged = obj.range_charged
 			chargePoints[index].rangeUnit = obj.range_unit
-		} */ else if (
+		} else if (
 			topic.match(
 				/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/info$/i,
 			)
