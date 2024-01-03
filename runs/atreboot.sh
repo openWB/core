@@ -32,6 +32,14 @@ chmod 666 "$LOGFILE"
 		exit
 	fi
 
+	# check for rc.local bug
+	if grep -Fq "do_expand_rootfs" /etc/rc.local.bak; then
+		echo "fixing rc.local bug"
+		echo "#!/bin/sh -e" | sudo tee "/etc/rc.local.bak" >"/dev/null"
+	else
+		echo "rc.local bug not found"
+	fi
+
 	# check for pending factory reset
 	if [[ -f "${OPENWBBASEDIR}/data/restore/factory_reset" ]]; then
 		echo "pending factory_reset detected, executing factory_reset"
