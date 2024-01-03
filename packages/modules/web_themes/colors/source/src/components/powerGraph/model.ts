@@ -367,6 +367,7 @@ export function updateEnergyValues(
 			Object.values(shDevices).map((device) => {
 				const hDevice = historicSummary.items['sh' + device.id]
 				if (hDevice) {
+					device.energy = hDevice.energy
 					device.energyPv = hDevice.energyPv
 					device.energyBat = hDevice.energyBat
 					device.pvPercentage = hDevice.pvPercentage

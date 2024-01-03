@@ -33,6 +33,8 @@ function processSmarthomeConfigMessages(topic: string, message: string) {
 		)
 	) {
 		shDevices[index].name = message.toString()
+		shDevices[index].icon = message.toString()
+
 		masterData['sh' + index].name = message.toString()
 		masterData['sh' + index].icon = message.toString()
 	} else if (
