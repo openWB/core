@@ -82,6 +82,7 @@ class SubData:
                  event_start_internal_chargepoint: threading.Event,
                  event_stop_internal_chargepoint: threading.Event,
                  event_update_config_completed: threading.Event,
+                 event_update_soc: threading.Event,
                  event_soc: threading.Event,
                  event_jobs_running: threading.Event,
                  event_modbus_server: threading.Event,):
@@ -99,6 +100,7 @@ class SubData:
         self.event_start_internal_chargepoint = event_start_internal_chargepoint
         self.event_stop_internal_chargepoint = event_stop_internal_chargepoint
         self.event_update_config_completed = event_update_config_completed
+        self.event_update_soc = event_update_soc
         self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
         self.event_modbus_server = event_modbus_server
@@ -265,6 +267,9 @@ class SubData:
 
                     if re.search("/vehicle/[0-9]+/get", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.get, msg)
+                        if (re.search("/vehicle/[0-9]+/get/force_soc_update", msg.topic) is not None and
+                                decode_payload(msg.payload)):
+                            self.event_update_soc.set()
                     elif re.search("/vehicle/[0-9]+/set", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
                     elif re.search("/vehicle/[0-9]+/soc_module/general_config", msg.topic) is not None:
