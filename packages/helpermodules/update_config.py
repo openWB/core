@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 32
+    DATASTORE_VERSION = 33
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1056,16 +1056,9 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 29)
 
-    def upgrade_datastore_29(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
-                payload = decode_payload(payload)
-                if payload.get("et") is None:
-                    updated_payload = payload
-                    updated_payload.update({"et": asdict(ev.Et())})
-                    Pub().pub(topic, updated_payload)
-        self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 30)
+    # upgrade_datastore_29
+    # nach upgrade_datastore_32 verschoben, damit beim Update vom master (datastore_version 32)
+    # die Anpassung vorgenommen wird.
 
     def upgrade_datastore_30(self) -> None:
         def upgrade(topic: str, payload) -> None:
@@ -1087,3 +1080,14 @@ class UpdateConfig:
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 32)
+
+    def upgrade_datastore_32(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("et") is None:
+                    updated_payload = payload
+                    updated_payload.update({"et": asdict(ev.Et())})
+                    Pub().pub(topic, updated_payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 33)
