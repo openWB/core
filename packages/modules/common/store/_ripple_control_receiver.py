@@ -12,8 +12,7 @@ class RippleControlReceiverValueStore(ValueStore[RcrState]):
         self.state = state
 
     def update(self):
-        pub_to_broker("openWB/set/general/ripple_control_receiver/get/r1_blocking", self.state.r1_blocking)
-        pub_to_broker("openWB/set/general/ripple_control_receiver/get/r2_blocking", self.state.r2_blocking)
+        pub_to_broker("openWB/set/general/ripple_control_receiver/get/override_value", self.state.override_value)
 
 
 def get_ripple_control_receiver_value_store() -> ValueStore[RcrState]:

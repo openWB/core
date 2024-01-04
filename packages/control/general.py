@@ -1,6 +1,7 @@
 """Allgemeine Einstellungen
 """
 from dataclasses import dataclass, field
+from enum import Enum
 import logging
 import random
 from typing import List, Optional
@@ -89,8 +90,7 @@ def chargemode_config_factory() -> ChargemodeConfig:
 class RippleControlReceiverGet:
     fault_state: int = 0
     fault_str: str = NO_ERROR
-    r1_blocking: bool = False
-    r2_blocking: bool = False
+    override_value: float = 100
 
 
 def rcr_get_factory() -> RippleControlReceiverGet:
@@ -101,11 +101,17 @@ def gpio_rcr_factory() -> ConfigurableRcr:
     return create_ripple_control_receiver(GpioRcr())
 
 
+class OverrideReference(Enum):
+    EVU = "evu"
+    CHARGEPOINT = "chargepoint"
+
+
 @dataclass
 class RippleControlReceiver:
     configured: bool = False
     get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
     module: ConfigurableRcr = field(default_factory=gpio_rcr_factory)
+    overrice_reference: OverrideReference = OverrideReference.CHARGEPOINT
 
 
 def ripple_control_receiver_factory() -> RippleControlReceiver:

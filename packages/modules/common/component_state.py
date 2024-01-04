@@ -172,8 +172,5 @@ class TariffState:
 
 
 class RcrState:
-    def __init__(self, r1_blocking: bool, r2_blocking: bool) -> None:
-        """Wenn der Kontakt aktiv ist == True, wird die Ladung unterbrochen.
-        """
-        self.r1_blocking = r1_blocking
-        self.r2_blocking = r2_blocking
+    def __init__(self, override_value: float) -> None:
+        self.override_value = override_value

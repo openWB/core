@@ -783,12 +783,13 @@ class SetData:
                   "openWB/set/general/prices/grid" in msg.topic or
                   "openWB/set/general/prices/pv" in msg.topic):
                 self._validate_value(msg, float, [(0, 99.99)])
-            elif "openWB/set/general/range_unit" in msg.topic:
+            elif ("openWB/set/general/range_unit" in msg.topic or
+                  "openWB/set/general/ripple_control_receiver/override_reference" in msg.topic):
                 self._validate_value(msg, str)
-            elif ("openWB/set/general/ripple_control_receiver/configured" in msg.topic or
-                    "openWB/set/general/ripple_control_receiver/get/r1_blocking" in msg.topic or
-                    "openWB/set/general/ripple_control_receiver/get/r2_blocking" in msg.topic):
+            elif "openWB/set/general/ripple_control_receiver/configured" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "openWB/set/general/ripple_control_receiver/get/override_value" in msg.topic:
+                self._validate_value(msg, float)
             elif "openWB/set/general/ripple_control_receiver/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "openWB/set/general/ripple_control_receiver/get/fault_str" in msg.topic:

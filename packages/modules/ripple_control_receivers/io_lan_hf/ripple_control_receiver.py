@@ -14,7 +14,12 @@ def create_ripple_control_receiver(config: IoLanRcr):
     def updater():
         r1 = client.read_coils(0x0000, 1, unit=config.configuration.modbus_id) is False
         r2 = client.read_coils(0x0001, 1, unit=config.configuration.modbus_id) is False
-        return RcrState(r1, r2)
+        log.debug(f"RSE-Kontakt 1: {r1}, RSE-Kontakt 2: {r2}")
+        if r1 or r2:
+            override_value = 0
+        else:
+            override_value = 100
+        return RcrState(override_value=override_value)
     try:
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
     except Exception:

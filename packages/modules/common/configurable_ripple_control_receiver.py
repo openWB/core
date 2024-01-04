@@ -12,7 +12,7 @@ T_RCR_CONFIG = TypeVar("T_RCR_CONFIG")
 class ConfigurableRcr(Generic[T_RCR_CONFIG]):
     def __init__(self,
                  config: T_RCR_CONFIG,
-                 component_updater: Callable[[str, bytes], None]) -> None:
+                 component_updater: Callable[[], float]) -> None:
         self.__component_updater = component_updater
         self.config = config
         self.fault_state = FaultState(ComponentInfo(None, self.config.name,

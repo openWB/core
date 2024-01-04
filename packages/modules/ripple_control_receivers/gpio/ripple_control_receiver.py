@@ -33,7 +33,12 @@ def read() -> Tuple[bool, bool]:
         except Exception as e:
             GPIO.cleanup()
             raise e
-    return RcrState(rse1, rse2)
+    log.debug(f"RSE-Kontakt 1: {rse1}, RSE-Kontakt 2: {rse2}")
+    if rse1 or rse2:
+        override_value = 0
+    else:
+        override_value = 100
+    return RcrState(override_value=override_value)
 
 
 def create_ripple_control_receiver(config: GpioRcr):
