@@ -140,7 +140,7 @@ def get_totals(entries: List) -> Dict:
 
 def get_daily_log(date: str):
     data = _collect_daily_log_data(date)
-    data = _process_entries(data, CalculationType.POWER)
+    data = _process_entries(data, CalculationType.ALL)
     data = _analyse_power_source(data)
     return data
 
