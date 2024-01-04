@@ -564,6 +564,8 @@ class SubData:
             if re.search("/general/", msg.topic) is not None:
                 if re.search("/general/ripple_control_receiver/", msg.topic) is not None:
                     return
+                elif re.search("/general/prices/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.prices, msg)
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
                     if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.chargemode_config.pv_charging, msg)
@@ -619,10 +621,18 @@ class SubData:
                             str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")
                         ])
                 elif re.search("/optional/et/", msg.topic) is not None:
-                    if re.search("/optional/et/get/", msg.topic) is not None:
+                    if re.search("/optional/et/get/prices", msg.topic) is not None:
+                        var.data.et.get.prices = decode_payload(msg.payload)
+                    elif re.search("/optional/et/get/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.et.get, msg)
-                    elif re.search("/optional/et/config/", msg.topic) is not None:
-                        self.set_json_payload_class(var.data.et.config, msg)
+                    elif re.search("/optional/et/provider$", msg.topic) is not None:
+                        payload = decode_payload(msg.payload)
+                        if payload["type"] is not None:
+                            mod = importlib.import_module(
+                                f".electricity_tariffs.{payload['type']}.tariff", "modules")
+                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
+                            var.et_module = mod.create_electricity_tariff(config)
+                            var.et_get_prices()
                     else:
                         self.set_json_payload_class(var.data.et, msg)
                 else:

@@ -24,6 +24,7 @@ from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
 from control import ev
+from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
@@ -32,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 31
+    DATASTORE_VERSION = 33
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -154,7 +155,6 @@ class UpdateConfig:
         "^openWB/general/mqtt_bridge$",
         "^openWB/general/grid_protection_timestamp$",
         "^openWB/general/grid_protection_random_stop$",
-        "^openWB/general/price_kwh$",
         "^openWB/general/range_unit$",
         "^openWB/general/notifications/selected$",
         "^openWB/general/notifications/configuration$",
@@ -185,6 +185,9 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
         "^openWB/general/chargemode_config/time_charging/phases_to_use$",
+        "^openWB/general/prices/bat$",
+        "^openWB/general/prices/grid$",
+        "^openWB/general/prices/pv$",
         "^openWB/general/web_theme$",
 
         "^openWB/graph/config/duration$",
@@ -201,12 +204,10 @@ class UpdateConfig:
         "^openWB/set/log/request",
         "^openWB/set/log/data",
 
-        "^openWB/optional/et/active$",
-        "^openWB/optional/et/get/price_list$",
-        "^openWB/optional/et/get/price$",
-        "^openWB/optional/et/get/source$",
-        "^openWB/optional/et/config/max_price$",
-        "^openWB/optional/et/config/provider$",
+        "^openWB/optional/et/get/fault_state$",
+        "^openWB/optional/et/get/fault_str$",
+        "^openWB/optional/et/get/prices$",
+        "^openWB/optional/et/provider$",
         "^openWB/optional/int_display/active$",
         "^openWB/optional/int_display/on_if_plugged_in$",
         "^openWB/optional/int_display/pin_active$",
@@ -347,6 +348,7 @@ class UpdateConfig:
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
+        "^openWB/system/configurable/electricity_tariffs$",
         "^openWB/system/configurable/display_themes$",
         "^openWB/system/configurable/soc_modules$",
         "^openWB/system/current_branch",
@@ -422,16 +424,16 @@ class UpdateConfig:
         ("openWB/general/notifications/stop_charging", False),
         ("openWB/general/notifications/smart_home", False),
         ("openWB/general/notifications/configuration", {}),
-        ("openWB/general/price_kwh", 0.3),
+        ("openWB/general/prices/bat", Prices().bat),
+        ("openWB/general/prices/grid", Prices().grid),
+        ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
         ("openWB/general/ripple_control_receiver/configured", False),
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
-        ("openWB/optional/et/active", False),
-        ("openWB/optional/et/config/max_price", 0),
-        ("openWB/optional/et/config/provider", {}),
+        ("openWB/optional/et/provider", {"type": None, "configuration": {}}),
         ("openWB/optional/int_display/active", False),
         ("openWB/optional/int_display/on_if_plugged_in", True),
         ("openWB/optional/int_display/pin_active", False),
@@ -1054,7 +1056,11 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 29)
 
-    def upgrade_datastore_29(self) -> None:
+    # upgrade_datastore_29
+    # nach upgrade_datastore_32 verschoben, damit beim Update vom master (datastore_version 32)
+    # die Anpassung vorgenommen wird.
+
+    def upgrade_datastore_30(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/vehicle/[0-9]+/soc_module/general_config", topic) is not None:
                 payload = decode_payload(payload)
@@ -1063,9 +1069,9 @@ class UpdateConfig:
                 payload["request_interval_not_charging"] = payload["request_interval_not_charging"]*60
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 30)
+        Pub().pub("openWB/system/datastore_version", 31)
 
-    def upgrade_datastore_30(self) -> None:
+    def upgrade_datastore_31(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/vehicle/[0-9]+/get/soc_timestamp", topic) is not None:
                 payload = decode_payload(payload)
@@ -1073,4 +1079,15 @@ class UpdateConfig:
                     updated_payload = datetime.datetime.strptime(payload, "%m/%d/%Y, %H:%M:%S").timestamp()
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 31)
+        Pub().pub("openWB/system/datastore_version", 32)
+
+    def upgrade_datastore_32(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("et") is None:
+                    updated_payload = payload
+                    updated_payload.update({"et": asdict(ev.Et())})
+                    Pub().pub(topic, updated_payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 33)

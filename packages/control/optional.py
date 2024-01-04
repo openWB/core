@@ -3,9 +3,14 @@
 from dataclasses import dataclass, field
 import logging
 from math import ceil  # Aufrunden
+import threading
 from typing import Dict, List
 
-from dataclass_utils.factories import empty_dict_factory, empty_list_factory
+from dataclass_utils.factories import empty_dict_factory
+from helpermodules.constants import NO_ERROR
+from helpermodules.pub import Pub
+from helpermodules.timecheck import create_unix_timestamp_current_full_hour
+from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.display_themes.cards.config import CardsDisplayTheme
 
 log = logging.getLogger(__name__)
@@ -13,8 +18,9 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class EtGet:
-    price: float = 0
-    price_list: List = field(default_factory=empty_list_factory)
+    fault_state: int = 0
+    fault_str: str = NO_ERROR
+    prices: Dict = field(default_factory=empty_dict_factory)
 
 
 def get_factory() -> EtGet:
@@ -22,19 +28,7 @@ def get_factory() -> EtGet:
 
 
 @dataclass
-class EtConfig:
-    max_price: float = 0
-    provider: Dict = field(default_factory=empty_dict_factory)
-
-
-def et_config_factory() -> EtConfig:
-    return EtConfig()
-
-
-@dataclass
 class Et:
-    active: bool = False
-    config: EtConfig = field(default_factory=et_config_factory)
     get: EtGet = field(default_factory=get_factory)
 
 
@@ -86,10 +80,11 @@ class Optional:
     def __init__(self):
         try:
             self.data = OptionalData()
+            self.et_module: ConfigurableElectricityTariff = None
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
-    def et_price_lower_than_limit(self):
+    def et_price_lower_than_limit(self, max_price: float):
         """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
 
         Return
@@ -98,16 +93,21 @@ class Optional:
         False: Preis liegt darüber
         """
         try:
-            if self.data.et.get.price <= self.data.et.config.max_price:
+            if self.et_get_current_price() <= max_price:
                 return True
             else:
                 return False
-        except Exception:
+        except KeyError:
+            log.exception("Fehler beim strompreisbasierten Laden")
             self.et_get_prices()
+        except Exception:
             log.exception("Fehler im Optional-Modul")
             return False
 
-    def et_get_loading_hours(self, duration):
+    def et_get_current_price(self):
+        return self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())]
+
+    def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """ geht die Preise der nächsten 24h durch und liefert eine Liste der Uhrzeiten, zu denen geladen werden soll
 
         Parameter
@@ -120,26 +120,33 @@ class Optional:
         list: Key des Dictionary (Unix-Sekunden der günstigen Stunden)
         """
         try:
-            price_list = self.data.et.get.price_list
-            return [
-                i[0] for i in sorted(price_list, key=lambda x: x[1])
-                [:ceil(duration)]
-            ]
+            prices = self.data.et.get.prices
+            prices_in_scheduled_time = {}
+            i = 0
+            for timestamp, price in prices.items():
+                if i < ceil((duration+remaining_time)/3600):
+                    prices_in_scheduled_time.update({timestamp: price})
+                    i += 1
+                else:
+                    break
+            ordered = sorted(prices_in_scheduled_time.items(), key=lambda x: x[1])
+            return [int(i[0]) for i in ordered][:ceil(duration/3600)]
         except Exception:
-            self.et_get_prices()
             log.exception("Fehler im Optional-Modul")
             return []
 
     def et_get_prices(self):
         try:
-            if self.data.et.active:
-                # if self.data["et"]["config"]["provider"]["provider"] == "awattar":
-                #     awattargetprices.update_pricedata(
-                #         self.data["et"]["config"]["provider"]["country"], 0)
-                # elif self.data["et"]["config"]["provider"]["provider"] == "tibber":
-                #     tibbergetprices.update_pricedata(
-                #         self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
-                # else:
-                log.error("Unbekannter Et-Provider.")
+            if self.et_module:
+                for thread in threading.enumerate():
+                    if thread.name == "electricity tariff":
+                        log.debug("Don't start multiple instances of electricity tariff thread.")
+                        return
+                threading.Thread(target=self.et_module.update, args=(), name="electricity tariff").start()
+            else:
+                # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
+                if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
+                    Pub().pub("openWB/set/optional/et/get/fault_state", 0)
+                    Pub().pub("openWB/set/optional/et/get/fault_str", NO_ERROR)
         except Exception:
             log.exception("Fehler im Optional-Modul")

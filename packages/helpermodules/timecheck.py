@@ -179,7 +179,7 @@ def _get_remaining_time(now: datetime.datetime, duration: float, end: datetime.d
     neg: Zeitpunkt vorbei
     pos: verbleibende Sekunden
     """
-    delta = datetime.timedelta(hours=int(duration), minutes=((duration % 1) * 60))
+    delta = datetime.timedelta(seconds=duration)
     start_time = end-delta
     log.debug(f"delta {delta} start_time {start_time} end {end} now {now}")
     return (start_time-now).total_seconds()
@@ -199,13 +199,9 @@ def is_list_valid(hour_list: List[int]) -> bool:
     False: aktuelle Stunde ist nicht in der Liste enthalten
     """
     try:
-        now = datetime.datetime.today()
         for hour in hour_list:
-            timestamp = datetime.datetime.fromtimestamp(float(hour))
-            if timestamp.hour == now.hour:
+            if hour == create_unix_timestamp_current_full_hour():
                 return True
-            else:
-                return False
         else:
             return False
     except Exception:
@@ -243,6 +239,11 @@ def create_timestamp_YYYYMM() -> str:
 def create_timestamp_YYYYMMDD() -> str:
     stamp = datetime.datetime.today().strftime("%Y%m%d")
     return stamp
+
+
+def create_unix_timestamp_current_full_hour() -> int:
+    full_hour = datetime.datetime.fromtimestamp(create_timestamp()).strftime("%m/%d/%Y, %H")
+    return int(datetime.datetime.strptime(full_hour, "%m/%d/%Y, %H").timestamp())
 
 
 def get_relative_date_string(date_string: str, day_offset: int = 0, month_offset: int = 0, year_offset: int = 0) -> str:

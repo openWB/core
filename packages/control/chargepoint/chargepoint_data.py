@@ -65,13 +65,17 @@ class ConnectedVehicle:
 @dataclass
 class Log:
     chargemode_log_entry: str = "_"
+    costs: float = 0
     imported_at_mode_switch: float = 0
     imported_at_plugtime: float = 0
     imported_since_mode_switch: float = 0
     imported_since_plugged: float = 0
     range_charged: float = 0
-    time_charged: float = 0
-    timestamp_start_charging: Optional[float] = None
+    time_charged: str = "00:00"
+    timestamp_start_charging: Optional[str] = None
+    ev: int = -1
+    prio: bool = False
+    rfid: Optional[str] = None
 
 
 def connected_vehicle_factory() -> ConnectedVehicle:

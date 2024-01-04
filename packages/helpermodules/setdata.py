@@ -777,7 +777,9 @@ class SetData:
                     "openWB/set/general/notifications/plug" in msg.topic or
                     "openWB/set/general/notifications/smart_home" in msg.topic):
                 self._validate_value(msg, bool)
-            elif "openWB/set/general/price_kwh" in msg.topic:
+            elif ("openWB/set/general/prices/bat" in msg.topic or
+                  "openWB/set/general/prices/grid" in msg.topic or
+                  "openWB/set/general/prices/pv" in msg.topic):
                 self._validate_value(msg, float, [(0, 99.99)])
             elif "openWB/set/general/range_unit" in msg.topic:
                 self._validate_value(msg, str)
@@ -802,21 +804,15 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/optional/load_sharing/active" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/optional/load_sharing/max_current" in msg.topic:
-                self._validate_value(msg, int, [(16, 32)])
-            elif "openWB/set/optional/et/active" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/optional/et/get/price_list" in msg.topic:
+            if "openWB/set/optional/et/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/et/get/price" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/optional/et/get/source" in msg.topic:
+            elif "openWB/set/optional/et/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/optional/et/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
-            elif "openWB/set/optional/et/config/max_price" in msg.topic:
-                self._validate_value(msg, float)
-            elif "openWB/set/optional/et/config/provider" in msg.topic:
+            elif "openWB/set/optional/et/provider" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)
