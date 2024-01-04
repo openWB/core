@@ -1,4 +1,3 @@
-import { timeParse } from 'd3'
 import {
 	graphData,
 	type GraphDataItem,
@@ -63,18 +62,8 @@ function transformDatatable(
 function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	const currentItem: GraphDataItem = {}
 	if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
-		const d = timeParse('%H:%M')(currentRow.date)
-		if (d) {
-			d.setMonth(dayGraph.date.getMonth())
-			d.setDate(dayGraph.date.getDate())
-			d.setFullYear(dayGraph.date.getFullYear())
-			currentItem.date = d.getTime()
-		}
-	} else {
-		const d = timeParse('%Y%m%d')(currentRow.date)
-		if (d) {
-			currentItem.date = d.getDate()
-		}
+		currentItem.date = (new Date(+currentRow.date*1000).getTime())
+		
 	}
 	currentItem.evuOut = 0
 	currentItem.evuIn = 0
@@ -95,7 +84,6 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		})
 	}
 	currentItem.pv = currentRow.pv.all.power_exported
-
 	if (Object.entries(currentRow.bat).length > 0) {
 		currentItem.batIn = currentRow.bat.all.power_imported
 		currentItem.batOut = currentRow.bat.all.power_exported
