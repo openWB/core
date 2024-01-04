@@ -401,7 +401,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
         ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
-        ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 15000),
+        ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 0),
         ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
         ("openWB/general/chargemode_config/pv_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/retry_failed_phase_switches",

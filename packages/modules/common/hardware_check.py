@@ -1,4 +1,6 @@
+import pymodbus
 from typing import Any, List, Optional, Protocol, Tuple, Union
+
 from modules.common.evse import Evse
 from modules.common.fault_state import FaultState
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
@@ -6,8 +8,11 @@ from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
 EVSE_MIN_FIRMWARE = 7
 
 OPEN_TICKET = " Bitte nehme über die Support-Funktion in den Einstellungen Kontakt mit uns auf."
-USB_ADAPTER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der USB-Adapter defekt oder zwei "
-                      f"Busteilnehmer haben die gleiche Modbus-ID. Bitte die Zähler-ID prüfen. {OPEN_TICKET}")
+RS485_ADPATER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist {} defekt oder zwei "
+                        f"Busteilnehmer haben die gleiche Modbus-ID. Bitte die Zähler-ID prüfen. {OPEN_TICKET}")
+USB_ADAPTER_BROKEN = RS485_ADPATER_BROKEN.format('der USB-Adapter')
+LAN_ADAPTER_BROKEN = (f"{RS485_ADPATER_BROKEN.format('der LAN-Konverter abgestürzt,')} "
+                      "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
                  f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
 METER_BROKEN = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
@@ -46,17 +51,29 @@ class SeriesHardwareCheckMixin:
     def __init__(self) -> None:
         pass
 
+    def handle_exception(self: ClientHandlerProtocol, exception: Exception):
+        # separated for test purposes
+        if (isinstance(self.client, ModbusTcpClient_) and
+                isinstance(exception, pymodbus.exceptions.ConnectionException)):
+            raise exception
+        else:
+            return False
+
     def check_hardware(self: ClientHandlerProtocol):
+
         try:
             if self.evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
                 evse_check_passed = True
             else:
                 evse_check_passed = False
-        except Exception:
-            evse_check_passed = False
+        except Exception as e:
+            evse_check_passed = self.handle_exception(e)
         meter_check_passed, meter_error_msg = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
-            raise Exception(USB_ADAPTER_BROKEN)
+            if isinstance(self.client, ModbusTcpClient_):
+                raise Exception(LAN_ADAPTER_BROKEN)
+            else:
+                raise Exception(USB_ADAPTER_BROKEN)
         if meter_check_passed is False:
             raise Exception(meter_error_msg)
         elif meter_check_passed and meter_error_msg == METER_BROKEN:

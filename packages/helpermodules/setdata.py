@@ -386,6 +386,10 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
+    def __unknown_id(self, msg: mqtt.MQTTMessage) -> None:
+        log.warning(f"Keine ID {get_index(msg.topic)} mit gültiger Konfiguration für Topic {msg.topic} mit "
+                    f"Payload {decode_payload(msg.payload)} gefunden.")
+
     def process_vehicle_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die EV-Topics
 
@@ -565,7 +569,7 @@ class SetData:
                 else:
                     self.__unknown_topic(msg)
             else:
-                log.warning(f"Kein Ladepunkt {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
+                self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
@@ -652,7 +656,7 @@ class SetData:
                 else:
                     self.__unknown_topic(msg)
             else:
-                log.warning(f"Kein Wechselrichter {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
+                self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
@@ -704,7 +708,7 @@ class SetData:
                 else:
                     self.__unknown_topic(msg)
             else:
-                log.warning(f"Kein Speicher {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
+                self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
@@ -911,7 +915,7 @@ class SetData:
                 else:
                     self.__unknown_topic(msg)
             else:
-                log.warning(f"Kein Zähler {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
+                self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 

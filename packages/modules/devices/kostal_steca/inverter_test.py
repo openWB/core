@@ -1,9 +1,8 @@
 import pytest
+from modules.conftest import SAMPLE_IP
 
 from modules.devices.kostal_steca.config import KostalStecaInverterSetup
 from modules.devices.kostal_steca.inverter import KostalStecaInverter
-
-SAMPLE_IP = "1.1.1.1"
 
 
 @pytest.mark.parametrize("measurements_file, expected_power",

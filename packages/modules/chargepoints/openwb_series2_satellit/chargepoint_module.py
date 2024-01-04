@@ -72,8 +72,8 @@ class ChargepointModule(AbstractChargepoint):
             raise e
 
     def get_values(self) -> None:
-        if self.version is not None:
-            with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state):
+            if self.version is not None:
                 with self.__client_error_context:
                     try:
                         with SeriesHardwareCheckContext(self._client):
@@ -101,6 +101,9 @@ class ChargepointModule(AbstractChargepoint):
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
+            else:
+                self._create_client()
+                self._validate_version()
 
     def set_current(self, current: float) -> None:
         if self.version is not None:
