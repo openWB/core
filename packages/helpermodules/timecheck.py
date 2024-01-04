@@ -231,6 +231,10 @@ def create_timestamp() -> float:
     return datetime.datetime.today().timestamp()
 
 
+def create_timestamp_YYYY() -> str:
+    return datetime.datetime.today().strftime("%Y")
+
+
 def create_timestamp_YYYYMM() -> str:
     stamp = datetime.datetime.today().strftime("%Y%m")
     return stamp
