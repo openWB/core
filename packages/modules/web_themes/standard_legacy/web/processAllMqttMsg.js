@@ -868,7 +868,8 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		var spinner = parent.find('.charge-point-reload-soc-symbol');
 		spinner.removeClass('fa-spin');
 		// "range" + "range_unit" + "timestamp"
-		element.attr('title', Math.round(socData.range) + socData.range_unit + " (" + socData.timestamp + ")");
+		let timeString = new Date(socData.timestamp * 1000).toLocaleString();
+		element.attr('title', Math.round(socData.range) + socData.range_unit + " (" + timeString + ")");
 		// "fault_stat" ToDo
 		// "fault_str" ToDo
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/info$/i)) {
