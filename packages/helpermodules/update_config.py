@@ -382,7 +382,7 @@ class UpdateConfig:
         "^openWB/system/messages/[0-9]+$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/release_train$",
-        "^openWB/system/time§",
+        "^openWB/system/time$",
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
         "^openWB/system/version$",
