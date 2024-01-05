@@ -1,5 +1,5 @@
 import logging
-import time
+import threading
 from typing import List, Tuple
 import copy
 from threading import Event, Thread
@@ -18,13 +18,16 @@ log = logging.getLogger(__name__)
 
 
 class UpdateSoc:
-    def __init__(self) -> None:
+    def __init__(self, event_update_soc: threading.Event) -> None:
         self.heartbeat = False
         self.event_vehicle_update_completed = Event()
         self.event_vehicle_update_completed.set()
+        self.event_update_soc = event_update_soc
 
     def update(self) -> None:
         while True:
+            self.event_update_soc.wait(timeout=10)
+            self.event_update_soc.clear()
             topic = "openWB/set/vehicle/set/vehicle_update_completed"
             try:
                 threads_update, threads_store = self._get_threads()
@@ -33,16 +36,12 @@ class UpdateSoc:
                 # threads_store = self._filter_failed_store_threads(threads_store)
                 thread_handler(threads_store, data.data.general_data.data.control_interval/3)
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
-                # Don't request faster than control interval
-                if len(threads_update) > 0:
-                    time.sleep(5)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
-            time.sleep(5)
 
     def _get_threads(self) -> Tuple[List[Thread], List[Thread]]:
         threads_update, threads_store = [], []
-        ev_data = copy.deepcopy(data.data.ev_data)
+        ev_data = copy.deepcopy(subdata.SubData.ev_data)
         # Alle Autos durchgehen
         for ev in ev_data.values():
             try:
@@ -89,9 +88,9 @@ class UpdateSoc:
                 plug_state = cp.data.get.plug_state
                 charge_state = cp.data.get.charge_state
                 imported = cp.data.get.imported
-                battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
-                efficiency = data.data.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
-                if data.data.ev_data[f"ev{ev_num}"].soc_module.general_config.use_soc_from_cp:
+                battery_capacity = subdata.SubData.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
+                efficiency = subdata.SubData.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
+                if subdata.SubData.ev_data[f"ev{ev_num}"].soc_module.general_config.use_soc_from_cp:
                     soc_from_cp = cp.data.get.soc
                     timestamp_soc_from_cp = cp.data.get.soc_timestamp
                 else:
@@ -102,8 +101,8 @@ class UpdateSoc:
             plug_state = False
             charge_state = False
             imported = None
-            battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
-            efficiency = data.data.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
+            battery_capacity = subdata.SubData.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
+            efficiency = subdata.SubData.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
             soc_from_cp = None
             timestamp_soc_from_cp = None
         return VehicleUpdateData(plug_state=plug_state,

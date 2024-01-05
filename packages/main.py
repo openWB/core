@@ -215,8 +215,9 @@ try:
     event_modbus_server = threading.Event()
     event_jobs_running = threading.Event()
     event_jobs_running.set()
+    event_update_soc = threading.Event()
     prep = prepare.Prepare()
-    soc = update_soc.UpdateSoc()
+    soc = update_soc.UpdateSoc(event_update_soc)
     set = setdata.SetData(event_ev_template, event_charge_template,
                           event_cp_config, event_scheduled_charging_plan, event_time_charging_plan, event_soc,
                           event_subdata_initialized)
@@ -228,6 +229,7 @@ try:
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,
+                          event_update_soc,
                           event_soc,
                           event_jobs_running, event_modbus_server)
     comm = command.Command(event_command_completed)
