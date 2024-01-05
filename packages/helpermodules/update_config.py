@@ -185,6 +185,8 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
         "^openWB/general/chargemode_config/time_charging/phases_to_use$",
+        # obsolet, Daten hieraus müssen nach prices/ überführt werden
+        "^openWB/general/price_kwh$",
         "^openWB/general/prices/bat$",
         "^openWB/general/prices/grid$",
         "^openWB/general/prices/pv$",
@@ -1082,12 +1084,20 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 32)
 
     def upgrade_datastore_32(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade_et_entry(topic: str, payload) -> None:
             if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 if payload.get("et") is None:
                     updated_payload = payload
                     updated_payload.update({"et": asdict(ev.Et())})
                     Pub().pub(topic, updated_payload)
-        self._loop_all_received_topics(upgrade)
+
+        def upgrade_prices(topic: str, payload) -> None:
+            if re.search("^openWB/general/price_kwh$", topic) is not None:
+                price = decode_payload(payload)
+                Pub().pub("openWB/set/general/prices/bat", price)
+                Pub().pub("openWB/set/general/prices/grid", price)
+                Pub().pub("openWB/set/general/prices/pv", price)
+        self._loop_all_received_topics(upgrade_et_entry)
+        self._loop_all_received_topics(upgrade_prices)
         Pub().pub("openWB/system/datastore_version", 33)
