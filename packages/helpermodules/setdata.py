@@ -419,8 +419,6 @@ class SetData:
                 self._validate_value(msg, str)
             elif "/tag_id" in msg.topic:
                 self._validate_value(msg, str, collection=list)
-            elif "/set/ev_template" in msg.topic:
-                self._validate_value(msg, "json")
             elif ("/charge_template" in msg.topic or
                     "/ev_template" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])

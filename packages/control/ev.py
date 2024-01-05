@@ -157,7 +157,6 @@ def ev_template_factory() -> EvTemplate:
 
 @dataclass
 class Set:
-    ev_template: EvTemplate = field(default_factory=ev_template_factory)
     soc_error_counter: int = 0
 
 
