@@ -25,7 +25,7 @@ export interface RawGraphDataItem {
 }
 export interface RawDayGraphDataItem {
 	timestamp: number
-	date: string
+	date: string | number
 	counter: object
 	pv: {
 		all: { power_exported: number; energy_exported: number; exported: number }
@@ -195,7 +195,9 @@ export const monthGraph = reactive({
 		this.activate()
 	},
 	forward() {
-		if (this.month - 1 < new Date().getMonth()) {
+		console.log('forward')
+		const now = new Date()
+		if (this.month - 1 < now.getMonth() || this.year < now.getFullYear()) {
 			this.month = this.month + 1
 			if (this.month > 12) {
 				this.month = 1

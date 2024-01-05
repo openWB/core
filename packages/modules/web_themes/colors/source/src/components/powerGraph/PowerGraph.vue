@@ -9,6 +9,8 @@
 					widgetid="graphsettings"
 					:show-left-button="true"
 					:show-right-button="true"
+					:show-up-button="true"
+					:show-down-button="true"
 					@shift-left="shiftLeft"
 					@shift-right="shiftRight"
 					@shift-up="shiftUp"
