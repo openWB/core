@@ -701,54 +701,15 @@ class Chargepoint(ChargepointRfidMixin):
                       " verwendet.")
             charging_ev = ev_list["ev0"]
             vehicle = 0
-        # Das EV darf nur gewechselt werden, wenn noch nicht geladen wurde.
-        if (self.data.set.charging_ev == vehicle or
-                self.data.set.charging_ev_prev == vehicle):
-            # Das EV entspricht dem bisherigen EV.
-            self._set_charging_ev_and_charging_ev_prev(vehicle)
-            charging_ev.ev_template = charging_ev.data.set.ev_template
-            self.data.set.charging_ev_data = charging_ev
-            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
-                      "/set/change_ev_permitted", [True, ""])
-        else:
-            # Darf das EV geändert werden?
-            if (self.data.set.log.imported_at_plugtime == 0 or
-                    self.data.set.log.imported_at_plugtime == self.data.get.imported):
-                self._set_charging_ev_and_charging_ev_prev(vehicle)
-                self.data.set.charging_ev_data = charging_ev
-                Pub().pub("openWB/set/chargepoint/"+str(self.num) +
-                          "/set/change_ev_permitted", [True, ""])
-                charging_ev.data.set.ev_template = charging_ev.ev_template
-                Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
-                          "/set/ev_template", asdict(charging_ev.data.set.ev_template.data))
-                Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
-                log.debug("SoC nach EV-Wechsel")
-            else:
-                # Altes EV beibehalten.
-                if self.data.set.charging_ev != -1:
-                    vehicle = self.data.set.charging_ev
-                elif self.data.set.charging_ev_prev != -1:
-                    vehicle = self.data.set.charging_ev_prev
-                    self._set_charging_ev_and_charging_ev_prev(vehicle)
-                else:
-                    raise ValueError(
-                        "Wenn kein aktuelles und kein vorheriges Ev zugeordnet waren, \
-                            sollte noch nicht geladen worden sein.")
-                charging_ev = ev_list["ev" + str(vehicle)]
-                charging_ev.ev_template = charging_ev.data.set.ev_template
-                self.data.set.charging_ev_data = charging_ev
-                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/change_ev_permitted", [
-                    False, "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde. \
-                            Bitte abstecken, dann wird das gewählte Fahrzeug verwendet."])
-                log.warning(
-                    "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde.")
+        if self.data.set.charging_ev != vehicle and self.data.set.charging_ev_prev != vehicle:
+            Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
+            log.debug("SoC nach EV-Wechsel")
+        self.data.set.charging_ev_data = charging_ev
+        self.data.set.charging_ev = vehicle
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", vehicle)
+        self.data.set.charging_ev_prev = vehicle
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", vehicle)
         return charging_ev
-
-    def _set_charging_ev_and_charging_ev_prev(self, charging_ev: int) -> None:
-        self.data.set.charging_ev = charging_ev
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", charging_ev)
-        self.data.set.charging_ev_prev = charging_ev
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", charging_ev)
 
     def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.

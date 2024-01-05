@@ -264,7 +264,6 @@ class UpdateConfig:
         "^openWB/vehicle/[0-9]+/get/soc_timestamp$",
         "^openWB/vehicle/[0-9]+/match_ev/selected$",
         "^openWB/vehicle/[0-9]+/match_ev/tag_id$",
-        "^openWB/vehicle/[0-9]+/set/ev_template$",
         "^openWB/vehicle/[0-9]+/set/soc_error_counter$",
 
         "^openWB/LegacySmartHome/config/get/logLevel$",
