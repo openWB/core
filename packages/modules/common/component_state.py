@@ -125,7 +125,7 @@ class CarState:
 @auto_str
 class ChargepointState:
     def __init__(self,
-                 phases_in_use: int,
+                 phases_in_use: int = 0,
                  imported: float = 0,
                  exported: float = 0,
                  power: float = 0,

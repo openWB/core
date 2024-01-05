@@ -7,7 +7,8 @@ from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
 
 EVSE_MIN_FIRMWARE = 7
 
-OPEN_TICKET = " Bitte nehme über die Support-Funktion in den Einstellungen Kontakt mit uns auf."
+OPEN_TICKET = (" Bitte nehme bei anhaltenden Problemen über die Support-Funktion in den Einstellungen Kontakt mit " +
+               "uns auf.")
 RS485_ADPATER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist {} defekt oder zwei "
                         f"Busteilnehmer haben die gleiche Modbus-ID. Bitte die Zähler-ID prüfen. {OPEN_TICKET}")
 USB_ADAPTER_BROKEN = RS485_ADPATER_BROKEN.format('der USB-Adapter')
