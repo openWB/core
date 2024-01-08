@@ -3,20 +3,19 @@ from unittest.mock import Mock
 import requests_mock
 
 from modules.common.component_state import CounterState
+from modules.conftest import SAMPLE_IP
 from modules.devices.vzlogger import counter
 from modules.devices.vzlogger.config import (VZLogger, VZLoggerConfiguration, VZLoggerCounterConfiguration,
                                              VZLoggerCounterSetup)
 from modules.devices.vzlogger.device import create_device
-
-SAMPLE_IP = "http://1.1.1.1"
 
 
 def test_vzlogger_counter_update(monkeypatch, requests_mock: requests_mock.mock):
     # setup
     mock_counter_value_store = Mock()
     monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
-    requests_mock.get(SAMPLE_IP, json=SAMPLE)
-    device = create_device(VZLogger(configuration=VZLoggerConfiguration(ip_address=SAMPLE_IP)))
+    requests_mock.get(f"http://{SAMPLE_IP}", json=SAMPLE)
+    device = create_device(VZLogger(configuration=VZLoggerConfiguration(ip_address=f"http://{SAMPLE_IP}")))
     device.add_component(VZLoggerCounterSetup(
         configuration=VZLoggerCounterConfiguration(line_exported=25, line_imported=37, line_power=13)))
 

@@ -140,7 +140,7 @@ def get_totals(entries: List) -> Dict:
 
 def get_daily_log(date: str):
     data = _collect_daily_log_data(date)
-    data = _process_entries(data, CalculationType.POWER)
+    data = _process_entries(data, CalculationType.ALL)
     data = _analyse_power_source(data)
     return data
 
@@ -174,6 +174,20 @@ def _collect_monthly_log_data(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
             log_data = json.load(jsonFile)
+        this_month = timecheck.create_timestamp_YYYYMM()
+        if date == this_month:
+            # add last entry of current day, if current month is requested
+            try:
+                today = timecheck.create_timestamp_YYYYMMDD()
+                with open(str(Path(__file__).resolve().parents[3] / "data" / "daily_log"/(today+".json")),
+                          "r") as todayJsonFile:
+                    today_log_data = json.load(todayJsonFile)
+                    if len(today_log_data["entries"]) > 0:
+                        log_data["entries"].append(today_log_data["entries"][-1])
+            except FileNotFoundError:
+                pass
+        else:
+            # add first entry of next month
             try:
                 next_date = timecheck.get_relative_date_string(date, month_offset=1)
                 with open(str(Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(next_date+".json")),
@@ -182,7 +196,8 @@ def _collect_monthly_log_data(date: str):
                     log_data["entries"].append(next_log_data["entries"][0])
             except FileNotFoundError:
                 pass
-            log_data["totals"] = get_totals(log_data["entries"])
+        # calculate totals
+        log_data["totals"] = get_totals(log_data["entries"])
     except FileNotFoundError:
         log_data = {"entries": [], "totals": {}, "names": {}}
     return log_data
@@ -196,43 +211,89 @@ def get_yearly_log(year: str):
 
 
 def _collect_yearly_log_data(year: str):
+    def add_monthly_log(month: str, check_next_month: bool = False) -> None:
+        monthly_log_path = Path(__file__).resolve().parents[3]/"data"/"monthly_log"
+        try:
+            with open(monthly_log_path / f"{month}.json", "r") as jsonFile:
+                content = json.load(jsonFile)
+                entries.append(content["entries"][0])
+            # add last entry of current file if next file is missing
+            if check_next_month:
+                next_month = timecheck.get_relative_date_string(month, month_offset=1)
+                if not (monthly_log_path / (next_month+".json")).is_file():
+                    entries.append(content["entries"][-1])
+                    log.debug(f"Keine Logdatei für Monat {next_month} gefunden, "
+                              f"füge letzten Datensatz von {month} ein: {entries[-1]['date']}")
+            names.update(content["names"])
+        except FileNotFoundError:
+            log.debug(f"Kein Log für Monat {month} gefunden.")
+
+    def add_daily_log(day: str) -> None:
+        try:
+            with open(str(Path(__file__).resolve().parents[3] / "data" / "daily_log"/(day+".json")),
+                      "r") as dayJsonFile:
+                day_log_data = json.load(dayJsonFile)
+                if len(day_log_data["entries"]) > 0:
+                    entries.append(day_log_data["entries"][-1])
+        except FileNotFoundError:
+            pass
+
     entries = []
     names = {}
     dates = []
-    for month in range(1, 13):
-        dates.append(f"{year}{month:02}")
-    dates.append(f"{int(year)+1}01")
+
+    # we have to find a valid data range
+    this_year = timecheck.create_timestamp_YYYY()
+    this_month = timecheck.create_timestamp_YYYYMM()
+    if year < this_year:
+        # if the requested year is in the past, just add all possible months
+        for month in range(1, 13):
+            dates.append(f"{year}{month:02}")
+    else:
+        # add all months until current month
+        for month in range(1, int(this_month[-2:])+1):
+            dates.append(f"{year}{month:02}")
+    # add data for month range
     for date in dates:
         try:
-            with open(Path(__file__).resolve().parents[3]/"data"/"monthly_log"/f"{date}.json",
-                      "r") as jsonFile:
-                content = json.load(jsonFile)
-                entries.append(content["entries"][0])
-                next_date = timecheck.get_relative_date_string(date, month_offset=1)
-                # add last entry of current file if next file is missing
-                if not (Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(next_date+".json")).is_file():
-                    entries.append(content["entries"][-1])
-                    log.debug(f"Keine Logdatei für Monat {next_date} gefunden, "
-                              f"füge letzten Datensatz von {date} ein: {entries[-1]['date']}")
-                names.update(content["names"])
-        except FileNotFoundError:
-            log.debug(f"Kein Log für Monat {date} gefunden.")
+            log.debug(f"add regular month: {date}")
+            add_monthly_log(date, date != this_month)
         except Exception:
             log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für Monat {date}")
+
+    # now we have to find a valid "next" entry for proper calculation
+    if year == this_year:  # current year
+        # add todays last entry
+        this_day = timecheck.create_timestamp_YYYYMMDD()
+        try:
+            log.debug(f"add today: {this_day}")
+            add_daily_log(this_day)
+        except Exception:
+            log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für den aktuellen Tag {this_day}")
+    else:
+        # no special handling here, just add first entry of next month
+        next_date = f"{int(year)+1}01"
+        try:
+            log.debug(f"add next month: {next_date}")
+            add_monthly_log(next_date)
+        except Exception:
+            log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für Monat {next_date}")
+
+    # calculate totals and return our data
     return {"entries": entries, "totals": get_totals(entries), "names": names}
 
 
 def _analyse_power_source(data) -> Dict:
     if data:
         for i in range(0, len(data["entries"])):
-            data["entries"][i] = _analyse_percentage(data["entries"][i])
-        data["totals"] = _analyse_percentage(data["totals"])
+            data["entries"][i] = analyse_percentage(data["entries"][i])
+        data["totals"] = analyse_percentage(data["totals"])
     return data
 
 
-def _analyse_percentage(entry):
+def analyse_percentage(entry):
     def format(value):
-        return round(value*100, 2)
+        return round(value, 4)
     try:
         bat_imported = entry["bat"]["all"]["energy_imported"] if "all" in entry["bat"].keys() else 0
         bat_exported = entry["bat"]["all"]["energy_exported"] if "all" in entry["bat"].keys() else 0
@@ -264,12 +325,12 @@ def _process_entries(data, calculation):
         for i in range(0, len(data["entries"])-1):
             entry = data["entries"][i]
             next_entry = data["entries"][i+1]
-            data["entries"][i] = _process_entry(entry, next_entry, calculation)
+            data["entries"][i] = process_entry(entry, next_entry, calculation)
         data["entries"].pop()
     return data
 
 
-def _process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
+def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
     time_diff = next_entry["timestamp"] - entry["timestamp"]
     for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
         if type in entry:

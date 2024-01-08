@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Config:
-    reserve_for_not_charging: bool = True
+    reserve_for_not_charging: bool = False
 
 
 def config_factory() -> Config:

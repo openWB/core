@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from helpermodules import timecheck
 
 from helpermodules.auto_str import auto_str
@@ -125,7 +125,7 @@ class CarState:
 @auto_str
 class ChargepointState:
     def __init__(self,
-                 phases_in_use: int,
+                 phases_in_use: int = 0,
                  imported: float = 0,
                  exported: float = 0,
                  power: float = 0,
@@ -162,3 +162,10 @@ class ChargepointState:
         self.soc_timestamp = soc_timestamp
         self.evse_current = evse_current
         self.vehicle_id = vehicle_id
+
+
+@auto_str
+class TariffState:
+    def __init__(self,
+                 prices: Optional[Dict[int, float]] = None) -> None:
+        self.prices = prices

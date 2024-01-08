@@ -150,11 +150,11 @@ def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixtur
 
 @pytest.mark.parametrize("control_range, evu_power, expected_range_offset",
                          [pytest.param([0, 230], 200, 0, id="Bezug, im Regelbereich"),
-                          pytest.param([0, 230], 290, -175, id="Bezug, über Regelbereich"),
-                          pytest.param([0, 230], -100, 215, id="Bezug, unter Regelbereich"),
+                          pytest.param([0, 230], 290, -115, id="Bezug, über Regelbereich"),
+                          pytest.param([0, 230], -100, 115, id="Bezug, unter Regelbereich"),
                           pytest.param([-230, 0], -104, 0, id="Einspeisung, im Regelbereich"),
-                          pytest.param([-230, 0], 80, -195, id="Einspeisung, über Regelbereich"),
-                          pytest.param([-230, 0], -300, 185, id="Einspeisung, unter Regelbereich"),
+                          pytest.param([-230, 0], 80, -115, id="Einspeisung, über Regelbereich"),
+                          pytest.param([-230, 0], -300, 115, id="Einspeisung, unter Regelbereich"),
                           ],
                          )
 def test_control_range(control_range, evu_power, expected_range_offset, general_data_fixture, monkeypatch):
@@ -166,7 +166,7 @@ def test_control_range(control_range, evu_power, expected_range_offset, general_
     c = Counter(0)
 
     # execution
-    range_offset = c._control_range()
+    range_offset = c._control_range_offset()
 
     # evaluation
     assert range_offset == expected_range_offset

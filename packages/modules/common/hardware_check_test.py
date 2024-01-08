@@ -4,22 +4,36 @@ import pytest
 from modules.common import sdm
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, METER_BROKEN, METER_PROBLEM, USB_ADAPTER_BROKEN, check_meter_values)
+    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_PROBLEM, USB_ADAPTER_BROKEN,
+    SeriesHardwareCheckMixin, check_meter_values)
+from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
+from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
 
 
 @pytest.mark.parametrize(
-    "evse_side_effect, evse_return_value, meter_side_effect, meter_return_value, expected_error_msg",
-    [pytest.param(Exception("Modbus"), None, None, [230]*3, EVSE_BROKEN, id="EVSE defekt"),
-     pytest.param(None, 18, Exception("Modbus"), None, METER_PROBLEM, id="Zähler verkonfiguriert"),
-     pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, USB_ADAPTER_BROKEN,
-                  id="USB-Adapter defekt")
+    ("evse_side_effect, evse_return_value, meter_side_effect, meter_return_value, handle_exception_side_effect,"
+     "handle_exception_return_value, client_spec, expected_error_msg"),
+    [pytest.param(Exception("Modbus"), None, None, [230]*3, None, False, ModbusSerialClient_, EVSE_BROKEN,
+                  id="EVSE defekt"),
+     pytest.param(None, 18, Exception("Modbus"), None, None, None,
+                  ModbusSerialClient_, METER_PROBLEM, id="Zähler verkonfiguriert"),
+     pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, None, False, ModbusSerialClient_,
+                  USB_ADAPTER_BROKEN, id="USB-Adapter defekt"),
+     pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, None, False, ModbusTcpClient_,
+                  LAN_ADAPTER_BROKEN, id="LAN-Adapter defekt"),
+     pytest.param(Exception("Modbus"), None, Exception("Modbus"), None,
+                  Exception(NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT)), None, ModbusTcpClient_,
+                  NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT), id="LAN-Adapter nicht erreichbar"),
      ]
 )
 def test_hardware_check_fails(evse_side_effect,
                               evse_return_value,
                               meter_side_effect,
                               meter_return_value,
+                              handle_exception_side_effect,
+                              handle_exception_return_value,
+                              client_spec,
                               expected_error_msg,
                               monkeypatch):
     # setup
@@ -33,9 +47,12 @@ def test_hardware_check_fails(evse_side_effect,
     mock_find_meter_client = Mock(spec=sdm.Sdm630, return_value=mock_meter_client)
     monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
 
+    handle_exception_mock = Mock(side_effect=handle_exception_side_effect, return_value=handle_exception_return_value)
+    monkeypatch.setattr(SeriesHardwareCheckMixin, "handle_exception", handle_exception_mock)
+
     # execution and evaluation
     with pytest.raises(Exception, match=expected_error_msg):
-        ClientHandler(0, Mock(), [1], Mock())
+        ClientHandler(0, Mock(spec=client_spec, address=SAMPLE_IP, port=SAMPLE_PORT), [1], Mock())
 
 
 def test_hardware_check_succeeds(monkeypatch):
