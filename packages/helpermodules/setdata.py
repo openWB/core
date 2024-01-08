@@ -479,6 +479,10 @@ class SetData:
                     self._validate_value(msg, "json")
                 elif "/chargemode/scheduled_charging" in msg.topic:
                     self._validate_value(msg, "json", pub_json=True)
+                elif "/et/active" in msg.topic:
+                    self._validate_value(msg, bool, pub_json=True)
+                elif "/et/max_price" in msg.topic:
+                    self._validate_value(msg, float, pub_json=True)
                 elif "/time_charging/active" in msg.topic:
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/time_charging/plans/" in msg.topic and "/active" in msg.topic:
