@@ -916,6 +916,12 @@
 					</div>
 					<!-- modal body -->
 					<div class="modal-body">
+						<div class="row justify-content-center my-2">
+							<div id="electricityPriceChartCanvasDiv" class="col text-center">
+								<canvas id="electricityPriceChartCanvas"></canvas>
+							</div>
+						</div>
+		
 						<div class="row vaRow justify-content-center">
 							<div class="col-2 px-1 py-1">
 								<button type="button" id="maxPriceDecrement"
@@ -952,7 +958,13 @@
 			</div>
 			<script>
 				function clearPriceForm() {
-					$("#maxPriceBox").val("0");
+					$("#maxPriceBox").val(0);
+					window.electricityPricechart.destroy();
+				}
+
+				function updatePriceChart() {
+					window.electricityPricechart.destroy();
+					loadElectricityPriceChart();
 				}
 
 				function submitPriceForm() {
@@ -963,12 +975,18 @@
 
 				$(document).ready(function () {
 
+					$('#maxPriceBox').change(function () {
+						updatePriceChart();
+					});
+
 					$('#maxPriceDecrement').click(function () {
 						$('#maxPriceBox')[0].stepDown();
+						updatePriceChart();
 					});
 
 					$('#maxPriceIncrement').click(function () {
 						$('#maxPriceBox')[0].stepUp();
+						updatePriceChart();
 					});
 
 					$('#maxPriceCancel').click(function () {
@@ -977,6 +995,7 @@
 
 					$('#maxPriceOk').click(function () {
 						submitPriceForm();
+						clearPriceForm();
 					});
 
 				});
@@ -1118,8 +1137,9 @@
 				'js/luxon/luxon.min.js',
 				// load Chart.js library
 				'js/chart.js-3.2.1/chart.min.js',
-				// load Chart.js annotation plugin
-				// 'js/chartjs-plugin-annotation.min.js',
+				// annotations plugin for price chart backgrounds
+				'js/chartjs-plugin-annotation/chartjs-plugin-annotation.min.js',
+				// adapter for time scales
 				'js/chartjs-adapter-luxon/chartjs-adapter-luxon.min.js',
 				// load mqtt library
 				'js/mqttws31.js',
@@ -1129,8 +1149,8 @@
 				'processAllMqttMsg.js?ver=20240108',
 				// respective Chart.js definition live
 				'livechart.js?ver=20221117',
-				// respective Chart.js definition
-				// 'themes/dark/electricityPriceChart.js?ver=20221117',
+				// respective Chart.js definition price based charging
+				'electricityPriceChart.js?ver=20240108',
 				// functions performing mqtt and start mqtt-service
 				'setupMqttServices.js?ver=20240108',
 			];
@@ -1249,6 +1269,7 @@
 					$('#maxPriceModal').find('.vehicle-name').text(vehicleName);
 					$('#maxPriceModal').attr('data-charge-template', chargeTemplate).data('charge-template', chargeTemplate);
 					$('#maxPriceModal').find('#maxPriceBox').val(currentMaxPrice);
+					loadElectricityPriceChart();
 					$('#maxPriceModal').modal("show");
 				}
 			});

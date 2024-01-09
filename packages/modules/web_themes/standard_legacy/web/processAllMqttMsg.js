@@ -125,7 +125,7 @@ function refreshChargeTemplate(templateIndex) {
 				}
 				// et.max_price
 				element = parent.find('.charge-point-max-price-button');
-				var max_price = chargeModeTemplate[templateIndex].et.max_price * 100000;
+				var max_price = parseFloat((chargeModeTemplate[templateIndex].et.max_price * 100000).toFixed(2));
 				element.data('max-price', max_price);
 				element.attr('data-max-price', max_price).data('max-price', max_price);
 				element.find('.charge-point-price-charging-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2}));
@@ -1262,8 +1262,8 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 			$('.et-configured').addClass('hide');
 		}
 	} else if (mqttTopic == 'openWB/optional/et/get/prices') {
-		let priceList = JSON.parse(mqttPayload);
-		var currentPrice = priceList[Object.keys(priceList)[0]] * 100000;
+		electricityPriceList = JSON.parse(mqttPayload);
+		var currentPrice = electricityPriceList[Object.keys(electricityPriceList)[0]] * 100000;
 		$('.et-current-price').text(currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' ct/kWh');
 	}
 }
