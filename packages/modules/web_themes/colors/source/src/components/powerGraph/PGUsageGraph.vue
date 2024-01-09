@@ -72,7 +72,7 @@ const draw = computed(() => {
 	} else {
 		drawGraph(graph)
 	}
-	graph.selectAll('.axis').remove()
+
 	const yAxis = graph.append('g').attr('class', 'axis')
 	yAxis.call(yAxisGenerator.value)
 	yAxis
@@ -132,15 +132,15 @@ const vrange = computed(() => {
 	}
 })
 
-const ticklength = computed(() => {
-	return graphData.graphMode == 'month' || graphData.graphMode == 'year'
-		? -props.width - props.margin.right
-		: -props.width
-})
+const ticklength = computed(
+	() => graphData.graphMode == 'month' || graphData.graphMode == 'year',
+)
+	? -props.width - props.margin.right
+	: -props.width
 
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
-		.tickSizeInner(ticklength.value)
+		.tickSizeInner(ticklength)
 		.ticks(4)
 		.tickFormat((d: number) =>
 			(d == 0 ? '' : Math.round(d * 10) / 10).toLocaleString(undefined),

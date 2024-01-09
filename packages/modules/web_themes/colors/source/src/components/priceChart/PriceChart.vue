@@ -1,137 +1,125 @@
 <template>
-	<WBWidget v-if="etData.isEtEnabled">
-		<p>not implemented yet</p>
+	<p class="settingsheader mt-2 ms-1">Preisbasiertes Laden:</p>
+	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
+	<hr />
+	<div class="row p-0 m-0">
+		<div class="col-12 pricechartColumn p-0 m-0">
+			<figure id="pricechart" class="p-0 m-0">
+				<svg viewBox="0 0 400 120">
+					<g
+						:id="'priceChartCanvas' + props.chargepoint.id"
+						:origin="draw"
+						:transform="'translate(' + margin.top + ',' + margin.right + ')'"
+					/>
+				</svg>
+			</figure>
+		</div>
+	</div>
 
-		<!-- 		<template #title> Preisbasiertes Laden </template>
-		<template #buttons>
-			<span class="color-charging"> Max: {{ etData.etMaxPrice }} ct</span>
-		</template>
-		<div class="row p-0 m-0">
-			<div class="col-12 pricechartColumn p-0 m-0">
-				<figure id="pricechart" class="p-0 m-0">
-					<svg viewBox="0 0 400 120">
-						<g
-							id="priceChartCanvas"
-							:transform="'translate(' + margin.left + ',' + margin.right + ')'"
-						/>
-					</svg>
-				</figure>
-			</div>
-		</div>
-		<div class="row m-0 p-0">
-			<div class="col-2 m-0 p-0 d-flex justify-content-start">
-				<button
-					type="button"
-					class="btn btn-secondary priceLess price-button"
-					@click="reducePrice"
-				>
-					<i class="fa fa-xl fa-minus-square" />
-				</button>
-			</div>
-			<div class="col-8 d-flex justify-content-center">
-				<input
-					id="maxPrice"
-					v-model.number="etData.etMaxPrice"
-					type="range"
-					class="form-range"
-					min="-25"
-					max="95"
-					step="0.1"
-				/>
-			</div>
-			<div class="col-2 m-0 p-0 d-flex justify-content-end">
-				<button
-					type="button"
-					class="btn btn-secondary priceMore price-button"
-					@click="increasePrice"
-				>
-					<i class="fa fa-xl fa-plus-square" />
-				</button>
-			</div>
-		</div>
-		<div class="p-0 m-0">
-			<div class="col m-0 p-0 tablecell maxPrice">
-				<label for="maxPrice" class="col-form-label p-0 m-0"
-					>Max. Preis: {{ etData.etMaxPrice }} ct
-				</label>
-			</div>
-		</div> -->
-	</WBWidget>
+	<div class="p-3">
+		<RangeInput
+			v-if="chargepoint.etActive"
+			id="foo"
+			v-model="maxPrice"
+			:min="-25"
+			:max="95"
+			:step="0.1"
+			:decimals="1"
+			unit="ct"
+		/>
+	</div>
+	<div class="d-flex justify-content-end">
+		<span class="me-3 pt-0" @click="setMaxPrice">
+			<span type="button" class="fa-solid fa-lg ps-1 fa-circle-check" />
+		</span>
+	</div>
 </template>
 
 <script setup lang="ts">
-// import { computed } from 'vue'
-//import * as d3 from 'd3'
+import { computed, onMounted, ref } from 'vue'
 import { etData } from './model'
-import WBWidget from '../shared/WBWidget.vue'
-
-/* const width = 400
-const height = 120
-const margin = { top: 5, bottom: 15, left: 15, right: 5 }
+import {
+	extent,
+	scaleTime,
+	scaleLinear,
+	line,
+	axisBottom,
+	timeFormat,
+	axisLeft,
+	select,
+} from 'd3'
+import RangeInput from '../shared/RangeInput.vue'
+import { chargePoints, type ChargePoint } from '../chargePointList/model'
+const props = defineProps<{
+	chargepoint: ChargePoint
+}>()
+const cp = ref(props.chargepoint)
+const maxPrice = ref(props.chargepoint.etMaxPrice)
+function setMaxPrice() {
+	chargePoints[cp.value.id].etMaxPrice = maxPrice.value
+}
+const needsUpdate = ref(false)
+let dummy = false
+const width = 400
+const height = 110
+const margin = { top: 0, bottom: 15, left: 15, right: 5 }
+const axisfontsize = 12
 const plotdata = computed(() => {
-	let valueArray: number[][] = []
-	if (etData.etPriceList != '') {
-		let lineBuffer = etData.etPriceList.split(/\r?\n|\r/) // split into lines
-		lineBuffer.shift() // remove first line
-		valueArray = lineBuffer
-			.map((line) => {
-				// split lines into tuples [time,price]
-				return line.split(',')
-			})
-			.map((line) => [+line[0] * 1000, +line[1]]) // multiply timestamps by 1000
+	let valueArray: [Date, number][] = []
+	if (etData.etPriceList.size > 0) {
+		etData.etPriceList.forEach((value, date) => {
+			valueArray.push([date, value])
+		})
 	}
 	return valueArray
 })
- const barwidth = computed(() => {
+const barwidth = computed(() => {
 	if (plotdata.value.length > 1) {
 		return (width - margin.left - margin.right) / plotdata.value.length - 1
 	} else {
 		return 0
 	}
-}) 
+})
 const xScale = computed(() => {
-	let xdomain = d3.extent(plotdata.value, (d) => d[0]) as [number, number]
-	xdomain[1] = xdomain[1] + 3600000
-	return d3
-		.scaleTime()
-		.range([0, width - margin.left - margin.right])
+	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
+
+	return scaleTime()
+		.range([margin.left, width - margin.left - margin.right])
 		.domain(xdomain)
 })
 const yScale = computed(() => {
-	let ydomain = d3.extent(plotdata.value, (d) => d[1]) as [number, number]
+	let ydomain = extent(plotdata.value, (d) => d[1]) as [number, number]
 	if (ydomain[0] > 0) {
 		ydomain[0] = 0
 	}
 	ydomain[1] = Math.floor(ydomain[1] + 1)
-	return d3
-		.scaleLinear()
-		.range([height - margin.bottom - margin.top, 0])
+	return scaleLinear()
+		.range([height - margin.bottom, 0])
 		.domain(ydomain)
 })
 const linePath = computed(() => {
-	console.log(etData)
-	const generator = d3.line()
+	const generator = line()
 	const points = [
-		[0, yScale.value(etData.etMaxPrice)],
-		[width - margin.left - margin.right, yScale.value(etData.etMaxPrice)],
+		[margin.left, yScale.value(maxPrice.value)],
+		[width - margin.right, yScale.value(maxPrice.value)],
 	]
 	return generator(points as [number, number][])
 })
 const xAxisGenerator = computed(() => {
-	return d3
-		.axisBottom<Date>(xScale.value)
-		.ticks(4)
-		.tickFormat(d3.timeFormat('%H:%M'))
+	return axisBottom<Date>(xScale.value).ticks(4).tickFormat(timeFormat('%H:%M'))
 })
 const yAxisGenerator = computed(() => {
-	return d3
-		.axisLeft<number>(yScale.value)
+	return axisLeft<number>(yScale.value)
 		.ticks(6)
 		.tickSizeInner(-(width - margin.right - margin.left))
 		.tickFormat((d) => d.toString())
 })
- const draw = computed(() => {
-	let svg = d3.select('g#priceChartCanvas')
+const draw = computed(() => {
+	if (needsUpdate.value == true) {
+		dummy = !dummy
+	}
+
+	const svg = select('g#priceChartCanvas' + props.chargepoint.id)
 	svg.selectAll('*').remove()
 	const bargroups = svg
 		.selectAll('bar')
@@ -142,7 +130,9 @@ const yAxisGenerator = computed(() => {
 		.append('rect')
 		.attr('class', 'bar')
 		.attr('x', (d) => xScale.value(d[0]))
-		.attr('y', (d) => (d[1] >= 0 ? yScale.value(d[1]) : yScale.value(0)))
+		.attr('y', (d) => {
+			return d[1] >= 0 ? yScale.value(d[1]) : yScale.value(0)
+		})
 		.attr('width', barwidth.value)
 		.attr('height', (d) =>
 			d[1] >= 0
@@ -150,17 +140,18 @@ const yAxisGenerator = computed(() => {
 				: yScale.value(d[1]) - yScale.value(0),
 		)
 		.attr('fill', (d) =>
-			d[1] <= etData.etMaxPrice ? 'var(--color-charging)' : 'var(--color-axis',
+			d[1] <= maxPrice.value ? 'var(--color-charging)' : 'var(--color-axis)',
 		)
-	// Line for max price
-	svg.append('path').attr('d', linePath.value).attr('stroke', 'yellow')
 	// X Axis
 	const xAxis = svg.append('g').attr('class', 'axis').call(xAxisGenerator.value)
 	xAxis.attr(
 		'transform',
 		'translate(' + margin.left + ',' + (height - margin.bottom) + ')',
 	)
-	xAxis.selectAll('.tick').attr('font-size', 8).attr('color', 'var(--color-bg)')
+	xAxis
+		.selectAll('.tick')
+		.attr('font-size', axisfontsize)
+		.attr('color', 'var(--color-bg)')
 	xAxis
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
@@ -168,8 +159,11 @@ const yAxisGenerator = computed(() => {
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
 	const yAxis = svg.append('g').attr('class', 'axis').call(yAxisGenerator.value)
-	yAxis.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-	yAxis.selectAll('.tick').attr('font-size', 8).attr('color', 'var(--color-bg)')
+	yAxis.attr('transform', 'translate(' + margin.left + ',' + 0 + ')')
+	yAxis
+		.selectAll('.tick')
+		.attr('font-size', axisfontsize)
+		.attr('color', 'var(--color-bg)')
 
 	yAxis
 		.selectAll('.tick line')
@@ -177,16 +171,16 @@ const yAxisGenerator = computed(() => {
 		.attr('stroke-width', '0.5')
 
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+	// Line for max price
+	svg.append('path').attr('d', linePath.value).attr('stroke', 'yellow')
 
 	return 'PriceChart.vue'
-}) 
-function increasePrice() {
-	etData.etMaxPrice = Math.round(etData.etMaxPrice * 10 + 1) / 10
-}
-function reducePrice() {
-	etData.etMaxPrice = Math.round(etData.etMaxPrice * 10 - 1) / 10
-} 
-*/
+})
+
+onMounted(() => {
+	console.log('mounted')
+	needsUpdate.value = !needsUpdate.value
+})
 </script>
 
 <style scoped>
@@ -194,9 +188,18 @@ function reducePrice() {
 	color: var(--color-charging);
 }
 
-.price-button {
-	background-color: var(--color-bg);
-	color: var(--color-fg);
-	border: 0;
+.fa-circle-check {
+	color: var(--color-menu);
+}
+
+.settingsheader {
+	color: var(--color-charging);
+	font-size: 16px;
+	font-weight: bold;
+}
+
+.providername {
+	color: var(--color-axis);
+	font-size: 16px;
 }
 </style>

@@ -101,6 +101,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		})
 	}
 	currentItem.pv = currentRow.pv.all.power_exported
+
 	if (Object.entries(currentRow.bat).length > 0) {
 		currentItem.batIn = currentRow.bat.all.power_imported
 		currentItem.batOut = currentRow.bat.all.power_exported

@@ -25,7 +25,7 @@
 			v-if="editmode == 1"
 			type="button"
 			class="arrowButton d-flex align-self-center mb-3 mt-3"
-			:class="{ disabled: !props.showUpButton }"
+			:class="{ disabled: !props.showLeftButton }"
 			@click="$emit('shiftUp')"
 		>
 			<i class="fa-solid fa-xl fa-chevron-circle-up" />
@@ -80,7 +80,7 @@
 				id="graphLeftButton"
 				type="button"
 				class="arrowButton fa-solid fa-xl fa-chevron-circle-down p-1"
-				:class="{ disabled: !props.showDownButton }"
+				:class="{ disabled: !props.showLeftButton }"
 				@click="$emit('shiftDown')"
 			/>
 			<!-- Close Button -->
@@ -110,8 +110,6 @@ const props = defineProps<{
 	widgetid: string
 	showLeftButton: boolean
 	showRightButton: boolean
-	showUpButton: boolean
-	showDownButton: boolean
 }>()
 defineEmits(['shiftLeft', 'shiftRight', 'shiftUp', 'shiftDown'])
 const editmode = ref(0)

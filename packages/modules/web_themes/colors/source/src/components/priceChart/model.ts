@@ -1,21 +1,13 @@
 import { reactive } from 'vue'
-import { updateServer } from '@/assets/js/sendMessages'
+// import { updateServer } from '@/assets/js/sendMessages'
 class EtData {
-	etPriceList = ''
-	private _etMaxPrice = 20
-	etCurrentPrice = 0
-	isEtEnabled = false
+	etPriceList = new Map<Date, number>()
 	etProvider = ''
-	get etMaxPrice() {
-		return this._etMaxPrice
-	}
-	set etMaxPrice(max: number) {
-		this._etMaxPrice = max
-		updateServer('etMaxPrice', max)
-	}
-	updateEtMaxPrice(max: number) {
-		this._etMaxPrice = max
-	}
+	etMaxPrice = 0
+}
+
+export interface ServerPriceList {
+	[key: string]: number
 }
 
 export const etData = reactive(new EtData())
