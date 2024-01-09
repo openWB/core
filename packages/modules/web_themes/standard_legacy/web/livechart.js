@@ -113,28 +113,6 @@ function parseData(allData) {
 	return result;
 }
 
-// not used for time scale chart
-// function getXScaleData(matrix){
-// 	return matrix.map(function(row){
-// 		// return row.time;
-// 		return row.timestamp*1000;
-// 	});
-// }
-
-// not used, parsing is done in chart object
-// function getColData(matrix, colLabel){
-// 	console.log('getColData: '+colLabel);
-// 	return matrix.map(function(row){
-// 		data = {x:row.timestamp};
-// 		if(row[colLabel]){
-// 			data['y'] = row[colLabel];
-// 		} else {
-// 			data['y'] = 0;
-// 		}
-// 		return data;
-// 	});
-// }
-
 let datasetTemplates = {
 	// optional components
 	"pv-all": {

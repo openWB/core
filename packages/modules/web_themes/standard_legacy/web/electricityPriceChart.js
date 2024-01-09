@@ -143,7 +143,7 @@ function loadElectricityPriceChart() {
 					},
 					display: true,
 					title: {
-						display: true,
+						display: false,
 						text: "Uhrzeit",
 					},
 					ticks: {
