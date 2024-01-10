@@ -1,30 +1,31 @@
 /**
- * Functions to update graph and gui values via MQTT-messages
+ * Functions to update gui values via MQTT-messages
  */
 
 function loadTarget() {
 	if (allTopicsReceived()) {
-		// const startup = document.getElementById("notReady");
-		// const iframe = document.getElementById("themeTarget");
+		var destination = "";
 		const logMessages = document.getElementById("log");
 		if (!data["openWB/system/boot_done"]) {
 			addLog("backend still booting");
-			// startup.classList.remove("hide");
-			// iframe.classList.add("hide");
 			return;
 		}
 		if (data["openWB/system/update_in_progress"]) {
 			addLog("update in progress");
-			// startup.classList.remove("hide");
-			// iframe.classList.add("hide");
+			return;
+		}
+		if (data["openWB/system/usage_terms_acknowledged"] === false) {
+			addLog("usage terms not accepted, redirecting...");
+			destination = "settings/";
+			setTimeout(() => {
+				location.href = destination
+			}, 2500);
 			return;
 		}
 		const theme = data["openWB/general/web_theme"].type;
-		let destination = `themes/${theme}/`;
+		destination = `themes/${theme}/`;
 		if (data["openWB/general/extern"]) {
 			console.log("openWB is configured as external charge point");
-			// startup.classList.remove("hide");
-			// iframe.classList.add("hide");
 			logMessages.classList.add("hide");
 			return;
 		} else {
@@ -37,12 +38,7 @@ function loadTarget() {
 				if (this.status == 200) {
 					addLog(`theme '${theme}' is valid`)
 					addLog(`all done, starting theme '${theme}' with url '${destination}'`);
-					// if (destination != iframe.src) {
-					// 	iframe.src = destination;
-					// }
 					setTimeout(() => {
-						// startup.classList.add("hide");
-						// iframe.classList.remove("hide");
 						location.href = destination
 					}, 250);
 				} else {
@@ -90,4 +86,4 @@ function handleMessage(topic, payload) {
 		document.getElementById("primary-link").setAttribute("href", `https://${data["openWB/internal_chargepoint/global_data"].parent_ip}/`);
 	}
 	loadTarget();
-}  // end handleMessage
+}

@@ -8,6 +8,7 @@ var topicsToSubscribe = {
 	"openWB/system/version": false,
 	"openWB/system/boot_done": false,
 	"openWB/system/update_in_progress": false,
+	"openWB/system/usage_terms_acknowledged": false,
 	"openWB/general/extern": false,
 	"openWB/general/web_theme": false,
 }
@@ -92,7 +93,7 @@ function publish(payload, topic) {
 
 function totalTopicCount() {
 	var counter = Object.keys(topicsToSubscribe).length;
-	if (data["openWB/general/extern"]) {
+	if (data["openWB/general/extern"] === true) {
 		counter += Object.keys(secondaryTopicsToSubscribe).length;
 	}
 	return counter;
@@ -105,7 +106,7 @@ function missingTopics() {
 			counter++;
 		};
 	});
-	if (data["openWB/general/extern"]) {
+	if (data["openWB/general/extern"] === true) {
 		Object.keys(secondaryTopicsToSubscribe).forEach((topic) => {
 			if (!secondaryTopicsToSubscribe[topic]) {
 				counter++;
