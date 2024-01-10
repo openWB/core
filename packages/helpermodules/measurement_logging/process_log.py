@@ -140,8 +140,8 @@ def get_totals(entries: List) -> Dict:
 
 def get_daily_log(date: str):
     data = _collect_daily_log_data(date)
-    data = _process_entries(data, CalculationType.ALL)
-    data = _analyse_power_source(data)
+    data = _process_entries(data, CalculationType.POWER)
+    # data = _analyse_power_source(data)
     return data
 
 
@@ -314,6 +314,12 @@ def analyse_percentage(entry):
                                      "cp": format(cp_exported/consumption)}
         except ZeroDivisionError:
             entry["power_source"] = {"power_source": {"grid": 0, "pv": 0, "bat": 0, "cp": 0}}
+        entry["cp"]["all"]["sources"] = {
+            "grid": entry["cp"]["all"]["energy_imported"] * entry["power_source"]["grid"],
+            "pv": entry["cp"]["all"]["energy_imported"] * entry["power_source"]["pv"],
+            "bat": entry["cp"]["all"]["energy_imported"] * entry["power_source"]["bat"],
+            "cp": entry["cp"]["all"]["energy_imported"] * entry["power_source"]["cp"],
+        }
     except Exception:
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
     finally:
