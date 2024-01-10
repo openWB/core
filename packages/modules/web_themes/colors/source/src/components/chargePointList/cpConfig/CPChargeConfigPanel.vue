@@ -55,6 +55,14 @@
 			>
 				<i class="fa-solid fa-rectangle-list" />
 			</a>
+			<a
+				v-if="cp.etActive"
+				class="nav-link"
+				data-bs-toggle="tab"
+				:data-bs-target="'#priceChart' + cpid"
+			>
+				<i class="fa-solid fa-chart-line" />
+			</a>
 		</nav>
 
 		<!-- Tab panes -->
@@ -126,6 +134,17 @@
 					:vehicle-id="cp.connectedVehicle"
 				/>
 			</div>
+			<div
+				:id="'priceChart' + cpid"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="price-tab"
+			>
+				<PriceChart
+					v-if="vehicles[cp.connectedVehicle] != undefined"
+					:chargepoint="cp"
+				/>
+			</div>
 		</div>
 	</div>
 </template>
@@ -140,6 +159,7 @@ import CPConfigScheduled from './CPConfigScheduled.vue'
 import CPConfigTimed from './CPConfigTimed.vue'
 import CPConfigVehicle from './CPConfigVehicle.vue'
 import CPChargeConfig from './CPChargeConfig.vue'
+import PriceChart from '@/components/priceChart/PriceChart.vue'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()

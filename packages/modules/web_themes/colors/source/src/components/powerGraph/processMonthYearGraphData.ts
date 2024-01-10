@@ -87,7 +87,7 @@ function transformDatatable(
 function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	const outputRow: GraphDataItem = {}
 	// date
-	const d = timeParse('%Y%m%d')(inputRow.date)
+	const d = timeParse('%Y%m%d')(inputRow.date as string)
 	if (d) {
 		outputRow.date =
 			graphData.graphMode == 'month' ? d.getDate() : d.getMonth() + 1

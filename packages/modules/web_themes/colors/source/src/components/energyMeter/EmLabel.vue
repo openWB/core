@@ -12,7 +12,8 @@
 				formatWattH(
 					item.energy,
 					globalConfig.decimalPlaces,
-					graphData.graphMode == 'year',
+					//graphData.graphMode == 'year',
+					false,
 				)
 			}}
 		</text>
@@ -46,7 +47,6 @@ import * as d3 from 'd3'
 import type { MarginType, PowerItem } from '@/assets/js/types'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { formatWattH } from '@/assets/js/helpers'
-import { graphData } from '../powerGraph/model'
 
 const props = defineProps<{
 	item: PowerItem

@@ -149,6 +149,7 @@
 							{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
 						</InfoItem>
 					</div>
+
 					<div
 						v-if="editSoc"
 						class="socEditor rounded mt-2 d-flex flex-column align-items-center"
@@ -173,6 +174,14 @@
 							class="fa-solid d-flex fa-lg me-2 mb-3 align-self-end fa-circle-check"
 							@click="setSoc"
 						/>
+					</div>
+					<div v-if="props.chargepoint.etActive" class="row m-1 p-0">
+						<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
+							<InfoItem heading="max. Preis:">
+								{{ props.chargepoint.etMaxPrice }} ct
+							</InfoItem>
+							<InfoItem heading="akt. Preis:"> {{ currentPrice }} ct </InfoItem>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -216,6 +225,7 @@ import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import { updateServer } from '@/assets/js/sendMessages'
 import RangeInput from '../shared/RangeInput.vue'
+import { etData } from '../priceChart/model'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
@@ -318,6 +328,10 @@ const manualSoc = computed({
 	set(s: number) {
 		chargePoints[props.chargepoint.id].soc = s
 	},
+})
+const currentPrice = computed(() => {
+	const [p] = etData.etPriceList.values()
+	return (Math.round(p * 10) / 10).toFixed(1)
 })
 // methods
 </script>

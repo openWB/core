@@ -63,17 +63,23 @@ function transformDatatable(
 function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	const currentItem: GraphDataItem = {}
 	if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
-		const d = timeParse('%H:%M')(currentRow.date)
-		if (d) {
-			d.setMonth(dayGraph.date.getMonth())
-			d.setDate(dayGraph.date.getDate())
-			d.setFullYear(dayGraph.date.getFullYear())
-			currentItem.date = d.getTime()
+		if (typeof currentRow.date == 'number') {
+			currentItem.date = new Date(+currentRow.date * 1000).getTime()
+		} else {
+			const d = timeParse('%H:%M')(currentRow.date)
+			if (d) {
+				d.setMonth(dayGraph.date.getMonth())
+				d.setDate(dayGraph.date.getDate())
+				d.setFullYear(dayGraph.date.getFullYear())
+				currentItem.date = d.getTime()
+			}
 		}
 	} else {
-		const d = timeParse('%Y%m%d')(currentRow.date)
-		if (d) {
-			currentItem.date = d.getDate()
+		if (typeof currentRow.date == 'string') {
+			const d = timeParse('%Y%m%d')(currentRow.date)
+			if (d) {
+				currentItem.date = d.getDate()
+			}
 		}
 	}
 	currentItem.evuOut = 0
