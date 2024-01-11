@@ -16,7 +16,7 @@ def test_fems_bat(monkeypatch, requests_mock: requests_mock.mock):
                       json=SAMPLE_RESPONSE)
 
     requests_mock.get('http://1.1.1.1:8084/rest/channel/_sum/(GridActivePower|ProductionActivePower'
-                    + '|ConsumptionActivePower)',
+                      + '|ConsumptionActivePower)',
                       json=SAMPLE_SUM_RESPONSE)
 
     dev = device.create_device(Fems(configuration=FemsConfiguration(ip_address="1.1.1.1", password="abc")))
