@@ -12,7 +12,7 @@ def test_fems_bat(monkeypatch, requests_mock: requests_mock.mock):
     # setup
     mock_bat_value_store = Mock()
     monkeypatch.setattr(bat, 'get_bat_value_store', Mock(return_value=mock_bat_value_store))
-    requests_mock.get('http://1.1.1.1:8084/rest/channel/(ess0|_sum)/(Soc|DcChargeEnergy|DcDischargeEnergy|GridActivePower|ProductionActivePower|ConsumptionActivePower)',
+    requests_mock.get('http://1.1.1.1:8084/rest/channel/ess0/(Soc|DcChargeEnergy|DcDischargeEnergy)',
                       json=SAMPLE_RESPONSE)
 
     dev = device.create_device(Fems(configuration=FemsConfiguration(ip_address="1.1.1.1", password="abc")))
@@ -29,25 +29,6 @@ def test_fems_bat(monkeypatch, requests_mock: requests_mock.mock):
 # example FEMS response on "http://" + self.ip_address + ":8084/rest/channel/(ess0|_sum)/" +
 #    "(Soc|DcChargeEnergy|DcDischargeEnergy|GridActivePower|ProductionActivePower|ConsumptionActivePower)"
 SAMPLE_RESPONSE = [{'accessMode': 'RO',
-                    'address': '_sum/ConsumptionActivePower',
-                    'text': '',
-                    'type': 'INTEGER',
-                    'unit': 'W',
-                    'value': 17183},
-                   {'accessMode': 'RO',
-                    'address': '_sum/ProductionActivePower',
-                    'text': 'Total production; always positive',
-                    'type': 'INTEGER',
-                    'unit': 'W',
-                    'value': -9},
-                   {'accessMode': 'RO',
-                    'address': '_sum/GridActivePower',
-                    'text': 'Grid exchange power. Negative values for sell-to-grid; positive for '
-                    'buy-from-grid',
-                    'type': 'INTEGER',
-                    'unit': 'W',
-                    'value': 17164},
-                   {'accessMode': 'RO',
                     'address': 'ess0/Soc',
                     'text': '',
                     'type': 'INTEGER',
