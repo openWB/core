@@ -79,17 +79,17 @@ SAMPLE_RESPONSE = [{'accessMode': 'RO',
                     'value': 50000}]
 
 SAMPLE_SUM_RESPONSE = [{'accessMode': 'RO',
-                    'address': '_sum/GridSellActiveEnergy',
-                    'text': '',
-                    'type': 'LONG',
-                    'unit': 'Wh_Σ',
-                    'value': 11752059},
-                   {'accessMode': 'RO',
-                    'address': '_sum/GridBuyActiveEnergy',
-                    'text': '',
-                    'type': 'LONG',
-                    'unit': 'Wh_Σ',
-                    'value': 1088853}]
+                        'address': '_sum/GridSellActiveEnergy',
+                        'text': '',
+                        'type': 'LONG',
+                        'unit': 'Wh_Σ',
+                        'value': 11752059},
+                       {'accessMode': 'RO',
+                        'address': '_sum/GridBuyActiveEnergy',
+                        'text': '',
+                        'type': 'LONG',
+                        'unit': 'Wh_Σ',
+                        'value': 1088853}]
 
 SAMPLE_STATE = CounterState(
     currents=[24.29193899782135, 23.86829481029219, 26.78150894025294],
