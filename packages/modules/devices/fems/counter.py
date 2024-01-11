@@ -16,11 +16,10 @@ class FemsCounter:
 
     def update(self, session: Session) -> None:
         try:
-            # Grid meter values and grid total energy sums
+            # Grid meter values
             response = session.get('http://' + self.ip_address +
-                                   ':8084/rest/channel/(meter0|_sum)/' +
-                                   '(ActivePower.*|VoltageL.|Frequency|Grid.+ActiveEnergy)',
-                                   timeout=6).json()
+                                   ':8084/rest/channel/meter0/(ActivePower.*|VoltageL.|Frequency)',
+                                   timeout=1).json()
 
             # ATTENTION: Recent FEMS versions started using the "unit" field (see example response below) and
             #            kind-of arbitrarily return either Volts, Kilowatthours or Hz or Millivolts, Watthours or
@@ -45,7 +44,15 @@ class FemsCounter:
                     voltages[1] = scale_metric(singleValue['value'], singleValue.get('unit'), 'V')
                 elif (address == 'meter0/VoltageL3'):
                     voltages[2] = scale_metric(singleValue['value'], singleValue.get('unit'), 'V')
-                elif (address == '_sum/GridBuyActiveEnergy'):
+
+            # Grid total energy sums
+            response = session.get(
+                'http://'+self.ip_address+':8084/rest/channel/_sum/Grid.+ActiveEnergy',
+                timeout=1).json()
+
+            for singleValue in response:
+                address = singleValue['address']
+                if (address == '_sum/GridBuyActiveEnergy'):
                     imported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
                 elif (address == '_sum/GridSellActiveEnergy'):
                     exported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')

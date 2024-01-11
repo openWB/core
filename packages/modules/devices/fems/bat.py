@@ -20,8 +20,7 @@ class FemsBat:
         else:
             data = "ess2"
         response = session.get(
-            "http://" + self.ip_address + ":8084/rest/channel/(" + data + "|_sum)/" +
-            "(Soc|DcChargeEnergy|DcDischargeEnergy|GridActivePower|ProductionActivePower|ConsumptionActivePower)",
+            "http://" + self.ip_address + ":8084/rest/channel/"+data+"/(Soc|DcChargeEnergy|DcDischargeEnergy)",
             timeout=2).json()
         for singleValue in response:
             address = singleValue["address"]
@@ -32,6 +31,15 @@ class FemsBat:
             elif address == data+"/DcDischargeEnergy":
                 exported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
             elif address == "_sum/GridActivePower":
+                grid = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
+
+        response = session.get(
+            "http://" + self.ip_address +
+            ":8084/rest/channel/_sum/(GridActivePower|ProductionActivePower|ConsumptionActivePower)",
+            timeout=2).json()
+        for singleValue in response:
+            address = singleValue["address"]
+            if (address == "_sum/GridActivePower"):
                 grid = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
             elif address == "_sum/ProductionActivePower":
                 pv = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
