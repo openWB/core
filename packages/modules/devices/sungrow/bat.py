@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 from typing import Dict, Union
 
-from pymodbus.constants import Endian
-
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.modbus import ModbusDataType
+from modules.common.modbus import ModbusDataType, Endian
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.config import SungrowBatSetup, Sungrow
