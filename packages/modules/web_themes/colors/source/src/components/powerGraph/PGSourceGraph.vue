@@ -56,6 +56,7 @@ const draw = computed(() => {
 	} else {
 		drawGraph(graph)
 	}
+	graph.selectAll('.axis').remove()
 	const yAxis = graph.append('g').attr('class', 'axis')
 	yAxis.call(yAxisGenerator.value)
 	yAxis.selectAll('.tick').attr('font-size', 12)
