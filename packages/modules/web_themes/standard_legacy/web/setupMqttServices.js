@@ -72,9 +72,8 @@ var topicsToSubscribe = [
 
 	// electricity tariff
 	["openWB/optional/et/active", 1], // et provider is configured
-	["openWB/optional/et/provider", 1], // et provider name
-	["openWB/optional/et/get/price", 1], // current price
-	["openWB/optional/et/config/max_price", 1], // configured max price
+	["openWB/optional/et/provider", 1], // et provider information
+	["openWB/optional/et/get/prices", 1], // current price list
 
 	// graph topics
 	["openWB/graph/config/duration", 1], // maximum duration to display in landing page

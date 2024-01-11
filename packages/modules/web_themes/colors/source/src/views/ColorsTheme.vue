@@ -38,7 +38,6 @@ Hagen */
 			<ChargePointList />
 			<BatteryList />
 			<SmartHomeList v-if="showSH"></SmartHomeList>
-			<!-- <PriceChart /> -->
 		</div>
 		<!-- Tabbed area -->
 		<nav
@@ -102,7 +101,6 @@ Hagen */
 					<ChargePointList />
 					<BatteryList />
 					<SmartHomeList v-if="showSH" />
-					<PriceChart />
 				</div>
 			</div>
 			<div
@@ -135,16 +133,6 @@ Hagen */
 					<SmartHomeList />
 				</div>
 			</div>
-			<!-- <div
-				id="etPricing"
-				class="tab-pane"
-				role="tabpanel"
-				aria-labelledby="pricechart-tab"
-			>
-				<div class="row py-0 m-0 d-flex justify-content-center">
-					<PriceChart />
-				</div>
-			</div> -->
 		</div>
 	</div>
 	<!-- Footer -->
@@ -171,7 +159,6 @@ import { ref, computed, onMounted } from 'vue'
 import { usageSummary, globalData } from '../assets/js/model'
 import { shDevices } from '@/components/smartHome/model'
 import { chargePoints } from '@/components/chargePointList/model'
-// import { etData } from '@/components/priceChart/model'
 import { initConfig } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
@@ -179,7 +166,6 @@ import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
 import ChargePointList from '@/components/chargePointList/ChargePointList.vue'
 import ButtonBar from '@/components/buttonBar/ButtonBar.vue'
 import BatteryList from '@/components/batteryList/BatteryList.vue'
-import PriceChart from '@/components/priceChart/PriceChart.vue'
 import SmartHomeList from '@/components/smartHome/SmartHomeList.vue'
 import CarouselFix from '@/components/shared/CarouselFix.vue'
 import { msgInit } from '@/assets/js/processMessages'
