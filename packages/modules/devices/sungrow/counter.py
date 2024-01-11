@@ -44,6 +44,10 @@ class SungrowCounter:
             imported, exported = self.sim_counter.sim_count(power)
 
         frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
+        if self.device_config.configuration.version == Version.SH_winet_dongle:
+            # On WiNet-S, the frequency accuracy is higher by one place
+            frequency /= 10
+
         power_factor = self.__tcp_client.read_input_registers(5034, ModbusDataType.INT_16, unit=unit) / 1000
         # These are actually output voltages of the inverter:
         voltages = self.__tcp_client.read_input_registers(5018, [ModbusDataType.UINT_16] * 3,
