@@ -141,7 +141,6 @@ def get_totals(entries: List) -> Dict:
 def get_daily_log(date: str):
     data = _collect_daily_log_data(date)
     data = _process_entries(data, CalculationType.POWER)
-    # data = _analyse_power_source(data)
     return data
 
 
@@ -166,7 +165,7 @@ def _collect_daily_log_data(date: str):
 def get_monthly_log(date: str):
     data = _collect_monthly_log_data(date)
     data = _process_entries(data, CalculationType.ENERGY)
-    data = _analyse_power_source(data)
+    data = _analyse_energy_source(data)
     return data
 
 
@@ -206,7 +205,7 @@ def _collect_monthly_log_data(date: str):
 def get_yearly_log(year: str):
     data = _collect_yearly_log_data(year)
     data = _process_entries(data, CalculationType.ENERGY)
-    data = _analyse_power_source(data)
+    data = _analyse_energy_source(data)
     return data
 
 
@@ -283,7 +282,7 @@ def _collect_yearly_log_data(year: str):
     return {"entries": entries, "totals": get_totals(entries), "names": names}
 
 
-def _analyse_power_source(data) -> Dict:
+def _analyse_energy_source(data) -> Dict:
     if data:
         for i in range(0, len(data["entries"])):
             data["entries"][i] = analyse_percentage(data["entries"][i])
@@ -308,18 +307,20 @@ def analyse_percentage(entry):
                 grid_exported = counter["energy_exported"]
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
         try:
-            entry["power_source"] = {"grid": format(grid_imported / consumption),
-                                     "pv": format((pv - grid_exported - bat_imported) / consumption),
-                                     "bat": format(bat_exported/consumption),
-                                     "cp": format(cp_exported/consumption)}
+            entry["energy_source"] = {
+                "grid": format(grid_imported / consumption),
+                "pv": format((pv - grid_exported - bat_imported) / consumption),
+                "bat": format(bat_exported/consumption),
+                "cp": format(cp_exported/consumption)}
         except ZeroDivisionError:
-            entry["power_source"] = {"power_source": {"grid": 0, "pv": 0, "bat": 0, "cp": 0}}
-        entry["cp"]["all"]["sources"] = {
-            "grid": entry["cp"]["all"]["energy_imported"] * entry["power_source"]["grid"],
-            "pv": entry["cp"]["all"]["energy_imported"] * entry["power_source"]["pv"],
-            "bat": entry["cp"]["all"]["energy_imported"] * entry["power_source"]["bat"],
-            "cp": entry["cp"]["all"]["energy_imported"] * entry["power_source"]["cp"],
-        }
+            entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
+        for source in ("grid", "pv", "bat", "cp"):
+            if "all" in entry["hc"].keys():
+                entry["hc"]["all"][f"energy_imported_{source}"] = (entry["hc"]["all"]["energy_imported"] *
+                                                                   entry["energy_source"][source])
+            if "all" in entry["cp"].keys():
+                entry["cp"]["all"][f"energy_imported_{source}"] = (entry["cp"]["all"]["energy_imported"] *
+                                                                   entry["energy_source"][source])
     except Exception:
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
     finally:
