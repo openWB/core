@@ -14,6 +14,8 @@ def test_fems_counter(monkeypatch, requests_mock: requests_mock.mock):
     monkeypatch.setattr(counter, 'get_counter_value_store', Mock(return_value=mock_counter_value_store))
     requests_mock.get('http://1.1.1.1:8084/rest/channel/meter0/(ActivePower.*|VoltageL.|Frequency)',
                       json=SAMPLE_RESPONSE)
+    requests_mock.get('http://1.1.1.1:8084/rest/channel/_sum/Grid.+ActiveEnergy',
+                      json=SAMPLE_SUM_RESPONSE)
 
     dev = device.create_device(Fems(configuration=FemsConfiguration(ip_address="1.1.1.1", password="abc")))
     dev.add_component(FemsCounterSetup())
@@ -75,6 +77,19 @@ SAMPLE_RESPONSE = [{'accessMode': 'RO',
                     'type': 'INTEGER',
                     'unit': 'mHz',
                     'value': 50000}]
+
+SAMPLE_SUM_RESPONSE = [{'accessMode': 'RO',
+                    'address': '_sum/GridSellActiveEnergy',
+                    'text': '',
+                    'type': 'LONG',
+                    'unit': 'Wh_Σ',
+                    'value': 11752059},
+                   {'accessMode': 'RO',
+                    'address': '_sum/GridBuyActiveEnergy',
+                    'text': '',
+                    'type': 'LONG',
+                    'unit': 'Wh_Σ',
+                    'value': 1088853}]
 
 SAMPLE_STATE = CounterState(
     currents=[24.29193899782135, 23.86829481029219, 26.78150894025294],

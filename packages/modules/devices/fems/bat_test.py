@@ -15,6 +15,9 @@ def test_fems_bat(monkeypatch, requests_mock: requests_mock.mock):
     requests_mock.get('http://1.1.1.1:8084/rest/channel/ess0/(Soc|DcChargeEnergy|DcDischargeEnergy)',
                       json=SAMPLE_RESPONSE)
 
+    requests_mock.get('http://1.1.1.1:8084/rest/channel/_sum/(GridActivePower|ProductionActivePower|ConsumptionActivePower)',
+                      json=SAMPLE_SUM_RESPONSE)
+
     dev = device.create_device(Fems(configuration=FemsConfiguration(ip_address="1.1.1.1", password="abc")))
     dev.add_component(FemsBatSetup())
 
@@ -46,6 +49,19 @@ SAMPLE_RESPONSE = [{'accessMode': 'RO',
                     'type': 'LONG',
                     'unit': 'Wh_Σ',
                     'value': 3202108}]
+
+SAMPLE_SUM_RESPONSE = [{'accessMode': 'RO',
+                    'address': '_sum/ConsumptionActivePower',
+                    'text': '',
+                    'type': 'INTEGER',
+                    'unit': 'W',
+                    'value': 17183},
+                   {'accessMode': 'RO',
+                    'address': '_sum/ProductionActivePower',
+                    'text': 'Total production; always positive',
+                    'type': 'INTEGER',
+                    'unit': 'W',
+                    'value': -9}]
 
 SAMPLE_STATE = BatState(
     exported=3202108,
