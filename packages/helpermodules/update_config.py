@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 33
+    DATASTORE_VERSION = 34
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1107,10 +1107,22 @@ class UpdateConfig:
 
         def upgrade_prices(topic: str, payload) -> None:
             if re.search("^openWB/general/price_kwh$", topic) is not None:
-                price = decode_payload(payload)
+                price = decode_payload(payload)/1000  # €/kWh -> €/Wh
                 Pub().pub("openWB/set/general/prices/bat", price)
                 Pub().pub("openWB/set/general/prices/grid", price)
                 Pub().pub("openWB/set/general/prices/pv", price)
         self._loop_all_received_topics(upgrade_et_entry)
         self._loop_all_received_topics(upgrade_prices)
         Pub().pub("openWB/system/datastore_version", 33)
+
+    def upgrade_datastore_33(self) -> None:
+        def upgrade_fix_price_unit(topic: str, payload) -> None:
+            if (re.search("openWB/general/prices/bat$", topic) is not None or
+                re.search("openWB/general/prices/grid$", topic) is not None or
+                    re.search("openWB/general/prices/pv$", topic) is not None):
+                payload = decode_payload(payload)
+                if payload > 0.01:  # entspricht 10€/kWh
+                    updated_payload = payload/1000  # €/kWh -> €/Wh
+                    Pub().pub(topic, updated_payload)
+        self._loop_all_received_topics(upgrade_fix_price_unit)
+        Pub().pub("openWB/system/datastore_version", 34)
