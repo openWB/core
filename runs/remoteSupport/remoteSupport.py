@@ -194,7 +194,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                             log.error("start cloud tunnel requested but lt executable not found!")
                         else:
                             log.info(f"start cloud tunnel '{token[:4]}...{token[-4:]}' on '{cloud_node}'")
-                            cloud_tunnel = Popen([f"{RUNS_PATH}/{get_lt_executable()}", "-h",
+                            cloud_tunnel = Popen([f"{lt_executable}", "-h",
                                                   "https://" + cloud_node + ".openwb.de/", "-p", "80", "-s", token])
                             log.info(f"cloud tunnel running with pid {cloud_tunnel.pid}")
             else:
