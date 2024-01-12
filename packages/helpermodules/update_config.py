@@ -1195,5 +1195,5 @@ class UpdateConfig:
     def upgrade_datastore_36(self) -> None:
         if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured"):
             Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
-        # hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
+        hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
         Pub().pub("openWB/system/datastore_version", 37)
