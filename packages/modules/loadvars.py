@@ -91,8 +91,7 @@ class Loadvars:
         try:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen,
             # da die Daten erstmalig ins data-Modul kopiert werden müssen.
-            data.data.general_data.set_ripple_control_receiver()
-            if data.data.general_data.data.ripple_control_receiver.configured:
+            if data.data.general_data.data.ripple_control_receiver.module:
                 threads.append(
                     threading.Thread(target=data.data.general_data.data.ripple_control_receiver.module.update,
                                      args=(), name="get ripple control receiver"))
@@ -104,7 +103,7 @@ class Loadvars:
     def _set_general(self) -> List[threading.Thread]:
         threads = []  # type: List[threading.Thread]
         try:
-            if data.data.general_data.data.ripple_control_receiver.configured:
+            if data.data.general_data.data.ripple_control_receiver.module:
                 threads.append(threading.Thread(target=update_values,
                                args=(data.data.general_data.data.ripple_control_receiver.module,),
                                name="set ripple control receiver"))

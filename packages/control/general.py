@@ -7,7 +7,6 @@ import random
 from typing import List, Optional
 
 from control import data
-from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -108,7 +107,6 @@ class OverrideReference(Enum):
 
 @dataclass
 class RippleControlReceiver:
-    configured: bool = False
     get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
     module: ConfigurableRcr = field(default_factory=gpio_rcr_factory)
     overrice_reference: OverrideReference = OverrideReference.CHARGEPOINT
@@ -219,9 +217,3 @@ class General:
                             "openWB/set/general/grid_protection_random_stop", 0)
         except Exception:
             log.exception("Fehler im General-Modul")
-
-    def set_ripple_control_receiver(self):
-        configured = hardware_configuration.get_hardware_configuration_setting(
-            "ripple_control_receiver_configured")
-        Pub().pub("openWB/set/general/ripple_control_receiver/configured", configured)
-        self.data.ripple_control_receiver.configured = configured

@@ -114,7 +114,7 @@ class Chargepoint(ChargepointRfidMixin):
         state = True
         message = None
         general_data = data.data.general_data.data
-        if general_data.ripple_control_receiver.configured:
+        if general_data.ripple_control_receiver.module:
             if general_data.ripple_control_receiver.get.override_value == 0:
                 state = False
                 message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."

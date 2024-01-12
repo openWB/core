@@ -249,7 +249,7 @@ def _pub_configurable_chargepoints() -> None:
 
 def _pub_configurable_ripple_control_receivers() -> None:
     try:
-        ipple_control_receivers = []
+        ripple_control_receivers = []
         path_list = Path(_get_packages_path()/"modules"/"ripple_control_receivers").glob('**/config.py')
         for path in path_list:
             try:
@@ -259,15 +259,25 @@ def _pub_configurable_ripple_control_receivers() -> None:
                 dev_defaults = importlib.import_module(
                     f".ripple_control_receivers.{path.parts[-2]}.ripple_control_receiver",
                     "modules").device_descriptor.configuration_factory()
-                ipple_control_receivers.append({
+                ripple_control_receivers.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
                     "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
-        ipple_control_receivers = sorted(ipple_control_receivers, key=lambda d: d['text'].upper())
-        Pub().pub("openWB/set/system/configurable/ripple_control_receivers", ipple_control_receivers)
+        ripple_control_receivers = sorted(ripple_control_receivers, key=lambda d: d['text'].upper())
+        # "leeren" Eintrag an erster Stelle einfügen
+        ripple_control_receivers.insert(0,
+                                        {
+                                            "value": None,
+                                            "text": "- kein RSE Modul -",
+                                            "defaults": {
+                                                "type": None,
+                                                "configuration": {}
+                                            }
+                                        })
+        Pub().pub("openWB/set/system/configurable/ripple_control_receivers", ripple_control_receivers)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 
