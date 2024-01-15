@@ -19,7 +19,7 @@ def validate_token(config: VoltegoTariff) -> None:
     if config.configuration.token.expires_in:
         expiration = config.configuration.token.created_at + config.configuration.token.expires_in
         log.debug("No need to authenticate. Valid token already present.")
-        if timecheck.create_timestamp_unix() > expiration:
+        if timecheck.create_timestamp() > expiration:
             log.debug("Access token expired. Refreshing token.")
             _refresh_token(config)
     else:
