@@ -39,11 +39,11 @@ def get_totals(entries: List) -> Dict:
                     try:
                         if entry_module not in totals[totals_group]:
                             if totals_group == "hc":
-                                totals[totals_group][entry_module] = {"energy_imported": 0}
+                                totals[totals_group][entry_module] = {"energy_imported": 0.0}
                             elif totals_group == "pv":
-                                totals[totals_group][entry_module] = {"energy_exported": 0}
+                                totals[totals_group][entry_module] = {"energy_exported": 0.0}
                             else:
-                                totals[totals_group][entry_module] = {"energy_imported": 0, "energy_exported": 0}
+                                totals[totals_group][entry_module] = {"energy_imported": 0.0, "energy_exported": 0.0}
                                 if totals_group == "counter" and "grid" in entry[totals_group][entry_module]:
                                     totals[totals_group][entry_module]["grid"] = entry[
                                         totals_group][entry_module]["grid"]
@@ -54,7 +54,8 @@ def get_totals(entries: List) -> Dict:
                                           f"total:{totals[totals_group][entry_module][entry_module_key]}")
                                 # avoid floating point issues with using Decimal
                                 value = (Decimal(str(totals[totals_group][entry_module][entry_module_key]))
-                                         + Decimal(str(entry_module_value)))
+                                         + Decimal(str(entry_module_value * 1000)))  # totals in Wh!
+                                value.quantize(Decimal('0.001'))
                                 value = f'{value: f}'
                                 # remove trailing zeros
                                 totals[totals_group][entry_module][entry_module_key] = string_to_float(
@@ -360,8 +361,9 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                             next_value_exported = next_entry[type][module]["exported"]
                         except KeyError:
                             next_value_exported = value_exported
-                        average_power = _calculate_average_power(time_diff, value_imported, next_value_imported,
-                                                                 value_exported, next_value_exported)
+                        average_power = _calculate_average_power(
+                            time_diff, value_imported / 1000, next_value_imported / 1000,
+                            value_exported / 1000, next_value_exported / 1000)
                         if calculation in [CalculationType.POWER, CalculationType.ALL]:
                             new_data.update({
                                 "power_average": average_power,
@@ -371,9 +373,9 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                         if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
                             new_data.update({
                                 "energy_imported":
-                                    _calculate_energy_difference(value_imported, next_value_imported),
+                                    _calculate_energy_difference(value_imported / 1000, next_value_imported / 1000),
                                 "energy_exported":
-                                    _calculate_energy_difference(value_exported, next_value_exported)
+                                    _calculate_energy_difference(value_exported / 1000, next_value_exported / 1000)
                             })
                     entry[type][module].update(new_data)
                 except Exception:
@@ -382,7 +384,7 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
             for module in next_entry[type].keys():
                 if module not in entry[type].keys():
                     log.warning(f"adding module {module} from next entry")
-                    entry[type].update({module: {"energy_imported": 0, "energy_exported": 0}})
+                    entry[type].update({module: {"energy_imported": 0.0, "energy_exported": 0.0}})
     return entry
 
 

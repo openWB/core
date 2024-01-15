@@ -67,16 +67,16 @@ def daily_log_sample():
 
 @pytest.fixture()
 def daily_log_totals():
-    return {'bat': {'all': {'energy_exported': 550.857, 'energy_imported': 0.0},
-                    'bat2': {'energy_exported': 550.857, 'energy_imported': 0.0}},
-            'counter': {'counter0': {'energy_exported': 0.0, 'energy_imported': 1492.011, 'grid': True}},
-            'cp': {'all': {'energy_exported': 0.0, 'energy_imported': 1919.626},
-                   'cp3': {'energy_exported': 0.0, 'energy_imported': 1151.52},
-                   'cp4': {'energy_exported': 0.0, 'energy_imported': 383.942},
-                   'cp5': {'energy_exported': 0.0, 'energy_imported': 191.928},
+    return {'bat': {'all': {'energy_exported': 550.0, 'energy_imported': 0.0},
+                    'bat2': {'energy_exported': 550.0, 'energy_imported': 0.0}},
+            'counter': {'counter0': {'energy_exported': 0.0, 'energy_imported': 1492.0, 'grid': True}},
+            'cp': {'all': {'energy_exported': 0.0, 'energy_imported': 1920.0},
+                   'cp3': {'energy_exported': 0.0, 'energy_imported': 1152.0},
+                   'cp4': {'energy_exported': 0.0, 'energy_imported': 384.0},
+                   'cp5': {'energy_exported': 0.0, 'energy_imported': 192.0},
                    'cp6': {'energy_exported': 0.0, 'energy_imported': 0}},
             'pv': {'all': {'energy_exported': 251.0}, 'pv1': {'energy_exported': 251.0}},
-            "sh": {"sh1": {"energy_imported": 0.3, "energy_exported": 0}},
+            "sh": {"sh1": {"energy_imported": 0.0, "energy_exported": 0.0}},
             "hc": {"all": {"energy_imported": 20.0}}}
 
 
@@ -88,41 +88,40 @@ def daily_log_entry_kw():
                 "cp3": {
                     "imported": 3620.971,
                     "exported": 0,
-                    "power_average": 6932.3,
-                    "power_imported": 6932.3,
+                    "power_average": 6.932,
+                    "power_imported": 6.932,
                     "power_exported": 0.0,
-                    "energy_imported": 575.766,
+                    "energy_imported": 0.576,
                     "energy_exported": 0.0
                 },
                 "cp5": {
                     "imported": 1208.646,
                     "exported": 0,
-                    "power_average": 2310.839,
-                    "power_imported": 2310.839,
+                    "power_average": 2.311,
+                    "power_imported": 2.311,
                     "power_exported": 0.0,
-                    "energy_imported": 191.928,
+                    "energy_imported": 0.192,
                     "energy_exported": 0.0
                 },
                 "cp4": {
                     "imported": 1198.566,
                     "exported": 0,
-                    "power_average": 2313.138,
-                    "power_imported": 2313.138,
+                    "power_average": 2.313,
+                    "power_imported": 2.313,
                     "power_exported": 0.0,
-                    "energy_imported": 192.119,
+                    "energy_imported": 0.192,
                     "energy_exported": 0.0
                 },
                 "all": {
                     "imported": 6028.183,
                     "exported": 0,
-                    "power_average": 11556.277,
-                    "power_imported": 11556.277,
+                    "power_average": 11.556,
+                    "power_imported": 11.556,
                     "power_exported": 0.0,
-                    "energy_imported": 959.813,
+                    "energy_imported": 0.96,
                     "energy_exported": 0.0
                 }
-            },
-            "ev": {
+            },            "ev": {
                 "ev0": {
                     "soc": 0
                 }
@@ -132,29 +131,29 @@ def daily_log_entry_kw():
                     "imported": 4686.054,
                     "exported": 2.396,
                     "grid": True,
-                    "power_average": 8983.421,
-                    "power_imported": 8983.421,
+                    "power_average": 8.983,
+                    "power_imported": 8.983,
                     "power_exported": 0.0,
-                    "energy_imported": 746.123,
+                    "energy_imported": 0.746,
                     "energy_exported": 0.0
                 }
             },
             "pv": {
                 "pv1": {
                     "exported": 804,
-                    "power_average": -1517.057,
+                    "power_average": -1.517,
                     "power_imported": 0.0,
-                    "power_exported": 1517.057,
+                    "power_exported": 1.517,
                     "energy_imported": 0.0,
-                    "energy_exported": 126.0
+                    "energy_exported": 0.126
                 },
                 "all": {
                     "exported": 804,
-                    "power_average": -1517.057,
+                    "power_average": -1.517,
                     "power_imported": 0.0,
-                    "power_exported": 1517.057,
+                    "power_exported": 1.517,
                     "energy_imported": 0.0,
-                    "energy_exported": 126.0
+                    "energy_exported": 0.126
                 }
             },
             "bat": {
@@ -162,21 +161,21 @@ def daily_log_entry_kw():
                     "imported": 2.42,
                     "exported": 1742.135,
                     "soc": 15,
-                    "power_average": -3316.262,
+                    "power_average": -3.316,
                     "power_imported": 0.0,
-                    "power_exported": 3316.262,
+                    "power_exported": 3.316,
                     "energy_imported": 0.0,
-                    "energy_exported": 275.434
+                    "energy_exported": 0.275
                 },
                 "all": {
                     "imported": 2.42,
                     "exported": 1742.135,
                     "soc": 15,
-                    "power_average": -3316.262,
+                    "power_average": -3.316,
                     "power_imported": 0.0,
-                    "power_exported": 3316.262,
+                    "power_exported": 3.316,
                     "energy_imported": 0.0,
-                    "energy_exported": 275.434
+                    "energy_exported": 0.275
                 }
             },
             "sh": {
@@ -186,16 +185,16 @@ def daily_log_entry_kw():
                     "temp2": 300,
                     "imported": 0.1,
                     "exported": 0,
-                    "power_average": 1.204,
-                    "power_imported": 1.204,
+                    "power_average": 0.001,
+                    "power_imported": 0.001,
                     "power_exported": 0.0,
-                    "energy_imported": 0.1,
+                    "energy_imported": 0.0,
                     "energy_exported": 0.0
                 }
             },
             'hc': {'all': {'energy_exported': 0.0,
-                           'energy_imported': 10.0,
+                           'energy_imported': 0.01,
                            'imported': 100,
-                           'power_average': 120.401,
+                           'power_average': 0.12,
                            'power_exported': 0.0,
-                           'power_imported': 120.401}}}
+                           'power_imported': 0.12}}}
