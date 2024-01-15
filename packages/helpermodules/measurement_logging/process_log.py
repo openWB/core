@@ -1,3 +1,4 @@
+from decimal import Decimal
 from enum import Enum
 import json
 import logging
@@ -51,7 +52,14 @@ def get_totals(entries: List) -> Dict:
                                 log.debug(f"group:{totals_group}, module:{entry_module}, key:{entry_module_key}, "
                                           f"value:{entry_module_value}, "
                                           f"total:{totals[totals_group][entry_module][entry_module_key]}")
-                                totals[totals_group][entry_module][entry_module_key] += entry_module_value
+                                # avoid floating point issues with using Decimal
+                                value = (Decimal(str(totals[totals_group][entry_module][entry_module_key]))
+                                         + Decimal(str(entry_module_value)))
+                                value = f'{value: f}'
+                                # remove trailing zeros
+                                totals[totals_group][entry_module][entry_module_key] = string_to_float(
+                                    value) if "." in value else string_to_int(value)
+
                     except Exception:
                         log.exception(f"Fehler beim Berechnen der Summe von {entry_module}; "
                                       f"group:{totals_group}, module:{entry_module}, key:{entry_module_key}")
@@ -301,11 +309,17 @@ def analyse_percentage(entry):
             entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
         for source in ("grid", "pv", "bat", "cp"):
             if "all" in entry["hc"].keys():
-                entry["hc"]["all"][f"energy_imported_{source}"] = (entry["hc"]["all"]["energy_imported"] *
-                                                                   entry["energy_source"][source])
+                value = (Decimal(str(entry["hc"]["all"]["energy_imported"])) *
+                         Decimal(str(entry["energy_source"][source]))).quantize(Decimal('0.001'))  # limit precision
+                value = f'{value: f}'
+                value = string_to_float(value) if "." in value else string_to_int(value)
+                entry["hc"]["all"][f"energy_imported_{source}"] = value
             if "all" in entry["cp"].keys():
-                entry["cp"]["all"][f"energy_imported_{source}"] = (entry["cp"]["all"]["energy_imported"] *
-                                                                   entry["energy_source"][source])
+                value = (Decimal(str(entry["cp"]["all"]["energy_imported"])) *
+                         Decimal(str(entry["energy_source"][source]))).quantize(Decimal('0.001'))  # limit precision
+                value = f'{value: f}'
+                value = string_to_float(value) if "." in value else string_to_int(value)
+                entry["cp"]["all"][f"energy_imported_{source}"] = value
     except Exception:
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
     finally:
@@ -347,7 +361,7 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                         except KeyError:
                             next_value_exported = value_exported
                         average_power = _calculate_average_power(time_diff, value_imported, next_value_imported,
-                                                                 value_exported, next_value_exported) / 1000
+                                                                 value_exported, next_value_exported)
                         if calculation in [CalculationType.POWER, CalculationType.ALL]:
                             new_data.update({
                                 "power_average": average_power,
@@ -357,23 +371,32 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                         if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
                             new_data.update({
                                 "energy_imported":
-                                    _calculate_energy_difference(value_imported, next_value_imported) / 1000,
+                                    _calculate_energy_difference(value_imported, next_value_imported),
                                 "energy_exported":
-                                    _calculate_energy_difference(value_exported, next_value_exported) / 1000
+                                    _calculate_energy_difference(value_exported, next_value_exported)
                             })
                     entry[type][module].update(new_data)
                 except Exception:
                     log.exception("Fehler beim Berechnen der Leistung")
+            # next_entry may contain new modules, we add them here
+            for module in next_entry[type].keys():
+                if module not in entry[type].keys():
+                    log.warning(f"adding module {module} from next entry")
+                    entry[type].update({module: {"energy_imported": 0, "energy_exported": 0}})
     return entry
 
 
 def _calculate_energy_difference(current_value: float, next_value: float) -> float:
-    return (next_value - current_value)
+    value = (Decimal(str(next_value)) - Decimal(str(current_value)))
+    value = value.quantize(Decimal('0.001'))  # limit precision
+    value = f'{value: f}'
+    return string_to_float(value) if "." in value else string_to_int(value)
 
 
 def _calculate_average_power(time_diff: float, current_imported: float = 0, next_imported: float = 0,
                              current_exported: float = 0, next_exported: float = 0) -> float:
-    energy_diff = next_imported - current_imported - (next_exported - current_exported)
-    energy_diff_ws = energy_diff * 3600  # Ws
-    power = energy_diff_ws / time_diff  # W
-    return power
+    power = (Decimal(str(next_imported)) - Decimal(str(current_imported))
+             - (Decimal(str(next_exported)) - Decimal(str(current_exported)))) * Decimal(str(3600 / time_diff))  # Ws
+    power = power.quantize(Decimal('0.001'))  # limit precision
+    power = f'{power: f}'
+    return string_to_float(power) if "." in power else string_to_int(power)

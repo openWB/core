@@ -13,7 +13,7 @@ def test_update_module_yields(daily_log_totals, mock_pub):
         "openWB/set/bat/2/get/daily_exported": 550.857,
         "openWB/set/counter/0/get/daily_imported": 1492.011,
         "openWB/set/counter/0/get/daily_exported": 0,
-        "openWB/set/chargepoint/get/daily_imported": 1919.625999999999,
+        "openWB/set/chargepoint/get/daily_imported": 1919.626,
         "openWB/set/chargepoint/get/daily_exported": 0,
         "openWB/set/chargepoint/4/get/daily_imported": 383.942,
         "openWB/set/chargepoint/4/get/daily_exported": 0,

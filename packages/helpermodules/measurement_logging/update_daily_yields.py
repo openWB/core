@@ -19,8 +19,8 @@ def update_daily_yields(entries):
     """
     totals = get_totals(entries)
     [update_module_yields(type, totals) for type in ("bat", "counter", "cp", "pv")]
-    data.data.counter_all_data.data.set.daily_yield_home_consumption = totals["hc"]["all"]["imported"]
-    Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", totals["hc"]["all"]["imported"])
+    data.data.counter_all_data.data.set.daily_yield_home_consumption = totals["hc"]["all"]["energy_imported"]
+    Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", totals["hc"]["all"]["energy_imported"])
 
 
 def update_module_yields(module: str, totals: Dict) -> None:
@@ -53,8 +53,8 @@ def update_module_yields(module: str, totals: Dict) -> None:
             else:
                 module_data = getattr(data.data, f"{module}_data")[m]
             if module == "pv":
-                update_exported(totals[module][m]["exported"])
+                update_exported(totals[module][m]["energy_exported"])
             else:
-                update_imported_exported(totals[module][m]["imported"], totals[module][m]["exported"])
+                update_imported_exported(totals[module][m]["energy_imported"], totals[module][m]["energy_exported"])
         else:
             log.info(f"Modul {m} wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")

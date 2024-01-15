@@ -305,12 +305,12 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
             reference_time = get_reference_time(cp, reference)
             reference_entry = _get_reference_entry(content["entries"], reference_time)
             energy_entry = process_entry(reference_entry, content["entries"][-1], CalculationType.ENERGY)
-            power_source_entry = analyse_percentage(energy_entry)
+            energy_source_entry = analyse_percentage(energy_entry)
             if reference == ReferenceTime.START:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
             elif reference == ReferenceTime.MIDDLE:
                 charged_energy = (content["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
-                                  power_source_entry["cp"][f"cp{cp.num}"]["imported"])
+                                  energy_source_entry["cp"][f"cp{cp.num}"]["imported"])
             elif reference == ReferenceTime.END:
                 reference_start_position = _get_reference_position(cp, False)
                 if reference_start_position == ReferenceTime.START:
@@ -322,9 +322,9 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
                         last_considered_entry["cp"][f"cp{cp.num}"]["imported"]
             else:
                 raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
-            log.debug(f'power source {power_source_entry["power_source"]}')
+            log.debug(f'power source {energy_source_entry["energy_source"]}')
             log.debug(f"charged_energy {charged_energy}")
-            cp.data.set.log.costs += _calc(power_source_entry["power_source"],
+            cp.data.set.log.costs += _calc(energy_source_entry["energy_source"],
                                            charged_energy,
                                            (data.data.optional_data.et_module is not None))
             Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
@@ -394,20 +394,20 @@ def get_daily_log(day):
         return []
 
 
-def _calc(power_source: Dict[str, float], charged_energy_last_hour: float, et_active: bool) -> float:
+def _calc(energy_source: Dict[str, float], charged_energy_last_hour: float, et_active: bool) -> float:
     prices = data.data.general_data.data.prices
 
-    bat_costs = prices.bat * charged_energy_last_hour * power_source["bat"]
-    cp_costs = prices.cp * charged_energy_last_hour * power_source["cp"]
+    bat_costs = prices.bat * charged_energy_last_hour * energy_source["bat"]
+    cp_costs = prices.cp * charged_energy_last_hour * energy_source["cp"]
     if et_active:
-        grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_last_hour * power_source["grid"]
+        grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_last_hour * energy_source["grid"]
     else:
-        grid_costs = prices.grid * charged_energy_last_hour * power_source["grid"]
-    pv_costs = prices.pv * charged_energy_last_hour * power_source["pv"]
+        grid_costs = prices.grid * charged_energy_last_hour * energy_source["grid"]
+    pv_costs = prices.pv * charged_energy_last_hour * energy_source["pv"]
 
     log.debug(
-        f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({power_source["bat"]}%), {grid_costs}€ Netz '
-        f'({power_source["grid"]}%), {pv_costs}€ Pv ({power_source["pv"]}%)')
+        f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({energy_source["bat"]}%), {grid_costs}€ Netz '
+        f'({energy_source["grid"]}%), {pv_costs}€ Pv ({energy_source["pv"]}%)')
     return round(bat_costs + cp_costs + grid_costs + pv_costs, 4)
 
 
