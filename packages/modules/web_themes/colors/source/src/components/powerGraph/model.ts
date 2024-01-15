@@ -195,14 +195,19 @@ export const monthGraph = reactive({
 		this.activate()
 	},
 	forward() {
-		if (this.month - 1 < new Date().getMonth()) {
-			this.month = this.month + 1
+		const now = new Date()
+		if (now.getFullYear() == this.year) {
+			if (this.month - 1 < now.getMonth()) {
+				this.month = this.month + 1
+			}
+		} else {
+			this.month = this.month+1
 			if (this.month > 12) {
 				this.month = 1
 				this.year += 1
 			}
-			this.activate()
 		}
+		this.activate()
 	},
 	getDate() {
 		return new Date(this.year, this.month)
