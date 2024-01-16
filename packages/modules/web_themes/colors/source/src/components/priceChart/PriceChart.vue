@@ -30,7 +30,14 @@
 	</div>
 	<div class="d-flex justify-content-end">
 		<span class="me-3 pt-0" @click="setMaxPrice">
-			<span type="button" class="fa-solid fa-lg ps-1 fa-circle-check" />
+			<button
+				type="button"
+				class="btn btn-secondary"
+				:style="confirmButtonStyle"
+				:disabled="!maxPriceEdited"
+			>
+				Bestätigen
+			</button>
 		</span>
 	</div>
 </template>
@@ -53,10 +60,23 @@ import { chargePoints, type ChargePoint } from '../chargePointList/model'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
+let _maxPrice = ref(props.chargepoint.etMaxPrice)
+const maxPriceEdited = ref(false)
 const cp = ref(props.chargepoint)
-const maxPrice = ref(props.chargepoint.etMaxPrice)
+const maxPrice = computed({
+	get() {
+		return _maxPrice.value
+		// ref(props.chargepoint.etMaxPrice)
+	},
+	set(newmax) {
+		_maxPrice.value = newmax
+		maxPriceEdited.value = true
+	},
+})
+
 function setMaxPrice() {
 	chargePoints[cp.value.id].etMaxPrice = maxPrice.value
+	maxPriceEdited.value = false
 }
 const needsUpdate = ref(false)
 let dummy = false
@@ -78,6 +98,13 @@ const barwidth = computed(() => {
 		return (width - margin.left - margin.right) / plotdata.value.length - 1
 	} else {
 		return 0
+	}
+})
+const confirmButtonStyle = computed(() => {
+	if (maxPriceEdited.value) {
+		return { background: 'var(--color-charging)' }
+	} else {
+		return { background: 'var(--color-menu)' }
 	}
 })
 const xScale = computed(() => {

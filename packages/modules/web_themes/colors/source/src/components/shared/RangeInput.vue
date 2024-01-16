@@ -39,7 +39,7 @@ const dec = props.decimals ?? 0
 const emit = defineEmits(['update:modelValue'])
 const v = computed({
 	get() {
-		return props.modelValue
+		return Math.round(props.modelValue*Math.pow(10,dec))/Math.pow(10,dec)
 	},
 	set(value: number) {
 		emit('update:modelValue', value)
