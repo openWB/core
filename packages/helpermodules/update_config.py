@@ -1133,11 +1133,11 @@ class UpdateConfig:
                 with open(file, "r+") as jsonFile:
                     content = json.load(jsonFile)
                     for e in content["entries"]:
-                        if type(e.date) is not str:
-                            old_date = datetime.datetime.fromtimestamp(e.date)
-                            e.date = old_date.strftime('%H:$M')
-                        if type(e.timestamp) is float:
-                            e.timestamp = int(e.timestamp)
+                        if type(e["date"]) is not str:
+                            old_date = datetime.datetime.fromtimestamp(e["date"])
+                            e["date"] = old_date.strftime('%H:$M')
+                        if type(e["timestamp"]) is float:
+                            e["timestamp"] = int(e["timestamp"])
                     jsonFile.seek(0)
                     json.dump(content, jsonFile)
                     jsonFile.truncate()
