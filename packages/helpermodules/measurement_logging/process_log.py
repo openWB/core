@@ -30,7 +30,13 @@ def string_to_int(value: str, default: int = 0) -> int:
         return default
 
 
-def get_totals(entries: List) -> Dict:
+def get_totals(entries: List, process_entries: bool = True) -> Dict:
+    """ Berechnet aus der übergebenen Liste "entries" die Summen (totals).
+        "process_entries" besagt, ob die Differenzen der einzelnen Einträge noch
+        berechnet werden müssen.
+    """
+    if process_entries:
+        entries = _process_entries(entries, CalculationType.ENERGY)
     totals = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}, "hc": {}}
     for totals_group in totals.keys():
         for entry in entries:
@@ -133,8 +139,8 @@ def get_totals(entries: List) -> Dict:
 
 def get_daily_log(date: str):
     data = _collect_daily_log_data(date)
-    data = _process_entries(data, CalculationType.ALL)
-    data["totals"] = get_totals(data["entries"])
+    data["entries"] = _process_entries(data["entries"], CalculationType.ALL)
+    data["totals"] = get_totals(data["entries"], False)
     data = _analyse_energy_source(data)
     return data
 
@@ -158,8 +164,8 @@ def _collect_daily_log_data(date: str):
 
 def get_monthly_log(date: str):
     data = _collect_monthly_log_data(date)
-    data = _process_entries(data, CalculationType.ENERGY)
-    data["totals"] = get_totals(data["entries"])
+    data["entries"] = _process_entries(data["entries"], CalculationType.ENERGY)
+    data["totals"] = get_totals(data["entries"], False)
     data = _analyse_energy_source(data)
     return data
 
@@ -197,8 +203,8 @@ def _collect_monthly_log_data(date: str):
 
 def get_yearly_log(year: str):
     data = _collect_yearly_log_data(year)
-    data = _process_entries(data, CalculationType.ENERGY)
-    data["totals"] = get_totals(data["entries"])
+    data["entries"] = _process_entries(data["entries"], CalculationType.ENERGY)
+    data["totals"] = get_totals(data["entries"], False)
     data = _analyse_energy_source(data)
     return data
 
@@ -327,14 +333,14 @@ def analyse_percentage(entry):
         return entry
 
 
-def _process_entries(data, calculation):
-    if data and len(data["entries"]) > 0:
-        for i in range(0, len(data["entries"])-1):
-            entry = data["entries"][i]
-            next_entry = data["entries"][i+1]
-            data["entries"][i] = process_entry(entry, next_entry, calculation)
-        data["entries"].pop()
-    return data
+def _process_entries(entries: List, calculation: CalculationType):
+    if entries and len(entries) > 0:
+        for i in range(0, len(entries)-1):
+            entry = entries[i]
+            next_entry = entries[i+1]
+            entries[i] = process_entry(entry, next_entry, calculation)
+        entries.pop()
+    return entries
 
 
 def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):

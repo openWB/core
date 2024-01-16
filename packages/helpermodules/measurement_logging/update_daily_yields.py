@@ -35,7 +35,7 @@ def update_module_yields(module: str, totals: Dict) -> None:
             Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_imported", daily_imported)
             Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_exported", daily_exported)
         elif not isinstance(module_data, BatAll):
-            # wird im changed_values_handler gepublished
+            # wird im changed_values_handler an den Broker gesendet
             Pub().pub(f"openWB/set/{topic}/get/daily_imported", daily_imported)
             Pub().pub(f"openWB/set/{topic}/get/daily_exported", daily_exported)
 

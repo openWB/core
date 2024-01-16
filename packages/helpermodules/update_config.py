@@ -560,7 +560,7 @@ class UpdateConfig:
             try:
                 func(topic, payload)
             except Exception:
-                log.exception(f"Fehler beim Akutalisieren von {topic} mit Payload {payload}")
+                log.exception(f"Fehler beim Aktualisieren von {topic} mit Payload {payload}")
 
     def upgrade_datastore_0(self) -> None:
         # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen

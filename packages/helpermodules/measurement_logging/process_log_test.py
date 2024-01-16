@@ -2,7 +2,6 @@ from copy import deepcopy
 from helpermodules.measurement_logging.process_log import (
     analyse_percentage,
     _calculate_average_power,
-    _process_entries,
     process_entry,
     get_totals,
     CalculationType)
@@ -10,8 +9,8 @@ from helpermodules.measurement_logging.process_log import (
 
 def test_get_totals(daily_log_sample, daily_log_totals):
     # setup and execution
-    data = {"entries": deepcopy(daily_log_sample)}
-    totals = get_totals(_process_entries(data, CalculationType.ENERGY)["entries"])
+    entries = deepcopy(daily_log_sample)
+    totals = get_totals(entries)
 
     # evaluation
     assert totals == daily_log_totals
