@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 34
+    DATASTORE_VERSION = 35
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1126,3 +1126,27 @@ class UpdateConfig:
                     Pub().pub(topic, updated_payload)
         self._loop_all_received_topics(upgrade_fix_price_unit)
         Pub().pub("openWB/system/datastore_version", 34)
+
+    def upgrade_datastore_34(self) -> None:
+        def convert_file(file):
+            try:
+                with open(file, "r+") as jsonFile:
+                    content = json.load(jsonFile)
+                    for e in content["entries"]:
+                        if type(e.date) is not str:
+                            old_date = datetime.datetime.fromtimestamp(e.date)
+                            e.date = old_date.strftime('%H:$M')
+                        if type(e.timestamp) is float:
+                            e.timestamp = int(e.timestamp)
+                    jsonFile.seek(0)
+                    json.dump(content, jsonFile)
+                    jsonFile.truncate()
+                    log.debug(f"Format der Logdatei {file} aktualisiert.")
+            except FileNotFoundError:
+                pass
+            except Exception:
+                log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        for file in files:
+            convert_file(file)
+        Pub().pub("openWB/system/datastore_version", 35)

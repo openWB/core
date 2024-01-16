@@ -95,7 +95,7 @@ def save_log(folder):
         date = timecheck.create_timestamp_HH_MM()
     else:
         date = timecheck.create_timestamp_YYYYMMDD()
-    current_timestamp = timecheck.create_timestamp()
+    current_timestamp = int(timecheck.create_timestamp())
     cp_dict = {}
     for cp in data.data.cp_data:
         try:
