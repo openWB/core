@@ -35,11 +35,12 @@ def mock_data() -> None:
     SubData.ev_data.update({"ev0": Mock(
         spec=Ev,
         num=0,
-        data=Mock(spec=EvData, get=Mock(spec=EvGet, fault_state=0), set=Mock(spec=EvSet, soc_error_counter=0)),
-        ev_template=Mock(
-            spec=EvTemplate, data=Mock(spec=EvTemplateData, battery_capacity=82000)),
+        data=Mock(spec=EvData, ev_template=0, get=Mock(spec=EvGet, fault_state=0),
+                  set=Mock(spec=EvSet, soc_error_counter=0)),
         soc_module=Mock(spec=ConfigurableVehicle,
                         general_config=Mock(spec=GeneralVehicleConfig, use_soc_from_cp=False)))})
+    SubData.ev_template_data.update({"et0": Mock(
+        spec=EvTemplate, data=Mock(spec=EvTemplateData, battery_capacity=82000))})
 
 
 @pytest.mark.parametrize(
