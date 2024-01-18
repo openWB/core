@@ -410,7 +410,7 @@ export function addChargePoint(chargePointIndex: number) {
 	if (!(chargePointIndex in chargePoints)) {
 		chargePoints[chargePointIndex] = new ChargePoint(chargePointIndex)
 		chargePoints[chargePointIndex].color =
-			'var(--color-cp' + Object.values(chargePoints).length + ')'
+			'var(--color-cp' + (Object.values(chargePoints).length - 1) + ')'
 		// console.info('Added chargepoint ' + chargePointIndex)
 	} else {
 		// console.info('Duplicate chargepoint message: ' + chargePointIndex)

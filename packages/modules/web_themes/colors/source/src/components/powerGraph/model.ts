@@ -201,7 +201,7 @@ export const monthGraph = reactive({
 				this.month = this.month + 1
 			}
 		} else {
-			this.month = this.month+1
+			this.month = this.month + 1
 			if (this.month > 12) {
 				this.month = 1
 				this.year += 1

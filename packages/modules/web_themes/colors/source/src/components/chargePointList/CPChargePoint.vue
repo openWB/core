@@ -179,7 +179,12 @@
 					<div v-if="props.chargepoint.etActive" class="row m-1 p-0">
 						<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
 							<InfoItem heading="max. Preis:">
-								{{ (Math.round(props.chargepoint.etMaxPrice*10)/10).toFixed(1) }} ct
+								{{
+									(Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(
+										1,
+									)
+								}}
+								ct
 							</InfoItem>
 							<InfoItem heading="akt. Preis:">
 								<span :style="currentPriceStyle"

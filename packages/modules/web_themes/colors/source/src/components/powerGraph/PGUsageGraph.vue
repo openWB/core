@@ -141,7 +141,7 @@ const keysToUse = computed(() => {
 		}
 		additionalKeys.map((key, i) => {
 			k.splice(idx + i, 0, key)
-			colors[key]='var(--color-cp'+i+')'
+			colors[key] = 'var(--color-cp' + i + ')'
 		})
 		return k
 	}
