@@ -55,11 +55,11 @@ const myline = computed(() => {
 	const path = line<GraphDataItem>()
 		.x((d) => xScale.value(d.date))
 		.y(
-			(d) =>
-				yScale.value(
-					props.order == 2 ? d.batSoc : d['soc' + cp.value.connectedVehicle],
-				) ?? yScale.value(0),
-		)
+			(d) => yScale.value(
+					props.order == 2 ? d.batSoc : d['soc' + cp.value.connectedVehicle]
+				) ?? yScale.value(0)
+)
+			
 	let p = path(graphData.data)
 	return p ? p : ''
 })
