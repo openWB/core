@@ -28,7 +28,7 @@ from helpermodules.timecheck import convert_timedelta_to_time_string, get_differ
 from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("data_migration")
 
 
 def get_rounding_function_by_digits(digits: Union[int, None]) -> Callable:
