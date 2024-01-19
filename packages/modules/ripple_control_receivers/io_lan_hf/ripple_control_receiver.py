@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from enum import Enum
 import logging
 
 from modules.common.abstract_device import DeviceDescriptor
@@ -10,12 +11,17 @@ from modules.ripple_control_receivers.io_lan_hf.config import IoLanRcr
 log = logging.getLogger(__name__)
 
 
+class State(Enum):
+    OPENED = False
+    CLOSED = True
+
+
 def create_ripple_control_receiver(config: IoLanRcr):
     def updater():
-        r1 = client.read_coils(0x0000, 1, unit=config.configuration.modbus_id) is False
-        r2 = client.read_coils(0x0001, 1, unit=config.configuration.modbus_id) is False
+        r1 = State(client.read_coils(0x0000, 1, unit=config.configuration.modbus_id))
+        r2 = State(client.read_coils(0x0001, 1, unit=config.configuration.modbus_id))
         log.debug(f"RSE-Kontakt 1: {r1}, RSE-Kontakt 2: {r2}")
-        if r1 or r2:
+        if r1 == State.OPENED or r2 == State.OPENED:
             override_value = 0
         else:
             override_value = 100
