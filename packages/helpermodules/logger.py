@@ -7,7 +7,7 @@ import typing_extensions
 FORMAT_STR_DETAILED = '%(asctime)s - {%(name)s:%(lineno)s} - {%(levelname)s:%(threadName)s} - %(message)s'
 FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
 RAMDISK_PATH = str(Path(__file__).resolve().parents[2]) + '/ramdisk/'
-PERSISTENT_LOG_PATH = str(Path(__file__).resolve().parents[2]) + 'data/log'
+PERSISTENT_LOG_PATH = str(Path(__file__).resolve().parents[2]) + '/data/log/'
 
 
 def filter_neg(name: str, record) -> bool:
