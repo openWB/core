@@ -303,6 +303,7 @@ export function calculateAutarchy(cat: string, values: GraphDataItem) {
 }
 const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
 export const noData = ref(false)
+
 export function updateEnergyValues(
 	totals: RawDayGraphDataItem,
 	gridCounters: string[],
@@ -311,32 +312,32 @@ export function updateEnergyValues(
 		noData.value = false
 		Object.entries(totals.counter).forEach(([id, values]) => {
 			if (gridCounters.length == 0 || gridCounters.includes(id)) {
-				historicSummary.items.evuIn.energy += values.imported
-				historicSummary.items.evuOut.energy += values.exported
+				historicSummary.items.evuIn.energy += values.energy_imported
+				historicSummary.items.evuOut.energy += values.energy_exported
 			}
 		})
-		historicSummary.items.pv.energy = totals.pv.all.exported
+		historicSummary.items.pv.energy = totals.pv.all.energy_exported
 		if (totals.bat.all) {
-			historicSummary.items.batIn.energy = totals.bat.all.imported
-			historicSummary.items.batOut.energy = totals.bat.all.exported
+			historicSummary.items.batIn.energy = totals.bat.all.energy_imported
+			historicSummary.items.batOut.energy = totals.bat.all.energy_exported
 		}
 		Object.entries(totals.cp).forEach(([id, values]) => {
 			if (id == 'all') {
-				historicSummary.setEnergy('charging', values.imported)
+				historicSummary.setEnergy('charging', values.energy_imported)
 			} else {
-				historicSummary.setEnergy(id, values.imported)
+				historicSummary.setEnergy(id, values.energy_imported)
 			}
 		})
 		historicSummary.setEnergy('devices', 0)
 		Object.entries(totals.sh).forEach(([id, values]) => {
-			historicSummary.setEnergy(id, values.imported)
+			historicSummary.setEnergy(id, values.energy_imported)
 			const idNumber = id.substring(2)
 			if (!shDevices[+idNumber].countAsHouse) {
-				historicSummary.items.devices.energy += values.imported
+				historicSummary.items.devices.energy += values.energy_imported
 			}
 		})
 		if (totals.hc && totals.hc.all) {
-			historicSummary.setEnergy('house', totals.hc.all.imported)
+			historicSummary.setEnergy('house', totals.hc.all.energy_imported)
 		} else {
 			historicSummary.calculateHouseEnergy()
 		}
