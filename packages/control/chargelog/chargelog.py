@@ -8,6 +8,7 @@ from typing import Dict, List
 from control import data
 from dataclass_utils import asdict
 from helpermodules.measurement_logging.process_log import CalculationType, analyse_percentage, process_entry
+from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -304,7 +305,9 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
             reference = _get_reference_position(cp, create_log_entry)
             reference_time = get_reference_time(cp, reference)
             reference_entry = _get_reference_entry(content["entries"], reference_time)
-            energy_entry = process_entry(reference_entry, content["entries"][-1], CalculationType.ENERGY)
+            energy_entry = process_entry(reference_entry,
+                                         create_entry(LogType.DAILY, LegacySmartHomeLogData()),
+                                         CalculationType.ENERGY)
             energy_source_entry = analyse_percentage(energy_entry)
             if reference == ReferenceTime.START:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
@@ -312,14 +315,12 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
                 charged_energy = (content["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
                                   energy_source_entry["cp"][f"cp{cp.num}"]["imported"])
             elif reference == ReferenceTime.END:
-                reference_start_position = _get_reference_position(cp, False)
-                if reference_start_position == ReferenceTime.START:
+                # timestamp_before_full_hour, dann gibt es schon ein Zwischenergebnis
+                if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
                     charged_energy = cp.data.set.log.imported_since_mode_switch
                 else:
-                    last_considered_entry = _get_reference_entry(
-                        content["entries"], timecheck.create_unix_timestamp_current_full_hour())
                     charged_energy = cp.data.get.imported - \
-                        last_considered_entry["cp"][f"cp{cp.num}"]["imported"]
+                        energy_entry["cp"][f"cp{cp.num}"]["imported"]
             else:
                 raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
             log.debug(f'power source {energy_source_entry["energy_source"]}')
@@ -345,6 +346,7 @@ def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
         # Ladekosten für angefangene Stunde ermitteln
         return ReferenceTime.END
     else:
+        # Wenn der Ladevorgang erst innerhalb der letzten Stunde gestartet wurde, ist das das erste Zwischenergebnis.
         one_hour_back = timecheck.create_timestamp() - 3600
         if (one_hour_back - cp.data.set.log.timestamp_start_charging) < 0:
             return ReferenceTime.START
@@ -356,9 +358,9 @@ def get_reference_time(cp, reference_position):
     if reference_position == ReferenceTime.START:
         return cp.data.set.log.timestamp_start_charging
     elif reference_position == ReferenceTime.MIDDLE:
-        return timecheck.create_timestamp() - 3600
+        return timecheck.create_timestamp() - 3540
     elif reference_position == ReferenceTime.END:
-        return timecheck.create_unix_timestamp_current_full_hour()
+        return timecheck.create_unix_timestamp_current_full_hour() + 60
     else:
         raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference_position}")
 
@@ -370,9 +372,10 @@ def _get_reference_entry(entries: List[Dict], reference_time: float) -> Dict:
     else:
         # Tagesumbruch
         content = _get_yesterdays_daily_log()
-        for entry in reversed(content["entries"]):
-            if entry["timestamp"] < reference_time:
-                return entry
+        if content:
+            for entry in reversed(content["entries"]):
+                if entry["timestamp"] < reference_time:
+                    return entry
         else:
             return {}
 

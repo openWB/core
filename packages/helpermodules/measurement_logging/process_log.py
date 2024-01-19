@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from helpermodules import timecheck
+from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
 
 log = logging.getLogger(__name__)
 
@@ -149,14 +150,19 @@ def _collect_daily_log_data(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(date+".json")), "r") as json_file:
             log_data = json.load(json_file)
-            try:
-                next_date = timecheck.get_relative_date_string(date, day_offset=1)
-                with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(next_date+".json")),
-                          "r") as next_json_file:
-                    next_log_data = json.load(next_json_file)
-                    log_data["entries"].append(next_log_data["entries"][0])
-            except FileNotFoundError:
-                pass
+            if date == timecheck.create_timestamp_YYYYMMDD():
+                # beim aktuellen Tag den aktuellen Datensatz ergänzen
+                log_data["entries"].append(create_entry(LogType.DAILY, LegacySmartHomeLogData()))
+            else:
+                # bei älteren als letzten Datensatz den des nächsten Tags
+                try:
+                    next_date = timecheck.get_relative_date_string(date, day_offset=1)
+                    with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(next_date+".json")),
+                              "r") as next_json_file:
+                        next_log_data = json.load(next_json_file)
+                        log_data["entries"].append(next_log_data["entries"][0])
+                except FileNotFoundError:
+                    pass
     except FileNotFoundError:
         log_data = {"entries": [], "totals": {}, "names": {}}
     return log_data

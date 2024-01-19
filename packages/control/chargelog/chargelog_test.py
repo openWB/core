@@ -86,11 +86,11 @@ def test_get_reference_position(start_charging: str, create_log_entry: bool, exp
 @pytest.mark.parametrize(
     "reference_position, start_charging, expected_timestamp",
     (pytest.param(ReferenceTime.START, 1652679772, 1652679772,
-                  id="innerhalb der letzten Stunde angesteckt"),  # "05/16/2022, 07:42:52"
-     pytest.param(ReferenceTime.MIDDLE, 1652676052, 1652679652,
-                  id="vor mehr als einer Stunde angesteckt"),  # "05/16/2022, 06:40:52"
-     pytest.param(ReferenceTime.END, 1652676052, 1652680800,
-                  id="vor mehr als einer Stunde angesteckt, Ladevorgang beenden"),  # "05/16/2022, 06:40:52"
+                  id="innerhalb der letzten Stunde begonnen"),  # "05/16/2022, 07:42:52"
+     pytest.param(ReferenceTime.MIDDLE, 1652676052, 1652679712,
+                  id="vor Stundenwechsel begonnen"),  # "05/16/2022, 06:40:52"
+     pytest.param(ReferenceTime.END, 1652676052, 1652680860,
+                  id="vor Stundenwechsel begonnen, Ladevorgang beenden"),  # "05/16/2022, 06:40:52"
      )
 )
 def test_get_reference_time(reference_position: ReferenceTime, start_charging: str, expected_timestamp: float):
@@ -133,7 +133,7 @@ def test_get_reference_entry(reference_time, expected_entry, monkeypatch):
                              pytest.param(True, 1.1649, id="Et aktiv"),
                              pytest.param(False, 2.5953, id="Et inaktiv"),
                          ))
-def test_calc(et_active, expected_costs, monkeypatch):
+def test_calc(et_active: bool, expected_costs: float, monkeypatch: pytest.MonkeyPatch):
     # setup
     mock_et_get_current_price = Mock(return_value=0.00008)
     monkeypatch.setattr(data.data.optional_data, "et_get_current_price", mock_et_get_current_price)
@@ -145,12 +145,30 @@ def test_calc(et_active, expected_costs, monkeypatch):
     assert costs == expected_costs
 
 
-def test_calculate_charge_cost(monkeypatch):
+CREATE_LOG = {'bat': {'all': {'exported': 2506.763, 'imported': 6.33, 'soc': 0},
+                      'bat2': {'exported': 2506.763, 'imported': 6.33, 'soc': 0}},
+              'counter': {'counter0': {'exported': 20.152,
+                                       'grid': True,
+                                       'imported': 15584.117}},
+              'cp': {'all': {'exported': 0, 'imported': 33245.051},
+                     'cp3': {'exported': 0, 'imported': 33245.051},
+                     'cp4': {'exported': 0, 'imported': 0},
+                     'cp5': {'exported': 0, 'imported': 0}},
+              'date': '07:00:51',
+              'ev': {'ev0': {'soc': 0}},
+              'hc': {'all': {'imported': 114169.25077207937}},
+              'pv': {'all': {'exported': 21692}, 'pv1': {'exported': 21692}},
+              'sh': {},
+              'timestamp': 1698904851}
+
+
+def test_calculate_charge_cost(monkeypatch: pytest.MonkeyPatch):
     # integration test
     # setup
-    data.data.cp_data["cp3"].data.set.log.timestamp_start_charging = 1698822760
+    data.data.cp_data["cp3"].data.set.log.timestamp_start_charging = 1698822760  # Wed Nov 01 2023 08:12:40
     data.data.cp_data["cp3"].data.set.log.imported_since_plugged = 1000
     data.data.cp_data["cp3"].data.set.log.imported_since_mode_switch = 1000
+    data.data.cp_data["cp3"].data.get.imported = 33245.051
     # Mock today() to values in log-file
     # Thu Nov 02 2023 07:00:51
     mock_today_timestamp = Mock(return_value=1698904851)
@@ -161,6 +179,8 @@ def test_calculate_charge_cost(monkeypatch):
     with open("packages/control/chargelog/sample_daily_today.json", "r") as json_file:
         content_today = json.load(json_file)
     monkeypatch.setattr(chargelog, "get_todays_daily_log", Mock(return_value=content_today))
+    create_entry_mock = Mock(return_value=CREATE_LOG)
+    monkeypatch.setattr(chargelog, "create_entry", create_entry_mock)
 
     # execution
     calculate_charge_cost(data.data.cp_data["cp3"])
@@ -168,3 +188,48 @@ def test_calculate_charge_cost(monkeypatch):
     # evaluation
     # charged energy 2.3kWh, 45,45% Grid, 54,55% PV, Grid 0,3ct/kWh, Pv 0,15ct/kWh
     assert data.data.cp_data["cp3"].data.set.log.costs == 0.5023
+
+
+def test_calculate_charge_cost_full_hour(monkeypatch: pytest.MonkeyPatch):
+    # integration test charging 1.5 h
+    # setup
+    data.data.cp_data["cp3"].data.set.log.timestamp_start_charging = 1698900420  # Thu Nov 02 2023 05:47:00
+    data.data.cp_data["cp3"].data.set.log.imported_since_plugged = 1000
+    data.data.cp_data["cp3"].data.set.log.imported_since_mode_switch = 1000
+    # simplify cost structure
+    data.data.general_data.data.prices.bat = 0.0003
+    data.data.general_data.data.prices.grid = 0.0003
+    data.data.general_data.data.prices.pv = 0.0003
+    with open("packages/control/chargelog/sample_daily_yesterday.json", "r") as json_file:
+        content_yesterday = json.load(json_file)
+    monkeypatch.setattr(chargelog, "_get_yesterdays_daily_log", Mock(return_value=content_yesterday))
+    with open("packages/control/chargelog/sample_daily_today.json", "r") as json_file:
+        content_today = json.load(json_file)
+    monkeypatch.setattr(chargelog, "get_todays_daily_log", Mock(return_value=content_today))
+
+    # execution
+    # Berechnung nach der ersten Viertel-Stunde ReferenceTime.START
+    # Mock today() to values in log-file
+    mock_today_timestamp = Mock(return_value=1698901200)  # 6:00
+    monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
+    calculate_charge_cost(data.data.cp_data["cp3"])
+
+    # Berechnung nach den ersten 1.25h ReferenceTime.MIDDLE
+    mock_today_timestamp = Mock(return_value=1698904800)  # 07:00
+    monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
+    calculate_charge_cost(data.data.cp_data["cp3"])
+
+    # Berechnung nach 1.5 h (Ladeende) ReferenceTime.END
+    data.data.cp_data["cp3"].data.set.log.imported_since_plugged = 3557.236
+    data.data.cp_data["cp3"].data.set.log.imported_since_mode_switch = 3557.236
+    data.data.cp_data["cp3"].data.get.imported = 33500
+    mock_today_timestamp = Mock(return_value=1698904920)  # 7:02
+    monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
+    calculate_charge_cost(data.data.cp_data["cp3"], create_log_entry=True)
+
+    # evaluation
+    # 3557.236Wh * 0,3€/kWh = 1.06€
+    # 5:45-6:00 1000Wh; 0,3€
+    # 6:00-7:00 33245.051-30942.764 = 2302.287Wh; 0,69€
+    # 7:00-7:02 254.949 Wh; 0,08€
+    assert data.data.cp_data["cp3"].data.set.log.costs == 1.0672
