@@ -386,6 +386,10 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
+    def __unknown_id(self, msg: mqtt.MQTTMessage) -> None:
+        log.warning(f"Keine ID {get_index(msg.topic)} mit gültiger Konfiguration für Topic {msg.topic} mit "
+                    f"Payload {decode_payload(msg.payload)} gefunden.")
+
     def process_vehicle_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die EV-Topics
 
@@ -415,8 +419,6 @@ class SetData:
                 self._validate_value(msg, str)
             elif "/tag_id" in msg.topic:
                 self._validate_value(msg, str, collection=list)
-            elif "/set/ev_template" in msg.topic:
-                self._validate_value(msg, "json")
             elif ("/charge_template" in msg.topic or
                     "/ev_template" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
@@ -475,6 +477,10 @@ class SetData:
                     self._validate_value(msg, "json")
                 elif "/chargemode/scheduled_charging" in msg.topic:
                     self._validate_value(msg, "json", pub_json=True)
+                elif "/et/active" in msg.topic:
+                    self._validate_value(msg, bool, pub_json=True)
+                elif "/et/max_price" in msg.topic:
+                    self._validate_value(msg, float, pub_json=True)
                 elif "/time_charging/active" in msg.topic:
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/time_charging/plans/" in msg.topic and "/active" in msg.topic:
@@ -565,7 +571,7 @@ class SetData:
                 else:
                     self.__unknown_topic(msg)
             else:
-                log.warning(f"Kein Ladepunkt {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
+                self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
@@ -652,7 +658,7 @@ class SetData:
                 else:
                     self.__unknown_topic(msg)
             else:
-                log.warning(f"Kein Wechselrichter {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
+                self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
@@ -704,7 +710,7 @@ class SetData:
                 else:
                     self.__unknown_topic(msg)
             else:
-                log.warning(f"Kein Speicher {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
+                self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
@@ -773,7 +779,9 @@ class SetData:
                     "openWB/set/general/notifications/plug" in msg.topic or
                     "openWB/set/general/notifications/smart_home" in msg.topic):
                 self._validate_value(msg, bool)
-            elif "openWB/set/general/price_kwh" in msg.topic:
+            elif ("openWB/set/general/prices/bat" in msg.topic or
+                  "openWB/set/general/prices/grid" in msg.topic or
+                  "openWB/set/general/prices/pv" in msg.topic):
                 self._validate_value(msg, float, [(0, 99.99)])
             elif "openWB/set/general/range_unit" in msg.topic:
                 self._validate_value(msg, str)
@@ -798,21 +806,15 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/optional/load_sharing/active" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/optional/load_sharing/max_current" in msg.topic:
-                self._validate_value(msg, int, [(16, 32)])
-            elif "openWB/set/optional/et/active" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/optional/et/get/price_list" in msg.topic:
+            if "openWB/set/optional/et/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/et/get/price" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/optional/et/get/source" in msg.topic:
+            elif "openWB/set/optional/et/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/optional/et/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
-            elif "openWB/set/optional/et/config/max_price" in msg.topic:
-                self._validate_value(msg, float)
-            elif "openWB/set/optional/et/config/provider" in msg.topic:
+            elif "openWB/set/optional/et/provider" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)
@@ -911,7 +913,7 @@ class SetData:
                 else:
                     self.__unknown_topic(msg)
             else:
-                log.warning(f"Kein Zähler {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
+                self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 

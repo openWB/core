@@ -4,7 +4,7 @@ import logging
 import threading
 from typing import List
 
-from control import chargelog
+from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
@@ -37,7 +37,7 @@ class Process:
                     else:
                         # LP, an denen nicht geladen werden darf
                         if cp.data.set.charging_ev_prev != -1:
-                            chargelog.save_data(
+                            chargelog.save_interim_data(
                                 cp, data.data.ev_data
                                 ["ev" + str(cp.data.set.charging_ev_prev)],
                                 immediately=False)

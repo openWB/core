@@ -4,7 +4,6 @@ from typing import Dict, Union
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import FaultState
 from modules.devices.openwb_evu_kit.config import EvuKitCounterSetup
 from modules.devices.openwb_flex.counter import EvuKitFlex
 from modules.devices.openwb_flex.config import convert_to_flex_setup
@@ -24,7 +23,7 @@ class EvuKit(EvuKitFlex):
         elif version == 2:
             id = 115
         else:
-            raise FaultState.error("Version " + str(version) + " unbekannt.")
+            raise ValueError("Version " + str(version) + " unbekannt.")
 
         super().__init__(device_id, convert_to_flex_setup(self.component_config, id), tcp_client)
 

@@ -35,7 +35,8 @@ const topics: { [topic: string]: string } = {
 		'openWB/set/vehicle/template/charge_template/%/chargemode/pv_charging/min_soc',
 	cpPvMinSocCurrent:
 		'openWB/set/vehicle/template/charge_template/%/chargemode/pv_charging/min_soc_current',
-	etMaxPrice: 'openWB/set/optional/et/max_price',
+	cpEtMaxPrice: 'openWB/set/vehicle/template/charge_template/%/et/max_price',
+	//etMaxPrice: 'openWB/set/optional/et/max_price',
 	vhChargeTemplateId: 'openWB/set/vehicle/%/charge_template',
 	vhEvTemplateId: 'openWB/set/vehicle/%/ev_template',
 	shSetManual: 'openWB/set/LegacySmartHome/config/set/Devices/%/mode',
@@ -70,6 +71,7 @@ export function updateServer(
 		case 'cpPvMinCurrent':
 		case 'cpPvMaxSoc':
 		case 'cpPvMinSoc':
+		case 'cpEtMaxPrice':
 		case 'cpPvMinSocCurrent': // these values are set in the charge template
 			topic = topic.replace('%', chargePoints[index].chargeTemplate.toString())
 			break

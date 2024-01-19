@@ -37,7 +37,7 @@ class FroniusSmCounter:
         elif variant == 2:
             counter_state = self.__update_variant_2(session)
         else:
-            raise FaultState.error("Unbekannte Variante: "+str(variant))
+            raise ValueError("Unbekannte Variante: "+str(variant))
         counter_state.imported, counter_state.exported = self.sim_counter.sim_count(counter_state.power)
         self.store.set(counter_state)
 
@@ -56,7 +56,7 @@ class FroniusSmCounter:
                 ('DataCollection', 'MeterRealtimeData'),
             )
         else:
-            raise FaultState.error("Unbekannte Generation: "+str(variant))
+            raise ValueError("Unbekannte Generation: "+str(variant))
         response = session.get(
             'http://' + self.device_config.ip_address + '/solar_api/v1/GetMeterRealtimeData.cgi',
             params=params,

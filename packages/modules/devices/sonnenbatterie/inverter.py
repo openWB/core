@@ -107,7 +107,7 @@ class SonnenbatterieInverter:
         elif self.__device_variant == 3:
             state = self.__update_variant_1("v2")
         else:
-            raise FaultState.error("Unbekannte Variante: " + str(self.__device_variant))
+            raise ValueError("Unbekannte Variante: " + str(self.__device_variant))
         self.store.set(state)
 
 

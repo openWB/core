@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 import Vue from "@vitejs/plugin-vue";
 
 import { nodePolyfills } from "vite-plugin-node-polyfills";
-import rollupNodePolyFill from "rollup-plugin-node-polyfills";
+import rollupNodePolyfills from "rollup-plugin-polyfill-node";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -48,7 +48,7 @@ export default defineConfig(({ command, mode }) => {
     );
     myConfiguration.build = {
       rollupOptions: {
-        plugins: [rollupNodePolyFill()],
+        plugins: [rollupNodePolyfills()],
         output: {
           manualChunks(id) {
             if (id.includes("node_modules")) {

@@ -16,14 +16,15 @@ class FemsInverter:
 
     def update(self, session: Session) -> None:
         response = session.get(
-            'http://'+self.ip_address+':8084/rest/channel/_sum/ProductionActivePower',
+            'http://'+self.ip_address+':8084/rest/channel/_sum/(ProductionActivePower|ProductionActiveEnergy)',
             timeout=2).json()
-        power = scale_metric(response["value"], response.get("unit"), 'W') * -1
+        for singleValue in response:
+            address = singleValue["address"]
+            if address == "_sum/ProductionActivePower":
+                power = scale_metric(singleValue['value'], singleValue.get('unit'), 'W') * -1
+            elif address == "_sum/ProductionActiveEnergy":
+                exported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
 
-        response = session.get(
-            'http://'+self.ip_address+':8084/rest/channel/_sum/ProductionActiveEnergy',
-            timeout=2).json()
-        exported = scale_metric(response["value"], response.get("unit"), 'Wh')
         inverter_state = InverterState(
             power=power,
             exported=exported

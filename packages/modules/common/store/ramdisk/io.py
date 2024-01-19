@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Iterable, Optional, TypeVar, Callable
 
-from modules.common.store._util import get_rounding_function_by_digits, process_error
+from modules.common.store._util import get_rounding_function_by_digits
 
 RAMDISK_PATH = Path(__file__).resolve().parents[5] / "ramdisk"
 
@@ -19,10 +19,7 @@ def ramdisk_write_to_files(prefix: str, values: Iterable, digits: int = None):
 
 
 def ramdisk_write(file: str, value, digits: Optional[int] = None) -> None:
-    try:
-        (RAMDISK_PATH / file).write_text(str(get_rounding_function_by_digits(digits)(value)))
-    except Exception as e:
-        process_error(e)
+    (RAMDISK_PATH / file).write_text(str(get_rounding_function_by_digits(digits)(value)))
 
 
 def ramdisk_read(file: str) -> str:

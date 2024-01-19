@@ -49,7 +49,8 @@
 					<PgSoc
 						v-if="
 							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today') &&
+								graphData.graphMode == 'today' ||
+								graphData.graphMode == 'live') &&
 							Object.values(chargePoints).length > 0
 						"
 						:width="width - margin.left - 2 * margin.right"
@@ -60,7 +61,8 @@
 					<PgSoc
 						v-if="
 							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today') &&
+								graphData.graphMode == 'today' ||
+								graphData.graphMode == 'live') &&
 							Object.values(chargePoints).length > 1
 						"
 						:width="width - margin.left - 2 * margin.right"

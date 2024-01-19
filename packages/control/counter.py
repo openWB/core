@@ -1,6 +1,7 @@
 """Zähler-Logik
 """
 from dataclasses import dataclass, field
+from enum import Enum
 import logging
 import operator
 from typing import List, Tuple
@@ -19,8 +20,14 @@ log = logging.getLogger(__name__)
 
 
 def get_counter_default_config():
-    return {"max_currents": [16, 16, 16],
-            "max_total_power": 11000}
+    return {"max_currents": [35]*3,
+            "max_total_power": 24000}
+
+
+class ControlRangeState(Enum):
+    BELOW = -1
+    MIDDLE = 0
+    ABOVE = 1
 
 
 @dataclass
@@ -206,11 +213,22 @@ class Counter:
         raw_power_left = evu_counter.data.set.raw_power_left
         max_power = evu_counter.data.config.max_total_power
         surplus = raw_power_left - max_power + bat_surplus + disengageable_smarthome_power
-        ranged_surplus = surplus + self._control_range()
+        ranged_surplus = surplus + self._control_range_offset()
         log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
         return ranged_surplus
 
-    def _control_range(self):
+    def get_control_range_state(self, feed_in_yield: int) -> ControlRangeState:
+        control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
+        control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
+        surplus = data.data.counter_all_data.get_evu_counter().data.get.power + feed_in_yield
+        if control_range_low > surplus:
+            return ControlRangeState.BELOW
+        elif surplus > control_range_high:
+            return ControlRangeState.ABOVE
+        else:
+            return ControlRangeState.MIDDLE
+
+    def _control_range_offset(self):
         if data.data.bat_all_data.data.set.regulate_up:
             # 100(50 reichen auch?) W Überschuss übrig lassen, damit der Speicher bis zur max Ladeleistung hochregeln
             # kann. Regelmodus ignorieren, denn mit Regelmodus Bezug kann keine Einspeisung für den Speicher erzeugt
@@ -220,14 +238,15 @@ class Counter:
             return - 100
         control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
         control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
-        control_range_center = control_range_high - \
-            (control_range_high - control_range_low) / 2
-        if control_range_low > data.data.counter_all_data.get_evu_counter().data.get.power:
-            range_offset = control_range_center - data.data.counter_all_data.get_evu_counter().data.get.power
-        elif data.data.counter_all_data.get_evu_counter().data.get.power > control_range_high:
-            range_offset = control_range_center - data.data.counter_all_data.get_evu_counter().data.get.power
+        control_range_center = control_range_high - (control_range_high - control_range_low) / 2
+        control_range_state = self.get_control_range_state(0)
+        if control_range_state == ControlRangeState.BELOW:
+            range_offset = abs(control_range_center)
+        elif control_range_state == ControlRangeState.ABOVE:
+            range_offset = - abs(control_range_center)
         else:
             range_offset = 0
+        log.debug(f"Anpassen des Regelbereichs {range_offset}W")
         return range_offset
 
     SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Einschaltverzögerung unterschritten."
@@ -314,8 +333,8 @@ class Counter:
 
     SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
     SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Abschaltverzögerung {}s gestoppt."
-    SWITCH_OFF_NO_STOP = ("Stoppen des Ladevorgangs verhindert, da in dem Fahrzeug-Profil die Einstellung"
-                          " 'Ladung aktiv halten' aktiviert ist.")
+    SWITCH_OFF_NO_STOP = ("Der Ladevorgang wird trotz fehlenden Überschusses nicht gestoppt, da in dem Fahrzeug-Profil "
+                          "die Einstellung 'Ladung aktiv halten' aktiviert ist.")
     SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."
     SWITCH_OFF_NOT_CHARGING = ("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "
                                "wird die Ladefreigabe sofort entzogen.")

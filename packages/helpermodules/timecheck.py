@@ -3,6 +3,7 @@
 import copy
 import logging
 import datetime
+from dateutil.relativedelta import relativedelta
 from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
 from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
@@ -178,7 +179,7 @@ def _get_remaining_time(now: datetime.datetime, duration: float, end: datetime.d
     neg: Zeitpunkt vorbei
     pos: verbleibende Sekunden
     """
-    delta = datetime.timedelta(hours=int(duration), minutes=((duration % 1) * 60))
+    delta = datetime.timedelta(seconds=duration)
     start_time = end-delta
     log.debug(f"delta {delta} start_time {start_time} end {end} now {now}")
     return (start_time-now).total_seconds()
@@ -198,13 +199,9 @@ def is_list_valid(hour_list: List[int]) -> bool:
     False: aktuelle Stunde ist nicht in der Liste enthalten
     """
     try:
-        now = datetime.datetime.today()
         for hour in hour_list:
-            timestamp = datetime.datetime.fromtimestamp(float(hour))
-            if timestamp.hour == now.hour:
+            if hour == create_unix_timestamp_current_full_hour():
                 return True
-            else:
-                return False
         else:
             return False
     except Exception:
@@ -230,6 +227,10 @@ def create_timestamp() -> float:
     return datetime.datetime.today().timestamp()
 
 
+def create_timestamp_YYYY() -> str:
+    return datetime.datetime.today().strftime("%Y")
+
+
 def create_timestamp_YYYYMM() -> str:
     stamp = datetime.datetime.today().strftime("%Y%m")
     return stamp
@@ -238,6 +239,21 @@ def create_timestamp_YYYYMM() -> str:
 def create_timestamp_YYYYMMDD() -> str:
     stamp = datetime.datetime.today().strftime("%Y%m%d")
     return stamp
+
+
+def create_timestamp_HH_MM() -> str:
+    return datetime.datetime.today().strftime("%H:%M")
+
+
+def create_unix_timestamp_current_full_hour() -> int:
+    full_hour = datetime.datetime.fromtimestamp(create_timestamp()).strftime("%m/%d/%Y, %H")
+    return int(datetime.datetime.strptime(full_hour, "%m/%d/%Y, %H").timestamp())
+
+
+def get_relative_date_string(date_string: str, day_offset: int = 0, month_offset: int = 0, year_offset: int = 0) -> str:
+    print_format = "%Y%m%d" if len(date_string) > 6 else "%Y%m"
+    my_date = datetime.datetime.strptime(date_string, print_format)
+    return (my_date + relativedelta(years=year_offset, months=month_offset, days=day_offset)).strftime(print_format)
 
 
 def get_difference_to_now(timestamp_begin: float) -> Tuple[str, int]:
