@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import time
 from typing import Iterable, Optional, List, Union
 
 from helpermodules.cli import run_using_positional_cli_args
@@ -29,6 +30,7 @@ def create_device(device_config: Rct):
             rct = rct_lib.RCT(device_config.configuration.ip_address)
             if rct.connect_to_server():
                 for component in components:
+                    time.sleep(0.1)
                     component.update(rct)
         except Exception:
             raise
