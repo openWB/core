@@ -1131,6 +1131,7 @@ class UpdateConfig:
         def convert_file(file):
             try:
                 with open(file, "r+") as jsonFile:
+                    modified = False
                     content = json.load(jsonFile)
                     for e in content["entries"]:
                         if type(e["date"]) is not str:
@@ -1138,12 +1139,15 @@ class UpdateConfig:
                             # old version had a bug formatting "date" '$M' <-> '%M'
                             # e["date"] = old_date.strftime('%H:$M')
                             e["date"] = old_date.strftime('%H:%M')
+                            modified = True
                         if type(e["timestamp"]) is float:
                             e["timestamp"] = int(e["timestamp"])
-                    jsonFile.seek(0)
-                    json.dump(content, jsonFile)
-                    jsonFile.truncate()
-                    log.debug(f"Format der Logdatei {file} aktualisiert.")
+                            modified = True
+                    if modified:
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format der Logdatei {file} aktualisiert.")
             except FileNotFoundError:
                 pass
             except Exception:
@@ -1159,15 +1163,18 @@ class UpdateConfig:
         def convert_file(file):
             try:
                 with open(file, "r+") as jsonFile:
+                    modified = False
                     content = json.load(jsonFile)
                     for e in content["entries"]:
                         if type(e["date"]) is str and '$M' in e["date"]:
                             old_timestamp = datetime.datetime.fromtimestamp(e["timestamp"])
                             e["date"] = old_timestamp.strftime('%H:%M')
-                    jsonFile.seek(0)
-                    json.dump(content, jsonFile)
-                    jsonFile.truncate()
-                    log.debug(f"Format der Logdatei {file} aktualisiert.")
+                            modified = True
+                    if modified:
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format der Logdatei {file} aktualisiert.")
             except FileNotFoundError:
                 pass
             except Exception:
