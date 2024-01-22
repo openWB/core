@@ -373,21 +373,33 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                             next_value_exported = next_entry[type][module]["exported"]
                         except KeyError:
                             next_value_exported = value_exported
-                        average_power = _calculate_average_power(
-                            time_diff, value_imported / 1000, next_value_imported / 1000,
-                            value_exported / 1000, next_value_exported / 1000)
                         if calculation in [CalculationType.POWER, CalculationType.ALL]:
+                            if next_value_imported < value_imported or next_value_exported < value_exported:
+                                # do not calculate as we have a backwards jump in our meter value!
+                                average_power = 0
+                            else:
+                                average_power = _calculate_average_power(
+                                    time_diff, value_imported / 1000, next_value_imported / 1000,
+                                    value_exported / 1000, next_value_exported / 1000)
                             new_data.update({
                                 "power_average": average_power,
                                 "power_imported": average_power if average_power >= 0 else 0,
                                 "power_exported": average_power * -1 if average_power < 0 else 0
                             })
                         if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
+                            if next_value_imported < value_imported:
+                                energy_imported = 0
+                            else:
+                                energy_imported = _calculate_energy_difference(value_imported / 1000,
+                                                                               next_value_imported / 1000)
+                            if next_value_exported < value_exported:
+                                energy_exported = 0
+                            else:
+                                energy_exported = _calculate_energy_difference(value_exported / 1000,
+                                                                               next_value_exported / 1000)
                             new_data.update({
-                                "energy_imported":
-                                    _calculate_energy_difference(value_imported / 1000, next_value_imported / 1000),
-                                "energy_exported":
-                                    _calculate_energy_difference(value_exported / 1000, next_value_exported / 1000)
+                                "energy_imported": energy_imported,
+                                "energy_exported": energy_exported
                             })
                     entry[type][module].update(new_data)
                 except Exception:
