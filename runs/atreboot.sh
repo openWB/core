@@ -344,6 +344,20 @@ chmod 666 "$LOGFILE"
 	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
 	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
 
+	# cleanup some folders
+	folder="${OPENWBBASEDIR}/data/data_migration/var"
+	if [ -d "$folder" ]; then
+		echo "deleting temporary data migration folder"
+		rm -R "$folder"
+	fi
+	files=("${OPENWBBASEDIR}/data/data_migration/data_migration.tar" "${OPENWBBASEDIR}/data/data_migration/data_migration.tar.gz")
+	for file in "${files[@]}"; do
+		if [ -f "$file" ]; then
+			echo "deleting temporary data migration file '$file'"
+			rm "$file"
+		fi
+	done
+
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
