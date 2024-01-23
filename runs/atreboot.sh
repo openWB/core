@@ -87,10 +87,15 @@ chmod 666 "$LOGFILE"
 
 	# check group membership
 	echo "Group membership..."
-	for group in "input" "dialout"; do
+	# ToDo: remove sudo group membership if possible
+	for group in "input" "dialout" "gpio" "sudo"; do
 		if ! groups openwb | grep --quiet "$group"; then
-			sudo usermod -G "$group" -a openwb
-			echo "added openwb to group '$group'"
+			if getent group | cut -d: -f1 | grep --quiet "$group"; then
+				sudo usermod -G "$group" -a openwb
+				echo "added openwb to group '$group'"
+			else
+				echo "required group '$group' missing on this system!"
+			fi
 		fi
 	done
 	echo -n "Final group membership: "
