@@ -32,6 +32,13 @@ def setup_logging() -> None:
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "Internal Chargepoint"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "smarthome"))
 
+    chargelog_log = logging.getLogger("chargelog")
+    chargelog_log.propagate = False
+    chargelog_file_handler = RotatingFileHandler(
+        RAMDISK_PATH + 'chargelog.log', maxBytes=mb_to_bytes(3), backupCount=1)
+    chargelog_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+    chargelog_log.addHandler(chargelog_file_handler)
+
     data_migration_log = logging.getLogger("data_migration")
     data_migration_log.propagate = False
     data_migration_file_handler = RotatingFileHandler(
