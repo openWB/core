@@ -56,9 +56,6 @@ def get_totals(entries: List, process_entries: bool = True) -> Dict:
                                         totals_group][entry_module]["grid"]
                         for entry_module_key, entry_module_value in entry[totals_group][entry_module].items():
                             if "grid" != entry_module_key and entry_module_key in totals[totals_group][entry_module]:
-                                log.debug(f"group:{totals_group}, module:{entry_module}, key:{entry_module_key}, "
-                                          f"value:{entry_module_value}, "
-                                          f"total:{totals[totals_group][entry_module][entry_module_key]}")
                                 # avoid floating point issues with using Decimal
                                 value = (Decimal(str(totals[totals_group][entry_module][entry_module_key]))
                                          + Decimal(str(entry_module_value * 1000)))  # totals in Wh!
@@ -388,11 +385,13 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                             })
                         if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
                             if next_value_imported < value_imported:
+                                # do not calculate as we have a backwards jump in our meter value!
                                 energy_imported = 0
                             else:
                                 energy_imported = _calculate_energy_difference(value_imported / 1000,
                                                                                next_value_imported / 1000)
                             if next_value_exported < value_exported:
+                                # do not calculate as we have a backwards jump in our meter value!
                                 energy_exported = 0
                             else:
                                 energy_exported = _calculate_energy_difference(value_exported / 1000,
