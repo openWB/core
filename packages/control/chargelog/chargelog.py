@@ -20,7 +20,7 @@ from helpermodules import timecheck
 # "data": {"range_charged": 34, "imported_since_mode_switch": 3400, "imported_since_plugged": 5000,
 #          "power": 110000, "costs": 3,42} }}
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("chargelog")
 
 
 def collect_data(chargepoint):
@@ -55,8 +55,8 @@ def collect_data(chargepoint):
                 log_data.prio = chargepoint.data.control_parameter.prio
                 log_data.rfid = chargepoint.data.set.rfid
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
-                log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
-                          f"counter {chargepoint.data.get.imported}")
+                # log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
+                #           f"counter {chargepoint.data.get.imported}")
                 log_data.range_charged = log_data.imported_since_mode_switch / \
                     charging_ev.ev_template.data.average_consump * 100
                 log_data.time_charged = timecheck.get_difference_to_now(log_data.timestamp_start_charging)[0]
@@ -309,6 +309,10 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
                                          create_entry(LogType.DAILY, LegacySmartHomeLogData()),
                                          CalculationType.ENERGY)
             energy_source_entry = analyse_percentage(energy_entry)
+            log.debug(f"reference {reference}, reference_time {reference_time}, "
+                      f"cp.data.set.log.imported_since_mode_switch {cp.data.set.log.imported_since_mode_switch}, "
+                      f"cp.data.set.log.timestamp_start_charging {cp.data.set.log.timestamp_start_charging}")
+            log.debug(f"energy_source_entry {energy_source_entry}")
             if reference == ReferenceTime.START:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
             elif reference == ReferenceTime.MIDDLE:
@@ -319,15 +323,18 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
                 if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
                     charged_energy = cp.data.set.log.imported_since_mode_switch
                 else:
+                    log.debug(f"cp.data.get.imported {cp.data.get.imported}")
                     charged_energy = cp.data.get.imported - \
                         energy_entry["cp"][f"cp{cp.num}"]["imported"]
             else:
                 raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
             log.debug(f'power source {energy_source_entry["energy_source"]}')
             log.debug(f"charged_energy {charged_energy}")
-            cp.data.set.log.costs += _calc(energy_source_entry["energy_source"],
-                                           charged_energy,
-                                           (data.data.optional_data.et_module is not None))
+            costs = _calc(energy_source_entry["energy_source"],
+                          charged_energy,
+                          (data.data.optional_data.et_module is not None))
+            cp.data.set.log.costs += costs
+            log.debug(f"current costs {costs}, total costs {cp.data.set.log.costs}")
             Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
