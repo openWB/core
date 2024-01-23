@@ -190,6 +190,55 @@ def test_calculate_charge_cost(monkeypatch: pytest.MonkeyPatch):
     assert data.data.cp_data["cp3"].data.set.log.costs == 0.5023
 
 
+CREATE_LOG_1 = {'bat': {'all': {'exported': 2506.763, 'imported': 6.33, 'soc': 0},
+                        'bat2': {'exported': 2506.763, 'imported': 6.33, 'soc': 0}},
+                'counter': {'counter0': {'exported': 20.152,
+                                         'grid': True,
+                                         'imported': 14327.787}},
+                'cp': {'all': {'exported': 0, 'imported': 30942.764},
+                       'cp3': {'exported': 0, 'imported': 30942.764},
+                       'cp4': {'exported': 0, 'imported': 0},
+                       'cp5': {'exported': 0, 'imported': 0}},
+                'date': '06:00',
+                'ev': {'ev0': {'soc': 0}},
+                'hc': {'all': {'imported': 113712.84747947555}},
+                'pv': {'all': {'exported': 20185}, 'pv1': {'exported': 20185}},
+                'sh': {},
+                'timestamp': 1698901200}
+
+CREATE_LOG_2 = {'bat': {'all': {'exported': 2506.763, 'imported': 6.33, 'soc': 0},
+                        'bat2': {'exported': 2506.763, 'imported': 6.33, 'soc': 0}},
+                'counter': {'counter0': {'exported': 20.152,
+                                         'grid': True,
+                                         'imported': 15584.117}},
+                'cp': {'all': {'exported': 0, 'imported': 33245.051},
+                       'cp3': {'exported': 0, 'imported': 33245.051},
+                       'cp4': {'exported': 0, 'imported': 0},
+                       'cp5': {'exported': 0, 'imported': 0}},
+                'date': '07:00',
+                'ev': {'ev0': {'soc': 0}},
+                'hc': {'all': {'imported': 114169.25077207937}},
+                'pv': {'all': {'exported': 21692}, 'pv1': {'exported': 21692}},
+                'sh': {},
+                'timestamp': 1698904800}
+
+CREATE_LOG_3 = {'bat': {'all': {'exported': 2506.763, 'imported': 6.33, 'soc': 0},
+                        'bat2': {'exported': 2506.763, 'imported': 6.33, 'soc': 0}},
+                'counter': {'counter0': {'exported': 20.152,
+                                         'grid': True,
+                                         'imported': 15839.117}},
+                'cp': {'all': {'exported': 0, 'imported': 33500},
+                       'cp3': {'exported': 0, 'imported': 33500},
+                       'cp4': {'exported': 0, 'imported': 0},
+                       'cp5': {'exported': 0, 'imported': 0}},
+                'date': '07:02',
+                'ev': {'ev0': {'soc': 0}},
+                'hc': {'all': {'imported': 114169.25077207937}},
+                'pv': {'all': {'exported': 21692}, 'pv1': {'exported': 21692}},
+                'sh': {},
+                'timestamp': 1698904800}
+
+
 def test_calculate_charge_cost_full_hour(monkeypatch: pytest.MonkeyPatch):
     # integration test charging 1.5 h
     # setup
@@ -206,6 +255,8 @@ def test_calculate_charge_cost_full_hour(monkeypatch: pytest.MonkeyPatch):
     with open("packages/control/chargelog/sample_daily_today.json", "r") as json_file:
         content_today = json.load(json_file)
     monkeypatch.setattr(chargelog, "get_todays_daily_log", Mock(return_value=content_today))
+    create_entry_mock = Mock(side_effect=[CREATE_LOG_1, CREATE_LOG_2, CREATE_LOG_3])
+    monkeypatch.setattr(chargelog, "create_entry", create_entry_mock)
 
     # execution
     # Berechnung nach der ersten Viertel-Stunde ReferenceTime.START

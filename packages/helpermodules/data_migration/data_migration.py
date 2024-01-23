@@ -341,7 +341,8 @@ class MigrateData:
                             "counter": {},
                             "pv": {},
                             "bat": {},
-                            "sh": {}
+                            "sh": {},
+                            "hc": {}
                         }
                         cp_detail_entry = False
                         for i in range(0, len(DAILY_LOG_CP_ROW_IDS)):
@@ -464,7 +465,8 @@ class MigrateData:
                             "counter": {},
                             "pv": {},
                             "bat": {},
-                            "sh": {}
+                            "sh": {},
+                            "hc": {}
                         }
                         cp_detail_entry = False
                         for i in range(0, len(MONTHLY_LOG_CP_ROW_IDS)):

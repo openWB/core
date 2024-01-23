@@ -162,7 +162,7 @@ def save_log(log_type: LogType):
 
 def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData) -> Dict:
     if log_type == LogType.DAILY:
-        date = date = timecheck.create_timestamp_HH_MM()
+        date = timecheck.create_timestamp_HH_MM()
     else:
         date = timecheck.create_timestamp_YYYYMMDD()
     current_timestamp = int(timecheck.create_timestamp())
