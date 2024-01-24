@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 from modules.common.component_type import ComponentDescriptor
 from modules.devices.benning.config import BenningInverterSetup
 

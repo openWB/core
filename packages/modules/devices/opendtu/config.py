@@ -5,33 +5,33 @@ from modules.devices.json.config import Json, JsonConfiguration, JsonInverterCon
 
 
 @auto_str
-class BenningConfiguration(JsonConfiguration):
+class OpenDTUConfiguration(JsonConfiguration):
     def __init__(self, url: Optional[str] = None):
-        self.url = "http://" + url + "/getentries.cgi?oids=11369,19000"
+        self.url = "http://" + url + "/api/livedata/status"
 
 
 @auto_str
-class Benning(Json):
+class OpenDTU(Json):
     def __init__(self,
-                 name: str = "Benning",
-                 type: str = "benning",
+                 name: str = "OpenDTU",
+                 type: str = "opendtu",
                  id: int = 0,
-                 configuration: BenningConfiguration = None) -> None:
+                 configuration: OpenDTUConfiguration = None) -> None:
         super().__init__(name, type, id, configuration)
 
 
 @auto_str
-class BenningInverterConfiguration:
+class OpenDTUInverterConfiguration:
     def __init__(self):
         pass
 
 
 @auto_str
-class BenningInverterSetup(JsonInverterSetup):
+class OpenDTUInverterSetup(JsonInverterSetup):
     def __init__(self,
-                 name: str = "Benning Wechselrichter",
+                 name: str = "Hoymiles Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: JsonInverterConfiguration = None) -> None:
         super().__init__(name, type, id, JsonInverterConfiguration(
-            jq_power=".[]|select(.oid==11365)|.val|tonumber", jq_exported=".[]|select(.oid==19000)|.val|tonumber"))
+            jq_power=".total.Power.v", jq_exported=".total.YieldTotal.v*1000"))
