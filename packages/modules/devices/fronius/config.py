@@ -7,12 +7,16 @@ from modules.common.component_setup import ComponentSetup
 
 class MeterLocation(Enum):
     # 0...grid interconnection point (primary meter)
+    # positive power is consumption, negative is feed in
     grid = 0
     # 1...load (primary meter)
+    # negative power is consumption, positive is production!
     load = 1
     # 3...external generator (secondary meters)(multiple)
+    # negative power is consumption, positive is production!
     external = 3
     # 256-511 subloads (secondary meters)(unique)
+    # negative power is consumption, positive us production!
     subload = 256
 
     @classmethod
