@@ -2,7 +2,13 @@ import { etData } from './model'
 
 export function processEtProviderMessages(topic: string, message: string) {
 	if (topic == 'openWB/optional/et/provider') {
-		etData.etProvider = JSON.parse(message).name
+		const data = JSON.parse(message)
+		if (data.type == null) {
+			etData.active = false
+		} else {
+			etData.active = true
+			etData.etProvider = JSON.parse(message).name
+		}
 	} else if (topic == 'openWB/optional/et/get/prices') {
 		const plist = JSON.parse(message)
 		etData.etPriceList = new Map<Date, number>()
