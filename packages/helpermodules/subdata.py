@@ -563,7 +563,15 @@ class SubData:
         """
         try:
             if re.search("/general/", msg.topic) is not None:
-                if re.search("/general/ripple_control_receiver/", msg.topic) is not None:
+                if re.search("/general/ripple_control_receiver/module", msg.topic) is not None:
+                    config = decode_payload(msg.payload)
+                    mod = importlib.import_module(".ripple_control_receivers." +
+                                                  config["type"]+".ripple_control_receiver", "modules")
+                    config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
+                    var.data.ripple_control_receiver.module = mod.create_ripple_control_receiver(config)
+                elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
+                elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
                     return
                 elif re.search("/general/prices/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.prices, msg)

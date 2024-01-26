@@ -14,6 +14,7 @@ import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
+from helpermodules import hardware_configuration
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.constants import NO_ERROR
 from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
@@ -27,13 +28,16 @@ from control import ev
 from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 
 log = logging.getLogger(__name__)
 
+NO_MODULE = {"type": None, "configuration": {}}
+
 
 class UpdateConfig:
-    DATASTORE_VERSION = 36
+    DATASTORE_VERSION = 37
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -169,8 +173,11 @@ class UpdateConfig:
         "^openWB/general/notifications/plug$",
         "^openWB/general/notifications/smart_home$",
         "^openWB/general/ripple_control_receiver/configured$",
-        "^openWB/general/ripple_control_receiver/r1_active$",
-        "^openWB/general/ripple_control_receiver/r2_active$",
+        "^openWB/general/ripple_control_receiver/module$",
+        "^openWB/general/ripple_control_receiver/get/fault_state$",
+        "^openWB/general/ripple_control_receiver/get/fault_str$",
+        "^openWB/general/ripple_control_receiver/get/override_value$",
+        "^openWB/general/ripple_control_receiver/override_reference$",
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
         "^openWB/general/chargemode_config/pv_charging/feed_in_yield$",
@@ -363,6 +370,7 @@ class UpdateConfig:
         "^openWB/system/configurable/devices_components$",
         "^openWB/system/configurable/electricity_tariffs$",
         "^openWB/system/configurable/display_themes$",
+        "^openWB/system/configurable/ripple_control_receivers$",
         "^openWB/system/configurable/soc_modules$",
         "^openWB/system/configurable/web_themes$",
         "^openWB/system/current_branch",
@@ -399,7 +407,7 @@ class UpdateConfig:
         ("openWB/counter/config/reserve_for_not_charging", counter_all.Config().reserve_for_not_charging),
         ("openWB/vehicle/0/name", ev.EvData().name),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
-        ("openWB/vehicle/0/soc_module/config", {"type": None, "configuration": {}}),
+        ("openWB/vehicle/0/soc_module/config", NO_MODULE),
         ("openWB/vehicle/0/soc_module/general_config", dataclass_utils.asdict(GeneralVehicleConfig())),
         ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
@@ -443,12 +451,12 @@ class UpdateConfig:
         ("openWB/general/prices/grid", Prices().grid),
         ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
-        ("openWB/general/ripple_control_receiver/configured", False),
+        ("openWB/general/ripple_control_receiver/module", NO_MODULE),
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
-        ("openWB/optional/et/provider", {"type": None, "configuration": {}}),
+        ("openWB/optional/et/provider", NO_MODULE),
         ("openWB/optional/int_display/active", False),
         ("openWB/optional/int_display/on_if_plugged_in", True),
         ("openWB/optional/int_display/pin_active", False),
@@ -459,7 +467,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
-        ("openWB/system/backup_cloud/config", {"type": None, "configuration": {}}),
+        ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/datastore_version", DATASTORE_VERSION),
         ("openWB/system/usage_terms_acknowledged", False),
@@ -1183,3 +1191,9 @@ class UpdateConfig:
         for file in files:
             convert_file(file)
         Pub().pub("openWB/system/datastore_version", 36)
+
+    def upgrade_datastore_36(self) -> None:
+        if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured"):
+            Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
+        hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
+        Pub().pub("openWB/system/datastore_version", 37)

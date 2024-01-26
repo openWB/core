@@ -18,7 +18,6 @@ class Prepare:
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
         try:
-            data.data.general_data.check_ripple_control_receiver()
             for cp in data.data.cp_data.values():
                 cp.setup_values_at_start()
             data.data.bat_all_data.setup_bat()
