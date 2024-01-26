@@ -14,7 +14,8 @@ Hagen */
 		<div v-if="false" class="row py-0 px-0 m-0">
 			<PowerMeter />
 			<PowerGraph />
-			<EnergyMeter :usage-details="usageDetails" />
+			<EnergyMeter />
+			<CounterList />
 		</div>
 		<div v-if="true" class="row py-0 px-0 m-0">
 			<CarouselFix>
@@ -25,7 +26,7 @@ Hagen */
 					<PowerGraph />
 				</template>
 				<template #item3>
-					<EnergyMeter :usage-details="usageDetails" />
+					<EnergyMeter />
 				</template>
 			</CarouselFix>
 		</div>
@@ -35,9 +36,10 @@ Hagen */
 			v-if="!globalConfig.showQuickAccess"
 			class="row py-0 m-0 d-flex justify-content-center"
 		>
-			<ChargePointList />
+			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
 			<BatteryList />
 			<SmartHomeList v-if="showSH"></SmartHomeList>
+			<CounterList v-if="globalConfig.showCounters"></CounterList>
 		</div>
 		<!-- Tabbed area -->
 		<nav
@@ -75,15 +77,15 @@ Hagen */
 				<i class="fa-solid fa-lg fa-plug" />
 				<span class="d-none d-md-inline ms-2">Smart Home</span>
 			</a>
-			<!-- <a
-				v-if="etData.isEtEnabled"
+			<a
+				v-if="globalConfig.showCounters"
 				class="nav-link"
 				data-bs-toggle="tab"
-				data-bs-target="#etPricing"
+				data-bs-target="#counterlist"
 			>
-				<i class="fa-solid fa-lg fa-money-bill-1-wave" />
-				<span class="d-none d-md-inline ms-2">Strompreis</span>
-			</a> -->
+				<i class="fa-solid fa-lg fa-bolt" />
+				<span class="d-none d-md-inline ms-2">Zähler</span>
+			</a>
 		</nav>
 		<!-- Tab panes -->
 		<div
@@ -98,9 +100,10 @@ Hagen */
 				aria-labelledby="showall-tab"
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
-					<ChargePointList />
+					<ChargePointList :shortlist="globalConfig.shortCpList != 'no'" />
 					<BatteryList />
 					<SmartHomeList v-if="showSH" />
+					<CounterList v-if="globalConfig.showCounters" />
 				</div>
 			</div>
 			<div
@@ -110,7 +113,7 @@ Hagen */
 				aria-labelledby="chargepoint-tab"
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
-					<ChargePointList />
+					<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
 				</div>
 			</div>
 			<div
@@ -131,6 +134,19 @@ Hagen */
 			>
 				<div v-if="showSH" class="row py-0 m-0 d-flex justify-content-center">
 					<SmartHomeList />
+				</div>
+			</div>
+			<div
+				id="counterlist"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="counter-tab"
+			>
+				<div
+					v-if="globalConfig.showCounters"
+					class="row py-0 m-0 d-flex justify-content-center"
+				>
+					<CounterList />
 				</div>
 			</div>
 		</div>
@@ -156,9 +172,8 @@ Hagen */
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { usageSummary, globalData } from '../assets/js/model'
+import { globalData } from '../assets/js/model'
 import { shDevices } from '@/components/smartHome/model'
-import { chargePoints } from '@/components/chargePointList/model'
 import { initConfig } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
@@ -171,6 +186,7 @@ import CarouselFix from '@/components/shared/CarouselFix.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import MQTTViewer from '@/components/mqttViewer/MQTTViewer.vue'
 import ThemeSettings from '@/views/ThemeSettings.vue'
+import CounterList from '@/components/counterList/CounterList.vue'
 import { resetArcs } from '@/assets/js/themeConfig'
 import {
 	globalConfig,
@@ -179,16 +195,6 @@ import {
 } from '@/assets/js/themeConfig'
 
 // state
-const usageDetails = computed(() => {
-	return [usageSummary.evuOut, usageSummary.devices, usageSummary.charging]
-		.concat(Object.values(chargePoints).map((cp) => cp.toPowerItem()))
-		.concat(
-			Object.values(shDevices).filter(
-				(row) => row.configured && row.showInGraph,
-			),
-		)
-		.concat([usageSummary.batIn, usageSummary.house])
-})
 const showMQ = ref(false)
 const showSH = computed(() => {
 	return Object.values(shDevices).filter((dev) => dev.configured).length > 0
@@ -255,8 +261,7 @@ function visibilityChange() {
 .fa-plug {
 	color: var(--color-devices);
 }
-
-.fa-money-bill-1-wave {
-	color: var(--color-pv);
+.fa-bolt {
+	color: var(--color-evu);
 }
 </style>

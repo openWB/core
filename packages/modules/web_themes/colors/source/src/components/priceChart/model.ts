@@ -4,6 +4,11 @@ class EtData {
 	etPriceList = new Map<Date, number>()
 	etProvider = ''
 	etMaxPrice = 0
+
+	get etCurrentPriceString() {
+		const [p] = etData.etPriceList.values()
+		return (Math.round(p * 10) / 10).toFixed(1) + ' ct'
+	}
 }
 
 export interface ServerPriceList {

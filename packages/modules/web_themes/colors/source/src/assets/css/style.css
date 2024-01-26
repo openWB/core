@@ -192,7 +192,7 @@ body>.container-fluid {
 	--color-subframe: lightgrey;
 	--color-fg: black;
 	--color-scale: lightgrey;
-	--color-title: black;
+	--color-title: rgba(0, 0, 0, 0.644);
 	--padding-widget: 5px;
 	--fontCol: rgba(255, 255, 255, 0.82);
 	--gridCol: rgba(255, 255, 255, 0.82);

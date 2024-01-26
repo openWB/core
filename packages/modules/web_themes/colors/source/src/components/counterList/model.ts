@@ -1,46 +1,44 @@
 import { reactive } from 'vue'
-import { savePrefs } from '@/assets/js/themeConfig'
-export class ShDevice {
+export class Counter {
 	id: number
-	name = 'Gerät'
+	name = 'Zähler'
 	power = 0
-	status = 'off'
-	energy = 0
-	runningTime = 0
-	configured = false
-	private _showInGraph = true
-	color = 'white'
-	canSwitch = false
-	countAsHouse = false
+	energy_imported = 0
+	energy_exported = 0
+	grid = false
+	type = 'counter'
+	color = 'var(--color-evu)'
 	energyPv = 0
 	energyBat = 0
 	pvPercentage = 0
-	tempConfigured = 0
-	temp = [300.0, 300.0, 300.0]
-	on = false
-	isAutomatic = true
 	icon = ''
 	constructor(index: number) {
 		this.id = index
 	}
-	get showInGraph() {
-		return this._showInGraph
-	}
-	set showInGraph(val: boolean) {
-		this._showInGraph = val
-		savePrefs()
-	}
 }
 
-export const shDevices: { [key: number]: ShDevice } = reactive({})
+export const counters: { [key: number]: Counter } = reactive({})
 
-export function addShDevice(shIndex: number) {
-	if (!(shIndex in shDevices)) {
-		shDevices[shIndex] = new ShDevice(shIndex)
-		shDevices[shIndex].color =
-			'var(--color-sh' + Object.values(shDevices).length + ')'
-		// console.info('Added sh device ' + shIndex)
+export function addCounter(index: number, type: string) {
+	if (!(index in counters)) {
+		counters[index] = new Counter(index)
+		counters[index].type = type
+		switch (type) {
+			case 'counter':
+				counters[index].color = 'var(--color-evu)'
+				break
+			case 'inverter':
+				counters[index].color = 'var(--color-pv)'
+				break
+			case 'cp':
+				counters[index].color = 'var(--color-charging)'
+				break
+			case 'bat':
+				counters[index].color = 'var(--color-bat)'
+				break
+		}
+		//console.info('Added counter ' + index)
 	} else {
-		console.info('Duplicate sh device message: ' + shIndex)
+		console.info('Duplicate counter message: ' + index)
 	}
 }
