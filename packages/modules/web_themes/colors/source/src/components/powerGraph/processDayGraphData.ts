@@ -131,8 +131,8 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.devices = 0
 	Object.entries(currentRow.sh).forEach(([id, values]) => {
 		if (id != 'all') {
-			currentItem[id] = values.power_imported
-			currentItem.devices += values.power_imported
+			currentItem[id] = values.power_imported ?? 0
+			currentItem.devices += values.power_imported ?? 0
 			if (!historicSummary.keys().includes(id)) {
 				historicSummary.addItem(id)
 			}
