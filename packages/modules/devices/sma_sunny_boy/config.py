@@ -5,8 +5,9 @@ from modules.devices.sma_sunny_boy.inv_version import SmaInverterVersion
 
 
 class SmaSunnyBoyConfiguration:
-    def __init__(self, ip_address: Optional[str] = None):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
         self.ip_address = ip_address
+        self.port = port
 
 
 class SmaSunnyBoy:

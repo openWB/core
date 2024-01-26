@@ -68,7 +68,7 @@ def create_device(device_config: KostalPlenticore):
             update(components, reader)
 
     try:
-        tcp_client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, 1502)
+        tcp_client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
         reader = _create_reader(tcp_client)
     except Exception:
         log.exception("Fehler in create_device")

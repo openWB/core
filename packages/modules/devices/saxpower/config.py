@@ -4,8 +4,9 @@ from modules.common.component_setup import ComponentSetup
 
 
 class SaxpowerConfiguration:
-    def __init__(self, ip_address: Optional[str] = None):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 3600):
         self.ip_address = ip_address
+        self.port = port
 
 
 class Saxpower:

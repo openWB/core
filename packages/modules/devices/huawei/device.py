@@ -54,7 +54,8 @@ def create_device(device_config: Huawei):
             raise e
 
     try:
-        client = ModbusTcpClient_(device_config.configuration.ip_address, 502, sleep_after_connect=7)
+        client = ModbusTcpClient_(device_config.configuration.ip_address,
+                                  device_config.configuration.port, sleep_after_connect=7)
     except Exception:
         log.exception("Fehler in create_device")
     return ConfigurableDevice(

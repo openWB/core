@@ -24,8 +24,8 @@ class Device(AbstractDevice):
         self.components = {}  # type: Dict[str, Union[counter.PowerdogCounter, inverter.PowerdogInverter]]
         try:
             self.device_config = dataclass_from_dict(Powerdog, device_config)
-            ip_address = self.device_config.configuration.ip_address
-            self.client = modbus.ModbusTcpClient_(ip_address, 502)
+            self.client = modbus.ModbusTcpClient_(
+                self.device_config.configuration.ip_address, self.device_config.configuration.port)
         except Exception:
             log.exception("Fehler im Modul "+self.device_config.name)
 

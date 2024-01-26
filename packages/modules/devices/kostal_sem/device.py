@@ -15,7 +15,7 @@ def create_device(device_config: KostalSem):
     def create_counter_component(component_config: KostalSemCounterSetup):
         return KostalSemCounter(component_config, client)
 
-    client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, 502)
+    client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
     return ConfigurableDevice(
         device_config=device_config,
         component_factory=ComponentFactoryByType(counter=create_counter_component),

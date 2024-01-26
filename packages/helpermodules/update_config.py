@@ -37,7 +37,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 39
+    DATASTORE_VERSION = 40
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1333,3 +1333,27 @@ class UpdateConfig:
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 39)
+        Pub().pub("openWB/system/datastore_version", 39)
+
+    def upgrade_datastore_39(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("type") == "alpha_ess" and "port" not in payload["configuration"]:
+                    if payload["configuration"]["source"] == 1:
+                        payload["configuration"].update({"port": 502})
+                if payload.get("type") == "kostal_plenticore" and "port" not in payload["configuration"]:
+                    payload["configuration"].update({"port": 1502})
+                if payload.get("type") == "saxpower" and "port" not in payload["configuration"]:
+                    payload["configuration"].update({"port": 3600})
+                # modules with port 502
+                modified_modules = ["powerdog", "carlo_gavazzi", "e3dc", "good_we",
+                                    "huawei", "huawei_smartlogger", "janitza", "kostal_sem", "qcells",
+                                    "siemens", "siemens_sentron", "sma_sunny_boy", "sma_sunny_island",
+                                    "solarmax", "solax", "studer", "varta", "victron"]
+                for i in modified_modules:
+                    if payload.get("type") == i and "port" not in payload["configuration"]:
+                        payload["configuration"].update({"port": 502})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 40)
