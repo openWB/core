@@ -25,6 +25,10 @@ class B23(AbstractCounter):
         time.sleep(0.1)
         return self.client.read_holding_registers(0x5000, ModbusDataType.UINT_64, unit=self.id) * 10
 
+    def get_exported(self) -> float:
+        time.sleep(0.1)
+        return self.client.read_holding_registers(0x5004, ModbusDataType.UINT_64, unit=self.id) * 10
+
     def get_power(self) -> Tuple[List[float], float]:
         time.sleep(0.1)
         power = self.client.read_holding_registers(0x5B14, ModbusDataType.INT_32, unit=self.id) / 100
