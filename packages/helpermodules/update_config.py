@@ -37,7 +37,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 40
+    DATASTORE_VERSION = 41
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1357,3 +1357,13 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 40)
+
+    def upgrade_datastore_40(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("type") == "powerdog" and "port" not in payload["configuration"]:
+                    payload["configuration"].update({"port": 502})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 41)
