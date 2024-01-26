@@ -158,8 +158,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                             if lt_executable is None:
                                 log.error("start partner tunnel requested but lt executable not found!")
                             else:
-                                # ToDo: remove first check for empty list in next release
-                                if not valid_partner_ids or user in valid_partner_ids:
+                                if user in valid_partner_ids:
                                     log.info("start partner support v1")
                                     if lt_executable is not None:
                                         partner_tunnel = Popen([f"{lt_executable}", "-h",
