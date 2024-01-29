@@ -30,6 +30,7 @@ export class Config {
 	private _showButtonBar = true
 	private _showCounters = false
 	private _showVehicles = false
+	private _showPrices = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -232,6 +233,16 @@ export class Config {
 	setShowVehicles(show: boolean) {
 		this._showVehicles = show
 	}
+	get showPrices() {
+		return this._showPrices
+	}
+	set showPrices(show: boolean) {
+		this._showPrices = show
+		savePrefs()
+	}
+	setShowPrices(show: boolean) {
+		this._showPrices = show
+	}
 }
 export const globalConfig = reactive(new Config())
 export function initConfig() {
@@ -371,6 +382,7 @@ interface Preferences {
 	showButtonBar?: boolean
 	showCounters?: boolean
 	showVehicles?: boolean
+	showPrices?: boolean
 	debug?: boolean
 }
 
@@ -397,6 +409,7 @@ function writeCookie() {
 	prefs.showButtonBar = globalConfig.showButtonBar
 	prefs.showCounters = globalConfig.showCounters
 	prefs.showVehicles = globalConfig.showVehicles
+	prefs.showPrices = globalConfig.showPrices
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
@@ -471,6 +484,9 @@ function readCookie() {
 		}
 		if (prefs.showVehicles !== undefined) {
 			globalConfig.setShowVehicles(prefs.showVehicles)
+		}
+		if (prefs.showPrices !== undefined) {
+			globalConfig.setShowPrices(prefs.showPrices)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)

@@ -17,6 +17,7 @@ Hagen */
 			<EnergyMeter />
 			<CounterList />
 			<VehicleList />
+			<GlobalPriceChart id="Hidden" />
 		</div>
 		<div v-if="true" class="row py-0 px-0 m-0">
 			<CarouselFix>
@@ -42,6 +43,10 @@ Hagen */
 			<SmartHomeList v-if="showSH"></SmartHomeList>
 			<CounterList v-if="globalConfig.showCounters"></CounterList>
 			<VehicleList v-if="globalConfig.showVehicles"></VehicleList>
+			<GlobalPriceChart
+				v-if="globalConfig.showPrices"
+				id="NoTabs"
+			></GlobalPriceChart>
 		</div>
 		<!-- Tabbed area -->
 		<nav
@@ -97,6 +102,15 @@ Hagen */
 				<i class="fa-solid fa-lg fa-car" />
 				<span class="d-none d-md-inline ms-2">Fahrzeuge</span>
 			</a>
+			<a
+				v-if="globalConfig.showPrices"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#pricecharttabbed"
+			>
+				<i class="fa-solid fa-lg fa-money-bill-wave" />
+				<span class="d-none d-md-inline ms-2">Strompreis</span>
+			</a>
 		</nav>
 		<!-- Tab panes -->
 		<div
@@ -116,6 +130,7 @@ Hagen */
 					<SmartHomeList v-if="showSH" />
 					<CounterList v-if="globalConfig.showCounters" />
 					<VehicleList v-if="globalConfig.showVehicles" />
+					<GlobalPriceChart v-if="globalConfig.showPrices" id="Overview" />
 				</div>
 			</div>
 			<div
@@ -174,6 +189,19 @@ Hagen */
 					<VehicleList />
 				</div>
 			</div>
+			<div
+				id="pricecharttabbed"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="price-tab"
+			>
+				<div
+					v-if="globalConfig.showPrices"
+					class="row py-0 m-0 d-flex justify-content-center"
+				>
+					<GlobalPriceChart id="Tabbed" />
+				</div>
+			</div>
 		</div>
 	</div>
 	<!-- Footer -->
@@ -219,6 +247,7 @@ import {
 	updateDimensions,
 	screensize,
 } from '@/assets/js/themeConfig'
+import GlobalPriceChart from '@/components/priceChart/GlobalPriceChart.vue'
 
 // state
 const showMQ = ref(false)
@@ -289,5 +318,11 @@ function visibilityChange() {
 }
 .fa-bolt {
 	color: var(--color-evu);
+}
+.fa-car {
+	color: var(--color-charging);
+}
+.fa-money-bill-wave {
+	color: var(--color-pv);
 }
 </style>

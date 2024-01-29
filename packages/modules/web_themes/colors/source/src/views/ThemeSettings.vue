@@ -172,6 +172,14 @@
 						</ConfigItem>
 						<ConfigItem
 							:fullwidth="true"
+							title="Preistabelle anzeigen (beta)"
+							icon="fa-car"
+							infotext="Zeige die Strompreistabelle in einer separaten Box an (beta)"
+						>
+							<SwitchInput v-model="globalConfig.showPrices" />
+						</ConfigItem>
+						<ConfigItem
+							:fullwidth="true"
 							title="Debug-Modus"
 							icon="fa-bug-slash"
 							infotext="Kontrollausgaben in der Console sowie Anzeige von Bildschirmbreite und MQ-Viewer"
