@@ -370,6 +370,7 @@ interface Preferences {
 	clock?: string
 	showButtonBar?: boolean
 	showCounters?: boolean
+	showVehicles?: boolean
 	debug?: boolean
 }
 
@@ -395,6 +396,7 @@ function writeCookie() {
 	prefs.clock = globalConfig.showClock
 	prefs.showButtonBar = globalConfig.showButtonBar
 	prefs.showCounters = globalConfig.showCounters
+	prefs.showVehicles = globalConfig.showVehicles
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
@@ -466,6 +468,9 @@ function readCookie() {
 		}
 		if (prefs.showCounters !== undefined) {
 			globalConfig.setShowCounters(prefs.showCounters)
+		}
+		if (prefs.showVehicles !== undefined) {
+			globalConfig.setShowVehicles(prefs.showVehicles)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)

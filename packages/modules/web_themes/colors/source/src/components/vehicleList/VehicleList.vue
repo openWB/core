@@ -29,7 +29,7 @@ import { vehicles } from '@/components/chargePointList/model'
 }
 
 .modebutton {
-	background-color:  var(--color-menu);
+	background-color: var(--color-menu);
 	font-size: var(--font-verysmall);
 	font-weight: normal;
 }
