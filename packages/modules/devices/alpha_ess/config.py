@@ -4,7 +4,11 @@ from modules.common.component_setup import ComponentSetup
 
 
 class AlphaEssConfiguration:
-    def __init__(self, source: int = 0, ip_address: Optional[str] = None, version: int = 1, port: int = 502):
+    def __init__(self, modbus_id: int = 85,
+                 source: int = 0,
+                 ip_address: Optional[str] = None,
+                 version: int = 1, port: int = 502):
+        self.modbus_id = modbus_id
         self.source = source  # 0: AlphaEss-Kit, 1: Hi5/10 mit variabler IP
         self.ip_address = ip_address
         self.version = version  # 0: <V1.23, 1: >= V1.23
