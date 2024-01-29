@@ -164,6 +164,14 @@
 						</ConfigItem>
 						<ConfigItem
 							:fullwidth="true"
+							title="Fahrzeuge anzeigen (beta)"
+							icon="fa-car"
+							infotext="Zeige die Werte zusätzlich angelegter Zähler (beta)"
+						>
+							<SwitchInput v-model="globalConfig.showVehicles" />
+						</ConfigItem>
+						<ConfigItem
+							:fullwidth="true"
 							title="Debug-Modus"
 							icon="fa-bug-slash"
 							infotext="Kontrollausgaben in der Console sowie Anzeige von Bildschirmbreite und MQ-Viewer"

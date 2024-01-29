@@ -1,29 +1,24 @@
 <template>
 	<WbSubwidget titlecolor="var(--color-title)" :fullwidth="true">
 		<template #title>
-			<span>{{ counter.name }} </span>
+			<span class="countername">{{ counter.name }} </span>
 		</template>
 		<template #buttons>
 			<div class="d-flex float-right justify-content-end align-items-center">
-				<span class="badge rounded-pill idbadge mx-2"
-					>ID: {{ props.counter.id }}</span
-				>
-				<span
-					v-if="props.counter.power != 0"
-					class="badge rounded-pill modebadge mx-2"
-					:style="modestyle"
-					>{{ modestring }}</span
-				>
+
+				<span v-if="props.counter.power != 0" class="badge rounded-pill modebadge mx-2" :style="modestyle">{{ modestring
+				}}</span>
+				<span class="badge rounded-pill idbadge mx-2">ID: {{ props.counter.id }}</span>
 			</div>
 		</template>
 		<div class="d-flex justify-content-between">
-			<InfoItem heading="Leistung:">
+			<InfoItem heading="Leistung:" :small="true">
 				<FormatWatt :watt="Math.abs(props.counter.power)"></FormatWatt>
 			</InfoItem>
-			<InfoItem heading="Bezogen:">
+			<InfoItem heading="Bezogen:" :small="true">
 				<FormatWattH :watt-h="props.counter.energy_imported"></FormatWattH>
 			</InfoItem>
-			<InfoItem heading="Exportiert:">
+			<InfoItem heading="Exportiert:" :small="true">
 				<FormatWattH :watt-h="props.counter.energy_exported"></FormatWattH>
 			</InfoItem>
 		</div>
@@ -62,5 +57,9 @@ const modestyle = computed(() => {
 .idbadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
+}
+
+.countername {
+	font-size: var(--font-medium);
 }
 </style>

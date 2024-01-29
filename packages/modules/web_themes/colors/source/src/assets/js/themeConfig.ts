@@ -29,6 +29,7 @@ export class Config {
 	private _showClock = 'no'
 	private _showButtonBar = true
 	private _showCounters = false
+	private _showVehicles = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -220,6 +221,16 @@ export class Config {
 	}
 	setShowCounters(show: boolean) {
 		this._showCounters = show
+	}
+	get showVehicles() {
+		return this._showVehicles
+	}
+	set showVehicles(show: boolean) {
+		this._showVehicles = show
+		savePrefs()
+	}
+	setShowVehicles(show: boolean) {
+		this._showVehicles = show
 	}
 }
 export const globalConfig = reactive(new Config())
