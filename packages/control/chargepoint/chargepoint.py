@@ -550,19 +550,17 @@ class Chargepoint(ChargepointRfidMixin):
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
             if self.data.set.log.imported_since_plugged != 0:
-                no_switch = False
                 if charging_ev.ev_template.data.prevent_phase_switch:
                     log.info(f"Phasenumschaltung an Ladepunkt {self.num} nicht möglich, da bei EV"
                              f"{charging_ev.num} nach Ladestart nicht mehr umgeschaltet werden darf.")
-                    no_switch = True
-                elif self.cp_ev_support_phase_switch() is False:
-                    log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
-                    no_switch = True
-                if no_switch:
                     if self.data.get.phases_in_use != 0:
                         phases = self.data.get.phases_in_use
                     else:
                         phases = self.data.control_parameter.phases
+                elif self.cp_ev_support_phase_switch() is False:
+                    # sonst passt die Phasenzahl nicht bei Autos, die eine Phase weg schalten.
+                    log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
+                    phases = phases
         if phases != self.data.control_parameter.phases:
             self.data.control_parameter.phases = phases
         return phases
