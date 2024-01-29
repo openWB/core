@@ -176,7 +176,7 @@
 						/>
 					</div>
 					<!-- ET Information -->
-					<div v-if="props.chargepoint.etActive" class="row m-1 p-0">
+					<div v-if="etData.active &&  props.chargepoint.etActive" class="row m-1 p-0">
 						<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
 							<InfoItem heading="max. Preis:">
 								{{

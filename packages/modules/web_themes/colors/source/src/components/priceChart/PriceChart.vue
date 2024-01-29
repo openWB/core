@@ -205,7 +205,6 @@ const draw = computed(() => {
 })
 
 onMounted(() => {
-	console.log('mounted')
 	needsUpdate.value = !needsUpdate.value
 })
 </script>
