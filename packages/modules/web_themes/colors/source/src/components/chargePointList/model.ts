@@ -302,6 +302,15 @@ export class Vehicle {
 			}
 		}
 	}
+	get chargepoint(): ChargePoint | undefined {
+		for (const cp of Object.values(chargePoints)) {
+			if (cp.connectedVehicle == this.id) {
+				return cp
+			}
+		}
+		console.log('no cp')
+		return undefined
+	}
 }
 export interface ConnectedVehicleConfig {
 	average_consumption: number

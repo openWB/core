@@ -62,6 +62,7 @@ import {
 	sourceSummary,
 	historicSummary,
 	energyMeterNeedsRedraw,
+	usageSummary,
 } from '@/assets/js/model'
 import EMBarGraph from './EMBarGraph.vue'
 import EMYAxis from './EMYAxis.vue'
@@ -77,10 +78,9 @@ import {
 } from '@/components/powerGraph/model'
 import { graphData, noData } from '@/components/powerGraph/model'
 import { computed } from 'vue'
-// props
-const props = defineProps<{
-	usageDetails: PowerItem[]
-}>()
+import { chargePoints } from '../chargePointList/model'
+import { shDevices } from '../smartHome/model'
+
 //state
 const width = 500
 const height = 500
@@ -94,7 +94,7 @@ const axisFontsize = 12
 // computed
 const plotdata = computed(() => {
 	let sources = Object.values(sourceSummary)
-	let usage = props.usageDetails
+	let usage = usageDetails.value
 	let historic = historicSummary.values()
 	let result: PowerItem[] = []
 
@@ -102,7 +102,7 @@ const plotdata = computed(() => {
 		console.debug('----------------------- source summary -----------------')
 		console.debug(sourceSummary)
 		console.debug('----------------------- usage details ------------------')
-		console.debug(props.usageDetails)
+		console.debug(usageDetails.value)
 		console.debug('----------------------- historic summary ---------------')
 		console.debug(historicSummary)
 		console.debug('--------------------------------------------------------')
@@ -140,6 +140,27 @@ const yScale = computed(() => {
 		.domain([0, max(plotdata.value, (d: PowerItem) => d.energy) as number])
 })
 const heading = 'Energie'
+
+const usageDetails = computed(() => {
+	const cpcount = Object.values(chargePoints).length
+	const shcount = Object.values(shDevices).filter(
+		(dev) => dev.configured,
+	).length
+	return [usageSummary.evuOut, usageSummary.devices, usageSummary.charging]
+		.concat(
+			cpcount > 1
+				? Object.values(chargePoints).map((cp) => cp.toPowerItem())
+				: [],
+		)
+		.concat(
+			shcount > 1
+				? Object.values(shDevices).filter(
+						(row) => row.configured && row.showInGraph,
+				  )
+				: [],
+		)
+		.concat([usageSummary.batIn, usageSummary.house])
+})
 </script>
 
 <style scoped></style>

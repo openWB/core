@@ -21,12 +21,15 @@ export class Config {
 	private _decimalPlaces = 1
 	private _showQuickAccess = true
 	private _simpleCpList = false
+	private _shortCpList = 'no'
 	private _showAnimations = true
 	private _preferWideBoxes = false
 	private _maxPower = 4000
 	private _fluidDisplay = false
 	private _showClock = 'no'
 	private _showButtonBar = true
+	private _showCounters = false
+	private _showVehicles = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -129,6 +132,16 @@ export class Config {
 	setSimpleCpList(show: boolean) {
 		this._simpleCpList = show
 	}
+	get shortCpList() {
+		return this._shortCpList
+	}
+	set shortCpList(show: string) {
+		this._shortCpList = show
+		savePrefs()
+	}
+	setShortCpList(show: string) {
+		this._shortCpList = show
+	}
 	get showAnimations() {
 		return this._showAnimations
 	}
@@ -184,6 +197,7 @@ export class Config {
 	}
 	set debug(on: boolean) {
 		this._debug = on
+		savePrefs()
 	}
 	setDebug(on: boolean) {
 		this._debug = on
@@ -197,6 +211,26 @@ export class Config {
 	}
 	setShowButtonBar(show: boolean) {
 		this._showButtonBar = show
+	}
+	get showCounters() {
+		return this._showCounters
+	}
+	set showCounters(show: boolean) {
+		this._showCounters = show
+		savePrefs()
+	}
+	setShowCounters(show: boolean) {
+		this._showCounters = show
+	}
+	get showVehicles() {
+		return this._showVehicles
+	}
+	set showVehicles(show: boolean) {
+		this._showVehicles = show
+		savePrefs()
+	}
+	setShowVehicles(show: boolean) {
+		this._showVehicles = show
 	}
 }
 export const globalConfig = reactive(new Config())
@@ -329,11 +363,15 @@ interface Preferences {
 	maxPow?: number
 	showQA?: boolean
 	simpleCP?: boolean
+	shortCP?: string
 	animation?: boolean
 	wideB?: boolean
 	fluidD?: boolean
 	clock?: string
 	showButtonBar?: boolean
+	showCounters?: boolean
+	showVehicles?: boolean
+	debug?: boolean
 }
 
 function writeCookie() {
@@ -351,11 +389,16 @@ function writeCookie() {
 	prefs.maxPow = globalConfig.maxPower
 	prefs.showQA = globalConfig.showQuickAccess
 	prefs.simpleCP = globalConfig.simpleCpList
+	prefs.shortCP = globalConfig.shortCpList
 	prefs.animation = globalConfig.showAnimations
 	prefs.wideB = globalConfig.preferWideBoxes
 	prefs.fluidD = globalConfig.fluidDisplay
 	prefs.clock = globalConfig.showClock
 	prefs.showButtonBar = globalConfig.showButtonBar
+	prefs.showCounters = globalConfig.showCounters
+	prefs.showVehicles = globalConfig.showVehicles
+	prefs.debug = globalConfig.debug
+
 	document.cookie =
 		'openWBColorTheme=' + JSON.stringify(prefs) + '; max-age=16000000'
 }
@@ -405,6 +448,9 @@ function readCookie() {
 		if (prefs.simpleCP !== undefined) {
 			globalConfig.setSimpleCpList(prefs.simpleCP)
 		}
+		if (prefs.shortCP !== undefined) {
+			globalConfig.setShortCpList(prefs.shortCP)
+		}
 		if (prefs.animation != undefined) {
 			globalConfig.setShowAnimations(prefs.animation)
 		}
@@ -419,6 +465,15 @@ function readCookie() {
 		}
 		if (prefs.showButtonBar !== undefined) {
 			globalConfig.setShowButtonBar(prefs.showButtonBar)
+		}
+		if (prefs.showCounters !== undefined) {
+			globalConfig.setShowCounters(prefs.showCounters)
+		}
+		if (prefs.showVehicles !== undefined) {
+			globalConfig.setShowVehicles(prefs.showVehicles)
+		}
+		if (prefs.debug !== undefined) {
+			globalConfig.setDebug(prefs.debug)
 		}
 	}
 }
