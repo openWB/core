@@ -289,7 +289,7 @@ def _analyse_energy_source(data) -> Dict:
     if data:
         for i in range(0, len(data["entries"])):
             data["entries"][i] = analyse_percentage(data["entries"][i])
-        data["totals"] = analyse_percentage(data["totals"])
+        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
     return data
 
 
@@ -334,6 +334,18 @@ def analyse_percentage(entry):
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
     finally:
         return entry
+
+
+def analyse_percentage_totals(entries, totals):
+    for source in ("grid", "pv", "bat", "cp"):
+        totals["hc"]["all"].update({f"energy_imported_{source}": 0})
+        totals["cp"]["all"].update({f"energy_imported_{source}": 0})
+        for entry in entries:
+            if "all" in entry["hc"].keys():
+                totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"][f"energy_imported_{source}"]*1000
+            if "all" in entry["cp"].keys():
+                totals["cp"]["all"][f"energy_imported_{source}"] += entry["cp"]["all"][f"energy_imported_{source}"]*1000
+    return totals
 
 
 def _process_entries(entries: List, calculation: CalculationType):
