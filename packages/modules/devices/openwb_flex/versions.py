@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Type, Union
 
 from modules.common import b23, lovato
