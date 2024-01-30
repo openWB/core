@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Type, Union
 
 from modules.common import b23, lovato
@@ -49,3 +50,5 @@ def consumption_counter_factory(type: str) -> Type[Union[sdm.Sdm120, sdm.Sdm630,
         return sdm.Sdm630
     elif type == "b23":
         return b23.B23
+    else:
+        raise ValueError(f"Version {type} unbekannt.")
