@@ -94,6 +94,7 @@ class ChargepointModule(AbstractChargepoint):
                                     plug_state=plug_state,
                                     charge_state=charge_state,
                                     phases_in_use=phases_in_use,
+                                    serial_number=self._client.meter_client.get_serial_number()
                                 )
                             self.store.set(chargepoint_state)
                     except AttributeError:

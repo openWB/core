@@ -163,6 +163,9 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
         {
             "id": get_value_or_default(lambda: chargepoint.num),
             "name": get_value_or_default(lambda: chargepoint.data.config.name),
+            "serial_number": get_value_or_default(lambda: chargepoint.data.get.serial_number),
+            "imported_at_start": get_value_or_default(lambda: log_data.imported_at_mode_switch),
+            "imported_at_end": get_value_or_default(lambda: chargepoint.data.get.imported),
         },
         "vehicle":
         {

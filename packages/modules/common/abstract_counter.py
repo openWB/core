@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from modules.common import modbus
 
@@ -36,3 +36,7 @@ class AbstractCounter:
     @abstractmethod
     def get_voltages(self) -> List[float]:
         return [230]*3
+
+    @abstractmethod
+    def get_serial_number(self) -> Optional[str]:
+        return None

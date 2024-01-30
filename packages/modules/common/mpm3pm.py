@@ -44,3 +44,6 @@ class Mpm3pm(AbstractCounter):
     def get_currents(self) -> List[float]:
         return [val / 100 for val in self.client.read_input_registers(
             0x0E, [ModbusDataType.UINT_32]*3, unit=self.id)]
+
+    def get_serial_number(self) -> str:
+        return str(self.client.read_input_registers(0x33, ModbusDataType.UINT_32, unit=self.id))

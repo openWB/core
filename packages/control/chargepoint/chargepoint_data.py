@@ -76,6 +76,7 @@ class Log:
     ev: int = -1
     prio: bool = False
     rfid: Optional[str] = None
+    serial_number: Optional[str] = None
 
 
 def connected_vehicle_factory() -> ConnectedVehicle:
@@ -99,6 +100,7 @@ class Get:
     power: float = 0
     rfid_timestamp: Optional[float] = None
     rfid: Optional[int] = None
+    serial_number: Optional[str] = None
     soc: Optional[float] = None
     soc_timestamp: Optional[int] = None
     state_str: Optional[str] = None
