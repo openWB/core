@@ -63,7 +63,7 @@ class ConsumptionCounterFlexConfiguration:
 class ConsumptionCounterFlexSetup(ComponentSetup[ConsumptionCounterFlexConfiguration]):
     def __init__(self,
                  name: str = "openWB Verbrauchszähler flex",
-                 type: str = "counter",
+                 type: str = "consumption_counter",
                  id: int = 0,
                  configuration: ConsumptionCounterFlexConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or ConsumptionCounterFlexConfiguration())
