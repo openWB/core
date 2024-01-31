@@ -4,7 +4,7 @@ import re
 
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.devices.kostal_piko_old.config import KostalPikoOldInverterSetup
 
@@ -15,7 +15,7 @@ class KostalPikoOldInverter:
     def __init__(self, component_config: KostalPikoOldInverterSetup) -> None:
         self.component_config = component_config
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response) -> None:
         # power may be a string "xxx" when the inverter is offline, so we cannot match as a number

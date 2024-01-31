@@ -8,7 +8,7 @@ Hagen */
 			<ThemeSettings @reset-arcs="resetArcs"></ThemeSettings>
 		</div>
 		<!-- Button Bar -->
-		<ButtonBar />
+		<ButtonBar v-if="globalConfig.showButtonBar" />
 
 		<!-- Main Widgets -->
 		<div v-if="false" class="row py-0 px-0 m-0">
@@ -38,7 +38,6 @@ Hagen */
 			<ChargePointList />
 			<BatteryList />
 			<SmartHomeList v-if="showSH"></SmartHomeList>
-			<!-- <PriceChart /> -->
 		</div>
 		<!-- Tabbed area -->
 		<nav
@@ -102,7 +101,6 @@ Hagen */
 					<ChargePointList />
 					<BatteryList />
 					<SmartHomeList v-if="showSH" />
-					<PriceChart />
 				</div>
 			</div>
 			<div
@@ -135,16 +133,6 @@ Hagen */
 					<SmartHomeList />
 				</div>
 			</div>
-			<!-- 		<div
-				id="etPricing"
-				class="tab-pane"
-				role="tabpanel"
-				aria-labelledby="pricechart-tab"
-			>
-				<div class="row py-0 m-0 d-flex justify-content-center">
-					<PriceChart />
-				</div>
-			</div> -->
 		</div>
 	</div>
 	<!-- Footer -->
@@ -153,9 +141,9 @@ Hagen */
 			<hr />
 			<div class="d-flex justify-content-between">
 				<p class="mx-4">Screen Width: {{ screensize.x }}</p>
-				<!--      <button class="btn btn-sm btn-secondary mx-4" @click="toggleSetup">
-          System Setup
-        </button> -->
+				<!-- <button class="btn btn-sm btn-secondary mx-4" @click="toggleSetup">
+					System Setup
+				</button> -->
 				<button class="btn btn-sm btn-secondary mx-4" @click="toggleMqViewer">
 					MQ Viewer
 				</button>
@@ -171,7 +159,6 @@ import { ref, computed, onMounted } from 'vue'
 import { usageSummary, globalData } from '../assets/js/model'
 import { shDevices } from '@/components/smartHome/model'
 import { chargePoints } from '@/components/chargePointList/model'
-// import { etData } from '@/components/priceChart/model'
 import { initConfig } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
@@ -179,7 +166,6 @@ import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
 import ChargePointList from '@/components/chargePointList/ChargePointList.vue'
 import ButtonBar from '@/components/buttonBar/ButtonBar.vue'
 import BatteryList from '@/components/batteryList/BatteryList.vue'
-import PriceChart from '@/components/priceChart/PriceChart.vue'
 import SmartHomeList from '@/components/smartHome/SmartHomeList.vue'
 import CarouselFix from '@/components/shared/CarouselFix.vue'
 import { msgInit } from '@/assets/js/processMessages'
@@ -218,8 +204,15 @@ function toggleMqViewer() {
 onMounted(() => {
 	init()
 	window.addEventListener('resize', updateDimensions)
+	window.document.addEventListener('visibilitychange', visibilityChange)
 	msgInit()
 })
+
+function visibilityChange() {
+	if (!document.hidden) {
+		msgInit()
+	}
+}
 </script>
 
 <style scoped>
@@ -227,10 +220,12 @@ onMounted(() => {
 	border-bottom: 0.5px solid var(--color-menu);
 	background-color: var(--color-bg);
 }
+
 .nav-tabs .nav-link {
 	color: var(--color-menu);
 	opacity: 0.5;
 }
+
 .nav-tabs .nav-link.disabled {
 	color: var(--color-axis);
 	border: 0.5px solid var(--color-axis);
@@ -244,18 +239,23 @@ onMounted(() => {
 	border-bottom: 0px solid var(--color-menu);
 	box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
+
 .fa-circle-info {
 	color: var(--color-fg);
 }
+
 .fa-charging-station {
 	color: var(--color-charging);
 }
+
 .fa-car-battery {
 	color: var(--color-battery);
 }
+
 .fa-plug {
 	color: var(--color-devices);
 }
+
 .fa-money-bill-1-wave {
 	color: var(--color-pv);
 }

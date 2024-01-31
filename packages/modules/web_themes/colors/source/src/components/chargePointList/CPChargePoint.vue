@@ -36,7 +36,7 @@
 
 					<!-- Ladung -->
 					<InfoItem heading="Geladen:">
-						<FormatWattH :watt-h="chargepoint.chargedSincePlugged" />
+						<FormatWattH :watt-h="chargepoint.dailyYield" />
 					</InfoItem>
 					<InfoItem heading="gel. Reichw.:">
 						{{ chargedRangeString }}
@@ -52,11 +52,14 @@
 					<InfoItem heading="Leistung:">
 						<FormatWatt :watt="props.chargepoint.power" />
 					</InfoItem>
-					<InfoItem heading="Stromstärke:">
-						{{ chargeAmpereString }}
+					<InfoItem heading="Strom:">
+						{{ realChargeAmpereString }}
 					</InfoItem>
 					<InfoItem heading="Phasen:">
 						{{ props.chargepoint.phasesInUse }}
+					</InfoItem>
+					<InfoItem heading="Sollstrom:">
+						<span class="targetCurrent">{{ chargeAmpereString }}</span>
 					</InfoItem>
 				</div>
 			</div>
@@ -108,12 +111,8 @@
 					<!-- Car info -->
 
 					<div class="m-0 p-0 d-flex justify-content-between">
-						<InfoItem heading="Ladestand:">
-							<BatterySymbol
-								v-if="chargepoint.isSocConfigured"
-								:soc="soc"
-								class="me-2"
-							/>
+						<InfoItem v-if="chargepoint.isSocConfigured" heading="Ladestand:">
+							<BatterySymbol :soc="soc" class="me-2" />
 							<i
 								v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
 								class="fa-solid fa-sm fas fa-edit"
@@ -124,7 +123,7 @@
 							<i
 								v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual"
 								type="button"
-								class="fa-solid fa-sm fa-sync"
+								class="fa-solid fa-sm"
 								:class="
 									chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
 								"
@@ -132,7 +131,7 @@
 								@click="loadSoc"
 							/>
 						</InfoItem>
-						<InfoItem heading="Reichweite:">
+						<InfoItem v-if="chargepoint.isSocConfigured" heading="Reichweite:">
 							{{
 								vehicles[props.chargepoint.connectedVehicle]
 									? Math.round(
@@ -150,25 +149,49 @@
 							{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
 						</InfoItem>
 					</div>
+
 					<div
 						v-if="editSoc"
-						class="socEditor rounded mt-2 d-flex flex-column align-items-end"
+						class="socEditor rounded mt-2 d-flex flex-column align-items-center"
 					>
-						<ConfigItem title="Ladestand einstellen:" :fullwidth="true">
-							<RangeInput
-								id="manualSoc"
-								v-model="manualSoc"
-								:min="0"
-								:max="100"
-								:step="1"
-								unit="%"
-							/>
-						</ConfigItem>
+						<span class="d-flex m-1 p-0 socEditTitle"
+							>Ladestand einstellen:</span
+						>
+						<span class="d-flex justify-content-stretch align-items-center">
+							<span>
+								<RangeInput
+									id="manualSoc"
+									v-model="manualSoc"
+									:min="0"
+									:max="100"
+									:step="1"
+									unit="%"
+								/>
+							</span>
+						</span>
 						<span
 							type="button"
-							class="fa-solid d-flex fa-lg me-2 mb-3 fa-circle-check"
+							class="fa-solid d-flex fa-lg me-2 mb-3 align-self-end fa-circle-check"
 							@click="setSoc"
 						/>
+					</div>
+					<!-- ET Information -->
+					<div v-if="props.chargepoint.etActive" class="row m-1 p-0">
+						<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
+							<InfoItem heading="max. Preis:">
+								{{
+									(Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(
+										1,
+									)
+								}}
+								ct
+							</InfoItem>
+							<InfoItem heading="akt. Preis:">
+								<span :style="currentPriceStyle"
+									>{{ currentPrice }} ct
+								</span></InfoItem
+							>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -212,7 +235,7 @@ import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import { updateServer } from '@/assets/js/sendMessages'
 import RangeInput from '../shared/RangeInput.vue'
-import ConfigItem from '../shared/ConfigItem.vue'
+import { etData } from '../priceChart/model'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
@@ -230,6 +253,13 @@ const chargeMode = computed({
 const chargeAmpereString = computed(() => {
 	return (
 		(Math.round(props.chargepoint.current * 10) / 10).toLocaleString(
+			undefined,
+		) + ' A'
+	)
+})
+const realChargeAmpereString = computed(() => {
+	return (
+		(Math.round(props.chargepoint.realCurrent * 10) / 10).toLocaleString(
 			undefined,
 		) + ' A'
 	)
@@ -291,6 +321,11 @@ const cpNameStyle = computed(() => {
 	return { color: props.chargepoint.color }
 	// return { color: 'var(--color-fg)' }
 })
+const currentPriceStyle = computed(() => {
+	return props.chargepoint.etMaxPrice >= +currentPrice.value
+		? { color: 'var(--color-charging)' }
+		: { color: 'var(--color-menu)' }
+})
 const configmode = ref(false)
 const editSoc = ref(false)
 function loadSoc() {
@@ -308,6 +343,10 @@ const manualSoc = computed({
 	set(s: number) {
 		chargePoints[props.chargepoint.id].soc = s
 	},
+})
+const currentPrice = computed(() => {
+	const [p] = etData.etPriceList.values()
+	return (Math.round(p * 10) / 10).toFixed(1)
 })
 // methods
 </script>
@@ -383,5 +422,9 @@ const manualSoc = computed({
 
 .socEditor {
 	border: 1px solid var(--color-menu);
+}
+
+.targetCurrent {
+	color: var(--color-menu);
 }
 </style>

@@ -12,9 +12,9 @@ from modules.chargepoints.openwb_series2_satellit.config import OpenWBseries2Sat
 from modules.common import modbus
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.chargepoint_context import HardwareCheckContext
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.hardware_check_context import SeriesHardwareCheckContext
 from modules.common.store import get_chargepoint_value_store
 from modules.common.component_state import ChargepointState
 from modules.internal_chargepoint_handler.clients import EVSE_ID_CP0, EVSE_ID_ONE_BUS_CP1, ClientHandler
@@ -29,9 +29,9 @@ class ChargepointModule(AbstractChargepoint):
 
     def __init__(self, config: OpenWBseries2Satellit) -> None:
         self.config = config
-        self.component_info = ComponentInfo(self.config.id, "Ladepunkt", "chargepoint")
+        self.fault_state = FaultState(ComponentInfo(self.config.id, "Ladepunkt", "chargepoint"))
         self.version: Optional[bool] = None
-        with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state):
             self.delay_second_cp(self.CP0_DELAY_STARTUP)
             self.store = get_chargepoint_value_store(self.config.id)
             self.__client_error_context = ErrorCounterContext(
@@ -50,7 +50,8 @@ class ChargepointModule(AbstractChargepoint):
         self._client = ClientHandler(
             self.config.configuration.duo_num,
             modbus.ModbusTcpClient_(self.config.configuration.ip_address, 8899),
-            EVSE_ID_CP0 if self.config.configuration.duo_num == 0 else EVSE_ID_ONE_BUS_CP1)
+            EVSE_ID_CP0 if self.config.configuration.duo_num == 0 else EVSE_ID_ONE_BUS_CP1,
+            self.fault_state)
 
     def _validate_version(self):
         # telnetlib ist ab Python 3.11 deprecated
@@ -65,19 +66,19 @@ class ChargepointModule(AbstractChargepoint):
                 else:
                     self.version = False
                     raise ValueError
-        except (ConnectionRefusedError, ValueError):
-            raise FaultState.error(
-                "Firmware des openWB satellit ist nicht mit openWB software2 kompatibel. "
-                "Bitte den Support kontaktieren.")
+        except (ConnectionRefusedError, ValueError) as e:
+            e.args += (("Firmware des openWB satellit ist nicht mit openWB software2 kompatibel. "
+                        "Bitte den Support kontaktieren."),)
+            raise e
 
     def get_values(self) -> None:
-        if self.version is not None:
-            with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state):
+            if self.version is not None:
                 with self.__client_error_context:
                     try:
-                        with HardwareCheckContext(self._client):
+                        with SeriesHardwareCheckContext(self._client):
                             if self.version is False:
-                                raise FaultState.error(
+                                raise ValueError(
                                     "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
                                     "Bitte den Support kontaktieren.")
                             self.delay_second_cp(self.CP0_DELAY)
@@ -100,13 +101,16 @@ class ChargepointModule(AbstractChargepoint):
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
+            else:
+                self._create_client()
+                self._validate_version()
 
     def set_current(self, current: float) -> None:
         if self.version is not None:
-            with SingleComponentUpdateContext(self.component_info, update_always=False):
+            with SingleComponentUpdateContext(self.fault_state, update_always=False):
                 with self.__client_error_context:
                     try:
-                        with HardwareCheckContext(self._client):
+                        with SeriesHardwareCheckContext(self._client):
                             self.delay_second_cp(self.CP0_DELAY)
                             with self._client.client:
                                 if self.version:

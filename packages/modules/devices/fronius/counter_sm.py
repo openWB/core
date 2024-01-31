@@ -27,7 +27,7 @@ class FroniusSmCounter:
         self.device_config = device_config
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
         session = req.get_http_session()
@@ -37,7 +37,7 @@ class FroniusSmCounter:
         elif variant == 2:
             counter_state = self.__update_variant_2(session)
         else:
-            raise FaultState.error("Unbekannte Variante: "+str(variant))
+            raise ValueError("Unbekannte Variante: "+str(variant))
         counter_state.imported, counter_state.exported = self.sim_counter.sim_count(counter_state.power)
         self.store.set(counter_state)
 
@@ -56,7 +56,7 @@ class FroniusSmCounter:
                 ('DataCollection', 'MeterRealtimeData'),
             )
         else:
-            raise FaultState.error("Unbekannte Generation: "+str(variant))
+            raise ValueError("Unbekannte Generation: "+str(variant))
         response = session.get(
             'http://' + self.device_config.ip_address + '/solar_api/v1/GetMeterRealtimeData.cgi',
             params=params,
@@ -77,6 +77,9 @@ class FroniusSmCounter:
             powers = [-1 * power - power_inverter/3 for power in powers]
         else:
             power = response_json_id["PowerReal_P_Sum"]
+        # for all meter locations except "grid", negative power is consumption!
+        if meter_location in (MeterLocation.external, MeterLocation.subload):
+            power *= -1
         voltages = [response_json_id["Voltage_AC_Phase_"+str(num)] for num in range(1, 4)]
         currents = [powers[i] / voltages[i] for i in range(0, 3)]
         power_factors = [response_json_id["PowerFactor_Phase_"+str(num)] for num in range(1, 4)]

@@ -38,8 +38,9 @@ export class ChargePoint {
 	chargedSincePlugged = 0
 	stateStr = ''
 	current = 0
+	currents = [0, 0, 0]
 	phasesToUse = 0
-	soc = 0
+	// soc = 0
 	isSocConfigured = true
 	isSocManual = false
 	waitingForSoc = false
@@ -54,6 +55,9 @@ export class ChargePoint {
 	private _pvMaxSoc = 0
 	private _pvMinSoc = 0
 	private _pvMinSocCurrent = 0
+	private _etActive = false
+	private _etMaxPrice = 20
+
 	constructor(index: number) {
 		this.id = index
 	}
@@ -76,6 +80,18 @@ export class ChargePoint {
 	}
 	updateConnectedVehicle(id: number) {
 		this._connectedVehicle = id
+	}
+	get soc() {
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].soc
+		} else {
+			return 0
+		}
+	}
+	set soc(newSoc: number) {
+		if (vehicles[this.connectedVehicle]) {
+			vehicles[this.connectedVehicle].soc = newSoc
+		}
 	}
 	get chargeMode() {
 		return this._chargeMode
@@ -199,6 +215,34 @@ export class ChargePoint {
 	updatePvMinSocCurrent(a: number) {
 		this._pvMinSocCurrent = a
 	}
+	get realCurrent() {
+		switch (this.phasesInUse) {
+			case 0:
+				return 0
+			case 1:
+				return this.currents[0]
+			case 2:
+				return (this.currents[0] + this.currents[1]) / 2
+			case 3:
+				return (this.currents[0] + this.currents[1] + this.currents[2]) / 3
+			default:
+				return 0
+		}
+	}
+	get etActive() {
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].etActive
+		} else {
+			return false
+		}
+	}
+	get etMaxPrice() {
+		return vehicles[this.connectedVehicle].etMaxPrice ?? 0
+	}
+	set etMaxPrice(newPrice: number) {
+		console.log('Setting et max price needs to be implemented')
+		updateServer('cpEtMaxPrice', newPrice / 100000, this.id)
+	}
 	toPowerItem(): PowerItem {
 		return {
 			name: this.name,
@@ -218,8 +262,11 @@ export class Vehicle {
 	private _chargeTemplateId = 0
 	private _evTemplateId = 0
 	tags: Array<string> = []
+	config = {}
 	soc = 0
 	range = 0
+	private _etActive = false
+	private _etMaxPrice = 20
 	constructor(index: number) {
 		this.id = index
 	}
@@ -242,6 +289,18 @@ export class Vehicle {
 	}
 	updateEvTemplateId(id: number) {
 		this._evTemplateId = id
+	}
+	get etActive() {
+		if (chargeTemplates[this.chargeTemplateId]) {
+			return chargeTemplates[this.chargeTemplateId].et.active
+		}
+	}
+	get etMaxPrice() {
+		if (chargeTemplates[this.chargeTemplateId]) {
+			if (chargeTemplates[this.chargeTemplateId].et.active) {
+				return chargeTemplates[this.chargeTemplateId].et.max_price * 100000
+			}
+		}
 	}
 }
 export interface ConnectedVehicleConfig {
@@ -314,6 +373,10 @@ export interface ChargeTemplate {
 	}
 	disable_after_unplug: boolean
 	load_default: boolean
+	et: {
+		active: boolean
+		max_price: number
+	}
 }
 export interface EvTemplate {
 	name: string
@@ -347,7 +410,7 @@ export function addChargePoint(chargePointIndex: number) {
 	if (!(chargePointIndex in chargePoints)) {
 		chargePoints[chargePointIndex] = new ChargePoint(chargePointIndex)
 		chargePoints[chargePointIndex].color =
-			'var(--color-cp' + Object.values(chargePoints).length + ')'
+			'var(--color-cp' + (Object.values(chargePoints).length - 1) + ')'
 		// console.info('Added chargepoint ' + chargePointIndex)
 	} else {
 		// console.info('Duplicate chargepoint message: ' + chargePointIndex)

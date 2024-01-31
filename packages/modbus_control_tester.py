@@ -49,7 +49,7 @@ REGISTERS = (
     Register(10143, Actions.READ_NUMBER, 1, ModbusDataType.INT_16, name="Type of Hardware", expected=(1, 1)),
     Register(10150, Actions.READ_STR, 10, ModbusDataType.INT_16,
              name="Serial Number of Chargepoint", expected="noSerialNumber"),
-    Register(10160, Actions.READ_STR, 10, ModbusDataType.INT_16, name="RFID Tag", expected='0004141661'),
+    Register(10160, Actions.READ_STR, 10, ModbusDataType.INT_16, name="ID-Tag", expected='0004141661'),
 )
 
 
@@ -141,7 +141,7 @@ def read_all_registers():
                     if evaluate_reg(reg):
                         break
                 except Exception:
-                    print("Bitte RFID Tag scannen")
+                    print("Bitte ID-Tag erfassen")
                     time.sleep(1)
         else:
             evaluate_reg(reg)

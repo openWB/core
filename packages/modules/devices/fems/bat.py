@@ -3,7 +3,7 @@ from helpermodules.scale_metric import scale_metric
 from modules.devices.fems.config import FemsBatSetup
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_bat_value_store
 
 
@@ -12,7 +12,7 @@ class FemsBat:
         self.ip_address = ip_address
         self.component_config = component_config
         self.store = get_bat_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, session: Session) -> None:
         if self.component_config.configuration.num == 1:
@@ -20,7 +20,8 @@ class FemsBat:
         else:
             data = "ess2"
         response = session.get(
-            "http://" + self.ip_address + ":8084/rest/channel/"+data+"/(Soc|DcChargeEnergy|DcDischargeEnergy)",
+            "http://" + self.ip_address + ":8084/rest/channel/(" + data + "|_sum)/" +
+            "(Soc|DcChargeEnergy|DcDischargeEnergy|GridActivePower|ProductionActivePower|ConsumptionActivePower)",
             timeout=2).json()
         for singleValue in response:
             address = singleValue["address"]
@@ -30,14 +31,7 @@ class FemsBat:
                 imported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
             elif address == data+"/DcDischargeEnergy":
                 exported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
-
-        response = session.get(
-            "http://" + self.ip_address +
-            ":8084/rest/channel/_sum/(GridActivePower|ProductionActivePower|ConsumptionActivePower)",
-            timeout=2).json()
-        for singleValue in response:
-            address = singleValue["address"]
-            if (address == "_sum/GridActivePower"):
+            elif address == "_sum/GridActivePower":
                 grid = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
             elif address == "_sum/ProductionActivePower":
                 pv = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')

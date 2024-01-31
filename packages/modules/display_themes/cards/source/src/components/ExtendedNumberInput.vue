@@ -63,7 +63,7 @@ export default {
               "inputValue: not found in values: ",
               this.modelValue,
               "using minimum as default: ",
-              this.minimum
+              this.minimum,
             );
             return this.minimum;
           } else {
@@ -86,7 +86,7 @@ export default {
     increment() {
       var newInputValue = Math.min(
         this.inputValue + this.stepSize,
-        this.maximum
+        this.maximum,
       );
       // rounding needed!
       this.inputValue =
@@ -96,7 +96,7 @@ export default {
     decrement() {
       var newInputValue = Math.max(
         this.inputValue - this.stepSize,
-        this.minimum
+        this.minimum,
       );
       // rounding needed!
       this.inputValue =

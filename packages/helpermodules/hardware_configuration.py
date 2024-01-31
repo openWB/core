@@ -11,6 +11,14 @@ def update_hardware_configuration(new_setting: Dict) -> None:
         f.write(json.dumps(data))
 
 
+def remove_setting_hardware_configuration(obsolet_setting: str) -> None:
+    with open("/home/openwb/configuration.json", "r") as f:
+        data = json.loads(f.read())
+    with open("/home/openwb/configuration.json", "w") as f:
+        data.pop(obsolet_setting)
+        f.write(json.dumps(data))
+
+
 def get_hardware_configuration_setting(name: str):
     with open("/home/openwb/configuration.json", "r") as f:
         return json.loads(f.read())[name]

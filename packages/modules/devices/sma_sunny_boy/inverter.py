@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 class SmaSunnyBoyInverter:
 
     SMA_INT32_NAN = -0x80000000  # SMA uses this value to represent NaN
+    SMA_NAN = -0xC000
 
     def __init__(self,
                  device_id: int,
@@ -26,7 +27,7 @@ class SmaSunnyBoyInverter:
         self.component_config = dataclass_from_dict(SmaSunnyBoyInverterSetup, component_config)
         self.tcp_client = tcp_client
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
         self.store.set(self.read())
@@ -60,8 +61,8 @@ class SmaSunnyBoyInverter:
             # Aus kompatibilitätsgründen wird dc_power auf den Wert der AC-Wirkleistung gesetzt.
             dc_power = power_total
         else:
-            raise FaultState.error("Unbekannte Version "+str(self.component_config.configuration.version))
-        if power_total == self.SMA_INT32_NAN:
+            raise ValueError("Unbekannte Version "+str(self.component_config.configuration.version))
+        if power_total == self.SMA_INT32_NAN or power_total == self.SMA_NAN:
             power_total = 0
 
         inverter_state = InverterState(

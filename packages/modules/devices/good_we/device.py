@@ -41,8 +41,8 @@ class Device(AbstractDevice):
         else:
             component_type = component_config.type
         component_config = dataclass_from_dict(COMPONENT_TYPE_TO_MODULE[
-                                                   component_type].component_descriptor.configuration_factory,
-                                               component_config)
+            component_type].component_descriptor.configuration_factory,
+            component_config)
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component" + str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
                 self.device_config.configuration.modbus_id, component_config, self.client))
@@ -57,7 +57,7 @@ class Device(AbstractDevice):
         if self.components:
             for component in self.components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                with SingleComponentUpdateContext(self.components[component].component_info):
+                with SingleComponentUpdateContext(self.components[component].fault_state):
                     self.components[component].update()
         else:
             log.warning(

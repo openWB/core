@@ -3,7 +3,7 @@ from helpermodules.scale_metric import scale_metric
 from modules.devices.fems.config import FemsCounterSetup
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 
 
@@ -12,14 +12,15 @@ class FemsCounter:
         self.ip_address = ip_address
         self.component_config = component_config
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, session: Session) -> None:
         try:
-            # Grid meter values
+            # Grid meter values and grid total energy sums
             response = session.get('http://' + self.ip_address +
-                                   ':8084/rest/channel/meter0/(ActivePower.*|VoltageL.|Frequency)',
-                                   timeout=1).json()
+                                   ':8084/rest/channel/(meter0|_sum)/' +
+                                   '(ActivePower.*|VoltageL.|Frequency|Grid.+ActiveEnergy)',
+                                   timeout=6).json()
 
             # ATTENTION: Recent FEMS versions started using the "unit" field (see example response below) and
             #            kind-of arbitrarily return either Volts, Kilowatthours or Hz or Millivolts, Watthours or
@@ -44,18 +45,11 @@ class FemsCounter:
                     voltages[1] = scale_metric(singleValue['value'], singleValue.get('unit'), 'V')
                 elif (address == 'meter0/VoltageL3'):
                     voltages[2] = scale_metric(singleValue['value'], singleValue.get('unit'), 'V')
-
-            # Grid total energy sums
-            response = session.get(
-                'http://'+self.ip_address+':8084/rest/channel/_sum/Grid.+ActiveEnergy',
-                timeout=1).json()
-
-            for singleValue in response:
-                address = singleValue['address']
-                if (address == '_sum/GridBuyActiveEnergy'):
+                elif (address == '_sum/GridBuyActiveEnergy'):
                     imported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
                 elif (address == '_sum/GridSellActiveEnergy'):
                     exported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
+
             counter_state = CounterState(
                 imported=imported,
                 exported=exported,

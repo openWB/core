@@ -66,7 +66,7 @@ class Device(AbstractDevice):
             with self.client:
                 for component in self.components:
                     # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                    with SingleComponentUpdateContext(self.components[component].component_info):
+                    with SingleComponentUpdateContext(self.components[component].fault_state):
                         self.components[component].update(unit_id=default_unit_id)
         else:
             log.warning(

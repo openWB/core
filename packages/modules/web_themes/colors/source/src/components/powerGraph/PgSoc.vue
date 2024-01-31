@@ -60,6 +60,7 @@ const myline = computed(() => {
 					props.order == 2 ? d.batSoc : d['soc' + cp.value.connectedVehicle],
 				) ?? yScale.value(0),
 		)
+
 	let p = path(graphData.data)
 	return p ? p : ''
 })
@@ -113,7 +114,7 @@ const nameY = computed(() => {
 					graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
 				)
 			case 2:
-				index = graphData.data.length / 2
+				index = Math.round(graphData.data.length / 2)
 				return yScale.value(graphData.data[index].batSoc + 2)
 			default:
 				return 0

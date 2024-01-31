@@ -51,6 +51,7 @@
 				</g>
 			</svg>
 		</figure>
+		<p v-if="noData">No data</p>
 	</WBWidget>
 </template>
 <script setup lang="ts">
@@ -74,7 +75,7 @@ import {
 	shiftUp,
 	shiftDown,
 } from '@/components/powerGraph/model'
-import { graphData } from '@/components/powerGraph/model'
+import { graphData, noData } from '@/components/powerGraph/model'
 import { computed } from 'vue'
 // props
 const props = defineProps<{
@@ -118,7 +119,12 @@ const plotdata = computed(() => {
 		case 'day':
 		case 'month':
 		case 'year':
-			result = historic.filter((row) => row.energy > 0)
+			if (historic.length == 0) {
+				noData.value = true
+			} else {
+				noData.value = false
+				result = historic.filter((row) => row.energy > 0)
+			}
 	}
 	return result
 })

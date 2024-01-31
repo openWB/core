@@ -6,8 +6,7 @@ from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
-from modules.common.fault_state import FaultState
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.sonnenbatterie.config import SonnenbatterieInverterSetup
@@ -27,7 +26,7 @@ class SonnenbatterieInverter:
         self.component_config = dataclass_from_dict(SonnenbatterieInverterSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def __read_variant_1(self, api: str = "v1"):
         return req.get_http_session().get(
@@ -108,7 +107,7 @@ class SonnenbatterieInverter:
         elif self.__device_variant == 3:
             state = self.__update_variant_1("v2")
         else:
-            raise FaultState.error("Unbekannte Variante: " + str(self.__device_variant))
+            raise ValueError("Unbekannte Variante: " + str(self.__device_variant))
         self.store.set(state)
 
 

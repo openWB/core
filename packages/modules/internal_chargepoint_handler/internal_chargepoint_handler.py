@@ -11,7 +11,7 @@ from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store._util import get_rounding_function_by_digits
 from modules.common.component_state import ChargepointState
 from modules.internal_chargepoint_handler import chargepoint_module
@@ -146,21 +146,26 @@ class InternalChargepointHandler:
         self.event_start = event_start
         self.event_stop = event_stop
         self.heartbeat = False
-        with SingleComponentUpdateContext(
+        fault_state_info_cp0 = FaultState(
             ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
-                          parent_hostname=global_data.parent_ip)):
+                          parent_hostname=global_data.parent_ip))
+        fault_state_info_cp1 = FaultState(
+            ComponentInfo(hierarchy_id_cp1, "Interner Ladepunkt 1", "chargepoint", parent_id=parent_cp1,
+                          parent_hostname=global_data.parent_ip))
+        with SingleComponentUpdateContext(fault_state_info_cp0):
             # Allgemeine Fehlermeldungen an LP 1:
-            self.cp0_client_handler = client_factory(0)
+            self.cp0_client_handler = client_factory(0, fault_state_info_cp0)
             self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode, global_data, parent_cp0, hierarchy_id_cp0)
-            if mode == InternalChargepointMode.DUO.value:
+            self.init_gpio()
+        if mode == InternalChargepointMode.DUO.value:
+            with SingleComponentUpdateContext(fault_state_info_cp1):
                 log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
-                self.cp1_client_handler = client_factory(1, self.cp0_client_handler)
+                self.cp1_client_handler = client_factory(1, fault_state_info_cp1, self.cp0_client_handler)
                 self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
                                               global_data, parent_cp1, hierarchy_id_cp1)
-            else:
-                self.cp1 = None
-                self.cp1_client_handler = None
-            self.init_gpio()
+        else:
+            self.cp1 = None
+            self.cp1_client_handler = None
 
     def init_gpio(self) -> None:
         GPIO.setwarnings(False)
@@ -190,7 +195,7 @@ class InternalChargepointHandler:
                 if self.cp1:
                     self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
                 time.sleep(1.1)
-        with SingleComponentUpdateContext(self.cp0.module.component_info):
+        with SingleComponentUpdateContext(self.cp0.module.fault_state):
             # Allgemeine Fehlermeldungen an LP 1:
             if self.cp1_client_handler is None:
                 with self.cp0_client_handler.client:
@@ -223,7 +228,7 @@ class HandlerChargepoint:
         else:
             self.module = chargepoint_module.ChargepointModule(
                 local_charge_point_num, client_handler, global_data.parent_ip, parent_cp, hierarchy_id)
-        with SingleComponentUpdateContext(self.module.component_info):
+        with SingleComponentUpdateContext(self.module.fault_state):
             self.update_values = UpdateValues(local_charge_point_num, global_data.parent_ip, parent_cp, hierarchy_id)
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
@@ -234,7 +239,7 @@ class HandlerChargepoint:
                 return thread.is_alive()
             else:
                 return False
-        with SingleComponentUpdateContext(self.module.component_info):
+        with SingleComponentUpdateContext(self.module.fault_state):
             if self.local_charge_point_num == 1:
                 time.sleep(0.1)
             phase_switch_cp_active = __thread_active(self.update_state.cp_interruption_thread) or __thread_active(
@@ -247,8 +252,8 @@ class HandlerChargepoint:
             self.update_state.update_state(data, heartbeat_expired)
 
     def _check_heartbeat_expired(self, heartbeat) -> bool:
-        if heartbeat+80 < timecheck.create_timestamp_unix():
-            log.error(f"Heartbeat Fehler seit {timecheck.create_timestamp_unix()-heartbeat}"
+        if heartbeat+80 < timecheck.create_timestamp():
+            log.error(f"Heartbeat Fehler seit {timecheck.create_timestamp()-heartbeat}"
                       "s keine Verbindung. Stoppe Ladung.")
             return True
         else:

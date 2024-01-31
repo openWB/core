@@ -25,7 +25,8 @@ export class Config {
 	private _preferWideBoxes = false
 	private _maxPower = 4000
 	private _fluidDisplay = false
-	private _showClock = false
+	private _showClock = 'no'
+	private _showButtonBar = true
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -171,12 +172,12 @@ export class Config {
 	get showClock() {
 		return this._showClock
 	}
-	set showClock(on: boolean) {
-		this._showClock = on
+	set showClock(mode: string) {
+		this._showClock = mode
 		savePrefs()
 	}
-	setShowClock(on: boolean) {
-		this._showClock = on
+	setShowClock(mode: string) {
+		this._showClock = mode
 	}
 	get debug() {
 		return this._debug
@@ -186,6 +187,16 @@ export class Config {
 	}
 	setDebug(on: boolean) {
 		this._debug = on
+	}
+	get showButtonBar() {
+		return this._showButtonBar
+	}
+	set showButtonBar(show: boolean) {
+		this._showButtonBar = show
+		savePrefs()
+	}
+	setShowButtonBar(show: boolean) {
+		this._showButtonBar = show
 	}
 }
 export const globalConfig = reactive(new Config())
@@ -321,7 +332,8 @@ interface Preferences {
 	animation?: boolean
 	wideB?: boolean
 	fluidD?: boolean
-	clock?: boolean
+	clock?: string
+	showButtonBar?: boolean
 }
 
 function writeCookie() {
@@ -343,6 +355,7 @@ function writeCookie() {
 	prefs.wideB = globalConfig.preferWideBoxes
 	prefs.fluidD = globalConfig.fluidDisplay
 	prefs.clock = globalConfig.showClock
+	prefs.showButtonBar = globalConfig.showButtonBar
 	document.cookie =
 		'openWBColorTheme=' + JSON.stringify(prefs) + '; max-age=16000000'
 }
@@ -403,6 +416,9 @@ function readCookie() {
 		}
 		if (prefs.clock != undefined) {
 			globalConfig.setShowClock(prefs.clock)
+		}
+		if (prefs.showButtonBar !== undefined) {
+			globalConfig.setShowButtonBar(prefs.showButtonBar)
 		}
 	}
 }

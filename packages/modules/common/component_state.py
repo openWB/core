@@ -1,5 +1,6 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
+from helpermodules import timecheck
 
 from helpermodules.auto_str import auto_str
 
@@ -18,7 +19,11 @@ def _calculate_powers_and_currents(currents: Optional[List[float]],
         else:
             powers = [currents[i]*voltages[i] for i in range(0, 3)]
     if currents is None and powers:
-        currents = [powers[i]/voltages[i] for i in range(0, 3)]
+        try:
+            currents = [powers[i]/voltages[i] for i in range(0, 3)]
+        except ZeroDivisionError:
+            # some inverters (Sungrow) report 0V if in standby
+            currents = [0.0]*3
     if currents and powers:
         currents = [currents[i]*-1 if powers[i] < 0 and currents[i] > 0 else currents[i] for i in range(0, 3)]
     return currents, powers, voltages
@@ -106,11 +111,11 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: Optional[str] = None):
+    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: float = 0):
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
-            soc_timestamp: timestamp of last request in %m/%d/%Y, %H:%M:%S
+            soc_timestamp: timestamp of last request as unix timestamp
         """
         self.soc = soc
         self.range = range
@@ -120,7 +125,7 @@ class CarState:
 @auto_str
 class ChargepointState:
     def __init__(self,
-                 phases_in_use: int,
+                 phases_in_use: int = 0,
                  imported: float = 0,
                  exported: float = 0,
                  power: float = 0,
@@ -131,10 +136,12 @@ class ChargepointState:
                  charge_state: bool = False,
                  plug_state: bool = False,
                  rfid: Optional[str] = None,
+                 rfid_timestamp: Optional[float] = None,
                  frequency: float = 50,
                  soc: Optional[float] = None,
                  soc_timestamp: Optional[int] = None,
-                 evse_current: Optional[float] = None):
+                 evse_current: Optional[float] = None,
+                 vehicle_id: Optional[str] = None):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
@@ -144,9 +151,26 @@ class ChargepointState:
         self.charge_state = charge_state
         self.plug_state = plug_state
         self.rfid = rfid
+        if self.rfid and rfid_timestamp is None:
+            self.rfid_timestamp = timecheck.create_timestamp()
+        else:
+            self.rfid_timestamp = rfid_timestamp
         if power_factors is None:
             power_factors = [0.0]*3
         self.power_factors = power_factors
         self.soc = soc
         self.soc_timestamp = soc_timestamp
         self.evse_current = evse_current
+        self.vehicle_id = vehicle_id
+
+
+@auto_str
+class TariffState:
+    def __init__(self,
+                 prices: Optional[Dict[int, float]] = None) -> None:
+        self.prices = prices
+
+
+class RcrState:
+    def __init__(self, override_value: float) -> None:
+        self.override_value = override_value

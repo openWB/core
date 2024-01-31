@@ -1,3 +1,4 @@
+from enum import Enum
 import json
 import logging
 import pathlib
@@ -5,7 +6,7 @@ from pathlib import Path
 import re
 import string
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
-from typing import Dict, Tuple
+from typing import Dict
 
 from control import data
 from helpermodules.broker import InternalBrokerClient
@@ -85,17 +86,86 @@ log = logging.getLogger(__name__)
 #      }
 
 
-def save_log(folder):
+class LogType(Enum):
+    DAILY = "daily"
+    MONTHLY = "monthly"
+
+
+class LegacySmartHomeLogData:
+    def __init__(self) -> None:
+        self.all_received_topics: Dict = {}
+        self.sh_dict: Dict = {}
+        self.sh_names: Dict = {}
+        try:
+            InternalBrokerClient("smart-home-logging", self.on_connect, self.on_message).start_finite_loop()
+            for topic, payload in self.all_received_topics.items():
+                if re.search("openWB/LegacySmartHome/config/get/Devices/[1-9]/device_configured", topic) is not None:
+                    if decode_payload(payload) == 1:
+                        index = get_index(topic)
+                        self.sh_dict.update({f"sh{index}": {}})
+                        for topic, payload in self.all_received_topics.items():
+                            if f"openWB/LegacySmartHome/Devices/{index}/Wh" == topic:
+                                self.sh_dict[f"sh{index}"].update({"imported": decode_payload(payload), "exported": 0})
+                            for sensor_id in range(0, 3):
+                                if f"openWB/LegacySmartHome/Devices/{index}/TemperatureSensor{sensor_id}" == topic:
+                                    self.sh_dict[f"sh{index}"].update({f"temp{sensor_id}": decode_payload(payload)})
+                        for topic, payload in self.all_received_topics.items():
+                            if f"openWB/LegacySmartHome/config/get/Devices/{index}/device_name" == topic:
+                                self.sh_names.update({f"sh{index}": decode_payload(payload)})
+        except Exception:
+            log.exception("Fehler im Werte-Logging-Modul für SmartHome")
+
+    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
+        client.subscribe("openWB/LegacySmartHome/#", 2)
+
+    def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
+        self.all_received_topics.update({msg.topic: msg.payload})
+
+
+def save_log(log_type: LogType):
     """ Parameter
     ---------
     folder: str
         gibt an, ob ein Tages-oder Monats-Log-Eintrag erstellt werden soll.
     """
-    if folder == "daily":
-        date = timecheck.create_timestamp_time()
+    sh_log_data = LegacySmartHomeLogData()
+    new_entry = create_entry(log_type, sh_log_data)
+
+    # json-Objekt in Datei einfügen
+    if log_type == LogType.DAILY:
+        (pathlib.Path(__file__).resolve().parents[3] / "data"/"daily_log").mkdir(mode=0o755,
+                                                                                 parents=True, exist_ok=True)
+        filepath = str(
+            Path(__file__).resolve().parents[3] / "data" / "daily_log" /
+            (timecheck.create_timestamp_YYYYMMDD() + ".json"))
+    else:
+        (pathlib.Path(__file__).resolve().parents[3] / "data"/"monthly_log").mkdir(mode=0o755,
+                                                                                   parents=True, exist_ok=True)
+        filepath = str(
+            Path(__file__).resolve().parents[3] / "data" / "monthly_log" /
+            (timecheck.create_timestamp_YYYYMM() + ".json"))
+    try:
+        with open(filepath, "r") as jsonFile:
+            content = json.load(jsonFile)
+    except FileNotFoundError:
+        with open(filepath, "w") as jsonFile:
+            json.dump({"entries": [], "names": {}}, jsonFile)
+        with open(filepath, "r") as jsonFile:
+            content = json.load(jsonFile)
+    entries = content["entries"]
+    entries.append(new_entry)
+    content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
+    with open(filepath, "w") as jsonFile:
+        json.dump(content, jsonFile)
+    return content["entries"]
+
+
+def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData) -> Dict:
+    if log_type == LogType.DAILY:
+        date = timecheck.create_timestamp_HH_MM()
     else:
         date = timecheck.create_timestamp_YYYYMMDD()
-    current_timestamp = timecheck.create_timestamp_unix()
+    current_timestamp = int(timecheck.create_timestamp())
     cp_dict = {}
     for cp in data.data.cp_data:
         try:
@@ -153,11 +223,9 @@ def save_log(folder):
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
-    sh_dict, sh_names = LegacySmartHomeLogData().update()
-
     hc_dict = {"all": {"imported": data.data.counter_all_data.data.set.imported_home_consumption}}
 
-    new_entry = {
+    return {
         "timestamp": current_timestamp,
         "date": date,
         "cp": cp_dict,
@@ -165,37 +233,9 @@ def save_log(folder):
         "counter": counter_dict,
         "pv": pv_dict,
         "bat": bat_dict,
-        "sh": sh_dict,
+        "sh": sh_log_data.sh_dict,
         "hc": hc_dict
     }
-
-    # json-Objekt in Datei einfügen
-    if folder == "daily":
-        (pathlib.Path(__file__).resolve().parents[3] / "data"/"daily_log").mkdir(mode=0o755,
-                                                                                 parents=True, exist_ok=True)
-        filepath = str(
-            Path(__file__).resolve().parents[3] / "data" / "daily_log" /
-            (timecheck.create_timestamp_YYYYMMDD() + ".json"))
-    else:
-        (pathlib.Path(__file__).resolve().parents[3] / "data"/"monthly_log").mkdir(mode=0o755,
-                                                                                   parents=True, exist_ok=True)
-        filepath = str(
-            Path(__file__).resolve().parents[3] / "data" / "monthly_log" /
-            (timecheck.create_timestamp_YYYYMM() + ".json"))
-    try:
-        with open(filepath, "r") as jsonFile:
-            content = json.load(jsonFile)
-    except FileNotFoundError:
-        with open(filepath, "w") as jsonFile:
-            json.dump({"entries": [], "names": {}}, jsonFile)
-        with open(filepath, "r") as jsonFile:
-            content = json.load(jsonFile)
-    entries = content["entries"]
-    entries.append(new_entry)
-    content["names"] = get_names(content["entries"][-1], sh_names)
-    with open(filepath, "w") as jsonFile:
-        json.dump(content, jsonFile)
-    return content["entries"]
 
 
 def get_names(totals: Dict, sh_names: Dict) -> Dict:
@@ -213,38 +253,3 @@ def get_names(totals: Dict, sh_names: Dict) -> Dict:
             except (ValueError, KeyError, AttributeError):
                 names.update({entry: entry})
     return names
-
-
-class LegacySmartHomeLogData:
-    def __init__(self) -> None:
-        self.all_received_topics: Dict = {}
-
-    def update(self) -> Tuple[Dict, Dict]:
-        sh_dict: Dict = {}
-        sh_names: Dict = {}
-        try:
-            InternalBrokerClient("smart-home-logging", self.on_connect, self.on_message).start_finite_loop()
-            for topic, payload in self.all_received_topics.items():
-                if re.search("openWB/LegacySmartHome/config/get/Devices/[1-9]/device_configured", topic) is not None:
-                    if decode_payload(payload) == 1:
-                        index = get_index(topic)
-                        sh_dict.update({f"sh{index}": {}})
-                        for topic, payload in self.all_received_topics.items():
-                            if f"openWB/LegacySmartHome/Devices/{index}/Wh" == topic:
-                                sh_dict[f"sh{index}"].update({"imported": decode_payload(payload), "exported": 0})
-                            for sensor_id in range(0, 3):
-                                if f"openWB/LegacySmartHome/Devices/{index}/TemperatureSensor{sensor_id}" == topic:
-                                    sh_dict[f"sh{index}"].update({f"temp{sensor_id}": decode_payload(payload)})
-                        for topic, payload in self.all_received_topics.items():
-                            if f"openWB/LegacySmartHome/config/get/Devices/{index}/device_name" == topic:
-                                sh_names.update({f"sh{index}": decode_payload(payload)})
-        except Exception:
-            log.exception("Fehler im Werte-Logging-Modul für SmartHome")
-        finally:
-            return sh_dict, sh_names
-
-    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
-        client.subscribe("openWB/LegacySmartHome/#", 2)
-
-    def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
-        self.all_received_topics.update({msg.topic: msg.payload})

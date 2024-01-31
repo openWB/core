@@ -71,15 +71,27 @@ class HistoricSummary {
 		this._items[key] = createPowerItem(key)
 	}
 	setEnergy(cat: string, val: number) {
+		if (!this.keys().includes(cat)) {
+			this.addItem(cat)
+		}
 		this._items[cat].energy = val
 	}
 	setEnergyPv(cat: string, val: number) {
+		if (!this.keys().includes(cat)) {
+			this.addItem(cat)
+		}
 		this._items[cat].energyPv = val
 	}
 	setEnergyBat(cat: string, val: number) {
+		if (!this.keys().includes(cat)) {
+			this.addItem(cat)
+		}
 		this._items[cat].energyBat = val
 	}
 	setPvPercentage(cat: string, val: number) {
+		if (!this.keys().includes(cat)) {
+			this.addItem(cat)
+		}
 		this._items[cat].pvPercentage = val
 	}
 	calculateHouseEnergy() {
@@ -129,3 +141,5 @@ export function correctHouseConsumption() {
 	usageSummary.house.power =
 		usageSummary.house.power - usageSummary.devices.power
 }
+
+export const currentTime = ref(new Date())

@@ -1,6 +1,8 @@
 import logging
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Tuple, Union
+from modules.common.fault_state import FaultState
+from modules.common.hardware_check import SeriesHardwareCheckMixin
 
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
 from modules.common import mpm3pm, sdm
@@ -26,13 +28,15 @@ EVSE_ID_ONE_BUS_CP1 = [2]
 EVSE_MIN_FIRMWARE = 7
 
 
-class ClientHandler:
+class ClientHandler(SeriesHardwareCheckMixin):
     def __init__(self,
                  local_charge_point_num: int,
                  client: Union[ModbusSerialClient_, ModbusTcpClient_],
-                 evse_ids: List[int]) -> None:
+                 evse_ids: List[int],
+                 fault_state: FaultState) -> None:
         self.client = client
         self.local_charge_point_num = local_charge_point_num
+        self.fault_state = fault_state
         self.evse_client = self._evse_factory(client, evse_ids)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
                                                    client)
@@ -67,47 +71,6 @@ class ClientHandler:
                     log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
-    OPEN_TICKET = " Bitte nehme über die Support-Funktion in den Einstellungen Kontakt mit uns auf."
-    USB_ADAPTER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. "
-                          f"Vermutlich ist der USB-Adapter defekt. {OPEN_TICKET}")
-    METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
-                     f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
-    METER_BROKEN = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
-                    f"Der Zähler ist defekt. {OPEN_TICKET}")
-    EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. "
-                   f"Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. {OPEN_TICKET}")
-
-    def check_hardware(self):
-        try:
-            if self.evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
-                evse_check_passed = True
-            else:
-                evse_check_passed = False
-        except Exception:
-            evse_check_passed = False
-        meter_check_passed, meter_error_msg = self.check_meter()
-        if meter_check_passed is False and evse_check_passed is False:
-            raise Exception(self.USB_ADAPTER_BROKEN)
-        if meter_check_passed is False:
-            raise Exception(meter_error_msg)
-        if meter_error_msg == self.METER_BROKEN:
-            log.error(self.METER_BROKEN)
-        if evse_check_passed is False:
-            raise Exception(self.EVSE_BROKEN)
-
-    def check_meter(self):
-        def valid_voltage(voltage) -> bool:
-            return 200 < voltage < 250
-        try:
-            voltages = self.meter_client.get_voltages()
-            if ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
-                    (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
-                    (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
-                return True, None
-            else:
-                return True, self.METER_BROKEN
-        except Exception:
-            return False, self.METER_PROBLEM
 
     def get_pins_phase_switch(self, new_phases: int) -> Tuple[int, int]:
         # return gpio_cp, gpio_relay
@@ -125,6 +88,7 @@ class ClientHandler:
 
 
 def client_factory(local_charge_point_num: int,
+                   fault_state: FaultState,
                    created_client_handler: Optional[ClientHandler] = None) -> ClientHandler:
     tty_devices = list(Path("/dev/serial/by-path").glob("*"))
     log.debug("tty_devices"+str(tty_devices))
@@ -165,4 +129,4 @@ def client_factory(local_charge_point_num: int,
                 if detected_device:
                     break
         log.error("LP"+str(local_charge_point_num)+" Device: "+str(device))
-    return ClientHandler(local_charge_point_num, serial_client, evse_ids)
+    return ClientHandler(local_charge_point_num, serial_client, evse_ids, fault_state)

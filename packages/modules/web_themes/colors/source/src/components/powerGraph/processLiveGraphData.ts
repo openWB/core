@@ -105,14 +105,18 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 	} else {
 		values.batterySoc = 0
 	}
+	if (data['ev0-soc']) {
+		values.soc0 = +data['ev0-soc']
+	}
+	if (data['ev1-soc']) {
+		values.soc1 = +data['ev1-soc']
+	}
+
 	values.charging = +data['charging-all']
 	// charge points - we only show a maximum of 10 chargepoints in the graph
 	for (let i = 0; i < 10; i++) {
-		if (data['cp' + i + '-power']) {
-			values['cp' + i] = +data['cp' + i + '-power']
-		} else {
-			values['cp' + i] = 0
-		}
+		const idx = 'cp' + i
+		values[idx] = +data[idx + '-power'] ?? 0
 	}
 	values.selfUsage = values.pv - values.evuOut
 	if (values.selfUsage < 0) {

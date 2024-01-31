@@ -16,8 +16,8 @@ class VehicleUpdateData:
 @dataclass
 class GeneralVehicleConfig:
     use_soc_from_cp: bool = False
-    request_interval_charging: int = 5
-    request_interval_not_charging: int = 720
+    request_interval_charging: int = 300
+    request_interval_not_charging: int = 43200
     request_only_plugged: bool = False
 
 
