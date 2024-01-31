@@ -156,16 +156,16 @@ class InternalChargepointHandler:
             # Allgemeine Fehlermeldungen an LP 1:
             self.cp0_client_handler = client_factory(0, fault_state_info_cp0)
             self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode, global_data, parent_cp0, hierarchy_id_cp0)
-        with SingleComponentUpdateContext(fault_state_info_cp1):
-            if mode == InternalChargepointMode.DUO.value:
+            self.init_gpio()
+        if mode == InternalChargepointMode.DUO.value:
+            with SingleComponentUpdateContext(fault_state_info_cp1):
                 log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
                 self.cp1_client_handler = client_factory(1, fault_state_info_cp1, self.cp0_client_handler)
                 self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
                                               global_data, parent_cp1, hierarchy_id_cp1)
-            else:
-                self.cp1 = None
-                self.cp1_client_handler = None
-            self.init_gpio()
+        else:
+            self.cp1 = None
+            self.cp1_client_handler = None
 
     def init_gpio(self) -> None:
         GPIO.setwarnings(False)
