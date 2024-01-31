@@ -18,7 +18,7 @@ def get_meter_phases(id: int, meters: List[int]) -> List[int]:
     return next(meters[i+1:i+4] for i in reversed(range(0, len(meters), 4)) if meters[i] == id)
 
 
-def read_counter(client: modbus.ModbusTcpClient_) -> Tuple[int, List[int]]:
+def read_counter(client: modbus.ModbusTcpClient_, modbus_id: int) -> Tuple[int, List[int]]:
     log.debug("Beginning EVU update")
     # 40130,40131, 40132 je Phasenleistung in Watt
     # max 7 Leistungsmesser verbaut ab 40105, typ 1 ist evu
@@ -26,7 +26,7 @@ def read_counter(client: modbus.ModbusTcpClient_) -> Tuple[int, List[int]]:
     # bei den meisten e3dc auf 40128
     # farm haben typ 5, normale e3dc haben nur typ 1 und keinen typ 5
     # bei farm ist typ 1 vorhanden aber liefert immer 0
-    meters = list(map(int, client.read_holding_registers(40104, [ModbusDataType.INT_16] * 28, unit=1)))
+    meters = list(map(int, client.read_holding_registers(40104, [ModbusDataType.INT_16] * 28, unit=modbus_id)))
     log.debug("meters: %s", meters)
     try:
         powers = get_meter_phases(5, meters)
@@ -42,14 +42,16 @@ def read_counter(client: modbus.ModbusTcpClient_) -> Tuple[int, List[int]]:
 class E3dcCounter:
     def __init__(self,
                  device_id: int,
-                 component_config: E3dcCounterSetup) -> None:
+                 component_config: E3dcCounterSetup,
+                 modbus_id: int) -> None:
         self.component_config = component_config
+        self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, client: modbus.ModbusTcpClient_) -> None:
-        power, powers = read_counter(client)
+        power, powers = read_counter(client, self.__modbus_id)
         imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             imported=imported,

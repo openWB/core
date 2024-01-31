@@ -1362,10 +1362,21 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
                 payload = decode_payload(payload)
-                if payload.get("type") == "powerdog" and "modbus_id" not in payload["configuration"]:
-                    payload["configuration"].update({"modbus_id": 1})
                 if payload.get("type") == "alpha_ess" and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 85})
+                if payload.get("type") == "kostal_plenticore" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 71})
+                if payload.get("type") == "kostal_sem" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 71})
+                if payload.get("type") == "saxpower" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 64})
+
+                # modules with modbus_id 1
+                modified_modules = ["powerdog", "carlo_gavazzi", "e3dc", "janitza", "siemens", "siemens_sentron"]
+                for i in modified_modules:
+                    if payload.get("type") == i and "modbus_id" not in payload["configuration"]:
+                        payload["configuration"].update({"modbus_id": 1})
+
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 41)
