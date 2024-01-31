@@ -6,7 +6,7 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import RcrState
 from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.common.modbus import ModbusTcpClient_
-from modules.ripple_control_receivers.io_lan_hf.config import IoLanRcr
+from modules.ripple_control_receivers.dimm_kit.config import IoLanRcr
 
 log = logging.getLogger(__name__)
 
