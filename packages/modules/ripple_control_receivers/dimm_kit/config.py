@@ -10,8 +10,8 @@ class IoLanRcrConfiguration:
 
 class IoLanRcr:
     def __init__(self,
-                 name: str = "IO-LAN-Modul HF6208, HF6508",
-                 type: str = "io_lan_hf",
+                 name: str = "Dimm-Kit",
+                 type: str = "dimm_kit",
                  configuration: IoLanRcrConfiguration = None) -> None:
         self.name = name
         self.type = type
