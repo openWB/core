@@ -61,8 +61,9 @@ class PvAll:
                     try:
                         if "pv" in module:
                             module_data = data.data.pv_data[module].data
-                            self.data.get.power += module_data.get.power
-                            self.data.get.exported += module_data.get.exported
+                            if module_data.get.fault_state < 2:
+                                self.data.get.power += module_data.get.power
+                                self.data.get.exported += module_data.get.exported
                     except Exception:
                         log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
                 Pub().pub("openWB/set/pv/get/power", self.data.get.power)

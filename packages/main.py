@@ -13,7 +13,7 @@ from control.chargelog.chargelog import calculate_charge_cost
 
 from helpermodules.changed_values_handler import ChangedValuesHandler
 from helpermodules.measurement_logging.update_daily_yields import update_daily_yields
-from helpermodules.measurement_logging.write_log import save_log
+from helpermodules.measurement_logging.write_log import LogType, save_log
 from modules import loadvars
 from modules import configuration
 from helpermodules import timecheck, update_config
@@ -87,7 +87,7 @@ class HandlerAlgorithm:
         """
         try:
             changed_values_handler.store_inital_values()
-            totals = save_log("daily")
+            totals = save_log(LogType.DAILY)
             update_daily_yields(totals)
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
@@ -135,7 +135,7 @@ class HandlerAlgorithm:
     @exit_after(10)
     def handler_midnight(self):
         try:
-            save_log("monthly")
+            save_log(LogType.MONTHLY)
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -162,7 +162,6 @@ class HandlerAlgorithm:
 
 
 def schedule_jobs():
-    [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
     [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(0, 60, 5)]
@@ -172,6 +171,7 @@ def schedule_jobs():
     schedule.every().day.at("00:00:00").do(handler.handler_midnight).tag("algorithm")
     schedule.every().day.at(f"0{randrange(0, 5)}:{randrange(0, 59):02d}:{randrange(0, 59):02d}").do(
         handler.handler_random_nightly)
+    [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
 
 
 try:

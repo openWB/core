@@ -84,9 +84,9 @@ def __refresh_token(token: TeslaSocToken) -> TeslaSocToken:
 
 
 def __get_vehicle_id(index: int, token: TeslaSocToken) -> str:
-    vehicles = __request_data('vehicles', token)
+    products = __request_data('products', token)
     try:
-        vehicle_id = str(json.loads(vehicles)["response"][index]["id"])
+        vehicle_id = str(json.loads(products)["response"][index]["id"])
         log.debug("vehicle_id for entry %d: %s" % (index, vehicle_id))
     except IndexError:
         raise Exception("Zur Tesla-ID "+str(index)+" konnte kein Fahrzeug im Account gefunden werden.")

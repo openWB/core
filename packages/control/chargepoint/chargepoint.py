@@ -114,11 +114,14 @@ class Chargepoint(ChargepointRfidMixin):
         state = True
         message = None
         general_data = data.data.general_data.data
-        if general_data.ripple_control_receiver.configured:
-            if (general_data.ripple_control_receiver.r1_active or
-                    general_data.ripple_control_receiver.r2_active):
+        if general_data.ripple_control_receiver.module:
+            if general_data.ripple_control_receiver.get.override_value == 0:
                 state = False
                 message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
+            elif general_data.ripple_control_receiver.get.fault_state == 2:
+                state = False
+                message = ("Ladepunkt gesperrt, da der Rundsteuerempfänger ein Problem meldet. "
+                           "Bitte im Status des RSE nachsehen.")
         return state, message
 
     def _is_loadmanagement_available(self) -> Tuple[bool, Optional[str]]:
@@ -547,19 +550,17 @@ class Chargepoint(ChargepointRfidMixin):
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
             if self.data.set.log.imported_since_plugged != 0:
-                no_switch = False
                 if charging_ev.ev_template.data.prevent_phase_switch:
                     log.info(f"Phasenumschaltung an Ladepunkt {self.num} nicht möglich, da bei EV"
                              f"{charging_ev.num} nach Ladestart nicht mehr umgeschaltet werden darf.")
-                    no_switch = True
-                elif self.cp_ev_support_phase_switch() is False:
-                    log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
-                    no_switch = True
-                if no_switch:
                     if self.data.get.phases_in_use != 0:
                         phases = self.data.get.phases_in_use
                     else:
                         phases = self.data.control_parameter.phases
+                elif self.cp_ev_support_phase_switch() is False:
+                    # sonst passt die Phasenzahl nicht bei Autos, die eine Phase weg schalten.
+                    log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
+                    phases = phases
         if phases != self.data.control_parameter.phases:
             self.data.control_parameter.phases = phases
         return phases

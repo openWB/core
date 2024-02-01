@@ -3,7 +3,6 @@ import threading
 from typing import List
 
 from control import data
-from modules import ripple_control_receiver
 from modules.utils import wait_for_module_update_completed
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
@@ -30,6 +29,7 @@ class Loadvars:
                 data.data.copy_module_data()
             wait_for_module_update_completed(self.event_module_update_completed, topic)
             thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
+            thread_handler(self._set_general(), data.data.general_data.data.control_interval/3)
             wait_for_module_update_completed(self.event_module_update_completed, topic)
             data.data.pv_all_data.calc_power_for_all_components()
             data.data.bat_all_data.calc_power_for_all_components()
@@ -91,8 +91,22 @@ class Loadvars:
         try:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen,
             # da die Daten erstmalig ins data-Modul kopiert werden müssen.
-            if data.data.general_data.data.ripple_control_receiver.configured:
-                threads.append(threading.Thread(target=ripple_control_receiver.read, args=(), name="get general"))
+            if data.data.general_data.data.ripple_control_receiver.module:
+                threads.append(
+                    threading.Thread(target=data.data.general_data.data.ripple_control_receiver.module.update,
+                                     args=(), name="get ripple control receiver"))
+        except Exception:
+            log.exception("Fehler im loadvars-Modul")
+        finally:
+            return threads
+
+    def _set_general(self) -> List[threading.Thread]:
+        threads = []  # type: List[threading.Thread]
+        try:
+            if data.data.general_data.data.ripple_control_receiver.module:
+                threads.append(threading.Thread(target=update_values,
+                               args=(data.data.general_data.data.ripple_control_receiver.module,),
+                               name="set ripple control receiver"))
         except Exception:
             log.exception("Fehler im loadvars-Modul")
         finally:

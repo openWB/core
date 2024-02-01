@@ -139,6 +139,29 @@ class ModbusClient:
                              **kwargs):
         return self.__read_registers(self.delegate.read_input_registers, address, types, byteorder, wordorder, **kwargs)
 
+    @overload
+    def read_coils(self, address: int, types: Iterable[ModbusDataType], byteorder: Endian = Endian.Big,
+                   wordorder: Endian = Endian.Big,
+                   **kwargs) -> List[bool]:
+        pass
+
+    @overload
+    def read_coils(self, address: int, count: int, **kwargs) -> bool:
+        pass
+
+    def read_coils(self, address: int, count: int, **kwargs):
+        try:
+            response = self.delegate.read_coils(address, count, **kwargs)
+            if response.isError():
+                raise Exception(__name__+" "+str(response))
+            return response.bits[0] if count == 1 else response.bits[:count]
+        except pymodbus.exceptions.ConnectionException as e:
+            e.args += (NO_CONNECTION.format(self.address, self.port),)
+            raise e
+        except pymodbus.exceptions.ModbusIOException as e:
+            e.args += (NO_VALUES.format(self.address, self.port),)
+            raise e
+
 
 class ModbusTcpClient_(ModbusClient):
     def __init__(self, address: str, port: int = 502):

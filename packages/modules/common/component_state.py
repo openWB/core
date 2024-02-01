@@ -169,3 +169,8 @@ class TariffState:
     def __init__(self,
                  prices: Optional[Dict[int, float]] = None) -> None:
         self.prices = prices
+
+
+class RcrState:
+    def __init__(self, override_value: float) -> None:
+        self.override_value = override_value
