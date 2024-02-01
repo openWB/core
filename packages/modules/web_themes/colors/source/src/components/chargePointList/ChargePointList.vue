@@ -21,7 +21,8 @@
 		</swiper-slide>
 	</swiper-container>
 	<!-- </div> -->
-	<CPSimpleList v-if="props.shortlist" />
+	<CPSimpleList v-if="props.shortlist" /> 
+	<!-- <CpSimpleList2 v-if="props.shortlist" /> -->
 </template>
 
 <script setup lang="ts">
@@ -34,6 +35,7 @@ import Swiper from 'swiper'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import type { SwiperContainer } from 'swiper/element'
+// import CpSimpleList2 from './cpSimpleList/CpSimpleList2.vue'
 
 let swiper: Swiper
 let swiperEl: SwiperContainer

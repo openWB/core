@@ -1,9 +1,9 @@
 <template>
-	<span class="d-flex flex-column align-items-center">
-		<span class="heading mt-1" :style="headingstyle">
+	<span class="d-flex flex-column align-items-center justify-content-center">
+		<span class="d-flex heading mt-1" :style="headingstyle">
 			{{ props.heading }}
 		</span>
-		<span class="mx-1">
+		<span class="d-flex mx-1">
 			<span
 				class="d-flex my-0 align-items-center content"
 				:style="contentstyle"

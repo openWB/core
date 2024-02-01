@@ -37,7 +37,7 @@ const topicsToSubscribe = [
 	'openWB/optional/et/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
-	'openWB/command/#',
+	// 'openWB/command/#',
 ]
 export function msgInit() {
 	mqttRegister(processMqttMessage)

@@ -1,9 +1,9 @@
 <template>
-	<div class="px-4 pt-3 mb-2 wb-subwidget m-0" :class="widgetwidth">
+	<div class="px-4 pt-2 mb-2 wb-subwidget m-0" :class="widgetwidth">
 		<div class="row p-0 m-0">
 			<div class="col p-0 m-0">
 				<div class="d-flex justify-content-between">
-					<h3 class="m-0 mb-2" :style="titlestyle">
+					<h3 class="d-flex m-0 mb-2" :style="titlestyle">
 						<slot name="title" />
 					</h3>
 
