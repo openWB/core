@@ -26,13 +26,13 @@ class FemsBat:
 
     def get_data_by_multiple_segement_regex_query(self):
         return self.session.get(
-            (f"http://{self.ip_address}:8084/rest/channel/{self._data}|_sum)/"
+            (f"http://{self.ip_address}:8084/rest/channel/({self._data}|_sum)/"
              "(Soc|DcChargeEnergy|DcDischargeEnergy|GridActivePower|ProductionActivePower|ConsumptionActivePower)"),
             timeout=2).json()
 
     def update(self) -> None:
         if self.version == FemsVersion.MULTIPLE_SEGMENT_REGEX_QUERY:
-            response = self.get_data_by_multiple_segement_regex_query(self.session)
+            response = self.get_data_by_multiple_segement_regex_query()
             for singleValue in response:
                 address = singleValue["address"]
                 if (address == self._data+"/Soc"):
