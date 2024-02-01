@@ -19,4 +19,7 @@ Wenn die Freischaltung mittels PIN, RFID oder MAC-Adresse erfolgen soll:
 
 - Einstellungen -> Optionale Hardware: **Identifikation aktivieren** + Speichern
 - unter Konfiguration -> Fahrzeuge -> gewünschtes Fahrzeug -> Zugeordnete ID-Tags: dem jeweiligen Fahrzeug **den ID-Tag (PIN/RFID-Tag/MAC-Adresse) zuweisen** + Speichern
-- unter Konfiguration -> Ladepunkte -> Ladepunkt-Profile -> im gewünschten Ladepunkt-Profil: **Freigabe durch ID-Tags aktivieren und die gültigen ID-Tags zuordnen** + Speichern
+- unter Konfiguration -> Ladepunkte -> Ladepunkt-Profile -> im gewünschten Ladepunkt-Profil: **Freigabe durch ID-Tags aktiviere** + Speichern
+
+Wenn die Tags an allen Ladepunkten genutzt werden dürfen, müssen die Tags nur bei den Fahrzeugen eingetragen werden. Sollen die Tags nur für bestimmte Ladepunkte nutzbar sein, müssen alle Tags in den jeweiligen Ladepunkt-Profilen hinterlegt werden. Damit lassen sich zB Kunden und Mitarbeiter-Parkplätze abbilden.
+- unter Konfiguration -> Ladepunkte -> Ladepunkt-Profile -> im gewünschten Ladepunkt-Profil: **die gültigen ID-Tags zuordnen** + Speichern
