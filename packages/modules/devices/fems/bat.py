@@ -49,15 +49,15 @@ class FemsBat:
                     haus = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
         else:
             response = self.session.get(
-                f"http://{self.ip_address}:8084/rest/channel/{self.data}/(Soc|DcChargeEnergy|DcDischargeEnergy)",
+                f"http://{self.ip_address}:8084/rest/channel/{self._data}/(Soc|DcChargeEnergy|DcDischargeEnergy)",
                 timeout=2).json()
             for singleValue in response:
                 address = singleValue["address"]
-                if (address == self.data+"/Soc"):
+                if (address == self._data+"/Soc"):
                     soc = singleValue["value"]
-                elif address == self.data+"/DcChargeEnergy":
+                elif address == self._data+"/DcChargeEnergy":
                     imported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
-                elif address == self.data+"/DcDischargeEnergy":
+                elif address == self._data+"/DcDischargeEnergy":
                     exported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
                 elif address == "_sum/GridActivePower":
                     grid = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
