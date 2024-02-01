@@ -1362,7 +1362,7 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
-                # modules with individual modbus_id for each component
+                # Module mit separater Modbus ID für jede Komponente
                 if payload.get("name") == "Sma Sunny Boy/Tripower Speicher"\
                         and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 3})
@@ -1383,14 +1383,14 @@ class UpdateConfig:
                 if payload.get("name") == "SMA Sunny Island Speicher" and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 3})
 
-                # modules with modbus_id=1 for device (same id for each component)
+                # Module mit Modbus ID=1 für Gerät (alle Komponenten haben die gleiche ID)
                 modified_modules = ["powerdog", "carlo_gavazzi", "e3dc",
                                     "janitza", "siemens", "siemens_sentron", "varta"]
                 for i in modified_modules:
                     if payload.get("type") == i and "modbus_id" not in payload["configuration"]:
                         payload["configuration"].update({"modbus_id": 1})
 
-                # modules with special modbus_id for device
+                # Module mit spezieller Modbus ID für Gerät
                 if payload.get("type") == "alpha_ess" and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 85})
                 if payload.get("type") == "kostal_plenticore" and "modbus_id" not in payload["configuration"]:
