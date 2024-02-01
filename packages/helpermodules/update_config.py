@@ -1360,8 +1360,33 @@ class UpdateConfig:
 
     def upgrade_datastore_40(self) -> None:
         def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
+                # modules with individual modbus_id for each component
+                if payload.get("name") == "Sma Sunny Boy/Tripower Speicher" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 3})
+                if payload.get("name") == "Sma Sunny Boy Smart Energy Speicher" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 3})
+                if payload.get("name") == "Sma Sunny Boy/Tripower Zähler" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 3})
+                if payload.get("name") == "Sma Sunny Boy/Tripower Wechselrichter" and "modbus_id" not in payload["configuration"]:
+                    if payload.get("configuration").get("version") == 1:
+                        payload["configuration"].update({"modbus_id": 1})
+                    elif payload.get("configuration").get("version") == 2:
+                        payload["configuration"].update({"modbus_id": 2})
+                    else:
+                        payload["configuration"].update({"modbus_id": 3})
+                if payload.get("name") == "SMA Sunny Island Speicher" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 3})
+
+                # modules with modbus_id=1 for device (same id for each component)
+                modified_modules = ["powerdog", "carlo_gavazzi", "e3dc",
+                                    "janitza", "siemens", "siemens_sentron", "varta"]
+                for i in modified_modules:
+                    if payload.get("type") == i and "modbus_id" not in payload["configuration"]:
+                        payload["configuration"].update({"modbus_id": 1})
+
+                # modules with special modbus_id for device
                 if payload.get("type") == "alpha_ess" and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 85})
                 if payload.get("type") == "kostal_plenticore" and "modbus_id" not in payload["configuration"]:
@@ -1370,12 +1395,6 @@ class UpdateConfig:
                     payload["configuration"].update({"modbus_id": 71})
                 if payload.get("type") == "saxpower" and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 64})
-
-                # modules with modbus_id 1
-                modified_modules = ["powerdog", "carlo_gavazzi", "e3dc", "janitza", "siemens", "siemens_sentron"]
-                for i in modified_modules:
-                    if payload.get("type") == i and "modbus_id" not in payload["configuration"]:
-                        payload["configuration"].update({"modbus_id": 1})
 
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
