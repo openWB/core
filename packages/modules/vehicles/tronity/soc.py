@@ -14,7 +14,8 @@ log = logging.getLogger(__name__)
 def create_vehicle(vehicle_config: TronityVehicleSoc, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
         return fetch_soc(vehicle_config.configuration, vehicle_update_data, vehicle)
-    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
+    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle,
+                               calc_while_charging=vehicle_config.configuration.calculate_soc)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=TronityVehicleSoc)
