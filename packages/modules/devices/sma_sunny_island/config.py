@@ -22,8 +22,8 @@ class SmaSunnyIsland:
 
 
 class SmaSunnyIslandBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 3):
+        self.modbus_id = modbus_id
 
 
 class SmaSunnyIslandBatSetup(ComponentSetup[SmaSunnyIslandBatConfiguration]):

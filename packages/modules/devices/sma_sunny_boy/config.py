@@ -23,8 +23,8 @@ class SmaSunnyBoy:
 
 
 class SmaSunnyBoyBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 3):
+        self.modbus_id = modbus_id
 
 
 class SmaSunnyBoyBatSetup(ComponentSetup[SmaSunnyBoyBatConfiguration]):
@@ -37,8 +37,8 @@ class SmaSunnyBoyBatSetup(ComponentSetup[SmaSunnyBoyBatConfiguration]):
 
 
 class SmaSunnyBoySmartEnergyBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 3):
+        self.modbus_id = modbus_id
 
 
 class SmaSunnyBoySmartEnergyBatSetup(ComponentSetup[SmaSunnyBoySmartEnergyBatConfiguration]):
@@ -51,8 +51,8 @@ class SmaSunnyBoySmartEnergyBatSetup(ComponentSetup[SmaSunnyBoySmartEnergyBatCon
 
 
 class SmaSunnyBoyCounterConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 3):
+        self.modbus_id = modbus_id
 
 
 class SmaSunnyBoyCounterSetup(ComponentSetup[SmaSunnyBoyCounterConfiguration]):
@@ -65,9 +65,12 @@ class SmaSunnyBoyCounterSetup(ComponentSetup[SmaSunnyBoyCounterConfiguration]):
 
 
 class SmaSunnyBoyInverterConfiguration:
-    def __init__(self, hybrid: bool = False, version: SmaInverterVersion = SmaInverterVersion.default):
+    def __init__(self, hybrid: bool = False,
+                 version: SmaInverterVersion = SmaInverterVersion.default,
+                 modbus_id: int = 3):
         self.hybrid = hybrid
         self.version = version
+        self.modbus_id = modbus_id
 
 
 class SmaSunnyBoyInverterSetup(ComponentSetup[SmaSunnyBoyInverterConfiguration]):

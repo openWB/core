@@ -22,8 +22,8 @@ class Studer:
 
 
 class StuderBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 60):
+        self.modbus_id = modbus_id
 
 
 class StuderBatSetup(ComponentSetup[StuderBatConfiguration]):
