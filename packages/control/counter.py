@@ -172,14 +172,16 @@ class Counter:
     def update_values_left(self, diffs) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
-            self.data.set.raw_power_left -= sum(diffs) * 230
+            average_voltage = sum(self.data.get.voltages)/len(self.data.get.voltages)
+            self.data.set.raw_power_left -= sum(diffs) * average_voltage
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.raw_power_left}W verbleibende Leistung')
 
     def update_surplus_values_left(self, diffs) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.surplus_power_left:
-            self.data.set.surplus_power_left -= sum(diffs) * 230
+            average_voltage = sum(self.data.get.voltages)/len(self.data.get.voltages)
+            self.data.set.surplus_power_left -= sum(diffs) * average_voltage
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
 
