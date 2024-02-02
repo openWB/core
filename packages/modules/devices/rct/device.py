@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import time
 from typing import Callable, Optional, List
 
 from helpermodules.cli import run_using_positional_cli_args
@@ -33,6 +34,7 @@ def create_device(device_config: Rct):
             raise
         finally:
             rct.close()
+            time.sleep(0.5)
 
     return ConfigurableDevice(
         device_config=device_config,
