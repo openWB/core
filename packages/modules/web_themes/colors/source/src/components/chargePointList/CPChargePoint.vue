@@ -175,12 +175,22 @@
 							@click="setSoc"
 						/>
 					</div>
+					<!-- ET Information -->
 					<div v-if="props.chargepoint.etActive" class="row m-1 p-0">
 						<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
 							<InfoItem heading="max. Preis:">
-								{{ props.chargepoint.etMaxPrice }} ct
+								{{
+									(Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(
+										1,
+									)
+								}}
+								ct
 							</InfoItem>
-							<InfoItem heading="akt. Preis:"> {{ currentPrice }} ct </InfoItem>
+							<InfoItem heading="akt. Preis:">
+								<span :style="currentPriceStyle"
+									>{{ currentPrice }} ct
+								</span></InfoItem
+							>
 						</div>
 					</div>
 				</div>
@@ -310,6 +320,11 @@ const soc = computed(() => {
 const cpNameStyle = computed(() => {
 	return { color: props.chargepoint.color }
 	// return { color: 'var(--color-fg)' }
+})
+const currentPriceStyle = computed(() => {
+	return props.chargepoint.etMaxPrice >= +currentPrice.value
+		? { color: 'var(--color-charging)' }
+		: { color: 'var(--color-menu)' }
 })
 const configmode = ref(false)
 const editSoc = ref(false)

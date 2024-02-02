@@ -24,12 +24,11 @@ class SingleComponentUpdateContext:
     def __enter__(self):
         log.debug("Update Komponente ['"+self.__fault_state.component_info.name+"']")
         if self.update_always:
-            self.__fault_state.fault_state = FaultStateLevel.NO_ERROR
-            self.__fault_state.fault_str = NO_ERROR
+            self.__fault_state.no_error()
         return None
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        MultiComponentUpdateContext.override_subcomponent_state(self.__fault_state, exception)
+        MultiComponentUpdateContext.override_subcomponent_state(self.__fault_state, exception, self.update_always)
         return True
 
 
@@ -72,7 +71,7 @@ class MultiComponentUpdateContext:
         self.__ignored_components.append(component)
 
     @staticmethod
-    def override_subcomponent_state(fault_state: FaultState, exception):
+    def override_subcomponent_state(fault_state: FaultState, exception, update_always: bool):
         active_context = getattr(
             MultiComponentUpdateContext.__thread_local, "active_context", None
         )  # type: Optional[MultiComponentUpdateContext]
@@ -83,4 +82,7 @@ class MultiComponentUpdateContext:
 
         if exception:
             fault_state.from_exception(exception)
+        elif update_always is False:
+            # Fehlerstatus nicht überschreiben
+            return
         fault_state.store_error()

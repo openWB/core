@@ -8,6 +8,7 @@ from typing import Dict, List
 from control import data
 from dataclass_utils import asdict
 from helpermodules.measurement_logging.process_log import CalculationType, analyse_percentage, process_entry
+from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -19,7 +20,7 @@ from helpermodules import timecheck
 # "data": {"range_charged": 34, "imported_since_mode_switch": 3400, "imported_since_plugged": 5000,
 #          "power": 110000, "costs": 3,42} }}
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("chargelog")
 
 
 def collect_data(chargepoint):
@@ -54,8 +55,8 @@ def collect_data(chargepoint):
                 log_data.prio = chargepoint.data.control_parameter.prio
                 log_data.rfid = chargepoint.data.set.rfid
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
-                log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
-                          f"counter {chargepoint.data.get.imported}")
+                # log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
+                #           f"counter {chargepoint.data.get.imported}")
                 log_data.range_charged = log_data.imported_since_mode_switch / \
                     charging_ev.ev_template.data.average_consump * 100
                 log_data.time_charged = timecheck.get_difference_to_now(log_data.timestamp_start_charging)[0]
@@ -304,29 +305,36 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
             reference = _get_reference_position(cp, create_log_entry)
             reference_time = get_reference_time(cp, reference)
             reference_entry = _get_reference_entry(content["entries"], reference_time)
-            energy_entry = process_entry(reference_entry, content["entries"][-1], CalculationType.ENERGY)
-            power_source_entry = analyse_percentage(energy_entry)
+            energy_entry = process_entry(reference_entry,
+                                         create_entry(LogType.DAILY, LegacySmartHomeLogData()),
+                                         CalculationType.ENERGY)
+            energy_source_entry = analyse_percentage(energy_entry)
+            log.debug(f"reference {reference}, reference_time {reference_time}, "
+                      f"cp.data.set.log.imported_since_mode_switch {cp.data.set.log.imported_since_mode_switch}, "
+                      f"cp.data.set.log.timestamp_start_charging {cp.data.set.log.timestamp_start_charging}")
+            log.debug(f"energy_source_entry {energy_source_entry}")
             if reference == ReferenceTime.START:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
             elif reference == ReferenceTime.MIDDLE:
                 charged_energy = (content["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
-                                  power_source_entry["cp"][f"cp{cp.num}"]["imported"])
+                                  energy_source_entry["cp"][f"cp{cp.num}"]["imported"])
             elif reference == ReferenceTime.END:
-                reference_start_position = _get_reference_position(cp, False)
-                if reference_start_position == ReferenceTime.START:
+                # timestamp_before_full_hour, dann gibt es schon ein Zwischenergebnis
+                if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
                     charged_energy = cp.data.set.log.imported_since_mode_switch
                 else:
-                    last_considered_entry = _get_reference_entry(
-                        content["entries"], timecheck.create_unix_timestamp_current_full_hour())
+                    log.debug(f"cp.data.get.imported {cp.data.get.imported}")
                     charged_energy = cp.data.get.imported - \
-                        last_considered_entry["cp"][f"cp{cp.num}"]["imported"]
+                        energy_entry["cp"][f"cp{cp.num}"]["imported"]
             else:
                 raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
-            log.debug(f'power source {power_source_entry["power_source"]}')
+            log.debug(f'power source {energy_source_entry["energy_source"]}')
             log.debug(f"charged_energy {charged_energy}")
-            cp.data.set.log.costs += _calc(power_source_entry["power_source"],
-                                           charged_energy,
-                                           (data.data.optional_data.et_module is not None))
+            costs = _calc(energy_source_entry["energy_source"],
+                          charged_energy,
+                          (data.data.optional_data.et_module is not None))
+            cp.data.set.log.costs += costs
+            log.debug(f"current costs {costs}, total costs {cp.data.set.log.costs}")
             Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
@@ -345,6 +353,7 @@ def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
         # Ladekosten für angefangene Stunde ermitteln
         return ReferenceTime.END
     else:
+        # Wenn der Ladevorgang erst innerhalb der letzten Stunde gestartet wurde, ist das das erste Zwischenergebnis.
         one_hour_back = timecheck.create_timestamp() - 3600
         if (one_hour_back - cp.data.set.log.timestamp_start_charging) < 0:
             return ReferenceTime.START
@@ -356,9 +365,9 @@ def get_reference_time(cp, reference_position):
     if reference_position == ReferenceTime.START:
         return cp.data.set.log.timestamp_start_charging
     elif reference_position == ReferenceTime.MIDDLE:
-        return timecheck.create_timestamp() - 3600
+        return timecheck.create_timestamp() - 3540
     elif reference_position == ReferenceTime.END:
-        return timecheck.create_unix_timestamp_current_full_hour()
+        return timecheck.create_unix_timestamp_current_full_hour() + 60
     else:
         raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference_position}")
 
@@ -370,9 +379,10 @@ def _get_reference_entry(entries: List[Dict], reference_time: float) -> Dict:
     else:
         # Tagesumbruch
         content = _get_yesterdays_daily_log()
-        for entry in reversed(content["entries"]):
-            if entry["timestamp"] < reference_time:
-                return entry
+        if content:
+            for entry in reversed(content["entries"]):
+                if entry["timestamp"] < reference_time:
+                    return entry
         else:
             return {}
 
@@ -394,20 +404,20 @@ def get_daily_log(day):
         return []
 
 
-def _calc(power_source: Dict[str, float], charged_energy_last_hour: float, et_active: bool) -> float:
+def _calc(energy_source: Dict[str, float], charged_energy_last_hour: float, et_active: bool) -> float:
     prices = data.data.general_data.data.prices
 
-    bat_costs = prices.bat * charged_energy_last_hour * power_source["bat"]
-    cp_costs = prices.cp * charged_energy_last_hour * power_source["cp"]
+    bat_costs = prices.bat * charged_energy_last_hour * energy_source["bat"]
+    cp_costs = prices.cp * charged_energy_last_hour * energy_source["cp"]
     if et_active:
-        grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_last_hour * power_source["grid"]
+        grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_last_hour * energy_source["grid"]
     else:
-        grid_costs = prices.grid * charged_energy_last_hour * power_source["grid"]
-    pv_costs = prices.pv * charged_energy_last_hour * power_source["pv"]
+        grid_costs = prices.grid * charged_energy_last_hour * energy_source["grid"]
+    pv_costs = prices.pv * charged_energy_last_hour * energy_source["pv"]
 
     log.debug(
-        f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({power_source["bat"]}%), {grid_costs}€ Netz '
-        f'({power_source["grid"]}%), {pv_costs}€ Pv ({power_source["pv"]}%)')
+        f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({energy_source["bat"]}%), {grid_costs}€ Netz '
+        f'({energy_source["grid"]}%), {pv_costs}€ Pv ({energy_source["pv"]}%)')
     return round(bat_costs + cp_costs + grid_costs + pv_costs, 4)
 
 

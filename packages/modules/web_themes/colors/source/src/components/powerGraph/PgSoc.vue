@@ -60,6 +60,7 @@ const myline = computed(() => {
 					props.order == 2 ? d.batSoc : d['soc' + cp.value.connectedVehicle],
 				) ?? yScale.value(0),
 		)
+
 	let p = path(graphData.data)
 	return p ? p : ''
 })

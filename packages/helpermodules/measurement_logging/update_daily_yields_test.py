@@ -9,20 +9,20 @@ def test_update_module_yields(daily_log_totals, mock_pub):
 
     # evaluation
     expected = {
-        "openWB/set/bat/2/get/daily_imported": 0,
-        "openWB/set/bat/2/get/daily_exported": 550.857,
-        "openWB/set/counter/0/get/daily_imported": 1492.011,
-        "openWB/set/counter/0/get/daily_exported": 0,
-        "openWB/set/chargepoint/get/daily_imported": 1919.625999999999,
-        "openWB/set/chargepoint/get/daily_exported": 0,
-        "openWB/set/chargepoint/4/get/daily_imported": 383.942,
-        "openWB/set/chargepoint/4/get/daily_exported": 0,
-        "openWB/set/chargepoint/5/get/daily_imported": 191.928,
-        "openWB/set/chargepoint/5/get/daily_exported": 0,
-        "openWB/set/chargepoint/6/get/daily_imported": 0,
-        "openWB/set/chargepoint/6/get/daily_exported": 0,
-        "openWB/set/pv/get/daily_exported": 251,
-        "openWB/set/pv/1/get/daily_exported": 251}
+        "openWB/set/bat/2/get/daily_imported": 0.0,
+        "openWB/set/bat/2/get/daily_exported": 550.0,
+        "openWB/set/counter/0/get/daily_imported": 1492.0,
+        "openWB/set/counter/0/get/daily_exported": 0.0,
+        "openWB/set/chargepoint/get/daily_imported": 1920.0,
+        "openWB/set/chargepoint/get/daily_exported": 0.0,
+        "openWB/set/chargepoint/4/get/daily_imported": 384.0,
+        "openWB/set/chargepoint/4/get/daily_exported": 0.0,
+        "openWB/set/chargepoint/5/get/daily_imported": 192.0,
+        "openWB/set/chargepoint/5/get/daily_exported": 0.0,
+        "openWB/set/chargepoint/6/get/daily_imported": 0.0,
+        "openWB/set/chargepoint/6/get/daily_exported": 0.0,
+        "openWB/set/pv/get/daily_exported": 251.0,
+        "openWB/set/pv/1/get/daily_exported": 251.0}
     for topic, value in expected.items():
         for call in mock_pub.mock_calls:
             try:

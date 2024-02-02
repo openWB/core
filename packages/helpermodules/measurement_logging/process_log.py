@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from helpermodules import timecheck
+from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
 
 log = logging.getLogger(__name__)
 
@@ -30,47 +31,43 @@ def string_to_int(value: str, default: int = 0) -> int:
         return default
 
 
-def get_totals(entries: List) -> Dict:
-    totals: Dict[str, Dict] = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}, "hc": {}}
-    prev_entry: Dict = {}
-    for group in totals.keys():
+def get_totals(entries: List, process_entries: bool = True) -> Dict:
+    """ Berechnet aus der übergebenen Liste "entries" die Summen (totals).
+        "process_entries" besagt, ob die Differenzen der einzelnen Einträge noch
+        berechnet werden müssen.
+    """
+    if process_entries:
+        entries = _process_entries(entries, CalculationType.ENERGY)
+    totals = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}, "hc": {}}
+    for totals_group in totals.keys():
         for entry in entries:
-            if group in entry:
-                for module in entry[group]:
+            if totals_group in entry:
+                for entry_module in entry[totals_group]:
                     try:
-                        if not prev_entry or module not in totals[group]:
-                            if group == "hc":
-                                totals[group][module] = {"imported": 0}
-                            elif group == "pv":
-                                totals[group][module] = {"exported": 0}
+                        if entry_module not in totals[totals_group]:
+                            if totals_group == "hc":
+                                totals[totals_group][entry_module] = {"energy_imported": 0.0}
+                            elif totals_group == "pv":
+                                totals[totals_group][entry_module] = {"energy_exported": 0.0}
                             else:
-                                totals[group][module] = {"imported": 0, "exported": 0}
-                        else:
-                            for key, value in entry[group][module].items():
-                                if key != "soc" and key != "grid" and "temp" not in key:
-                                    if value == "":
-                                        # Manchmal fehlen Werte im alten Log
-                                        value = 0
-                                    try:
-                                        prev_value = prev_entry[group][module][key]
-                                    # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden
-                                    # die Werte zusammen addiert.
-                                    except KeyError:
-                                        prev_value = entry[group][module][key]
-                                    if prev_value == "":
-                                        # Manchmal fehlen Werte im alten Log
-                                        prev_value = 0
-                                    # avoid floating point issues with using Decimal
-                                    value = (Decimal(str(value))
-                                             - Decimal(str(prev_value))
-                                             + Decimal(str(totals[group][module][key])))
-                                    value = f'{value: f}'
-                                    # remove trailing zeros
-                                    totals[group][module][key] = string_to_float(
-                                        value) if "." in value else string_to_int(value)
+                                totals[totals_group][entry_module] = {"energy_imported": 0.0, "energy_exported": 0.0}
+                                if totals_group == "counter" and "grid" in entry[totals_group][entry_module]:
+                                    totals[totals_group][entry_module]["grid"] = entry[
+                                        totals_group][entry_module]["grid"]
+                        for entry_module_key, entry_module_value in entry[totals_group][entry_module].items():
+                            if "grid" != entry_module_key and entry_module_key in totals[totals_group][entry_module]:
+                                # avoid floating point issues with using Decimal
+                                value = (Decimal(str(totals[totals_group][entry_module][entry_module_key]))
+                                         + Decimal(str(entry_module_value * 1000)))  # totals in Wh!
+                                value.quantize(Decimal('0.001'))
+                                value = f'{value: f}'
+                                # remove trailing zeros
+                                totals[totals_group][entry_module][entry_module_key] = string_to_float(
+                                    value) if "." in value else string_to_int(value)
+
                     except Exception:
-                        log.exception(f"Fehler beim Berechnen der Summe von {module}")
-            prev_entry = entry
+                        log.exception(f"Fehler beim Berechnen der Summe von {entry_module}; "
+                                      f"group:{totals_group}, module:{entry_module}, key:{entry_module_key}")
     return totals
 
 #     {"entries": [
@@ -114,7 +111,7 @@ def get_totals(entries: List) -> Dict:
 #                 },
 #                 ... (dynamisch, je nach Anzahl konfigurierter Geräte)
 #             },
-#             "power_source": {"grid": %, "pv": %, "bat": %, "cp": %}
+#             "energy_source": {"grid": %, "pv": %, "bat": %, "cp": %}
 #         }],
 #         "totals": {
 #             {'bat': {'all': {'exported': 0, 'imported': 175.534},
@@ -128,7 +125,7 @@ def get_totals(entries: List) -> Dict:
 #             'ev': {'ev1': {}},
 #             'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}},
 #             'sh': { 'sh1': {'exported': 123, 'imported': 123}},
-#             "power_source": {"grid": %, "pv": %, "bat": %, "cp": %}
+#             "energy_source": {"grid": %, "pv": %, "bat": %, "cp": %}
 #         },
 #         "names": {
 #             "counter0": "Mein EVU-Zähler",
@@ -140,8 +137,9 @@ def get_totals(entries: List) -> Dict:
 
 def get_daily_log(date: str):
     data = _collect_daily_log_data(date)
-    data = _process_entries(data, CalculationType.ALL)
-    data = _analyse_power_source(data)
+    data["entries"] = _process_entries(data["entries"], CalculationType.ALL)
+    data["totals"] = get_totals(data["entries"], False)
+    data = _analyse_energy_source(data)
     return data
 
 
@@ -149,15 +147,19 @@ def _collect_daily_log_data(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(date+".json")), "r") as json_file:
             log_data = json.load(json_file)
-            try:
-                next_date = timecheck.get_relative_date_string(date, day_offset=1)
-                with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(next_date+".json")),
-                          "r") as next_json_file:
-                    next_log_data = json.load(next_json_file)
-                    log_data["entries"].append(next_log_data["entries"][0])
-            except FileNotFoundError:
-                pass
-            log_data["totals"] = get_totals(log_data["entries"])
+            if date == timecheck.create_timestamp_YYYYMMDD():
+                # beim aktuellen Tag den aktuellen Datensatz ergänzen
+                log_data["entries"].append(create_entry(LogType.DAILY, LegacySmartHomeLogData()))
+            else:
+                # bei älteren als letzten Datensatz den des nächsten Tags
+                try:
+                    next_date = timecheck.get_relative_date_string(date, day_offset=1)
+                    with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(next_date+".json")),
+                              "r") as next_json_file:
+                        next_log_data = json.load(next_json_file)
+                        log_data["entries"].append(next_log_data["entries"][0])
+                except FileNotFoundError:
+                    pass
     except FileNotFoundError:
         log_data = {"entries": [], "totals": {}, "names": {}}
     return log_data
@@ -165,8 +167,9 @@ def _collect_daily_log_data(date: str):
 
 def get_monthly_log(date: str):
     data = _collect_monthly_log_data(date)
-    data = _process_entries(data, CalculationType.ENERGY)
-    data = _analyse_power_source(data)
+    data["entries"] = _process_entries(data["entries"], CalculationType.ENERGY)
+    data["totals"] = get_totals(data["entries"], False)
+    data = _analyse_energy_source(data)
     return data
 
 
@@ -196,8 +199,6 @@ def _collect_monthly_log_data(date: str):
                     log_data["entries"].append(next_log_data["entries"][0])
             except FileNotFoundError:
                 pass
-        # calculate totals
-        log_data["totals"] = get_totals(log_data["entries"])
     except FileNotFoundError:
         log_data = {"entries": [], "totals": {}, "names": {}}
     return log_data
@@ -205,8 +206,9 @@ def _collect_monthly_log_data(date: str):
 
 def get_yearly_log(year: str):
     data = _collect_yearly_log_data(year)
-    data = _process_entries(data, CalculationType.ENERGY)
-    data = _analyse_power_source(data)
+    data["entries"] = _process_entries(data["entries"], CalculationType.ENERGY)
+    data["totals"] = get_totals(data["entries"], False)
+    data = _analyse_energy_source(data)
     return data
 
 
@@ -279,15 +281,15 @@ def _collect_yearly_log_data(year: str):
         except Exception:
             log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für Monat {next_date}")
 
-    # calculate totals and return our data
-    return {"entries": entries, "totals": get_totals(entries), "names": names}
+    # return our data
+    return {"entries": entries, "names": names}
 
 
-def _analyse_power_source(data) -> Dict:
+def _analyse_energy_source(data) -> Dict:
     if data:
         for i in range(0, len(data["entries"])):
             data["entries"][i] = analyse_percentage(data["entries"][i])
-        data["totals"] = analyse_percentage(data["totals"])
+        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
     return data
 
 
@@ -308,26 +310,52 @@ def analyse_percentage(entry):
                 grid_exported = counter["energy_exported"]
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
         try:
-            entry["power_source"] = {"grid": format(grid_imported / consumption),
-                                     "pv": format((pv - grid_exported - bat_imported) / consumption),
-                                     "bat": format(bat_exported/consumption),
-                                     "cp": format(cp_exported/consumption)}
+            entry["energy_source"] = {
+                "grid": format(grid_imported / consumption),
+                "pv": format((pv - grid_exported - bat_imported) / consumption),
+                "bat": format(bat_exported/consumption),
+                "cp": format(cp_exported/consumption)}
         except ZeroDivisionError:
-            entry["power_source"] = {"power_source": {"grid": 0, "pv": 0, "bat": 0, "cp": 0}}
+            entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
+        for source in ("grid", "pv", "bat", "cp"):
+            if "all" in entry["hc"].keys():
+                value = (Decimal(str(entry["hc"]["all"]["energy_imported"])) *
+                         Decimal(str(entry["energy_source"][source]))).quantize(Decimal('0.001'))  # limit precision
+                value = f'{value: f}'
+                value = string_to_float(value) if "." in value else string_to_int(value)
+                entry["hc"]["all"][f"energy_imported_{source}"] = value
+            if "all" in entry["cp"].keys():
+                value = (Decimal(str(entry["cp"]["all"]["energy_imported"])) *
+                         Decimal(str(entry["energy_source"][source]))).quantize(Decimal('0.001'))  # limit precision
+                value = f'{value: f}'
+                value = string_to_float(value) if "." in value else string_to_int(value)
+                entry["cp"]["all"][f"energy_imported_{source}"] = value
     except Exception:
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
     finally:
         return entry
 
 
-def _process_entries(data, calculation):
-    if data and len(data["entries"]) > 0:
-        for i in range(0, len(data["entries"])-1):
-            entry = data["entries"][i]
-            next_entry = data["entries"][i+1]
-            data["entries"][i] = process_entry(entry, next_entry, calculation)
-        data["entries"].pop()
-    return data
+def analyse_percentage_totals(entries, totals):
+    for source in ("grid", "pv", "bat", "cp"):
+        totals["hc"]["all"].update({f"energy_imported_{source}": 0})
+        totals["cp"]["all"].update({f"energy_imported_{source}": 0})
+        for entry in entries:
+            if "all" in entry["hc"].keys():
+                totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"][f"energy_imported_{source}"]*1000
+            if "all" in entry["cp"].keys():
+                totals["cp"]["all"][f"energy_imported_{source}"] += entry["cp"]["all"][f"energy_imported_{source}"]*1000
+    return totals
+
+
+def _process_entries(entries: List, calculation: CalculationType):
+    if entries and len(entries) > 0:
+        for i in range(0, len(entries)-1):
+            entry = entries[i]
+            next_entry = entries[i+1]
+            entries[i] = process_entry(entry, next_entry, calculation)
+        entries.pop()
+    return entries
 
 
 def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
@@ -354,32 +382,58 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                             next_value_exported = next_entry[type][module]["exported"]
                         except KeyError:
                             next_value_exported = value_exported
-                        average_power = _calculate_average_power(time_diff, value_imported, next_value_imported,
-                                                                 value_exported, next_value_exported)
                         if calculation in [CalculationType.POWER, CalculationType.ALL]:
+                            if next_value_imported < value_imported or next_value_exported < value_exported:
+                                # do not calculate as we have a backwards jump in our meter value!
+                                average_power = 0
+                            else:
+                                average_power = _calculate_average_power(
+                                    time_diff, value_imported / 1000, next_value_imported / 1000,
+                                    value_exported / 1000, next_value_exported / 1000)
                             new_data.update({
                                 "power_average": average_power,
                                 "power_imported": average_power if average_power >= 0 else 0,
                                 "power_exported": average_power * -1 if average_power < 0 else 0
                             })
                         if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
+                            if next_value_imported < value_imported:
+                                # do not calculate as we have a backwards jump in our meter value!
+                                energy_imported = 0
+                            else:
+                                energy_imported = _calculate_energy_difference(value_imported / 1000,
+                                                                               next_value_imported / 1000)
+                            if next_value_exported < value_exported:
+                                # do not calculate as we have a backwards jump in our meter value!
+                                energy_exported = 0
+                            else:
+                                energy_exported = _calculate_energy_difference(value_exported / 1000,
+                                                                               next_value_exported / 1000)
                             new_data.update({
-                                "energy_imported": _calculate_energy_difference(value_imported, next_value_imported),
-                                "energy_exported": _calculate_energy_difference(value_exported, next_value_exported)
+                                "energy_imported": energy_imported,
+                                "energy_exported": energy_exported
                             })
                     entry[type][module].update(new_data)
                 except Exception:
                     log.exception("Fehler beim Berechnen der Leistung")
+            # next_entry may contain new modules, we add them here
+            for module in next_entry[type].keys():
+                if module not in entry[type].keys():
+                    log.warning(f"adding module {module} from next entry")
+                    entry[type].update({module: {"energy_imported": 0.0, "energy_exported": 0.0}})
     return entry
 
 
 def _calculate_energy_difference(current_value: float, next_value: float) -> float:
-    return (next_value - current_value) / 1000
+    value = (Decimal(str(next_value)) - Decimal(str(current_value)))
+    value = value.quantize(Decimal('0.001'))  # limit precision
+    value = f'{value: f}'
+    return string_to_float(value) if "." in value else string_to_int(value)
 
 
 def _calculate_average_power(time_diff: float, current_imported: float = 0, next_imported: float = 0,
                              current_exported: float = 0, next_exported: float = 0) -> float:
-    energy_diff = next_imported - current_imported - (next_exported - current_exported)
-    energy_diff_ws = energy_diff * 3600  # Ws
-    power = energy_diff_ws / time_diff  # W
-    return power / 1000  # kW
+    power = (Decimal(str(next_imported)) - Decimal(str(current_imported))
+             - (Decimal(str(next_exported)) - Decimal(str(current_exported)))) * Decimal(str(3600 / time_diff))  # Ws
+    power = power.quantize(Decimal('0.001'))  # limit precision
+    power = f'{power: f}'
+    return string_to_float(power) if "." in power else string_to_int(power)

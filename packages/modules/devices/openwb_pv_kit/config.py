@@ -8,7 +8,7 @@ class PvKitConfiguration:
 
 class PvKit:
     def __init__(self,
-                 name: str = "PV-Kit",
+                 name: str = "openWB PV-Kit",
                  type: str = "openwb_pv_kit",
                  id: int = 0,
                  configuration: PvKitConfiguration = None) -> None:
@@ -25,7 +25,7 @@ class PvKitInverterConfiguration:
 
 class PvKitInverterSetup(ComponentSetup[PvKitInverterConfiguration]):
     def __init__(self,
-                 name: str = "PV-Kit",
+                 name: str = "openWB PV-Kit",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: PvKitInverterConfiguration = None) -> None:

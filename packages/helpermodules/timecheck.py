@@ -86,8 +86,10 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
             day_change = begin > end
             if day_change:
                 # Endzeit ist am nächsten Tag, in Zeitabschnitt vor und nach Mitternacht einteilen
-                state_before_midnight = is_timeframe_valid(now, begin, now.replace(day=now.day+1, hour=0, minute=0))
-                state_after_midnight = is_timeframe_valid(now, now.replace(hour=0, minute=0), end)
+                next_day = now + datetime.timedelta(days=1)
+                next_day_midnight = next_day.replace(hour=0, minute=0)
+                state_after_midnight = is_timeframe_valid(now, begin, next_day_midnight)
+                state_before_midnight = is_timeframe_valid(now, now.replace(hour=0, minute=0), end)
 
             if plan.frequency.selected == "daily":
                 if day_change:
@@ -97,8 +99,8 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
 
             elif plan.frequency.selected == "weekly":
                 if day_change:
-                    state = ((state_before_midnight and plan.frequency.weekly[now.weekday()]) or
-                             (state_after_midnight and plan.frequency.weekly[now.weekday() - 1]))
+                    state = ((state_after_midnight and plan.frequency.weekly[now.weekday()]) or
+                             (state_before_midnight and plan.frequency.weekly[now.weekday() - 1]))
                 else:
                     if plan.frequency.weekly[now.weekday()]:
                         state = is_timeframe_valid(now, begin, end)
@@ -239,6 +241,10 @@ def create_timestamp_YYYYMM() -> str:
 def create_timestamp_YYYYMMDD() -> str:
     stamp = datetime.datetime.today().strftime("%Y%m%d")
     return stamp
+
+
+def create_timestamp_HH_MM() -> str:
+    return datetime.datetime.today().strftime("%H:%M")
 
 
 def create_unix_timestamp_current_full_hour() -> int:
