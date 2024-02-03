@@ -21,11 +21,11 @@ import threading
 import traceback
 from typing import Dict, Optional, Tuple
 
-from control import chargelog
+from control.chargelog import chargelog
 from control import cp_interruption
 from control import data
 from control.chargemode import Chargemode
-from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get
+from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter
 from control.chargepoint.rfid import ChargepointRfidMixin
@@ -46,7 +46,7 @@ def get_chargepoint_config_default() -> dict:
         "ev": 0,
         "template": 0,
         "connected_phases": 3,
-        "phase_1": 0,
+        "phase_1": 1,
         "auto_phase_switch_hw": False,
         "control_pilot_interruption_hw": False
     }
@@ -114,11 +114,14 @@ class Chargepoint(ChargepointRfidMixin):
         state = True
         message = None
         general_data = data.data.general_data.data
-        if general_data.ripple_control_receiver.configured:
-            if (general_data.ripple_control_receiver.r1_active or
-                    general_data.ripple_control_receiver.r2_active):
+        if general_data.ripple_control_receiver.module:
+            if general_data.ripple_control_receiver.get.override_value == 0:
                 state = False
                 message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
+            elif general_data.ripple_control_receiver.get.fault_state == 2:
+                state = False
+                message = ("Ladepunkt gesperrt, da der Rundsteuerempfänger ein Problem meldet. "
+                           "Bitte im Status des RSE nachsehen.")
         return state, message
 
     def _is_loadmanagement_available(self) -> Tuple[bool, Optional[str]]:
@@ -224,7 +227,7 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.set.manual_lock = True
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
                 # Ev wurde noch nicht aktualisiert.
-                chargelog.reset_data(self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
+                chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
                 self.data.set.charging_ev_prev = -1
                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev",
                           self.data.set.charging_ev_prev)
@@ -287,6 +290,19 @@ class Chargepoint(ChargepointRfidMixin):
     def remember_previous_values(self):
         self.data.set.plug_state_prev = self.data.get.plug_state
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
+
+    def reset_log_data_chargemode_switch(self) -> None:
+        reset_log = Log()
+        # Wenn ein Zwischeneintrag, zB bei Wechsel des Lademodus, erstellt wird, Zählerstände nicht verwerfen.
+        reset_log.imported_at_mode_switch = self.data.get.imported
+        reset_log.imported_at_plugtime = self.data.set.log.imported_at_plugtime
+        reset_log.imported_since_plugged = self.data.set.log.imported_since_plugged
+        self.data.set.log = reset_log
+        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/log", asdict(self.data.set.log))
+
+    def reset_log_data(self) -> None:
+        self.data.set.log = Log()
+        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/log", asdict(self.data.set.log))
 
     def prepare_cp(self) -> Tuple[int, Optional[str]]:
         try:
@@ -534,19 +550,17 @@ class Chargepoint(ChargepointRfidMixin):
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
             if self.data.set.log.imported_since_plugged != 0:
-                no_switch = False
                 if charging_ev.ev_template.data.prevent_phase_switch:
                     log.info(f"Phasenumschaltung an Ladepunkt {self.num} nicht möglich, da bei EV"
                              f"{charging_ev.num} nach Ladestart nicht mehr umgeschaltet werden darf.")
-                    no_switch = True
-                elif self.cp_ev_support_phase_switch() is False:
-                    log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
-                    no_switch = True
-                if no_switch:
                     if self.data.get.phases_in_use != 0:
                         phases = self.data.get.phases_in_use
                     else:
                         phases = self.data.control_parameter.phases
+                elif self.cp_ev_support_phase_switch() is False:
+                    # sonst passt die Phasenzahl nicht bei Autos, die eine Phase weg schalten.
+                    log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
+                    phases = phases
         if phases != self.data.control_parameter.phases:
             self.data.control_parameter.phases = phases
         return phases
@@ -626,7 +640,7 @@ class Chargepoint(ChargepointRfidMixin):
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
                     if charging_ev.chargemode_changed and self.data.get.charge_state and state:
-                        chargelog.save_data(self, charging_ev)
+                        chargelog.save_interim_data(self, charging_ev)
 
                     # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht
                     # berücksichtigt werden soll.
@@ -688,54 +702,15 @@ class Chargepoint(ChargepointRfidMixin):
                       " verwendet.")
             charging_ev = ev_list["ev0"]
             vehicle = 0
-        # Das EV darf nur gewechselt werden, wenn noch nicht geladen wurde.
-        if (self.data.set.charging_ev == vehicle or
-                self.data.set.charging_ev_prev == vehicle):
-            # Das EV entspricht dem bisherigen EV.
-            self._set_charging_ev_and_charging_ev_prev(vehicle)
-            charging_ev.ev_template = charging_ev.data.set.ev_template
-            self.data.set.charging_ev_data = charging_ev
-            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
-                      "/set/change_ev_permitted", [True, ""])
-        else:
-            # Darf das EV geändert werden?
-            if (self.data.set.log.imported_at_plugtime == 0 or
-                    self.data.set.log.imported_at_plugtime == self.data.get.imported):
-                self._set_charging_ev_and_charging_ev_prev(vehicle)
-                self.data.set.charging_ev_data = charging_ev
-                Pub().pub("openWB/set/chargepoint/"+str(self.num) +
-                          "/set/change_ev_permitted", [True, ""])
-                charging_ev.data.set.ev_template = charging_ev.ev_template
-                Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
-                          "/set/ev_template", asdict(charging_ev.data.set.ev_template.data))
-                Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
-                log.debug("SoC nach EV-Wechsel")
-            else:
-                # Altes EV beibehalten.
-                if self.data.set.charging_ev != -1:
-                    vehicle = self.data.set.charging_ev
-                elif self.data.set.charging_ev_prev != -1:
-                    vehicle = self.data.set.charging_ev_prev
-                    self._set_charging_ev_and_charging_ev_prev(vehicle)
-                else:
-                    raise ValueError(
-                        "Wenn kein aktuelles und kein vorheriges Ev zugeordnet waren, \
-                            sollte noch nicht geladen worden sein.")
-                charging_ev = ev_list["ev" + str(vehicle)]
-                charging_ev.ev_template = charging_ev.data.set.ev_template
-                self.data.set.charging_ev_data = charging_ev
-                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/change_ev_permitted", [
-                    False, "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde. \
-                            Bitte abstecken, dann wird das gewählte Fahrzeug verwendet."])
-                log.warning(
-                    "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde.")
+        if self.data.set.charging_ev != vehicle and self.data.set.charging_ev_prev != vehicle:
+            Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
+            log.debug("SoC nach EV-Wechsel")
+        self.data.set.charging_ev_data = charging_ev
+        self.data.set.charging_ev = vehicle
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", vehicle)
+        self.data.set.charging_ev_prev = vehicle
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", vehicle)
         return charging_ev
-
-    def _set_charging_ev_and_charging_ev_prev(self, charging_ev: int) -> None:
-        self.data.set.charging_ev = charging_ev
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", charging_ev)
-        self.data.set.charging_ev_prev = charging_ev
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", charging_ev)
 
     def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.

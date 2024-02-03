@@ -10,7 +10,6 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import MultiComponentUpdateContext
-from modules.common.fault_state import FaultState
 from modules.devices.lg.config import LG, LgBatSetup, LgConfiguration, LgCounterSetup, LgInverterSetup
 from modules.devices.lg import bat, counter, inverter
 
@@ -88,8 +87,9 @@ class Device(AbstractDevice):
             response = session.put("https://"+self.device_config.configuration.ip_address+'/v1/login', headers=headers,
                                    data=data, verify=False, timeout=5).json()
             self.session_key = response["auth_key"]
-        except (HTTPError, KeyError):
-            raise FaultState.error("login failed! check password!")
+        except (HTTPError, KeyError) as e:
+            e.args += ("login failed! check password!", )
+            raise e
 
     def _request_data(self, session: Session) -> Dict:
         headers = {'Content-Type': 'application/json', }

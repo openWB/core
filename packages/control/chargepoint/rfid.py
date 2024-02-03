@@ -11,21 +11,22 @@ log = logging.getLogger(__name__)
 
 class ChargepointRfidMixin:
     def _link_rfid_to_cp(self: ChargepointProtocol) -> None:
-        """ Wenn der Tag einem EV zugeordnet worden ist, wird der Tag unter set/rfid abgelegt und muss der Timer
+        """ tested
+        Wenn der Tag einem EV zugeordnet worden ist, wird der Tag unter set/rfid abgelegt und muss der Timer
         zurückgesetzt werden.
         """
         rfid = self.data.get.rfid
         cp2_num = self.find_duo_partner()
+        cp2_data = data.data.cp_data[f"cp{cp2_num}"] if cp2_num is not None else None
         # Tag wird diesem LP der Duo zugewiesen oder es ist keine Duo
-        if ((cp2_num is not None and
+        if ((cp2_data is not None and
                 # EV am anderen Ladepunkt, am eigenen wurde zuerst angesteckt
-             ((data.data.cp_data[f"cp{cp2_num}"].data.get.plug_state and
-               timecheck.get_difference(self.data.set.plug_time,
-                                        data.data.cp_data[f"cp{cp2_num}"].data.set.plug_time) < 0) or
+             ((cp2_data.data.get.plug_state and self.data.get.plug_state and
+               (cp2_data.data.set.plug_time - self.data.set.plug_time) < 0) or
               # kein EV am anderen Duo-Ladepunkt
-              data.data.cp_data[f"cp{cp2_num  }"].data.get.plug_state is False)) or
+              cp2_data.data.get.plug_state is False)) or
                 # keine Duo
-                cp2_num is None):
+                cp2_data is None):
             self.data.set.rfid = rfid
             Pub().pub("openWB/chargepoint/"+str(self.num)+"/set/rfid", rfid)
             self.chargepoint_module.clear_rfid()

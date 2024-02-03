@@ -32,6 +32,14 @@ chmod 666 "$LOGFILE"
 		exit
 	fi
 
+	# check for rc.local bug
+	if grep -Fq "do_expand_rootfs" /etc/rc.local.bak; then
+		echo "fixing rc.local bug"
+		echo "#!/bin/sh -e" | sudo tee "/etc/rc.local.bak" >"/dev/null"
+	else
+		echo "rc.local bug not found"
+	fi
+
 	# check for pending factory reset
 	if [[ -f "${OPENWBBASEDIR}/data/restore/factory_reset" ]]; then
 		echo "pending factory_reset detected, executing factory_reset"
@@ -79,10 +87,15 @@ chmod 666 "$LOGFILE"
 
 	# check group membership
 	echo "Group membership..."
-	for group in "input" "dialout"; do
+	# ToDo: remove sudo group membership if possible
+	for group in "input" "dialout" "gpio" "sudo"; do
 		if ! groups openwb | grep --quiet "$group"; then
-			sudo usermod -G "$group" -a openwb
-			echo "added openwb to group '$group'"
+			if getent group | cut -d: -f1 | grep --quiet "$group"; then
+				sudo usermod -G "$group" -a openwb
+				echo "added openwb to group '$group'"
+			else
+				echo "required group '$group' missing on this system!"
+			fi
 		fi
 	done
 	echo -n "Final group membership: "
@@ -335,6 +348,20 @@ chmod 666 "$LOGFILE"
 	# set restore dir permissions to allow file upload for apache
 	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
 	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
+
+	# cleanup some folders
+	folder="${OPENWBBASEDIR}/data/data_migration/var"
+	if [ -d "$folder" ]; then
+		echo "deleting temporary data migration folder"
+		rm -R "$folder"
+	fi
+	files=("${OPENWBBASEDIR}/data/data_migration/data_migration.tar" "${OPENWBBASEDIR}/data/data_migration/data_migration.tar.gz")
+	for file in "${files[@]}"; do
+		if [ -f "$file" ]; then
+			echo "deleting temporary data migration file '$file'"
+			rm "$file"
+		fi
+	done
 
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"

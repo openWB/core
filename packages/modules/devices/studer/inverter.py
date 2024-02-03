@@ -32,7 +32,7 @@ class StuderInverter:
                 mb_unit = 20
                 mb_register = 8  # MB:8; ID: 11004; Power of the PV generator kW
             else:
-                raise FaultState.error("Unbekannter VC-Typ: "+str(vc_type))
+                raise ValueError("Unbekannter VC-Typ: "+str(vc_type))
             power = 0
             for i in range(1, vc_count+1):
                 mb_unit_dev = mb_unit+i

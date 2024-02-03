@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from helpermodules import timecheck
 
 from helpermodules.auto_str import auto_str
@@ -19,7 +19,11 @@ def _calculate_powers_and_currents(currents: Optional[List[float]],
         else:
             powers = [currents[i]*voltages[i] for i in range(0, 3)]
     if currents is None and powers:
-        currents = [powers[i]/voltages[i] for i in range(0, 3)]
+        try:
+            currents = [powers[i]/voltages[i] for i in range(0, 3)]
+        except ZeroDivisionError:
+            # some inverters (Sungrow) report 0V if in standby
+            currents = [0.0]*3
     if currents and powers:
         currents = [currents[i]*-1 if powers[i] < 0 and currents[i] > 0 else currents[i] for i in range(0, 3)]
     return currents, powers, voltages
@@ -121,7 +125,7 @@ class CarState:
 @auto_str
 class ChargepointState:
     def __init__(self,
-                 phases_in_use: int,
+                 phases_in_use: int = 0,
                  imported: float = 0,
                  exported: float = 0,
                  power: float = 0,
@@ -158,3 +162,15 @@ class ChargepointState:
         self.soc_timestamp = soc_timestamp
         self.evse_current = evse_current
         self.vehicle_id = vehicle_id
+
+
+@auto_str
+class TariffState:
+    def __init__(self,
+                 prices: Optional[Dict[int, float]] = None) -> None:
+        self.prices = prices
+
+
+class RcrState:
+    def __init__(self, override_value: float) -> None:
+        self.override_value = override_value

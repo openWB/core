@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class ComponentInfo:
     def __init__(self,
-                 id: int,
+                 id: Optional[int],
                  name: str,
                  type: str,
                  hostname: str = "localhost",
@@ -51,14 +51,19 @@ class FaultState(Exception):
                           self.fault_str + ", Traceback: \n" +
                           traceback.format_exc())
             topic = component_type.type_to_topic_mapping(self.component_info.type)
-            topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
+            if self.component_info.type == component_type.ComponentType.ELECTRICITY_TARIFF.value:
+                topic_prefix = f"openWB/set/{topic}"
+            elif self.component_info.type == component_type.ComponentType.RIPPLE_CONTROL_RECEIVER.value:
+                topic_prefix = f"openWB/set/general/{topic}"
+            else:
+                topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
             pub.Pub().pub(f"{topic_prefix}/get/fault_str", self.fault_str)
             pub.Pub().pub(f"{topic_prefix}/get/fault_state", self.fault_state.value)
             if (self.component_info.parent_hostname and
                     self.component_info.parent_hostname != self.component_info.hostname):
-                pub.pub_single(f"{topic_prefix}/get/fault_str",
+                pub.pub_single(f"openWB/set/{topic}/{self.component_info.parent_id}/get/fault_str",
                                self.fault_str, hostname=self.component_info.parent_hostname)
-                pub.pub_single(f"{topic_prefix}/get/fault_state",
+                pub.pub_single(f"openWB/set/{topic}/{self.component_info.parent_id}/get/fault_state",
                                self.fault_state.value, hostname=self.component_info.parent_hostname)
         except Exception:
             log.exception("Fehler im Modul fault_state")
@@ -71,8 +76,11 @@ class FaultState(Exception):
         self.fault_str = message
         self.fault_state = FaultStateLevel.WARNING
 
-    def no_error(self) -> None:
-        self.fault_str = NO_ERROR
+    def no_error(self, message: Optional[str] = None) -> None:
+        if message:
+            self.fault_str = message
+        else:
+            self.fault_str = NO_ERROR
         self.fault_state = FaultStateLevel.NO_ERROR
 
     def from_exception(self, exception: Optional[Exception] = None) -> None:

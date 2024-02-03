@@ -9,7 +9,7 @@ log = logging.getLogger()
 #
 #  openwb 2.0 spec
 mqttcg = 'openWB/LegacySmartHome/config/get/'
-mqttcs = 'openWB/LegacySmartHome/config/set/'
+mqttcs = 'openWB/set/LegacySmartHome/config/set/'
 mqttsdevstat = 'openWB/LegacySmartHome/Devices'
 mqttsglobstat = 'openWB/LegacySmartHome/Status/'
 mqtttopicdisengageable = 'openWB/set/counter/set/disengageable_smarthome_power'

@@ -9,10 +9,11 @@ import time
 import threading
 import traceback
 from threading import Thread
+from control.chargelog.chargelog import calculate_charge_cost
 
 from helpermodules.changed_values_handler import ChangedValuesHandler
 from helpermodules.measurement_logging.update_daily_yields import update_daily_yields
-from helpermodules.measurement_logging.write_log import save_log
+from helpermodules.measurement_logging.write_log import LogType, save_log
 from modules import loadvars
 from modules import configuration
 from helpermodules import timecheck, update_config
@@ -86,7 +87,7 @@ class HandlerAlgorithm:
         """
         try:
             changed_values_handler.store_inital_values()
-            totals = save_log("daily")
+            totals = save_log(LogType.DAILY)
             update_daily_yields(totals)
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
@@ -134,7 +135,7 @@ class HandlerAlgorithm:
     @exit_after(10)
     def handler_midnight(self):
         try:
-            save_log("monthly")
+            save_log(LogType.MONTHLY)
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -149,15 +150,28 @@ class HandlerAlgorithm:
         except Exception:
             log.exception("Fehler im Main-Modul")
 
+    @exit_after(10)
+    def handler_hour(self):
+        try:
+            for cp in data.data.cp_data.values():
+                calculate_charge_cost(cp)
+        except KeyboardInterrupt:
+            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
+        except Exception:
+            log.exception("Fehler im Main-Modul")
+
 
 def schedule_jobs():
-    [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
     [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(0, 60, 5)]
+    [schedule.every().day.at(f"{i:02d}:00").do(handler.handler_hour).tag("algorithm") for i in range(0, 24, 1)]
+    # every().hour ruft nicht jede Stunde den Handler auf.
+    # schedule.every().hour.do(handler.handler_hour).tag("algorithm")
     schedule.every().day.at("00:00:00").do(handler.handler_midnight).tag("algorithm")
     schedule.every().day.at(f"0{randrange(0, 5)}:{randrange(0, 59):02d}:{randrange(0, 59):02d}").do(
         handler.handler_random_nightly)
+    [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
 
 
 try:
@@ -201,8 +215,9 @@ try:
     event_modbus_server = threading.Event()
     event_jobs_running = threading.Event()
     event_jobs_running.set()
+    event_update_soc = threading.Event()
     prep = prepare.Prepare()
-    soc = update_soc.UpdateSoc()
+    soc = update_soc.UpdateSoc(event_update_soc)
     set = setdata.SetData(event_ev_template, event_charge_template,
                           event_cp_config, event_scheduled_charging_plan, event_time_charging_plan, event_soc,
                           event_subdata_initialized)
@@ -214,6 +229,7 @@ try:
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,
+                          event_update_soc,
                           event_soc,
                           event_jobs_running, event_modbus_server)
     comm = command.Command(event_command_completed)

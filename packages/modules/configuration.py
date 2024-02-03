@@ -14,9 +14,11 @@ def pub_configurable():
     _pub_configurable_backup_clouds()
     _pub_configurable_web_themes()
     _pub_configurable_display_themes()
+    _pub_configurable_electricity_tariffs()
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
     _pub_configurable_chargepoints()
+    _pub_configurable_ripple_control_receivers()
 
 
 def _pub_configurable_backup_clouds() -> None:
@@ -100,6 +102,42 @@ def _pub_configurable_display_themes() -> None:
                 log.exception("Fehler im configuration-Modul")
         themes_modules = sorted(themes_modules, key=lambda d: d['text'].upper())
         Pub().pub("openWB/set/system/configurable/display_themes", themes_modules)
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
+
+
+def _pub_configurable_electricity_tariffs() -> None:
+    try:
+        electricity_tariffs: List[Dict] = []
+        path_list = Path(_get_packages_path()/"modules"/"electricity_tariffs").glob('**/tariff.py')
+        for path in path_list:
+            try:
+                if path.name.endswith("_test.py"):
+                    # Tests überspringen
+                    continue
+                dev_defaults = importlib.import_module(
+                    f".electricity_tariffs.{path.parts[-2]}.tariff",
+                    "modules").device_descriptor.configuration_factory()
+                electricity_tariffs.append({
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
+                    "defaults": dataclass_utils.asdict(dev_defaults)
+                })
+            except Exception:
+                log.exception("Fehler im configuration-Modul")
+        electricity_tariffs = sorted(electricity_tariffs, key=lambda d: d['text'].upper())
+        # "leeren" Eintrag an erster Stelle einfügen
+        electricity_tariffs.insert(0,
+                                   {
+                                       "value": None,
+                                       "text": "- kein Anbieter -",
+                                       "defaults": {
+                                           "type": None,
+                                           "configuration": {}
+                                       }
+                                   })
+
+        Pub().pub("openWB/set/system/configurable/electricity_tariffs", electricity_tariffs)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 
@@ -205,6 +243,41 @@ def _pub_configurable_chargepoints() -> None:
         path_list = Path(_get_packages_path()/"modules" /
                          "chargepoints/internal_openwb").glob('**/chargepoint_module.py')
         Pub().pub("openWB/set/system/configurable/chargepoints_internal", create_chargepoints_list(path_list))
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
+
+
+def _pub_configurable_ripple_control_receivers() -> None:
+    try:
+        ripple_control_receivers = []
+        path_list = Path(_get_packages_path()/"modules"/"ripple_control_receivers").glob('**/config.py')
+        for path in path_list:
+            try:
+                if path.name.endswith("_test.py"):
+                    # Tests überspringen
+                    continue
+                dev_defaults = importlib.import_module(
+                    f".ripple_control_receivers.{path.parts[-2]}.ripple_control_receiver",
+                    "modules").device_descriptor.configuration_factory()
+                ripple_control_receivers.append({
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
+                    "defaults": dataclass_utils.asdict(dev_defaults)
+                })
+            except Exception:
+                log.exception("Fehler im configuration-Modul")
+        ripple_control_receivers = sorted(ripple_control_receivers, key=lambda d: d['text'].upper())
+        # "leeren" Eintrag an erster Stelle einfügen
+        ripple_control_receivers.insert(0,
+                                        {
+                                            "value": None,
+                                            "text": "- kein RSE Modul -",
+                                            "defaults": {
+                                                "type": None,
+                                                "configuration": {}
+                                            }
+                                        })
+        Pub().pub("openWB/set/system/configurable/ripple_control_receivers", ripple_control_receivers)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 

@@ -7,6 +7,7 @@ import typing_extensions
 FORMAT_STR_DETAILED = '%(asctime)s - {%(name)s:%(lineno)s} - {%(levelname)s:%(threadName)s} - %(message)s'
 FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
 RAMDISK_PATH = str(Path(__file__).resolve().parents[2]) + '/ramdisk/'
+PERSISTENT_LOG_PATH = str(Path(__file__).resolve().parents[2]) + '/data/log/'
 
 
 def filter_neg(name: str, record) -> bool:
@@ -30,6 +31,20 @@ def setup_logging() -> None:
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "Internal Chargepoint"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "smarthome"))
+
+    chargelog_log = logging.getLogger("chargelog")
+    chargelog_log.propagate = False
+    chargelog_file_handler = RotatingFileHandler(
+        RAMDISK_PATH + 'chargelog.log', maxBytes=mb_to_bytes(3), backupCount=1)
+    chargelog_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+    chargelog_log.addHandler(chargelog_file_handler)
+
+    data_migration_log = logging.getLogger("data_migration")
+    data_migration_log.propagate = False
+    data_migration_file_handler = RotatingFileHandler(
+        PERSISTENT_LOG_PATH + 'data_migration.log', maxBytes=mb_to_bytes(3), backupCount=1)
+    data_migration_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+    data_migration_log.addHandler(data_migration_file_handler)
 
     mqtt_log = logging.getLogger("mqtt")
     mqtt_log.propagate = False

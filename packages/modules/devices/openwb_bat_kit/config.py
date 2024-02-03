@@ -8,7 +8,7 @@ class BatKitConfiguration:
 
 class BatKit:
     def __init__(self,
-                 name: str = "Speicher-Kit",
+                 name: str = "openWB Speicher-Kit",
                  type: str = "openwb_bat_kit",
                  id: int = 0,
                  configuration: BatKitConfiguration = None) -> None:
@@ -25,7 +25,7 @@ class BatKitBatConfiguration:
 
 class BatKitBatSetup(ComponentSetup[BatKitBatConfiguration]):
     def __init__(self,
-                 name: str = "Speicher-Kit",
+                 name: str = "openWB Speicher-Kit",
                  type: str = "bat",
                  id: int = 0,
                  configuration: BatKitBatConfiguration = None) -> None:

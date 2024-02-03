@@ -14,6 +14,7 @@ import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
+from helpermodules import hardware_configuration
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.constants import NO_ERROR
 from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
@@ -24,18 +25,23 @@ from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
 from control import ev
+from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 
 log = logging.getLogger(__name__)
 
+NO_MODULE = {"type": None, "configuration": {}}
+
 
 class UpdateConfig:
-    DATASTORE_VERSION = 31
+    DATASTORE_VERSION = 37
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
+        "^openWB/bat/set/regulate_up$",
         "^openWB/bat/set/switch_on_soc_reached$",
         "^openWB/bat/get/fault_state$",
         "^openWB/bat/get/fault_str$",
@@ -66,6 +72,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/chargemode$",
         "^openWB/chargepoint/[0-9]+/control_parameter/current_plan$",
         "^openWB/chargepoint/[0-9]+/control_parameter/imported_at_plan_start$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/limit$",
         "^openWB/chargepoint/[0-9]+/control_parameter/prio$",
         "^openWB/chargepoint/[0-9]+/control_parameter/required_current$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_auto_phase_switch$",
@@ -99,6 +106,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/energy_to_charge$",
         "^openWB/chargepoint/[0-9]+/set/manual_lock$",
+        "^openWB/chargepoint/[0-9]+/set/plug_state_prev$",
         "^openWB/chargepoint/[0-9]+/set/plug_time$",
         "^openWB/chargepoint/[0-9]+/set/rfid$",
         "^openWB/chargepoint/[0-9]+/set/change_ev_permitted$",
@@ -140,6 +148,9 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/get/imported$",
         "^openWB/counter/[0-9]+/get/exported$",
         "^openWB/counter/[0-9]+/set/consumption_left$",
+        "^openWB/counter/[0-9]+/set/error_counter$",
+        "^openWB/counter/[0-9]+/set/released_surplus$",
+        "^openWB/counter/[0-9]+/set/reserved_surplus$",
         "^openWB/counter/[0-9]+/set/state_str$",
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
@@ -154,7 +165,6 @@ class UpdateConfig:
         "^openWB/general/mqtt_bridge$",
         "^openWB/general/grid_protection_timestamp$",
         "^openWB/general/grid_protection_random_stop$",
-        "^openWB/general/price_kwh$",
         "^openWB/general/range_unit$",
         "^openWB/general/notifications/selected$",
         "^openWB/general/notifications/configuration$",
@@ -163,8 +173,11 @@ class UpdateConfig:
         "^openWB/general/notifications/plug$",
         "^openWB/general/notifications/smart_home$",
         "^openWB/general/ripple_control_receiver/configured$",
-        "^openWB/general/ripple_control_receiver/r1_active$",
-        "^openWB/general/ripple_control_receiver/r2_active$",
+        "^openWB/general/ripple_control_receiver/module$",
+        "^openWB/general/ripple_control_receiver/get/fault_state$",
+        "^openWB/general/ripple_control_receiver/get/fault_str$",
+        "^openWB/general/ripple_control_receiver/get/override_value$",
+        "^openWB/general/ripple_control_receiver/override_reference$",
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
         "^openWB/general/chargemode_config/pv_charging/feed_in_yield$",
@@ -185,6 +198,11 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
         "^openWB/general/chargemode_config/time_charging/phases_to_use$",
+        # obsolet, Daten hieraus müssen nach prices/ überführt werden
+        "^openWB/general/price_kwh$",
+        "^openWB/general/prices/bat$",
+        "^openWB/general/prices/grid$",
+        "^openWB/general/prices/pv$",
         "^openWB/general/web_theme$",
 
         "^openWB/graph/config/duration$",
@@ -201,12 +219,10 @@ class UpdateConfig:
         "^openWB/set/log/request",
         "^openWB/set/log/data",
 
-        "^openWB/optional/et/active$",
-        "^openWB/optional/et/get/price_list$",
-        "^openWB/optional/et/get/price$",
-        "^openWB/optional/et/get/source$",
-        "^openWB/optional/et/config/max_price$",
-        "^openWB/optional/et/config/provider$",
+        "^openWB/optional/et/get/fault_state$",
+        "^openWB/optional/et/get/fault_str$",
+        "^openWB/optional/et/get/prices$",
+        "^openWB/optional/et/provider$",
         "^openWB/optional/int_display/active$",
         "^openWB/optional/int_display/on_if_plugged_in$",
         "^openWB/optional/int_display/pin_active$",
@@ -235,6 +251,7 @@ class UpdateConfig:
         "^openWB/pv/[0-9]+/get/fault_state$",
         "^openWB/pv/[0-9]+/get/fault_str$",
 
+        "^openWB/vehicle/set/vehicle_update_completed$",
         "^openWB/vehicle/template/ev_template/[0-9]+$",
         "^openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
         "^openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
@@ -254,7 +271,6 @@ class UpdateConfig:
         "^openWB/vehicle/[0-9]+/get/soc_timestamp$",
         "^openWB/vehicle/[0-9]+/match_ev/selected$",
         "^openWB/vehicle/[0-9]+/match_ev/tag_id$",
-        "^openWB/vehicle/[0-9]+/set/ev_template$",
         "^openWB/vehicle/[0-9]+/set/soc_error_counter$",
 
         "^openWB/LegacySmartHome/config/get/logLevel$",
@@ -339,6 +355,11 @@ class UpdateConfig:
         "^openWB/LegacySmartHome/Devices/[0-9]+/oncountnor$",
         "^openWB/LegacySmartHome/Devices/[0-9]+/OnCntStandby$",
         "^openWB/LegacySmartHome/Devices/[1-2]+/TemperatureSensor[0-2]$",
+        "^openWB/LegacySmartHome/Status/maxspeicherladung$",
+        "^openWB/LegacySmartHome/Status/wattnichtschalt$",
+        "^openWB/LegacySmartHome/Status/wattnichtHaus$",
+        "^openWB/LegacySmartHome/Status/uberschuss$",
+        "^openWB/LegacySmartHome/Status/uberschussoffset$",
 
         "^openWB/system/available_branches",
         "^openWB/system/backup_cloud/config$",
@@ -347,8 +368,11 @@ class UpdateConfig:
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
+        "^openWB/system/configurable/electricity_tariffs$",
         "^openWB/system/configurable/display_themes$",
+        "^openWB/system/configurable/ripple_control_receivers$",
         "^openWB/system/configurable/soc_modules$",
+        "^openWB/system/configurable/web_themes$",
         "^openWB/system/current_branch",
         "^openWB/system/current_branch_commit",
         "^openWB/system/current_commit",
@@ -369,6 +393,7 @@ class UpdateConfig:
         "^openWB/system/messages/[0-9]+$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/release_train$",
+        "^openWB/system/time$",
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
         "^openWB/system/version$",
@@ -382,7 +407,7 @@ class UpdateConfig:
         ("openWB/counter/config/reserve_for_not_charging", counter_all.Config().reserve_for_not_charging),
         ("openWB/vehicle/0/name", ev.EvData().name),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
-        ("openWB/vehicle/0/soc_module/config", {"type": None, "configuration": {}}),
+        ("openWB/vehicle/0/soc_module/config", NO_MODULE),
         ("openWB/vehicle/0/soc_module/general_config", dataclass_utils.asdict(GeneralVehicleConfig())),
         ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
@@ -401,7 +426,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
         ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
-        ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 15000),
+        ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 0),
         ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
         ("openWB/general/chargemode_config/pv_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/retry_failed_phase_switches",
@@ -422,16 +447,16 @@ class UpdateConfig:
         ("openWB/general/notifications/stop_charging", False),
         ("openWB/general/notifications/smart_home", False),
         ("openWB/general/notifications/configuration", {}),
-        ("openWB/general/price_kwh", 0.3),
+        ("openWB/general/prices/bat", Prices().bat),
+        ("openWB/general/prices/grid", Prices().grid),
+        ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
-        ("openWB/general/ripple_control_receiver/configured", False),
+        ("openWB/general/ripple_control_receiver/module", NO_MODULE),
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
-        ("openWB/optional/et/active", False),
-        ("openWB/optional/et/config/max_price", 0),
-        ("openWB/optional/et/config/provider", {}),
+        ("openWB/optional/et/provider", NO_MODULE),
         ("openWB/optional/int_display/active", False),
         ("openWB/optional/int_display/on_if_plugged_in", True),
         ("openWB/optional/int_display/pin_active", False),
@@ -442,7 +467,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
-        ("openWB/system/backup_cloud/config", {"type": None, "configuration": {}}),
+        ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/datastore_version", DATASTORE_VERSION),
         ("openWB/system/usage_terms_acknowledged", False),
@@ -543,7 +568,7 @@ class UpdateConfig:
             try:
                 func(topic, payload)
             except Exception:
-                log.exception(f"Fehler beim Akutalisieren von {topic} mit Payload {payload}")
+                log.exception(f"Fehler beim Aktualisieren von {topic} mit Payload {payload}")
 
     def upgrade_datastore_0(self) -> None:
         # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
@@ -1054,7 +1079,11 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 29)
 
-    def upgrade_datastore_29(self) -> None:
+    # upgrade_datastore_29
+    # nach upgrade_datastore_32 verschoben, damit beim Update vom master (datastore_version 32)
+    # die Anpassung vorgenommen wird.
+
+    def upgrade_datastore_30(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/vehicle/[0-9]+/soc_module/general_config", topic) is not None:
                 payload = decode_payload(payload)
@@ -1063,9 +1092,9 @@ class UpdateConfig:
                 payload["request_interval_not_charging"] = payload["request_interval_not_charging"]*60
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 30)
+        Pub().pub("openWB/system/datastore_version", 31)
 
-    def upgrade_datastore_30(self) -> None:
+    def upgrade_datastore_31(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/vehicle/[0-9]+/get/soc_timestamp", topic) is not None:
                 payload = decode_payload(payload)
@@ -1073,4 +1102,98 @@ class UpdateConfig:
                     updated_payload = datetime.datetime.strptime(payload, "%m/%d/%Y, %H:%M:%S").timestamp()
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 31)
+        Pub().pub("openWB/system/datastore_version", 32)
+
+    def upgrade_datastore_32(self) -> None:
+        def upgrade_et_entry(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("et") is None:
+                    updated_payload = payload
+                    updated_payload.update({"et": asdict(ev.Et())})
+                    Pub().pub(topic, updated_payload)
+
+        def upgrade_prices(topic: str, payload) -> None:
+            if re.search("^openWB/general/price_kwh$", topic) is not None:
+                price = decode_payload(payload)/1000  # €/kWh -> €/Wh
+                Pub().pub("openWB/set/general/prices/bat", price)
+                Pub().pub("openWB/set/general/prices/grid", price)
+                Pub().pub("openWB/set/general/prices/pv", price)
+        self._loop_all_received_topics(upgrade_et_entry)
+        self._loop_all_received_topics(upgrade_prices)
+        Pub().pub("openWB/system/datastore_version", 33)
+
+    def upgrade_datastore_33(self) -> None:
+        def upgrade_fix_price_unit(topic: str, payload) -> None:
+            if (re.search("openWB/general/prices/bat$", topic) is not None or
+                re.search("openWB/general/prices/grid$", topic) is not None or
+                    re.search("openWB/general/prices/pv$", topic) is not None):
+                payload = decode_payload(payload)
+                if payload > 0.01:  # entspricht 10€/kWh
+                    updated_payload = payload/1000  # €/kWh -> €/Wh
+                    Pub().pub(topic, updated_payload)
+        self._loop_all_received_topics(upgrade_fix_price_unit)
+        Pub().pub("openWB/system/datastore_version", 34)
+
+    def upgrade_datastore_34(self) -> None:
+        def convert_file(file):
+            try:
+                with open(file, "r+") as jsonFile:
+                    modified = False
+                    content = json.load(jsonFile)
+                    for e in content["entries"]:
+                        if type(e["date"]) is not str:
+                            old_date = datetime.datetime.fromtimestamp(e["date"])
+                            # old version had a bug formatting "date" '$M' <-> '%M'
+                            # e["date"] = old_date.strftime('%H:$M')
+                            e["date"] = old_date.strftime('%H:%M')
+                            modified = True
+                        if type(e["timestamp"]) is float:
+                            e["timestamp"] = int(e["timestamp"])
+                            modified = True
+                    if modified:
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format der Logdatei {file} aktualisiert.")
+            except FileNotFoundError:
+                pass
+            except Exception:
+                log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        for file in files:
+            convert_file(file)
+        # next upgrade only fixes a bug introduced in an earlier version of this method
+        # so we can skip upgrade_datastore_35() if this fixed version has run
+        Pub().pub("openWB/system/datastore_version", 36)
+
+    def upgrade_datastore_35(self) -> None:
+        def convert_file(file):
+            try:
+                with open(file, "r+") as jsonFile:
+                    modified = False
+                    content = json.load(jsonFile)
+                    for e in content["entries"]:
+                        if type(e["date"]) is str and '$M' in e["date"]:
+                            old_timestamp = datetime.datetime.fromtimestamp(e["timestamp"])
+                            e["date"] = old_timestamp.strftime('%H:%M')
+                            modified = True
+                    if modified:
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format der Logdatei {file} aktualisiert.")
+            except FileNotFoundError:
+                pass
+            except Exception:
+                log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        for file in files:
+            convert_file(file)
+        Pub().pub("openWB/system/datastore_version", 36)
+
+    def upgrade_datastore_36(self) -> None:
+        if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured"):
+            Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
+        hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
+        Pub().pub("openWB/system/datastore_version", 37)

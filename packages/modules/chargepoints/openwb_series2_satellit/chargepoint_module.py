@@ -66,19 +66,19 @@ class ChargepointModule(AbstractChargepoint):
                 else:
                     self.version = False
                     raise ValueError
-        except (ConnectionRefusedError, ValueError):
-            raise FaultState.error(
-                "Firmware des openWB satellit ist nicht mit openWB software2 kompatibel. "
-                "Bitte den Support kontaktieren.")
+        except (ConnectionRefusedError, ValueError) as e:
+            e.args += (("Firmware des openWB satellit ist nicht mit openWB software2 kompatibel. "
+                        "Bitte den Support kontaktieren."),)
+            raise e
 
     def get_values(self) -> None:
-        if self.version is not None:
-            with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state):
+            if self.version is not None:
                 with self.__client_error_context:
                     try:
                         with SeriesHardwareCheckContext(self._client):
                             if self.version is False:
-                                raise FaultState.error(
+                                raise ValueError(
                                     "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
                                     "Bitte den Support kontaktieren.")
                             self.delay_second_cp(self.CP0_DELAY)
@@ -101,6 +101,9 @@ class ChargepointModule(AbstractChargepoint):
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
+            else:
+                self._create_client()
+                self._validate_version()
 
     def set_current(self, current: float) -> None:
         if self.version is not None:

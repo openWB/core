@@ -86,8 +86,10 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
             day_change = begin > end
             if day_change:
                 # Endzeit ist am nächsten Tag, in Zeitabschnitt vor und nach Mitternacht einteilen
-                state_before_midnight = is_timeframe_valid(now, begin, now.replace(day=now.day+1, hour=0, minute=0))
-                state_after_midnight = is_timeframe_valid(now, now.replace(hour=0, minute=0), end)
+                next_day = now + datetime.timedelta(days=1)
+                next_day_midnight = next_day.replace(hour=0, minute=0)
+                state_after_midnight = is_timeframe_valid(now, begin, next_day_midnight)
+                state_before_midnight = is_timeframe_valid(now, now.replace(hour=0, minute=0), end)
 
             if plan.frequency.selected == "daily":
                 if day_change:
@@ -97,8 +99,8 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
 
             elif plan.frequency.selected == "weekly":
                 if day_change:
-                    state = ((state_before_midnight and plan.frequency.weekly[now.weekday()]) or
-                             (state_after_midnight and plan.frequency.weekly[now.weekday() - 1]))
+                    state = ((state_after_midnight and plan.frequency.weekly[now.weekday()]) or
+                             (state_before_midnight and plan.frequency.weekly[now.weekday() - 1]))
                 else:
                     if plan.frequency.weekly[now.weekday()]:
                         state = is_timeframe_valid(now, begin, end)
@@ -179,7 +181,7 @@ def _get_remaining_time(now: datetime.datetime, duration: float, end: datetime.d
     neg: Zeitpunkt vorbei
     pos: verbleibende Sekunden
     """
-    delta = datetime.timedelta(hours=int(duration), minutes=((duration % 1) * 60))
+    delta = datetime.timedelta(seconds=duration)
     start_time = end-delta
     log.debug(f"delta {delta} start_time {start_time} end {end} now {now}")
     return (start_time-now).total_seconds()
@@ -199,13 +201,9 @@ def is_list_valid(hour_list: List[int]) -> bool:
     False: aktuelle Stunde ist nicht in der Liste enthalten
     """
     try:
-        now = datetime.datetime.today()
         for hour in hour_list:
-            timestamp = datetime.datetime.fromtimestamp(float(hour))
-            if timestamp.hour == now.hour:
+            if hour == create_unix_timestamp_current_full_hour():
                 return True
-            else:
-                return False
         else:
             return False
     except Exception:
@@ -231,6 +229,10 @@ def create_timestamp() -> float:
     return datetime.datetime.today().timestamp()
 
 
+def create_timestamp_YYYY() -> str:
+    return datetime.datetime.today().strftime("%Y")
+
+
 def create_timestamp_YYYYMM() -> str:
     stamp = datetime.datetime.today().strftime("%Y%m")
     return stamp
@@ -239,6 +241,15 @@ def create_timestamp_YYYYMM() -> str:
 def create_timestamp_YYYYMMDD() -> str:
     stamp = datetime.datetime.today().strftime("%Y%m%d")
     return stamp
+
+
+def create_timestamp_HH_MM() -> str:
+    return datetime.datetime.today().strftime("%H:%M")
+
+
+def create_unix_timestamp_current_full_hour() -> int:
+    full_hour = datetime.datetime.fromtimestamp(create_timestamp()).strftime("%m/%d/%Y, %H")
+    return int(datetime.datetime.strptime(full_hour, "%m/%d/%Y, %H").timestamp())
 
 
 def get_relative_date_string(date_string: str, day_offset: int = 0, month_offset: int = 0, year_offset: int = 0) -> str:

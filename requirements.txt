@@ -18,3 +18,4 @@ msal==1.22.0
 python-dateutil==2.8.2
 umodbus==1.0.4
 pysmb==1.2.9.1
+pytz==2023.3.post1

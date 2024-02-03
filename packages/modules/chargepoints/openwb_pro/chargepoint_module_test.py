@@ -7,8 +7,7 @@ import pytest
 from modules.chargepoints.openwb_pro.config import OpenWBPro, OpenWBProConfiguration
 from modules.common.component_state import ChargepointState
 from modules.chargepoints.openwb_pro import chargepoint_module
-
-SAMPLE_IP = "1.1.1.1"
+from modules.conftest import SAMPLE_IP
 
 SAMPLE_CHARGEPOINT_STATE = ChargepointState(
     power=4302.7,

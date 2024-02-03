@@ -68,30 +68,11 @@
 			color: grey;
 		}
 	</style>
+	<link rel="stylesheet" href="style.css?v=20221122">
 	<!-- important scripts to be loaded -->
 	<script src="js/jquery-3.6.0.min.js"></script>
 	<script src="js/bootstrap-4.4.1/bootstrap.bundle.min.js"></script>
 	<script src="js/bootstrap4-toggle/bootstrap4-toggle.min.js"></script>
-	<script>
-		function getCookie(cname) {
-			var name = cname + '=';
-			var decodedCookie = decodeURIComponent(document.cookie);
-			var ca = decodedCookie.split(';');
-			for (var i = 0; i < ca.length; i++) {
-				var c = ca[i];
-				while (c.charAt(0) == ' ') {
-					c = c.substring(1);
-				}
-				if (c.indexOf(name) == 0) {
-					return c.substring(name.length, c.length);
-				}
-			}
-			return '';
-		}
-		var themeCookie = getCookie('openWBTheme');
-		// include special Theme style
-		$('head').append('<link rel="stylesheet" href="style.css?v=20221122">');
-	</script>
 </head>
 
 <body>
@@ -226,12 +207,9 @@
 				<div class="card border-danger fill-height">
 					<div class="card-header bg-danger collapsed" data-toggle="collapse" data-target="#cardGrid">
 						<img src="img/icons/electric-tower.svg" alt="electric tower" style="width: 1.1em;">
+						<i class="et-configured fas fa-coins hide"></i>
 						<i class="grid-exporting fas fa-angle-double-left hide"></i>
 						<i class="grid-importing fas fa-angle-double-right hide"></i>
-						<span class="et-configured hide">
-							<i class="et-blocked fas fa-coins hide"></i>
-							<i class="et-not-blocked fas fa-coins text-success hide"></i>
-						</span>
 						<span class="grid-power">600 W</span>
 						<span class="collPlus"></span>
 					</div>
@@ -277,14 +255,6 @@
 									aktuell
 								</div>
 								<div class="et-current-price col pl-0 text-right">
-									-- ct/kWh
-								</div>
-							</div>
-							<div class="row">
-								<div class="col pr-0">
-									Preisgrenze
-								</div>
-								<div class="et-price-limit col pl-0 text-right">
 									-- ct/kWh
 								</div>
 							</div>
@@ -440,6 +410,9 @@
 						</div>
 						<div class="col-3">
 							<span class="charge-point-vehicle-charge-mode">--</span>
+							<span class="charge-point-vehicle-et-active hide">
+								<i class="fas fa-xs fa-coins"></i>
+							</span>
 						</div>
 						<div class="col-3">
 							<span class="charge-point-power">--</span> <span class="charge-point-phases-in-use">-</span>
@@ -540,6 +513,30 @@
 										data-topic="openWB/set/vehicle/template/charge_template/<ct>/prio" data-on="Ja"
 										data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm"
 										data-style="w-100">
+								</div>
+							</div>
+							<div class="et et-configured">
+								<div class="form-row mb-1">
+									<div class="col">
+										<i class="fas fa-coins"></i>
+										Strompreisbasiert Laden
+									</div>
+									<div class="col-md-8 text-right">
+										<div class="form-row">
+											<div class="col">
+												<input class="charge-point-price-charging-active" type="checkbox" data-toggle="toggle"
+													data-topic="openWB/set/vehicle/template/charge_template/<ct>/et/active" data-on="Ja"
+													data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm"
+													data-style="w-100">
+											</div>
+											<div class="col-2">
+												<button type="button" class="charge-point-max-price-button btn btn-sm btn-secondary btn-block" data-max-price="">
+													<span class="charge-point-price-charging-max_price">--</span>&nbsp;ct/kWh
+													<!-- <i class="fas fa-coins"></i> -->
+												</button>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
 							<div class="form-row mb-1">
@@ -906,6 +903,105 @@
 			</script>
 		</div>
 
+		<!-- modal et-price-window -->
+		<div class="modal fade" id="maxPriceModal" data-charge-template="">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<!-- modal header -->
+					<div class="modal-header bg-secondary text-light">
+						<h4 class="modal-title">
+							Max. Preis - Fahrzeug
+							"<span class="vehicle-name"></span>"
+						</h4>
+					</div>
+					<!-- modal body -->
+					<div class="modal-body">
+						<div class="row justify-content-center my-2">
+							<div id="electricityPriceChartCanvasDiv" class="col text-center">
+								<canvas id="electricityPriceChartCanvas"></canvas>
+							</div>
+						</div>
+		
+						<div class="row vaRow justify-content-center">
+							<div class="col-2 px-1 py-1">
+								<button type="button" id="maxPriceDecrement"
+									class="btn btn-block btn-secondary">-</button>
+							</div>
+							<div class="col py-1">
+								<div class="input-group input-group-lg">
+									<input id="maxPriceBox" type="number" step="0.01"
+										name="maxPriceBox" class="form-control text-right">
+									<div class="input-group-append">
+										<div class="input-group-text">
+											ct/kWh
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-2 px-1 py-1">
+								<button type="button" id="maxPriceIncrement"
+									class="btn btn-block btn-secondary">+</button>
+							</div>
+						</div>
+						<div class="row justify-content-center">
+							<div class="col-sm-5 py-1">
+								<button type="button" id="maxPriceOk" class="btn btn-lg btn-block btn-success"
+									data-dismiss="modal">Übernehmen</button>
+							</div>
+							<div class="col-sm-5 py-1">
+								<button type="button" id="maxPriceCancel" class="btn btn-lg btn-block btn-secondary"
+									data-dismiss="modal">Abbrechen</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<script>
+				function clearPriceForm() {
+					$("#maxPriceBox").val(0);
+					window.electricityPricechart.destroy();
+				}
+
+				function updatePriceChart() {
+					window.electricityPricechart.destroy();
+					loadElectricityPriceChart();
+				}
+
+				function submitPriceForm() {
+					var chargeTemplate = $('#maxPriceModal').data('charge-template');
+					var maxPrice = parseFloat(($("#maxPriceBox").val() / 100000).toFixed(7));
+					publish(maxPrice, "openWB/set/vehicle/template/charge_template/" + chargeTemplate + "/et/max_price");
+				};
+
+				$(document).ready(function () {
+
+					$('#maxPriceBox').change(function () {
+						updatePriceChart();
+					});
+
+					$('#maxPriceDecrement').click(function () {
+						$('#maxPriceBox')[0].stepDown();
+						updatePriceChart();
+					});
+
+					$('#maxPriceIncrement').click(function () {
+						$('#maxPriceBox')[0].stepUp();
+						updatePriceChart();
+					});
+
+					$('#maxPriceCancel').click(function () {
+						clearPriceForm();
+					});
+
+					$('#maxPriceOk').click(function () {
+						submitPriceForm();
+						clearPriceForm();
+					});
+
+				});
+			</script>
+		</div>
+
 	</div> <!-- container -->
 
 	<script>
@@ -1041,21 +1137,22 @@
 				'js/luxon/luxon.min.js',
 				// load Chart.js library
 				'js/chart.js-3.2.1/chart.min.js',
-				// load Chart.js annotation plugin
-				// 'js/chartjs-plugin-annotation.min.js',
+				// annotations plugin for price chart backgrounds
+				'js/chartjs-plugin-annotation/chartjs-plugin-annotation.min.js',
+				// adapter for time scales
 				'js/chartjs-adapter-luxon/chartjs-adapter-luxon.min.js',
 				// load mqtt library
 				'js/mqttws31.js',
 				// some helper functions
 				'helperFunctions.js?ver=20221117',
 				// functions for processing messages
-				'processAllMqttMsg.js?ver=20221117',
+				'processAllMqttMsg.js?ver=20240108',
 				// respective Chart.js definition live
 				'livechart.js?ver=20221117',
-				// respective Chart.js definition
-				// 'themes/dark/electricityPriceChart.js?ver=20221117',
+				// respective Chart.js definition price based charging
+				'electricityPriceChart.js?ver=20240108',
 				// functions performing mqtt and start mqtt-service
-				'setupMqttServices.js?ver=20221117',
+				'setupMqttServices.js?ver=20240108',
 			];
 			scriptsToLoad.forEach(function (src) {
 				var script = document.createElement('script');
@@ -1124,7 +1221,6 @@
 
 			$('.container').on('click', '.charge-point-soc-configured', function (event) {
 				event.stopPropagation();
-				// send mqtt set to force reload of charge point SoC after click
 				var parentChargePoint = $(this).closest('[data-cp]');
 				var cp = parseInt(parentChargePoint.data('cp'));  // get attribute cp-# of parent element
 				var ev = parseInt(parentChargePoint.find('.charge-point-vehicle-data[data-ev]').data('ev'));
@@ -1138,6 +1234,7 @@
 						$("#manualSocBox").val(currentSoc);
 						$('#socModal').modal("show");
 					} else {
+						// send mqtt set to force reload of charge point SoC after click
 						var spinner = $(this).find('.charge-point-reload-soc-symbol');
 						var isRunning = spinner.hasClass("fa-spin");
 						if (!isNaN(ev) && !isRunning) {
@@ -1162,10 +1259,20 @@
 				window.location.href = "../../settings/#/VehicleConfiguration/charge_template/" + chargeTemplate;
 			});
 
-			// $('.btn[value="Reset"]').click(function(event){
-			// 	var topic = getTopicToSendTo($(this).attr('id'));
-			// 	publish(1, topic);
-			// });
+			$('.container').on('click', '.charge-point-max-price-button', function (event) {
+				event.stopPropagation();
+				var parentChargePoint = $(this).closest('[data-cp]');
+				var chargeTemplate = parseInt(parentChargePoint.data('charge-template'));
+				var vehicleName = parentChargePoint.find('.charge-point-vehicle-name').text();
+				var currentMaxPrice = $(this).data('max-price');
+				if (!isNaN(chargeTemplate)) {
+					$('#maxPriceModal').find('.vehicle-name').text(vehicleName);
+					$('#maxPriceModal').attr('data-charge-template', chargeTemplate).data('charge-template', chargeTemplate);
+					$('#maxPriceModal').find('#maxPriceBox').val(currentMaxPrice);
+					loadElectricityPriceChart();
+					$('#maxPriceModal').modal("show");
+				}
+			});
 
 			$('.container').on('change', '.btn-group-toggle', function (event) {
 				var ct = parseInt($(this).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
@@ -1185,28 +1292,6 @@
 					}
 				}
 			});
-
-			// $('.priceMore, .priceLess').click(function(event){
-			// 	// change Slider upon click on buttons
-			// 	event.preventDefault();
-			// 	var currentMaxPrice = parseFloat($('#MaxPriceForCharging').val());
-			// 	var rangeMin = parseFloat($('#MaxPriceForCharging').attr('min'));
-			// 	var rangeMax = parseFloat($('#MaxPriceForCharging').attr('max'));
-			// 	var step = parseFloat($('#MaxPriceForCharging').attr('step'));
-			// 	if ( $(this).hasClass ('priceLess') ) {
-			// 		currentMaxPrice -= step;
-			// 	} else {
-			// 		currentMaxPrice += step;
-			// 	}
-			// 	// prevent timeout of delayUserInput when clicking "beyond" range
-			// 	if ( currentMaxPrice < rangeMin ) {
-			// 		currentMaxPrice = rangeMin;
-			// 	} else if ( currentMaxPrice > rangeMax ) {
-			// 		currentMaxPrice = rangeMax;
-			// 	}
-			// 	$('#MaxPriceForCharging').val(currentMaxPrice);
-			// 	$('#MaxPriceForCharging').trigger('input');
-			// });
 
 			$('.container').on('input', '.rangeInput', function () {
 				// show slider value in label of class valueLabel
@@ -1238,17 +1323,6 @@
 					var topic = getTopicToSendTo(id);
 					publish(value, topic);
 					label.removeClass('text-danger');
-					// if rangeInput is for chargeLimitation, recalculate progress
-					// if ( id.includes('/energyToCharge') ) {
-					// 	var parent = elem.closest('.chargeLimitation')  // get parent div element for charge limitation
-					// 	var element = parent.find('.progress-bar');  // now get parents progressbar
-					// 	var actualCharged = element.data('actualCharged');  // get stored value
-					// 	if ( isNaN(parseFloat(actualCharged)) ) {
-					// 		actualCharged = 0;  // minimum value
-					// 	}
-					// 	var progress = (actualCharged / value * 100).toFixed(0);
-					// 	element.width(progress+"%");
-					// }
 				}, 2000);
 			});
 
