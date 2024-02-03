@@ -1,6 +1,6 @@
 <template>
 	<div class="p-2 m-0 d-flex" :class="widgetWidth">
-		<div class="wb-widget p-0 m-0 shadow">
+		<div class="wb-widget p-0 m-0 shadow widgetWidth">
 			<div class="d-flex justify-content-between">
 				<h3 class="m-4 mb-3">
 					<slot name="title">

@@ -1,16 +1,18 @@
 <template>
-	<span class="d-flex flex-column align-items-center justify-content-center">
-		<span class="d-flex heading mt-1" :style="headingstyle">
+	<span
+		class="d-flex flex-column align-items-center justify-content-center me-1"
+	>
+		<span class="d-flex heading" :style="headingstyle" :class="headingclass">
 			{{ props.heading }}
 		</span>
-		<span class="d-flex mx-1">
-			<span
-				class="d-flex my-0 align-items-center content"
-				:style="contentstyle"
-			>
-				<slot />
-			</span>
+		<!-- <span class="d-flex mx-1"> -->
+		<span
+			class="d-flex my-0 me-0 align-items-center content"
+			:style="contentstyle"
+		>
+			<slot />
 		</span>
+		<!-- </span> -->
 	</span>
 </template>
 
@@ -44,12 +46,21 @@ const contentstyle = computed(() => {
 		}
 	}
 })
+
+const headingclass = computed(() => {
+	if (props.small) {
+		return 'mt-0'
+	} else {
+		return 'mt-1'
+	}
+})
 </script>
 
 <style scoped>
 .heading {
 	color: var(--color-menu);
 	font-weight: normal;
+	text-align: center;
 }
 
 .content {

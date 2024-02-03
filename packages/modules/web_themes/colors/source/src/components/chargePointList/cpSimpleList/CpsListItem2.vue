@@ -1,19 +1,28 @@
 <template>
-	<WbSubwidget :titlecolor="chargepoint.color" :fullwidth="true">
+	<WbSubwidget :titlecolor="chargepoint.color" :fullwidth="true" :small="true">
 		<template #title>
-			<span class="cpname">{{ chargepoint.name }} </span>
-		</template>
-		<template #buttons>
-			<div class="d-flex float-right justify-content-end align-items-center">
+			<div class="d-flex align-items-center">
+				<span class="cpname">{{ chargepoint.name }} </span>
 				<span class="badge rounded-pill statusbadge mx-2" :style="statusColor">
 					<i :class="statusIcon" class="me-1" />
 					{{ statusString }}</span
 				>
-				<span class="badge rounded-pill modebadge mx-2" :style="modeStyle">
+			</div>
+		</template>
+		<template #buttons>
+			<div class="d-flex float-right justify-content-end align-items-center">
+				<span
+					class="badge rounded-pill modebadge mx-2"
+					type="button"
+					:style="modeStyle"
+					data-bs-toggle="modal"
+					:data-bs-target="'#cpsconfig-' + chargepoint.id"
+				>
 					<i class="fa me-1" :class="modeIcon" /> {{ modeString }}
 				</span>
 				<span
 					class="fa-solid ms-2 fa-lg fa-edit ps-1"
+					type="button"
 					data-bs-toggle="modal"
 					:data-bs-target="'#cpsconfig-' + chargepoint.id"
 				/>
@@ -21,12 +30,15 @@
 		</template>
 		<div class="d-flex justify-content-between">
 			<InfoItem :heading="chargepoint.vehicleName" :small="true">
-				<span v-if="chargepoint.isSocConfigured" class="flex-wrap">
+				<span
+					v-if="chargepoint.isSocConfigured"
+					class="d-flex justify-content-center align-items-center"
+				>
 					<BatterySymbol class="me-1" :soc="chargepoint.soc" />
 					<i
 						v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
 						type="button"
-						class="fa-solid fa-sm fas fa-edit me-2"
+						class="fa-solid fa-sm fas fa-edit"
 						:style="{ color: 'var(--color-menu)' }"
 						@click="editSoc = !editSoc"
 					/>
@@ -43,11 +55,11 @@
 				</span>
 			</InfoItem>
 			<InfoItem heading="Parameter:" :small="true">
-				<div class="d-flex flex-column">
-					<span class="d-flex align-items-center flex-wrap">
+				<div class="d-flex flex-column align-items-center px-0">
+					<span class="d-flex justify-content-center flex-wrap">
 						<span>{{ chargePowerString }}</span>
 
-						<span class="d-flex align-items-center me-1">
+						<span class="d-flex align-items-center">
 							<span class="badge phasesInUse rounded-pill">
 								{{ chargePhasesString }}</span
 							>
@@ -59,101 +71,13 @@
 				</div>
 			</InfoItem>
 			<InfoItem heading="Geladen:" :small="true">
-				<div class="d-flex flex-wrap">
+				<div class="d-flex flex-wrap justify-content-center ms-1">
 					<span class="me-2">{{ chargeEnergyString }}</span>
 					<span>{{ chargedRangeString }}</span>
 				</div>
 			</InfoItem>
 		</div>
-	</WbSubwidget>
-	<!-- <tr class="tablerow">
-		<td
-			class="tablecell left"
-			data-bs-toggle="modal"
-			:data-bs-target="'#cpsconfig-' + chargepoint.id"
-		>
-			<div class="d-flex flex-wrap">
-				<span>
-					<i :class="statusIcon" class="me-1" :style="statusColor" />
-					<span class="me-1" :style="nameCellStyle()">
-						{{ chargepoint.name }}</span
-					>
-				</span>
-				<span
-					><i v-if="chargepoint.hasPriority" class="fa-solid fa-xs fa-star" />
-					<i v-if="chargepoint.timedCharging" class="fa-solid fa-xs fa-clock" />
-				</span>
-			</div>
-		</td>
-		<td class="tablecell left">
-			<div class="d-flex flex-column">
-				<span>{{ chargepoint.vehicleName }}</span>
-				<span v-if="chargepoint.isSocConfigured" class="flex-wrap">
-					<BatterySymbol class="me-1" :soc="chargepoint.soc" />
-					<i
-						v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
-						type="button"
-						class="fa-solid fa-sm fas fa-edit me-2"
-						:style="{ color: 'var(--color-menu)' }"
-						@click="editSoc = !editSoc"
-					/>
-					<i
-						v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual"
-						type="button"
-						class="fa-solid fa-sm me-2"
-						:class="
-							chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
-						"
-						:style="{ color: 'var(--color-menu)' }"
-						@click="loadSoc"
-					/>
-				</span>
-			</div>
-		</td>
-		<td
-			class="tablecell left"
-			data-bs-toggle="modal"
-			:data-bs-target="'#cpsconfig-' + chargepoint.id"
-		>
-			<div class="d-flex flex-column">
-				<span class="d-flex align-items-center flex-wrap">
-					<span>{{ chargePowerString }}</span>
-
-					<span class="d-flex align-items-center me-1">
-						<span class="badge phasesInUse rounded-pill">
-							{{ chargePhasesString }}</span
-						>
-						<span>
-							{{ chargeAmpereString }}
-						</span>
-					</span>
-				</span>
-				<span :style="modeStyle">
-					<i class="fa me-1" :class="modeIcon" /> {{ modeString }}
-				</span>
-			</div>
-		</td>
-		<td
-			class="tablecell left"
-			data-bs-toggle="modal"
-			:data-bs-target="'#cpsconfig-' + chargepoint.id"
-		>
-			<div class="d-flex flex-column">
-				<span class="me-2">{{ chargeEnergyString }}</span>
-				<span>{{ chargedRangeString }}</span>
-			</div>
-		</td>
-
-		<td class="buttoncell right">
-			<span
-				class="fa-solid fa-lg fa-edit ps-1 tableicon"
-				data-bs-toggle="modal"
-				:data-bs-target="'#cpsconfig-' + chargepoint.id"
-			/>
-		</td>
-	</tr>
-	<tr v-if="editSoc" class="socEditRow m-0 p-0">
-		<td colspan="5" class="m-0 p-0 pb-2">
+		<div v-if="editSoc" class="socEditRow m-0 p-0">
 			<div class="socEditor rounded mt-2 d-flex flex-column align-items-center">
 				<span class="d-flex m-1 p-0 socEditTitle">Ladestand einstellen:</span>
 				<span class="d-flex justify-content-stretch align-items-center">
@@ -174,8 +98,9 @@
 					@click="setSoc"
 				/>
 			</div>
-		</td>
-	</tr> -->
+		</div>
+	</WbSubwidget>
+
 	<Teleport to="body">
 		<ModalComponent
 			:key="chargepoint.id"
@@ -197,7 +122,7 @@ import { chargemodes, globalConfig } from '@/assets/js/themeConfig'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
 import CPChargeConfigPanel from '../cpConfig/CPChargeConfigPanel.vue'
 import BatterySymbol from '../../shared/BatterySymbol.vue'
-// import RangeInput from '@/components/shared/RangeInput.vue'
+import RangeInput from '@/components/shared/RangeInput.vue'
 import { updateServer } from '@/assets/js/sendMessages'
 import ModalComponent from '@/components/shared/ModalComponent.vue'
 import WbSubwidget from '@/components/shared/WbSubwidget.vue'
@@ -221,15 +146,15 @@ const statusIcon = computed(() => {
 	return 'fa ' + icon
 })
 const statusColor = computed(() => {
-	let result = { 'background-color': 'var(--color-axis)' }
+	let result = 'var(--color-axis)'
 	if (props.chargepoint.isLocked) {
-		result['background-color'] = 'var(--color-evu)'
+		result = 'var(--color-evu)'
 	} else if (props.chargepoint.isCharging) {
-		result['background-color'] = 'var(--color-charging)'
+		result = 'var(--color-charging)'
 	} else if (props.chargepoint.isPluggedIn) {
-		result['background-color'] = 'var(--color-battery)'
+		result = 'var(--color-battery)'
 	}
-	return result
+	return { color: result, border: `0.5px solid ${result} ` }
 })
 const modeStyle = computed(() => {
 	switch (props.chargepoint.chargeMode) {
@@ -285,18 +210,18 @@ function loadSoc() {
 	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
 	chargePoints[props.chargepoint.id].waitingForSoc = true
 }
-/* function setSoc() {
+function setSoc() {
 	updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
 	editSoc.value = false
-} */
-/* const manualSoc = computed({
+}
+const manualSoc = computed({
 	get() {
 		return props.chargepoint.soc
 	},
 	set(s: number) {
 		chargePoints[props.chargepoint.id].soc = s
 	},
-}) */
+})
 const statusString = computed(() => {
 	if (props.chargepoint.isLocked) {
 		return 'Gesperrt'
@@ -377,11 +302,18 @@ const statusString = computed(() => {
 .socEditTitle {
 	color: white;
 }
+
 .statusbadge {
-	background-color: var(--color-menu);
-	font-weight: normal;
+	background-color: var(--color-bg);
+	font-weight: bold;
+	font-size: var(--font-verysmall);
 }
+
 .cpname {
-	font-size: var(--font-medium);
+	font-size: var(--font-small);
+}
+
+.fa-edit {
+	color: var(--color-menu);
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-	<WbWidgetFlex :variable-width="true">
+	<WbWidgetFlex :variable-width="true" class="cptable">
 		<template #title>
 			<span class="fa-solid fa-charging-station">&nbsp;</span>
 			Ladepunkte
@@ -11,39 +11,13 @@
 				>
 			</div>
 		</template>
-		<p
+		<div
 			v-for="(cp, index) in chargepointsToDisplay"
 			:key="index"
-			class="row m-1 mt-0 p-0"
+			class="m-1 mt-0 p-0"
 		>
 			<CpsListItem2 :chargepoint="cp" />
-		</p>
-		<!-- <table class="table table-borderless px-0">
-			<thead>
-				<tr>
-					<th class="tableheader alignleft">
-						<i class="fa-solid fa-lg fa-charging-station ps-2" />
-					</th>
-					<th class="tableheader alignleft">
-						<i class="fa-solid fa-lg fa-car ps-2" />
-					</th>
-					<th class="tableheader alignleft">
-						<i class="fa-solid fa-lg fa-bolt ps-2" />
-					</th>
-					<th class="tableheader alignleft">
-						<i class="fa-solid fa-lg fa-car-battery ps-2" />
-					</th>
-					<th class="tableheader alignright" />
-				</tr>
-			</thead>
-			<tbody>
-				<CpsListItem2
-					v-for="chargepoint in chargepointsToDisplay"
-					:key="chargepoint.id"
-					:chargepoint="chargepoint"
-				/>
-			</tbody>
-		</table> -->
+		</div>
 	</WbWidgetFlex>
 </template>
 
@@ -84,5 +58,11 @@ const chargepointsToDisplay = computed(() => {
 }
 .fa-charging-station {
 	color: var(--color-charging);
+}
+.cptable {
+	display: grid;
+	grid-template-rows: [row1] auto [row2] auto;
+	grid-template-columns: [left] auto [center] auto [right] auto;
+	grid-gap: 1px;
 }
 </style>

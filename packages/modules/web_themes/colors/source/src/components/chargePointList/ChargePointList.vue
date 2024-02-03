@@ -21,8 +21,8 @@
 		</swiper-slide>
 	</swiper-container>
 	<!-- </div> -->
-	<CPSimpleList v-if="props.shortlist" /> 
-	<!-- <CpSimpleList2 v-if="props.shortlist" /> -->
+	<!-- <CPSimpleList v-if="props.shortlist" /> -->
+	<CpSimpleList2 v-if="props.shortlist" />
 </template>
 
 <script setup lang="ts">
@@ -30,12 +30,12 @@ import { computed, onMounted } from 'vue'
 import { chargePoints } from './model'
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import CPChargePoint from './CPChargePoint.vue'
-import CPSimpleList from './cpSimpleList/CPSimpleList.vue'
+// import CPSimpleList from './cpSimpleList/CPSimpleList.vue'
 import Swiper from 'swiper'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import type { SwiperContainer } from 'swiper/element'
-// import CpSimpleList2 from './cpSimpleList/CpSimpleList2.vue'
+import CpSimpleList2 from './cpSimpleList/CpSimpleList2.vue'
 
 let swiper: Swiper
 let swiperEl: SwiperContainer
