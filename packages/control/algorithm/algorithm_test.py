@@ -29,20 +29,48 @@ def data_fixture() -> None:
 
 
 @pytest.mark.parametrize("control_range, evu_power, evu_currents, evu_voltages, cp_power, cp_currents",
-                         [pytest.param([-230, 0], -84.08, [-2.42, 4.69, -2.66], [239, 237.8, 237.6], 1823.86, [7.81, -0.06, 0.06], id="Einspeisung, im Regelbereich"),
-                          pytest.param([-230, 0], 41.96, [-2.4, 5.22, -2.64], [238.7, 237.7, 237.7], 1939.72, [8.31, -0.06, 0.06], id="Einspeisung, über Regelbereich"),
-                          pytest.param([-230, 0], -690, [-1, -1, -1], [230, 230, 230], 1610, [7, 0, 0], id="Einspeisung bei 230V Spannung, unter Regelbereich"),
-                          pytest.param([-230, 0], -115, [0, -0.5, 0], [230, 230, 230], 2185, [9.5, 0, 0], id="Einspeisung bei 230V Spannung, im Regelbereich"),
-                          pytest.param([-230, 0], -115, [0, -0.49, 0], [235, 235, 235], 2185, [9.3, 0, 0], id="Einspeisung bei 235V Spannung, im Regelbereich"),
-                          pytest.param([-230, 0], 235, [0, 1, 0], [235, 235, 235], 2535, [10.87, 0, 0], id="Einspeisung bei 235V Spannung, über Regelbereich"),
-                          pytest.param([0, 230], -230, [0, -1, 0], [230, 230, 230], 2070, [9, 0, 0], id="Bezug bei 230V Spannung, unter Regelbereich"),
-                          pytest.param([0, 230], 115, [0, 0.5, 0], [230, 230, 230], 2415, [10.5, 0, 0], id="Bezug bei 230V Spannung, im Regelbereich"),
-                          pytest.param([0, 230], 115, [0, 0.49, 0], [235, 235, 235], 2415, [10.3, 0, 0], id="Bezug bei 235V Spannung, im Regelbereich"),
-                          pytest.param([0, 230], 705, [1, 1, 1], [235, 235, 235], 3005, [12.8, 0, 0], id="Bezug bei 235V Spannung, über Regelbereich"),
-                          pytest.param([-115, 115], -230, [0, -1, 0], [230, 230, 230], 2070, [9, 0, 0], id="Ausgeglichen bei 230V Spannung, unter Regelbereich"),
-                          pytest.param([-115, 115], 0, [0, 0, 0], [230, 230, 230], 2300, [10, 0, 0], id="Ausgeglichen bei 230V Spannung, im Regelbereich"),
-                          pytest.param([-115, 115], 0, [0, 0, 0], [235, 235, 235], 2300, [9.8, 0, 0], id="Ausgeglichen bei 235V Spannung, im Regelbereich"),
-                          pytest.param([-115, 115], 235, [0, 1, 0], [235, 235, 235], 2535, [10.8, 0, 0], id="Ausgeglichen bei 235V Spannung, über Regelbereich")
+                         [pytest.param(
+                            [-230, 0], -84.08, [-2.42, 4.69, -2.66], [239, 237.8, 237.6], 1823.86, [7.81, -0.06, 0.06],
+                            id="Einspeisung, im Regelbereich"),
+                          pytest.param(
+                            [-230, 0], 41.96, [-2.4, 5.22, -2.64], [238.7, 237.7, 237.7], 1939.72, [8.31, -0.06, 0.06],
+                            id="Einspeisung, über Regelbereich"),
+                          pytest.param(
+                            [-230, 0], -690, [-1, -1, -1], [230, 230, 230], 1610, [7, 0, 0],
+                            id="Einspeisung bei 230V Spannung, unter Regelbereich"),
+                          pytest.param(
+                            [-230, 0], -115, [0, -0.5, 0], [230, 230, 230], 2185, [9.5, 0, 0],
+                            id="Einspeisung bei 230V Spannung, im Regelbereich"),
+                          pytest.param(
+                            [-230, 0], -115, [0, -0.49, 0], [235, 235, 235], 2185, [9.3, 0, 0],
+                            id="Einspeisung bei 235V Spannung, im Regelbereich"),
+                          pytest.param(
+                            [-230, 0], 235, [0, 1, 0], [235, 235, 235], 2535, [10.87, 0, 0],
+                            id="Einspeisung bei 235V Spannung, über Regelbereich"),
+                          pytest.param(
+                            [0, 230], -230, [0, -1, 0], [230, 230, 230], 2070, [9, 0, 0],
+                            id="Bezug bei 230V Spannung, unter Regelbereich"),
+                          pytest.param(
+                            [0, 230], 115, [0, 0.5, 0], [230, 230, 230], 2415, [10.5, 0, 0],
+                            id="Bezug bei 230V Spannung, im Regelbereich"),
+                          pytest.param(
+                            [0, 230], 115, [0, 0.49, 0], [235, 235, 235], 2415, [10.3, 0, 0],
+                            id="Bezug bei 235V Spannung, im Regelbereich"),
+                          pytest.param(
+                            [0, 230], 705, [1, 1, 1], [235, 235, 235], 3005, [12.8, 0, 0],
+                            id="Bezug bei 235V Spannung, über Regelbereich"),
+                          pytest.param(
+                            [-115, 115], -230, [0, -1, 0], [230, 230, 230], 2070, [9, 0, 0],
+                            id="Ausgeglichen bei 230V Spannung, unter Regelbereich"),
+                          pytest.param(
+                            [-115, 115], 0, [0, 0, 0], [230, 230, 230], 2300, [10, 0, 0],
+                            id="Ausgeglichen bei 230V Spannung, im Regelbereich"),
+                          pytest.param(
+                            [-115, 115], 0, [0, 0, 0], [235, 235, 235], 2300, [9.8, 0, 0],
+                            id="Ausgeglichen bei 235V Spannung, im Regelbereich"),
+                          pytest.param(
+                            [-115, 115], 235, [0, 1, 0], [235, 235, 235], 2535, [10.8, 0, 0],
+                            id="Ausgeglichen bei 235V Spannung, über Regelbereich")
                           ]
                          )
 def test_calc_current(control_range, evu_power, evu_currents, evu_voltages, cp_power, cp_currents, monkeypatch):
