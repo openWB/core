@@ -640,6 +640,10 @@ class SubData:
                         log.info("Setting YC ACTIVE mode = " + str(var.data.yc_config.active) + ": Switching to openWB control algorithm")
                 elif re.search("yourCharge/config/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.yc_config, msg)
+                elif re.search("yourCharge/control/nightly_meter_reading", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.yc_control.nightly_meter_reading, msg)
+                elif re.search("yourCharge/control/accounting", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.yc_control.accounting, msg)
                 elif re.search("yourCharge/control/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.yc_control, msg)
                 else:

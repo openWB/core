@@ -46,6 +46,8 @@ class StatemachineYc():
         self._control_algorithm = ControlAlgorithmYc(key, self._status_handler)
         self._previous_plug_state = None
         self._previous_justification = None
+        self._last_data_update_timestamp = datetime.datetime.min
+        self._data_update_interval = timedelta(seconds=30)
         log.error(f"YC algorithm active: Internal CP found as '{self._internal_cp_key}'")
 
 
@@ -54,6 +56,7 @@ class StatemachineYc():
         try:
             # (key, value) = next(((key, value) for i, (key, value) in enumerate(data.data.cp_data.items()) if value.chargepoint_module.config.type == 'internal_openwb'), None)
             self._internal_cp = data.data.cp_data[self._internal_cp_key]
+            now_it_is = datetime.datetime.utcnow()
             # log.error(f"Internal CP now '{id(self._internal_cp)}'")
 
             # check heartbeat and super-early exit in case of controller not being seen anymore, charge current --> 0 and socket --> off
@@ -64,17 +67,8 @@ class StatemachineYc():
             # this way the cp-enabled status gets persisted in MQTT server
             self._status_handler.update_cp_enabled(data.data.yc_data.data.yc_control.cp_enabled)
 
-            # detect plugin (for accounting and engery since plugged)
-            if self._previous_plug_state is None:
-                self._status_handler.get_accounting()
-            elif not self._previous_plug_state and self._internal_cp.data.get.plug_state:
-                # transition from unplugged -> plugged -> update meter value at plugin
-                self._status_handler.update_cp_meter_at_last_plugin(self._internal_cp.data.get.imported)
-                self._status_handler.new_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported, self._internal_cp.data.get.charge_state, self._internal_cp.data.get.plug_state)
-
-            # calculate charged-since-plugged and charged-today
-            if data.data.yc_data.data.yc_control.cp_meter_at_last_plugin is not None:
-                self._status_handler.update_energy_charged_since_last_plugin(self._internal_cp.data.get.imported - data.data.yc_data.data.yc_control.cp_meter_at_last_plugin)
+            # signal the received energy limit in status so controller can check what is currently configured
+            self._status_handler.update_energy_limit(data.data.yc_data.data.yc_config.energy_limit)
 
             # get data that we need
             self._last_rfid_data = SubData.internal_chargepoint_data["rfid_data"]
@@ -83,6 +77,24 @@ class StatemachineYc():
                 self._valid_standard_socket_tag_found = self._standard_socket_handler.valid_socket_rfid_scanned(self._last_rfid_data)
             else:
                 self._valid_standard_socket_tag_found = False
+
+            # detect plugin (for accounting and engery since plugged)
+            plugin = False
+            plugout = False
+            if self._previous_plug_state is None:
+                self._status_handler.get_accounting()
+            elif not self._previous_plug_state and self._internal_cp.data.get.plug_state:
+                # transition from unplugged -> plugged -> update meter value at plugin
+                plugin = True
+                self._status_handler.update_cp_meter_at_last_plugin(self._internal_cp.data.get.imported)
+                self._status_handler.new_accounting(now_it_is, self._internal_cp.data.get.imported, self._internal_cp.data.get.charge_state, self._internal_cp.data.get.plug_state, self._last_rfid_data.last_tag)
+            elif self._previous_plug_state and not self._internal_cp.data.get.plug_state:
+                # transition from plugged -> unplugged
+                plugout = True
+
+            # calculate charged-since-plugged and charged-today
+            if data.data.yc_data.data.yc_control.cp_meter_at_last_plugin is not None:
+                self._status_handler.update_energy_charged_since_last_plugin(self._internal_cp.data.get.imported - data.data.yc_data.data.yc_control.cp_meter_at_last_plugin)
 
             log.info(f"---> Entering with load control state {self._current_control_state.name}, last RFID data {self._last_rfid_data}, valid standard socket tag {self._valid_standard_socket_tag_found}")
 
@@ -115,8 +127,14 @@ class StatemachineYc():
         finally:
             self._valid_standard_socket_tag_found = False
             self._previous_plug_state = self._internal_cp.data.get.plug_state
-            if self._internal_cp.data.get.plug_state:
-                self._status_handler.update_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported, self._internal_cp.data.get.charge_state, self._internal_cp.data.get.plug_state)
+
+            # handle slow data update
+            if plugin or plugout or (now_it_is - self._last_data_update_timestamp >= self._data_update_interval):
+                self._last_data_update_timestamp = now_it_is
+                self._status_handler.update_energy_charged_today(self._internal_cp.data.get.imported)
+                if plugin or plugout or self._internal_cp.data.get.plug_state:
+                    self._status_handler.update_accounting(now_it_is, self._internal_cp.data.get.imported, self._internal_cp.data.get.charge_state, self._internal_cp.data.get.plug_state)
+
             self._send_status()
             SubData.internal_chargepoint_data["rfid_data"].last_tag = ""
 
@@ -204,8 +222,8 @@ class StatemachineYc():
 
         if not self._internal_cp.data.get.plug_state:
             self._status_handler.update_cp_enabled(False)
-            self._set_current("Detected unplug while charging", 0.0, yourcharge.LmStatus.DownByDisable)
-            self._state_change("Detected unplug while charging", LoadControlState.Idle)
+            self._set_current("Detected unplug while in EV charge", 0.0, yourcharge.LmStatus.DownByDisable)
+            self._state_change("Detected unplug while in EV charge", LoadControlState.Idle)
             return
 
         if not self._status_handler.get_cp_enabled():

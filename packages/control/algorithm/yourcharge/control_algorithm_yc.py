@@ -111,6 +111,10 @@ class ControlAlgorithmYc:
 
         log.error(f"total_current_of_charging_phase_with_maximum_total_current={charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current} A, charging_ev_adjusted_for_this_cp={charging_phase_infos.charging_ev_adjusted_for_this_cp}, _previous_expected_charge_current={self._previous_expected_charge_current} A, lldiff={lldiff} A -> llneu={llneu} A")
 
+        # handle load imbalance limit
+        llneu = self._adjust_for_imbalance(charging_phase_infos, llneu)
+        lldiff = llneu - self._previous_expected_charge_current
+
         # limit the change to +1, -1 or -3 if slow ramping is enabled, a value of 0 will be kept unchanged
         if data.data.yc_data.data.yc_config.slow_ramping:
             actual_adjustment = 0
@@ -149,9 +153,7 @@ class ControlAlgorithmYc:
             else:
                 log.error(f"Fast ramping: Setting llneu={llneu} A")
 
-        llneu = self._adjust_for_imbalance(charging_phase_infos, llneu)
-
-        self._call_set_current(charging_phase_infos, llneu, None)
+        self._call_set_current(charging_phase_infos, llneu, LmStatus.InLoop)
 
 
     def _adjust_for_imbalance(self, charging_phase_infos: _AggregatedData, llneu: float) -> None:
@@ -162,7 +164,7 @@ class ControlAlgorithmYc:
             return llneu
 
         current_load_imbalance = charging_phase_infos.system_load_imbalance
-        log.error(f"Load Imbalance: Current imbalance L${charging_phase_infos.phase_with_maximum_imbalance_current} - L${charging_phase_infos.phase_with_minimum_imbalance_current}: {data.data.yc_data.data.yc_control.imbalance_current_consumption[charging_phase_infos.phase_with_maximum_imbalance_current]} - {data.data.yc_data.data.yc_control.imbalance_current_consumption[charging_phase_infos.phase_with_minimum_imbalance_current]} = ${current_load_imbalance} A (limit is {data.data.yc_data.data.yc_config.allowed_load_imbalance} A)")
+        log.error(f"Load Imbalance: Current imbalance L{charging_phase_infos.phase_with_maximum_imbalance_current} - L{charging_phase_infos.phase_with_minimum_imbalance_current}: {data.data.yc_data.data.yc_control.imbalance_current_consumption[charging_phase_infos.phase_with_maximum_imbalance_current]} - {data.data.yc_data.data.yc_control.imbalance_current_consumption[charging_phase_infos.phase_with_minimum_imbalance_current]} = {current_load_imbalance} A (limit is {data.data.yc_data.data.yc_config.allowed_load_imbalance} A)")
 
         charging_ev_to_use = charging_phase_infos.charging_ev_adjusted_for_this_cp
         if charging_ev_to_use <= 0:
@@ -186,9 +188,9 @@ class ControlAlgorithmYc:
             log.debug("0 or negative energy limit setting: Energy limit disabled")
             return False
 
-        log.error(f"Active energy limit: {data.data.yc_data.data.yc_config.energy_limit} Wh, already charged {self._status_handler.get_energy_charged_since_last_plugin} kWh")
+        log.error(f"Active energy limit: {data.data.yc_data.data.yc_config.energy_limit} Wh, already charged {self._status_handler.get_energy_charged_since_last_plugin()} kWh")
 
-        if self._status_handler.get_energy_charged_since_last_plugin > data.data.yc_data.data.yc_config.energy_limit:
+        if self._status_handler.get_energy_charged_since_last_plugin() > data.data.yc_data.data.yc_config.energy_limit:
             log.error("Energy limit reached: Disabling charge")
             return True
 
@@ -305,6 +307,7 @@ Phase with minimum imbal. current  : {charging_phase_infos.phase_with_minimum_im
 Load imbalance                     : {charging_phase_infos.system_load_imbalance} A
 
 Chargbox-related:
+Metered current flow               : {self._internal_cp.data.get.currents} A (@{self._internal_cp.data.get.voltages}) V -> {self._internal_cp.data.get.power} W
 Charging phase list                : {charging_phase_infos.charging_on_phase_list}
 Number of charging phases          : {charging_phase_infos.number_of_charging_phases}
 Highest total current across phases: {charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current} (on phase {charging_phase_infos.charging_phase_with_maximum_total_current})

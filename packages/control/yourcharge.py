@@ -1,5 +1,6 @@
 """YourCharge Daten
 """
+import datetime
 import logging
 
 from typing import List
@@ -85,6 +86,17 @@ class AccountingInfo:
     charging: bool = None
     current_meter: float = None
 
+def current_timestamp_factory() -> str:
+    return f"{datetime.datetime.now().isoformat()}Z"
+
+def current_day_factory() -> int:
+    return datetime.datetime.now().day
+
+@dataclass
+class MeterValueMark:
+    timestamp: str = field(default_factory=current_timestamp_factory)
+    day: int = field(default_factory=current_day_factory)
+    meter_reading: float = None
 
 @dataclass
 class YcConfig:
@@ -119,7 +131,8 @@ class YcControlData:
     cp_enabled: bool = False
     socket_activated: bool = False
     cp_meter_at_last_plugin: float = None
-    accounting: str = None
+    accounting: AccountingInfo = AccountingInfo()
+    nightly_meter_reading: MeterValueMark = MeterValueMark()
 
     @property
     def fixed_charge_current(self) -> float:
