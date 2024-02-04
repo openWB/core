@@ -119,8 +119,7 @@ class YcControlData:
     cp_enabled: bool = False
     socket_activated: bool = False
     cp_meter_at_last_plugin: float = None
-    accounting: AccountingInfo = None
-
+    accounting: str = None
 
     @property
     def fixed_charge_current(self) -> float:

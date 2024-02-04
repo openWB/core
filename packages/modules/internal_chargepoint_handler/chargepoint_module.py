@@ -96,7 +96,6 @@ class ChargepointModule(AbstractChargepoint):
 
             if self.standard_socket_handler is not None:
                 time.sleep(0.1)
-                log.info(f"ChargepointModule with ID of CP {self.local_charge_point_num}: {id(self)}")
                 self.standard_socket_handler.update()
 
             chargepoint_state = ChargepointState(

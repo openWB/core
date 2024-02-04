@@ -41,19 +41,29 @@ class YcStatusHandler:
         try:
             for changed_key in self._changed_keys:
                 new_value = self._status_dict[changed_key]
-                log.info(f"Publishing status update: {changed_key} = '{new_value}'")
+                log.debug(f"Publishing status update: {changed_key} = '{new_value}'")
                 Pub().pub(changed_key, new_value)
         finally:
             self._changed_keys.clear()
 
     # RFID scan
     def new_accounting(self, start_timestamp: datetime.datetime, meter_reading: float, charging: bool, plugged: bool) -> None:
-        self._accounting_info_cache = AccountingInfo(timestamp=f"{start_timestamp.isoformat()}Z", meter_at_start=meter_reading, charging=charging, plugged_in=plugged)
+        self._accounting_info_cache = AccountingInfo(charge_start=f"{start_timestamp.isoformat()}Z", meter_at_start=meter_reading, charging=charging, plugged_in=plugged)
         self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
         self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
 
     def update_accounting(self, update_timestamp: datetime.datetime, current_meter: float, charging: bool, plugged: bool) -> None:
         self.get_accounting() # initializes the cache field
+
+        # if we have a "corrupüted" dataset, initialize it with current data
+        if plugged and (self._accounting_info_cache.charge_start is None or self._accounting_info_cache.meter_at_start is None):
+            log.error(f"Detected corrupteda accounting data set while being plugged-in: Initializing charge start timestamp and meter value")
+            self._accounting_info_cache.charge_start = f"{update_timestamp.isoformat()}Z"
+            if data.data.yc_data.data.yc_control.cp_meter_at_last_plugin is not None:
+                self._accounting_info_cache.meter_at_start = data.data.yc_data.data.yc_control.cp_meter_at_last_plugin
+            else:
+                self._accounting_info_cache.meter_at_start = current_meter
+
         self._accounting_info_cache.charging = charging
         self._accounting_info_cache.plugged_in = plugged
         self._accounting_info_cache.currrent_time = f"{update_timestamp.isoformat()}Z"
@@ -64,7 +74,7 @@ class YcStatusHandler:
     def get_accounting(self) -> AccountingInfo:
         if self._accounting_info_cache is None:
             if data.data.yc_data.data.yc_control.accounting is not None:
-                self._accounting_info_cache = data.data.yc_data.data.yc_control.accounting
+                self._accounting_info_cache = json.loads(data.data.yc_data.data.yc_control.accounting)
                 self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
             else:
                 self._accounting_info_cache = AccountingInfo()
@@ -161,5 +171,5 @@ class YcStatusHandler:
     def _update(self, key: str, value: object):
         if not key in self._status_dict or value != self._status_dict[key]:
             self._changed_keys.append(key)
-            log.info(f"Status change: {key} changed form '{self._status_dict.get(key)}' to '{value}'")
+            log.debug(f"Status change: {key} changed from '{self._status_dict.get(key)}' to '{value}'")
             self._status_dict[key] = value

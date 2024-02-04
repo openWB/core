@@ -10,16 +10,17 @@ class HeartbeatChecker:
         self.heartbeat_timeout = timeout
         self._timeout_detection_time = None
         self._previous_lcs_publish = -1
+        self._timeout_reported = False
 
     def is_heartbeat_ok(self) -> bool:
 
         now_it_is = datetime.utcnow()
 
-        log.info(f"LCS heartbeat ENTER: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
+        log.debug(f"LCS heartbeat ENTER: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
 
         if self._previous_lcs_publish == -1:
             # very first run: just store the last_controller_publish
-            log.info(f"LCS heartbeat initialized to: {data.data.yc_data.data.last_controller_publish}")
+            log.debug(f"LCS heartbeat initialized to: {data.data.yc_data.data.last_controller_publish}")
             self._previous_lcs_publish = data.data.yc_data.data.last_controller_publish
             self._timeout_detection_time = datetime.utcnow() - self.heartbeat_timeout
             return False
@@ -28,20 +29,25 @@ class HeartbeatChecker:
             # no new controller timestamp seen
             if self._timeout_detection_time == None:
                 # first time no change --> start timeout timer
-                log.warning(f"No LCS heartbeat change (first time): now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}")
+                log.error(f"No LCS heartbeat change (first time): now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}")
                 self._timeout_detection_time = now_it_is
+                self._timeout_reported = False
             else:
                 timeout_since = now_it_is - self._timeout_detection_time
-                log.info(f"LCS heartbeat DETECTED: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
+                log.debug(f"LCS heartbeat DETECTED: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
                 if timeout_since > self.heartbeat_timeout:
                     # timeout detected
-                    log.critical(f"LCS heartbeat ERROR: now it is {now_it_is}, timeout_detection_time={self._timeout_detection_time} --> timeout since {timeout_since} > heartbeat_timeout ({self.heartbeat_timeout})")
+                    if not self._timeout_reported:
+                        log.critical(f"LCS heartbeat ERROR: now it is {now_it_is}, timeout_detection_time={self._timeout_detection_time} --> timeout since {timeout_since} > heartbeat_timeout ({self.heartbeat_timeout})")
+                        self._timeout_reported = True
                     return False
+        else:
+            self._previous_lcs_publish = data.data.yc_data.data.last_controller_publish
+            if self._timeout_detection_time != None:
+                log.critical(f"LCS heartbeat returned: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}")
+                self._timeout_detection_time = None
+                self._timeout_reported = False
 
-        elif self._timeout_detection_time != None:
-            log.warning(f"LCS heartbeat returned: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}")
-            self._timeout_detection_time = None
-
-        log.info(f"LCS heartbeat OK: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
+        log.debug(f"LCS heartbeat OK: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
 
         return True

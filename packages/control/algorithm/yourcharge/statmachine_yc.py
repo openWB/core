@@ -43,14 +43,18 @@ class StatemachineYc():
         self._standard_socket_handler: StandardSocketHandler = StandardSocketHandler(general_chargepoint_handler, self._status_handler)
         self._current_control_state = LoadControlState.Startup
         self._wait_for_plugin_entered = None
-        self._control_algorithm = ControlAlgorithmYc(key, value, self._status_handler)
+        self._control_algorithm = ControlAlgorithmYc(key, self._status_handler)
         self._previous_plug_state = None
-        log.critical(f"YC algorithm active: Internal CP found as '{self._internal_cp_key}'")
+        self._previous_justification = None
+        log.error(f"YC algorithm active: Internal CP found as '{self._internal_cp_key}'")
 
 
     def perform_load_control(self) -> None:
 
         try:
+            # (key, value) = next(((key, value) for i, (key, value) in enumerate(data.data.cp_data.items()) if value.chargepoint_module.config.type == 'internal_openwb'), None)
+            self._internal_cp = data.data.cp_data[self._internal_cp_key]
+            # log.error(f"Internal CP now '{id(self._internal_cp)}'")
 
             # check heartbeat and super-early exit in case of controller not being seen anymore, charge current --> 0 and socket --> off
             self._status_handler.update_heartbeat_ok(self._heartbeat_checker.is_heartbeat_ok())
@@ -61,7 +65,9 @@ class StatemachineYc():
             self._status_handler.update_cp_enabled(data.data.yc_data.data.yc_control.cp_enabled)
 
             # detect plugin (for accounting and engery since plugged)
-            if self._previous_plug_state is not None and self._previous_plug_state and self._internal_cp.data.get.plug_state:
+            if self._previous_plug_state is None:
+                self._status_handler.get_accounting()
+            elif not self._previous_plug_state and self._internal_cp.data.get.plug_state:
                 # transition from unplugged -> plugged -> update meter value at plugin
                 self._status_handler.update_cp_meter_at_last_plugin(self._internal_cp.data.get.imported)
                 self._status_handler.new_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported, self._internal_cp.data.get.charge_state, self._internal_cp.data.get.plug_state)
@@ -101,7 +107,7 @@ class StatemachineYc():
             elif self._current_control_state == LoadControlState.Disabled:
                 self._check_disabled_transitions()
             else:
-                log.critical(f"Unknown state '{self._current_control_state.name}': Resetting to Idle")
+                log.error(f"Unknown state '{self._current_control_state.name}': Resetting to Idle")
                 self._current_control_state = LoadControlState.Idle
 
             # log.info(f"Leaving with load control state {self._current_control_state.name}")
@@ -109,7 +115,8 @@ class StatemachineYc():
         finally:
             self._valid_standard_socket_tag_found = False
             self._previous_plug_state = self._internal_cp.data.get.plug_state
-            self._status_handler.update_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported, self._internal_cp.data.get.charge_state, self._internal_cp.data.get.plug_state)
+            if self._internal_cp.data.get.plug_state:
+                self._status_handler.update_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported, self._internal_cp.data.get.charge_state, self._internal_cp.data.get.plug_state)
             self._send_status()
             SubData.internal_chargepoint_data["rfid_data"].last_tag = ""
 
@@ -126,7 +133,6 @@ class StatemachineYc():
                 self._state_change("Valid EV RFID tag scanned while idle but plugged-in", LoadControlState.EvActive)
             else:
                 self._state_change(f"Valid EV RFID tag scanned while idle and unplugged: Waiting {data.data.yc_data.data.yc_config.max_plugin_wait_time_s} for plugin", LoadControlState.WaitingForPlugin)
-
 
     def _check_wait_for_plugin_transitions(self) -> None:
         # first check for socket activation
@@ -157,7 +163,7 @@ class StatemachineYc():
 
     def _check_socket_active_transitions(self) -> None:
         if self._valid_standard_socket_tag_found:
-            log.info("Detected socket RFID scan while socket is active: Starting turn-off procedure")
+            log.error("Detected socket RFID scan while socket is active: Starting turn-off procedure")
             self._standard_socket_handler.socket_off()
             self._wait_for_socket_idle = True
             # no transition yet - only transit once EV can charge is signaled again
@@ -165,7 +171,7 @@ class StatemachineYc():
 
         # first check for EV activation or "re-scan" of socket RFID tag -> in both cases we trigger disable of standard socket
         if self._valid_ev_rfid_scanned(self._last_rfid_data):
-            log.info("Detected EV RFID scan while socket is active: Starting turn-off procedure")
+            log.error("Detected EV RFID scan while socket is active: Starting turn-off procedure")
             self._standard_socket_handler.socket_off()
             self._wait_for_socket_idle = True
             # no transition yet - only transit once EV can charge is signaled again
@@ -198,8 +204,13 @@ class StatemachineYc():
 
         if not self._internal_cp.data.get.plug_state:
             self._status_handler.update_cp_enabled(False)
+            self._set_current("Detected unplug while charging", 0.0, yourcharge.LmStatus.DownByDisable)
             self._state_change("Detected unplug while charging", LoadControlState.Idle)
             return
+
+        if not self._status_handler.get_cp_enabled():
+            self._set_current("Chargepoint got disabled from outside while in regular control loop", 0.0, yourcharge.LmStatus.DownByDisable)
+            self._state_change("Chargepoint got disabled from outside while in regular control loop", LoadControlState.Idle)
 
         self._control_algorithm.do_load_control()
 
@@ -246,10 +257,7 @@ class StatemachineYc():
 
     ### other, non-statemachine, methods
     def _set_current(self, justification: str, current: float, status: yourcharge.LmStatus):
-        self._status_handler.update_lm_status(status)
-        if abs(self._internal_cp.data.set.current - current) > 0.001:
-            log.info(f"{justification}: Setting CP '{self._internal_cp_key}' charge current to {current} A (status {status})")
-            self._internal_cp.data.set.current = current
+        self._control_algorithm.set_current(justification, current, status)
 
 
     def _send_status(self):
@@ -261,12 +269,12 @@ class StatemachineYc():
 
     def _valid_ev_rfid_scanned(self, rfid_data: RfidData) -> bool:
         if rfid_data.last_tag is not None and rfid_data.last_tag != "":
-            log.info(f"Detected RFID scan: {rfid_data.last_tag}: Still need to check if it's a valid EV tag ...")
+            log.error(f"Detected RFID scan: {rfid_data.last_tag}: Still need to check if it's a valid EV tag ...")
             if rfid_data.last_tag in data.data.yc_data.data.yc_config.allowed_rfid_ev:
-                log.info(f"!!! Detected RFID scan: {rfid_data.last_tag}: VALID EV TAG !!!")
+                log.error(f"!!! Detected RFID scan: {rfid_data.last_tag}: VALID EV TAG !!!")
                 return True
             else:
-                log.info(f"Detected RFID scan: {rfid_data.last_tag}: Is not a valid EV RFID tag")
+                log.error(f"Detected RFID scan: {rfid_data.last_tag}: Is not a valid EV RFID tag")
         return False
 
     def _get_state_from_plugstate(self) -> LoadControlState:
@@ -275,7 +283,7 @@ class StatemachineYc():
         else:
             return LoadControlState.WaitingForPlugin
 
-    def _state_change(self, info_text: str, new_state: LoadControlState, log_level = logging.INFO):
+    def _state_change(self, info_text: str, new_state: LoadControlState, log_level = logging.ERROR):
             if self._current_control_state != new_state:
                 log.log(level=log_level, msg=f"---> {info_text}: Switching to state '{new_state.name}'")
                 self._current_control_state = new_state
