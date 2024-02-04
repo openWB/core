@@ -241,7 +241,7 @@ export class ChargePoint {
 	}
 	set etMaxPrice(newPrice: number) {
 		console.log('Setting et max price needs to be implemented')
-		updateServer('cpEtMaxPrice', newPrice / 100000, this.id)
+		updateServer('cpEtMaxPrice', Math.round(newPrice * 10) / 1000000, this.id)
 	}
 	toPowerItem(): PowerItem {
 		return {
@@ -308,7 +308,6 @@ export class Vehicle {
 				return cp
 			}
 		}
-		console.log('no cp')
 		return undefined
 	}
 }

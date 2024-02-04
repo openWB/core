@@ -16,7 +16,7 @@
 				>
 			</div>
 		</template>
-		<div class="d-flex justify-content-between">
+		<div class="d-flex justify-content-between pb-2">
 			<InfoItem heading="Leistung:" :small="true">
 				<FormatWatt :watt="Math.abs(props.counter.power)"></FormatWatt>
 			</InfoItem>

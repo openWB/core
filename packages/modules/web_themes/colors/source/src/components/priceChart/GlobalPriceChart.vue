@@ -43,6 +43,7 @@ import {
 	timeFormat,
 	axisLeft,
 	select,
+	line,
 } from 'd3'
 
 const props = defineProps<{
@@ -78,15 +79,28 @@ const xScale = computed(() => {
 		.range([margin.left, width - margin.left - margin.right])
 		.domain(xdomain)
 })
-const yScale = computed(() => {
-	let ydomain = extent(plotdata.value, (d) => d[1]) as [number, number]
-	if (ydomain[0] > 0) {
-		ydomain[0] = 0
+const yDomain = computed(() => {
+	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
+	if (yd[0] > 1) {
+		yd[0] = 0
+	} else {
+		yd[0] = Math.floor(yd[0]) - 1
 	}
-	ydomain[1] = Math.floor(ydomain[1] + 1)
+	yd[1] = Math.floor(yd[1]) + 1
+	return yd
+})
+const yScale = computed(() => {
 	return scaleLinear()
 		.range([height - margin.bottom, 0])
-		.domain(ydomain)
+		.domain(yDomain.value)
+})
+const zeroPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(0)],
+		[width - margin.right, yScale.value(0)],
+	]
+	return generator(points as [number, number][])
 })
 const xAxisGenerator = computed(() => {
 	return axisBottom<Date>(xScale.value).ticks(4).tickFormat(timeFormat('%H:%M'))
@@ -113,15 +127,9 @@ const draw = computed(() => {
 		.append('rect')
 		.attr('class', 'bar')
 		.attr('x', (d) => xScale.value(d[0]))
-		.attr('y', (d) => {
-			return d[1] >= 0 ? yScale.value(d[1]) : yScale.value(0)
-		})
+		.attr('y', (d) => yScale.value(d[1]))
 		.attr('width', barwidth.value)
-		.attr('height', (d) =>
-			d[1] >= 0
-				? yScale.value(0) - yScale.value(d[1])
-				: yScale.value(d[1]) - yScale.value(0),
-		)
+		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
 		.attr('fill', 'var(--color-charging)')
 	// X Axis
 	const xAxis = svg.append('g').attr('class', 'axis').call(xAxisGenerator.value)
@@ -152,8 +160,14 @@ const draw = computed(() => {
 		.attr('stroke-width', '0.5')
 
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
-	// Line for max price
 
+	// zero line
+	if (yDomain.value[0] < 0) {
+		svg
+			.append('path')
+			.attr('d', zeroPath.value)
+			.attr('stroke', 'var(--color-fg)')
+	}
 	return 'PriceChart.vue'
 })
 const chartId = computed(() => {
@@ -183,6 +197,7 @@ onMounted(() => {
 	color: var(--color-axis);
 	font-size: 16px;
 }
+
 .providerbadge {
 	background-color: var(--color-menu);
 	font-weight: normal;

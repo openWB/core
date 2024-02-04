@@ -6,13 +6,15 @@
 			>
 			<span>Fahrzeuge</span>
 		</template>
-		<p
-			v-for="(vehicle, index) in vehicles"
-			:key="index"
-			class="row m-1 mt-0 p-0"
-		>
-			<VlVehicle :vehicle="vehicle" />
-		</p>
+		<div class="pb-3">
+			<div
+				v-for="(vehicle, index) in vehicles"
+				:key="index"
+				class="row m-1 mt-0 p-0"
+			>
+				<VlVehicle :vehicle="vehicle" />
+			</div>
+		</div>
 	</WBWidgetFlex>
 </template>
 

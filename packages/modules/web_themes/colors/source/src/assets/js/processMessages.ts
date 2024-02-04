@@ -1,4 +1,4 @@
-import { mqttRegister, mqttSubscribe } from './mqttClient'
+import { mqttRegister, mqttSubscribe, mqttUnsubscribe } from './mqttClient'
 import type { Hierarchy } from './types'
 import {
 	correctHouseConsumption,
@@ -37,7 +37,7 @@ const topicsToSubscribe = [
 	'openWB/optional/et/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
-	// 'openWB/command/#',
+	'openWB/command/' + mqttClientId() + '/#',
 ]
 export function msgInit() {
 	mqttRegister(processMqttMessage)
@@ -45,6 +45,11 @@ export function msgInit() {
 		mqttSubscribe(topic)
 	})
 	initGraph()
+}
+export function msgStop() {
+	topicsToSubscribe.forEach((topic) => {
+		mqttUnsubscribe(topic)
+	})
 }
 function processMqttMessage(topic: string, payload: Buffer) {
 	const message = payload.toString()

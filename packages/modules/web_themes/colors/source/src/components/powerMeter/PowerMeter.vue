@@ -233,7 +233,7 @@ function labelCoordinates(item: number) {
 // methods
 
 function soc(i: number) {
-	return chargepoints.value[i].soc
+	return Math.round(chargepoints.value[i].soc)
 }
 function trimName(name: string) {
 	const maxlen = 12

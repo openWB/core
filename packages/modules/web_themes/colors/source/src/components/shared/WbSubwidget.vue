@@ -35,8 +35,6 @@ const titlestyle = computed(() => {
 	if (props.small) {
 		result['font-size'] = 'var(--font-verysmall)'
 	}
-	console.log(result)
-	console.log(props.small)
 	return result
 })
 const widgetwidth = computed(() => {

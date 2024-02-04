@@ -15,8 +15,9 @@ Hagen */
 			<PowerMeter />
 			<PowerGraph />
 			<EnergyMeter />
-			<CounterList />
+			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
 			<VehicleList />
+			<CounterList />
 			<GlobalPriceChart id="Hidden" />
 		</div>
 		<div v-if="true" class="row py-0 px-0 m-0">
@@ -39,10 +40,10 @@ Hagen */
 			class="row py-0 m-0 d-flex justify-content-center"
 		>
 			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+			<VehicleList v-if="globalConfig.showVehicles"></VehicleList>
 			<BatteryList />
 			<SmartHomeList v-if="showSH"></SmartHomeList>
 			<CounterList v-if="globalConfig.showCounters"></CounterList>
-			<VehicleList v-if="globalConfig.showVehicles"></VehicleList>
 			<GlobalPriceChart
 				v-if="globalConfig.showPrices"
 				id="NoTabs"
@@ -65,6 +66,15 @@ Hagen */
 			>
 				<i class="fa-solid fa-lg fa-charging-station" />
 				<span class="d-none d-md-inline ms-2">Ladepunkte</span>
+			</a>
+			<a
+				v-if="globalConfig.showVehicles"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#vehiclelist"
+			>
+				<i class="fa-solid fa-lg fa-car" />
+				<span class="d-none d-md-inline ms-2">Fahrzeuge</span>
 			</a>
 			<a
 				v-if="globalData.isBatteryConfigured"
@@ -93,15 +103,7 @@ Hagen */
 				<i class="fa-solid fa-lg fa-bolt" />
 				<span class="d-none d-md-inline ms-2">Zähler</span>
 			</a>
-			<a
-				v-if="globalConfig.showVehicles"
-				class="nav-link"
-				data-bs-toggle="tab"
-				data-bs-target="#vehiclelist"
-			>
-				<i class="fa-solid fa-lg fa-car" />
-				<span class="d-none d-md-inline ms-2">Fahrzeuge</span>
-			</a>
+
 			<a
 				v-if="globalConfig.showPrices"
 				class="nav-link"
@@ -126,10 +128,10 @@ Hagen */
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
 					<ChargePointList :shortlist="globalConfig.shortCpList != 'no'" />
+					<VehicleList v-if="globalConfig.showVehicles" />
 					<BatteryList />
 					<SmartHomeList v-if="showSH" />
 					<CounterList v-if="globalConfig.showCounters" />
-					<VehicleList v-if="globalConfig.showVehicles" />
 					<GlobalPriceChart v-if="globalConfig.showPrices" id="Overview" />
 				</div>
 			</div>
@@ -143,6 +145,20 @@ Hagen */
 					<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
 				</div>
 			</div>
+			<div
+				id="vehiclelist"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="vehicle-tab"
+			>
+				<div
+					v-if="globalConfig.showVehicles"
+					class="row py-0 m-0 d-flex justify-content-center"
+				>
+					<VehicleList />
+				</div>
+			</div>
+
 			<div
 				id="batterylist"
 				class="tab-pane"
@@ -174,19 +190,6 @@ Hagen */
 					class="row py-0 m-0 d-flex justify-content-center"
 				>
 					<CounterList />
-				</div>
-			</div>
-			<div
-				id="vehiclelist"
-				class="tab-pane"
-				role="tabpanel"
-				aria-labelledby="vehicle-tab"
-			>
-				<div
-					v-if="globalConfig.showVehicles"
-					class="row py-0 m-0 d-flex justify-content-center"
-				>
-					<VehicleList />
 				</div>
 			</div>
 			<div
@@ -248,6 +251,7 @@ import {
 	screensize,
 } from '@/assets/js/themeConfig'
 import GlobalPriceChart from '@/components/priceChart/GlobalPriceChart.vue'
+import { initGraph } from '@/components/powerGraph/model'
 
 // state
 const showMQ = ref(false)
@@ -265,15 +269,25 @@ function toggleMqViewer() {
 onMounted(() => {
 	init()
 	window.addEventListener('resize', updateDimensions)
-	window.document.addEventListener('visibilitychange', visibilityChange)
+	window.addEventListener('focus', haveFocus)
+	//window.addEventListener('blur',lostFocus)
 	msgInit()
 })
 
-function visibilityChange() {
-	if (!document.hidden) {
-		msgInit()
+function haveFocus() {
+	if (document.hasFocus()) {
+		// console.log('I have focus')
+
+		initGraph()
 	}
+	//msgInit()
 }
+/* function lostFocus() {
+	if (!document.hasFocus()) {
+		console.log('I lost focus')
+	}
+//	msgStop()
+} */
 </script>
 
 <style scoped>
@@ -316,12 +330,15 @@ function visibilityChange() {
 .fa-plug {
 	color: var(--color-devices);
 }
+
 .fa-bolt {
 	color: var(--color-evu);
 }
+
 .fa-car {
 	color: var(--color-charging);
 }
+
 .fa-money-bill-wave {
 	color: var(--color-pv);
 }

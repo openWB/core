@@ -4,13 +4,13 @@
 			<span class="vehiclename">{{ props.vehicle.name }} </span>
 		</template>
 		<div class="d-flex justify-content-between">
-			<InfoItem heading="Status:" :small="true">
-				{{ statusString }}
+			<InfoItem heading="Status:" :small="false">
+				<span :style="{ color: statusColor }">{{ statusString }}</span>
 			</InfoItem>
-			<InfoItem heading="Ladestand:" :small="true">
-				{{ props.vehicle.soc }} %
+			<InfoItem heading="Ladestand:" :small="false">
+				{{ Math.round(props.vehicle.soc) }} %
 			</InfoItem>
-			<InfoItem heading="Reichweite:" :small="true">
+			<InfoItem heading="Reichweite:" :small="false">
 				{{ props.vehicle.range }} km
 			</InfoItem>
 		</div>
@@ -33,11 +33,28 @@ const statusString = computed(() => {
 		if (cp.isCharging) {
 			result = 'Lädt (' + cp.name + ')'
 		} else {
-			result = 'Bereit'
+			result = 'Bereit (' + cp.name + ')'
 		}
 		return result
 	} else {
-		return '-'
+		return 'Unterwegs'
+	}
+})
+
+const statusColor = computed(() => {
+	let cp = props.vehicle.chargepoint
+	if (cp != undefined) {
+		if (cp.isLocked) {
+			return 'var(--color-evu)'
+		} else if (cp.isCharging) {
+			return 'var(--color-charging)'
+		} else if (cp.isPluggedIn) {
+			return 'var(--color-battery)'
+		} else {
+			return 'var(--color-axis)'
+		}
+	} else {
+		return 'var(--color-axis)'
 	}
 })
 </script>
@@ -48,6 +65,6 @@ const statusString = computed(() => {
 }
 
 .vehiclename {
-	font-size: var(--font-medium);
+	font-size: var(--font-large);
 }
 </style>

@@ -118,15 +118,20 @@ const xScale = computed(() => {
 		.range([margin.left, width - margin.left - margin.right])
 		.domain(xdomain)
 })
-const yScale = computed(() => {
-	let ydomain = extent(plotdata.value, (d) => d[1]) as [number, number]
-	if (ydomain[0] > 0) {
-		ydomain[0] = 0
+const yDomain = computed(() => {
+	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
+	if (yd[0] > 1) {
+		yd[0] = 0
+	} else {
+		yd[0] = Math.floor(yd[0] - 1)
 	}
-	ydomain[1] = Math.floor(ydomain[1] + 1)
+	yd[1] = Math.floor(yd[1] + 1)
+	return yd
+})
+const yScale = computed(() => {
 	return scaleLinear()
 		.range([height - margin.bottom, 0])
-		.domain(ydomain)
+		.domain(yDomain.value)
 })
 const linePath = computed(() => {
 	const generator = line()
@@ -136,6 +141,15 @@ const linePath = computed(() => {
 	]
 	return generator(points as [number, number][])
 })
+const zeroPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(0)],
+		[width - margin.right, yScale.value(0)],
+	]
+	return generator(points as [number, number][])
+})
+
 const xAxisGenerator = computed(() => {
 	return axisBottom<Date>(xScale.value).ticks(4).tickFormat(timeFormat('%H:%M'))
 })
@@ -161,15 +175,9 @@ const draw = computed(() => {
 		.append('rect')
 		.attr('class', 'bar')
 		.attr('x', (d) => xScale.value(d[0]))
-		.attr('y', (d) => {
-			return d[1] >= 0 ? yScale.value(d[1]) : yScale.value(0)
-		})
+		.attr('y', (d) => yScale.value(d[1]))
 		.attr('width', barwidth.value)
-		.attr('height', (d) =>
-			d[1] >= 0
-				? yScale.value(0) - yScale.value(d[1])
-				: yScale.value(d[1]) - yScale.value(0),
-		)
+		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
 		.attr('fill', (d) =>
 			d[1] <= maxPrice.value ? 'var(--color-charging)' : 'var(--color-axis)',
 		)
@@ -200,8 +208,14 @@ const draw = computed(() => {
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
 		.attr('stroke-width', '0.5')
-
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+	// zero line
+	if (yDomain.value[0] < 0) {
+		svg
+			.append('path')
+			.attr('d', zeroPath.value)
+			.attr('stroke', 'var(--color-fg)')
+	}
 	// Line for max price
 	svg.append('path').attr('d', linePath.value).attr('stroke', 'yellow')
 
