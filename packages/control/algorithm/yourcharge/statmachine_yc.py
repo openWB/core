@@ -75,6 +75,8 @@ class StatemachineYc():
             if self._last_rfid_data is not None and self._last_rfid_data.last_tag != "":
                 self._status_handler.update_rfid_scan(rfid=self._last_rfid_data.last_tag)
                 self._valid_standard_socket_tag_found = self._standard_socket_handler.valid_socket_rfid_scanned(self._last_rfid_data)
+                if not self._valid_standard_socket_tag_found:
+                    self._status_handler.update_accounting_rfid(self._last_rfid_data.last_tag)
             else:
                 self._valid_standard_socket_tag_found = False
 
@@ -290,6 +292,7 @@ class StatemachineYc():
             log.error(f"Detected RFID scan: {rfid_data.last_tag}: Still need to check if it's a valid EV tag ...")
             if rfid_data.last_tag in data.data.yc_data.data.yc_config.allowed_rfid_ev:
                 log.error(f"!!! Detected RFID scan: {rfid_data.last_tag}: VALID EV TAG !!!")
+                self._status_handler.update_accounting_rfid(rfid_data.last_tag)
                 return True
             else:
                 log.error(f"Detected RFID scan: {rfid_data.last_tag}: Is not a valid EV RFID tag")
@@ -306,7 +309,7 @@ class StatemachineYc():
                 log.log(level=log_level, msg=f"---> {info_text}: Switching to state '{new_state.name}'")
                 self._current_control_state = new_state
             else:
-                log.log(level=log_level, msg=f"---> {info_text}: Staying in state '{new_state.name}'")
+                log.debug(f"---> {info_text}: Staying in state '{new_state.name}'")
 
     def _derive_state(self) -> LoadControlState:
         return_state = LoadControlState.Startup
