@@ -286,7 +286,7 @@ def _collect_yearly_log_data(year: str):
 
 
 def _analyse_energy_source(data) -> Dict:
-    if data:
+    if data and len(data["entries"]) > 0:
         for i in range(0, len(data["entries"])):
             data["entries"][i] = analyse_percentage(data["entries"][i])
         data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
@@ -337,13 +337,16 @@ def analyse_percentage(entry):
 
 
 def analyse_percentage_totals(entries, totals):
+    for section in ("hc", "cp"):
+        if "all" not in totals[section].keys():
+            totals[section]["all"] = {}
     for source in ("grid", "pv", "bat", "cp"):
         totals["hc"]["all"].update({f"energy_imported_{source}": 0})
         totals["cp"]["all"].update({f"energy_imported_{source}": 0})
         for entry in entries:
-            if "all" in entry["hc"].keys():
+            if "hc" in entry.keys() and "all" in entry["hc"].keys():
                 totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"][f"energy_imported_{source}"]*1000
-            if "all" in entry["cp"].keys():
+            if "all" in entry["cp"].keys() and f"energy_imported_{source}" in entry["cp"]["all"].keys():
                 totals["cp"]["all"][f"energy_imported_{source}"] += entry["cp"]["all"][f"energy_imported_{source}"]*1000
     return totals
 
