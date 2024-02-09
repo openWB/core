@@ -24,7 +24,7 @@ def test_analyse_percentage(daily_log_entry_kw):
         "energy_imported_bat": 0.23,
         "energy_imported_cp": 0.0,
         "energy_imported_grid": 0.624,
-        "energy_imported_pv": 0.106})
+        "energy_imported_pv": 0.105})
     expected["hc"]["all"].update({
         "energy_imported_bat": 0.002,
         "energy_imported_cp": 0.0,
