@@ -29,6 +29,7 @@ from helpermodules.timecheck import convert_timedelta_to_time_string, get_differ
 from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
 from modules.ripple_control_receivers.gpio.config import GpioRcr
+import re
 
 log = logging.getLogger("data_migration")
 
@@ -286,7 +287,7 @@ class MigrateData:
                 merged_entries = merger(new_entries + entries)
                 content["totals"] = get_totals(merged_entries)
                 content["entries"] = merged_entries
-                content["names"] = get_names(content["totals"], LegacySmartHomeLogData().update()[1])
+                content["names"] = get_names(content["totals"], LegacySmartHomeLogData().sh_names)
                 with open(filepath, "w") as jsonFile:
                     json.dump(content, jsonFile)
             except Exception:
@@ -294,7 +295,9 @@ class MigrateData:
 
         threads: List[Thread] = []
         for old_file_name in os.listdir(f"{self.BACKUP_DATA_PATH}/{folder}"):
-            threads.append(Thread(target=convert, args=[old_file_name, ], name=f"convert {folder} {old_file_name}"))
+            # limit valid files to pattern "YYYYMMDD.csv"
+            if re.match(r"\d{8}\.csv$", old_file_name):
+                threads.append(Thread(target=convert, args=[old_file_name, ], name=f"convert {folder} {old_file_name}"))
         return threads
 
     def _daily_log_entry(self, file: str):
