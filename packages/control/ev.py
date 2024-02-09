@@ -572,7 +572,7 @@ class ChargeTemplate:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
-                    if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+                    if self.data.et.active and data.data.optional_data.et_provider_availble():
                         if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
                             return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.name
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
@@ -610,7 +610,7 @@ class ChargeTemplate:
         message = None
         try:
             instant_charging = self.data.chargemode.instant_charging
-            if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+            if self.data.et.active and data.data.optional_data.et_provider_availble():
                 if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
                     return 0, "stop", self.CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
@@ -807,7 +807,7 @@ class ChargeTemplate:
         else:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
-            if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+            if self.data.et.active and data.data.optional_data.et_provider_availble():
                 hourlist = data.data.optional_data.et_get_loading_hours(plan_data.duration, plan_data.remaining_time)
                 log.debug(f"Günstige Ladezeiten: {hourlist}")
                 if timecheck.is_list_valid(hourlist):
