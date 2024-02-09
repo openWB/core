@@ -2,16 +2,8 @@
 	<g id="emBarLabels">
 		<!-- Bars -->
 		<g v-for="(item, i) in props.plotdata" :key="i">
-			<EmLabel
-				:item="item"
-				:x-scale="props.xScale"
-				:y-scale="props.yScale"
-				:margin="props.margin"
-				:height="props.height"
-				:barcount="props.plotdata.length"
-				:aut-text="autTxt(item)"
-				:autarchy="autPct(item)"
-			/>
+			<EmLabel :item="item" :x-scale="props.xScale" :y-scale="props.yScale" :margin="props.margin" :height="props.height"
+				:barcount="props.plotdata.length" :aut-text="autTxt(item)" :autarchy="autPct(item)" />
 		</g>
 	</g>
 </template>
@@ -60,15 +52,19 @@ function autPct(item: PowerItem) {
 		const generatedEnergy = src.pv.energy
 		const batEnergy = src.batOut.energy
 		const storedEnergy = usg.batIn.energy
-		return Math.round(
-			((generatedEnergy + batEnergy - exportedEnergy - storedEnergy) /
-				(generatedEnergy +
-					batEnergy +
-					importedEnergy -
-					exportedEnergy -
-					storedEnergy)) *
+		if ((generatedEnergy + batEnergy - exportedEnergy - storedEnergy) > 0) {
+			return Math.round(
+				((generatedEnergy + batEnergy - exportedEnergy - storedEnergy) /
+					(generatedEnergy +
+						batEnergy +
+						importedEnergy -
+						exportedEnergy -
+						storedEnergy)) *
 				100,
-		)
+			)
+		} else {
+			return 0
+		}
 	} else {
 		return item.pvPercentage
 	}

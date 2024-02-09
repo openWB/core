@@ -2,46 +2,54 @@
 Hagen */
 
 <template>
-	<WbWidget v-if="globalData.isBatteryConfigured" :variable-width="true">
+	<WbWidget
+		v-if="globalData.isBatteryConfigured"
+		:variable-width="true"
+		:full-width="false"
+	>
 		<template #title>
 			<span class="fas fa-car-battery me-2" style="color: var(--color-battery)"
 				>&nbsp;</span
 			>
 			<span class="sh-title py-4">Speicher</span>
 		</template>
-		<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
-			<!-- Soc information -->
-			<InfoItem heading="Ladestand:">
-				<BatterySymbol :soc="globalData.batterySoc" class="me-2" />
-			</InfoItem>
-			<!-- Status information -->
-			<InfoItem heading="Status:">
-				<span>
-					{{ batteryState }}
-				</span>
-			</InfoItem>
+		<div class="row m-1 mt-0 p-0">
+			<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
+				<!-- Soc information -->
+				<InfoItem heading="Ladestand:">
+					<BatterySymbol :soc="globalData.batterySoc" class="me-2" />
+				</InfoItem>
+				<!-- Status information -->
+				<InfoItem heading="Status:">
+					<span>
+						{{ batteryState }}
+					</span>
+				</InfoItem>
 
-			<!-- Status information -->
-			<InfoItem heading="Leistung:">
-				<span>
-					{{ powerstring }}
-				</span>
-			</InfoItem>
+				<!-- Status information -->
+				<InfoItem heading="Leistung:">
+					<span>
+						{{ powerstring }}
+					</span>
+				</InfoItem>
+			</div>
 		</div>
-		<div class="col m-0 mt-3 mb-1 p-0 d-flex justify-content-between">
-			<InfoItem heading="">
-				<span class="todaystring mt-4 float-right"> Heute:</span>
-			</InfoItem>
-			<InfoItem heading="Geladen:">
-				<span>
-					{{ formatWattH(usageSummary.batIn.energy) }}
-				</span>
-			</InfoItem>
-			<InfoItem heading="Geliefert">
-				<span>
-					{{ formatWattH(sourceSummary.batOut.energy) }}
-				</span>
-			</InfoItem>
+		<div class="row m-1 mt-0 p-0">
+			<div class="col m-0 mt-0 mb-1 p-0 d-flex justify-content-between">
+				<InfoItem heading="">
+					<span class="todaystring mt-4 float-right"> Heute:</span>
+				</InfoItem>
+				<InfoItem heading="Geladen:">
+					<span>
+						{{ formatWattH(usageSummary.batIn.energy) }}
+					</span>
+				</InfoItem>
+				<InfoItem heading="Geliefert">
+					<span>
+						{{ formatWattH(sourceSummary.batOut.energy) }}
+					</span>
+				</InfoItem>
+			</div>
 		</div>
 	</WbWidget>
 </template>
@@ -72,12 +80,15 @@ const powerstring = computed(() => {
 .battery-color {
 	color: var(--color-battery);
 }
+
 .fg-color {
 	color: var(--color-fg);
 }
+
 .menu-color {
 	color: var(--color-menu);
 }
+
 .todaystring {
 	color: var(--color-menu);
 }

@@ -241,7 +241,7 @@ export class ChargePoint {
 	}
 	set etMaxPrice(newPrice: number) {
 		console.log('Setting et max price needs to be implemented')
-		updateServer('cpEtMaxPrice', newPrice / 100000, this.id)
+		updateServer('cpEtMaxPrice', Math.round(newPrice * 10) / 1000000, this.id)
 	}
 	toPowerItem(): PowerItem {
 		return {
@@ -301,6 +301,14 @@ export class Vehicle {
 				return chargeTemplates[this.chargeTemplateId].et.max_price * 100000
 			}
 		}
+	}
+	get chargepoint(): ChargePoint | undefined {
+		for (const cp of Object.values(chargePoints)) {
+			if (cp.connectedVehicle == this.id) {
+				return cp
+			}
+		}
+		return undefined
 	}
 }
 export interface ConnectedVehicleConfig {

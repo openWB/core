@@ -56,7 +56,7 @@
 				<i class="fa-solid fa-rectangle-list" />
 			</a>
 			<a
-				v-if="cp.etActive"
+				v-if="etData.active && cp.etActive"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#priceChart' + cpid"
@@ -160,6 +160,7 @@ import CPConfigTimed from './CPConfigTimed.vue'
 import CPConfigVehicle from './CPConfigVehicle.vue'
 import CPChargeConfig from './CPChargeConfig.vue'
 import PriceChart from '@/components/priceChart/PriceChart.vue'
+import { etData } from '@/components/priceChart/model'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
