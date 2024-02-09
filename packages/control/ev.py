@@ -833,13 +833,15 @@ class ChargeTemplate:
         return 0, "stop", "Keine Ladung, da der Lademodus Stop aktiv ist."
 
 
-def get_ev_to_rfid(rfid: str, vehicle_id: str):
+def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]:
     """ ermittelt zum übergebenen ID-Tag das Fahrzeug
 
     Parameter
     ---------
     rfid: string
         ID-Tag
+    vehicle_id: string
+        MAC-Adresse des ID-Tags (nur openWB Pro)
 
     Return
     ------
@@ -849,7 +851,7 @@ def get_ev_to_rfid(rfid: str, vehicle_id: str):
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
-                if vehicle_id in data.data.ev_data[vehicle].data.tag_id:
+                if vehicle_id is not None and vehicle_id in data.data.ev_data[vehicle].data.tag_id:
                     log.debug(f"MAC {vehicle_id} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
                 if rfid in data.data.ev_data[vehicle].data.tag_id:
