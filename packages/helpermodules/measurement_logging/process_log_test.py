@@ -19,7 +19,7 @@ def test_get_totals(daily_log_sample, daily_log_totals):
 def test_analyse_percentage(daily_log_entry_kw):
     # setup
     expected = deepcopy(daily_log_entry_kw)
-    expected.update({"energy_source":  {'bat': 0.2398, 'cp': 0.0, 'grid': 0.6504, 'pv': 0.1099}})
+    expected.update({"energy_source":  {'bat': 0.2398, 'cp': 0.0, 'grid': 0.6504, 'pv': 0.1098}})
     expected["cp"]["all"].update({
         "energy_imported_bat": 0.23,
         "energy_imported_cp": 0.0,

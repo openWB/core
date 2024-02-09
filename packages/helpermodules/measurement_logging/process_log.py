@@ -310,11 +310,21 @@ def analyse_percentage(entry):
                 grid_exported = counter["energy_exported"]
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
         try:
+            if grid_exported > pv:
+                # Ins Netz eingespeiste Leistung kam nicht von der PV-Anlage sondern aus dem Speicher
+                consumption += grid_exported - pv
+            elif bat_imported > pv:
+                # Die geladene Energie des Speichers kam nicht von der PV-Anlage sondern aus dem Netz
+                consumption += bat_imported - pv
+            grid_energy_source = format(grid_imported / consumption)
+            cp_energy_source = format(cp_exported/consumption)
+            bat_energy_source = format(bat_exported/consumption)
+            pv_energy_source = format(1 - grid_energy_source - bat_energy_source - cp_energy_source)
             entry["energy_source"] = {
-                "grid": format(grid_imported / consumption),
-                "pv": format((pv - grid_exported - bat_imported) / consumption),
-                "bat": format(bat_exported/consumption),
-                "cp": format(cp_exported/consumption)}
+                "grid": grid_energy_source,
+                "pv": pv_energy_source,
+                "bat": bat_energy_source,
+                "cp": cp_energy_source}
         except ZeroDivisionError:
             entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
         for source in ("grid", "pv", "bat", "cp"):
