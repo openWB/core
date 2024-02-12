@@ -19,7 +19,7 @@ class B23(AbstractCounter):
 
     def get_frequency(self) -> float:
         time.sleep(0.1)
-        return self.client.read_holding_registers(0x5B2C, ModbusDataType.INT_16, unit=self.id) / 100
+        return self.client.read_holding_registers(0x5B2C, ModbusDataType.UINT_16, unit=self.id) / 100
 
     def get_imported(self) -> float:
         time.sleep(0.1)
@@ -28,12 +28,15 @@ class B23(AbstractCounter):
     def get_power(self) -> Tuple[List[float], float]:
         time.sleep(0.1)
         power = self.client.read_holding_registers(0x5B14, ModbusDataType.INT_32, unit=self.id) / 100
-        return [0]*3, power
+        time.sleep(0.1)
+        powers = [val / 100 for val in self.client.read_holding_registers(
+            0x5B16, [ModbusDataType.INT_32]*3, unit=self.id)]
+        return powers, power
 
     def get_power_factors(self) -> List[float]:
         time.sleep(0.1)
         return [val / 1000 for val in self.client.read_holding_registers(
-            0x5B3B, [ModbusDataType.UINT_32]*3, unit=self.id)]
+            0x5B3B, [ModbusDataType.INT_16]*3, unit=self.id)]
 
     def get_voltages(self) -> List[float]:
         time.sleep(0.1)
