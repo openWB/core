@@ -497,7 +497,7 @@ class UpdateConfig:
 
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
-        InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
+        InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop(5)
         try:
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
@@ -557,6 +557,8 @@ class UpdateConfig:
 
     def __solve_breaking_changes(self) -> None:
         datastore_version = decode_payload(self.all_received_topics.get("openWB/system/datastore_version")) or 0
+        log.debug(f"current datastore version: {datastore_version}")
+        log.debug(f"target datastore version: {self.DATASTORE_VERSION}")
         for version in range(datastore_version, self.DATASTORE_VERSION):
             try:
                 getattr(self, f"upgrade_datastore_{version}")()
