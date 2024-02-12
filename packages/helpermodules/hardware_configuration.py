@@ -16,9 +16,10 @@ def update_hardware_configuration(new_setting: Dict) -> None:
 def remove_setting_hardware_configuration(obsolet_setting: str) -> None:
     with open(HARDWARE_CONFIGURATION_FILE, "r") as f:
         data = json.loads(f.read())
-    with open(HARDWARE_CONFIGURATION_FILE, "w") as f:
-        data.pop(obsolet_setting)
-        f.write(json.dumps(data))
+    if obsolet_setting in data:
+        with open(HARDWARE_CONFIGURATION_FILE, "w") as f:
+            data.pop(obsolet_setting)
+            f.write(json.dumps(data))
 
 
 def get_hardware_configuration_setting(name: str, default=None):
