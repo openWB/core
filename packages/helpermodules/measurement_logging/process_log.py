@@ -355,7 +355,8 @@ def analyse_percentage_totals(entries, totals):
         totals["cp"]["all"].update({f"energy_imported_{source}": 0})
         for entry in entries:
             if "hc" in entry.keys() and "all" in entry["hc"].keys():
-                totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"][f"energy_imported_{source}"]*1000
+                totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"].get(
+                    f"energy_imported_{source}", 0)*1000
             if "all" in entry["cp"].keys() and f"energy_imported_{source}" in entry["cp"]["all"].keys():
                 totals["cp"]["all"][f"energy_imported_{source}"] += entry["cp"]["all"][f"energy_imported_{source}"]*1000
     return totals
