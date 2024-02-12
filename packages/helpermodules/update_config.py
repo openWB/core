@@ -594,8 +594,9 @@ class UpdateConfig:
 
         # Alpha 3
         # Summen in Tages- und Monats-Log hinzufügen
-        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*").sort()
-        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*").sort())
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files.sort()
         for file in files:
             with open(file, "r+") as jsonFile:
                 try:
@@ -843,24 +844,29 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 15)
 
     def upgrade_datastore_15(self) -> None:
-        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*").sort()
-        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*").sort())
-        for file in files:
-            with open(file, "r+") as jsonFile:
-                try:
-                    content = json.load(jsonFile)
-                    for e in content["entries"]:
-                        e.update({"sh": {}})
-                    if "totals" not in content:
-                        content["totals"] = {}
-                    content["totals"].update({"sh": {}})
-                    content["names"] = get_names(content["totals"], {})
-                    jsonFile.seek(0)
-                    json.dump(content, jsonFile)
-                    jsonFile.truncate()
-                    log.debug(f"Format der Logdatei {file} aktualisiert.")
-                except Exception:
-                    log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        if files is not None:
+            files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        else:
+            files = glob.glob(str(self.base_path / "data" / "monthly_log") + "/*")
+        if files is not None:
+            files.sort()
+            for file in files:
+                with open(file, "r+") as jsonFile:
+                    try:
+                        content = json.load(jsonFile)
+                        for e in content["entries"]:
+                            e.update({"sh": {}})
+                        if "totals" not in content:
+                            content["totals"] = {}
+                        content["totals"].update({"sh": {}})
+                        content["names"] = get_names(content["totals"], {})
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format der Logdatei {file} aktualisiert.")
+                    except Exception:
+                        log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
         Pub().pub("openWB/system/datastore_version", 16)
 
     def upgrade_datastore_16(self) -> None:
@@ -962,23 +968,25 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 22)
 
     def upgrade_datastore_22(self) -> None:
-        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*").sort()
-        for file in files:
-            modified = False
-            with open(file, "r+") as jsonFile:
-                try:
-                    content = json.load(jsonFile)
-                    for entry in content:
-                        if entry["time"]["time_charged"].endswith(":60"):
-                            entry["time"]["time_charged"] = "1:00"
-                            modified = True
-                    if modified:
-                        jsonFile.seek(0)
-                        json.dump(content, jsonFile)
-                        jsonFile.truncate()
-                        log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
-                except Exception:
-                    log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
+        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*")
+        if files is not None:
+            files.sort()
+            for file in files:
+                modified = False
+                with open(file, "r+") as jsonFile:
+                    try:
+                        content = json.load(jsonFile)
+                        for entry in content:
+                            if entry["time"]["time_charged"].endswith(":60"):
+                                entry["time"]["time_charged"] = "1:00"
+                                modified = True
+                        if modified:
+                            jsonFile.seek(0)
+                            json.dump(content, jsonFile)
+                            jsonFile.truncate()
+                            log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
+                    except Exception:
+                        log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
         Pub().pub("openWB/system/datastore_version", 23)
 
     def upgrade_datastore_23(self) -> None:
@@ -1022,21 +1030,23 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 25)
 
     def upgrade_datastore_25(self) -> None:
-        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*").sort()
-        for file in files:
-            with open(file, "r+") as jsonFile:
-                try:
-                    content = json.load(jsonFile)
-                    for entry in content:
-                        entry["time"]["time_charged"] = timecheck.convert_timedelta_to_time_string(
-                            datetime.timedelta(seconds=timecheck.get_difference(
-                                entry["time"]["begin"], entry["time"]["end"])))
-                    jsonFile.seek(0)
-                    json.dump(content, jsonFile)
-                    jsonFile.truncate()
-                    log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
-                except Exception:
-                    log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
+        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*")
+        if files is not None:
+            files.sort()
+            for file in files:
+                with open(file, "r+") as jsonFile:
+                    try:
+                        content = json.load(jsonFile)
+                        for entry in content:
+                            entry["time"]["time_charged"] = timecheck.convert_timedelta_to_time_string(
+                                datetime.timedelta(seconds=timecheck.get_difference(
+                                    entry["time"]["begin"], entry["time"]["end"])))
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
+                    except Exception:
+                        log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
         Pub().pub("openWB/system/datastore_version", 26)
 
     def upgrade_datastore_26(self) -> None:
@@ -1166,9 +1176,11 @@ class UpdateConfig:
                 pass
             except Exception:
                 log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*").sort()
-        for file in files:
-            convert_file(file)
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        if files is not None:
+            files.sort()
+            for file in files:
+                convert_file(file)
         # next upgrade only fixes a bug introduced in an earlier version of this method
         # so we can skip upgrade_datastore_35() if this fixed version has run
         Pub().pub("openWB/system/datastore_version", 36)
@@ -1193,9 +1205,11 @@ class UpdateConfig:
                 pass
             except Exception:
                 log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*").sort()
-        for file in files:
-            convert_file(file)
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        if files is not None:
+            files.sort()
+            for file in files:
+                convert_file(file)
         Pub().pub("openWB/system/datastore_version", 36)
 
     def upgrade_datastore_36(self) -> None:
