@@ -296,7 +296,11 @@ class MigrateData:
         threads: List[Thread] = []
         for old_file_name in os.listdir(f"{self.BACKUP_DATA_PATH}/{folder}"):
             # limit valid files to pattern "YYYYMMDD.csv"
-            if re.match(r"\d{8}\.csv$", old_file_name):
+            if folder == "daily":
+                filename_pattern = r"\d{8}\.csv$"
+            else:
+                filename_pattern = r"\d{6}\.csv$"
+            if re.match(filename_pattern, old_file_name):
                 threads.append(Thread(target=convert, args=[old_file_name, ], name=f"convert {folder} {old_file_name}"))
         return threads
 
