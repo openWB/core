@@ -380,22 +380,16 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                 try:
                     new_data = {}
                     if "imported" in entry[type][module].keys() or "exported" in entry[type][module].keys():
-                        try:
-                            value_imported = entry[type][module]["imported"]
-                        except KeyError:
-                            value_imported = 0
-                        try:
-                            next_value_imported = next_entry[type][module]["imported"]
-                        except KeyError:
-                            next_value_imported = value_imported
-                        try:
-                            value_exported = entry[type][module]["exported"]
-                        except KeyError:
-                            value_exported = 0
-                        try:
-                            next_value_exported = next_entry[type][module]["exported"]
-                        except KeyError:
-                            next_value_exported = value_exported
+                        def get_current_and_next(value_key: str):
+                            def get_single_value(source: dict, default: int = 0):
+                                try:
+                                    return source[type][module][value_key]
+                                except KeyError:
+                                    return default
+                            current_value = get_single_value(entry);
+                            return current_value, get_single_value(next_entry,  current_value)
+                        value_imported, next_value_imported = get_current_and_next("imported")
+                        value_exported, next_value_exported = get_current_and_next("exported")
                         if calculation in [CalculationType.POWER, CalculationType.ALL]:
                             if next_value_imported < value_imported or next_value_exported < value_exported:
                                 # do not calculate as we have a backwards jump in our meter value!
