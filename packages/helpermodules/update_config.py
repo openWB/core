@@ -497,13 +497,15 @@ class UpdateConfig:
 
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
-        InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop(5)
+        InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
         try:
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
             time.sleep(2)
             self.__update_version()
+            # reread topics from broker to get updated values
+            InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
             self.__solve_breaking_changes()
         except Exception:
             log.exception("Fehler beim Prüfen des Brokers.")
