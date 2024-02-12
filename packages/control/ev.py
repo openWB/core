@@ -758,7 +758,7 @@ class ChargeTemplate:
     SCHEDULED_CHARGING_LIMITED_BY_AMOUNT = '{}kWh geladene Energie'
     SCHEDULED_CHARGING_IN_TIME = 'Zielladen mit {}A, um {}  um {} zu erreichen.'
     SCHEDULED_CHARGING_CHEAP_HOUR = "Zielladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
-    SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Kein Zielladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
+    SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Zielladen ausstehen, da noch kein günstiger Zeitpunkt zum preisbasierten Laden "
                                          "ist. Falls vorhanden, wird mit Überschuss geladen.")
 
     def scheduled_charging_calc_current(self,
