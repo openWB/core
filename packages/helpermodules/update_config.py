@@ -516,6 +516,8 @@ class UpdateConfig:
         client.subscribe("openWB/#", 2)
 
     def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
+        if msg.topic == "openWB/system/datastore_version":
+            log.debug(f"received datastore version: {msg.payload}")
         self.all_received_topics.update({msg.topic: msg.payload})
 
     def __remove_outdated_topics(self):
