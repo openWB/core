@@ -430,10 +430,14 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                 except Exception:
                     log.exception("Fehler beim Berechnen der Leistung")
             # next_entry may contain new modules, we add them here
-            for module in next_entry[type].keys():
-                if module not in entry[type].keys():
-                    log.warning(f"adding module {module} from next entry")
-                    entry[type].update({module: {"energy_imported": 0.0, "energy_exported": 0.0}})
+            try:
+                for module in next_entry[type].keys():
+                    if module not in entry[type].keys():
+                        log.warning(f"adding module {module} from next entry")
+                        entry[type].update({module: {"energy_imported": 0.0, "energy_exported": 0.0}})
+            except KeyError:
+                # catch missing "type"
+                pass
     return entry
 
 
