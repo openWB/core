@@ -592,8 +592,8 @@ class UpdateConfig:
 
         # Alpha 3
         # Summen in Tages- und Monats-Log hinzufügen
-        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
-        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*").sort()
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*").sort())
         for file in files:
             with open(file, "r+") as jsonFile:
                 try:
@@ -841,8 +841,8 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 15)
 
     def upgrade_datastore_15(self) -> None:
-        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
-        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*").sort()
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*").sort())
         for file in files:
             with open(file, "r+") as jsonFile:
                 try:
@@ -958,7 +958,7 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 22)
 
     def upgrade_datastore_22(self) -> None:
-        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*")
+        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*").sort()
         for file in files:
             modified = False
             with open(file, "r+") as jsonFile:
@@ -1018,7 +1018,7 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 25)
 
     def upgrade_datastore_25(self) -> None:
-        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*")
+        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*").sort()
         for file in files:
             with open(file, "r+") as jsonFile:
                 try:
@@ -1160,7 +1160,7 @@ class UpdateConfig:
                 pass
             except Exception:
                 log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*").sort()
         for file in files:
             convert_file(file)
         # next upgrade only fixes a bug introduced in an earlier version of this method
@@ -1187,13 +1187,13 @@ class UpdateConfig:
                 pass
             except Exception:
                 log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*").sort()
         for file in files:
             convert_file(file)
         Pub().pub("openWB/system/datastore_version", 36)
 
     def upgrade_datastore_36(self) -> None:
-        if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured"):
+        if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured", False):
             Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
         hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
         Pub().pub("openWB/system/datastore_version", 37)
