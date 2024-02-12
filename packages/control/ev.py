@@ -296,7 +296,8 @@ class Ev:
                     used_amount
                 )
                 # Info vom Zielladen erhalten
-                message += tmp_message
+                # Leerzeichen zwischen den Bestandteilen, wenn nötig 
+                message = ((message+' ').strip() + tmp_message).strip()
                 if tmp_current > 0:
                     control_parameter.current_plan = name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
