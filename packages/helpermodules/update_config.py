@@ -849,6 +849,8 @@ class UpdateConfig:
                     content = json.load(jsonFile)
                     for e in content["entries"]:
                         e.update({"sh": {}})
+                    if "totals" not in content:
+                        content["totals"] = {}
                     content["totals"].update({"sh": {}})
                     content["names"] = get_names(content["totals"], {})
                     jsonFile.seek(0)
@@ -1082,6 +1084,8 @@ class UpdateConfig:
     # upgrade_datastore_29
     # nach upgrade_datastore_32 verschoben, damit beim Update vom master (datastore_version 32)
     # die Anpassung vorgenommen wird.
+    def upgrade_datastore_29(self) -> None:
+        pass
 
     def upgrade_datastore_30(self) -> None:
         def upgrade(topic: str, payload) -> None:
