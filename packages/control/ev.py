@@ -295,7 +295,8 @@ class Ev:
                     self.data.get.soc,
                     used_amount
                 )
-                message = tmp_message
+                # Info vom Zielladen erhalten
+                message += tmp_message
                 if tmp_current > 0:
                     control_parameter.current_plan = name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
