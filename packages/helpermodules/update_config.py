@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import subprocess
 import time
-from typing import List
+from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from control.general import ChargemodeConfig
 import dataclass_utils
@@ -502,15 +502,13 @@ class UpdateConfig:
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
-            time.sleep(2)
             self.__update_version()
-            # reread topics from broker to get updated values
-            InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
             self.__solve_breaking_changes()
         except Exception:
-            log.exception("Fehler beim Prüfen des Brokers.")
+            log.exception("Fehler bei der Aktualisierung des Brokers.")
+            pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Brokers.", MessageType.ERROR)
         finally:
-            Pub().pub("openWB/set/system/update_config_completed", True)
+            self.__update_topic("openWB/system/update_config_completed", True)
 
     def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
         """ connect to broker and subscribe to set topics
@@ -522,18 +520,36 @@ class UpdateConfig:
             log.debug(f"received datastore version: {msg.payload}")
         self.all_received_topics.update({msg.topic: msg.payload})
 
+    def __update_topic(self, topic: str, payload):
+        """ publish topic to broker and update all_received_topics
+        set- and sub-data are not yet initialized, so we have to use pub() directly!
+        """
+        Pub().pub(topic, payload)
+        if payload == "":
+            del self.all_received_topics[topic]
+        else:
+            self.all_received_topics[topic] = payload
+
     def __remove_outdated_topics(self):
-        # ungültige Topics entfernen
-        # aufpassen mit dynamischen Zweigen! z.B. vehicle/x/...
+        """ remove outdated topics from all_received_topics and broker
+        take care with dynamic branches! e.g. vehicle/x/...
+        """
+        # deleting list items while in iteration throws runtime error, so we collect all topics to delete
+        removed_topics = []
         for topic in self.all_received_topics.keys():
             for valid_topic in self.valid_topic:
                 if re.search(valid_topic, topic) is not None:
                     break
             else:
-                Pub().pub(topic, "")
                 log.debug("Ungültiges Topic zum Startzeitpunkt: "+str(topic))
+                removed_topics += [topic]
+        # delete topics to allow setting new defaults afterwards
+        for topic in removed_topics:
+            self.__update_topic(topic, "")
 
     def _remove_invalid_topics(self):
+        """ remove invalid topics from all_received_topics and broker
+        """
         # deleting list items while in iteration throws runtime error, so we collect all topics to delete
         topics_to_delete = []
         for topic, payload in self.all_received_topics.items():
@@ -544,99 +560,71 @@ class UpdateConfig:
                     topics_to_delete.append(topic)
         # delete topics to allow setting new defaults afterwards
         for topic in topics_to_delete:
-            Pub().pub(topic, "")
-            del self.all_received_topics[topic]
+            self.__update_topic(topic, "")
 
     def __pub_missing_defaults(self):
-        # zwingend erforderliche Standardwerte setzen
+        """ publish missing required default topics to broker and update all_received_topics
+        """
+        missing_topics = {}
         for topic, default_payload in self.default_topic:
             if topic not in self.all_received_topics.keys():
                 log.debug(f"Setze Topic '{topic}' auf Standardwert '{str(default_payload)}'")
-                Pub().pub(topic.replace("openWB/", "openWB/set/"), default_payload)
+                missing_topics[topic] = default_payload
+        for topic, payload in missing_topics.items():
+            self.__update_topic(topic, payload)
 
     def __update_version(self):
+        """ update openWB/system/version topic with current version from filesystem
+        """
         with open(self.base_path / "web" / "version", "r") as f:
             version = f.read().splitlines()[0]
-        Pub().pub("openWB/set/system/version", version)
+        self.__update_topic("openWB/system/version", version)
 
     def __solve_breaking_changes(self) -> None:
+        """ solve breaking changes in the datastore
+        """
         datastore_version = decode_payload(self.all_received_topics.get("openWB/system/datastore_version")) or 0
         log.debug(f"current datastore version: {datastore_version}")
         log.debug(f"target datastore version: {self.DATASTORE_VERSION}")
         for version in range(datastore_version, self.DATASTORE_VERSION):
             try:
+                log.debug(f"upgrading datastore from version {version} to {version + 1}")
                 getattr(self, f"upgrade_datastore_{version}")()
             except AttributeError:
                 log.error(f"missing upgrade function! {version}")
 
-    def _loop_all_received_topics(self, func):
+    def _loop_all_received_topics(self, callback) -> None:
+        modified_topics = {}
         for topic, payload in self.all_received_topics.items():
             try:
-                func(topic, payload)
+                updated_topics = callback(topic, payload)
+                if updated_topics is not None:
+                    modified_topics.update(updated_topics)
             except Exception:
-                log.exception(f"Fehler beim Aktualisieren von {topic} mit Payload {payload}")
+                log.exception(f"Fehler beim Aktualisieren von '{topic}' mit Payload '{payload}'")
+        for topic, payload in modified_topics.items():
+            self.__update_topic(topic, payload)
 
     def upgrade_datastore_0(self) -> None:
-        # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
-        for topic, payload in self.all_received_topics.items():
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            modified_topics = {}
+            # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
             if "openWB/vehicle/template/ev_template/" in topic:
                 payload = decode_payload(payload)
                 if "prevent_switch_stop" in payload:
                     combined_setting = payload["prevent_switch_stop"]
                     payload.pop("prevent_switch_stop")
                     payload.update({"prevent_charge_stop": combined_setting, "prevent_phase_switch": combined_setting})
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
-        # Alpha2
-        # zu konfiguriertem Wechselrichter die maximale Ausgangsleistung hinzufügen
-        for topic, payload in self.all_received_topics.items():
+                    modified_topics[topic] = payload
+            # Alpha2
+            # zu konfiguriertem Wechselrichter die maximale Ausgangsleistung hinzufügen
             regex = re.search("(openWB/pv/[0-9]+)/get/fault_state", topic)
             if regex is not None:
                 module = regex.group(1)
                 if f"{module}/config/max_ac_out" not in self.all_received_topics.keys():
-                    Pub().pub(
-                        f'{module.replace("openWB/", "openWB/set/")}/config/max_ac_out', 0)
+                    modified_topics[f"{module}/config/max_ac_out"] = 0
 
-        # Alpha 3
-        # Summen in Tages- und Monats-Log hinzufügen
-        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
-        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
-        files.sort()
-        for file in files:
-            with open(file, "r+") as jsonFile:
-                try:
-                    content = json.load(jsonFile)
-                    if isinstance(content, List):
-                        try:
-                            new_content = {"entries": content, "totals": get_totals(content)}
-                            jsonFile.seek(0)
-                            json.dump(new_content, jsonFile)
-                            jsonFile.truncate()
-                            log.debug(f"Format der Logdatei {file} aktualisiert.")
-                        except Exception:
-                            log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
-                except json.decoder.JSONDecodeError:
-                    log.exception(
-                        f"Logfile {file} konnte nicht konvertiert werden, da es keine gültigen json-Daten enthält.")
-            with open(file, "r+") as jsonFile:
-                try:
-                    content = json.load(jsonFile)
-                    for e in content["entries"]:
-                        for module in e["pv"]:
-                            if e["pv"][module].get("imported"):
-                                e["pv"][module]["exported"] = e["pv"][module]["imported"]
-                                e["pv"][module].pop("imported")
-                    for entry in content["totals"]["pv"]:
-                        if content["totals"]["pv"][entry].get("imported"):
-                            content["totals"]["pv"][entry]["exported"] = content["totals"]["pv"][entry]["imported"]
-                            content["totals"]["pv"][entry].pop("imported")
-                    jsonFile.seek(0)
-                    json.dump(content, jsonFile)
-                    jsonFile.truncate()
-                except Exception:
-                    log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-
-        # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
-        for topic, payload in self.all_received_topics.items():
+            # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
             if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
                 payload = decode_payload(payload)
                 if payload["type"] == "http":
@@ -649,7 +637,7 @@ class UpdateConfig:
                                 updated_payload["configuration"]["exported_path"] = payload[
                                     "configuration"]["counter_path"]
                                 updated_payload["configuration"].pop("counter_path")
-                                Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                                modified_topics[topic] = updated_payload
                 elif payload["type"] == "json":
                     index = get_index(topic)
                     for topic, payload in self.all_received_topics.items():
@@ -659,45 +647,92 @@ class UpdateConfig:
                                 updated_payload = payload
                                 updated_payload["configuration"]["jq_exported"] = payload["configuration"]["jq_counter"]
                                 updated_payload["configuration"].pop("jq_counter")
-                                Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                                modified_topics[topic] = updated_payload
                 elif payload["type"] == "byd":
                     updated_payload = payload
                     updated_payload["configuration"]["user"] = payload["configuration"]["username"]
                     updated_payload["configuration"].pop("username")
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                    modified_topics[topic] = updated_payload
                 elif payload["type"] == "good_we":
                     updated_payload = payload
                     updated_payload["configuration"]["modbus_id"] = payload["configuration"]["id"]
                     updated_payload["configuration"].pop("id")
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
-        Pub().pub("openWB/set/system/datastore_version", 1)
+                    modified_topics[topic] = updated_payload
+            return modified_topics
+
+        def upgrade_logs() -> None:
+            # Alpha 3
+            # Summen in Tages- und Monats-Log hinzufügen
+            files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+            files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+            files.sort()
+            for file in files:
+                with open(file, "r+") as jsonFile:
+                    try:
+                        content = json.load(jsonFile)
+                        if isinstance(content, List):
+                            try:
+                                new_content = {"entries": content, "totals": get_totals(content)}
+                                jsonFile.seek(0)
+                                json.dump(new_content, jsonFile)
+                                jsonFile.truncate()
+                                log.debug(f"Format der Logdatei {file} aktualisiert.")
+                            except Exception:
+                                log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
+                    except json.decoder.JSONDecodeError:
+                        log.exception(
+                            f"Logfile {file} konnte nicht konvertiert werden, da es keine gültigen json-Daten enthält.")
+                with open(file, "r+") as jsonFile:
+                    try:
+                        content = json.load(jsonFile)
+                        for e in content["entries"]:
+                            for module in e["pv"]:
+                                if e["pv"][module].get("imported"):
+                                    e["pv"][module]["exported"] = e["pv"][module]["imported"]
+                                    e["pv"][module].pop("imported")
+                        for entry in content["totals"]["pv"]:
+                            if content["totals"]["pv"][entry].get("imported"):
+                                content["totals"]["pv"][entry]["exported"] = content["totals"]["pv"][entry]["imported"]
+                                content["totals"]["pv"][entry].pop("imported")
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                    except Exception:
+                        log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+
+        self._loop_all_received_topics(upgrade)
+        upgrade_logs()
+        self.__update_topic("openWB/system/datastore_version", 1)
 
     def upgrade_datastore_1(self) -> None:
-        def convert_ws_to_wh(value: float) -> float:
-            return value / 3600
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            def convert_ws_to_wh(value: float) -> float:
+                return value / 3600
 
-        def get_decoded_value(name: str) -> float:
-            return decode_payload(self.all_received_topics[f"{simulation_topic}/{name}"])
+            def get_decoded_value(name: str) -> float:
+                return decode_payload(self.all_received_topics[f"{simulation_topic}/{name}"])
 
-        for topic in self.all_received_topics.keys():
             if re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
                 simulation_topic = (f"openWB/system/device/{get_index(topic)}/component/"
                                     f"{get_second_index(topic)}/simulation")
                 if self.all_received_topics.get(f"{simulation_topic}/timestamp_present"):
-                    Pub().pub(simulation_topic.replace("openWB/", "openWB/set/"), {
+                    modified_topics = {}
+                    modified_topics[simulation_topic] = {
                         "timestamp": float(get_decoded_value("timestamp_present")),
                         "power": get_decoded_value("power_present"),
                         "imported": convert_ws_to_wh(get_decoded_value("present_imported")),
                         "exported": convert_ws_to_wh(get_decoded_value("present_exported"))
-                    })
-                    Pub().pub(f"{simulation_topic}/timestamp_present", "")
-                    Pub().pub(f"{simulation_topic}/power_present", "")
-                    Pub().pub(f"{simulation_topic}/present_imported", "")
-                    Pub().pub(f"{simulation_topic}/present_exported", "")
-        Pub().pub("openWB/set/system/datastore_version", 2)
+                    }
+                    modified_topics[f"{simulation_topic}/timestamp_present"] = ""
+                    modified_topics[f"{simulation_topic}/power_present"] = ""
+                    modified_topics[f"{simulation_topic}/present_imported"] = ""
+                    modified_topics[f"{simulation_topic}/present_exported"] = ""
+                    return modified_topics
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 2)
 
     def upgrade_datastore_2(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search(
                     "openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+",
                     topic) is not None:
@@ -707,12 +742,12 @@ class UpdateConfig:
                     updated_payload["limit"]["soc_scheduled"] = payload["limit"]["soc"]
                     updated_payload["limit"]["soc_limit"] = payload["limit"]["soc"]
                     updated_payload["limit"].pop("soc")
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                    return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/set/system/datastore_version", 3)
+        self.__update_topic("openWB/system/datastore_version", 3)
 
     def upgrade_datastore_3(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search(
                     "openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+",
                     topic) is not None:
@@ -720,54 +755,54 @@ class UpdateConfig:
                 if "limit" not in payload:
                     updated_payload = payload
                     updated_payload["limit"] = {"selected": "soc", "amount": 1000, "soc": 70}
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                    return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/set/system/datastore_version", 4)
+        self.__update_topic("openWB/system/datastore_version", 4)
 
     def upgrade_datastore_4(self) -> None:
         moved_file = False
         for path in Path("/etc/mosquitto/conf.d").glob('99-bridge-openwb-*.conf'):
             subprocess.run(["sudo", "mv", str(path), str(path).replace("conf.d", "conf_local.d")])
             moved_file = True
-        Pub().pub("openWB/set/system/datastore_version", 5)
+        self.__update_topic("openWB/system/datastore_version", 5)
         if moved_file:
             time.sleep(1)
             subprocess.run([str(self.base_path / "runs" / "reboot.sh")])
 
     def upgrade_datastore_5(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/chargepoint/template/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
                 if "max_current_single_phase" not in payload:
                     updated_payload = payload
                     updated_payload["max_current_single_phase"] = 32
                     updated_payload["max_current_multi_phases"] = 32
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                    return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/set/system/datastore_version", 6)
+        self.__update_topic("openWB/system/datastore_version", 6)
 
     def upgrade_datastore_6(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 if "plans" in payload["autolock"]:
                     payload["autolock"].pop("plans")
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                    return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/set/system/datastore_version", 7)
+        self.__update_topic("openWB/system/datastore_version", 7)
 
     def upgrade_datastore_7(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 if "keep_charge_active_duration" not in payload:
                     payload["keep_charge_active_duration"] = ev.EvTemplateData().keep_charge_active_duration
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                    return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/set/system/datastore_version", 8)
+        self.__update_topic("openWB/system/datastore_version", 8)
 
     def upgrade_datastore_8(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/chargepoint/[0-9]+/config$", topic) is not None:
                 payload = decode_payload(payload)
                 if "connection_module" in payload:
@@ -778,122 +813,134 @@ class UpdateConfig:
                         updated_payload["configuration"] = {}
                     updated_payload.pop("connection_module")
                     updated_payload.pop("power_module")
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                    return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/set/system/datastore_version", 9)
+        self.__update_topic("openWB/system/datastore_version", 9)
 
     def upgrade_datastore_9(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("^openWB/system/mqtt/bridge/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 if payload["name"] == "openWBCloud" and "access" not in payload:
                     payload["access"] = {"partner": False}
                     log.debug("cloud bridge configuration upgraded")
-                    Pub().pub(topic, payload)
+                    return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 10)
+        self.__update_topic("openWB/system/datastore_version", 10)
 
     def upgrade_datastore_10(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 updated_payload = payload
                 updated_payload["battery_capacity"] = payload["battery_capacity"] * 1000
                 updated_payload["average_consump"] = payload["average_consump"] * 1000
-                Pub().pub(topic, updated_payload)
+                return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 11)
+        self.__update_topic("openWB/system/datastore_version", 11)
 
     def upgrade_datastore_11(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/chargepoint/[0-9]+/config$", topic) is not None:
                 payload = decode_payload(payload)
                 if payload["type"] == "openwb_series2_satellit":
                     if "duo_num" not in payload["configuration"]:
                         payload["configuration"].update({"duo_num": 0})
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                        return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/set/system/datastore_version", 12)
+        self.__update_topic("openWB/system/datastore_version", 12)
 
     def upgrade_datastore_12(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
                 payload = decode_payload(payload)
                 index = get_index(topic)
-                Pub().pub(f"openWB/set/vehicle/{index}/soc_module/interval_config",
-                          dataclass_utils.asdict(GeneralVehicleConfig()))
+                return {f"openWB/set/vehicle/{index}/soc_module/interval_config":
+                        dataclass_utils.asdict(GeneralVehicleConfig())}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 13)
+        self.__update_topic("openWB/system/datastore_version", 13)
 
     def upgrade_datastore_13(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/chargepoint/[0-9]+/config$", topic) is not None:
                 updated_payload = decode_payload(payload)
                 payload = decode_payload(payload)
                 if payload["type"] == "internal_openwb" or payload["type"] == "external_openwb":
                     updated_payload["configuration"]["duo_num"] = payload["configuration"]["duo_num"] - 1
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                    return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/set/system/datastore_version", 14)
+        self.__update_topic("openWB/system/datastore_version", 14)
 
     def upgrade_datastore_14(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
                 payload = decode_payload(payload)
                 if payload["type"] == "solar_watt":
                     payload["configuration"]["ip_address"] = payload["configuration"]["ip_adress"]
-                    payload.configuration.pop("ip_adress")
-                Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                    payload["configuration"].pop("ip_adress")
+                    return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 15)
+        self.__update_topic("openWB/system/datastore_version", 15)
 
     def upgrade_datastore_15(self) -> None:
         files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
-        if files is not None:
-            files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
-        else:
-            files = glob.glob(str(self.base_path / "data" / "monthly_log") + "/*")
-        if files is not None:
-            files.sort()
-            for file in files:
-                with open(file, "r+") as jsonFile:
-                    try:
-                        content = json.load(jsonFile)
-                        for e in content["entries"]:
-                            e.update({"sh": {}})
-                        if "totals" not in content:
-                            content["totals"] = {}
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files.sort()
+        for file in files:
+            with open(file, "r+") as jsonFile:
+                try:
+                    modified = False
+                    content = json.load(jsonFile)
+                    for entry in content["entries"]:
+                        if "sh" not in entry:
+                            entry.update({"sh": {}})
+                            modified = True
+                    if "totals" not in content:
+                        content["totals"] = {}
+                        modified = True
+                    if "sh" not in content["totals"]:
                         content["totals"].update({"sh": {}})
+                        modified = True
+                    if "names" not in content:
                         content["names"] = get_names(content["totals"], {})
+                        modified = True
+                    if modified:
                         jsonFile.seek(0)
                         json.dump(content, jsonFile)
                         jsonFile.truncate()
-                        log.debug(f"Format der Logdatei {file} aktualisiert.")
-                    except Exception:
-                        log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-        Pub().pub("openWB/system/datastore_version", 16)
+                        log.debug(f"Format der Logdatei '{file}' aktualisiert.")
+                except Exception:
+                    log.exception(f"Logdatei '{file}' konnte nicht konvertiert werden.")
+        self.__update_topic("openWB/system/datastore_version", 16)
 
     def upgrade_datastore_16(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
                 payload = decode_payload(payload)
                 if payload["type"] == "powerdog":
                     index = get_index(topic)
-                    for topic, payload in self.all_received_topics.items():
-                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config", topic) is not None:
-                            payload = decode_payload(payload)
-                            if payload["type"] == "counter" and payload["configuration"].get("position_evu") is None:
-                                payload["configuration"].update({"position_evu": False})
-                            Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                    modified_topics = {}
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config",
+                                     topic_component) is not None:
+                            payload_component = decode_payload(payload_component)
+                            if (
+                                payload_component["type"] == "counter" and
+                                payload_component["configuration"].get("position_evu") is None
+                            ):
+                                payload_component["configuration"].update({"position_evu": False})
+                                modified_topics[topic_component] = payload_component
+                    return modified_topics
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 17)
+        self.__update_topic("openWB/system/datastore_version", 17)
 
     def upgrade_datastore_17(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
                 payload_device = decode_payload(payload)
                 index = get_index(topic)
                 if payload_device["type"] == "solarmax":
+                    modified_topics = {}
                     for topic_component, payload_component in self.all_received_topics.items():
                         if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
                                      topic_component) is not None:
@@ -902,32 +949,37 @@ class UpdateConfig:
                                 payload_inverter["configuration"]["modbus_id"] = payload_device["configuration"][
                                     "modbus_id"]
                                 payload_device["configuration"].pop("modbus_id")
-                            Pub().pub(topic.replace("openWB/", "openWB/set/"), payload_device)
-                            Pub().pub(topic_component.replace("openWB/", "openWB/set/"), payload_inverter)
+                            modified_topics[topic] = payload_device
+                            modified_topics[topic_component] = payload_inverter
+                    return modified_topics
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 18)
+        self.__update_topic("openWB/system/datastore_version", 18)
 
     def upgrade_datastore_18(self) -> None:
         def convert_file(file):
             try:
                 with open(file, "r+") as jsonFile:
+                    modified = False
                     content = json.load(jsonFile)
-                    for e in content["entries"]:
-                        e.update({"hc": {}})
-                    jsonFile.seek(0)
-                    json.dump(content, jsonFile)
-                    jsonFile.truncate()
-                    log.debug(f"Format der Logdatei {file} aktualisiert.")
+                    for entry in content["entries"]:
+                        if "hc" not in entry:
+                            entry.update({"hc": {}})
+                            modified = True
+                    if modified:
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format der Logdatei '{file}' aktualisiert.")
             except FileNotFoundError:
                 pass
             except Exception:
-                log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+                log.exception(f"Logdatei '{file}' konnte nicht konvertiert werden.")
         convert_file(f"{str(self.base_path / 'data' / 'daily_log')}/{timecheck.create_timestamp_YYYYMMDD()}.json")
         convert_file(f"{str(self.base_path / 'data' / 'monthly_log')}/{timecheck.create_timestamp_YYYYMM()}.json")
-        Pub().pub("openWB/system/datastore_version", 19)
+        self.__update_topic("openWB/system/datastore_version", 19)
 
     def upgrade_datastore_19(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/internal_chargepoint/[0-1]/data/parent_cp", topic) is not None:
                 payload = decode_payload(payload)
                 for topic_cp, payload_cp in self.all_received_topics.items():
@@ -937,18 +989,20 @@ class UpdateConfig:
                             if int(get_index(topic)) == payload_cp["configuration"]["duo_num"]:
                                 break
                 else:
-                    Pub().pub(topic, None)
+                    return {topic: None}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 20)
+        self.__update_topic("openWB/system/datastore_version", 20)
 
     def upgrade_datastore_20(self) -> None:
         max_c_socket = get_hardware_configuration_setting("max_c_socket")
         if isinstance(max_c_socket, str):
             update_hardware_configuration({"max_c_socket": int(max_c_socket)})
-        Pub().pub("openWB/system/datastore_version", 21)
+        elif max_c_socket is None:
+            update_hardware_configuration({"max_c_socket": 32})
+        self.__update_topic("openWB/system/datastore_version", 21)
 
     def upgrade_datastore_21(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
                 config_payload = decode_payload(payload)
                 index = get_index(topic)
@@ -965,33 +1019,33 @@ class UpdateConfig:
                 if config_payload["type"] == "manual" and config_payload["configuration"].get("efficiency"):
                     general_config.efficiency = config_payload["configuration"]["efficiency"]*100
                     config_payload["configuration"] = {}
-                Pub().pub(topic.replace("config", "general_config").replace("openWB/", "openWB/set/"),
-                          asdict(general_config))
-                Pub().pub(topic.replace("openWB/", "openWB/set/"), config_payload)
+                return {
+                    topic.replace("config", "general_config"): asdict(general_config),
+                    topic: config_payload
+                }
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 22)
+        self.__update_topic("openWB/system/datastore_version", 22)
 
     def upgrade_datastore_22(self) -> None:
         files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*")
-        if files is not None:
-            files.sort()
-            for file in files:
-                modified = False
-                with open(file, "r+") as jsonFile:
-                    try:
-                        content = json.load(jsonFile)
-                        for entry in content:
-                            if entry["time"]["time_charged"].endswith(":60"):
-                                entry["time"]["time_charged"] = "1:00"
-                                modified = True
-                        if modified:
-                            jsonFile.seek(0)
-                            json.dump(content, jsonFile)
-                            jsonFile.truncate()
-                            log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
-                    except Exception:
-                        log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
-        Pub().pub("openWB/system/datastore_version", 23)
+        files.sort()
+        for file in files:
+            modified = False
+            with open(file, "r+") as jsonFile:
+                try:
+                    content = json.load(jsonFile)
+                    for entry in content:
+                        if entry["time"]["time_charged"].endswith(":60"):
+                            entry["time"]["time_charged"] = "1:00"
+                            modified = True
+                    if modified:
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
+                except Exception:
+                    log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
+        self.__update_topic("openWB/system/datastore_version", 23)
 
     def upgrade_datastore_23(self) -> None:
         def upgrade(topic: str, payload) -> None:
@@ -1010,14 +1064,15 @@ class UpdateConfig:
                         log.error("update of configuration for bridge "
                                   f"'{bridge_configuration['name']}' {index} failed! {result.stdout}")
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 24)
+        self.__update_topic("openWB/system/datastore_version", 24)
 
     def upgrade_datastore_24(self) -> None:
         # Wenn mehrere EV eine Fahrzeug-Vorlage nutzen, wird die Effizienz des letzten für alle in der Vorlage gesetzt.
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/[0-9]+/soc_module/general_config", topic) is not None:
                 payload = decode_payload(payload)
                 index = get_index(topic)
+                modified_topics = {}
                 for ev_template_id_topic, ev_template_id_payload in self.all_received_topics.items():
                     if f"openWB/vehicle/{index}/ev_template" == ev_template_id_topic:
                         ev_template_id = decode_payload(ev_template_id_payload)
@@ -1029,34 +1084,34 @@ class UpdateConfig:
                 if "efficiency" in payload:
                     ev_template.update({"efficiency": payload["efficiency"]})
                     payload.pop("efficiency")
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
-                Pub().pub(ev_template_topic.replace("openWB/", "openWB/set/"), ev_template)
+                    modified_topics[topic] = payload
+                modified_topics[ev_template_topic] = ev_template
+                return modified_topics
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 25)
+        self.__update_topic("openWB/system/datastore_version", 25)
 
     def upgrade_datastore_25(self) -> None:
         files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*")
-        if files is not None:
-            files.sort()
-            for file in files:
-                with open(file, "r+") as jsonFile:
-                    try:
-                        content = json.load(jsonFile)
-                        for entry in content:
-                            entry["time"]["time_charged"] = timecheck.convert_timedelta_to_time_string(
-                                datetime.timedelta(seconds=timecheck.get_difference(
-                                    entry["time"]["begin"], entry["time"]["end"])))
-                        jsonFile.seek(0)
-                        json.dump(content, jsonFile)
-                        jsonFile.truncate()
-                        log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
-                    except Exception:
-                        log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
-        Pub().pub("openWB/system/datastore_version", 26)
+        files.sort()
+        for file in files:
+            with open(file, "r+") as jsonFile:
+                try:
+                    content = json.load(jsonFile)
+                    for entry in content:
+                        entry["time"]["time_charged"] = timecheck.convert_timedelta_to_time_string(
+                            datetime.timedelta(seconds=timecheck.get_difference(
+                                entry["time"]["begin"], entry["time"]["end"])))
+                    jsonFile.seek(0)
+                    json.dump(content, jsonFile)
+                    jsonFile.truncate()
+                    log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
+                except Exception:
+                    log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
+        self.__update_topic("openWB/system/datastore_version", 26)
 
     def upgrade_datastore_26(self) -> None:
         # module kostal_pico_old: rename "ip_address" in configuration to "url" as we need a complete url
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config", topic) is not None:
                 configuration_payload = decode_payload(payload)
                 if configuration_payload.get("type") == "kostal_piko_old":
@@ -1067,94 +1122,93 @@ class UpdateConfig:
                     if not re.search("^https?://", configuration_payload["configuration"]["url"], re.IGNORECASE):
                         configuration_payload["configuration"]["url"] = (
                             f"http://{configuration_payload['configuration']['url']}")
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+                    return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 27)
+        self.__update_topic("openWB/system/datastore_version", 27)
 
     def upgrade_datastore_27(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             # add "official" flag if display theme "card" is selected
             if re.search("openWB/optional/int_display/theme", topic) is not None:
                 configuration_payload = decode_payload(payload)
                 if configuration_payload.get("type") == "cards":
                     configuration_payload.update({"official": True})
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+                    return {topic: configuration_payload}
             # add "official" flag if web theme "standard_legacy" is selected
             if re.search("openWB/general/web_theme", topic) is not None:
                 configuration_payload = decode_payload(payload)
                 if configuration_payload.get("type") == "standard_legacy":
                     configuration_payload.update({"official": True})
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+                    return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 28)
+        self.__update_topic("openWB/system/datastore_version", 28)
 
     def upgrade_datastore_28(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/[0-9]+/soc_module/calculated_soc_state", topic) is not None:
                 payload = decode_payload(payload)
                 if payload.get("request_start_soc"):
                     payload.pop("request_start_soc")
-                Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                    return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 29)
+        self.__update_topic("openWB/system/datastore_version", 29)
 
-    # upgrade_datastore_29
-    # nach upgrade_datastore_32 verschoben, damit beim Update vom master (datastore_version 32)
-    # die Anpassung vorgenommen wird.
     def upgrade_datastore_29(self) -> None:
-        pass
+        """ moved to upgrade_datastore_32
+        """
+        self.__update_topic("openWB/system/datastore_version", 30)
 
     def upgrade_datastore_30(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/[0-9]+/soc_module/general_config", topic) is not None:
                 payload = decode_payload(payload)
                 # Zeitangabe in s
                 payload["request_interval_charging"] = payload["request_interval_charging"]*60
                 payload["request_interval_not_charging"] = payload["request_interval_not_charging"]*60
-                Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 31)
+        self.__update_topic("openWB/system/datastore_version", 31)
 
     def upgrade_datastore_31(self) -> None:
-        def upgrade(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/[0-9]+/get/soc_timestamp", topic) is not None:
                 payload = decode_payload(payload)
                 if payload:
                     updated_payload = datetime.datetime.strptime(payload, "%m/%d/%Y, %H:%M:%S").timestamp()
-                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                    return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 32)
+        self.__update_topic("openWB/system/datastore_version", 32)
 
     def upgrade_datastore_32(self) -> None:
-        def upgrade_et_entry(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 if payload.get("et") is None:
                     updated_payload = payload
                     updated_payload.update({"et": asdict(ev.Et())})
-                    Pub().pub(topic, updated_payload)
-
-        def upgrade_prices(topic: str, payload) -> None:
+                    return {topic: updated_payload}
             if re.search("^openWB/general/price_kwh$", topic) is not None:
                 price = decode_payload(payload)/1000  # €/kWh -> €/Wh
-                Pub().pub("openWB/set/general/prices/bat", price)
-                Pub().pub("openWB/set/general/prices/grid", price)
-                Pub().pub("openWB/set/general/prices/pv", price)
-        self._loop_all_received_topics(upgrade_et_entry)
-        self._loop_all_received_topics(upgrade_prices)
-        Pub().pub("openWB/system/datastore_version", 33)
+                return {
+                    "openWB/set/general/prices/bat": price,
+                    "openWB/set/general/prices/grid": price,
+                    "openWB/set/general/prices/pv": price
+                }
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 33)
 
     def upgrade_datastore_33(self) -> None:
-        def upgrade_fix_price_unit(topic: str, payload) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # convert price from €/kWh to €/Wh
             if (re.search("openWB/general/prices/bat$", topic) is not None or
                 re.search("openWB/general/prices/grid$", topic) is not None or
                     re.search("openWB/general/prices/pv$", topic) is not None):
                 payload = decode_payload(payload)
                 if payload > 0.01:  # entspricht 10€/kWh
                     updated_payload = payload/1000  # €/kWh -> €/Wh
-                    Pub().pub(topic, updated_payload)
-        self._loop_all_received_topics(upgrade_fix_price_unit)
-        Pub().pub("openWB/system/datastore_version", 34)
+                    return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 34)
 
     def upgrade_datastore_34(self) -> None:
         def convert_file(file):
@@ -1181,14 +1235,14 @@ class UpdateConfig:
                 pass
             except Exception:
                 log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+
         files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
-        if files is not None:
-            files.sort()
-            for file in files:
-                convert_file(file)
+        files.sort()
+        for file in files:
+            convert_file(file)
         # next upgrade only fixes a bug introduced in an earlier version of this method
         # so we can skip upgrade_datastore_35() if this fixed version has run
-        Pub().pub("openWB/system/datastore_version", 36)
+        self.__update_topic("openWB/system/datastore_version", 36)
 
     def upgrade_datastore_35(self) -> None:
         def convert_file(file):
@@ -1211,14 +1265,13 @@ class UpdateConfig:
             except Exception:
                 log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
         files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
-        if files is not None:
-            files.sort()
-            for file in files:
-                convert_file(file)
-        Pub().pub("openWB/system/datastore_version", 36)
+        files.sort()
+        for file in files:
+            convert_file(file)
+        self.__update_topic("openWB/system/datastore_version", 36)
 
     def upgrade_datastore_36(self) -> None:
         if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured", False):
             Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
         hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
-        Pub().pub("openWB/system/datastore_version", 37)
+        self.__update_topic("openWB/system/datastore_version", 37)
