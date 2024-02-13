@@ -27,11 +27,10 @@ class B23(AbstractCounter):
 
     def get_power(self) -> Tuple[List[float], float]:
         time.sleep(0.1)
-        power = self.client.read_holding_registers(0x5B14, ModbusDataType.INT_32, unit=self.id) / 100
-        time.sleep(0.1)
+        # reading of total power and power per phase in one call
         powers = [val / 100 for val in self.client.read_holding_registers(
-            0x5B16, [ModbusDataType.INT_32]*3, unit=self.id)]
-        return powers, power
+            0x5B14, [ModbusDataType.INT_32]*4, unit=self.id)]
+        return powers[1:3], powers[0]
 
     def get_power_factors(self) -> List[float]:
         time.sleep(0.1)
