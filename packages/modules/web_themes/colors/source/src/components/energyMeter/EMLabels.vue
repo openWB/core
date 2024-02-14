@@ -2,7 +2,8 @@
 	<g id="emBarLabels">
 		<!-- Bars -->
 		<g v-for="(item, i) in props.plotdata" :key="i">
-			<EmLabel :item="item" :x-scale="props.xScale" :y-scale="props.yScale" :margin="props.margin" :height="props.height"
+			<EmLabel
+:item="item" :x-scale="props.xScale" :y-scale="props.yScale" :margin="props.margin" :height="props.height"
 				:barcount="props.plotdata.length" :aut-text="autTxt(item)" :autarchy="autPct(item)" />
 		</g>
 	</g>

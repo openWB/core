@@ -434,7 +434,7 @@ function readCookie() {
 				if (shDevices[i] == undefined) {
 					addShDevice(i)
 				}
-				shDevices[i].showInGraph = false
+				shDevices[i].setShowInGraph(false)
 			})
 		}
 		if (prefs.showLG !== undefined) {

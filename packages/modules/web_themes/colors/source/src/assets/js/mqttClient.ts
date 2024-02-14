@@ -40,15 +40,9 @@ try {
 	client = connect(connectUrl, options)
 	client.on('connect', () => {
 		console.info('MQTT connection successful')
-		// topiclist.forEach((topic) => {
-		//  subscribe(topic);
-		// });
 	})
 	client.on('disconnect', () => {
 		console.info('MQTT disconnected')
-		// topiclist.forEach((topic) => {
-		//  subscribe(topic);
-		// });
 	})
 	client.on('error', (error) => {
 		console.error('MQTT connection failed: ', error)
@@ -87,15 +81,32 @@ export function mqttUnsubscribe(fromTopic: string) {
 		//console.info ('MQTT unsubscribe successful: ' + topic)
 	})
 }
-export function mqttPublish(topic: string, message: string) {
+export async function mqttPublish(topic: string, message: string) {
 	const qos: QoS = 0
-	client.publish(topic, message, { qos }, (error) => {
-		if (error) {
-			console.warn('MQTT publish error: ', error)
-		}
-		console.info('Message sent: [' + topic + '](' + message + ')')
-	})
+	let connected = client.connected
+	while (!connected) {
+		console.warn('MQTT publish: Not connected. Waiting 0.1 seconds')
+		await delay(100)
+		connected = client.connected
+	}
+	//console.warn ('MQTT publish: Now connected')
+	try {
+		client.publish(topic, message, { qos }, (error) => {
+			if (error) {
+				console.warn('MQTT publish error: ', error)
+			}
+			console.info(
+				'MQTT publish: Message sent: [' + topic + '](' + message + ')',
+			)
+		})
+	} catch (error) {
+		console.warn('MQTT publish: caught error: ' + error)
+	}
 }
 export function mqttClientId() {
 	return mqttConnection.clientId
+}
+
+function delay(ms: number) {
+	return new Promise((resolve) => setTimeout(resolve, ms))
 }
