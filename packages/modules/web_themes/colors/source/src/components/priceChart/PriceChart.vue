@@ -5,7 +5,7 @@
 	<div class="row p-0 m-0">
 		<div class="col-12 pricechartColumn p-0 m-0">
 			<figure id="pricechart" class="p-0 m-0">
-				<svg viewBox="0 0 400 120">
+				<svg viewBox="0 0 400 300">
 					<g
 						:id="chartId"
 						:origin="draw"
@@ -85,8 +85,8 @@ function setMaxPrice() {
 const needsUpdate = ref(false)
 let dummy = false
 const width = 400
-const height = 110
-const margin = { top: 0, bottom: 15, left: 15, right: 5 }
+const height = 250
+const margin = { top: 0, bottom: 15, left: 20, right: 5 }
 const axisfontsize = 12
 const plotdata = computed(() => {
 	let valueArray: [Date, number][] = []
@@ -120,12 +120,8 @@ const xScale = computed(() => {
 })
 const yDomain = computed(() => {
 	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
-	if (yd[0] > 1) {
-		yd[0] = 0
-	} else {
 		yd[0] = Math.floor(yd[0] - 1)
-	}
-	yd[1] = Math.floor(yd[1] + 1)
+		yd[1] = Math.floor(yd[1] + 1)
 	return yd
 })
 const yScale = computed(() => {
@@ -151,7 +147,7 @@ const zeroPath = computed(() => {
 })
 
 const xAxisGenerator = computed(() => {
-	return axisBottom<Date>(xScale.value).ticks(4).tickFormat(timeFormat('%H:%M'))
+	return axisBottom<Date>(xScale.value).ticks(6).tickSize(5).tickFormat(timeFormat('%H:%M'))
 })
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
@@ -185,7 +181,7 @@ const draw = computed(() => {
 	const xAxis = svg.append('g').attr('class', 'axis').call(xAxisGenerator.value)
 	xAxis.attr(
 		'transform',
-		'translate(' + margin.left + ',' + (height - margin.bottom) + ')',
+		'translate(0,' + (height - margin.bottom) + ')',
 	)
 	xAxis
 		.selectAll('.tick')
@@ -193,7 +189,7 @@ const draw = computed(() => {
 		.attr('color', 'var(--color-bg)')
 	xAxis
 		.selectAll('.tick line')
-		.attr('stroke', 'var(--color-bg)')
+		.attr('stroke', 'var(--color-fg)')
 		.attr('stroke-width', '0.5')
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
