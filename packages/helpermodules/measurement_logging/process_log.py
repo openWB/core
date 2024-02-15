@@ -3,7 +3,7 @@ from enum import Enum
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
@@ -380,13 +380,13 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                 try:
                     new_data = {}
                     if "imported" in entry[type][module].keys() or "exported" in entry[type][module].keys():
-                        def get_current_and_next(value_key: str) ->  Tuple[float, float]:
+                        def get_current_and_next(value_key: str) -> Tuple[float, float]:
                             def get_single_value(source: dict, default: int = 0) -> float:
                                 try:
                                     return source[type][module][value_key]
                                 except KeyError:
                                     return default
-                            current_value = get_single_value(entry);
+                            current_value = get_single_value(entry)
                             return current_value, get_single_value(next_entry,  current_value)
                         value_imported, next_value_imported = get_current_and_next("imported")
                         value_exported, next_value_exported = get_current_and_next("exported")
