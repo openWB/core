@@ -16,9 +16,9 @@ Hagen */
 			<PowerGraph />
 			<EnergyMeter />
 			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+			<GlobalPriceChart id="Hidden" />
 			<VehicleList />
 			<CounterList />
-			<GlobalPriceChart id="Hidden" />
 		</div>
 		<div v-if="true" class="row py-0 px-0 m-0">
 			<CarouselFix>
@@ -40,14 +40,14 @@ Hagen */
 			class="row py-0 m-0 d-flex justify-content-center"
 		>
 			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
-			<VehicleList v-if="globalConfig.showVehicles"></VehicleList>
-			<BatteryList />
-			<SmartHomeList v-if="showSH"></SmartHomeList>
-			<CounterList v-if="globalConfig.showCounters"></CounterList>
 			<GlobalPriceChart
 				v-if="globalConfig.showPrices"
 				id="NoTabs"
 			></GlobalPriceChart>
+			<VehicleList v-if="globalConfig.showVehicles"></VehicleList>
+			<BatteryList />
+			<SmartHomeList v-if="showSH"></SmartHomeList>
+			<CounterList v-if="globalConfig.showCounters"></CounterList>
 		</div>
 		<!-- Tabbed area -->
 		<nav
@@ -66,6 +66,15 @@ Hagen */
 			>
 				<i class="fa-solid fa-lg fa-charging-station" />
 				<span class="d-none d-md-inline ms-2">Ladepunkte</span>
+			</a>
+			<a
+				v-if="globalConfig.showPrices"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#pricecharttabbed"
+			>
+				<i class="fa-solid fa-lg fa-coins" />
+				<span class="d-none d-md-inline ms-2">Strompreis</span>
 			</a>
 			<a
 				v-if="globalConfig.showVehicles"
@@ -103,16 +112,6 @@ Hagen */
 				<i class="fa-solid fa-lg fa-bolt" />
 				<span class="d-none d-md-inline ms-2">Zähler</span>
 			</a>
-
-			<a
-				v-if="globalConfig.showPrices"
-				class="nav-link"
-				data-bs-toggle="tab"
-				data-bs-target="#pricecharttabbed"
-			>
-				<i class="fa-solid fa-lg fa-money-bill-wave" />
-				<span class="d-none d-md-inline ms-2">Strompreis</span>
-			</a>
 		</nav>
 		<!-- Tab panes -->
 		<div
@@ -128,11 +127,11 @@ Hagen */
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
 					<ChargePointList :shortlist="globalConfig.shortCpList != 'no'" />
+					<GlobalPriceChart v-if="globalConfig.showPrices" id="Overview" />
 					<VehicleList v-if="globalConfig.showVehicles" />
 					<BatteryList />
 					<SmartHomeList v-if="showSH" />
 					<CounterList v-if="globalConfig.showCounters" />
-					<GlobalPriceChart v-if="globalConfig.showPrices" id="Overview" />
 				</div>
 			</div>
 			<div
@@ -339,7 +338,7 @@ function haveFocus() {
 	color: var(--color-charging);
 }
 
-.fa-money-bill-wave {
-	color: var(--color-pv);
+.fa-coins {
+	color: var(--color-battery);
 }
 </style>

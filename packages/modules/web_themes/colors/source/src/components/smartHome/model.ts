@@ -30,7 +30,7 @@ export class ShDevice {
 		this._showInGraph = val
 		savePrefs()
 	}
-	setShowInGraph(val:boolean) {
+	setShowInGraph(val: boolean) {
 		this._showInGraph = val
 	}
 }

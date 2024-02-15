@@ -1,7 +1,7 @@
 <template>
 	<WbWidgetFlex :variable-width="true">
 		<template #title>
-			<span class="fas fa-money-bill-wave me-2" style="color: var(--color-pv)"
+			<span class="fas fa-coins me-2" style="color: var(--color-battery)"
 				>&nbsp;</span
 			>
 			<span>Strompreis</span>
@@ -10,11 +10,11 @@
 			<div class="d-flex float-right justify-content-end align-items-center">
 				<span
 					v-if="etData.active"
-					class="badge rounded-pill pricebadge me-2"
+					class="badge rounded-pill pricebadge mb-1 me-1"
 					>{{ etData.etCurrentPriceString }}</span
 				><span
 					v-if="etData.active"
-					class="badge rounded-pill providerbadge m-0"
+					class="badge rounded-pill providerbadge mb-1 m-0"
 					>{{ etData.etProvider }}</span
 				>
 			</div>
@@ -85,8 +85,8 @@ const xScale = computed(() => {
 })
 const yDomain = computed(() => {
 	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
-		yd[0] = Math.floor(yd[0]) - 1
-		yd[1] = Math.floor(yd[1]) + 1
+	yd[0] = Math.floor(yd[0]) - 1
+	yd[1] = Math.floor(yd[1]) + 1
 	return yd
 })
 const yScale = computed(() => {
@@ -103,12 +103,15 @@ const zeroPath = computed(() => {
 	return generator(points as [number, number][])
 })
 const xAxisGenerator = computed(() => {
-	return axisBottom<Date>(xScale.value).ticks(6).tickSize(5).tickFormat(timeFormat('%H:%M'))
+	return axisBottom<Date>(xScale.value)
+		.ticks(6)
+		.tickSize(5)
+		.tickFormat(timeFormat('%H:%M'))
 })
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
 		.ticks(6)
-		.tickSizeInner(-(width - margin.right ))
+		.tickSizeInner(-(width - margin.right))
 		.tickFormat((d) => d.toString())
 })
 const draw = computed(() => {
@@ -133,10 +136,7 @@ const draw = computed(() => {
 		.attr('fill', 'var(--color-charging)')
 	// X Axis
 	const xAxis = svg.append('g').attr('class', 'axis').call(xAxisGenerator.value)
-	xAxis.attr(
-		'transform',
-		'translate(0,' + (height - margin.bottom) + ')',
-	)
+	xAxis.attr('transform', 'translate(0,' + (height - margin.bottom) + ')')
 	xAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
@@ -201,7 +201,8 @@ onMounted(() => {
 .pricebadge {
 	background-color: var(--color-charging);
 	font-weight: normal;
-}.providerbadge {
+}
+.providerbadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
 }

@@ -361,6 +361,8 @@ export const infotext: { [key: string]: string } = {
 		'Immer mindestens bis zum eingestellten Ladestand laden. Wenn notwendig mit Netzstrom.',
 	minpv:
 		'Durchgehend mit mindestens dem eingestellten Strom laden. Wenn notwendig mit Netzstrom.',
+	pricebased:
+		'Laden bei dynamischem Stromtarif, wenn eingestellter Maximalpreis unterboten wird.',
 }
 interface Preferences {
 	hideSH?: number[]
