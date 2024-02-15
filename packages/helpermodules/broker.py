@@ -21,9 +21,9 @@ class InternalBrokerClient:
     def start_infinite_loop(self) -> None:
         self.client.loop_forever()
 
-    def start_finite_loop(self, timeout: int = 1) -> None:
+    def start_finite_loop(self) -> None:
         self.client.loop_start()
-        time.sleep(timeout)
+        time.sleep(1)
         self.client.loop_stop()
 
     def disconnect(self) -> None:

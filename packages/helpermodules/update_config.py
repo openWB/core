@@ -516,13 +516,11 @@ class UpdateConfig:
         client.subscribe("openWB/#", 2)
 
     def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
-        if msg.topic == "openWB/system/datastore_version":
-            log.debug(f"received datastore version: {msg.payload}")
         self.all_received_topics.update({msg.topic: msg.payload})
 
     def __update_topic(self, topic: str, payload):
         """ publish topic to broker and update all_received_topics
-        set- and sub-data are not yet initialized, so we have to use pub() directly!
+        set- and sub-data are not yet initialized, so we have to publish directly into the topic without adding "set/"
         """
         Pub().pub(topic, payload)
         if payload == "":
@@ -541,7 +539,7 @@ class UpdateConfig:
                 if re.search(valid_topic, topic) is not None:
                     break
             else:
-                log.debug("Ungültiges Topic zum Startzeitpunkt: "+str(topic))
+                log.debug(f"Ungültiges Topic zum Startzeitpunkt: {topic}")
                 removed_topics += [topic]
         # delete topics to allow setting new defaults afterwards
         for topic in removed_topics:
@@ -588,10 +586,10 @@ class UpdateConfig:
         log.debug(f"target datastore version: {self.DATASTORE_VERSION}")
         for version in range(datastore_version, self.DATASTORE_VERSION):
             try:
-                log.debug(f"upgrading datastore from version {version} to {version + 1}")
+                log.debug(f"upgrading datastore from version '{version}' to '{version + 1}'")
                 getattr(self, f"upgrade_datastore_{version}")()
             except AttributeError:
-                log.error(f"missing upgrade function! {version}")
+                log.error(f"missing upgrade function! '{version}'")
 
     def _loop_all_received_topics(self, callback) -> None:
         modified_topics = {}
@@ -676,12 +674,12 @@ class UpdateConfig:
                                 jsonFile.seek(0)
                                 json.dump(new_content, jsonFile)
                                 jsonFile.truncate()
-                                log.debug(f"Format der Logdatei {file} aktualisiert.")
+                                log.debug(f"Format der Logdatei '{file}' aktualisiert.")
                             except Exception:
-                                log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
+                                log.exception(f"Logfile '{file}' entspricht nicht dem Dateiformat von Alpha 3.")
                     except json.decoder.JSONDecodeError:
-                        log.exception(
-                            f"Logfile {file} konnte nicht konvertiert werden, da es keine gültigen json-Daten enthält.")
+                        log.exception(f"Logfile '{file}' konnte nicht konvertiert werden, "
+                                      "da es keine gültigen json-Daten enthält.")
                 with open(file, "r+") as jsonFile:
                     try:
                         content = json.load(jsonFile)
@@ -698,7 +696,7 @@ class UpdateConfig:
                         json.dump(content, jsonFile)
                         jsonFile.truncate()
                     except Exception:
-                        log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+                        log.exception(f"Logfile '{file}' konnte nicht konvertiert werden.")
 
         self._loop_all_received_topics(upgrade)
         upgrade_logs()
@@ -1062,7 +1060,7 @@ class UpdateConfig:
                         pub_system_message(payload, result.stdout, MessageType.SUCCESS)
                     else:
                         log.error("update of configuration for bridge "
-                                  f"'{bridge_configuration['name']}' {index} failed! {result.stdout}")
+                                  f"'{bridge_configuration['name']}' ({index}) failed! {result.stdout}")
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 24)
 
@@ -1230,11 +1228,11 @@ class UpdateConfig:
                         jsonFile.seek(0)
                         json.dump(content, jsonFile)
                         jsonFile.truncate()
-                        log.debug(f"Format der Logdatei {file} aktualisiert.")
+                        log.debug(f"Format der Logdatei '{file}' aktualisiert.")
             except FileNotFoundError:
                 pass
             except Exception:
-                log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+                log.exception(f"Logfile '{file}' konnte nicht konvertiert werden.")
 
         files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
         files.sort()
@@ -1259,11 +1257,11 @@ class UpdateConfig:
                         jsonFile.seek(0)
                         json.dump(content, jsonFile)
                         jsonFile.truncate()
-                        log.debug(f"Format der Logdatei {file} aktualisiert.")
+                        log.debug(f"Format der Logdatei '{file}' aktualisiert.")
             except FileNotFoundError:
                 pass
             except Exception:
-                log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+                log.exception(f"Logfile '{file}' konnte nicht konvertiert werden.")
         files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
         files.sort()
         for file in files:
