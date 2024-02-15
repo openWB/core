@@ -380,8 +380,8 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                 try:
                     new_data = {}
                     if "imported" in entry[type][module].keys() or "exported" in entry[type][module].keys():
-                        def get_current_and_next(value_key: str):
-                            def get_single_value(source: dict, default: int = 0):
+                        def get_current_and_next(value_key: str) ->  Tuple[float, float]:
+                            def get_single_value(source: dict, default: int = 0) -> float:
                                 try:
                                     return source[type][module][value_key]
                                 except KeyError:
