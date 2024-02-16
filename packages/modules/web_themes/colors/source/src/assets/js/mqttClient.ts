@@ -89,20 +89,24 @@ export async function mqttPublish(topic: string, message: string) {
 		console.warn('MQTT publish: Not connected. Waiting 0.1 seconds')
 		await delay(100)
 		connected = client.connected
-		retries = retries++
+		retries += 1
 	}
 	// console.warn ('MQTT publish: Now connected')
-	try {
-		client.publish(topic, message, { qos }, (error) => {
-			if (error) {
-				console.warn('MQTT publish error: ', error)
-			}
-			console.info(
-				'MQTT publish: Message sent: [' + topic + '](' + message + ')',
-			)
-		})
-	} catch (error) {
-		console.warn('MQTT publish: caught error: ' + error)
+	if (retries < 10) {
+		try {
+			client.publish(topic, message, { qos }, (error) => {
+				if (error) {
+					console.warn('MQTT publish error: ', error)
+				}
+				console.info(
+					'MQTT publish: Message sent: [' + topic + '](' + message + ')',
+				)
+			})
+		} catch (error) {
+			console.warn('MQTT publish: caught error: ' + error)
+		}
+	} else {
+		console.error('MQTT publish: Lost connection to MQTT server. Please reload the page')
 	}
 }
 export function mqttClientId() {
