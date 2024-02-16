@@ -8,7 +8,7 @@
 		</template>
 		<div class="pb-3">
 			<div
-				v-for="(vehicle, index) in vehicles"
+				v-for="(vehicle, index) in Object.values(vehicles).slice().reverse()"
 				:key="index"
 				class="row m-1 mt-0 p-0"
 			>

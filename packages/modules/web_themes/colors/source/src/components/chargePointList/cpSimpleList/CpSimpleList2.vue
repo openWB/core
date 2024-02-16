@@ -6,7 +6,9 @@
 		</template>
 		<template #buttons>
 			<div class="d-flex float-right justify-content-end align-items-center">
-				<span v-if="etData.active" class="badge rounded-pill pricebadge mx-2"
+				<span
+					v-if="etData.active"
+					class="badge rounded-pill pricebadge mb-1 ms-2"
 					>Strompreis: {{ etData.etCurrentPriceString }}</span
 				>
 			</div>

@@ -150,7 +150,7 @@ export const dayGraph = reactive({
 				command: 'getDailyLog',
 				data: { day: dateString },
 			})
-			graphData.data = []
+			// graphData.data = []
 		}
 	},
 	deactivate() {
