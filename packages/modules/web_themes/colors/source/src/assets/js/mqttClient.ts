@@ -84,12 +84,14 @@ export function mqttUnsubscribe(fromTopic: string) {
 export async function mqttPublish(topic: string, message: string) {
 	const qos: QoS = 0
 	let connected = client.connected
-	while (!connected) {
+	let retries = 0
+	while (!connected && retries < 10) {
 		console.warn('MQTT publish: Not connected. Waiting 0.1 seconds')
 		await delay(100)
 		connected = client.connected
+		retries = retries++
 	}
-	//console.warn ('MQTT publish: Now connected')
+	// console.warn ('MQTT publish: Now connected')
 	try {
 		client.publish(topic, message, { qos }, (error) => {
 			if (error) {
