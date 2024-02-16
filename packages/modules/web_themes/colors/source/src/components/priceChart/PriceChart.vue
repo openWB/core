@@ -7,7 +7,7 @@
 			<figure id="pricechart" class="p-0 m-0">
 				<svg viewBox="0 0 400 120">
 					<g
-						:id="'priceChartCanvas' + props.chargepoint.id"
+						:id="chartId"
 						:origin="draw"
 						:transform="'translate(' + margin.top + ',' + margin.right + ')'"
 					/>
@@ -16,7 +16,7 @@
 		</div>
 	</div>
 
-	<div class="p-3">
+	<div v-if="chargepoint != undefined" class="p-3">
 		<RangeInput
 			v-if="chargepoint.etActive"
 			id="foo"
@@ -28,7 +28,7 @@
 			unit="ct"
 		/>
 	</div>
-	<div class="d-flex justify-content-end">
+	<div v-if="chargepoint != undefined" class="d-flex justify-content-end">
 		<span class="me-3 pt-0" @click="setMaxPrice">
 			<button
 				type="button"
@@ -58,9 +58,11 @@ import {
 import RangeInput from '../shared/RangeInput.vue'
 import { chargePoints, type ChargePoint } from '../chargePointList/model'
 const props = defineProps<{
-	chargepoint: ChargePoint
+	chargepoint?: ChargePoint
+	globalview?: boolean
 }>()
-let _maxPrice = ref(props.chargepoint.etMaxPrice)
+
+let _maxPrice = props.chargepoint ? ref(props.chargepoint.etMaxPrice) : ref(0)
 const maxPriceEdited = ref(false)
 const cp = ref(props.chargepoint)
 const maxPrice = computed({
@@ -75,7 +77,9 @@ const maxPrice = computed({
 })
 
 function setMaxPrice() {
-	chargePoints[cp.value.id].etMaxPrice = maxPrice.value
+	if (cp.value) {
+		chargePoints[cp.value.id].etMaxPrice = maxPrice.value
+	}
 	maxPriceEdited.value = false
 }
 const needsUpdate = ref(false)
@@ -114,15 +118,20 @@ const xScale = computed(() => {
 		.range([margin.left, width - margin.left - margin.right])
 		.domain(xdomain)
 })
-const yScale = computed(() => {
-	let ydomain = extent(plotdata.value, (d) => d[1]) as [number, number]
-	if (ydomain[0] > 0) {
-		ydomain[0] = 0
+const yDomain = computed(() => {
+	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
+	if (yd[0] > 1) {
+		yd[0] = 0
+	} else {
+		yd[0] = Math.floor(yd[0] - 1)
 	}
-	ydomain[1] = Math.floor(ydomain[1] + 1)
+	yd[1] = Math.floor(yd[1] + 1)
+	return yd
+})
+const yScale = computed(() => {
 	return scaleLinear()
 		.range([height - margin.bottom, 0])
-		.domain(ydomain)
+		.domain(yDomain.value)
 })
 const linePath = computed(() => {
 	const generator = line()
@@ -132,6 +141,15 @@ const linePath = computed(() => {
 	]
 	return generator(points as [number, number][])
 })
+const zeroPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(0)],
+		[width - margin.right, yScale.value(0)],
+	]
+	return generator(points as [number, number][])
+})
+
 const xAxisGenerator = computed(() => {
 	return axisBottom<Date>(xScale.value).ticks(4).tickFormat(timeFormat('%H:%M'))
 })
@@ -146,7 +164,7 @@ const draw = computed(() => {
 		dummy = !dummy
 	}
 
-	const svg = select('g#priceChartCanvas' + props.chargepoint.id)
+	const svg = select('g#' + chartId.value)
 	svg.selectAll('*').remove()
 	const bargroups = svg
 		.selectAll('bar')
@@ -157,15 +175,9 @@ const draw = computed(() => {
 		.append('rect')
 		.attr('class', 'bar')
 		.attr('x', (d) => xScale.value(d[0]))
-		.attr('y', (d) => {
-			return d[1] >= 0 ? yScale.value(d[1]) : yScale.value(0)
-		})
+		.attr('y', (d) => yScale.value(d[1]))
 		.attr('width', barwidth.value)
-		.attr('height', (d) =>
-			d[1] >= 0
-				? yScale.value(0) - yScale.value(d[1])
-				: yScale.value(d[1]) - yScale.value(0),
-		)
+		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
 		.attr('fill', (d) =>
 			d[1] <= maxPrice.value ? 'var(--color-charging)' : 'var(--color-axis)',
 		)
@@ -196,16 +208,27 @@ const draw = computed(() => {
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
 		.attr('stroke-width', '0.5')
-
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+	// zero line
+	if (yDomain.value[0] < 0) {
+		svg
+			.append('path')
+			.attr('d', zeroPath.value)
+			.attr('stroke', 'var(--color-fg)')
+	}
 	// Line for max price
 	svg.append('path').attr('d', linePath.value).attr('stroke', 'yellow')
 
 	return 'PriceChart.vue'
 })
-
+const chartId = computed(() => {
+	if (props.chargepoint) {
+		return 'priceChartCanvas' + props.chargepoint.id
+	} else {
+		return 'priceChartCanvasGlobal'
+	}
+})
 onMounted(() => {
-	console.log('mounted')
 	needsUpdate.value = !needsUpdate.value
 })
 </script>

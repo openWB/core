@@ -21,6 +21,7 @@ const mqttConnection = {
 	protocol: (location.protocol == 'https:' ? 'wss' : 'ws') as MqttProtocol,
 	connectTimeout: 4000,
 	reconnectPeriod: 4000,
+	clean: false,
 	clientId: Math.random()
 		.toString(36)
 		.replace(/[^a-z]+/g, '')
@@ -39,6 +40,12 @@ try {
 	client = connect(connectUrl, options)
 	client.on('connect', () => {
 		console.info('MQTT connection successful')
+		// topiclist.forEach((topic) => {
+		//  subscribe(topic);
+		// });
+	})
+	client.on('disconnect', () => {
+		console.info('MQTT disconnected')
 		// topiclist.forEach((topic) => {
 		//  subscribe(topic);
 		// });

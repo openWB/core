@@ -295,7 +295,12 @@ class Ev:
                     self.data.get.soc,
                     used_amount
                 )
-                message = tmp_message
+                # Info vom Zielladen erhalten
+                if tmp_message is not None:
+                    if message is not None:
+                        message = f"{message} {tmp_message}"
+                    else:
+                        message = tmp_message
                 if tmp_current > 0:
                     control_parameter.current_plan = name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
@@ -572,7 +577,7 @@ class ChargeTemplate:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
-                    if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+                    if self.data.et.active and data.data.optional_data.et_provider_availble():
                         if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
                             return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.name
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
@@ -610,7 +615,7 @@ class ChargeTemplate:
         message = None
         try:
             instant_charging = self.data.chargemode.instant_charging
-            if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+            if self.data.et.active and data.data.optional_data.et_provider_availble():
                 if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
                     return 0, "stop", self.CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
@@ -758,8 +763,8 @@ class ChargeTemplate:
     SCHEDULED_CHARGING_LIMITED_BY_AMOUNT = '{}kWh geladene Energie'
     SCHEDULED_CHARGING_IN_TIME = 'Zielladen mit {}A, um {}  um {} zu erreichen.'
     SCHEDULED_CHARGING_CHEAP_HOUR = "Zielladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
-    SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Kein Zielladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
-                                         "ist. Falls vorhanden, wird mit Überschuss geladen.")
+    SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Zielladen ausstehend, da jetzt kein günstiger Zeitpunkt zum preisbasierten "
+                                         "Laden ist. Falls vorhanden, wird mit Überschuss geladen.")
 
     def scheduled_charging_calc_current(self,
                                         plan_data: Optional[SelectedPlan],
@@ -807,7 +812,7 @@ class ChargeTemplate:
         else:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
-            if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+            if self.data.et.active and data.data.optional_data.et_provider_availble():
                 hourlist = data.data.optional_data.et_get_loading_hours(plan_data.duration, plan_data.remaining_time)
                 log.debug(f"Günstige Ladezeiten: {hourlist}")
                 if timecheck.is_list_valid(hourlist):
@@ -833,13 +838,15 @@ class ChargeTemplate:
         return 0, "stop", "Keine Ladung, da der Lademodus Stop aktiv ist."
 
 
-def get_ev_to_rfid(rfid: str, vehicle_id: str):
+def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]:
     """ ermittelt zum übergebenen ID-Tag das Fahrzeug
 
     Parameter
     ---------
     rfid: string
         ID-Tag
+    vehicle_id: string
+        MAC-Adresse des ID-Tags (nur openWB Pro)
 
     Return
     ------
@@ -849,7 +856,7 @@ def get_ev_to_rfid(rfid: str, vehicle_id: str):
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
-                if vehicle_id in data.data.ev_data[vehicle].data.tag_id:
+                if vehicle_id is not None and vehicle_id in data.data.ev_data[vehicle].data.tag_id:
                     log.debug(f"MAC {vehicle_id} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
                 if rfid in data.data.ev_data[vehicle].data.tag_id:
