@@ -238,7 +238,7 @@ class StandardSocketHandler:
     # en/disable standard socket handler on internal CP handler as configured by YC config
     # then return true if standard socket is present, otherwise false
     def _verify_standard_socket_presence(self) -> bool:
-        if data.data.yc_data.data.yc_config.standard_socket_installed:
+        if data.data.yc_data.data.yc_config.standard_socket_installed is not None and data.data.yc_data.data.yc_config.standard_socket_installed:
             if self._standard_socket_handler == None:
                 self._standard_socket_handler = SocketMeterHandler(self._general_cp_handler.internal_chargepoint_handler.cp0_client_handler.client)
             if self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler is None:

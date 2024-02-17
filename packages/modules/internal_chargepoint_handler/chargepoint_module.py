@@ -95,8 +95,11 @@ class ChargepointModule(AbstractChargepoint):
                 self.old_plug_state = plug_state
 
             if self.standard_socket_handler is not None:
-                time.sleep(0.1)
-                self.standard_socket_handler.update()
+                try:
+                    time.sleep(0.1)
+                    self.standard_socket_handler.update()
+                except Exception as e:
+                    log.error(f"YC standard socket handler update() failure (ignored): {str(type(e))} {str(e)}")
 
             chargepoint_state = ChargepointState(
                 power=power,

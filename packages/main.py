@@ -164,7 +164,7 @@ class HandlerAlgorithm:
                 changed_values_handler.pub_changed_values()
                 wait_for_module_update_completed(loadvars_.event_module_update_completed, "openWB/set/system/device/module_update_completed")
                 data.data.copy_data()
-                changed_values_handler.store_inital_values()
+                changed_values_handler.store_initial_values()
                 self.heartbeat = True
                 if data.data.system_data["system"].data["perform_update"]:
                     data.data.system_data["system"].perform_update()
