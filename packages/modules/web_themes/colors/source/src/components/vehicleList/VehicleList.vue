@@ -1,26 +1,28 @@
 <template>
 	<WBWidgetFlex :variable-width="true">
 		<template #title>
-			<span class="fas fa-bolt me-2" style="color: var(--color-evu)"
+			<span class="fas fa-car me-2" style="color: var(--color-charging)"
 				>&nbsp;</span
 			>
-			<span>Zähler</span>
+			<span>Fahrzeuge</span>
 		</template>
-		<p
-			v-for="(counter, index) in counters"
-			:key="index"
-			class="row m-1 mt-0 p-0"
-		>
-			<ClCounter :counter="counter" />
-		</p>
+		<div class="pb-3">
+			<div
+				v-for="(vehicle, index) in Object.values(vehicles).slice().reverse()"
+				:key="index"
+				class="row m-1 mt-0 p-0"
+			>
+				<VlVehicle :vehicle="vehicle" />
+			</div>
+		</div>
 	</WBWidgetFlex>
 </template>
 
 <script setup lang="ts">
 //import { computed } from 'vue'
 import WBWidgetFlex from '../shared/WbWidgetFlex.vue'
-import ClCounter from './ClCounter.vue'
-import { counters } from './model'
+import VlVehicle from './VlVehicle.vue'
+import { vehicles } from '@/components/chargePointList/model'
 </script>
 
 <style scoped>

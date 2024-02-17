@@ -104,6 +104,10 @@
 								v-if="chargepoint.hasPriority"
 								class="me-1 fa-solid fa-xs fa-star ps-1"
 							/>
+							<span
+								v-if="chargepoint.etActive"
+								class="me-0 fa-solid fa-xs fa-coins ps-0"
+							/>
 						</h3>
 					</div>
 				</div>
@@ -176,21 +180,50 @@
 						/>
 					</div>
 					<!-- ET Information -->
-					<div v-if="props.chargepoint.etActive" class="row m-1 p-0">
+					<div v-if="etData.active" class="row m-1 p-0">
 						<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
+							<InfoItem heading="Preisladen:">
+								<SwitchInput v-model="cp.etActive" />
+							</InfoItem>
 							<InfoItem heading="max. Preis:">
-								{{
-									(Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(
-										1,
-									)
-								}}
-								ct
+								<span type="button" @click="editPrice = !editPrice"
+									>{{
+										props.chargepoint.etActive
+											? (
+													Math.round(props.chargepoint.etMaxPrice * 10) / 10
+											  ).toFixed(1) + ' ct'
+											: '-'
+									}}
+
+									<i
+										v-if="props.chargepoint.etActive"
+										class="fa-solid fa-sm fas fa-edit ms-2"
+									/>
+								</span>
 							</InfoItem>
 							<InfoItem heading="akt. Preis:">
-								<span :style="currentPriceStyle"
-									>{{ currentPrice }} ct
-								</span></InfoItem
+								<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
+							</InfoItem>
+						</div>
+						<div
+							v-if="editPrice"
+							:id="'priceChartInline' + props.chargepoint.id"
+							class="d-flex flex-column rounded priceEditor"
+						>
+							<PriceChart
+								v-if="vehicles[props.chargepoint.connectedVehicle] != undefined"
+								:chargepoint="props.chargepoint"
+							/>
+							<span
+								class="d-flex ms-2 my-4 pe-3 pt-1 d-flex align-self-end"
+								:style="modePillStyle"
+								@click="editPrice = false"
 							>
+								<span
+									type="button"
+									class="d-flex fa-solid fa-lg ps-1 fa-circle-check"
+								/>
+							</span>
 						</div>
 					</div>
 				</div>
@@ -235,12 +268,15 @@ import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import { updateServer } from '@/assets/js/sendMessages'
 import RangeInput from '../shared/RangeInput.vue'
+import PriceChart from '../priceChart/PriceChart.vue'
 import { etData } from '../priceChart/model'
+import SwitchInput from '../shared/SwitchInput.vue'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
 	fullWidth?: boolean
 }>()
+const cp = ref(props.chargepoint)
 // computed
 const chargeMode = computed({
 	get() {
@@ -348,54 +384,17 @@ const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return (Math.round(p * 10) / 10).toFixed(1)
 })
+const editPrice = ref(false)
 // methods
 </script>
 
 <style scoped>
-.modeIndicator {
-	color: white;
-}
-
-.outlinePill {
-	border: 1px solid;
-	background: var(--color-bg);
-	vertical-align: bottom;
-	font-size: var(--font-verysmall);
-}
-
-.statusIndicator {
-	border: 1px solid;
-	background: 'var(--bg) ';
-}
-
-.buttonIcon {
-	color: var(--color-menu);
-}
-
 .fa-star {
 	color: var(--color-evu);
 }
 
 .fa-clock {
 	color: var(--color-battery);
-}
-
-.fa-sliders {
-	color: var(--color-menu);
-}
-
-.energylabel {
-	color: var(--color-menu);
-}
-
-.vehicleName {
-	color: var(--color-fg);
-}
-
-.longline {
-	color: var(--color-menu);
-	padding: 3;
-	margin-left: 5;
 }
 
 .fa-car {
@@ -409,15 +408,12 @@ const currentPrice = computed(() => {
 .fa-circle-check {
 	color: var(--color-menu);
 }
-
-.heading {
-	color: var(--color-menu);
-	font-size: var(--font-small);
+.fa-coins {
+	color: var(--color-battery);
 }
 
-.content {
-	font-size: var(--font-normal);
-	font-weight: bold;
+.fa-edit {
+	color: var(--color-menu);
 }
 
 .socEditor {
@@ -426,5 +422,8 @@ const currentPrice = computed(() => {
 
 .targetCurrent {
 	color: var(--color-menu);
+}
+.priceEditor {
+	border: 1px solid var(--color-menu);
 }
 </style>

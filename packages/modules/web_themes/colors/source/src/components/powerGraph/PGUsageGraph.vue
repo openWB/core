@@ -66,7 +66,6 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 // computed:
 const draw = computed(() => {
 	const graph = select('g#pgUsageGraph')
-
 	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
 		drawBarGraph(graph)
 	} else {

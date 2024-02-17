@@ -5,6 +5,7 @@
 			class="form-check-input"
 			type="checkbox"
 			role="switch"
+			:style="switchStyle"
 		/>
 	</div>
 </template>
@@ -13,6 +14,8 @@
 import { computed } from 'vue'
 const props = defineProps<{
 	modelValue: boolean
+	onColor?: string
+	offColor?: string
 }>()
 const emit = defineEmits(['update:modelValue'])
 const flag = computed({
@@ -23,4 +26,12 @@ const flag = computed({
 		emit('update:modelValue', value)
 	},
 })
+const switchStyle = computed(() => {
+	if (flag.value) {
+		return { 'background-color': 'green' }
+	} else {
+		return { 'background-color': 'white' }
+	}
+})
 </script>
+<style scoped></style>
