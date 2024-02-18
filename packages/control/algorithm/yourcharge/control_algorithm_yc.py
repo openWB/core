@@ -120,12 +120,14 @@ class ControlAlgorithmYc:
             actual_adjustment = 0
             if lldiff >= 1.0:
                 actual_adjustment = 1.0
-            elif lldiff >= 0.0:
+            elif lldiff >= 0.0: # and < 1.0 else above condition would have fired
                 actual_adjustment = lldiff
             elif lldiff <= -3.0:
                 actual_adjustment = -3.0
-            elif lldiff <= -0.5:
+            elif lldiff < -1.0: # and > -3.0 else above condition would have fired
                 actual_adjustment = -1.0
+            elif lldiff < 0.0: # and > -1.0 else above conditions would have fired
+                actual_adjustment = lldiff
 
             # if we're not charging, we always start off with minimum supported current
             if not charging_phase_infos.is_charging:
