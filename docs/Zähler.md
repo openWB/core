@@ -1,7 +1,7 @@
 
 # Zähler
 
-OpenWB benötigt zum erfolgreichen PV-Überschussladen die entsprechenden Zählerwerte am EVU-Punkt (EVU=Elektrizitätsversorgungsunternehmen), sprich dem Übergang ins öffentliche Netz. An dieser Stelle muss saldierend (in beide Richtungen) die Leistung pro Phase erfasst werden.
+OpenWB benötigt zum erfolgreichen PV-Überschussladen die entsprechenden Zählerwerte am EVU-Punkt (EVU=Elektrizitätsversorgungsunternehmen), sprich dem Übergang ins öffentliche Netz. An dieser Stelle muss die Gesamtleistung saldierend erfasst werden. Für eine phasenbasierte Leistungsüberwachung sind auch die einzelnen Ströme und/oder Leistungen der drei Phasen notwendig.
 
 Im einfachsten Fall geschieht dies durch Kauf und Einbau eines [EVU-Kits](##EVU-Kit). Sollten schon digital auslesbare Zähler vorhanden sein, so besteht die Möglichkeit diese Werte an OpenWB weiterzuleiten, auch mit Hilfe von Hausautomationsservern.
 
