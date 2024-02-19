@@ -17,9 +17,9 @@ Der Zähler kommuniziert mit der OpenWB über Ethernet. Die Kits sind so vorkonf
 
 ## MQTT
 
-OpenWB hat einen MQTT-Broker integriert, welcher unter Port 1883 erreichbar ist. Verschlüsselung oder Benutzerauthentifizierung ist deaktiviert und auch nicht aktivierbar. Ein Zähler, welche die benötigten Daten liefert muss sich mit diesem Broker verbinden und dort die Werte unter den entsprechenden Topics publishen.
+OpenWB hat einen MQTT-Broker integriert, welcher unter Port 1883 (ohne Verschlüsselung) und Port 8883 (mit Verschlüsselung) erreichbar ist.Benutzerauthentifizierung ist deaktiviert und auch nicht aktivierbar. Ein Zähler, welcher die benötigten Daten liefert muss sich mit diesem Broker verbinden und dort die Werte unter den entsprechenden Topics publishen.
 
-Folgende Werte können dem MQTT-Zähler übergeben werden:
+Folgende Werte können dem MQTT-Zähler übergeben werden (Die Zahl in den Topics, hier "2", wird dynamisch erzeugt und ist den eigenen Gegebenheiten anzupassen. Wir ein neuer Zähler erstellt, wird diese Zahl inkrementiert):
 ```
 openWB/set/counter/2/get/power
 Bezugsleistung in Watt, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen, positiv Bezug, negativ Einspeisung
