@@ -32,20 +32,25 @@ class StandardSocketControlState(int, Enum):
     ActivationRequested = 1
     DeactivationRequested = 2
     Active = 3
+    WaitForEvChargeEnd = 4
 
 
 class StandardSocketHandler:
 
-    def __init__(self, general_chargepoint_handler: GeneralInternalChargepointHandler, status_handler: YcStatusHandler) -> None:
+    def __init__(self, general_chargepoint_handler: GeneralInternalChargepointHandler, status_handler: YcStatusHandler, internal_cp_key: str) -> None:
         self._general_cp_handler = general_chargepoint_handler
         self._status_handler: YcStatusHandler = status_handler
+        self._internal_cp_key: str = internal_cp_key
 
         self.socket_approval_max_wait_time: datetime.timedelta = datetime.timedelta(seconds=45.0)
+        self.ev_charge_end_max_wait_time: datetime.timedelta = datetime.timedelta(seconds=35.0)
         self._current_status = StandardSocketStatus.Unknown
         self._current_control_state = StandardSocketControlState.Idle
         self._standard_socket_handler: SocketMeterHandler = None
         self._previous_socket_action_for_restore = StandardSocketActions.Uninitialized
         self._last_socket_request_time = None
+        self._ev_deactivation_start = None
+        self._internal_cp = None
         self._init_gpio()
 
         # finally, for initialization, turn off the socket
@@ -65,11 +70,15 @@ class StandardSocketHandler:
             # if no socket is installed, just return
             return False
 
+        self._internal_cp = data.data.cp_data[self._internal_cp_key]
+
         # now the actual statemachine
         valid_tag_seen = self.valid_socket_rfid_scanned(rfid_data)
         log.info(f"Current socket control state '{self._current_control_state.name}'")
         if self._current_control_state == StandardSocketControlState.Idle:
             self._check_idle_transitions(valid_tag_seen)
+        elif self._current_control_state == StandardSocketControlState.WaitForEvChargeEnd:
+            self._check_wait_for_charge_end_transitions(valid_tag_seen)
         elif self._current_control_state == StandardSocketControlState.ActivationRequested:
             self._check_activation_requested_transitions(valid_tag_seen)
         elif self._current_control_state == StandardSocketControlState.DeactivationRequested:
@@ -129,7 +138,12 @@ class StandardSocketHandler:
             self._transit_to_socket_on()
             return
         if valid_tag_seen:
-            self._transit_to_socket_requested()
+            if self._internal_cp.data.get.charge_state:
+                log.critical(f"Socket activation requestd by RFID scan but EV is still charging: Waiting for EV to finally stop charging")
+                self._transit_to_wait_for_ev_charge_end()
+            else:
+                log.critical(f"Socket activation requestd by RFID scan and EV is not charging: Requesting socket activation right away")
+                self._transit_to_socket_requested()
 
 
     # transitions from ActivationRequested mode
@@ -165,6 +179,24 @@ class StandardSocketHandler:
             self._transit_to_idle()
 
 
+    # transitions from wait-for-EV-charge-end mode
+    def _check_wait_for_charge_end_transitions(self, valid_tag_seen: bool) -> None:
+        if valid_tag_seen:
+            log.error(f"De-activation requested by RFID-tag while waiting for EV charge end: Turning off socket and changing to {StandardSocketControlState.Idle}")
+            self._transit_to_socket_disable_requested()
+            return
+
+        if self._internal_cp.data.get.charge_state:
+            log.error(f"EV still charging while waiting for charge end. Waiting started at {self._ev_deactivation_start}")
+            if self._ev_deactivation_start is not None and (datetime.datetime.utcnow() - self._ev_deactivation_start) > self.ev_charge_end_max_wait_time:
+                log.error(f"Timeout waiting for EV charge end: Switching to idle. Waiting started at {self._ev_deactivation_start}, waiting for {datetime.datetime.utcnow() - self._ev_deactivation_start}")
+                self._transit_to_idle()
+        else:
+            log.error(f"EV stopped charging when waiting for charge end")
+            self._ev_deactivation_start = None
+            self._transit_to_socket_requested()
+
+
     # turn off the socket (only to be used internally)
     def _socket_off(self) -> None:
         if self._current_status == StandardSocketStatus.Off:
@@ -190,6 +222,14 @@ class StandardSocketHandler:
         self._current_status = StandardSocketStatus.On
         Pub().pub(yourcharge.yc_socket_activated_topic, self._current_status == StandardSocketStatus.On)
 
+
+    # transition action when waiting for EV charge end
+    def _transit_to_wait_for_ev_charge_end(self) -> None:
+        self._ev_deactivation_start = datetime.datetime.utcnow()
+        self._current_control_state = StandardSocketControlState.WaitForEvChargeEnd
+        log.error(f"Socket requested by EV still charging: Waiting for EV charge end at {self._ev_deactivation_start}")
+
+
     # transition action when requesting ENABLE of socket
     def _transit_to_socket_requested(self) -> None:
         if self._current_control_state == StandardSocketControlState.ActivationRequested:
@@ -206,6 +246,7 @@ class StandardSocketHandler:
             return
         self._current_control_state = StandardSocketControlState.DeactivationRequested
         self._last_socket_request_time = datetime.datetime.utcnow()
+        self._ev_deactivation_start = None
         log.error(f"Requesting deactivation of standard socket at {self._last_socket_request_time} by sending {yourcharge.SocketRequestStates.OffRequested}")
         Pub().pub(yourcharge.yc_socket_requested_topic, yourcharge.SocketRequestStates.OffRequested)
 
@@ -220,6 +261,7 @@ class StandardSocketHandler:
             return
         self._current_control_state = StandardSocketControlState.Active
         self._last_socket_request_time = None
+        self._ev_deactivation_start = None
         self._socket_on()
         Pub().pub(yourcharge.yc_socket_requested_topic, yourcharge.SocketRequestStates.NoRequest)
 
@@ -230,6 +272,7 @@ class StandardSocketHandler:
             return
         self._current_control_state = StandardSocketControlState.Idle
         self._last_socket_request_time = None
+        self._ev_deactivation_start = None
         log.error(f"Standard socket returning to {StandardSocketControlState.Idle}")
         self._socket_off()
         Pub().pub(yourcharge.yc_socket_requested_topic, yourcharge.SocketRequestStates.NoRequest)

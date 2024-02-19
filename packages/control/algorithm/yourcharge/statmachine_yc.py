@@ -40,7 +40,7 @@ class StatemachineYc():
         self._valid_standard_socket_tag_found = False
         self._general_cp_handler = general_chargepoint_handler
         self._heartbeat_checker: HeartbeatChecker = HeartbeatChecker(timedelta(seconds=25))
-        self._standard_socket_handler: StandardSocketHandler = StandardSocketHandler(general_chargepoint_handler, self._status_handler)
+        self._standard_socket_handler: StandardSocketHandler = StandardSocketHandler(general_chargepoint_handler, self._status_handler, key)
         self._current_control_state = LoadControlState.Startup
         self._wait_for_plugin_entered = None
         self._control_algorithm = ControlAlgorithmYc(key, self._status_handler)
@@ -259,8 +259,8 @@ class StatemachineYc():
     def _transition_to_standard_socket(self):
         # immediately disable CP when valid standard socket tag has been found
         self._status_handler.update_cp_enabled(False)
-        self._set_current("Standard socket activated: Disabling charge immediately", 0.0, yourcharge.LmStatus.DownForSocket)
-        self._state_change("Standard socket activated", LoadControlState.SocketActive)
+        self._set_current("Standard socket requested: Disabling charge immediately", 0.0, yourcharge.LmStatus.DownForSocket)
+        self._state_change("Standard socket requested", LoadControlState.SocketActive)
 
 
     def _transition_to_disabled(self):

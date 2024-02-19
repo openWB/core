@@ -173,7 +173,7 @@ class ControlAlgorithmYc:
             charging_ev_to_use = 1
 
         imbalance_available = (data.data.yc_data.data.yc_config.allowed_load_imbalance - current_load_imbalance) / charging_ev_to_use
-        log.error(f"Load Imbalance: Available imbalance {imbalance_available} A ({charging_ev_to_use} charging vehicles), wanted charge current increase ${ll_wanted_increase} A")
+        log.error(f"Load Imbalance: Available imbalance {imbalance_available} A ({charging_ev_to_use} charging vehicles), wanted charge current increase {ll_wanted_increase} A")
 
         if imbalance_available - ll_wanted_increase < 0.0:
             # need to reduce for imbalance
