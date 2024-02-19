@@ -16,6 +16,7 @@ Hier werden die vorhandenen Wallboxen als Ladepunkt angelegt und ihnen gemeinsam
 Sind mehrere Ladepunkte an einer Unterverteilung angeschlossen, deren Zuleitung weniger verträgt, als die Ladepunkte abgeben können, muss man sich noch über das Loadsharing Gedanken machen. Zum Beispiel ist eine Unterverteilung an der zwei 22kW openWBs angeschlossen sind, in den seltensten Fällen mit den dafür notwendigen 63A abgesichert; häufig z.B. nur 35A. Hier fügt man noch eine Komponente "virtuellen Zähler" ein, setzt den im [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) in der Struktur über die beiden Ladepunkte und trägt dort die 24kW / 35A ein. Die maximal zulässige Leistung am EVU-Punkt trägt man dementsprechend in diesem [Zähler](https://github.com/openWB/core/wiki/Zaehler) ein.
  
 ### Fahrzeuge - warum wir das hier alles machen
+
 Bei den Fahrzeugen zerteilt sich die Konfiguration in die technischen Eigenschaften und die ladungstechnischen Aspekte - das sind die beiden Profile für Fahrzeug und Ladung. Die beiden zusammengefasst ergibt das Fahrzeug. 
 #### Fahrzeug-Profile
 Da steht drin, was für einen Fahrzeugtyp mit welchen Eigenschaften wir haben (ID.3, BMW i3, Tesla Model Y,...) und Angaben zur Ladungssteuerung und -statistiken. Haben wir nur ein Auto oder interessiert Zielladen oder "geladene km" nicht, reicht es beim Standard Fahrzeug-Profil zu bleiben.
