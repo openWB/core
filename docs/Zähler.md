@@ -22,35 +22,34 @@ OpenWB hat einen MQTT-Broker integriert, welcher unter Port 1883 erreichbar ist.
 Folgende Werte können dem MQTT-Zähler übergeben werden:
 ```
 openWB/set/counter/2/get/power
-
 Bezugsleistung in Watt, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen, positiv Bezug, negativ Einspeisung
 Beispiel: -123.45
-openWB/set/counter/2/get/imported
 
+openWB/set/counter/2/get/imported
 Bezogene Energie in Wh, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen, nur positiv
 Beispiel: 123.45
-openWB/set/counter/2/get/exported
 
+openWB/set/counter/2/get/exported
 Eingespeiste Energie in Wh, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen, nur positiv
 Beispiel: 123.45
-openWB/set/counter/2/get/frequency
 
+openWB/set/counter/2/get/frequency
 Netzfrequenz in Hz, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen
 Beispiel: 50.12
-openWB/set/counter/2/get/currents
 
+openWB/set/counter/2/get/currents
 Array mit den Strömen je Phase in Ampere, mit Nachkommastellen (Float), positiv Bezug, negativ Einspeisung
 Beispiel: [1.2,2.3,-2.1]
-openWB/set/counter/2/get/voltages
 
+openWB/set/counter/2/get/voltages
 Array mit den Spannungen je Phase in Volt, mit Nachkommastellen (Float)
 Beispiel: [222.2,223.3,222.3]
-openWB/set/counter/2/get/powers
 
+openWB/set/counter/2/get/powers
 Array mit den Leistungen je Phase in Watt, mit Nachkommastellen (Float)
 Beispiel: [12.3,23.4,-12.3]
-openWB/set/counter/2/get/power_factors
 
+openWB/set/counter/2/get/power_factors
 Array mit den Leistungsfaktoren je Phase, mit Nachkommastellen (Float), Wertebereich -1 bis 1
 Beispiel: [0.95,0.96,-0.95]
 ```
