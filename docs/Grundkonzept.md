@@ -20,7 +20,9 @@ Bei den Fahrzeugen zerteilt sich die Konfiguration in die technischen Eigenschaf
 Da steht drin, was für einen Fahrzeugtyp mit welchen Eigenschaften wir haben (ID.3, BMW i3, Tesla Model Y,...) und Angaben zur Ladungssteuerung und -statistiken. Haben wir nur ein Auto oder interessiert Zielladen oder "geladene km" nicht, reicht es beim Standard Fahrzeug-Profil zu bleiben.
 #### Ladeprofil
 Da steht drin, wie wir das Auto geladen werden soll, aber diese Einstellungen sind später im UI der openWB alle änderbar. Bei mehr als einer openWB sollte man je Fahrzeug ein Ladeprofil anzulegen, damit man z.B. von der neu hinzu gekommenenen Priorisierung Gebrauch machen kann. (Das priorisierte Auto fängt zuerst an zu laden, wenn man beide gleich priorisiert, muss der Überschuss wie bei der 1.9 für beide angeschlossenen Autos reichen.) Bei mehr als einem Auto sollte man auch je Auto ein Ladeprofil anlegen, denn da stehen die Zeitpläne und ein SoC-Limit drin. Einfach ist es bei nur einem Auto - da reicht es wieder beim Standard Ladeprofil zu bleiben und das zu ändern. Allerdings wird das Standard Ladeprofil (im Modus Stop) auch dafür genutzt, Ladepunkte nach Abstecken zu sperren. Möchte man also Ladepunkte vor unbefugtem Zugriff schützen, muss man auch bei einer Wallbox ein eigenes Ladeprofil anlegen.
+
 #### Fahrzeug
+
 Hier werden nun die beiden Profile zusammengeführt und ggf. ein SoC-Modul konfiguriert.
 
 **Kurz zusammengefasst:** Mit einem Auto und einer openWB bleibt man bei den Profilen immer bei den mitgelieferten Standard-Profilen und ändert die Parameter dort. Bei mehreren Autos legt man für jedes Auto ein Fahrzeug-Profil und ein Ladeprofil an und fasst die beiden im Fahrzeug zusammen.
