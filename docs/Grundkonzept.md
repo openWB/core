@@ -2,7 +2,7 @@ Hier werden die Grundeinstellungen für Anfänger mit einer einfachen Konstellat
 Üblicherweise sind da ein oder zwei Autos und ein oder zwei Wallboxen, die bei der Software 2.0 nur noch openWBs sein dürfen. Hat man nur ein Auto und eine openWB ist es ganz simpel. Mit zwei Autos muss man sich - wenn man weiterreichende Features nutzen - oder nur ganz einfach die geladenen kWh loggen möchte - damit auseinander setzen, wie man der openWB mitteilt, welches Auto nun angeschlossen ist: 
 - man wählt das zu ladende Auto auf dem Handy oder auf dem Display der openWB aus
 - man macht das bei mit RFID-Leser ausgestatteten openWBs per RFID-Karte
-- man kauft jedem Auto eine eigene openWB (ohne pro), das hat den Vorteil, dass die Autos immer eingesteckt bleiben können und so der gesamte kein PV-Überschuss garantiert in den Autos landet.
+- man kauft für jedes Auto eine eigene openWB; das hat den Vorteil, dass die Autos immer eingesteckt bleiben können und so der gesamte PV-Überschuss garantiert in den Autos landet.
 - man gibt ein bisschen mehr Geld aus, kauft eine openWB pro und hat auch die richtigen Autos dafür, dass die Wallbox selbst das Auto erkennt. Da geht das automatisch und das ist neu in der Software 2.x
 
 ## Konfiguration
