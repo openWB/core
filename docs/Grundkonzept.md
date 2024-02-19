@@ -3,7 +3,7 @@ Hier werden die Grundeinstellungen für Anfänger mit einer einfachen Konstellat
 - man wählt das zu ladende Auto auf dem Handy oder auf dem Display der openWB aus
 - man macht das bei mit RFID-Leser ausgestatteten openWBs per RFID-Karte
 - man kauft für jedes Auto eine eigene openWB; das hat den Vorteil, dass die Autos immer eingesteckt bleiben können und so der gesamte PV-Überschuss garantiert in den Autos landet.
-- man gibt ein bisschen mehr Geld aus, kauft eine openWB pro und hat auch die richtigen Autos dafür, dass die Wallbox selbst das Auto erkennt. Da geht das automatisch und das ist neu in der Software 2.x
+- man gibt ein bisschen mehr Geld aus, kauft eine openWB pro und hat auch die richtigen Autos dafür, dass die Wallbox selbst das Auto erkennt. Da geht das automatisch und das ist neu in der software2; alternativ kann auch ein optionaler RFID-Leser an die Pro angeschlossen werden und zur Identifizierung des Fahrzeugs verwendet werden
 
 ## Konfiguration
 
