@@ -56,6 +56,9 @@ Array mit den Leistungsfaktoren je Phase, mit Nachkommastellen (Float), Werteber
 Beispiel: [0.95,0.96,-0.95]
 ```
 
+### Optionale Werte
+1. Phasenströme: _openWB/set/counter/2/get/voltages_: Werden nur benötigt, wenn in _Ladeeinstellungen - Übergreifendes_ die Begrenzung der Schieflast aktiviert ist. 
+
 _Welche Werte zwingend notwendig sind und welche optional ist mir nicht klar. OpenWB, kann ja manche Zählerstände wohl auch intern berechnen. Bitte ergänzen._
 
 
@@ -78,3 +81,17 @@ Alternativ können die Zählerwerte an eine Hausautomationsserver weitergegeben,
 
 ## Virtuelle Zähler
 Virtuelle Zähler sind, wie der Name schon sagt, nicht physikalisch vorhanden. Sie dienen in der Struktur des [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dazu Ströme für Ladepunkte zu begrenzen oder Zählerwerte aus darunter zusammengefassten einzelnen Zählern zu akkumulieren. 
+
+## Timing
+Das zyklische Senden bzw. Bereitstellen der Zählerwerte ist für eine funktionierende Regelung essentiell. Unter 
+
+> Einstellungen - Allgemein - Hardware
+
+kann die Regelgeschwindigkeit ausgewählt werden. Es gibt die Intervalle:
+ - Normal
+ - Langsam (20s)
+ - Sehr langsam (60s)
+
+Hier muss eine Regelgeschwindigkeit entsprechend der Aktualisierungsrate der Zählerwerte angegeben werden, da ansonsten die Rückmeldung des Systems zu spät kommt und die OpenWB weiter versucht nachzuregeln. 
+Insbesondere bei der unter [Solaranzeige](### Solaranzeige) ist aufgrund der 20-30s dauerenden Aktualisierungsrate die Regelungsgeschwindigkeit anzupassen. 
+
