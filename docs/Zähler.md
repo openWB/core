@@ -67,9 +67,8 @@ Die Schnittstelle am Dongle ist Modbus-TCP. Dies muss mit Installer-Account am W
 
 Eine Möglichkeit des Datenabrufs wird im [OpenWB-Forum](https://openwb.de/forum/viewtopic.php?t=7029) entwickelt und ist auf [Github](https://github.com/AlexanderMetzger/huawei_openwb_bridge) sowie der [Homepage des Entwicklers](https://lebensraum-wohnraum.de/openwb-kommunikation-mit-dem-huawei-wechselrichter-sun-2000/) zu finden. Hierbei wird das Image auf die SD-karte eines Raspberry-Zero gespiegelt und der Raspberry mit dem Config-WLAN des Wechselrichters verbunden. Die Skripte ziehen sich die entsprechenden Werte in Echtzeit vom Wechselrichter und publishen diese auf die [MQTT](#MQTT) Schnittstelle der OpenWB. Der Zähler in der OpenWB muss dementsprechend als MQTT-Zähler eingerichtet sein.
 
-
-
 ### Solaranzeige
+
 [Solaranzeige](https://solaranzeige.de)  ist ebenfalls ein OpenSource Projekt, welches der Visualisierung, Speicherung und Weiterverarbeitung von PV-Daten dient. 
 Dieses Projekt unterstützt aktuell (Stand 2024-02) mehr Wechselrichter als OpenWB. Somit können hier mit etwas Aufwand existierende Wechselrichter eingebunden und die Daten weitergereicht werden, ohne Arbeiten am Zählerschrank durchzuführen zu lassen. 
 Die Software ist originär dafür vorgesehen auf einen Raspberry per Image installiert zu werden und nach wenigen Konfigurationsschritten lauffähig zu sein. Es gibt auch auch schon Portierungen auf [Docker](https://github.com/DeBaschdi/docker.solaranzeige).
