@@ -57,8 +57,6 @@ Beispiel: [0.95,0.96,-0.95]
 ### Optionale Werte
 1. Phasenströme: _openWB/set/counter/2/get/voltages_: Werden nur benötigt, wenn in _Ladeeinstellungen - Übergreifendes_ die Begrenzung der Schieflast aktiviert ist. 
 
-_Welche Werte zwingend notwendig sind und welche optional ist mir nicht klar. OpenWB, kann ja manche Zählerstände wohl auch intern berechnen. Bitte ergänzen._
-
 
 ## Huawei Wechselrichter mit DTSU666-H 250A und SDongle
 
