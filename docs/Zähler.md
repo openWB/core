@@ -10,7 +10,7 @@ Es gibt viele verschiedene Möglichkeiten, Zähler als auch Wechselrichter in da
 
 ## EVU-Kit
 Das [EVU-Kit (Link zum Shop)](https://openwb.de/shop/?product=openwb-evu-kit) ist die einfachste Art in der Software einen Zähler an die OpenWB zu integrieren. Der Zähler muss von einem Elektriker direkt hinter dem Zähler des EVU in den Zählerschrank integriert werden. Es gibt, je nach Kapazität des Hausanschlusses, verschiedene Messvarianten des Zählers, welche sich von der Integration unterscheiden. Dies betrifft aber nur die Arbeit des Elektrikers.
-Der Zähler kommuniziert mit der OpenWB über Ethernet. Der Wallbox muss also nur noch in den Einstellungen die IP bekanntgegeben werden. Es gibt auch für Wechselrichter und Speicher entsprechende Kits.
+Der Zähler kommuniziert mit der OpenWB über Ethernet. Die Kits sind so vorkonfiguriert, dass sie von der openWB Software automatisch gefunden werden, wenn ein entsprechendes Gerät mit Zählerkomponente angelegt wird. Es gibt auch für Wechselrichter und Speicher entsprechende Kits.
 
 ![EVU-Kit](pictures/EVU-PV-Speicher-Kit-689x1024.png)
 
