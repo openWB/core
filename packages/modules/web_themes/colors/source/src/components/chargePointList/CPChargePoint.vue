@@ -104,6 +104,10 @@
 								v-if="chargepoint.hasPriority"
 								class="me-1 fa-solid fa-xs fa-star ps-1"
 							/>
+							<span
+								v-if="chargepoint.etActive"
+								class="me-0 fa-solid fa-xs fa-coins ps-0"
+							/>
 						</h3>
 					</div>
 				</div>
@@ -176,20 +180,25 @@
 						/>
 					</div>
 					<!-- ET Information -->
-					<div
-						v-if="etData.active && props.chargepoint.etActive"
-						class="row m-1 p-0"
-					>
+					<div v-if="etData.active" class="row m-1 p-0">
 						<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
+							<InfoItem heading="Preisladen:">
+								<SwitchInput v-model="cp.etActive" />
+							</InfoItem>
 							<InfoItem heading="max. Preis:">
 								<span type="button" @click="editPrice = !editPrice"
 									>{{
-										(
-											Math.round(props.chargepoint.etMaxPrice * 10) / 10
-										).toFixed(1)
+										props.chargepoint.etActive
+											? (
+													Math.round(props.chargepoint.etMaxPrice * 10) / 10
+											  ).toFixed(1) + ' ct'
+											: '-'
 									}}
-									ct
-									<i class="fa-solid fa-sm fas fa-edit ms-2" />
+
+									<i
+										v-if="props.chargepoint.etActive"
+										class="fa-solid fa-sm fas fa-edit ms-2"
+									/>
 								</span>
 							</InfoItem>
 							<InfoItem heading="akt. Preis:">
@@ -261,11 +270,13 @@ import { updateServer } from '@/assets/js/sendMessages'
 import RangeInput from '../shared/RangeInput.vue'
 import PriceChart from '../priceChart/PriceChart.vue'
 import { etData } from '../priceChart/model'
+import SwitchInput from '../shared/SwitchInput.vue'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
 	fullWidth?: boolean
 }>()
+const cp = ref(props.chargepoint)
 // computed
 const chargeMode = computed({
 	get() {
@@ -396,6 +407,9 @@ const editPrice = ref(false)
 
 .fa-circle-check {
 	color: var(--color-menu);
+}
+.fa-coins {
+	color: var(--color-battery);
 }
 
 .fa-edit {

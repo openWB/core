@@ -166,7 +166,7 @@
 							:fullwidth="true"
 							title="Fahrzeuge anzeigen (beta)"
 							icon="fa-car"
-							infotext="Zeige die Werte zusätzlich angelegter Zähler (beta)"
+							infotext="Zeige alle Fahrzeuge mit Ladestand und Reichweite (beta)"
 						>
 							<SwitchInput v-model="globalConfig.showVehicles" />
 						</ConfigItem>

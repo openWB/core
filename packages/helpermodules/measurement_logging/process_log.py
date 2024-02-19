@@ -3,7 +3,7 @@ from enum import Enum
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
@@ -355,7 +355,8 @@ def analyse_percentage_totals(entries, totals):
         totals["cp"]["all"].update({f"energy_imported_{source}": 0})
         for entry in entries:
             if "hc" in entry.keys() and "all" in entry["hc"].keys():
-                totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"][f"energy_imported_{source}"]*1000
+                totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"].get(
+                    f"energy_imported_{source}", 0)*1000
             if "all" in entry["cp"].keys() and f"energy_imported_{source}" in entry["cp"]["all"].keys():
                 totals["cp"]["all"][f"energy_imported_{source}"] += entry["cp"]["all"][f"energy_imported_{source}"]*1000
     return totals
@@ -379,22 +380,16 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                 try:
                     new_data = {}
                     if "imported" in entry[type][module].keys() or "exported" in entry[type][module].keys():
-                        try:
-                            value_imported = entry[type][module]["imported"]
-                        except KeyError:
-                            value_imported = 0
-                        try:
-                            next_value_imported = next_entry[type][module]["imported"]
-                        except KeyError:
-                            next_value_imported = value_imported
-                        try:
-                            value_exported = entry[type][module]["exported"]
-                        except KeyError:
-                            value_exported = 0
-                        try:
-                            next_value_exported = next_entry[type][module]["exported"]
-                        except KeyError:
-                            next_value_exported = value_exported
+                        def get_current_and_next(value_key: str) -> Tuple[float, float]:
+                            def get_single_value(source: dict, default: int = 0) -> float:
+                                try:
+                                    return source[type][module][value_key]
+                                except KeyError:
+                                    return default
+                            current_value = get_single_value(entry)
+                            return current_value, get_single_value(next_entry,  current_value)
+                        value_imported, next_value_imported = get_current_and_next("imported")
+                        value_exported, next_value_exported = get_current_and_next("exported")
                         if calculation in [CalculationType.POWER, CalculationType.ALL]:
                             if next_value_imported < value_imported or next_value_exported < value_exported:
                                 # do not calculate as we have a backwards jump in our meter value!
@@ -429,10 +424,14 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                 except Exception:
                     log.exception("Fehler beim Berechnen der Leistung")
             # next_entry may contain new modules, we add them here
-            for module in next_entry[type].keys():
-                if module not in entry[type].keys():
-                    log.warning(f"adding module {module} from next entry")
-                    entry[type].update({module: {"energy_imported": 0.0, "energy_exported": 0.0}})
+            try:
+                for module in next_entry[type].keys():
+                    if module not in entry[type].keys():
+                        log.warning(f"adding module {module} from next entry")
+                        entry[type].update({module: {"energy_imported": 0.0, "energy_exported": 0.0}})
+            except KeyError:
+                # catch missing "type"
+                pass
     return entry
 
 
