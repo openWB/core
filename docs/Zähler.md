@@ -77,6 +77,7 @@ In dem Projekt wird (mit Stand von 2021) auch die Möglichkeit dokumentiert die 
 Alternativ können die Zählerwerte an eine Hausautomationsserver weitergegeben, dort ggf. vorzeichenkorrigiert werden und dann über einen zweiten MQTT-Client zur OpenWb geschickt werden. 
 
 ## Virtuelle Zähler
+
 Virtuelle Zähler sind, wie der Name schon sagt, nicht physikalisch vorhanden. Sie dienen in der Struktur des [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dazu Ströme für Ladepunkte zu begrenzen oder Zählerwerte aus darunter zusammengefassten einzelnen Zählern zu akkumulieren. 
 
 ## Timing
