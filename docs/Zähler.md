@@ -69,7 +69,7 @@ Eine Möglichkeit des Datenabrufs wird im [OpenWB-Forum](https://openwb.de/forum
 
 [Solaranzeige](https://solaranzeige.de)  ist ebenfalls ein OpenSource Projekt, welches der Visualisierung, Speicherung und Weiterverarbeitung von PV-Daten dient. 
 Dieses Projekt unterstützt aktuell (Stand 2024-02) mehr Wechselrichter als OpenWB. Somit können hier mit etwas Aufwand existierende Wechselrichter eingebunden und die Daten weitergereicht werden, ohne Arbeiten am Zählerschrank durchzuführen zu lassen. 
-Die Software ist originär dafür vorgesehen auf einen Raspberry per Image installiert zu werden und nach wenigen Konfigurationsschritten lauffähig zu sein. Es gibt auch auch schon Portierungen auf [Docker](https://github.com/DeBaschdi/docker.solaranzeige).
+Die Software ist originär dafür vorgesehen auf einen Raspberry per Image installiert zu werden und nach wenigen Konfigurationsschritten lauffähig zu sein. Es gibt auch schon Portierungen für [Docker](https://github.com/DeBaschdi/docker.solaranzeige).
 Solaranzeige kann mit vielen Wechselrichtern kommunizieren und  auch teilweise die angeschlossenen Zähler auslesen. Eine Zeitbasierte Datenbank (InfluxDb), Datenweitergabe über einen MQTT-Client sowie eine Visualisierung mit Grafana sind direkt integriert. Es kann aber auch bereits existierende Infrastruktur verwendet werden.
 In dem Projekt wird (mit Stand von 2021) auch die Möglichkeit dokumentiert die Daten direkt an OpenWB weiterzuleiten. Dann kann jedoch kein weiterer MQTT-Broker bedient werden.
 Alternativ können die Zählerwerte an eine Hausautomationsserver weitergegeben, dort ggf. vorzeichenkorrigiert werden und dann über einen zweiten MQTT-Client zur OpenWb geschickt werden. 
