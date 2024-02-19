@@ -33,4 +33,4 @@ Hier werden nun die beiden Profile zusammengeführt und ggf. ein SoC-Modul konfi
 
 **Kurz zusammengefasst:** Mit einem Auto und einer openWB bleibt man bei den Profilen immer bei den mitgelieferten Standard-Profilen und ändert die Parameter dort. Bei mehreren Autos legt man für jedes Auto ein Fahrzeug-Profil und ein Ladeprofil an und fasst die beiden im Fahrzeug zusammen.
 
-Credit für dieses Howto geht an [Gero](https://openwb.de/forum/viewtopic.php?t=8076)
+Danke für das Erstellen dieses Howto an [Gero](https://openwb.de/forum/viewtopic.php?t=8076)
