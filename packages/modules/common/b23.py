@@ -11,7 +11,8 @@ class B23(AbstractCounter):
     def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
         self.client = client
         self.id = modbus_id
-        self.power_factors_via_modbus_capability: bool = True
+        self.capable_of_reading_power_factors_via_modbus: bool = True
+        self.check_capabilities()
 
     def get_currents(self) -> List[float]:
         time.sleep(0.1)
@@ -35,19 +36,23 @@ class B23(AbstractCounter):
 
     def get_power_factors(self) -> List[float]:
         # skipping reading modbus registers, if B23 is not capable of providing valid values on those registers
-        if not self.power_factors_via_modbus_capability:
+        if not self.capable_of_reading_power_factors_via_modbus:
             return [0]*3
         time.sleep(0.1)
         pf = [val / 1000 for val in self.client.read_holding_registers(
             0x5B3B, [ModbusDataType.INT_16]*3, unit=self.id)]
-        # checking for capility of providing valid values on power factor registers
-        if pf[0] > 1:
-            # storing incapability for skipping modbus calls in further loops
-            self.power_factors_via_modbus_capability = False
-            return [0]*3
         return pf
 
     def get_voltages(self) -> List[float]:
         time.sleep(0.1)
         return [val / 10 for val in self.client.read_holding_registers(
             0x5B00, [ModbusDataType.UINT_32]*3, unit=self.id)]
+
+    def check_capabilities(self) -> None:
+        # checking for capility of providing valid values on power factor registers
+        pf_l1 = self.client.read_holding_registers(
+            0x5B3B, [ModbusDataType.INT_16], unit=self.id)
+        # valid raw values are -1000 <= x <= 1000
+        if pf_l1 < -1000 or pf_l1 > 1000:
+            # saving incapability for skipping modbus calls in further loops
+            self.capable_of_reading_power_factors_via_modbus = False
