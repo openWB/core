@@ -7,8 +7,6 @@ Im einfachsten Fall geschieht dies durch Kauf und Einbau eines [EVU-Kits](##EVU-
 
 Es gibt viele verschiedene Möglichkeiten, Zähler als auch Wechselrichter in das OpenWB-System einzufügen.  Die Struktur der Zähler muss dann im  [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dem System bekanntgegeben werden. Hier können auch [virtuelle Zähler](##Virtuelle Zähler)  hinzugefügt werden, welche OpenWB-intern die untergeordneten Zähler verrechnen.
 
-_Ich beschreibe hier zunächst den Weg, der für mich funktioniert bzw. die Erkenntnisse auf meinem Weg dahin. Weiteres bitte gern ergänzen._
-
 
 ## EVU-Kit
 Das [EVU-Kit (Link zum Shop)](https://openwb.de/shop/?product=openwb-evu-kit) ist die einfachste Art in der Software einen Zähler an die OpenWB zu integrieren. Der Zähler muss von einem Elektriker direkt hinter dem Zähler des EVU in den Zählerschrank integriert werden. Es gibt, je nach Kapazität des Hausanschlusses, verschiedene Messvarianten des Zählers, welche sich von der Integration unterscheiden. Dies betrifft aber nur die Arbeit des Elektrikers.
