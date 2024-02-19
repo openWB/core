@@ -60,7 +60,7 @@ Beispiel: [0.95,0.96,-0.95]
 
 ## Huawei Wechselrichter mit DTSU666-H 250A und SDongle
 
-Huawei Wechselrichter werden, ind er Betriebsarbit mit Aufzeichung des Hausverbraucht mit dem _DTSU666-H 250A_ Stromzähler direkt am EVU-Punkt betrieben. Die Kommunikation zwischen Zähler und Wechselrichter findet über RS485 statt. Sofern der Wechselrichter mit dem otionalen SmartDongle FE ausgestattet ist, können über diesen Daten des Wechselrichter ausgelesen werden.
+Huawei Wechselrichter werden, in der Betriebsart mit Aufzeichnung des Hausverbraucht mit dem _DTSU666-H 250A_ Stromzähler direkt am EVU-Punkt betrieben. Die Kommunikation zwischen Zähler und Wechselrichter findet über RS485 statt. Sofern der Wechselrichter mit dem optionalen SmartDongle FE ausgestattet ist, können über diesen Daten des Wechselrichter ausgelesen werden.
 Die Schnittstelle am Dongle ist Modbus-TCP. Dies muss mit Installer-Account am Wechselrichter auf "Unrestrictet" gestellt werden, damit die Daten extern abgerufen werden können.
 
 Eine Möglichkeit des Datenabrufs wird im [OpenWB-Forum](https://openwb.de/forum/viewtopic.php?t=7029) entwickelt und ist auf [Github](https://github.com/AlexanderMetzger/huawei_openwb_bridge) sowie der [Homepage des Entwicklers](https://lebensraum-wohnraum.de/openwb-kommunikation-mit-dem-huawei-wechselrichter-sun-2000/) zu finden. Hierbei wird das Image auf die SD-karte eines Raspberry-Zero gespiegelt und der Raspberry mit dem Config-WLAN des Wechselrichters verbunden. Die Skripte ziehen sich die entsprechenden Werte in Echtzeit vom Wechselrichter und publishen diese auf die [MQTT](#MQTT) Schnittstelle der OpenWB. Der Zähler in der OpenWB muss dementsprechend als MQTT-Zähler eingerichtet sein.
