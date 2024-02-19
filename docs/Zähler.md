@@ -5,7 +5,7 @@ OpenWB benötigt zum erfolgreichen PV-Überschussladen die entsprechenden Zähle
 
 Im einfachsten Fall geschieht dies durch Kauf und Einbau eines [EVU-Kits](##EVU-Kit). Sollten schon digital auslesbare Zähler vorhanden sein, so besteht die Möglichkeit diese Werte an OpenWB weiterzuleiten, auch mit Hilfe von Hausautomationsservern.
 
-Es gibt viele verschiedene Möglichkeiten Zähler, als auch Wechselrichter in das OpenWB-System einzufügen.  Die Struktur der Zähler muss dann im  [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dem System bekanntgegeben werden. Hier können auch [virtuelle Zähler](##Virtuelle Zähler)  hinzugefügt werden, welche OpenWB-intern die darumherum angeordneten Zähler verrechnen.
+Es gibt viele verschiedene Möglichkeiten, Zähler als auch Wechselrichter in das OpenWB-System einzufügen.  Die Struktur der Zähler muss dann im  [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dem System bekanntgegeben werden. Hier können auch [virtuelle Zähler](##Virtuelle Zähler)  hinzugefügt werden, welche OpenWB-intern die untergeordneten Zähler verrechnen.
 
 _Ich beschreibe hier zunächst den Weg, der für mich funktioniert bzw. die Erkenntnisse auf meinem Weg dahin. Weiteres bitte gern ergänzen._
 
