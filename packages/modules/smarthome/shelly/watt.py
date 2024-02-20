@@ -4,13 +4,14 @@ import os
 import time
 import json
 import urllib.request
+from typing import Any
 from smarthome.smartret import writeret
 import logging
 
 log = logging.getLogger(__name__)
 
 
-def totalPowerFromShellyJson(answer, workchan: int) -> int:
+def totalPowerFromShellyJson(answer: Any, workchan: int) -> int:
     if (workchan == 0):
         if 'meters' in answer:
             meters = answer['meters']   # shelly
@@ -139,6 +140,10 @@ try:
     if (gen == "1"):
         relais = int(answer['relays'][workchan]['ison'])
     else:
+        # shelly pro 3em mit add on hat fix id 100 als switch Kanal, das Device muss auf jeden fall mit separater
+        # Leistunsmessung erfasst werden, da die Leistung auf drei verschieden Kanäle angeliefert werden kann
+        if ("SPEM-003CE" in model):
+            workchan = 100
         sw = 'switch:' + str(workchan)
         relais = int(answer[sw]['output'])
 except Exception:
