@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 from helpermodules import timecheck
 
 from helpermodules.auto_str import auto_str
@@ -7,24 +7,47 @@ from helpermodules.auto_str import auto_str
 log = logging.getLogger(__name__)
 
 
-def _calculate_powers_and_currents(currents: Optional[List[float]],
-                                   powers: Optional[List[float]],
-                                   voltages: Optional[List[float]]) -> Tuple[
+def _check_none(values: Optional[List[Optional[Union[int, float]]]]) -> bool:
+    """Check if values is None or [None, None, None]
+    Args:
+        values: list of values
+        Returns:
+            True if values is None or [None, None, None]
+    """
+    return values is None or values == [None]*3
+
+
+def _calculate_powers_and_currents(currents: Optional[List[Optional[float]]],
+                                   powers: Optional[List[Optional[float]]],
+                                   voltages: Optional[List[Optional[float]]]) -> Tuple[
         Optional[List[float]], List[float], List[float]]:
-    if voltages is None:
+    """Calculate currents from powers and voltages or vice versa
+    All args are optional, if one is None or [None, None, None] it will be calculated from the others if possible.
+    Args:
+        currents: list of currents for 3 phases in A
+        powers: list of powers for 3 phases in W
+        voltages: list of voltages for 3 phases in V
+    Returns:
+        currents, powers, voltages
+    """
+    if _check_none(voltages):
+        log.warning("voltages are None, setting to 230V")
         voltages = [230.0]*3
-    if powers is None:
-        if currents is None:
+    if _check_none(powers):
+        if _check_none(currents):
+            log.warning("currents and powers are None, setting powers to 0W")
             powers = [0.0]*3
         else:
+            log.warning("powers are None, calculating from currents and voltages")
             powers = [currents[i]*voltages[i] for i in range(0, 3)]
-    if currents is None and powers:
+    if _check_none(currents) and not _check_none(powers):
         try:
+            log.warning("currents are None, trying to calculate from powers and voltages")
             currents = [powers[i]/voltages[i] for i in range(0, 3)]
         except ZeroDivisionError:
             # some inverters (Sungrow) report 0V if in standby
             currents = [0.0]*3
-    if currents and powers:
+    if not _check_none(currents) and not _check_none(powers):
         currents = [currents[i]*-1 if powers[i] < 0 and currents[i] > 0 else currents[i] for i in range(0, 3)]
     return currents, powers, voltages
 
@@ -57,10 +80,10 @@ class CounterState:
         imported: float = 0,
         exported: float = 0,
         power: float = 0,
-        voltages: Optional[List[float]] = None,
-        currents: Optional[List[float]] = None,
-        powers: Optional[List[float]] = None,
-        power_factors: Optional[List[float]] = None,
+        voltages: Optional[List[Optional[float]]] = None,
+        currents: Optional[List[Optional[float]]] = None,
+        powers: Optional[List[Optional[float]]] = None,
+        power_factors: Optional[List[Optional[float]]] = None,
         frequency: float = 50,
     ):
         """Args:
@@ -74,7 +97,7 @@ class CounterState:
             frequency: actual grid frequency in Hz
         """
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
-        if power_factors is None:
+        if _check_none(power_factors):
             power_factors = [0.0]*3
         self.power_factors = power_factors
         self.imported = imported
@@ -89,7 +112,7 @@ class InverterState:
         self,
         exported: float,
         power: float,
-        currents: Optional[List[float]] = None,
+        currents: Optional[List[Optional[float]]] = None,
         dc_power: Optional[float] = None
     ):
         """Args:
@@ -98,7 +121,7 @@ class InverterState:
             currents: actual currents for 3 phases in A
             dc_power: dc power in W
         """
-        if currents is None:
+        if _check_none(currents):
             currents = [0.0]*3
         else:
             if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
@@ -129,10 +152,10 @@ class ChargepointState:
                  imported: float = 0,
                  exported: float = 0,
                  power: float = 0,
-                 powers: Optional[List[float]] = None,
-                 voltages: Optional[List[float]] = None,
-                 currents: Optional[List[float]] = None,
-                 power_factors: Optional[List[float]] = None,
+                 powers: Optional[List[Optional[float]]] = None,
+                 voltages: Optional[List[Optional[float]]] = None,
+                 currents: Optional[List[Optional[float]]] = None,
+                 power_factors: Optional[List[Optional[float]]] = None,
                  charge_state: bool = False,
                  plug_state: bool = False,
                  rfid: Optional[str] = None,
@@ -155,7 +178,7 @@ class ChargepointState:
             self.rfid_timestamp = timecheck.create_timestamp()
         else:
             self.rfid_timestamp = rfid_timestamp
-        if power_factors is None:
+        if _check_none(power_factors):
             power_factors = [0.0]*3
         self.power_factors = power_factors
         self.soc = soc
