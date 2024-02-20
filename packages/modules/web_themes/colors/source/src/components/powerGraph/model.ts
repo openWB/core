@@ -145,12 +145,12 @@ export const dayGraph = reactive({
 				this.date.getFullYear().toString() +
 				(this.date.getMonth() + 1).toString().padStart(2, '0') +
 				this.date.getDate().toString().padStart(2, '0')
-			graphData.data = []
 			mqttSubscribe(this.topic)
 			sendCommand({
 				command: 'getDailyLog',
 				data: { day: dateString },
 			})
+			// graphData.data = []
 		}
 	},
 	deactivate() {
