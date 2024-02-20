@@ -790,15 +790,14 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		// console.log("charged since plugged counter");
 		var index = getIndex(mqttTopic); // extract number between two / /
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
-		var element = parent.find('.charge-point-energy-since-plugged'); // now get parents respective child element
+		var element = parent.find('.charge-point-energy-since-mode-switch'); // now get parents respective child element
 		var logData = JSON.parse(mqttPayload);
-		var energyCharged = parseFloat(logData.imported_since_plugged) / 1000;
+		var energyCharged = parseFloat(logData.imported_since_mode_switch) / 1000;
 		if (isNaN(energyCharged)) {
 			energyCharged = 0;
 		}
 		element.text(energyCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kWh');
-		var rangeChargedElement = parent.find('.charge-point-range-since-plugged'); // now get parents child element
-		var consumption = parseFloat($(rangeChargedElement).data('consumption'));
+		var rangeChargedElement = parent.find('.charge-point-range-since-mode-switch'); // now get parents child element
 		var rangeCharged = parseFloat(logData.range_charged);
 		rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km';
 		$(rangeChargedElement).text(rangeCharged);
@@ -931,17 +930,6 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 			// element.prop('checked', false);
 			priorityElement.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
 		}
-		// "average_consumption" int unit: Wh/100km
-		var rangeChargedElement = parent.find('.charge-point-range-since-plugged');
-		rangeChargedElement.data('consumption', configData.average_consumption).attr('data-consumption', configData.average_consumption);
-		// if already energyCharged-displayed, update rangeCharged
-		var energyCharged = parseFloat(parent.find('.charge-point-energy-since-plugged').text().replace(',', '.')); // now get parents respective energyCharged child element
-		var rangeCharged = '';
-		if (!isNaN(energyCharged) && configData.average_consumption > 0) {
-			rangeCharged = (energyCharged / configData.average_consumption) * 100;
-			rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km';
-		}
-		$(rangeChargedElement).text(rangeCharged);
 	}
 	// else if ( mqttTopic.match( /^openwb\/lp\/[0-9]+\/kWhactualcharged$/i ) ) {
 	// 	// energy charged since reset of limitation
