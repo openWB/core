@@ -18,23 +18,23 @@ class ShellyInverter:
                  device_id: int,
                  component_config: ShellyInverterSetup,
                  address: str,
-                 type: Optional[int]) -> None:
+                 generation: Optional[int]) -> None:
         self.component_config = component_config
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.address = address
-        self.type = type
+        self.generation = generation
 
     def total_power_from_shelly(self) -> int:
         total = 0
-        if self.type == 1:
+        if self.generation == 1:
             status_url = "http://" + self.address + "/status"
         else:
             status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
         try:
-            if self.type == 1:
+            if self.generation == 1:
                 if 'meters' in status:
                     meters = status['meters']  # shelly
                 else:
@@ -42,10 +42,11 @@ class ShellyInverter:
                 # shellyEM has one meter, shelly3EM has three meters:
                 for meter in meters:
                     total = total + meter['power']
-            elif self.type == 2:
-                total = status['switch:0']['apower']
             else:
-                total = status['em:0']['total_act_power']
+                if 'switch:0' in status:
+                    total = status['switch:0']['apower']
+                else:
+                    total = status['em:0']['total_act_power']  # shelly Pro3EM
         except KeyError:
             log.exception("unsupported shelly device?")
         finally:

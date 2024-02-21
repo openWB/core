@@ -15,28 +15,22 @@ from modules.devices.shelly.config import ShellyInverterSetup, ShellyInverterCon
 log = logging.getLogger(__name__)
 
 
-def get_device_type(address: str) -> int:
+def get_device_generation(address: str) -> int:
     url = "http://" + address + "/shelly"
-    app = None
     generation = 1
     device_info = req.get_http_session().get(url, timeout=3).json()
-    if 'app' in device_info:
-        app = int(device_info['app'])
     if 'gen' in device_info:
         generation = int(device_info['gen'])
-    if generation == 2 and app == "Pro3EM":
-        return 3
-    else:
-        return generation
+    return generation
 
 
 def create_device(device_config: Shelly) -> ConfigurableDevice:
     def create_inverter_component(component_config: ShellyInverterSetup) -> ShellyInverter:
         return ShellyInverter(device_config.id, component_config, device_config.configuration.ip_address,
-                              device_config.configuration.type)
+                              device_config.configuration.generation)
 
-        if device_config.configuration.type is None and device_config.configuration.ip_address is not None:
-            device_config.configuration.type = get_device_type(device_config.configuration.ip_address)
+    if device_config.configuration.generation is None and device_config.configuration.ip_address is not None:
+        device_config.configuration.generation = get_device_generation(device_config.configuration.ip_address)
 
     return ConfigurableDevice(
         device_config=device_config,
@@ -72,7 +66,7 @@ def read_legacy_inverter(address: str, num: int) -> None:
         with open(generation_file_name, 'r') as file:
             generation = int(file.read())
     else:
-        generation = get_device_type(address)
+        generation = get_device_generation(address)
         with open(generation_file_name, 'w') as file:
             file.write(str(generation))
     run_device_legacy(create_legacy_device_config(address, generation,
