@@ -31,18 +31,14 @@ def _calculate_powers_and_currents(currents: Optional[List[Optional[float]]],
         currents, powers, voltages
     """
     if _check_none(voltages):
-        log.warning("voltages are None, setting to 230V")
         voltages = [230.0]*3
     if _check_none(powers):
         if _check_none(currents):
-            log.warning("currents and powers are None, setting powers to 0W")
             powers = [0.0]*3
         else:
-            log.warning("powers are None, calculating from currents and voltages")
             powers = [currents[i]*voltages[i] for i in range(0, 3)]
     if _check_none(currents) and not _check_none(powers):
         try:
-            log.warning("currents are None, trying to calculate from powers and voltages")
             currents = [powers[i]/voltages[i] for i in range(0, 3)]
         except ZeroDivisionError:
             # some inverters (Sungrow) report 0V if in standby
