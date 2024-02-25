@@ -72,6 +72,12 @@ const xAxisGeneratorMonth = computed(() =>
 		.tickSizeInner(ticksize.value)
 		.tickFormat((d) => d.toString()),
 )
+const xAxisGeneratorMonth2 = computed(() =>
+	axisBottom<number>(xScaleMonth.value)
+		.ticks(4)
+		.tickSizeInner(ticksize.value)
+		.tickFormat(d => ''),
+)
 
 const ticksize = computed(() => {
 	if (graphData.graphMode !== 'month' && graphData.graphMode !== 'year') {
@@ -133,7 +139,7 @@ const drawAxis2 = computed(() => {
 	axis.selectAll('*').remove()
 
 	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
-		axis.call(xAxisGeneratorMonth.value)
+		axis.call(xAxisGeneratorMonth2.value)
 	} else {
 		axis.call(xAxisGenerator2.value)
 	}
@@ -159,14 +165,7 @@ const drawAxis2 = computed(() => {
 	}
 
 	axis.select('.domain').attr('stroke', 'var(--color-bg)')
-	/* axis
-		.append('text')
-		.attr('x', -props.margin.left)
-		.attr('y', 12)
-		.attr('fill', 'var(--color-axis)')
-		.attr('font-size', fontsize)
-		.text(graphData.graphMode == 'year' ? 'MW' : 'kW')
-		.attr('text-anchor', 'start') */
+	
 	return 'PGXAxis2.vue'
 })
 </script>
