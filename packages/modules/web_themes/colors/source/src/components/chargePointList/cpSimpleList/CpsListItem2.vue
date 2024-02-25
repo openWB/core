@@ -32,7 +32,7 @@
 			<InfoItem
 				:heading="chargepoint.vehicleName"
 				:small="true"
-				class="grid-left -col-4"
+				class="grid-left grid-col-4"
 			>
 				<span
 					v-if="chargepoint.isSocConfigured"
