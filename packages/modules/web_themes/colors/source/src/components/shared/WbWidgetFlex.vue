@@ -12,7 +12,7 @@
 					<slot name="buttons" />
 				</div>
 			</div>
-			<div class="grid12">
+			<div class="grid12 pb-3">
 				<slot />
 			</div>
 		</div>
