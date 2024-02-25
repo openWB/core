@@ -82,8 +82,8 @@
 				</div>
 			</InfoItem>
 		</div>
-		<div v-if="editSoc" class="socEditRow m-0 p-0">
-			<div class="socEditor rounded mt-2 d-flex flex-column align-items-center">
+		<div v-if="editSoc" class="subgrid socEditRow m-0 p-0">
+			<div class="socEditor rounded mt-2 d-flex flex-column align-items-center grid-col-12">
 				<span class="d-flex m-1 p-0 socEditTitle">Ladestand einstellen:</span>
 				<span class="d-flex justify-content-stretch align-items-center">
 					<span>
@@ -296,7 +296,7 @@ const statusString = computed(() => {
 }
 
 .socEditTitle {
-	color: white;
+	color: var(--color-fg);
 }
 
 .statusbadge {

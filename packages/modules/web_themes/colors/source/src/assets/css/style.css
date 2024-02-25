@@ -297,14 +297,17 @@ body>.container-fluid {
 	gap: .2em;
 	justify-items: center;
 }
+.grid-col-3 {
+	grid-column: span 3;
+}
 .grid-col-4 {
 	grid-column: span 4;
 }
 .grid-col-6 {
 	grid-column: span 6;
 }
-.grid-col-3 {
-	grid-column: span 3;
+.grid-col-12 {
+	grid-column: span 12;
 }
 .subgrid {
 	display:grid;

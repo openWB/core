@@ -1,95 +1,69 @@
 <template>
-	<WBWidget
-		v-if="!configmode"
-		:variable-width="true"
-		:full-width="props.fullWidth"
-	>
+	<WBWidget v-if="!configmode" :variable-width="true" :full-width="props.fullWidth">
 		<template #title>
 			<span :style="cpNameStyle" @click="configmode = !configmode">
 				<span class="fa-solid fa-charging-station">&nbsp;</span>
-				{{ props.chargepoint.name }}</span
-			>
+				{{ props.chargepoint.name }}</span>
 		</template>
 
 		<template #buttons>
-			<span
-				type="button"
-				class="ms-2 ps-5 pt-1"
-				:style="modePillStyle"
-				@click="configmode = !configmode"
-			>
+			<span type="button" class="ms-2 ps-5 pt-1" :style="modePillStyle" @click="configmode = !configmode">
 				<span class="fa-solid fa-lg ps-1 fa-ellipsis-vertical" />
 			</span>
 		</template>
 
 		<!-- Chargepoint info -->
 		<div v-if="!configmode">
-			<div class="row m-1 mt-0 p-0" @click="configmode = !configmode">
-				<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
-					<!-- Status information -->
-					<InfoItem heading="Status:">
-						<span :style="{ color: statusColor }">
-							<i :class="statusIcon" />
-							{{ statusString }}
-						</span>
-					</InfoItem>
+			<div class="grid12" @click="configmode = !configmode">
+				<!-- Status information -->
+				<InfoItem heading="Status:" class="grid-col-4 grid-left">
+					<span :style="{ color: statusColor }">
+						<i :class="statusIcon" />
+						{{ statusString }}
+					</span>
+				</InfoItem>
 
-					<!-- Ladung -->
-					<InfoItem heading="Geladen:">
-						<FormatWattH :watt-h="chargepoint.dailyYield" />
-					</InfoItem>
-					<InfoItem heading="gel. Reichw.:">
-						{{ chargedRangeString }}
-					</InfoItem>
-				</div>
-			</div>
-			<div
-				v-if="props.chargepoint.power > 0"
-				class="row m-1 p-0"
-				@click="configmode = !configmode"
-			>
-				<div class="col m-0 p-0 d-flex justify-content-between">
-					<InfoItem heading="Leistung:">
+				<!-- Ladung -->
+				<InfoItem heading="Geladen:" class="grid-col-4">
+					<FormatWattH :watt-h="chargepoint.dailyYield" />
+				</InfoItem>
+				<InfoItem heading="gel. Reichw.:" class="grid-col-4 grid-right">
+					{{ chargedRangeString }}
+				</InfoItem>
+
+
+				<div v-if="props.chargepoint.power > 0" class="subgrid m-1 p-0" @click="configmode = !configmode">
+
+					<InfoItem heading="Leistung:" class="grid-col-3 grid-left">
 						<FormatWatt :watt="props.chargepoint.power" />
 					</InfoItem>
-					<InfoItem heading="Strom:">
+					<InfoItem heading="Strom:" class="grid-col-3">
 						{{ realChargeAmpereString }}
 					</InfoItem>
-					<InfoItem heading="Phasen:">
+					<InfoItem heading="Phasen:" class="grid-col-3">
 						{{ props.chargepoint.phasesInUse }}
 					</InfoItem>
-					<InfoItem heading="Sollstrom:">
+					<InfoItem heading="Sollstrom:" class="grid-col-3 grid-right">
 						<span class="targetCurrent">{{ chargeAmpereString }}</span>
 					</InfoItem>
+
 				</div>
-			</div>
-			<!-- Chargemode buttons -->
-			<div class="row m-0 p-0 mt-3 mb-0">
-				<div class="col d-flex justify-content-center p-0 m-0">
-					<RadioBarInput
-						:id="'chargemode-' + chargepoint.name"
-						v-model="chargeMode"
-						:options="
-							Object.keys(chargemodes).map((v) => {
-								return {
-									text: chargemodes[v].name,
-									value: v,
-									color: chargemodes[v].color,
-									icon: chargemodes[v].icon,
-									active: chargemodes[v].mode == chargepoint.chargeMode,
-								}
-							})
-						"
-					/>
-				</div>
+				<!-- Chargemode buttons -->
+				<RadioBarInput :id="'chargemode-' + chargepoint.name" v-model="chargeMode" class="chargemodes mt-3" :options="Object.keys(chargemodes).map((v) => {
+					return {
+						text: chargemodes[v].name,
+						value: v,
+						color: chargemodes[v].color,
+						icon: chargemodes[v].icon,
+						active: chargemodes[v].mode == chargepoint.chargeMode,
+					}
+				})
+					" />
 			</div>
 		</div>
 		<div v-if="configmode" class="row m-0 mt-0 p-0">
 			<div class="col m-0 p-0">
-				<CPChargeConfigPanel
-					v-if="chargepoint != undefined"
-					:chargepoint="chargepoint"
-				/>
+				<CPChargeConfigPanel v-if="chargepoint != undefined" :chargepoint="chargepoint" />
 			</div>
 		</div>
 		<!-- Car information-->
@@ -100,157 +74,94 @@
 						<h3>
 							<i class="fa-solid fa-sm fa-car me-2" />
 							{{ chargepoint.vehicleName }}
-							<span
-								v-if="chargepoint.hasPriority"
-								class="me-1 fa-solid fa-xs fa-star ps-1"
-							/>
-							<span
-								v-if="chargepoint.etActive"
-								class="me-0 fa-solid fa-xs fa-coins ps-0"
-							/>
+							<span v-if="chargepoint.hasPriority" class="me-1 fa-solid fa-xs fa-star ps-1" />
+							<span v-if="chargepoint.etActive" class="me-0 fa-solid fa-xs fa-coins ps-0" />
 						</h3>
 					</div>
 				</div>
-				<div class="row m-0 p-1 pt-2 mb-3">
+				<div class="grid12">
 					<!-- Car info -->
+					<InfoItem v-if="chargepoint.isSocConfigured" heading="Ladestand:" class="grid-col-4 grid-left">
+						<BatterySymbol :soc="soc" class="me-2" />
+						<i v-if="chargepoint.isSocConfigured && chargepoint.isSocManual" class="fa-solid fa-sm fas fa-edit"
+							:style="{ color: 'var(--color-menu)' }" @click="editSoc = !editSoc" />
 
-					<div class="m-0 p-0 d-flex justify-content-between">
-						<InfoItem v-if="chargepoint.isSocConfigured" heading="Ladestand:">
-							<BatterySymbol :soc="soc" class="me-2" />
-							<i
-								v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
-								class="fa-solid fa-sm fas fa-edit"
-								:style="{ color: 'var(--color-menu)' }"
-								@click="editSoc = !editSoc"
-							/>
+						<i v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual" type="button" class="fa-solid fa-sm" :class="chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
+							" :style="{ color: 'var(--color-menu)' }" @click="loadSoc" />
+					</InfoItem>
+					<InfoItem v-if="chargepoint.isSocConfigured" heading="Reichweite:" class="grid-col-4">
+						{{
+							vehicles[props.chargepoint.connectedVehicle]
+							? Math.round(
+								vehicles[props.chargepoint.connectedVehicle].range,
+							)
+							: 0
+						}}
+						km
+					</InfoItem>
+					<InfoItem heading="Zeitplan:" class="grid-col-4 grid-right">
+						<span v-if="chargepoint.timedCharging" class="me-1 fa-solid fa-xs fa-clock ps-1" />
+						{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
+					</InfoItem>
 
-							<i
-								v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual"
-								type="button"
-								class="fa-solid fa-sm"
-								:class="
-									chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
-								"
-								:style="{ color: 'var(--color-menu)' }"
-								@click="loadSoc"
-							/>
-						</InfoItem>
-						<InfoItem v-if="chargepoint.isSocConfigured" heading="Reichweite:">
-							{{
-								vehicles[props.chargepoint.connectedVehicle]
-									? Math.round(
-											vehicles[props.chargepoint.connectedVehicle].range,
-									  )
-									: 0
-							}}
-							km
-						</InfoItem>
-						<InfoItem heading="Zeitplan:">
-							<span
-								v-if="chargepoint.timedCharging"
-								class="me-1 fa-solid fa-xs fa-clock ps-1"
-							/>
-							{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
-						</InfoItem>
-					</div>
 
-					<div
-						v-if="editSoc"
-						class="socEditor rounded mt-2 d-flex flex-column align-items-center"
-					>
-						<span class="d-flex m-1 p-0 socEditTitle"
-							>Ladestand einstellen:</span
-						>
+					<div v-if="editSoc" class="socEditor rounded mt-2 d-flex flex-column align-items-center grid-col-12 grid-left">
+						<span class="d-flex m-1 p-0 socEditTitle">Ladestand einstellen:</span>
 						<span class="d-flex justify-content-stretch align-items-center">
 							<span>
-								<RangeInput
-									id="manualSoc"
-									v-model="manualSoc"
-									:min="0"
-									:max="100"
-									:step="1"
-									unit="%"
-								/>
+								<RangeInput id="manualSoc" v-model="manualSoc" :min="0" :max="100" :step="1" unit="%" />
 							</span>
 						</span>
-						<span
-							type="button"
-							class="fa-solid d-flex fa-lg me-2 mb-3 align-self-end fa-circle-check"
-							@click="setSoc"
-						/>
+						<span type="button" class="fa-solid d-flex fa-lg me-2 mb-3 align-self-end fa-circle-check" @click="setSoc" />
 					</div>
 					<!-- ET Information -->
-					<div v-if="etData.active" class="row m-1 p-0">
-						<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
-							<InfoItem heading="Preisladen:">
-								<SwitchInput v-model="cp.etActive" />
-							</InfoItem>
-							<InfoItem heading="max. Preis:">
-								<span type="button" @click="editPrice = !editPrice"
-									>{{
-										props.chargepoint.etActive
-											? (
-													Math.round(props.chargepoint.etMaxPrice * 10) / 10
-											  ).toFixed(1) + ' ct'
-											: '-'
-									}}
+					<div v-if="etData.active" class="subgrid">
+						<InfoItem heading="Preisladen:" class="grid-col-4 grid-left">
+							<SwitchInput v-model="cp.etActive" />
+						</InfoItem>
+						<InfoItem heading="max. Preis:" class="grid-col-4">
+							<span type="button" @click="editPrice = !editPrice">{{
+								props.chargepoint.etActive
+								? (
+									Math.round(props.chargepoint.etMaxPrice * 10) / 10
+								).toFixed(1) + ' ct'
+								: '-'
+							}}
 
-									<i
-										v-if="props.chargepoint.etActive"
-										class="fa-solid fa-sm fas fa-edit ms-2"
-									/>
-								</span>
-							</InfoItem>
-							<InfoItem heading="akt. Preis:">
-								<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
-							</InfoItem>
-						</div>
-						<div
-							v-if="editPrice"
-							:id="'priceChartInline' + props.chargepoint.id"
-							class="d-flex flex-column rounded priceEditor"
-						>
-							<PriceChart
-								v-if="vehicles[props.chargepoint.connectedVehicle] != undefined"
-								:chargepoint="props.chargepoint"
-							/>
-							<span
-								class="d-flex ms-2 my-4 pe-3 pt-1 d-flex align-self-end"
-								:style="modePillStyle"
-								@click="editPrice = false"
-							>
-								<span
-									type="button"
-									class="d-flex fa-solid fa-lg ps-1 fa-circle-check"
-								/>
+								<i v-if="props.chargepoint.etActive" class="fa-solid fa-sm fas fa-edit ms-2" />
 							</span>
-						</div>
+						</InfoItem>
+						<InfoItem heading="akt. Preis:" class="grid-col-4 grid-right">
+							<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
+						</InfoItem>
+					</div>
+					<div v-if="editPrice" :id="'priceChartInline' + props.chargepoint.id"
+						class="d-flex flex-column rounded priceEditor grid-col-12">
+						<PriceChart v-if="vehicles[props.chargepoint.connectedVehicle] != undefined"
+							:chargepoint="props.chargepoint" />
+						<span class="d-flex ms-2 my-4 pe-3 pt-1 d-flex align-self-end" :style="modePillStyle"
+							@click="editPrice = false">
+							<span type="button" class="d-flex fa-solid fa-lg ps-1 fa-circle-check" />
+						</span>
 					</div>
 				</div>
 			</div>
+
 		</template>
 	</WBWidget>
 	<WbWidgetFlex v-if="configmode" :full-width="props.fullWidth">
 		<template #title>
 			<span :style="cpNameStyle" @click="configmode = !configmode">
 				<span class="fas fa-gear">&nbsp;</span>
-				Einstellungen {{ props.chargepoint.name }}</span
-			>
+				Einstellungen {{ props.chargepoint.name }}</span>
 		</template>
 
 		<template #buttons>
-			<span
-				class="ms-2 pt-1"
-				:style="modePillStyle"
-				@click="configmode = !configmode"
-			>
+			<span class="ms-2 pt-1" :style="modePillStyle" @click="configmode = !configmode">
 				<span class="fa-solid fa-lg ps-1 fa-circle-check" />
 			</span>
 		</template>
-		<CPChargeConfigPanel
-			v-if="chargepoint != undefined"
-			:chargepoint="chargepoint"
-		/>
+		<CPChargeConfigPanel v-if="chargepoint != undefined" :chargepoint="chargepoint" />
 	</WbWidgetFlex>
 </template>
 
@@ -408,6 +319,7 @@ const editPrice = ref(false)
 .fa-circle-check {
 	color: var(--color-menu);
 }
+
 .fa-coins {
 	color: var(--color-battery);
 }
@@ -418,12 +330,20 @@ const editPrice = ref(false)
 
 .socEditor {
 	border: 1px solid var(--color-menu);
+	justify-self: stretch;
 }
 
 .targetCurrent {
 	color: var(--color-menu);
 }
+
 .priceEditor {
 	border: 1px solid var(--color-menu);
+	justify-self: stretch;
+}
+
+.chargemodes {
+	grid-column: 1 / 13;
+	justify-self: center;
 }
 </style>
