@@ -291,6 +291,33 @@ body>.container-fluid {
 	padding: var(--padding-widget);
 }
 
+.grid12 {
+	display: grid;
+	grid-template-columns: repeat(12, auto);
+	gap: .2em;
+	justify-items: center;
+}
+.grid-col-4 {
+	grid-column: span 4;
+}
+.grid-col-6 {
+	grid-column: span 6;
+}
+.grid-col-3 {
+	grid-column: span 3;
+}
+.subgrid {
+	display:grid;
+	grid-column: 1 / 13; 
+	grid-template-columns: subgrid;
+	justify-content: top;
+}
+.grid-left {
+	justify-self: start;
+}
+.grid-right {
+	justify-self: end;
+}
 th {
 	color: var(--color-axis);
 }

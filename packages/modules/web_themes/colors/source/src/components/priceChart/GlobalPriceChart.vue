@@ -12,17 +12,18 @@
 					v-if="etData.active"
 					class="badge rounded-pill pricebadge mb-1 me-1"
 					>{{ etData.etCurrentPriceString }}</span
-				><span
+				>
+				<span
 					v-if="etData.active"
 					class="badge rounded-pill providerbadge mb-1 m-0"
 					>{{ etData.etProvider }}</span
 				>
 			</div>
 		</template>
-		<div class="row p-2 m-0">
-			<div class="col-12 pricechartColumn p-0 m-0">
+		<div class="subgrid">
+			<div class="pricechart">
 				<figure id="pricechart" class="p-0 m-0">
-					<svg viewBox="0 0 400 300">
+					<svg viewBox="0 0 400 280">
 						<g
 							:id="chartId"
 							:origin="draw"
@@ -202,8 +203,13 @@ onMounted(() => {
 	background-color: var(--color-charging);
 	font-weight: normal;
 }
+
 .providerbadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
+}
+
+.pricechart {
+	grid-column: span 12;
 }
 </style>

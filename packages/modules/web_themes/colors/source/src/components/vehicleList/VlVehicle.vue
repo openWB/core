@@ -3,14 +3,22 @@
 		<template #title>
 			<span class="vehiclename">{{ props.vehicle.name }} </span>
 		</template>
-		<div class="d-flex justify-content-between">
-			<InfoItem heading="Status:" :small="false">
-				<span :style="{ color: statusColor }">{{ statusString }}</span>
+		<div class="subgrid">
+			<InfoItem heading="Status:" :small="false" class="grid-left grid-col-4">
+				<span
+					:style="{ color: statusColor }"
+					class="d-flex justify-content-center align-items-center status-string"
+					>{{ statusString }}</span
+				>
 			</InfoItem>
-			<InfoItem heading="Ladestand:" :small="false">
+			<InfoItem heading="Ladestand:" :small="false" class="grid-col-4">
 				{{ Math.round(props.vehicle.soc) }} %
 			</InfoItem>
-			<InfoItem heading="Reichweite:" :small="false">
+			<InfoItem
+				heading="Reichweite:"
+				:small="false"
+				class="grid-right grid-col-4"
+			>
 				{{ props.vehicle.range }} km
 			</InfoItem>
 		</div>
@@ -66,5 +74,8 @@ const statusColor = computed(() => {
 
 .vehiclename {
 	font-size: var(--font-large);
+}
+.status-string {
+	text-align: center;
 }
 </style>

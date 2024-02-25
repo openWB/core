@@ -159,14 +159,14 @@ const drawAxis2 = computed(() => {
 	}
 
 	axis.select('.domain').attr('stroke', 'var(--color-bg)')
-	axis
+	/* axis
 		.append('text')
 		.attr('x', -props.margin.left)
 		.attr('y', 12)
 		.attr('fill', 'var(--color-axis)')
 		.attr('font-size', fontsize)
 		.text(graphData.graphMode == 'year' ? 'MW' : 'kW')
-		.attr('text-anchor', 'start')
+		.attr('text-anchor', 'start') */
 	return 'PGXAxis2.vue'
 })
 </script>

@@ -28,11 +28,15 @@
 				/>
 			</div>
 		</template>
-		<div class="d-flex justify-content-between">
-			<InfoItem :heading="chargepoint.vehicleName" :small="true">
+		<div class="subgrid infolist">
+			<InfoItem
+				:heading="chargepoint.vehicleName"
+				:small="true"
+				class="grid-left -col-4"
+			>
 				<span
 					v-if="chargepoint.isSocConfigured"
-					class="d-flex justify-content-center align-items-center"
+					class="d-flex justify-content-center align-items-center vehiclestatus"
 				>
 					<BatterySymbol class="me-1" :soc="chargepoint.soc" />
 					<i
@@ -54,7 +58,8 @@
 					/>
 				</span>
 			</InfoItem>
-			<InfoItem heading="Parameter:" :small="true">
+
+			<InfoItem heading="Parameter:" :small="true" class="grid-col-4">
 				<div class="d-flex flex-column align-items-center px-0">
 					<span class="d-flex justify-content-center flex-wrap">
 						<span>{{ chargePowerString }}</span>
@@ -70,9 +75,9 @@
 					</span>
 				</div>
 			</InfoItem>
-			<InfoItem heading="Geladen:" :small="true">
-				<div class="d-flex flex-wrap justify-content-center ms-1">
-					<span class="me-2">{{ chargeEnergyString }}</span>
+			<InfoItem heading="Geladen:" :small="true" class="grid-right grid-col-4">
+				<div class="d-flex flex-wrap justify-content-center chargeinfo">
+					<span class="me-1">{{ chargeEnergyString }}</span>
 					<span>{{ chargedRangeString }}</span>
 				</div>
 			</InfoItem>
@@ -183,22 +188,13 @@ const chargeEnergyString = computed(() => {
 	}
 })
 const chargedRangeString = computed(() => {
-	if (
-		props.chargepoint.averageConsumption > 0 &&
-		props.chargepoint.dailyYield > 0
-	) {
-		return (
-			'(' +
-			Math.round(
-				props.chargepoint.dailyYield /
-					props.chargepoint.averageConsumption /
-					10,
-			).toString() +
-			' km)'
-		)
-	} else {
-		return ''
-	}
+	return (
+		'(' +
+		Math.round(props.chargepoint.rangeCharged).toString() +
+		' ' +
+		props.chargepoint.rangeUnit +
+		')'
+	)
 })
 const modeString = computed(() => {
 	return chargemodes[props.chargepoint.chargeMode].name
@@ -315,5 +311,8 @@ const statusString = computed(() => {
 
 .fa-edit {
 	color: var(--color-menu);
+}
+.infolist {
+	justify-content: center;
 }
 </style>
