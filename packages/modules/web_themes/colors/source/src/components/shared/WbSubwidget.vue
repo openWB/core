@@ -45,19 +45,17 @@ const widgetwidth = computed(() => {
 .wb-subwidget {
 	border-top: 0.5px solid var(--color-scale);
 	display: grid;
-	grid-template-rows: [titlerow] auto [contentrow] auto;
-	grid-template-columns: [maincolumn] auto;
-	grid-gap: 1px;
+	grid-template-columns: subgrid;
+	grid-column: 1 / 13;
 }
 .titlerow {
-	display: grid;
-	grid-row-start: titlerow;
-	grid-column-start: maincolumn;
+	grid-column: 1 / 13;
 }
 .contentrow {
 	display: grid;
-	grid-row-start: contentrow;
-	grid-column-start: maincolumn;
+	grid-template-columns: subgrid;
+	grid-column: 1 / 13;
+	align-items: top;
 }
 .widgetname {
 	font-weight: bold;

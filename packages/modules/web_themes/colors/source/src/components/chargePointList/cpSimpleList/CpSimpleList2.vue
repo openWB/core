@@ -1,5 +1,5 @@
 <template>
-	<WbWidgetFlex :variable-width="true" class="cptable">
+	<WbWidgetFlex :variable-width="true">
 		<template #title>
 			<span class="fa-solid fa-charging-station">&nbsp;</span>
 			Ladepunkte
@@ -16,7 +16,7 @@
 		<div
 			v-for="(cp, index) in chargepointsToDisplay"
 			:key="index"
-			class="m-1 mt-0 p-0"
+			class="subgrid pb-2"
 		>
 			<CpsListItem2 :chargepoint="cp" />
 		</div>
@@ -41,30 +41,30 @@ const chargepointsToDisplay = computed(() => {
 	background-color: var(--color-bg);
 	color: var(--color-menu);
 }
+
 .alignleft {
 	text-align: left;
 }
+
 .aligncenter {
 	text-align: center;
 }
+
 .alignright {
 	text-align: right;
 }
+
 .table {
 	border-spacing: 1rem;
 	background-color: var(--color-bg);
 }
+
 .pricebadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
 }
+
 .fa-charging-station {
 	color: var(--color-charging);
-}
-.cptable {
-	display: grid;
-	grid-template-rows: [row1] auto [row2] auto;
-	grid-template-columns: [left] auto [center] auto [right] auto;
-	grid-gap: 1px;
 }
 </style>

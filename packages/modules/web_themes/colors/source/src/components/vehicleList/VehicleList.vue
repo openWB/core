@@ -6,14 +6,12 @@
 			>
 			<span>Fahrzeuge</span>
 		</template>
-		<div class="pb-3">
-			<div
-				v-for="(vehicle, index) in Object.values(vehicles).slice().reverse()"
-				:key="index"
-				class="row m-1 mt-0 p-0"
-			>
-				<VlVehicle :vehicle="vehicle" />
-			</div>
+		<div
+			v-for="(vehicle, index) in Object.values(vehicles).slice().reverse()"
+			:key="index"
+			class="subgrid"
+		>
+			<VlVehicle :vehicle="vehicle" />
 		</div>
 	</WBWidgetFlex>
 </template>
