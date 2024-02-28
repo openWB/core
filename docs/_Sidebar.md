@@ -4,10 +4,12 @@
 * [Grundkonzept](https://github.com/openWB/core/wiki/Grundkonzept)
 * [Ladepunkte](https://github.com/openWB/core/wiki/Ladepunkte)
 * [Fahrzeuge](https://github.com/openWB/core/wiki/Fahrzeuge)
-* [Zähler](https://github.com/openWB/core/wiki/Zaehler)
+* Zähler
+  * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Zaehler)
   * [Lastmanagement und kaskadierte Zähler](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler)
   * [Hierarchie mit Hausverbrauchs-Zähler](https://github.com/openWB/core/wiki/Hausverbrauchs-Zähler)
 * Szenarien
+  * [Typische Anwendungsfälle] (https://github.com/openWB/core/wiki/Typische-Anwendungsfaelle)
   * [ID-Tag/Ladung nur nach Freischaltung](https://github.com/openWB/core/wiki/Ladung-nur-nach-Freischaltung)
   * [Hybrid-System aus Wechselrichter und Speicher](https://github.com/openWB/core/wiki/Hybrid-System-aus-Wechselrichter-und-Speicher)
 * Mitarbeit am Projekt
