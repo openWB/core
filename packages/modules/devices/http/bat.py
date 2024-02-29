@@ -6,7 +6,7 @@ from requests import Session
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.http.api import create_request_function
@@ -19,7 +19,7 @@ class HttpBat:
         self.component_config = dataclass_from_dict(HttpBatSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
         self.__get_power = create_request_function(url, self.component_config.configuration.power_path)
         self.__get_imported = create_request_function(url, self.component_config.configuration.imported_path)
@@ -27,17 +27,17 @@ class HttpBat:
         self.__get_soc = create_request_function(url, self.component_config.configuration.soc_path)
 
     def update(self, session: Session) -> None:
-        imported = self.__get_imported(session)
-        exported = self.__get_exported(session)
         power = self.__get_power(session)
+        exported = self.__get_exported(session)
+        imported = self.__get_imported(session)
         if imported is None or exported is None:
             imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(
             power=power,
-            soc=self.__get_soc(session),
+            exported=exported,
             imported=imported,
-            exported=exported
+            soc=self.__get_soc(session)
         )
         self.store.set(bat_state)
 

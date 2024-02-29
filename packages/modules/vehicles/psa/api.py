@@ -4,11 +4,12 @@ import logging
 from typing import Optional
 
 from modules.common import req
-from typing import NamedTuple, Tuple
+from typing import NamedTuple
+from modules.common.component_state import CarState
 
 from modules.vehicles.psa.config import PSAConfiguration
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 ManufacturerConfiguration = NamedTuple(
     "ManufacturerConfiguration",
@@ -104,7 +105,7 @@ def fetch_energy(vin_id: str, session: req.Session) -> dict:
 
 
 def fetch_soc(config: PSAConfiguration,
-              vehicle_id: int) -> Tuple[float, float, str]:
+              vehicle_id: int) -> CarState:
 
     try:
         session = create_session(
@@ -118,4 +119,4 @@ def fetch_soc(config: PSAConfiguration,
         raise Exception("Error requesting PSA data for vehicle: %s" % vehicle_id)
     log.info("psa.fetch_soc: soc=%s%%, range=%s, timestamp=%s",
              energy['level'], energy['autonomy'], energy['updatedAt'])
-    return energy['level'], energy['autonomy'], energy['updatedAt']
+    return CarState(soc=energy['level'], range=energy['autonomy'], soc_timestamp=energy['updatedAt'])

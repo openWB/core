@@ -1,0 +1,303 @@
+/**
+ * Functions to provide services for MQTT
+ *
+ * @author Kevin Wieland
+ * @author Michael Ortenstein
+ * @author Lutz Bender
+ */
+
+// these topics will be subscribed
+// index 1 represents flag if value was received, needed for preloader progress bar
+// if flags are preset with 1 they are not counted on reload and page will show even if topic was not received
+
+// add topics here which should be subscribed before any other topics
+var topicsToSubscribeFirst = [
+	["openWB/counter/get/hierarchy", 0] // hierarchy of all counters and charge points
+];
+
+// add any other topics here
+var topicsToSubscribe = [
+	// data for all charge points
+	["openWB/chargepoint/get/power", 1], // total actual charging power; int, unit: Wh
+	["openWB/chargepoint/get/daily_imported", 1], // total counted energy for charging; float, unit: kWh
+	["openWB/chargepoint/get/daily_exported", 1], // total counted energy for discharging (V2G/V2H); float, unit: kWh
+
+	// // pv topics
+	["openWB/pv/config/configured", 1], // is a pv module configured? bool
+	["openWB/pv/get/power", 1], // total actual power; negative int, unit: W
+	["openWB/pv/get/daily_exported", 1], // total daily yield; float, unit: kWh
+
+	// // house battery
+	["openWB/bat/config/configured", 1], // is a battery module configured? bool
+	["openWB/bat/get/power", 1], // total actual power; int, unit: W
+	["openWB/bat/get/soc", 1], // total actual soc; int, unit: %, 0-100
+	["openWB/bat/get/daily_exported", 1], // total daily imported energy; float, unit: kWh
+	["openWB/bat/get/daily_imported", 1], // total daily imported energy; float, unit: kWh
+
+	// counter topics, counter with index 0 is always main grid counter
+	["openWB/counter/set/home_consumption", 1], // actual home power
+	["openWB/counter/set/daily_yield_home_consumption", 1], // daily home energy
+	["openWB/counter/+/get/power", 1], // actual power; int, unit: W
+	["openWB/counter/+/get/daily_imported", 1], // daily imported energy; float, unit: kWh
+	["openWB/counter/+/get/daily_exported", 1], // daily exported energy; float, unit: kWh
+
+	// charge point topics
+	["openWB/chargepoint/+/config", 1], // chargepoint configuration; JSON { name: str, template: int, connected_phases: int, phase_1: int, auto_phase_switch_hardware: bool, control_pilot_interruption_hw: bool, connection_module: JSON { selected: str, config: JSON } }
+	["openWB/chargepoint/+/get/state_str", 1], // information about actual state; str
+	["openWB/chargepoint/+/get/fault_str", 1], // any error messages; str
+	["openWB/chargepoint/+/get/fault_state", 1], // error state; int, 0 = ok, 1 = warning, 2 = error
+	["openWB/chargepoint/+/set/log", 1], // log data: energy charged since the vehicle was plugged in; float, unit: kWh
+	["openWB/chargepoint/+/get/power", 1], // actual charging power
+	["openWB/chargepoint/+/get/phases_in_use", 1], // actual number of phases used while charging; int, 0-3
+	["openWB/chargepoint/+/get/plug_state", 1], // state of plug; int, 0 = disconnected, 1 = connected
+	["openWB/chargepoint/+/get/charge_state", 1], // state of charge; int, 0 = not charging, 1 = charging
+	["openWB/chargepoint/+/set/manual_lock", 1], // is manual lock active? int, 0 = off, 1 = on
+	["openWB/chargepoint/+/get/enabled", 1], // is the chargepoint enabled? int, 0 = disabled, 1 = enabled
+	["openWB/chargepoint/+/set/current", 1], // actual set current; float, unit: A
+
+	// information for connected vehicle
+	["openWB/chargepoint/+/get/connected_vehicle/info", 1], // general info of the vehicle; JSON { "id": int, "name": str }
+	["openWB/chargepoint/+/get/connected_vehicle/config", 1], // general configuration of the vehicle; JSON { "charge_template": int, "ev_template": int, "chargemode": str, "priority": bool, "average_consumption": int (Wh/100km) }
+	["openWB/chargepoint/+/get/connected_vehicle/soc", 1], // soc info of the vehicle; JSON {"soc": float (%), "range_charged": int, "range": float, "range_unit": str, "timestamp": int, "fault_stat": int, "fault_str": str }
+
+	// vehicle topics
+	["openWB/vehicle/+/name", 1], // populate a list of vehicle id/name info
+	["openWB/vehicle/+/soc_module/config", 1], // soc configuration of the vehicle; JSON { "type": text, "configuration": object }
+	["openWB/vehicle/template/charge_template/+", 1], // populate a list of charge templates
+	["openWB/vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/+", 1], // populate a list of schedule plans
+	["openWB/vehicle/template/charge_template/+/time_charging/plans/+", 1], // populate a list of time charge plans
+
+	// charge mode config
+	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
+
+	// electricity tariff
+	["openWB/optional/et/active", 1], // et provider is configured
+	["openWB/optional/et/provider", 1], // et provider information
+	["openWB/optional/et/get/prices", 1], // current price list
+
+	// graph topics
+	["openWB/graph/config/duration", 1], // maximum duration to display in landing page
+	["openWB/graph/boolDisplayCp1", 1],
+	["openWB/graph/boolDisplayCp2", 1],
+	["openWB/graph/boolDisplayCp3", 1],
+	["openWB/graph/boolDisplayCp4", 1],
+	["openWB/graph/boolDisplayCp5", 1],
+	["openWB/graph/boolDisplayCp6", 1],
+	["openWB/graph/boolDisplayCp7", 1],
+	["openWB/graph/boolDisplayCp8", 1],
+	["openWB/graph/boolDisplayHouseConsumption", 1],
+	["openWB/graph/boolDisplayLoad1", 1],
+	["openWB/graph/boolDisplayLoad2", 1],
+	["openWB/graph/boolDisplayCp1Soc", 1],
+	["openWB/graph/boolDisplayCp2Soc", 1],
+	["openWB/graph/boolDisplayCpAll", 1],
+	["openWB/graph/boolDisplayBatterySoc", 1],
+	["openWB/graph/boolDisplayBattery", 1],
+	["openWB/graph/boolDisplayEvu", 1],
+	["openWB/graph/boolDisplayLegend", 1],
+	["openWB/graph/boolDisplayLiveGraph", 1],
+	["openWB/graph/boolDisplayPv", 1],
+	["openWB/graph/alllivevaluesJson1", 1],
+	["openWB/graph/alllivevaluesJson2", 1],
+	["openWB/graph/alllivevaluesJson3", 1],
+	["openWB/graph/alllivevaluesJson4", 1],
+	["openWB/graph/alllivevaluesJson5", 1],
+	["openWB/graph/alllivevaluesJson6", 1],
+	["openWB/graph/alllivevaluesJson7", 1],
+	["openWB/graph/alllivevaluesJson8", 1],
+	["openWB/graph/alllivevaluesJson9", 1],
+	["openWB/graph/alllivevaluesJson10", 1],
+	["openWB/graph/alllivevaluesJson11", 1],
+	["openWB/graph/alllivevaluesJson12", 1],
+	["openWB/graph/alllivevaluesJson13", 1],
+	["openWB/graph/alllivevaluesJson14", 1],
+	["openWB/graph/alllivevaluesJson15", 1],
+	["openWB/graph/alllivevaluesJson16", 1],
+	["openWB/graph/lastlivevaluesJson", 1],
+
+	// // hook Konfiguration
+	// ["openWB/hook/1/boolHookConfigured", 0],
+	// ["openWB/hook/2/boolHookConfigured", 0],
+	// ["openWB/hook/3/boolHookConfigured", 0],
+	// // Verbraucher Konfiguration
+	// ["openWB/Verbraucher/1/Configured", 0],
+	// ["openWB/Verbraucher/1/Name", 1],
+	// ["openWB/Verbraucher/1/Watt", 1],
+	// ["openWB/Verbraucher/1/DailyYieldImportkWh", 1],
+	// ["openWB/Verbraucher/2/Configured", 0],
+	// ["openWB/Verbraucher/2/Name", 1],
+	// ["openWB/Verbraucher/2/Watt", 1],
+	// ["openWB/Verbraucher/2/DailyYieldImportkWh", 1],
+
+	// // global topics
+	// ["openWB/global/strLastmanagementActive", 1],
+
+	// ["openWB/config/get/pv/minCurrentMinPv", 1],
+	// // system topics
+	// ["openWB/system/Timestamp", 1],
+
+	// // geladene kWh seit anstecken des EV
+	// // geladene kWh seit Reset Lademengenbegrenzung
+	// ["openWB/lp/1/kWhActualCharged", 1],
+	// ["openWB/lp/2/kWhActualCharged", 1],
+	// ["openWB/lp/3/kWhActualCharged", 1],
+	// ["openWB/lp/4/kWhActualCharged", 1],
+	// ["openWB/lp/5/kWhActualCharged", 1],
+	// ["openWB/lp/6/kWhActualCharged", 1],
+	// ["openWB/lp/7/kWhActualCharged", 1],
+	// ["openWB/lp/8/kWhActualCharged", 1],
+	// // Status Nachtladen
+	// ["openWB/lp/1/boolChargeAtNight", 1],
+	// ["openWB/lp/2/boolChargeAtNight", 1],
+	// // Restzeit
+	// ["openWB/lp/1/TimeRemaining", 1],
+	// ["openWB/lp/2/TimeRemaining", 1],
+	// ["openWB/lp/3/TimeRemaining", 1],
+	// ["openWB/lp/4/TimeRemaining", 1],
+	// ["openWB/lp/5/TimeRemaining", 1],
+	// ["openWB/lp/6/TimeRemaining", 1],
+	// ["openWB/lp/7/TimeRemaining", 1],
+	// ["openWB/lp/8/TimeRemaining", 1],
+
+	// ["openWB/lp/1/boolDirectChargeMode_none_kwh_soc", 1],
+	// ["openWB/lp/2/boolDirectChargeMode_none_kwh_soc", 1],
+	// ["openWB/lp/3/boolDirectChargeMode_none_kwh_soc", 1],
+	// ["openWB/lp/4/boolDirectChargeMode_none_kwh_soc", 1],
+	// ["openWB/lp/5/boolDirectChargeMode_none_kwh_soc", 1],
+	// ["openWB/lp/6/boolDirectChargeMode_none_kwh_soc", 1],
+	// ["openWB/lp/7/boolDirectChargeMode_none_kwh_soc", 1],
+	// ["openWB/lp/8/boolDirectChargeMode_none_kwh_soc", 1],
+	//
+	// // Status Autolock konfiguriert
+	// ["openWB/lp/1/AutolockConfigured", 1],
+	// ["openWB/lp/2/AutolockConfigured", 1],
+	// ["openWB/lp/3/AutolockConfigured", 1],
+	// ["openWB/lp/4/AutolockConfigured", 1],
+	// ["openWB/lp/5/AutolockConfigured", 1],
+	// ["openWB/lp/6/AutolockConfigured", 1],
+	// ["openWB/lp/7/AutolockConfigured", 1],
+	// ["openWB/lp/8/AutolockConfigured", 1],
+	// // Status Autolock
+	// ["openWB/lp/1/AutolockStatus", 1],
+	// ["openWB/lp/2/AutolockStatus", 1],
+	// ["openWB/lp/3/AutolockStatus", 1],
+	// ["openWB/lp/4/AutolockStatus", 1],
+	// ["openWB/lp/5/AutolockStatus", 1],
+	// ["openWB/lp/6/AutolockStatus", 1],
+	// ["openWB/lp/7/AutolockStatus", 1],
+	// ["openWB/lp/8/AutolockStatus", 1],
+	// ["openWB/lp/1/ADirectModeAmps", 1],
+	// ["openWB/lp/2/ADirectModeAmps", 1],
+	// ["openWB/lp/3/ADirectModeAmps", 1],
+	// ["openWB/lp/4/ADirectModeAmps", 1],
+	// ["openWB/lp/5/ADirectModeAmps", 1],
+	// ["openWB/lp/6/ADirectModeAmps", 1],
+	// ["openWB/lp/7/ADirectModeAmps", 1],
+	// ["openWB/lp/8/ADirectModeAmps", 1],
+	// // Zielladen
+	// ["openWB/lp/1/boolFinishAtTimeChargeActive", 1],
+
+	// // hook status
+	// ["openWB/hook/1/boolHookStatus", 1],
+	// ["openWB/hook/2/boolHookStatus", 1],
+	// ["openWB/hook/3/boolHookStatus", 1],
+
+	// // Config Vars Sofort current
+	// ["openWB/config/get/sofort/lp/1/current", 1],
+	// ["openWB/config/get/sofort/lp/2/current", 1],
+	// ["openWB/config/get/sofort/lp/3/current", 1],
+	// ["openWB/config/get/sofort/lp/4/current", 1],
+	// ["openWB/config/get/sofort/lp/5/current", 1],
+	// ["openWB/config/get/sofort/lp/6/current", 1],
+	// ["openWB/config/get/sofort/lp/7/current", 1],
+	// ["openWB/config/get/sofort/lp/8/current", 1],
+	// ["openWB/config/get/sofort/lp/1/chargeLimitation", 1],
+	// ["openWB/config/get/sofort/lp/2/chargeLimitation", 1],
+	// ["openWB/config/get/sofort/lp/3/chargeLimitation", 1],
+	// ["openWB/config/get/sofort/lp/4/chargeLimitation", 1],
+	// ["openWB/config/get/sofort/lp/5/chargeLimitation", 1],
+	// ["openWB/config/get/sofort/lp/6/chargeLimitation", 1],
+	// ["openWB/config/get/sofort/lp/7/chargeLimitation", 1],
+	// ["openWB/config/get/sofort/lp/8/chargeLimitation", 1],
+	// ["openWB/config/get/sofort/lp/1/energyToCharge", 1],
+	// ["openWB/config/get/sofort/lp/2/energyToCharge", 1],
+	// ["openWB/config/get/sofort/lp/3/energyToCharge", 1],
+	// ["openWB/config/get/sofort/lp/4/energyToCharge", 1],
+	// ["openWB/config/get/sofort/lp/5/energyToCharge", 1],
+	// ["openWB/config/get/sofort/lp/6/energyToCharge", 1],
+	// ["openWB/config/get/sofort/lp/7/energyToCharge", 1],
+	// ["openWB/config/get/sofort/lp/8/energyToCharge", 1],
+	// ["openWB/config/get/sofort/lp/1/socToChargeTo", 1],
+	// ["openWB/config/get/sofort/lp/2/socToChargeTo", 1],
+
+	// ["openWB/pv/bool70PVDynStatus", 1],
+	// ["openWB/config/get/pv/nurpv70dynact", 1]
+];
+
+// holds number of topics flagged 1 initially
+var countTopicsNotForPreloader = topicsToSubscribeFirst.filter(row => row[1] === 1).length + topicsToSubscribe.filter(row => row[1] === 1).length;
+
+var retries = 0;
+
+//Connect Options
+var isSSL = location.protocol == 'https:'
+var port = parseInt(location.port) || (location.protocol == "https:" ? 443 : 80);
+
+var options = {
+	timeout: 5,
+	useSSL: isSSL,
+	//Gets Called if the connection has been established
+	onSuccess: function () {
+		retries = 0;
+		topicsToSubscribeFirst.forEach((topic) => {
+			client.subscribe(topic[0], { qos: 0 });
+		});
+		setTimeout(function () {
+			topicsToSubscribe.forEach((topic) => {
+				client.subscribe(topic[0], { qos: 0 });
+			});
+		}, 200);
+	},
+	//Gets Called if the connection could not be established
+	onFailure: function (message) {
+		setTimeout(function () { client.connect(options); }, 5000);
+	}
+};
+
+var clientUid = Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 5);
+console.debug(`connecting to broker on ${location.hostname}:${port} as client "${clientUid}"`);
+var client = new Messaging.Client(location.hostname, port, clientUid);
+
+$(document).ready(function () {
+	client.connect(options);
+	timeOfLastMqttMessage = Date.now();
+});
+
+//Gets  called if the websocket/mqtt connection gets disconnected for any reason
+client.onConnectionLost = function (responseObject) {
+	client.connect(options);
+};
+
+//Gets called whenever you receive a message
+client.onMessageArrived = function (message) {
+	handleMessage(message.destinationName, message.payloadString);
+};
+
+//Creates a new Messaging.Message Object and sends it
+function publish(payload, topic) {
+	console.debug(`publishing message: ${topic} -> ${payload}`);
+	if (topic != undefined) {
+		var message = new Messaging.Message(JSON.stringify(payload));
+		message.destinationName = topic;
+		message.qos = 2;
+		message.retained = true;
+		client.send(message);
+		var message = new Messaging.Message("local client uid: " + clientUid + " sent: " + topic);
+		message.destinationName = "openWB/set/system/topicSender";
+		message.qos = 2;
+		message.retained = true;
+		client.send(message);
+	} else {
+		console.error("not publishing message without topic!");
+	}
+}

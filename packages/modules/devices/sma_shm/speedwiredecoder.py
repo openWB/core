@@ -157,7 +157,7 @@ def decode_speedwire(datagram):
                     elif revision == "6":
                         # N – Keine Revision
                         version = version+".N"
-                    # adding versionnumber to compare verions
+                    # adding version number to compare versions
                     version = version+"|"+str(bversion[0:2])+str(bversion[2:4])+str(bversion[4:6])
                     emparts[sma_channels[measurement][0]] = version
                 position += 8

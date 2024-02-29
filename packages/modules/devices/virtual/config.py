@@ -19,7 +19,7 @@ class Virtual:
 
 
 class VirtualCounterConfiguration:
-    def __init__(self, external_consumption=400):
+    def __init__(self, external_consumption=0):
         self.external_consumption = external_consumption
 
 

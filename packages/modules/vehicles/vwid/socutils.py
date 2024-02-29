@@ -8,7 +8,7 @@ from helpermodules.pub import Pub
 
 initialToken = '1.2.3'
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class socUtils:

@@ -58,7 +58,7 @@ class Device(AbstractDevice):
         if self.components:
             for component in self.components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                with SingleComponentUpdateContext(self.components[component].component_info):
+                with SingleComponentUpdateContext(self.components[component].fault_state):
                     self.components[component].update()
         else:
             log.warning(
@@ -107,7 +107,7 @@ def read_legacy(component_type: str,
 
             dev.add_component(KostalPikoInverterSetup(
                 id=1, configuration=KostalPikoInverterConfiguration(bat_configured=True)))
-            inverter_power, _ = dev.components["component"+str(1)].get_values()
+            inverter_power, _ = dev.components["component"+str(1)].update()
 
             power = home_consumption + inverter_power
             imported, exported = sim_count(power, prefix="bezug")

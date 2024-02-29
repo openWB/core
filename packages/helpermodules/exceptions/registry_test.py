@@ -32,7 +32,7 @@ class ErrorF(ErrorD):
 
 
 @pytest.mark.parametrize("exception,expected_message", [
-    [ErrorRoot, "<class 'helpermodules.exceptions.registry_test.ErrorRoot'> ErrorRoot"],
+    [ErrorRoot, "<class 'helpermodules.exceptions.registry_test.ErrorRoot'> ('ErrorRoot',)"],
     [ErrorB, "B"],
     [ErrorC, "A"],
     [ErrorD, "B"],
@@ -49,7 +49,7 @@ def test_uses_exact_match_if_available(exception: Type, expected_message: str):
     actual = registry.translate_exception(exception())
 
     # evaluation
-    assert actual.fault_str == expected_message
+    assert actual[0] == expected_message
 
 
 @pytest.mark.parametrize("handler", [
@@ -66,5 +66,5 @@ def test_accepts_all_supported_formats(handler):
     actual = registry.translate_exception(Exception())
 
     # evaluation
-    assert isinstance(actual, FaultState)
-    assert actual.fault_str == "msg"
+    assert isinstance(actual[0], str)
+    assert actual[0] == "msg"

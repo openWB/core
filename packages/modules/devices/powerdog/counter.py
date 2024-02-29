@@ -6,7 +6,7 @@ from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
@@ -25,15 +25,19 @@ class PowerdogCounter:
         self.__tcp_client = tcp_client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self):
+    def update(self, inverter_power: float):
         with self.__tcp_client:
-            home_consumption = self.__tcp_client.read_input_registers(40026, ModbusDataType.INT_32, unit=1)
-        log.debug("Powerdog Hausverbrauch[W]: " + str(home_consumption))
-        return home_consumption
+            if self.component_config.configuration.position_evu:
+                export_power = self.__tcp_client.read_input_registers(40000, ModbusDataType.INT_32, unit=1) * -1
+                import_power = self.__tcp_client.read_input_registers(40024, ModbusDataType.INT_32, unit=1)
+                power = export_power + import_power
+            else:
+                home_consumption = self.__tcp_client.read_input_registers(40026, ModbusDataType.INT_32, unit=1)
+                power = home_consumption + inverter_power
+                log.debug("Powerdog Hausverbrauch[W]: " + str(home_consumption))
 
-    def set_counter_state(self, power: float) -> None:
         imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             imported=imported,

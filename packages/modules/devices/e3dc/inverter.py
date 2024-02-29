@@ -5,7 +5,7 @@ from modules.common import modbus
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.modbus import ModbusDataType, Endian
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.common.simcount._simcounter import SimCounter
 from modules.devices.e3dc.config import E3dcInverterSetup
@@ -27,13 +27,13 @@ class E3dcInverter:
         self.component_config = component_config
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, client: modbus.ModbusTcpClient_) -> None:
 
         pv = read_inverter(client)
-        # Im gegensatz zu v1.9 implementierung wird nicht mehr die PV
-        # leistung vom WR1 gelesen, da die durch v2.0 separat gehandelt wird
+        # Im gegensatz zur Implementierung in Version 1.9 wird nicht mehr die PV
+        # Leistung vom WR1 gelesen, da die durch v2.0 separat gehandelt wird
         _, pv_exported = self.sim_counter.sim_count(pv)
         inverter_state = InverterState(
             power=pv,

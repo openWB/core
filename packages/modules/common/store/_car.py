@@ -24,9 +24,9 @@ class CarValueStoreBroker(ValueStore[CarState]):
 
     def update(self):
         try:
-            pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/soc", self.state.soc)
+            pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/soc", self.state.soc, 2)
             if self.state.range:
-                pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/range", self.state.range)
+                pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/range", self.state.range, 2)
         except Exception as e:
             raise FaultState.from_exception(e)
 

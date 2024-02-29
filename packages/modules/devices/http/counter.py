@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 from typing import Dict, Union
 
+from requests import Session
+
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.http.api import create_request_function, create_request_function_array
@@ -17,7 +19,7 @@ class HttpCounter:
         self.component_config = dataclass_from_dict(HttpCounterSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
         self.__get_power = create_request_function(url, self.component_config.configuration.power_path)
         self.__get_imported = create_request_function(url, self.component_config.configuration.imported_path)
@@ -28,18 +30,18 @@ class HttpCounter:
             component_config.configuration.current_l3_path,
         ])
 
-    def update(self, session):
-        imported = self.__get_imported(session)
-        exported = self.__get_exported(session)
+    def update(self, session: Session) -> None:
         power = self.__get_power(session)
+        exported = self.__get_exported(session)
+        imported = self.__get_imported(session)
         if imported is None or exported is None:
             imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
-            currents=self.__get_currents(session),
-            imported=imported,
+            power=power,
             exported=exported,
-            power=power
+            imported=imported,
+            currents=self.__get_currents(session)
         )
         self.store.set(counter_state)
 

@@ -58,7 +58,7 @@ class PurgeCounterState:
 
     def update(self) -> None:
         state = self.calc_virtual(self.delegate.delegate.state)
-        self.delegate.delegate.set(state)  # Logging in update methode
+        self.delegate.delegate.set(state)  # Logging in update Methode
         self.delegate.update()
 
     def calc_virtual(self, state: CounterState) -> CounterState:
@@ -70,22 +70,26 @@ class PurgeCounterState:
             self.incomplete_currents = False
 
             def add_current_power(element):
-                if element.data["get"].get("currents"):
-                    self.currents = list(map(add, self.currents, element.data["get"]["currents"]))
+                if element.data.get.currents is not None:
+                    if sum(element.data.get.currents) == 0 and element.data.get.power != 0:
+                        self.currents = [0, 0, 0]
+                        self.incomplete_currents = True
+                    else:
+                        self.currents = list(map(add, self.currents, element.data.get.currents))
                 else:
                     self.currents = [0, 0, 0]
                     self.incomplete_currents = True
-                self.power += element.data["get"]["power"]
+                self.power += element.data.get.power
 
             def add_imported_exported(element):
-                self.imported += element.data["get"]["imported"]
-                self.exported += element.data["get"]["exported"]
+                self.imported += element.data.get.imported
+                self.exported += element.data.get.exported
 
             def add_exported(element):
-                self.exported += element.data["get"]["exported"]
+                self.exported += element.data.get.exported
 
             counter_all = data.data.counter_all_data
-            elements = counter_all.get_entry_of_element(self.delegate.delegate.num)["children"]
+            elements = counter_all.get_elements_for_downstream_calculation(self.delegate.delegate.num)
             for element in elements:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
                     chargepoint = data.data.cp_data[f"cp{element['id']}"]
@@ -96,8 +100,9 @@ class PurgeCounterState:
                                                      chargepoint.data.config.phase_1,
                                                      chargepoint.data.get.currents)))
                     except KeyError:
-                        raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
-                                               f" {chargepoint.num} an die Phasen der EVU angegeben werden.")
+                        raise KeyError("Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
+                                       f" {chargepoint.data.config.name} an die Phasen der EVU angegeben "
+                                       "werden.")
 
                     self.power += chargepoint.data.get.power
                     self.imported += chargepoint.data.get.imported

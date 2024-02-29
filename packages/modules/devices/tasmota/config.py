@@ -1,13 +1,11 @@
 from modules.common.component_setup import ComponentSetup
+from typing import Optional
 
 
 class TasmotaConfiguration:
-    def __init__(self, ip_address=None, phase=None):
+    def __init__(self, ip_address: Optional[str] = None, phase: int = 1):
         self.ip_address = ip_address
-        try:
-            self.phase = int(phase)
-        except Exception:
-            self.phase = 1
+        self.phase = phase
 
 
 class Tasmota:

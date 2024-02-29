@@ -1,13 +1,18 @@
 """Allgemeine Einstellungen
 """
 from dataclasses import dataclass, field
+from enum import Enum
 import logging
 import random
 from typing import List, Optional
 
 from control import data
+from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
+from modules.ripple_control_receivers.gpio.config import GpioRcr
+from modules.ripple_control_receivers.gpio.ripple_control_receiver import create_ripple_control_receiver
 
 log = logging.getLogger(__name__)
 
@@ -57,24 +62,6 @@ def scheduled_charging_factory() -> ScheduledCharging:
 
 
 @dataclass
-class Standby:
-    phases_to_use: int = 1
-
-
-def standby_factory() -> Standby:
-    return Standby()
-
-
-@dataclass
-class Stop:
-    phases_to_use: int = 1
-
-
-def stop_factory() -> Stop:
-    return Stop()
-
-
-@dataclass
 class TimeCharging:
     phases_to_use: int = 1
 
@@ -87,9 +74,8 @@ def time_charging_factory() -> TimeCharging:
 class ChargemodeConfig:
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
+    retry_failed_phase_switches = False
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
-    standby: Standby = field(default_factory=standby_factory)
-    stop: Stop = field(default_factory=stop_factory)
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = 18
     unbalanced_load: bool = False
@@ -100,10 +86,30 @@ def chargemode_config_factory() -> ChargemodeConfig:
 
 
 @dataclass
+class RippleControlReceiverGet:
+    fault_state: int = 0
+    fault_str: str = NO_ERROR
+    override_value: float = 100
+
+
+def rcr_get_factory() -> RippleControlReceiverGet:
+    return RippleControlReceiverGet()
+
+
+def gpio_rcr_factory() -> ConfigurableRcr:
+    return create_ripple_control_receiver(GpioRcr())
+
+
+class OverrideReference(Enum):
+    EVU = "evu"
+    CHARGEPOINT = "chargepoint"
+
+
+@dataclass
 class RippleControlReceiver:
-    configured: bool = False
-    r1_active: bool = False
-    r2_active: bool = False
+    get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
+    module: ConfigurableRcr = field(default_factory=gpio_rcr_factory)
+    overrice_reference: OverrideReference = OverrideReference.CHARGEPOINT
 
 
 def ripple_control_receiver_factory() -> RippleControlReceiver:
@@ -111,18 +117,30 @@ def ripple_control_receiver_factory() -> RippleControlReceiver:
 
 
 @dataclass
+class Prices:
+    bat: float = 0.0002
+    cp: float = 0
+    grid: float = 0.0003
+    pv: float = 0.00015
+
+
+def prices_factory() -> Prices:
+    return Prices()
+
+
+@dataclass
 class GeneralData:
     chargemode_config: ChargemodeConfig = field(default_factory=chargemode_config_factory)
     control_interval: int = 10
-    extern_display_mode: str = "local"
+    extern_display_mode: str = "primary"
     extern: bool = False
     external_buttons_hw: bool = False
     grid_protection_active: bool = False
     grid_protection_configured: bool = True
     grid_protection_random_stop: int = 0
-    grid_protection_timestamp: Optional[str] = ""
+    grid_protection_timestamp: Optional[float] = ""
     mqtt_bridge: bool = False
-    price_kwh: float = 0.3
+    prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
     ripple_control_receiver: RippleControlReceiver = field(default_factory=ripple_control_receiver_factory)
 
@@ -134,24 +152,15 @@ class General:
     def __init__(self):
         self.data: GeneralData = GeneralData()
 
-    def get_phases_chargemode(self, chargemode: str) -> int:
+    def get_phases_chargemode(self, chargemode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
         Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
         die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
-
-        Parameter
-        ---------
-        chargemode: str
-            Lademodus
-
-        Return
-        ------
-        int: Anzahl Phasen
         """
         try:
-            if chargemode == "stop":
-                # von maximaler Phasenzahl ausgehen.
-                return 3
+            if chargemode == "stop" or chargemode == "standby":
+                # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
+                return None
             else:
                 return getattr(self.data.chargemode_config, chargemode).phases_to_use
         except Exception:
@@ -166,7 +175,7 @@ class General:
         try:
             evu_counter = data.data.counter_all_data.get_evu_counter_str()
             if self.data.grid_protection_configured:
-                frequency = data.data.counter_data[evu_counter].data["get"]["frequency"] * 100
+                frequency = data.data.counter_data[evu_counter].data.get.frequency * 100
                 grid_protection_active = self.data.grid_protection_active
                 if not grid_protection_active:
                     if 4500 < frequency < 4920:
@@ -182,7 +191,7 @@ class General:
                         Pub().pub("openWB/set/general/grid_protection_active",
                                   self.data.grid_protection_active)
                         log.info("Netzschutz aktiv! Frequenz: " +
-                                 str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
+                                 str(data.data.counter_data[evu_counter].data.get.frequency)+"Hz")
                     if 5180 < frequency < 5300:
                         self.data.grid_protection_random_stop = 0
                         self.data.grid_protection_timestamp = None
@@ -194,14 +203,14 @@ class General:
                         Pub().pub("openWB/set/general/grid_protection_active",
                                   self.data.grid_protection_active)
                         log.info("Netzschutz aktiv! Frequenz: " +
-                                 str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
+                                 str(data.data.counter_data[evu_counter].data.get.frequency)+"Hz")
                 else:
                     if 4962 < frequency < 5100:
                         self.data.grid_protection_active = False
                         Pub().pub("openWB/set/general/grid_protection_active",
                                   self.data.grid_protection_active)
                         log.info("Netzfrequenz wieder im normalen Bereich. Frequenz: " +
-                                 str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
+                                 str(data.data.counter_data[evu_counter].data.get.frequency)+"Hz")
                         Pub().pub(
                             "openWB/set/general/grid_protection_timestamp", None)
                         Pub().pub(
