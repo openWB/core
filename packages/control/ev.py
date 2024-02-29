@@ -261,7 +261,8 @@ class Ev:
                     max_phases_hw,
                     phase_switch_supported)
                 if plan_data:
-                    control_parameter.current_plan = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].name
+                    plans = self.charge_template.data.chargemode.scheduled_charging.plans
+                    control_parameter.current_plan = plans[plan_data.num].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
                     if (self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].limit.
                             selected == "amount" and
