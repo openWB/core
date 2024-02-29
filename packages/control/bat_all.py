@@ -98,7 +98,7 @@ class BatAll:
                 power = 0
                 soc_sum = 0
                 soc_count = 0
-                self.data.get.fault_str = NO_ERROR
+                fault_state = 0
                 for battery in data.data.bat_data.values():
                     try:
                         if battery.data.get.fault_state < 2:
@@ -107,12 +107,20 @@ class BatAll:
                             exported += battery.data.get.exported
                             soc_sum += battery.data.get.soc
                             soc_count += 1
+                        else:
+                            if fault_state < battery.data.get.fault_state:
+                                fault_state = battery.data.get.fault_state
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
-                self.data.get.fault_state = 0
+                if fault_state == 0:
+                    self.data.get.imported = imported
+                    self.data.get.exported = exported
+                    self.data.get.fault_state = 0
+                    self.data.get.fault_str = NO_ERROR
+                else:
+                    self.data.get.fault_state = fault_state
+                    self.data.get.fault_str = "Bitte die Statusmeldungen der Speicher prüfen."
                 self.data.get.power = power
-                self.data.get.imported = imported
-                self.data.get.exported = exported
                 try:
                     self.data.get.soc = int(soc_sum / soc_count)
                 except ZeroDivisionError:

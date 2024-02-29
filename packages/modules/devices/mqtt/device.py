@@ -42,6 +42,7 @@ class Device(AbstractDevice):
                             ] = (self.COMPONENT_TYPE_TO_CLASS[component_type](component_config))
 
     def update(self) -> None:
+        return
         if self.components:
             with MultiComponentUpdateContext(self.components):
                 log.debug("MQTT-Module müssen nicht ausgelesen werden.")

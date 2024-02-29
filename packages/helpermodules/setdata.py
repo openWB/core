@@ -636,6 +636,10 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/power" in msg.topic:
                 self._validate_value(msg, float)
+            elif "openWB/set/pv/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/pv/get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
             elif "/config/max_ac_out" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
