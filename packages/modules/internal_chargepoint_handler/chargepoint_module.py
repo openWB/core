@@ -113,6 +113,8 @@ class ChargepointModule(AbstractChargepoint):
                 msg = ("Anhaltender Fehler beim Auslesen von EVSE und/oder Zähler. " +
                        "Lade- und Stecker-Status werden zurückgesetzt.")
                 chargepoint_state = ChargepointState()
+                chargepoint_state.plug_state = False
+                chargepoint_state.charge_state = False
                 chargepoint_state.imported = self.old_chargepoint_state.imported
                 chargepoint_state.exported = self.old_chargepoint_state.exported
                 store_state(chargepoint_state)
