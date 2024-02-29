@@ -3,12 +3,15 @@
 import logging
 import os
 import subprocess
+import threading
 import time
 from pathlib import Path
+from typing import Optional
 
 
 from helpermodules import pub
 from control import data
+from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
 log = logging.getLogger(__name__)
 
@@ -17,9 +20,9 @@ class System:
     def __init__(self):
         """
         """
-        self.data = {}
-        self.data["update_in_progress"] = False
-        self.data["perform_update"] = False
+        self.data = {"update_in_progress": False,
+                     "perform_update": False}
+        self.backup_cloud: Optional[ConfigurableBackupCloud] = None
 
     def perform_update(self):
         """ markiert ein aktives Update, triggert das Update auf dem Master und den externen WBs.
@@ -72,3 +75,32 @@ class System:
         if new_ip != self.data["ip_address"] and new_ip != "":
             self.data["ip_address"] = new_ip
             pub.Pub().pub("openWB/set/system/ip_address", new_ip)
+
+    def create_backup_and_send_to_cloud(self):
+        def create():
+            try:
+                if self.backup_cloud is not None:
+                    backup_filename = self.create_backup()
+                    with open(self._get_parent_file()/'data'/'backup'/backup_filename, 'rb') as f:
+                        data = f.read()
+                    self.backup_cloud.update(backup_filename, data)
+                    log.debug('Nächtliche Sicherung erstellt und hochgeladen.')
+            except Exception as e:
+                raise e
+
+        for thread in threading.enumerate():
+            if thread.name == "cloud backup":
+                log.debug("Don't start multiple instances of cloud backup thread.")
+                return
+        threading.Thread(target=create, args=(), name="cloud backup").start()
+
+    def create_backup(self) -> str:
+        result = subprocess.run([str(self._get_parent_file() / "runs" / "backup.sh"), "1"], stdout=subprocess.PIPE)
+        if result.returncode == 0:
+            file_name = result.stdout.decode("utf-8").rstrip('\n')
+            return file_name
+        else:
+            raise Exception(f'Backup-Status: {result.returncode}, Meldung: {result.stdout.decode("utf-8")}')
+
+    def _get_parent_file(self) -> Path:
+        return Path(__file__).resolve().parents[2]

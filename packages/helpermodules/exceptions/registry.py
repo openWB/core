@@ -1,7 +1,7 @@
 import sys
 from typing import Type, Optional, Callable, TypeVar, Generic, List, Union, Any
 
-from modules.common import fault_state
+from modules.common.fault_state_level import FaultStateLevel
 
 T = TypeVar("T", bound=Exception)
 
@@ -22,16 +22,14 @@ class RegistryEntry(Generic[T]):
 class ExceptionRegistry:
     registry = []  # type: List[RegistryEntry]
 
-    def translate_exception(self, exception: Exception) -> "fault_state.FaultState":
+    def translate_exception(self, exception: Exception) -> [str, FaultStateLevel]:
         entry = self.find_registry_entry(exception)
         if entry is None:
-            return fault_state.FaultState.error("{} {}".format(type(exception), exception))
+            return "{} {}".format(type(exception), exception.args), FaultStateLevel.ERROR
         if isinstance(entry.handler, str):
-            return fault_state.FaultState.error(entry.handler)
+            return entry.handler, FaultStateLevel.ERROR
         result = entry.handler(exception)
-        if isinstance(result, fault_state.FaultState):
-            return result
-        return fault_state.FaultState.error(str(result))
+        return result, FaultStateLevel.ERROR
 
     def find_registry_entry(self, exception: Exception) -> Optional[RegistryEntry]:
         score = sys.maxsize

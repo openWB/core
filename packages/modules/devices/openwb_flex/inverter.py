@@ -5,12 +5,12 @@ from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.openwb_flex.config import PvKitFlexSetup
-from modules.devices.openwb_flex.versions import kit_counter_inverter_version_factory
+from modules.devices.openwb_flex.versions import kit_inverter_version_factory
 
 
 class PvKitFlex:
@@ -20,14 +20,14 @@ class PvKitFlex:
                  tcp_client: modbus.ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(PvKitFlexSetup, component_config)
-        factory = kit_counter_inverter_version_factory(
+        factory = kit_inverter_version_factory(
             self.component_config.configuration.version)
         self.__client = factory(self.component_config.configuration.id, tcp_client)
         self.__tcp_client = tcp_client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.simulation = {}
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
         """ liest die Werte des Moduls aus.

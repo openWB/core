@@ -10,6 +10,9 @@ SELECTEDTAG=$2
 echo "#### running update ####" >"$LOGFILE"
 
 {
+	# notify system about running update
+	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'true'
+
 	# fetch new release from GitHub
 	echo "#### 1. fetching latest data from '$GITREMOTE' ####"
 	git -C "$OPENWBBASEDIR" fetch -v "$GITREMOTE" && echo "#### done"
@@ -29,6 +32,12 @@ echo "#### running update ####" >"$LOGFILE"
 		echo "#### no tag or default selected, resetting to latest revision"
 	fi
 	git -C "$OPENWBBASEDIR" reset --hard "$resetTarget" && echo "#### done"
+
+	# notify system
+	# set boot_done first to prevent flickering in gui
+	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
+	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
+	sleep 1
 
 	# now reboot system
 	echo "#### 4. rebooting system ####"

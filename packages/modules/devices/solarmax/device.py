@@ -1,61 +1,44 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Optional, List, Union
+from typing import Iterable, Optional, List, Union
 
-from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
-from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
+from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.solarmax import inverter
-from modules.devices.solarmax.config import Solarmax, SolarmaxConfiguration
+from modules.devices.solarmax.bat import SolarmaxBat
+from modules.devices.solarmax.config import Solarmax, SolarmaxBatSetup, SolarmaxConfiguration, SolarmaxInverterSetup
 
 log = logging.getLogger(__name__)
 
 
-class Device(AbstractDevice):
-    COMPONENT_TYPE_TO_CLASS = {
-        "inverter": inverter.SolarmaxInverter
-    }
+def create_device(device_config: Solarmax):
+    def create_bat_component(component_config: SolarmaxBatSetup):
+        return SolarmaxBat(device_config.id, component_config)
 
-    def __init__(self, device_config: Union[Dict, Solarmax]) -> None:
-        self.components = {}
-        try:
-            self.device_config = dataclass_from_dict(Solarmax, device_config)
-            self.client = modbus.ModbusTcpClient_(self.device_config.configuration.ip_address, 502)
-        except Exception:
-            log.exception("Fehler im Modul "+self.device_config.name)
+    def create_inverter_component(component_config: SolarmaxInverterSetup):
+        return inverter.SolarmaxInverter(device_config.id, component_config)
 
-    def add_component(self, component_config: dict) -> None:
-        if isinstance(component_config, Dict):
-            component_type = component_config["type"]
-        else:
-            component_type = component_config.type
-        component_config = dataclass_from_dict(COMPONENT_TYPE_TO_MODULE[
-            component_type].component_descriptor.configuration_factory, component_config)
-        if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self.components["component"+str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config.id,
-                component_config, self.client,
-                self.device_config.configuration.modbus_id))
-        else:
-            raise Exception(
-                "illegal component type " + component_type + ". Allowed values: " +
-                ','.join(self.COMPONENT_TYPE_TO_CLASS.keys())
-            )
+    def update_components(components: Iterable[Union[SolarmaxBat, inverter.SolarmaxInverter]]):
+        with client as c:
+            for component in components:
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update(c)
 
-    def update(self) -> None:
-        log.debug("Start device reading " + str(self.components))
-        if self.components:
-            for component in self.components:
-                # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                with SingleComponentUpdateContext(self.components[component].component_info):
-                    self.components[component].update()
-        else:
-            log.warning(
-                self.device_config.name +
-                ": Es konnten keine Werte gelesen werden, da noch keine oder zu viele Komponenten konfiguriert wurden."
-            )
+    try:
+        client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, 502)
+    except Exception:
+        log.exception("Fehler in create_device")
+    return ConfigurableDevice(
+        device_config=device_config,
+        component_factory=ComponentFactoryByType(
+            bat=create_bat_component,
+            inverter=create_inverter_component,
+        ),
+        component_updater=MultiComponentUpdater(update_components)
+    )
 
 
 COMPONENT_TYPE_TO_MODULE = {
@@ -64,7 +47,7 @@ COMPONENT_TYPE_TO_MODULE = {
 
 
 def read_legacy(component_type: str, ip_address: str, num: Optional[int] = None) -> None:
-    dev = Device(Solarmax(configuration=SolarmaxConfiguration(ip_address=ip_address)))
+    dev = create_device(Solarmax(configuration=SolarmaxConfiguration(ip_address=ip_address)))
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
     else:

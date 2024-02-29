@@ -18,9 +18,9 @@ Keine Gewährleistung für die Software - use at your own RISK!
 
 ## Wofür?
 
-Steuerung einer EVSE DIN oder anderer Ladepunkte für sofortiges laden, Überwachung der Ladung, PV Überschussladung und Lastmanagement mehrerer WB.
+Steuerung einer EVSE DIN oder anderer Ladepunkte für sofortiges laden, Überwachung der Ladung, PV Überschussladung und Lastmanagement mehrerer Wallboxen.
 
-Unterstützt wird jedes EV das den AC Ladestandard unterstützt.
+Unterstützt wird jedes Fahrzeug, das den AC Ladestandard unterstützt.
 
 ## Bezug
 
@@ -28,13 +28,15 @@ openWB gibt es unter <https://openwb.de/shop/>.
 
 ## Installation
 
-Bei fertigen openWB bereits vorinstalliert.
+Bei fertig erworbenen openWB ist die Software bereits vorinstalliert.
 
 Software:
 
-- Installiertes Raspberry Pi OS auf einem Raspberry Pi 3b+ oder besser.
-- Raspberry Pi OS Lite installieren. Aktuell werden in der Version 1.99 nur Bullseye (bevorzugt) und Buster unterstützt.
-<http://downloads.raspberrypi.org/raspios_lite_armhf/images/>
+- Installiertes Raspberry Pi OS auf einem Raspberry Pi 3b oder besser.
+- Raspberry Pi OS Lite installieren. Aktuell wird in der Version 2.1 nur **Debian 11 "Bullseye"** (derzeit "oldstable") unterstützt.
+<https://downloads.raspberrypi.org/raspios_oldstable_lite_armhf/>
+- alternativ kann auch ein x86_64 System (Hardware oder als VM) mit installiertem **Debian 11 "Bullseye"** als Basis verwendet werden.
+- Eine Installation unter **Debian 12 "Bookworm"** wird noch nicht unterstützt!
 
 In der Shell folgendes eingeben:
 

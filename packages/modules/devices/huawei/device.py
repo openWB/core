@@ -1,119 +1,67 @@
 #!/usr/bin/env python3
 import logging
 import time
-from typing import Dict, Union, List
+from typing import Iterable, Union
 
-from dataclass_utils import dataclass_from_dict
-from helpermodules.cli import run_using_positional_cli_args
-from modules.common import modbus
-from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
+from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.huawei import bat
-from modules.devices.huawei import counter
-from modules.devices.huawei import inverter
+from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
+from modules.common.modbus import ModbusDataType, ModbusTcpClient_
+from modules.devices.huawei.bat import HuaweiBat
 from modules.devices.huawei.config import Huawei, HuaweiBatSetup, HuaweiCounterSetup, HuaweiInverterSetup
+from modules.devices.huawei.counter import HuaweiCounter
+from modules.devices.huawei.inverter import HuaweiInverter
 
 log = logging.getLogger(__name__)
 
 
-huawei_component_classes = Union[bat.HuaweiBat, counter.HuaweiCounter, inverter.HuaweiInverter]
+def create_device(device_config: Huawei):
+    def create_bat_component(component_config: HuaweiBatSetup):
+        return HuaweiBat(device_config.id, component_config)
 
+    def create_counter_component(component_config: HuaweiCounterSetup):
+        return HuaweiCounter(device_config.id, component_config)
 
-class Device(AbstractDevice):
-    COMPONENT_TYPE_TO_CLASS = {
-        "bat": bat.HuaweiBat,
-        "counter": counter.HuaweiCounter,
-        "inverter": inverter.HuaweiInverter
-    }
+    def create_inverter_component(component_config: HuaweiInverterSetup):
+        return HuaweiInverter(device_config.id, component_config)
 
-    def __init__(self, device_config: Union[Dict, Huawei]) -> None:
-        self.components = {}  # type: Dict[str, huawei_component_classes]
-        try:
-            self.device_config = dataclass_from_dict(Huawei, device_config)
-            ip_address = self.device_config.configuration.ip_address
-            self.client = modbus.ModbusTcpClient_(ip_address, 502)
-            self.client.delegate.connect()
-            time.sleep(7)
-        except Exception:
-            log.exception("Fehler im Modul "+self.device_config.name)
+    def update_components(components: Iterable[Union[HuaweiBat, HuaweiCounter, HuaweiInverter]]):
+        with client as c:
+            modbus_id = device_config.configuration.modbus_id
+            regs = c.read_holding_registers(32064, [ModbusDataType.INT_32]*5701, unit=modbus_id)
+            counter_currents_reg = regs[5043:5045]  # INT 32, 37107-9
+            counter_power_reg = regs[5049]  # INT32, 37113
+            bat_power_reg = regs[-1]  # INT32, 37765
+            inverter_power_reg = regs[0]  # INT32 32064
+            # Huawei darf nur mit Regelintervall sehr langsam betrieben werden, daher kann hier eine längere Pause
+            # eingelegt werden. Ob auch eine kürzere ausreichend ist, ist nicht getestet.
+            time.sleep(5)
+            bat_soc_reg = c.read_holding_registers(37760, ModbusDataType.INT_16, unit=modbus_id)  # Int 16 37760
 
-    def add_component(self, component_config: Union[Dict,
-                                                    HuaweiBatSetup,
-                                                    HuaweiCounterSetup,
-                                                    HuaweiInverterSetup]) -> None:
-        if isinstance(component_config, Dict):
-            component_type = component_config["type"]
-        else:
-            component_type = component_config.type
-        component_config = dataclass_from_dict(COMPONENT_TYPE_TO_MODULE[
-            component_type].component_descriptor.configuration_factory, component_config)
-        if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self.components["component"+str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config.id,
-                component_config, self.client,
-                self.device_config.configuration.modbus_id))
-        else:
-            raise Exception(
-                "illegal component type " + component_type + ". Allowed values: " +
-                ','.join(self.COMPONENT_TYPE_TO_CLASS.keys())
-            )
+            for component in components:
+                with SingleComponentUpdateContext(component.fault_state):
+                    if isinstance(component, HuaweiBat):
+                        component.update(bat_power_reg, bat_soc_reg)
+                    elif isinstance(component, HuaweiCounter):
+                        component.update(counter_currents_reg, counter_power_reg)
+                    elif isinstance(component, HuaweiInverter):
+                        component.update(inverter_power_reg)
 
-    def update(self) -> None:
-        log.debug("Start device reading " + str(self.components))
-        if self.components:
-            for component in self.components:
-                # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                with SingleComponentUpdateContext(self.components[component].component_info):
-                    self.components[component].update()
-        else:
-            log.warning(
-                self.device_config.name +
-                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
-            )
-
-
-COMPONENT_TYPE_TO_MODULE = {
-    "bat": bat,
-    "counter": counter,
-    "inverter": inverter
-}
-
-
-def read_legacy(ip_address: str, modbus_id: int, read_counter: str = "False", read_battery: str = "False") -> None:
-    components_to_read = ["inverter"]
-    if read_counter.lower() == "true":
-        components_to_read.append("counter")
-    if read_battery.lower() == "true":
-        components_to_read.append("bat")
-    log.debug("components to read: " + str(components_to_read))
-
-    device_config = Huawei()
-    device_config.configuration.ip_address = ip_address
-    device_config.configuration.modbus_id = modbus_id
-    dev = Device(device_config)
-    for component_type in components_to_read:
-        if component_type in COMPONENT_TYPE_TO_MODULE:
-            component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
-        else:
-            raise Exception(
-                "illegal component type " + component_type + ". Allowed values: " +
-                ','.join(COMPONENT_TYPE_TO_MODULE.keys())
-            )
-        if component_type == "counter" or component_type == "bat":
-            num = None
-        else:
-            num = 1
-        component_config.id = num
-        dev.add_component(component_config)
-
-    log.debug('Huawei IP-Adresse: ' + ip_address)
-    log.debug('Huawei Modbus-ID: ' + str(modbus_id))
-
-    dev.update()
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(read_legacy, argv)
+    try:
+        client = ModbusTcpClient_(device_config.configuration.ip_address, 502)
+        client.delegate.connect()
+        time.sleep(7)
+    except Exception:
+        log.exception("Fehler in create_device")
+    return ConfigurableDevice(
+        device_config=device_config,
+        component_factory=ComponentFactoryByType(
+            bat=create_bat_component,
+            counter=create_counter_component,
+            inverter=create_inverter_component,
+        ),
+        component_updater=MultiComponentUpdater(update_components)
+    )
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Huawei)

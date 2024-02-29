@@ -4,6 +4,7 @@ import logging
 from typing import Union
 import asyncio
 import json
+from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
 from modules.vehicles.smarteq.config import SmartEQ
 # import requests
@@ -20,14 +21,15 @@ date_fmt = '%Y-%m-%d %H:%M:%S'
 # refreshToken_exp_days = 7    # 7 days before refreshToken expires a new refreshToken shall be stored
 initialToken = '1.2.3'
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 # Constants
 BASE_URL = "https://id.mercedes-benz.com"
 OAUTH_URL = BASE_URL + "/as/authorization.oauth2"
 LOGIN_URL = BASE_URL + "/ciam/auth/login"
 TOKEN_URL = BASE_URL + "/as/token.oauth2"
-STATUS_URL = "https://oneapp.microservice.smart.com"
+# STATUS_URL = "https://oneapp.microservice.smart.com"
+STATUS_URL = "https://oneapp.microservice.smart.mercedes-benz.com"
 REDIRECT_URI = STATUS_URL
 SCOPE = "openid+profile+email+phone+ciam-uid+offline_access"
 CLIENT_ID = "70d89501-938c-4bec-82d0-6abb550b0825"
@@ -35,6 +37,8 @@ GUID = "280C6B55-F179-4428-88B6-E0CCF5C22A7C"
 ACCEPT_LANGUAGE = "de-de"
 
 TOKENS_REFRESH_THRESHOLD = 3600
+SSL_VERIFY_AUTH = True
+SSL_VERIFY_STATUS = True
 
 
 # helper functions
@@ -57,7 +61,7 @@ def nested_key_exists(element: dict, *keys: str) -> bool:
 class Api:
 
     def __init__(self, vehicle: int):
-        self.log = logging.getLogger("soc."+__name__)
+        self.log = logging.getLogger(__name__)
         self.storeFile = str(RAMDISK_PATH) + '/soc_smarteq_store_vh_' + str(vehicle)
         # LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
         # logging.basicConfig(level=LOGLEVEL)
@@ -105,10 +109,10 @@ class Api:
         pickle.dump(self.store, tf)
         tf.close()
         try:
-            os.chmod(self.storeFile, 0o777)
+            os.chmod(self.storeFile, 0o666)
         except Exception:
             log.exception("chmod_store")
-            os.system("sudo chmod 0777 " + self.storeFile)
+            os.system("sudo chmod 0666 " + self.storeFile)
 
     # ===== get resume string ======
     def get_resume(self) -> str:
@@ -126,8 +130,7 @@ class Api:
         }
 
         try:
-            response = self.session.get(url, headers=headers)
-
+            response = self.session.get(url, headers=headers, verify=SSL_VERIFY_AUTH)
             soup = bs4.BeautifulSoup(response.text, 'html.parser')
 
             for cd in soup.findAll(text=True):
@@ -160,7 +163,7 @@ class Api:
                            'rememberMe': 'true'})
 
         try:
-            response = self.session.post(url, headers=headers, data=data)
+            response = self.session.post(url, headers=headers, data=data, verify=SSL_VERIFY_AUTH)
             self.log.debug("login: status_code = " + str(response.status_code))
             if response.status_code >= 400:
                 self.log.error("login: failed, status_code = " + str(response.status_code) +
@@ -190,7 +193,7 @@ class Api:
         data = json.dumps({'token': self.token})
 
         try:
-            response = self.session.post(url, headers=headers, data=data)
+            response = self.session.post(url, headers=headers, data=data, verify=SSL_VERIFY_AUTH)
             code = response.url.split('?')[1].split('=')[1]
             self.log.debug("get_code: code=" + code)
         except Exception:
@@ -220,8 +223,7 @@ class Api:
                "&redirect_uri=" + REDIRECT_URI + "&client_id=" + CLIENT_ID
 
         try:
-            response = self.session.post(url, headers=headers, data=data)
-
+            response = self.session.post(url, headers=headers, data=data, verify=SSL_VERIFY_AUTH)
             Tokens = json.loads(response.text)
             if not Tokens['access_token']:
                 self.log.warn("get_tokens: no access_token found")
@@ -250,7 +252,7 @@ class Api:
             response = self.session.post(url,
                                          headers=headers,
                                          data=data,
-                                         verify=True,
+                                         verify=SSL_VERIFY_AUTH,
                                          allow_redirects=False,
                                          timeout=(30, 30))
 
@@ -324,7 +326,7 @@ class Api:
         }
 
         try:
-            response = self.session.get(url, headers=headers)
+            response = self.session.get(url, headers=headers, verify=SSL_VERIFY_STATUS)
             res = json.loads(response.text)
             res_json = json.dumps(res, indent=4)
             if (nested_key_exists(res, 'precond', 'data', 'soc', 'value') and
@@ -422,7 +424,7 @@ class Api:
         return soc, range
 
 
-def fetch_soc(conf: SmartEQ, vehicle: int) -> Union[int, float]:
+def fetch_soc(conf: SmartEQ, vehicle: int) -> CarState:
 
     # prepare and call async method
     loop = asyncio.new_event_loop()
@@ -432,4 +434,4 @@ def fetch_soc(conf: SmartEQ, vehicle: int) -> Union[int, float]:
     a = Api(vehicle)
     soc, range = loop.run_until_complete(a._fetch_soc(conf, vehicle))
 
-    return soc, range
+    return CarState(soc, range)

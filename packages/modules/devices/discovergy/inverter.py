@@ -1,21 +1,26 @@
-from modules.common.component_state import InverterState, CounterState
+from requests import Session
+
+from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
-from modules.devices.discovergy.utils import DiscovergyComponent
+from modules.devices.discovergy import api
 from modules.devices.discovergy.config import DiscovergyInverterSetup
 
 
-def create_component(component_config: DiscovergyInverterSetup):
-    store = get_inverter_value_store(component_config.id)
+class DiscovergyInverter:
+    def __init__(self, component_config: DiscovergyInverterSetup) -> None:
+        self.component_config = component_config
+        self.store = get_inverter_value_store(self.component_config.id)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def persister(reading: CounterState):
-        store.set(InverterState(
+    def update(self, session: Session):
+        reading = api.get_last_reading(session, self.component_config.configuration.meter_id)
+        self.store.set(InverterState(
             exported=reading.exported,
             power=reading.power,
             currents=reading.currents
         ))
-
-    return DiscovergyComponent(component_config, persister)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=DiscovergyInverterSetup)

@@ -5,7 +5,7 @@ def empty_dict_factory() -> Dict:
     return {}
 
 
-def emtpy_list_factory() -> List:
+def empty_list_factory() -> List:
     return []
 
 

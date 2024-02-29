@@ -7,12 +7,16 @@ from modules.common.component_setup import ComponentSetup
 
 class MeterLocation(Enum):
     # 0...grid interconnection point (primary meter)
+    # positive power is consumption, negative is feed in
     grid = 0
     # 1...load (primary meter)
+    # negative power is consumption, positive is production!
     load = 1
     # 3...external generator (secondary meters)(multiple)
+    # negative power is consumption, positive is production!
     external = 3
     # 256-511 subloads (secondary meters)(unique)
+    # negative power is consumption, positive us production!
     subload = 256
 
     @classmethod
@@ -92,3 +96,17 @@ class FroniusInverterSetup(ComponentSetup[FroniusInverterConfiguration]):
                  id: int = 0,
                  configuration: FroniusInverterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or FroniusInverterConfiguration())
+
+
+class FroniusSecondaryInverterConfiguration:
+    def __init__(self, id: int = 1):
+        self.id = id
+
+
+class FroniusSecondaryInverterSetup(ComponentSetup[FroniusSecondaryInverterConfiguration]):
+    def __init__(self,
+                 name: str = "Sekundärer Wechselrichter",
+                 type: str = "inverter_secondary",
+                 id: int = 0,
+                 configuration: FroniusSecondaryInverterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or FroniusSecondaryInverterConfiguration())

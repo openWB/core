@@ -15,8 +15,6 @@ from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder
 from urllib3.util import parse_url
 
-from modules.common.fault_state import FaultState
-
 log = logging.getLogger(__name__)
 
 
@@ -41,6 +39,11 @@ class ModbusDataType(Enum):
 _MODBUS_HOLDING_REGISTER_SIZE = 16
 Number = Union[int, float]
 
+NO_CONNECTION = ("Modbus-Client konnte keine Verbindung zu {}:{} aufbauen. Bitte "
+                 "Einstellungen wie IP-Adresse, Ladepunkt-Typ, .. und Hardware-Anschluss prüfen.")
+NO_VALUES = ("TCP-Client {}:{} konnte keinen Wert abfragen. Falls vorhanden, parallele Verbindungen, zB. node red,"
+             "beenden und bei anhaltender Fehlermeldung Zähler neu starten.")
+
 
 class ModbusClient:
     def __init__(self, delegate: Union[ModbusSerialClient, ModbusTcpClient], address: str, port: int = 502):
@@ -49,7 +52,11 @@ class ModbusClient:
         self.port = port
 
     def __enter__(self):
-        self.delegate.__enter__()
+        try:
+            self.delegate.__enter__()
+        except pymodbus.exceptions.ConnectionException as e:
+            e.args += (NO_CONNECTION.format(self.address, self.port),)
+            raise e
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -60,8 +67,7 @@ class ModbusClient:
             log.debug("Close Modbus TCP connection")
             self.delegate.close()
         except Exception as e:
-            raise FaultState.error(__name__+" "+str(type(e))+" " +
-                                   str(e)) from e
+            raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
     def __read_registers(self, read_register_method: Callable,
                          address: int,
@@ -82,23 +88,19 @@ class ModbusClient:
             response = read_register_method(
                 address, number_of_addresses, **kwargs)
             if response.isError():
-                raise FaultState.error(__name__+" "+str(response))
+                raise Exception(__name__+" "+str(response))
             decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
             result = [struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint())) if t ==
                       ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in types]
             return result if multi_request else result[0]
         except pymodbus.exceptions.ConnectionException as e:
-            raise FaultState.error(
-                "TCP-Client konnte keine Verbindung zu " + str(self.address) + ":" + str(self.port) +
-                " aufbauen. Bitte Einstellungen (IP-Adresse, ..) und " + "Hardware-Anschluss prüfen.") from e
+            e.args += (NO_CONNECTION.format(self.address, self.port),)
+            raise e
         except pymodbus.exceptions.ModbusIOException as e:
-            raise FaultState.warning(
-                "TCP-Client " + str(self.address) + ":" + str(self.port) +
-                " konnte keinen Wert abfragen. Falls vorhanden, parallele Verbindungen, zB. node red," +
-                "beenden und bei anhaltender Fehlermeldung Zähler neu starten.") from e
+            e.args += (NO_VALUES.format(self.address, self.port),)
+            raise e
         except Exception as e:
-            raise FaultState.error(__name__+" "+str(type(e))+" " +
-                                   str(e)) from e
+            raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
     @overload
     def read_holding_registers(self, address: int, types: Iterable[ModbusDataType], byteorder: Endian = Endian.Big,
@@ -136,6 +138,29 @@ class ModbusClient:
                              wordorder: Endian = Endian.Big,
                              **kwargs):
         return self.__read_registers(self.delegate.read_input_registers, address, types, byteorder, wordorder, **kwargs)
+
+    @overload
+    def read_coils(self, address: int, types: Iterable[ModbusDataType], byteorder: Endian = Endian.Big,
+                   wordorder: Endian = Endian.Big,
+                   **kwargs) -> List[bool]:
+        pass
+
+    @overload
+    def read_coils(self, address: int, count: int, **kwargs) -> bool:
+        pass
+
+    def read_coils(self, address: int, count: int, **kwargs):
+        try:
+            response = self.delegate.read_coils(address, count, **kwargs)
+            if response.isError():
+                raise Exception(__name__+" "+str(response))
+            return response.bits[0] if count == 1 else response.bits[:count]
+        except pymodbus.exceptions.ConnectionException as e:
+            e.args += (NO_CONNECTION.format(self.address, self.port),)
+            raise e
+        except pymodbus.exceptions.ModbusIOException as e:
+            e.args += (NO_VALUES.format(self.address, self.port),)
+            raise e
 
 
 class ModbusTcpClient_(ModbusClient):

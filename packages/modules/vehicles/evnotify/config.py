@@ -1,5 +1,8 @@
+from typing import Optional
+
+
 class EVNotifyConfiguration:
-    def __init__(self, id: int = 0, akey: str = "", token: str = ""):
+    def __init__(self, id: int = 0, akey: Optional[str] = None, token: Optional[str] = None):
         self.id = id
         self.akey = akey
         self.token = token

@@ -1,6 +1,6 @@
 **Wie kann man die eigene Entwicklungsumgebung konfigurieren um bestmöglich mitwirken zu können?**
 
-Bewährt hat sich VSCode <https://code.visualstudio.com/>, hinzu kommen noch ein paar Plugins. Am einfachsten direkt nach der Installation von VSCode in den Erweiterungen danach suchen und installieren:
+Bewährt hat sich VSCode [https://code.visualstudio.com/](https://code.visualstudio.com/), hinzu kommen noch ein paar Plugins. Am einfachsten direkt nach der Installation von VSCode in den Erweiterungen danach suchen und installieren:
 
 * GitHub - für die Codeverwaltung, erstellen von PRs & co
 * Flake8 (ich musste aus dem DropDown explizit das prerelease auswählen) - Überprüft die Code-Formatierung von Python direkt im Editor. Ist optional, wird beim Erstellen eines PRs aber im Repo überprüft und der PR geht im Zweifel zurück an euch.
@@ -11,7 +11,7 @@ Bewährt hat sich VSCode <https://code.visualstudio.com/>, hinzu kommen noch ein
 Genereller Ablauf, um eigene Änderungen beisteuern zu können:
 
 * Eigenen GitHub Account erstellen
-* openWB core Repository in den eigenen Account kopieren ("forken"), um eine editierbare Version zu erhalten: <https://github.com/openWB/core/fork>
+* openWB core Repository in den eigenen Account kopieren ("forken"), um eine editierbare Version zu erhalten: [https://github.com/openWB/core/fork](https://github.com/openWB/core/fork)
 * Gegen diese eigene Kopie kann nun gearbeitet werden. Hierzu in VSCode in der Kommandozeile oben git clone starten, auf die URL des eigenen Repo zeigen. Diese URL endet auf .git und findet sich in GitHub hinter dem Button Code.
 * Es empfiehlt sich unbedingt für Änderungen stets einen separaten Branch zu öffnen, um das nächste Mal nicht wieder die ganzen alten Änderungen mitzuschleifen. Links unten in VSCode auf den Namen des Branch (master) klicken und einen neuen erstellen.
 * Die Änderungen durchführen und testen.
@@ -23,7 +23,7 @@ Hört sich jetzt schlimmer an als es ist, wenn man den Prozess einmal durch hat,
 
 Einrichtung Remote Development:
 
-Hier gibt es eine kurze Übersicht: <https://www.raspberrypi.com/news/coding-on-raspberry-pi-remotely-with-visual-studio-code/>
+Hier gibt es eine kurze Übersicht: [https://www.raspberrypi.com/news/coding-on-raspberry-pi-remotely-with-visual-studio-code/](https://www.raspberrypi.com/news/coding-on-raspberry-pi-remotely-with-visual-studio-code/)
 
 *hier braucht es noch mehr Details, ggf. ein Screenshot?*
 
@@ -38,19 +38,19 @@ Um nun zu vermeiden, dass man dies unnötig häufig macht, empfiehlt es sich, un
 
 Fehler und Warnungen findet man im Tray von VSCode:
 
-<img src="VSCode-Tray-Flake8.png" width="80">
+![VSCode Tray Flake8](VSCode-Tray-Flake8.png)
 
 In der Ausgabe im Reiter Probleme:
 
-<img src="VSCode-Problems-Flake8.png" width="400">
+![VSCode Fehler Flake8](VSCode-Problems-Flake8.png)
 
 Und auch inline direkt im Editor:
 
-<img src="VSCode-Inline-Flake8.png" width="600">
+![VSCode inline Fehler Flake8](VSCode-Inline-Flake8.png)
 
 ## Bezeichnungen für eigene Variablen, Funktionen
 
-Bitte an die allgemeinen Namenskonventionen für Python halten: <https://realpython.com/python-pep8/#naming-conventions>
+Bitte an die allgemeinen Namenskonventionen für Python halten: [https://realpython.com/python-pep8/#naming-conventions](https://realpython.com/python-pep8/#naming-conventions)
 
 Die vorgeschlagene Erweiterung "Code Spell Checker" kann mit fast allen Varianten umgehen. Lediglich die empfohlenen Bezeichnung für eigene Pakete (packages) kann nicht geprüft werden, da nur Kleinbuchstaben genutzt und die zusammengesetzten Wörter nicht von einem Tippfehler unterschieden werden können.
 
@@ -61,4 +61,4 @@ Zu finden sind die Tests links im Navigationsbaum von VSCode. Bei der ersten Nut
 
 Um sich das Leben einfach zu machen, sollte man spätestens hier die Variante 'Remote-Development' wählen. Das stellt sicher, dass die notwendigen Module allesamt vorhanden sind.
 
-<img src="VSCode-PyTest.png" width="400">
+![VSCode PyTest](VSCode-PyTest.png)

@@ -8,7 +8,7 @@ class EvuKitConfiguration:
 
 class EvuKit:
     def __init__(self,
-                 name: str = "EVU-Kit",
+                 name: str = "openWB EVU-Kit",
                  type: str = "openwb_evu_kit",
                  id: int = 0,
                  configuration: EvuKitConfiguration = None) -> None:
@@ -25,7 +25,7 @@ class EvuKitBatConfiguration:
 
 class EvuKitBatSetup(ComponentSetup[EvuKitBatConfiguration]):
     def __init__(self,
-                 name: str = "Speicher-Zähler an EVU-Kit",
+                 name: str = "Speicher-Zähler an openWB EVU-Kit",
                  type: str = "bat",
                  id: int = 0,
                  configuration: EvuKitBatConfiguration = None) -> None:
@@ -39,7 +39,7 @@ class EvuKitCounterConfiguration:
 
 class EvuKitCounterSetup(ComponentSetup[EvuKitCounterConfiguration]):
     def __init__(self,
-                 name: str = "EVU-Kit",
+                 name: str = "openWB EVU-Kit",
                  type: str = "counter",
                  id: int = 0,
                  configuration: EvuKitCounterConfiguration = None) -> None:
@@ -53,7 +53,7 @@ class EvuKitInverterConfiguration:
 
 class EvuKitInverterSetup(ComponentSetup[EvuKitInverterConfiguration]):
     def __init__(self,
-                 name: str = "PV-Zähler an EVU-Kit",
+                 name: str = "PV-Zähler an openWB EVU-Kit",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: EvuKitInverterConfiguration = None) -> None:

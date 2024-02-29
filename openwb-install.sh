@@ -10,14 +10,8 @@ fi
 
 echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
-echo "tweaking apt configuration..."
-if [ -d "/etc/apt/apt.conf.d" ]; then
-	sudo cp "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/"
-	echo "done"
-else
-	echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
-fi
-"${OPENWBBASEDIR}/runs/install_packages.sh"
+# install packages by pre-downloading our script so we only have one file to maintain
+curl -s "https://raw.githubusercontent.com/openWB/core/master/runs/install_packages.sh" | bash -s
 
 echo "create group $OPENWB_GROUP"
 # Will do nothing if group already exists:
@@ -125,10 +119,15 @@ echo "installing openwb2 system service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
 systemctl daemon-reload
 systemctl enable openwb2
-systemctl start openwb2
 
-echo "installation finished, now running atreboot.sh..."
-"${OPENWBBASEDIR}/runs/atreboot.sh"
+echo "installing openwb2 remote support service..."
+cp "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" /etc/systemd/system/openwbRemoteSupport.service
+systemctl daemon-reload
+systemctl enable openwbRemoteSupport
+systemctl start openwbRemoteSupport
+
+echo "installation finished, now starting openwb2.service..."
+systemctl start openwb2
 
 echo "all done"
 echo "if you want to use this installation for development, add a password for user 'openwb'"

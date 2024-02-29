@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+	<base href="/openWB/web/">
+	<meta charset="UTF-8">
+	<link rel="shortcut icon" href="img/favicons/favicon.ico">
+	<link rel="stylesheet" type="text/css" href="style.css?ver=20230322">
+	<script>
+		window.addEventListener("load", () => {
+			// load scripts synchronous in order specified
+			var scriptsToLoad = [
+				// load mqtt library
+				'js/mqttws31.js',
+				// functions for processing messages
+				'processAllMqttMsg.js?ver=20231006',
+				// functions performing mqtt and start mqtt-service
+				'setupMqttServices.js?ver=20230926',
+			];
+
+			scriptsToLoad.forEach((src) => {
+				var script = document.createElement('script');
+				script.src = src;
+				script.async = false;
+				document.body.appendChild(script);
+			});
+		});
+	</script>
+</head>
+
+<body>
+	<div class="wrapper">
+		<div id="notReady">
+			<div id="logo">
+				<img src="img/openWB_logo_dark.png" />
+				<div id="progress">
+					<div id="progress-value"></div>
+				</div>
+			</div>
+			<p id="log">Lade Einstellungen...</p>
+			<div id="info">
+				<p id="secondary-mode" class="warning hide">
+					Der Steuerungsmodus dieser openWB ist auf "secondary" konfiguriert. Alle Einstellungen erfolgen über die
+					übergeordnete <a id="primary-link" href="">primary openWB</a>. Der Steuerungsmodus dieser openWB kann in den
+					<a href="settings/">Einstellungen</a> geändert werden.
+				</p>
+				<p id="boot" class="warning hide">
+					Der Startvorgang ist noch nicht abgeschlossen.
+				</p>
+				<p id="update" class="warning hide">
+					Es wird gerade ein Update ausgeführt.
+				</p>
+				<p id="general">
+					Bei Problemen mit der Startseite können Sie direkt die <a href="settings/">Einstellungen</a> öffnen.
+				</p>
+			</div>
+		</div>
+		<!-- <iframe id="themeTarget" src="about:blank" class="hide" /> -->
+	</div>
+</body>
+
+</html>

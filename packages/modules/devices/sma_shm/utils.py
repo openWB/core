@@ -2,7 +2,7 @@ import logging
 from typing import TypeVar, Generic, Callable, Optional, Union
 
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import ValueStore
 from modules.devices.sma_shm.config import SmaHomeManagerCounterSetup, SmaHomeManagerInverterSetup
 
@@ -26,12 +26,12 @@ class SpeedwireComponent(Generic[T]):
         self.store = value_store_factory(component_config.id)
         self.__parser = parser
         self.__serial_matcher = _create_serial_matcher(component_config.configuration.serials)
-        self.component_info = ComponentInfo.from_component_config(component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(component_config))
         self.component_config = component_config
 
     def read_datagram(self, datagram: dict) -> bool:
         if self.__serial_matcher(datagram):
-            with SingleComponentUpdateContext(self.component_info):
+            with SingleComponentUpdateContext(self.fault_state):
                 self.store.set(self.__parser(datagram))
             return True
         return False

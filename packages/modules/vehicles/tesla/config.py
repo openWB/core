@@ -1,7 +1,10 @@
+from typing import Optional
+
+
 class TeslaSocToken:
     def __init__(self,
-                 refresh_token: str = "",
-                 access_token: str = "",
+                 refresh_token: Optional[str] = None,
+                 access_token: Optional[str] = None,
                  expires_in: int = 0,
                  created_at: int = 0) -> None:
         self.refresh_token = refresh_token

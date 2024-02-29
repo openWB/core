@@ -5,7 +5,7 @@ from typing import Tuple, List
 from modules.common import modbus
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.modbus import ModbusDataType
 from modules.common.store import get_counter_value_store
@@ -22,7 +22,7 @@ def read_counter(client: modbus.ModbusTcpClient_) -> Tuple[int, List[int]]:
     log.debug("Beginning EVU update")
     # 40130,40131, 40132 je Phasenleistung in Watt
     # max 7 Leistungsmesser verbaut ab 40105, typ 1 ist evu
-    # Modbus dokumentation Leistungsmesser von #0 bis #6
+    # Modbus Dokumentation Leistungsmesser von #0 bis #6
     # bei den meisten e3dc auf 40128
     # farm haben typ 5, normale e3dc haben nur typ 1 und keinen typ 5
     # bei farm ist typ 1 vorhanden aber liefert immer 0
@@ -46,7 +46,7 @@ class E3dcCounter:
         self.component_config = component_config
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, client: modbus.ModbusTcpClient_) -> None:
         power, powers = read_counter(client)
