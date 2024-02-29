@@ -261,8 +261,7 @@ class Ev:
                     max_phases_hw,
                     phase_switch_supported)
                 if plan_data:
-                    plans = self.charge_template.data.chargemode.scheduled_charging.plans
-                    control_parameter.current_plan = plans[plan_data.num].name
+                    name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
                     if (self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].limit.
                             selected == "amount" and
@@ -270,11 +269,13 @@ class Ev:
                         control_parameter.imported_at_plan_start = imported
                     # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
                     # Zielladen kannn nicht genauer arbeiten, als das Abfrageintervall vom SoC.
-                    if (self.soc_module and self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].
-                           limit.selected == "soc"):
+                    if (self.soc_module and 
+                            self.charge_template.data.chargemode.
+                            scheduled_charging.plans[plan_data.num].limit.selected == "soc"):
                         soc_request_intervall_offset = self.soc_module.general_config.request_interval_charging
                     else:
                         soc_request_intervall_offset = 0
+                    control_parameter.current_plan = name
                 else:
                     control_parameter.current_plan = None
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
