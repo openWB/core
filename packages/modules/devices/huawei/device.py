@@ -48,9 +48,7 @@ def create_device(device_config: Huawei):
                         component.update(inverter_power_reg)
 
     try:
-        client = ModbusTcpClient_(device_config.configuration.ip_address, 502)
-        client.delegate.connect()
-        time.sleep(7)
+        client = ModbusTcpClient_(device_config.configuration.ip_address, 502, sleep_after_connect=7)
     except Exception:
         log.exception("Fehler in create_device")
     return ConfigurableDevice(

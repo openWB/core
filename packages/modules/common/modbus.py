@@ -7,7 +7,8 @@ formatieren.
 import logging
 import struct
 from enum import Enum
-from typing import Callable, Iterable, Union, overload, List
+import time
+from typing import Callable, Iterable, Optional, Union, overload, List
 
 import pymodbus
 from pymodbus.client.sync import ModbusTcpClient, ModbusSerialClient
@@ -46,14 +47,21 @@ NO_VALUES = ("TCP-Client {}:{} konnte keinen Wert abfragen. Falls vorhanden, par
 
 
 class ModbusClient:
-    def __init__(self, delegate: Union[ModbusSerialClient, ModbusTcpClient], address: str, port: int = 502):
+    def __init__(self,
+                 delegate: Union[ModbusSerialClient, ModbusTcpClient],
+                 address: str, port: int = 502,
+                 sleep_after_connect: Optional[int] = None,
+                 sleep_before_reconnect: Optional[int] = None):
         self.delegate = delegate
         self.address = address
         self.port = port
+        self.sleep_after_connect = sleep_after_connect or 0
+        self.sleep_before_reconnect = sleep_before_reconnect or 0
 
     def __enter__(self):
         try:
             self.delegate.__enter__()
+            time.sleep(self.sleep_after_connect)
         except pymodbus.exceptions.ConnectionException as e:
             e.args += (NO_CONNECTION.format(self.address, self.port),)
             raise e
@@ -61,6 +69,7 @@ class ModbusClient:
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.delegate.__exit__(exc_type, exc_value, exc_traceback)
+        time.sleep(self.sleep_before_reconnect)
 
     def close_connection(self) -> None:
         try:
@@ -164,16 +173,25 @@ class ModbusClient:
 
 
 class ModbusTcpClient_(ModbusClient):
-    def __init__(self, address: str, port: int = 502):
+    def __init__(self,
+                 address: str,
+                 port: int = 502,
+                 sleep_after_connect: Optional[int] = None,
+                 sleep_before_reconnect: Optional[int] = None):
         parsed_url = parse_url(address)
         host = parsed_url.host
         if parsed_url.port is not None:
             port = parsed_url.port
-        super().__init__(ModbusTcpClient(host, port), address, port)
+        super().__init__(ModbusTcpClient(host, port), address, port, sleep_after_connect, sleep_before_reconnect)
 
 
 class ModbusSerialClient_(ModbusClient):
-    def __init__(self, port: int):
+    def __init__(self,
+                 port: int,
+                 sleep_after_connect: Optional[int] = None,
+                 sleep_before_reconnect: Optional[int] = None):
         super().__init__(ModbusSerialClient(method="rtu", port=port, baudrate=9600, stopbits=1, bytesize=8, timeout=1),
                          "Serial",
-                         port)
+                         port,
+                         sleep_after_connect,
+                         sleep_before_reconnect)
