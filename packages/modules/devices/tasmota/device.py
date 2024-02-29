@@ -45,7 +45,8 @@ class Device(AbstractDevice):
     def update(self) -> None:
         if self.components:
             for component in self.components:
-                with SingleComponentUpdateContext(self.components[component].component_info):
+                # with SingleComponentUpdateContext(self.components[component].component_info):
+                with SingleComponentUpdateContext(self.components[component].fault_state):
                     self.components[component].update()
         else:
             log.warning(

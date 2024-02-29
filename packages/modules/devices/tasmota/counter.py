@@ -6,7 +6,7 @@ from dataclass_utils import dataclass_from_dict
 from modules.devices.tasmota.config import TasmotaCounterSetup
 from modules.common.tasmota import Tasmota
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 
 log = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ class TasmotaCounter:
         self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
         self.__tasmota = Tasmota(self.__device_id, self.__ip_address, self.__phase)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
         log.debug("tasmota.counter.update: " + self.__ip_address)
