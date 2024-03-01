@@ -73,7 +73,7 @@ class Evse:
         else:
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird gesetzt.")
-            self.client.delegate.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
+            self.client.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
             # Zeit zum Verarbeiten geben
             time.sleep(1)
 
@@ -83,10 +83,10 @@ class Evse:
         if value & self.PRECISE_CURRENT_BIT:
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird zurueckgesetzt.")
-            self.client.delegate.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
+            self.client.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
         else:
             return
 
     def set_current(self, current: int) -> None:
         time.sleep(0.1)
-        self.client.delegate.write_registers(1000, current, unit=self.id)
+        self.client.write_registers(1000, current, unit=self.id)

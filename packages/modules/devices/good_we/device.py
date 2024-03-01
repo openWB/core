@@ -90,7 +90,7 @@ def read_legacy(component_type: str, ip_address: str, id: int, num: Optional[int
     log.debug('GoodWe ID: ' + str(id))
 
     dev.update()
-    dev.client.close_connection()
+    dev.client.close()
 
 
 def main(argv: List[str]):

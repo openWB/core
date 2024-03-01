@@ -26,9 +26,11 @@ def create_device(device_config: Huawei):
         return HuaweiInverter(device_config.id, component_config)
 
     def update_components(components: Iterable[Union[HuaweiBat, HuaweiCounter, HuaweiInverter]]):
-        with client as c:
+        if client.is_socket_open() is False:
+            client.connect()
+        try:
             modbus_id = device_config.configuration.modbus_id
-            regs = c.read_holding_registers(32064, [ModbusDataType.INT_32]*5701, unit=modbus_id)
+            regs = client.read_holding_registers(32064, [ModbusDataType.INT_32]*5701, unit=modbus_id)
             counter_currents_reg = regs[5043:5045]  # INT 32, 37107-9
             counter_power_reg = regs[5049]  # INT32, 37113
             bat_power_reg = regs[-1]  # INT32, 37765
@@ -36,7 +38,8 @@ def create_device(device_config: Huawei):
             # Huawei darf nur mit Regelintervall sehr langsam betrieben werden, daher kann hier eine längere Pause
             # eingelegt werden. Ob auch eine kürzere ausreichend ist, ist nicht getestet.
             time.sleep(5)
-            bat_soc_reg = c.read_holding_registers(37760, ModbusDataType.INT_16, unit=modbus_id)  # Int 16 37760
+            bat_soc_reg = client.read_holding_registers(
+                37760, ModbusDataType.INT_16, unit=modbus_id)  # Int 16 37760
 
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
@@ -46,6 +49,9 @@ def create_device(device_config: Huawei):
                         component.update(counter_currents_reg, counter_power_reg)
                     elif isinstance(component, HuaweiInverter):
                         component.update(inverter_power_reg)
+        except Exception as e:
+            client.close()
+            raise e
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address, 502, sleep_after_connect=7)

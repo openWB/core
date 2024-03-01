@@ -35,7 +35,7 @@ class Device(AbstractDevice):
             ip_address = self.device_config.configuration.ip_address
             self.port = 502
             self.client = modbus.ModbusTcpClient_(ip_address, 502)
-            self.client.delegate.connect()
+            self.client.connect()
         except Exception:
             log.exception("Fehler im Modul "+self.device_config.name)
 
