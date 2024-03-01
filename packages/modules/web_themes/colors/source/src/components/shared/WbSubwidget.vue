@@ -60,4 +60,5 @@ const widgetwidth = computed(() => {
 .widgetname {
 	font-weight: bold;
 }
+
 </style>
