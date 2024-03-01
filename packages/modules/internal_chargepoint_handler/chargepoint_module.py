@@ -112,13 +112,11 @@ class ChargepointModule(AbstractChargepoint):
             if self._client.read_error > 5:
                 msg = ("Anhaltender Fehler beim Auslesen von EVSE und/oder Zähler. " +
                        "Lade- und Stecker-Status werden zurückgesetzt.")
-                plug_state = False
-                charge_state = False
-                chargepoint_state = ChargepointState(
-                    plug_state=plug_state,
-                    charge_state=charge_state,
-                    phases_in_use=0
-                )
+                chargepoint_state = ChargepointState()
+                chargepoint_state.plug_state = False
+                chargepoint_state.charge_state = False
+                chargepoint_state.imported = self.old_chargepoint_state.imported
+                chargepoint_state.exported = self.old_chargepoint_state.exported
                 store_state(chargepoint_state)
                 e.args += (msg,)
                 raise e

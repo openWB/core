@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union
 from unittest.mock import Mock
 import pytest
-from control.conftest import hierarchy_hybrid, hierarchy_nested
+from packages.conftest import hierarchy_hybrid, hierarchy_nested
 from control.counter import Counter
 
 

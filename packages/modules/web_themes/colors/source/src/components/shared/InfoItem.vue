@@ -1,6 +1,6 @@
 <template>
 	<span
-		class="d-flex flex-column align-items-center justify-content-center me-1"
+		class="d-flex flex-column align-items-center justify-content-start infoitem"
 	>
 		<span class="d-flex heading" :style="headingstyle" :class="headingclass">
 			{{ props.heading }}

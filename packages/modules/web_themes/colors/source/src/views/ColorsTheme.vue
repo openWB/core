@@ -275,7 +275,7 @@ onMounted(() => {
 
 function haveFocus() {
 	if (document.hasFocus()) {
-	//	console.log('I have focus')
+		//	console.log('I have focus')
 		initGraph()
 	}
 	//msgInit()
@@ -285,7 +285,7 @@ function haveFocus() {
 		console.log('I lost focus')
 	}
 //	msgStop()
-} */ 
+} */
 </script>
 
 <style scoped>
