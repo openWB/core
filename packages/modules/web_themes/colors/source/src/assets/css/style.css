@@ -24,7 +24,12 @@ body>.container {
 /* No media query since this is the default in Bootstrap */
 html {
 	font-size: 12px;
+	.settingscolumn {
+		grid-column: span 12;
+	}
 }
+
+
 @media screen and (min-width: 240px) {
 	html {
 		font-size: 13px;
@@ -81,6 +86,9 @@ html {
 @media screen and (min-width: 992px) {
 	html {
 		font-size: 11px;
+		.settingscolumn {
+			grid-column: span 4;
+		}
 	}
 }
 /* Extra large devices (very large desktops, 1200px and up) */

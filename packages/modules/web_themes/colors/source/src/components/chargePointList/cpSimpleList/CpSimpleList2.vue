@@ -16,7 +16,7 @@
 		<div
 			v-for="(cp, index) in chargepointsToDisplay"
 			:key="index"
-			class="subgrid pb-2"
+			class="subgrid pb-2 "
 		>
 			<CpsListItem2 :chargepoint="cp" />
 		</div>
