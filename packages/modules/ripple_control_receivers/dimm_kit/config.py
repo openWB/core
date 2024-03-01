@@ -10,7 +10,7 @@ class IoLanRcrConfiguration:
 
 class IoLanRcr:
     def __init__(self,
-                 name: str = "Dimm-Kit",
+                 name: str = "openWB Dimm- & Control-Kit",
                  type: str = "dimm_kit",
                  configuration: IoLanRcrConfiguration = None) -> None:
         self.name = name

@@ -17,6 +17,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.hardware_check_context import SeriesHardwareCheckContext
 from modules.common.store import get_chargepoint_value_store
 from modules.common.component_state import ChargepointState
+from modules.common.version_by_telnet import get_version_by_telnet
 from modules.internal_chargepoint_handler.clients import EVSE_ID_CP0, EVSE_ID_ONE_BUS_CP1, ClientHandler
 
 log = logging.getLogger(__name__)
@@ -54,11 +55,8 @@ class ChargepointModule(AbstractChargepoint):
             self.fault_state)
 
     def _validate_version(self):
-        # telnetlib ist ab Python 3.11 deprecated
         try:
-            with telnetlib.Telnet(self.config.configuration.ip_address, 8898) as client:
-                answer = client.read_until(bytearray("openWB Satellit 2.0", 'utf-8'), 2)
-            parsed_answer = answer.decode("utf-8").split("\r\n")[-1]
+            parsed_answer = get_version_by_telnet("openWB Satellit 2.0", self.config.configuration.ip_address)
             for version in self.VALID_VERSIONS:
                 if version in parsed_answer:
                     self.version = True
