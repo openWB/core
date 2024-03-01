@@ -28,7 +28,7 @@
 				/>
 			</div>
 		</template>
-		<div class="subgrid infolist">
+		<div class="subgrid">
 			<InfoItem
 				:heading="chargepoint.vehicleName"
 				:small="true"

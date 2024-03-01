@@ -45,5 +45,5 @@ export default defineConfig({
       // used during production bundling
       plugins: [nodePolyfills()],
     },
-  },
+	},
 })

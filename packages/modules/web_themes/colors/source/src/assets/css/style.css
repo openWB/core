@@ -317,11 +317,23 @@ body>.container-fluid {
 .grid-col-12 {
 	grid-column: span 12;
 }
-.subgrid {
-	display:grid;
-	grid-column: 1 / 13; 
-	grid-template-columns: subgrid;
-	justify-content: top;
+
+@supports (grid-template-columns: subgrid) {
+	.subgrid {
+		display:grid;
+		grid-column: span 12; 
+		grid-template-columns: subgrid;
+		justify-content: top;
+	}
+}
+@supports not (grid-template-columns: subgrid) {
+	.subgrid {
+		display:grid;
+		grid-column: span 12; 
+		grid-template-columns: auto auto auto auto auto auto auto auto auto auto auto auto;
+		justify-content: top;
+		width: 100%;
+	}
 }
 .grid-left {
 	justify-self: start;

@@ -20,18 +20,16 @@
 				>
 			</div>
 		</template>
-		<div class="subgrid">
-			<div class="pricechart">
-				<figure id="pricechart" class="p-0 m-0">
-					<svg viewBox="0 0 400 280">
-						<g
-							:id="chartId"
-							:origin="draw"
-							:transform="'translate(' + margin.top + ',' + margin.right + ')'"
-						/>
-					</svg>
-				</figure>
-			</div>
+		<div class="grapharea">
+			<figure id="pricechart" class="p-0 m-0 pricefigure">
+				<svg viewBox="0 0 400 280">
+					<g
+						:id="chartId"
+						:origin="draw"
+						:transform="'translate(' + margin.top + ',' + margin.right + ')'"
+					/>
+				</svg>
+			</figure>
 		</div>
 	</WbWidgetFlex>
 </template>
@@ -180,36 +178,24 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.color-charging {
-	color: var(--color-charging);
-}
-
-.fa-circle-check {
-	color: var(--color-menu);
-}
-
-.settingsheader {
-	color: var(--color-charging);
-	font-size: 16px;
-	font-weight: bold;
-}
-
-.providername {
-	color: var(--color-axis);
-	font-size: 16px;
-}
-
 .pricebadge {
 	background-color: var(--color-charging);
 	font-weight: normal;
 }
-
 .providerbadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
 }
+.grapharea {
+	grid-column-start: 1;
+	grid-column-end: 13;
+	width: 100%;
+	object-fit: cover;
+	max-height: 100%;
 
-.pricechart {
-	grid-column: span 12;
+	justify-items: stretch;
+}
+.pricefigure {
+	justify-self: stretch;
 }
 </style>

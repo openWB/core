@@ -41,24 +41,35 @@
 					{{ chargedRangeString }}
 				</InfoItem>
 
-				<div
+				<InfoItem
 					v-if="props.chargepoint.power > 0"
-					class="subgrid m-1 p-0"
-					@click="configmode = !configmode"
+					heading="Leistung:"
+					class="grid-col-3 grid-left"
 				>
-					<InfoItem heading="Leistung:" class="grid-col-3 grid-left">
-						<FormatWatt :watt="props.chargepoint.power" />
-					</InfoItem>
-					<InfoItem heading="Strom:" class="grid-col-3">
-						{{ realChargeAmpereString }}
-					</InfoItem>
-					<InfoItem heading="Phasen:" class="grid-col-3">
-						{{ props.chargepoint.phasesInUse }}
-					</InfoItem>
-					<InfoItem heading="Sollstrom:" class="grid-col-3 grid-right">
-						<span class="targetCurrent">{{ chargeAmpereString }}</span>
-					</InfoItem>
-				</div>
+					<FormatWatt :watt="props.chargepoint.power" />
+				</InfoItem>
+				<InfoItem
+					v-if="props.chargepoint.power > 0"
+					heading="Strom:"
+					class="grid-col-3"
+				>
+					{{ realChargeAmpereString }}
+				</InfoItem>
+				<InfoItem
+					v-if="props.chargepoint.power > 0"
+					heading="Phasen:"
+					class="grid-col-3"
+				>
+					{{ props.chargepoint.phasesInUse }}
+				</InfoItem>
+				<InfoItem
+					v-if="props.chargepoint.power > 0"
+					heading="Sollstrom:"
+					class="grid-col-3 grid-right"
+				>
+					<span class="targetCurrent">{{ chargeAmpereString }}</span>
+				</InfoItem>
+
 				<!-- Chargemode buttons -->
 				<RadioBarInput
 					:id="'chargemode-' + chargepoint.name"
@@ -177,30 +188,41 @@
 						/>
 					</div>
 					<!-- ET Information -->
-					<div v-if="etData.active" class="subgrid">
-						<InfoItem heading="Preisladen:" class="grid-col-4 grid-left">
-							<SwitchInput v-model="cp.etActive" />
-						</InfoItem>
-						<InfoItem heading="max. Preis:" class="grid-col-4">
-							<span type="button" @click="editPrice = !editPrice"
-								>{{
-									props.chargepoint.etActive
-										? (
-												Math.round(props.chargepoint.etMaxPrice * 10) / 10
-										  ).toFixed(1) + ' ct'
-										: '-'
-								}}
+					<InfoItem
+						v-if="etData.active"
+						heading="Preisladen:"
+						class="grid-col-4 grid-left"
+					>
+						<SwitchInput v-model="cp.etActive" />
+					</InfoItem>
+					<InfoItem
+						v-if="etData.active"
+						heading="max. Preis:"
+						class="grid-col-4"
+					>
+						<span type="button" @click="editPrice = !editPrice"
+							>{{
+								props.chargepoint.etActive
+									? (
+											Math.round(props.chargepoint.etMaxPrice * 10) / 10
+									  ).toFixed(1) + ' ct'
+									: '-'
+							}}
 
-								<i
-									v-if="props.chargepoint.etActive"
-									class="fa-solid fa-sm fas fa-edit ms-2"
-								/>
-							</span>
-						</InfoItem>
-						<InfoItem heading="akt. Preis:" class="grid-col-4 grid-right">
-							<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
-						</InfoItem>
-					</div>
+							<i
+								v-if="props.chargepoint.etActive"
+								class="fa-solid fa-sm fas fa-edit ms-2"
+							/>
+						</span>
+					</InfoItem>
+					<InfoItem
+						v-if="etData.active"
+						heading="akt. Preis:"
+						class="grid-col-4 grid-right"
+					>
+						<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
+					</InfoItem>
+
 					<div
 						v-if="editPrice"
 						:id="'priceChartInline' + props.chargepoint.id"
@@ -429,5 +451,10 @@ const editPrice = ref(false)
 .chargemodes {
 	grid-column: 1 / 13;
 	justify-self: center;
+}
+.chargeinfo {
+	display: grid;
+	grid-template-columns: repeat(12, auto);
+	justify-content: space-between;
 }
 </style>

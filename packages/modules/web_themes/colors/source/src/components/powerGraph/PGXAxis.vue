@@ -76,7 +76,7 @@ const xAxisGeneratorMonth2 = computed(() =>
 	axisBottom<number>(xScaleMonth.value)
 		.ticks(4)
 		.tickSizeInner(ticksize.value)
-		.tickFormat(() =>''),
+		.tickFormat(() => ''),
 )
 
 const ticksize = computed(() => {

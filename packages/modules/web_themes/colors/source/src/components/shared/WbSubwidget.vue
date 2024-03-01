@@ -42,23 +42,45 @@ const widgetwidth = computed(() => {
 })
 </script>
 <style scoped>
-.wb-subwidget {
-	border-top: 0.5px solid var(--color-scale);
-	display: grid;
-	grid-template-columns: subgrid;
-	grid-column: 1 / 13;
+@supports (grid-template-columns: subgrid) {
+	.wb-subwidget {
+		border-top: 0.5px solid var(--color-scale);
+		display: grid;
+		grid-template-columns: subgrid;
+		grid-column: 1 / 13;
+	}
 }
+
+@supports not (grid-template-columns: subgrid) {
+	.wb-subwidget {
+		border-top: 0.5px solid var(--color-scale);
+		display: grid;
+		grid-template-columns: repeat(12, auto);
+		grid-column: 1 / 13;
+	}
+}
+
 .titlerow {
 	grid-column: 1 / 13;
 }
-.contentrow {
-	display: grid;
-	grid-template-columns: subgrid;
-	grid-column: 1 / 13;
-	align-items: top;
+
+@supports (grid-template-columns: subgrid) {
+	.contentrow {
+		display: grid;
+		grid-template-columns: subgrid;
+		grid-column: 1 / 13;
+		align-items: top;
+	}
 }
+@supports not (grid-template-columns: subgrid) {
+	.contentrow {
+		display: grid;
+		align-items: top;
+		grid-template-columns: repeat(12, auto);
+	}
+}
+
 .widgetname {
 	font-weight: bold;
 }
-
 </style>
