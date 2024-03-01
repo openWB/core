@@ -12,6 +12,8 @@
   * [Typische Anwendungsfälle] (https://github.com/openWB/core/wiki/Typische-Anwendungsfaelle)
   * [ID-Tag/Ladung nur nach Freischaltung](https://github.com/openWB/core/wiki/Ladung-nur-nach-Freischaltung)
   * [Hybrid-System aus Wechselrichter und Speicher](https://github.com/openWB/core/wiki/Hybrid-System-aus-Wechselrichter-und-Speicher)
+* Integration in Heimautomation
+  *  [MQTT](https://github.com/openWB/core/wiki/MQTT)
 * Mitarbeit am Projekt
   * [Wiki-Eintrag erstellen](https://github.com/openWB/core/wiki/Wiki-Eintrag_erstellen)
   * [Entwicklungsumgebung](https://github.com/openWB/core/wiki/Entwicklungsumgebung)
@@ -22,3 +24,5 @@
   * [Cloud-Sicherung](https://github.com/openWB/core/wiki/Cloud-Sicherung)
     * [NextCloud](https://github.com/openWB/core/wiki/NextCloud-als-Sicherungs-Cloud-einrichten)
     * [Samba](https://github.com/openWB/core/wiki/Samba-als-Sicherung-einrichten)
+* Sonstiges
+  * [Fehlersuche](https://github.com/openWB/core/wiki/Feherlsuche)

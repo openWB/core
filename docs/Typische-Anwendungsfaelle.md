@@ -26,4 +26,4 @@ Ist die Einstellung auf 0A, so wird ausschließlich mit solarem Überschuss gela
 OpenWB eignet sich hervorragend zur Integration in eine bestehende Hausautomatins-Infrastruktur, da über den integrierten MQTT-Broker Befehle, sowie Statusmeldungen ausgetauscht werden können. 
 ### MQTT
 Zum Debugging empfiehlt sich der Programm [MQTT-Explorer?](http://mqtt-explorer.com/). 
-
+Eine detailierte Erklärung ist auf der [MQTT-Seite](https://github.com/openWB/core/wiki/MQTT) zu finden.
