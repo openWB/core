@@ -260,6 +260,7 @@ class Ev:
                     used_amount,
                     max_phases_hw,
                     phase_switch_supported)
+                soc_request_intervall_offset = 0
                 if plan_data:
                     name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
@@ -273,8 +274,6 @@ class Ev:
                             self.charge_template.data.chargemode.
                             scheduled_charging.plans[plan_data.num].limit.selected == "soc"):
                         soc_request_intervall_offset = self.soc_module.general_config.request_interval_charging
-                    else:
-                        soc_request_intervall_offset = 0
                     control_parameter.current_plan = name
                 else:
                     control_parameter.current_plan = None
