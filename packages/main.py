@@ -56,7 +56,7 @@ class HandlerAlgorithm:
                     wait_for_module_update_completed(loadvars_.event_module_update_completed,
                                                      "openWB/set/system/device/module_update_completed")
                     data.data.copy_data()
-                    changed_values_handler.store_inital_values()
+                    changed_values_handler.store_initial_values()
                     self.heartbeat = True
                     if data.data.system_data["system"].data["perform_update"]:
                         data.data.system_data["system"].perform_update()
@@ -86,7 +86,7 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
-            changed_values_handler.store_inital_values()
+            changed_values_handler.store_initial_values()
             totals = save_log(LogType.DAILY)
             update_daily_yields(totals)
             data.data.general_data.grid_protection()
@@ -253,7 +253,7 @@ try:
     event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
-    changed_values_handler.store_inital_values()
+    changed_values_handler.store_initial_values()
     schedule_jobs()
 except Exception:
     log.exception("Fehler im Main-Modul")

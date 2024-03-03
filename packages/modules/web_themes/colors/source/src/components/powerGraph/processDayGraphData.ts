@@ -101,7 +101,6 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		})
 	}
 	currentItem.pv = currentRow.pv.all.power_exported
-
 	if (Object.entries(currentRow.bat).length > 0) {
 		currentItem.batIn = currentRow.bat.all.power_imported
 		currentItem.batOut = currentRow.bat.all.power_exported
@@ -131,8 +130,8 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.devices = 0
 	Object.entries(currentRow.sh).forEach(([id, values]) => {
 		if (id != 'all') {
-			currentItem[id] = values.power_imported
-			currentItem.devices += values.power_imported
+			currentItem[id] = values.power_imported ?? 0
+			currentItem.devices += values.power_imported ?? 0
 			if (!historicSummary.keys().includes(id)) {
 				historicSummary.addItem(id)
 			}

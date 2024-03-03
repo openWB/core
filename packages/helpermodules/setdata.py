@@ -636,6 +636,10 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/power" in msg.topic:
                 self._validate_value(msg, float)
+            elif "openWB/set/pv/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/pv/get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
             elif "/config/max_ac_out" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
@@ -741,9 +745,10 @@ class SetData:
             elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_delay" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_off_delay" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
+            elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
+                self._validate_value(msg, float)
             elif "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay" in msg.topic:
                 self._validate_value(msg, int, [(1, 15)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:

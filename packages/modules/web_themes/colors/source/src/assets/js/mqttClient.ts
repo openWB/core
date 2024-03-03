@@ -21,6 +21,7 @@ const mqttConnection = {
 	protocol: (location.protocol == 'https:' ? 'wss' : 'ws') as MqttProtocol,
 	connectTimeout: 4000,
 	reconnectPeriod: 4000,
+	clean: false,
 	clientId: Math.random()
 		.toString(36)
 		.replace(/[^a-z]+/g, '')
@@ -39,9 +40,9 @@ try {
 	client = connect(connectUrl, options)
 	client.on('connect', () => {
 		console.info('MQTT connection successful')
-		// topiclist.forEach((topic) => {
-		//  subscribe(topic);
-		// });
+	})
+	client.on('disconnect', () => {
+		console.info('MQTT disconnected')
 	})
 	client.on('error', (error) => {
 		console.error('MQTT connection failed: ', error)
@@ -80,15 +81,40 @@ export function mqttUnsubscribe(fromTopic: string) {
 		//console.info ('MQTT unsubscribe successful: ' + topic)
 	})
 }
-export function mqttPublish(topic: string, message: string) {
+export async function mqttPublish(topic: string, message: string) {
 	const qos: QoS = 0
-	client.publish(topic, message, { qos }, (error) => {
-		if (error) {
-			console.warn('MQTT publish error: ', error)
+	let connected = client.connected
+	let retries = 0
+	while (!connected && retries < 10) {
+		console.warn('MQTT publish: Not connected. Waiting 0.1 seconds')
+		await delay(100)
+		connected = client.connected
+		retries += 1
+	}
+	// console.warn ('MQTT publish: Now connected')
+	if (retries < 10) {
+		try {
+			client.publish(topic, message, { qos }, (error) => {
+				if (error) {
+					console.warn('MQTT publish error: ', error)
+				}
+				console.info(
+					'MQTT publish: Message sent: [' + topic + '](' + message + ')',
+				)
+			})
+		} catch (error) {
+			console.warn('MQTT publish: caught error: ' + error)
 		}
-		console.info('Message sent: [' + topic + '](' + message + ')')
-	})
+	} else {
+		console.error(
+			'MQTT publish: Lost connection to MQTT server. Please reload the page',
+		)
+	}
 }
 export function mqttClientId() {
 	return mqttConnection.clientId
+}
+
+function delay(ms: number) {
+	return new Promise((resolve) => setTimeout(resolve, ms))
 }

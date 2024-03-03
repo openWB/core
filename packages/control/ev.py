@@ -166,10 +166,10 @@ def set_factory() -> Set:
 
 @dataclass
 class Get:
-    soc: int = 0
-    soc_timestamp: float = 0
+    soc: Optional[int] = None
+    soc_timestamp: Optional[float] = None
     force_soc_update: bool = False
-    range: float = 0
+    range: Optional[float] = None
     fault_state: int = 0
     fault_str: str = ""
 
@@ -295,7 +295,12 @@ class Ev:
                     self.data.get.soc,
                     used_amount
                 )
-                message = tmp_message
+                # Info vom Zielladen erhalten
+                if tmp_message is not None:
+                    if message is not None:
+                        message = f"{message} {tmp_message}"
+                    else:
+                        message = tmp_message
                 if tmp_current > 0:
                     control_parameter.current_plan = name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
@@ -563,7 +568,7 @@ class ChargeTemplate:
     TIME_CHARGING_AMOUNT_REACHED = "Kein Zeitladen, da die Energiemenge bereits geladen wurde."
 
     def time_charging(self,
-                      soc: float,
+                      soc: Optional[float],
                       used_amount_time_charging: float) -> Tuple[int, str, Optional[str], Optional[str]]:
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
@@ -572,16 +577,19 @@ class ChargeTemplate:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
-                    if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+                    if self.data.et.active and data.data.optional_data.et_provider_availble():
                         if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
                             return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.name
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
                         return plan.current, "time_charging", message, plan.name
                     elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
-                        if soc < plan.limit.soc:
-                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
+                        if soc:
+                            if soc < plan.limit.soc:
+                                return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
+                            else:
+                                return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
                         else:
-                            return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
+                            return plan.current, "time_charging", message, plan.name
                     elif plan.limit.selected == "amount":  # Energiemengenlimit konfiguriert
                         if used_amount_time_charging < plan.limit.amount:
                             return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
@@ -603,23 +611,26 @@ class ChargeTemplate:
     INSTANT_CHARGING_AMOUNT_REACHED = "Kein Sofortladen, da die Energiemenge bereits geladen wurde."
 
     def instant_charging(self,
-                         soc: float,
+                         soc: Optional[float],
                          imported_instant_charging: float) -> Tuple[int, str, Optional[str]]:
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
         """
         message = None
         try:
             instant_charging = self.data.chargemode.instant_charging
-            if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+            if self.data.et.active and data.data.optional_data.et_provider_availble():
                 if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
                     return 0, "stop", self.CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
                 return instant_charging.current, "instant_charging", message
             elif instant_charging.limit.selected == "soc":
-                if soc < instant_charging.limit.soc:
-                    return instant_charging.current, "instant_charging", message
+                if soc:
+                    if soc < instant_charging.limit.soc:
+                        return instant_charging.current, "instant_charging", message
+                    else:
+                        return 0, "stop", self.INSTANT_CHARGING_SOC_REACHED
                 else:
-                    return 0, "stop", self.INSTANT_CHARGING_SOC_REACHED
+                    return instant_charging.current, "instant_charging", message
             elif instant_charging.limit.selected == "amount":
                 if imported_instant_charging < self.data.chargemode.instant_charging.limit.amount:
                     return instant_charging.current, "instant_charging", message
@@ -633,14 +644,14 @@ class ChargeTemplate:
 
     PV_CHARGING_SOC_REACHED = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
 
-    def pv_charging(self, soc: float, min_current: int) -> Tuple[int, str, Optional[str]]:
+    def pv_charging(self, soc: Optional[float], min_current: int) -> Tuple[int, str, Optional[str]]:
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
         """
         message = None
         try:
             pv_charging = self.data.chargemode.pv_charging
-            if soc < pv_charging.max_soc:
-                if pv_charging.min_soc != 0:
+            if soc is None or soc < pv_charging.max_soc:
+                if pv_charging.min_soc != 0 and soc is not None:
                     if soc < pv_charging.min_soc:
                         return pv_charging.min_soc_current, "instant_charging", message
                 if pv_charging.min_current == 0:
@@ -734,12 +745,15 @@ class ChargeTemplate:
 
     def calculate_duration(self,
                            plan: ScheduledChargingPlan,
-                           soc: float,
+                           soc: Optional[float],
                            battery_capacity: float,
                            used_amount: float,
                            phases: int) -> Tuple[float, float]:
         if plan.limit.selected == "soc":
-            missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
+            if soc:
+                missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
+            else:
+                raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren.")
         else:
             missing_amount = plan.limit.amount - used_amount
         duration = missing_amount/(plan.current * phases*230) * 3600
@@ -758,8 +772,8 @@ class ChargeTemplate:
     SCHEDULED_CHARGING_LIMITED_BY_AMOUNT = '{}kWh geladene Energie'
     SCHEDULED_CHARGING_IN_TIME = 'Zielladen mit {}A, um {}  um {} zu erreichen.'
     SCHEDULED_CHARGING_CHEAP_HOUR = "Zielladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
-    SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Kein Zielladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
-                                         "ist. Falls vorhanden, wird mit Überschuss geladen.")
+    SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Zielladen ausstehend, da jetzt kein günstiger Zeitpunkt zum preisbasierten "
+                                         "Laden ist. Falls vorhanden, wird mit Überschuss geladen.")
 
     def scheduled_charging_calc_current(self,
                                         plan_data: Optional[SelectedPlan],
@@ -807,7 +821,7 @@ class ChargeTemplate:
         else:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
-            if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+            if self.data.et.active and data.data.optional_data.et_provider_availble():
                 hourlist = data.data.optional_data.et_get_loading_hours(plan_data.duration, plan_data.remaining_time)
                 log.debug(f"Günstige Ladezeiten: {hourlist}")
                 if timecheck.is_list_valid(hourlist):
@@ -833,13 +847,15 @@ class ChargeTemplate:
         return 0, "stop", "Keine Ladung, da der Lademodus Stop aktiv ist."
 
 
-def get_ev_to_rfid(rfid: str, vehicle_id: str):
+def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]:
     """ ermittelt zum übergebenen ID-Tag das Fahrzeug
 
     Parameter
     ---------
     rfid: string
         ID-Tag
+    vehicle_id: string
+        MAC-Adresse des ID-Tags (nur openWB Pro)
 
     Return
     ------
@@ -849,7 +865,7 @@ def get_ev_to_rfid(rfid: str, vehicle_id: str):
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
-                if vehicle_id in data.data.ev_data[vehicle].data.tag_id:
+                if vehicle_id is not None and vehicle_id in data.data.ev_data[vehicle].data.tag_id:
                     log.debug(f"MAC {vehicle_id} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
                 if rfid in data.data.ev_data[vehicle].data.tag_id:

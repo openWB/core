@@ -68,7 +68,7 @@ class ChangedValuesHandler:
     def __init__(self, event_module_update_completed: threading.Event) -> None:
         self.prev_data: Data = Data(event_module_update_completed)
 
-    def store_inital_values(self):
+    def store_initial_values(self):
         try:
             # speichern der Daten zum Zyklus-Beginn, um später die geänderten Werte zu ermitteln
             self.prev_data.copy_data()

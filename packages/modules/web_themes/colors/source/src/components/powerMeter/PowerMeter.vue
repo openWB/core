@@ -45,6 +45,15 @@
 						:anchor="'middle'"
 						:config="globalConfig"
 					/>
+					<PMLabel
+						v-if="etData.active"
+						:x="0"
+						:y="-height / 10"
+						:data="sourceSummary.batOut"
+						:props="masterData.batOut"
+						:anchor="'middle'"
+						:config="globalConfig"
+					/>
 					<!-- iterate over all usage items-->
 					<PMLabel
 						v-for="(item, index) in valuesToDisplay"
@@ -93,7 +102,7 @@
 						:anchor="'end'"
 						:config="globalConfig"
 					/>
-					<!-- Show the SoC of the 1st battery -->
+					<!-- Show the SoC of the batteries -->
 					<PMLabel
 						v-if="globalData.batterySoc > 0"
 						:x="-width / 2 - margin / 4 + 10"
@@ -101,6 +110,17 @@
 						:labeltext="'Speicher: ' + globalData.batterySoc + '%'"
 						:labelcolor="usageSummary.batIn.color"
 						:anchor="'start'"
+						:config="globalConfig"
+					/>
+					<!-- Show the current energy price -->
+					<PMLabel
+						v-if="etData.active"
+						:x="width / 2 + margin / 4 - 10"
+						:y="height / 2 - margin + 15"
+						:value="currentPrice"
+						:labeltext="etData.etCurrentPriceString"
+						labelcolor="var(--color-charging)"
+						:anchor="'end'"
 						:config="globalConfig"
 					/>
 					<!-- Show the current consumption -->
@@ -149,6 +169,7 @@ import PMUsageArc from './PMUsageArc.vue'
 import PMLabel from './PMLabel.vue'
 import WBWidget from '../shared/WBWidget.vue'
 import { formatWatt } from '@/assets/js/helpers'
+import { etData } from '../priceChart/model'
 
 // state:
 const width = 500
@@ -233,12 +254,17 @@ function labelCoordinates(item: number) {
 // methods
 
 function soc(i: number) {
-	return chargepoints.value[i].soc
+	return Math.round(chargepoints.value[i].soc)
 }
 function trimName(name: string) {
 	const maxlen = 12
 	return name.length > maxlen ? name.slice(0, maxlen - 1) + '.' : name
 }
+
+const currentPrice = computed(() => {
+	const [p] = etData.etPriceList.values()
+	return Math.round(p * 10) / 10
+})
 </script>
 
 <style></style>

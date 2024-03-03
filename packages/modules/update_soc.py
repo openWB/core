@@ -72,6 +72,9 @@ class UpdateSoc:
                     if ev.data.get.fault_state != 0 or ev.data.get.fault_str != NO_ERROR:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_state", 0)
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_str", NO_ERROR)
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", None)
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", None)
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
         return threads_update, threads_store
