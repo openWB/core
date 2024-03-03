@@ -92,7 +92,7 @@ def _get_preferenced_chargepoint(valid_chargepoints: List[Chargepoint]) -> List:
                         for cp in chargepoints.keys())
                 elif condition_types[condition] == "soc":
                     chargepoints.update(
-                        (cp, cp.data.set.charging_ev_data.data.get.soc) for cp in chargepoints.keys())
+                        (cp, cp.data.set.charging_ev_data.data.get.soc or 0) for cp in chargepoints.keys())
                 elif condition_types[condition] == "plug_in":
                     chargepoints.update((cp, cp.data.set.plug_time)
                                         for cp in chargepoints.keys())

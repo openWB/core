@@ -1,18 +1,18 @@
 <template>
 	<div class="p-2 m-0 d-flex" :class="widgetWidth">
-		<div class="wb-widget p-0 m-0 shadow">
-			<div class="d-flex justify-content-between">
-				<h3 class="m-4 mb-3">
+		<div class="wb-widget p-0 m-0 shadow widgetWidth">
+			<div class="py-4 px-3 d-flex justify-content-between align-items-center">
+				<h3>
 					<slot name="title">
 						<div class="p-0">(title goes here)</div>
 					</slot>
 					<slot name="subtitle" />
 				</h3>
-				<div class="p-4 pb-0 col-4 m-0" style="text-align: right">
+				<div class="p-0" style="text-align: right">
 					<slot name="buttons" />
 				</div>
 			</div>
-			<div class="container-fluid p-0">
+			<div class="grid12 pb-3">
 				<slot />
 			</div>
 		</div>

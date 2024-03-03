@@ -84,6 +84,9 @@ class Optional:
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
+    def et_provider_availble(self) -> bool:
+        return self.et_module is not None and self.data.et.get.fault_state != 2
+
     def et_price_lower_than_limit(self, max_price: float):
         """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
 

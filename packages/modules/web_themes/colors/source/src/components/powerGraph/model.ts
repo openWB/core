@@ -145,12 +145,12 @@ export const dayGraph = reactive({
 				this.date.getFullYear().toString() +
 				(this.date.getMonth() + 1).toString().padStart(2, '0') +
 				this.date.getDate().toString().padStart(2, '0')
-			graphData.data = []
 			mqttSubscribe(this.topic)
 			sendCommand({
 				command: 'getDailyLog',
 				data: { day: dateString },
 			})
+			// graphData.data = []
 		}
 	},
 	deactivate() {
@@ -298,6 +298,16 @@ export function calculateAutarchy(cat: string, values: GraphDataItem) {
 			(values.pv - values.evuOut + values.evuIn + values.batOut)
 		historicSummary.items[cat].energyBat +=
 			((1000 / 12) * (values[cat] * values.batOut)) /
+			(values.pv - values.evuOut + values.evuIn + values.batOut)
+	}
+}
+export function calculateMonthlyAutarchy(cat: string, values: GraphDataItem) {
+	if (values[cat] > 0) {
+		historicSummary.items[cat].energyPv +=
+			((1000) * (values[cat] * (values.pv - values.evuOut))) /
+			(values.pv - values.evuOut + values.evuIn + values.batOut)
+		historicSummary.items[cat].energyBat +=
+			((1000) * (values[cat] * values.batOut)) /
 			(values.pv - values.evuOut + values.evuIn + values.batOut)
 	}
 }

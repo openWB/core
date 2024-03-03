@@ -57,6 +57,16 @@
 	>
 		<SwitchInput v-model="cp.timedCharging" />
 	</ConfigItem>
+	<!-- Price based Charging -->
+	<ConfigItem
+		v-if="etData.active"
+		title="Strompreisbasiert laden"
+		icon="fa-money-bill"
+		:infotext="infotext['pricebased']"
+		:fullwidth="true"
+	>
+		<SwitchInput v-model="cp.etActive" />
+	</ConfigItem>
 </template>
 
 <script setup lang="ts">
@@ -66,7 +76,7 @@ import ConfigItem from '../../shared/ConfigItem.vue'
 import { infotext } from '@/assets/js/themeConfig'
 import SwitchInput from '../../shared/SwitchInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
-
+import { etData } from '@/components/priceChart/model'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()

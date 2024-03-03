@@ -132,7 +132,7 @@ class CounterAll:
 
     def _calc_home_consumption(self) -> Tuple[float, List]:
         power = 0
-        elements_to_sum_up = self._get_elements_for_home_consumption_calculation()
+        elements_to_sum_up = self.get_elements_for_downstream_calculation(self.get_id_evu_counter())
         for element in elements_to_sum_up:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 power += data.data.cp_data[f"cp{element['id']}"].data.get.power
@@ -153,8 +153,10 @@ class CounterAll:
                 elements.append(child)
         return elements
 
-    def _get_elements_for_home_consumption_calculation(self):
-        elements = copy.deepcopy(self.get_entry_of_element(self.get_id_evu_counter())["children"])
+    def get_elements_for_downstream_calculation(self, id: int):
+        """returns a list of elements that are relevant for the calculation of the counter values based on the
+        downstream components, eg home consumption or virtual counter."""
+        elements = copy.deepcopy(self.get_entry_of_element(id)["children"])
         elements_to_sum_up = elements
         for element in elements:
             if element["type"] == ComponentType.INVERTER.value:

@@ -236,12 +236,17 @@ export class ChargePoint {
 			return false
 		}
 	}
+	set etActive(val) {
+		if (vehicles[this.connectedVehicle]) {
+			vehicles[this.connectedVehicle].etActive = val
+		}
+	}
 	get etMaxPrice() {
 		return vehicles[this.connectedVehicle].etMaxPrice ?? 0
 	}
 	set etMaxPrice(newPrice: number) {
 		console.log('Setting et max price needs to be implemented')
-		updateServer('cpEtMaxPrice', newPrice / 100000, this.id)
+		updateServer('cpEtMaxPrice', Math.round(newPrice * 10) / 1000000, this.id)
 	}
 	toPowerItem(): PowerItem {
 		return {
@@ -293,6 +298,15 @@ export class Vehicle {
 	get etActive() {
 		if (chargeTemplates[this.chargeTemplateId]) {
 			return chargeTemplates[this.chargeTemplateId].et.active
+		} else {
+			return false
+		}
+	}
+	set etActive(val) {
+		if (chargeTemplates[this.chargeTemplateId]) {
+			updateServer('priceCharging', val, this.chargeTemplateId)
+
+			// openWB/set/vehicle/template/charge_template/2/et/active -> false
 		}
 	}
 	get etMaxPrice() {
@@ -301,6 +315,14 @@ export class Vehicle {
 				return chargeTemplates[this.chargeTemplateId].et.max_price * 100000
 			}
 		}
+	}
+	get chargepoint(): ChargePoint | undefined {
+		for (const cp of Object.values(chargePoints)) {
+			if (cp.connectedVehicle == this.id) {
+				return cp
+			}
+		}
+		return undefined
 	}
 }
 export interface ConnectedVehicleConfig {
