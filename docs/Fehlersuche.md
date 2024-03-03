@@ -1,14 +1,14 @@
-#Fehlersuche
+# Fehlersuche
 Es kann immer mal passieren, dass etwas nicht wie gedacht funktioniert. Das kann an einem Fehler im Programmcode, an einem Hardwaredefekt oder an einer fehlerhaften oder nicht zu den Gegebenheiten passenden Konfiguration liegen.
 
-Habe ich Wenn nun eine Funktion nicht wie erwartet ausgeführt wird oder plötzlich ein Fehler auftritt, ist die erste Frage: 
+Wenn nun eine Funktion nicht wie erwartet ausgeführt wird oder plötzlich ein Fehler auftritt, ist die erste Frage: 
 > Habe ich vor Kurzem etwas verändert?
 
 Dies betrifft ebenso Änderungen am Einstellungen im Fahrzeug, Wechselrichter (Softwareupdate?)  oder der Hauselektrik. Unter Umständen kann das Problem so schon gelöst werden.
 
 
 ## Wo bekomme ich Hilfe?
-##Hardwaresupport
+### Hardwaresupport
 Mit Problemen bei Inbetriebnahme / Anschluss oder Hardwareproblemen mit openWB-Hardware bitte direkt über die Support-Funktion unter System -> Support an openWB wenden (Notfalls auch per Mail an support@openwb.de).
 Im Forum kann durchaus mal etwas untergehen. Das führt zu Frust und soll nicht sein.
 
