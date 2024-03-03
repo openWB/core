@@ -336,8 +336,9 @@ class SetData:
                             if value <= range[1]:
                                 break
                     else:
-                        log.error("Payload ungültig: Topic "+str(msg.topic)+", Payload " +
-                                  str(value)+" liegt in keinem der angegebenen Wertebereiche.")
+                        log.error(f"Payload ungültig: Topic {str(msg.topic)}, Payload " +
+                                  f"{str(value)} liegt in keinem der angegebenen Wertebereiche: "
+                                  f"{ranges}")
                         valid = False
             elif value is None:
                 if ranges:
@@ -424,7 +425,7 @@ class SetData:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "/get/soc_timestamp" in msg.topic:
                 self._validate_value(msg, float)
-            elif "/get/soc" in msg.topic:
+            elif ("/get/soc" in msg.topic):
                 self._validate_value(msg, float, [(0, 100)])
             elif "/get/range" in msg.topic:
                 self._validate_value(msg, float, [(0, 1000)])
@@ -582,7 +583,7 @@ class SetData:
               "/get/powers" in msg.topic):
             self._validate_value(msg, float, collection=list)
         elif ("/get/power_factors" in msg.topic):
-            self._validate_value(msg, float, [(-1, 1)], collection=list)
+            self._validate_value(msg, float, [(-1, 1), (-100, 100)], collection=list)
         elif ("/get/frequency" in msg.topic):
             self._validate_value(msg, float, [(40, 60)])
         elif ("/get/daily_imported" in msg.topic or
