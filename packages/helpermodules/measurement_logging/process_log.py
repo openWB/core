@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from helpermodules import timecheck
-from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
+from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
+                                                         get_prevoius_entry)
 
 log = logging.getLogger(__name__)
 
@@ -145,16 +146,18 @@ def get_daily_log(date: str):
 
 def _collect_daily_log_data(date: str):
     try:
-        with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(date+".json")), "r") as json_file:
+        parent_file = Path(__file__).resolve().parents[3] / "data"/"daily_log"
+        with open(str(parent_file / (date+".json")), "r") as json_file:
             log_data = json.load(json_file)
             if date == timecheck.create_timestamp_YYYYMMDD():
                 # beim aktuellen Tag den aktuellen Datensatz ergänzen
-                log_data["entries"].append(create_entry(LogType.DAILY, LegacySmartHomeLogData()))
+                log_data["entries"].append(create_entry(
+                    LogType.DAILY, LegacySmartHomeLogData(), get_prevoius_entry(parent_file, log_data)))
             else:
                 # bei älteren als letzten Datensatz den des nächsten Tags
                 try:
                     next_date = timecheck.get_relative_date_string(date, day_offset=1)
-                    with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(next_date+".json")),
+                    with open(str(parent_file / (next_date+".json")),
                               "r") as next_json_file:
                         next_log_data = json.load(next_json_file)
                         log_data["entries"].append(next_log_data["entries"][0])
