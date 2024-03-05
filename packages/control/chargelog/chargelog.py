@@ -306,7 +306,7 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
             reference_time = get_reference_time(cp, reference)
             reference_entry = _get_reference_entry(content["entries"], reference_time)
             energy_entry = process_entry(reference_entry,
-                                         create_entry(LogType.DAILY, LegacySmartHomeLogData()),
+                                         create_entry(LogType.DAILY, LegacySmartHomeLogData(), reference_entry),
                                          CalculationType.ENERGY)
             energy_source_entry = analyse_percentage(energy_entry)
             log.debug(f"reference {reference}, reference_time {reference_time}, "

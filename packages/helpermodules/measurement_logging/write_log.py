@@ -1,7 +1,6 @@
 from enum import Enum
 import json
 import logging
-import pathlib
 from pathlib import Path
 import re
 import string
@@ -128,22 +127,15 @@ def save_log(log_type: LogType):
     folder: str
         gibt an, ob ein Tages-oder Monats-Log-Eintrag erstellt werden soll.
     """
-    sh_log_data = LegacySmartHomeLogData()
-    new_entry = create_entry(log_type, sh_log_data)
-
-    # json-Objekt in Datei einfügen
+    parent_file = Path(__file__).resolve().parents[3] / "data" / \
+        ("daily_log" if log_type == LogType.DAILY else "monthly_log")
+    parent_file.mkdir(mode=0o755, parents=True, exist_ok=True)
     if log_type == LogType.DAILY:
-        (pathlib.Path(__file__).resolve().parents[3] / "data"/"daily_log").mkdir(mode=0o755,
-                                                                                 parents=True, exist_ok=True)
-        filepath = str(
-            Path(__file__).resolve().parents[3] / "data" / "daily_log" /
-            (timecheck.create_timestamp_YYYYMMDD() + ".json"))
+        file_name = timecheck.create_timestamp_YYYYMMDD()
     else:
-        (pathlib.Path(__file__).resolve().parents[3] / "data"/"monthly_log").mkdir(mode=0o755,
-                                                                                   parents=True, exist_ok=True)
-        filepath = str(
-            Path(__file__).resolve().parents[3] / "data" / "monthly_log" /
-            (timecheck.create_timestamp_YYYYMM() + ".json"))
+        file_name = timecheck.create_timestamp_YYYYMM()
+    filepath = str(parent_file / f"{file_name}.json")
+
     try:
         with open(filepath, "r") as jsonFile:
             content = json.load(jsonFile)
@@ -152,6 +144,14 @@ def save_log(log_type: LogType):
             json.dump({"entries": [], "names": {}}, jsonFile)
         with open(filepath, "r") as jsonFile:
             content = json.load(jsonFile)
+
+    previous_entry = get_prevoius_entry(parent_file, content)
+
+    sh_log_data = LegacySmartHomeLogData()
+    new_entry = create_entry(log_type, sh_log_data, previous_entry)
+
+    # json-Objekt in Datei einfügen
+
     entries = content["entries"]
     entries.append(new_entry)
     content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
@@ -160,7 +160,21 @@ def save_log(log_type: LogType):
     return content["entries"]
 
 
-def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData) -> Dict:
+def get_prevoius_entry(parent_file: Path, content: Dict):
+    try:
+        previous_entry = content["entries"][-1]
+    except IndexError:
+        # get all files in Folder
+        path_list = parent_file.glob('*.json')
+        # sort path list by name
+        path_list = sorted(path_list, key=lambda x: x.name)
+        with open(path_list[-2], "r") as jsonFile:
+            content = json.load(jsonFile)
+        previous_entry = content["entries"][-1]
+    return previous_entry
+
+
+def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previous_entry: Dict) -> Dict:
     if log_type == LogType.DAILY:
         date = timecheck.create_timestamp_HH_MM()
     else:
@@ -224,8 +238,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData) -> Dict
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
     hc_dict = {"all": {"imported": data.data.counter_all_data.data.set.imported_home_consumption}}
-
-    return {
+    new_entry = {
         "timestamp": current_timestamp,
         "date": date,
         "cp": cp_dict,
@@ -236,6 +249,22 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData) -> Dict
         "sh": sh_log_data.sh_dict,
         "hc": hc_dict
     }
+
+    return fix_values(new_entry, previous_entry)
+
+
+def fix_values(new_entry: Dict, previous_entry: Dict) -> Dict:
+    def find_and_fix_value(value_name):
+        if value.get(value_name) is not None:
+            if value[value_name] == 0:
+                value[value_name] = previous_entry[group][component][value_name]
+    for group, value in new_entry.items():
+        if group not in ("bat", "counter", "cp", "pv", "hc"):
+            continue
+        for component, value in value.items():
+            find_and_fix_value("exported")
+            find_and_fix_value("imported")
+    return new_entry
 
 
 def get_names(totals: Dict, sh_names: Dict) -> Dict:
