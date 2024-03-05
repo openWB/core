@@ -26,6 +26,7 @@ class ChargepointModule(AbstractChargepoint):
     VALID_VERSIONS = ["openWB Satellit 2.0"]
     CP0_DELAY = 1
     CP0_DELAY_STARTUP = 4
+    ID_PHASE_SWITCH_UNIT = 3
 
     def __init__(self, config: OpenWBseries2Satellit) -> None:
         self.config = config
@@ -120,6 +121,16 @@ class ChargepointModule(AbstractChargepoint):
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
+
+    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+        if phases_to_use == 1:
+            self._client.client.delegate.write_register(0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)
+            time.sleep(1)
+            self._client.client.delegate.write_register(0x0001, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+        else:
+            self._client.client.delegate.write_register(0x0002, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+            time.sleep(1)
+            self._client.client.delegate.write_register(0x0002, 256, unit=self.ID_PHASE_SWITCH_UNIT)
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=OpenWBseries2Satellit)
