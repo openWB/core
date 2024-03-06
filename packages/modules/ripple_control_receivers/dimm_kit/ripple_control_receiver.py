@@ -4,7 +4,6 @@ import logging
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import RcrState
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.common.modbus import ModbusTcpClient_
 from modules.ripple_control_receivers.dimm_kit.config import IoLanRcr
 
@@ -26,11 +25,8 @@ def create_ripple_control_receiver(config: IoLanRcr):
         else:
             override_value = 100
         return RcrState(override_value=override_value)
-    try:
-        client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
-    return ConfigurableRcr(config=config, component_updater=updater)
+    client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=IoLanRcr)
