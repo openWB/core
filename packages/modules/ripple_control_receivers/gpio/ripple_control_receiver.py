@@ -4,7 +4,6 @@ from typing import Tuple
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import RcrState
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 
 log = logging.getLogger(__name__)
@@ -44,7 +43,7 @@ def read() -> Tuple[bool, bool]:
 def create_ripple_control_receiver(config: GpioRcr):
     def updater():
         return read()
-    return ConfigurableRcr(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=GpioRcr)
