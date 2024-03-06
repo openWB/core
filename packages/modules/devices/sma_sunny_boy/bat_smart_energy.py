@@ -40,7 +40,8 @@ class SunnyBoySmartEnergyBat:
             power = 0
         else:
             power = current*voltage
-        imported, exported = self.sim_counter.sim_count(power)
+        exported = self.__tcp_client.read_holding_registers(31401, ModbusDataType.UINT_64, unit=3)
+        imported = self.__tcp_client.read_holding_registers(31397, ModbusDataType.UINT_64, unit=3)
 
         return BatState(
             power=power,
