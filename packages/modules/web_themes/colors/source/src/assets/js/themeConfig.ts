@@ -415,7 +415,9 @@ function writeCookie() {
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
-		'openWBColorTheme=' + JSON.stringify(prefs) + '; max-age=16000000'
+		'openWBColorTheme=' +
+		JSON.stringify(prefs) +
+		';max-age=16000000;samesite=strict'
 }
 
 function readCookie() {

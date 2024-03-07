@@ -20,18 +20,16 @@
 				>
 			</div>
 		</template>
-		<div class="subgrid">
-			<div class="pricechart">
-				<figure id="pricechart" class="p-0 m-0">
-					<svg viewBox="0 0 400 280">
-						<g
-							:id="chartId"
-							:origin="draw"
-							:transform="'translate(' + margin.top + ',' + margin.right + ')'"
-						/>
-					</svg>
-				</figure>
-			</div>
+		<div class="grapharea">
+			<figure id="pricechart" class="p-1 m-0 pricefigure">
+				<svg viewBox="0 0 400 280">
+					<g
+						:id="chartId"
+						:origin="draw"
+						:transform="'translate(' + margin.top + ',' + margin.right + ')'"
+					/>
+				</svg>
+			</figure>
 		</div>
 	</WbWidgetFlex>
 </template>
@@ -57,7 +55,7 @@ const props = defineProps<{
 
 const needsUpdate = ref(false)
 let dummy = false
-const width = 400
+const width = 380
 const height = 250
 const margin = { top: 0, bottom: 15, left: 20, right: 5 }
 const axisfontsize = 12
@@ -135,6 +133,7 @@ const draw = computed(() => {
 		.attr('width', barwidth.value)
 		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
 		.attr('fill', 'var(--color-charging)')
+	//rects.append('svg:title').text((d) => Math.round(d[1]*10)/10+' ct')
 	// X Axis
 	const xAxis = svg.append('g').attr('class', 'axis').call(xAxisGenerator.value)
 	xAxis.attr('transform', 'translate(0,' + (height - margin.bottom) + ')')
@@ -169,6 +168,56 @@ const draw = computed(() => {
 			.attr('d', zeroPath.value)
 			.attr('stroke', 'var(--color-fg)')
 	}
+	// Tooltips
+	const ttips = svg
+		.selectAll('ttip')
+		.data(plotdata.value)
+		.enter()
+		.append('g')
+		.attr('class', 'ttarea')
+	ttips
+		.append('rect')
+		.attr('x', (d) => xScale.value(d[0]))
+		.attr('y', (d) => yScale.value(d[1]))
+		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
+		.attr('class', 'ttrect')
+		.attr('width', barwidth.value)
+		.attr('opacity', '1%')
+		.attr('fill', 'var(--color-charging)')
+	const tt = ttips
+		.append('g')
+		.attr('class', 'ttmessage')
+		.attr(
+			'transform',
+			(d) =>
+				'translate(' +
+				(xScale.value(d[0]) - 30 + barwidth.value / 2) +
+				',' +
+				(yScale.value(d[1]) - 16) +
+				')',
+		)
+	tt.append('rect')
+		.attr('rx', 5)
+		.attr('width', '60')
+		.attr('height', '30')
+		.attr('fill', 'var(--color-menu)')
+	const texts = tt
+		.append('text')
+		.attr('text-anchor', 'middle')
+		.attr('x', 30)
+		.attr('y', 12)
+		.attr('font-size', axisfontsize)
+		.attr('fill', 'var(--color-bg)')
+	texts
+		.append('tspan')
+		.attr('x', 30)
+		.attr('dy', '0em')
+		.text((d) => timeFormat('%H:%M')(d[0]))
+	texts
+		.append('tspan')
+		.attr('x', 30)
+		.attr('dy', '1.1em')
+		.text((d) => Math.round(d[1] * 10) / 10 + ' ct')
 	return 'PriceChart.vue'
 })
 const chartId = computed(() => {
@@ -180,25 +229,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.color-charging {
-	color: var(--color-charging);
-}
-
-.fa-circle-check {
-	color: var(--color-menu);
-}
-
-.settingsheader {
-	color: var(--color-charging);
-	font-size: 16px;
-	font-weight: bold;
-}
-
-.providername {
-	color: var(--color-axis);
-	font-size: 16px;
-}
-
 .pricebadge {
 	background-color: var(--color-charging);
 	font-weight: normal;
@@ -209,7 +239,17 @@ onMounted(() => {
 	font-weight: normal;
 }
 
-.pricechart {
-	grid-column: span 12;
+.grapharea {
+	grid-column-start: 1;
+	grid-column-end: 13;
+	width: 100%;
+	object-fit: cover;
+	max-height: 100%;
+
+	justify-items: stretch;
+}
+
+.pricefigure {
+	justify-self: stretch;
 }
 </style>
