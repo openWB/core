@@ -20,7 +20,10 @@ log = logging.getLogger(__name__)
 
 
 class ChargepointModule(AbstractChargepoint):
-    VALID_VERSIONS = ["openWB Satellit 2.0"]
+    VALID_MODELS = {
+        "type": "openWB Satellit",
+        "versions": ["2.0"]
+    }
     CP0_DELAY = 1
     CP0_DELAY_STARTUP = 4
 
@@ -52,8 +55,9 @@ class ChargepointModule(AbstractChargepoint):
 
     def _validate_version(self):
         try:
-            parsed_answer = get_version_by_telnet("openWB Satellit 2.0", self.config.configuration.ip_address)
-            for version in self.VALID_VERSIONS:
+            parsed_answer = get_version_by_telnet(
+                f'{self.VALID_MODELS["type"]}{self.VALID_MODELS["versions"][0]}', self.config.configuration.ip_address)
+            for version in self.VALID_MODELS["versions"]:
                 if version in parsed_answer:
                     self.version = True
                     log.debug("Firmware des openWB satellit ist mit openWB software2 kompatibel.")

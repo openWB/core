@@ -37,7 +37,7 @@ def create_ripple_control_receiver(config: IoLanRcr):
         version = False
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
         try:
-            parsed_answer = get_version_by_telnet("openWB DimmModul", config.configuration.ip_address)
+            parsed_answer = get_version_by_telnet(VALID_VERSIONS[0], config.configuration.ip_address)
             for version in VALID_VERSIONS:
                 if version in parsed_answer:
                     version = True
