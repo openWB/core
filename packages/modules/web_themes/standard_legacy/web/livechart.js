@@ -106,8 +106,8 @@ function parseData(allData) {
 					console.error(e.name + ': ' + e.message);
 				}
 			}
-		} else {
-			console.debug('line too short:', line);
+		// } else {
+		// 	console.debug('line too short:', line);
 		}
 	});
 	return result;
@@ -524,10 +524,10 @@ function getDatasetIndex(datasetId) {
 		return dataset.jsonKey == datasetId;
 	});
 	if (index != -1) {
-		console.debug('index for dataset "' + datasetId + '": ' + index);
+		// console.debug('index for dataset "' + datasetId + '": ' + index);
 		return index;
 	}
-	console.debug('no index found for "' + datasetId + '"');
+	// console.debug('no index found for "' + datasetId + '"');
 	return
 }
 
@@ -537,7 +537,7 @@ function addDataset(datasetId) {
 	if (number = datasetId.match(/([\d]+)/g)) {
 		datasetIndex = number[0];
 	}
-	console.debug('template name: ' + datasetTemplate + ' index: ' + datasetIndex);
+	// console.debug(`id: ${datasetId} template name: ${datasetTemplate} index: ${datasetIndex}`);
 	if (datasetTemplates[datasetTemplate]) {
 		newDataset = JSON.parse(JSON.stringify(datasetTemplates[datasetTemplate]));
 		newDataset.parsing.yAxisKey = datasetId;
@@ -568,7 +568,7 @@ function initDataset(datasetId) {
 
 function truncateData(data) {
 	if (typeof maxDisplayLength !== "undefined" && data.length > maxDisplayLength) {
-		console.debug("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
+		// console.debug("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
 		data.splice(0, data.length - maxDisplayLength);
 	}
 }
@@ -629,9 +629,9 @@ function updateGraph(dataset) {
 		truncateData(allChartData);
 		chartUpdateBuffer = [];
 		myLine.update();
-		console.debug('graph updated, last dataset:', allChartData[allChartData.length-1].timestamp, allChartData[allChartData.length-1].time);
-	} else {
-		console.debug('graph not yet initialized, data stored in buffer');
+		// console.debug('graph updated, last dataset:', allChartData[allChartData.length-1].timestamp, allChartData[allChartData.length-1].time);
+	// } else {
+	// 	console.debug('graph not yet initialized, data stored in buffer');
 	}
 }
 
@@ -671,7 +671,7 @@ function forceGraphLoad() {
 			showHideDataset('boolDisplayLegend');
 		}
 		if (typeof maxDisplayLength === "undefined") {
-			console.info("setting graph duration to default of 30 minutes");
+			console.warn("setting graph duration to default of 30 minutes");
 			maxDisplayLength = 30 * 6;
 		}
 		checkGraphLoad();
@@ -709,7 +709,7 @@ function showHide(theDataset) {
 }
 
 function subscribeMqttGraphSegments() {
-	console.debug('subscribing to graph topics');
+	// console.debug('subscribing to graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		topic = "openWB/graph/alllivevaluesJson" + segments;
 		client.subscribe(topic, { qos: 0 });
@@ -717,7 +717,7 @@ function subscribeMqttGraphSegments() {
 }
 
 function unsubscribeMqttGraphSegments() {
-	console.debug('unsubscribing from graph topics');
+	// console.debug('unsubscribing from graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		topic = "openWB/graph/alllivevaluesJson" + segments;
 		client.unsubscribe(topic);
