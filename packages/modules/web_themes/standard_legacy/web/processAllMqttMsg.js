@@ -12,6 +12,7 @@ var schedulePlan = {};
 var timeChargePlan = {};
 var vehicleSoc = {};
 var evuCounterIndex = undefined;
+var chartLabels = {};
 
 function getIndex(topic) {
 	// get occurrence of numbers between / / in topic
@@ -29,7 +30,7 @@ function createChargePoint(hierarchy) {
 		var chargePointIndex = hierarchy.id;
 		if ($('.charge-point-card[data-cp=' + chargePointIndex + ']').length == 0) {
 			if (typeof chargePointIndex !== 'undefined') {
-				console.debug("creating charge-point " + chargePointIndex);
+				// console.debug("creating charge-point " + chargePointIndex);
 				var sourceElement = $('.charge-point-card.charge-point-template');
 				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
@@ -164,7 +165,7 @@ function refreshChargeTemplate(templateIndex) {
 				if (templateIndex in schedulePlan) {
 					parent.find(".charge-point-schedule-plan-missing").addClass("hide");
 					for (const [key, value] of Object.entries(schedulePlan[templateIndex])) {
-						console.debug("schedule", key, value);
+						// console.debug("schedule", key, value);
 						if (parent.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
 							// console.log('creating schedule plan with id "'+key+'"');
 							var clonedElement = sourceElement.clone();
@@ -250,7 +251,7 @@ function refreshChargeTemplate(templateIndex) {
 					// console.log("time charge plan found", templateIndex, timeChargePlan[templateIndex]);
 					parent.find(".charge-point-time-charge-plan-missing").addClass("hide");
 					for (const [key, value] of Object.entries(timeChargePlan[templateIndex])) {
-						console.debug("schedule", key, value);
+						// console.debug("schedule", key, value);
 						if (parent.find('.charge-point-time-charge-plan[data-plan=' + key + ']').length == 0) {
 							// console.log('creating time charge plan with id "'+key+'"');
 							var clonedElement = sourceElement.clone();
@@ -396,7 +397,7 @@ function processGlobalCounterMessages(mqttTopic, mqttPayload) {
 					break
 				}
 			}
-			console.debug("EVU counter index: " + evuCounterIndex);
+			// console.debug("EVU counter index: " + evuCounterIndex);
 			createChargePoint(hierarchy[0]);
 			// subscribe to other topics relevant for charge points
 			topicsToSubscribe.forEach((topic) => {
@@ -496,7 +497,6 @@ function processEvuMessages(mqttTopic, mqttPayload) {
 function processCounterMessages(mqttTopic, mqttPayload) {
 	let counterIndex = getIndex(mqttTopic);
 	if (counterIndex == evuCounterIndex) {
-		console.debug("evu counter message received");
 		processEvuMessages(mqttTopic, mqttPayload);
 	} else {
 		/* nothing here yet */
@@ -504,7 +504,7 @@ function processCounterMessages(mqttTopic, mqttPayload) {
 }
 
 function processBatteryMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/housebattery
+	// processes mqttTopic for topic openWB/bat
 	// called by handleMessage
 	if (mqttTopic == 'openWB/bat/config/configured') {
 		if (mqttPayload == "true") {
@@ -731,6 +731,8 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		// name
 		var element = parent.find('.charge-point-name'); // now get parents respective child element
 		$(element).text(configMessage.name);
+		// chart label
+		chartLabels[`cp${index}-power`] = configMessage.name;
 		// template
 		parent.attr('data-charge-point-template', configMessage.template).data('charge-point-template', configMessage.template);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/state_str$/i)) {
@@ -898,6 +900,8 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		parent.find('.charge-point-vehicle-data[data-ev]').attr('data-ev', infoData.id).data('ev', infoData.id); // set data-ev setting for this charge point
 		// "name" str
 		parent.find('.charge-point-vehicle-name').text(infoData.name);
+		// chart label
+		chartLabels[`ev${infoData.id}-soc`] = infoData.name;
 		refreshVehicleSoc(infoData.id);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/config$/i)) {
 		// settings of the vehicle if connected
@@ -1041,7 +1045,7 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 		var vehicleIndex = getIndex(mqttTopic); // extract number between two / /
 		var configData = JSON.parse(mqttPayload);
 		vehicleSoc[vehicleIndex] = configData;
-		console.debug("update vehicle soc config", vehicleIndex, configData);
+		// console.debug("update vehicle soc config", vehicleIndex, configData);
 		refreshVehicleSoc(vehicleIndex);
 	} else if (mqttTopic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+$/i)) {
 		templateIndex = mqttTopic.match(/[0-9]+$/i);
@@ -1229,7 +1233,7 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 		}
 		graphRefreshCounter += 1;
 	} else if (mqttTopic == 'openWB/graph/config/duration') {
-		console.debug("graph duration: " + mqttPayload + " minutes");
+		// console.debug("graph duration: " + mqttPayload + " minutes");
 		var duration = JSON.parse(mqttPayload);
 		if (isNaN(duration) || duration < 10 || duration > 120) {
 			console.error("bad graph duration received: " + mqttPayload + " setting to default of 30");
