@@ -543,7 +543,11 @@ function addDataset(datasetId) {
 		newDataset.parsing.yAxisKey = datasetId;
 		newDataset.jsonKey = datasetId;
 		if (datasetIndex) {
-			newDataset.label = newDataset.label + ' ' + datasetIndex;
+			if(chartLabels[datasetId] === undefined) {
+				console.warn('no label found for index: ' + datasetId);
+				chartLabels[datasetId] = newDataset.label + ' ' + datasetIndex;
+			}
+			newDataset.label = chartLabels[datasetId];
 		}
 		return chartDatasets.push(newDataset) - 1;
 	} else {

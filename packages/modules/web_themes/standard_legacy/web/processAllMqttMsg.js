@@ -12,6 +12,7 @@ var schedulePlan = {};
 var timeChargePlan = {};
 var vehicleSoc = {};
 var evuCounterIndex = undefined;
+var chartLabels = {};
 
 function getIndex(topic) {
 	// get occurrence of numbers between / / in topic
@@ -731,6 +732,8 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		// name
 		var element = parent.find('.charge-point-name'); // now get parents respective child element
 		$(element).text(configMessage.name);
+		// chart label
+		chartLabels[`cp${index}-power`] = configMessage.name;
 		// template
 		parent.attr('data-charge-point-template', configMessage.template).data('charge-point-template', configMessage.template);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/state_str$/i)) {
@@ -898,6 +901,8 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		parent.find('.charge-point-vehicle-data[data-ev]').attr('data-ev', infoData.id).data('ev', infoData.id); // set data-ev setting for this charge point
 		// "name" str
 		parent.find('.charge-point-vehicle-name').text(infoData.name);
+		// chart label
+		chartLabels[`ev${infoData.id}-soc`] = infoData.name;
 		refreshVehicleSoc(infoData.id);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/config$/i)) {
 		// settings of the vehicle if connected
