@@ -542,13 +542,6 @@ function addDataset(datasetId) {
 		newDataset = JSON.parse(JSON.stringify(datasetTemplates[datasetTemplate]));
 		newDataset.parsing.yAxisKey = datasetId;
 		newDataset.jsonKey = datasetId;
-		if (datasetIndex) {
-			if(chartLabels[datasetId] === undefined) {
-				console.warn('no label found for index: ' + datasetId);
-				chartLabels[datasetId] = newDataset.label + ' ' + datasetIndex;
-			}
-			newDataset.label = chartLabels[datasetId];
-		}
 		return chartDatasets.push(newDataset) - 1;
 	} else {
 		console.warn('no matching template found: ' + datasetId);
@@ -562,6 +555,9 @@ function initDataset(datasetId) {
 		index = addDataset(datasetId);
 	}
 	if (index != undefined) {
+		if (chartLabels[datasetId] !== undefined) {
+			chartDatasets[index].label = chartLabels[datasetId];
+		}
 		chartDatasets[index].data = allChartData;
 	}
 }

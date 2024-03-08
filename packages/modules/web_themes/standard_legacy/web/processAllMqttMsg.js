@@ -14,11 +14,12 @@ var vehicleSoc = {};
 var evuCounterIndex = undefined;
 var chartLabels = {};
 
-function getIndex(topic) {
+function getIndex(topic, position=0) {
 	// get occurrence of numbers between / / in topic
 	// since this is supposed to be the index like in openwb/lp/4/w
 	// no lookbehind supported by safari, so workaround with replace needed
-	var index = topic.match(/(?:\/)([0-9]+)(?=\/)/g)[0].replace(/[^0-9]+/g, '');
+	// there may be multiple occurrences of numbers in the topic, so we need to specify the position
+	var index = topic.match(/(?:\/)([0-9]+)(?=\/)/g)[position].replace(/[^0-9]+/g, '');
 	if (typeof index === 'undefined') {
 		index = '';
 	}
@@ -362,6 +363,7 @@ function handleMessage(mqttTopic, mqttPayload) {
 	processPreloader(mqttTopic);
 	if (mqttTopic.match(/^openwb\/counter\/[0-9]+\//i)) { processCounterMessages(mqttTopic, mqttPayload) }
 	else if (mqttTopic.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttTopic, mqttPayload); }
+	else if (mqttTopic.match(/^openwb\/system\/device\/[0-9]+\/component\/[0-9]+\//i) ) { processComponentMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/bat\//i)) { processBatteryMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/pv\//i)) { processPvMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/chargepoint\//i)) { processChargePointMessages(mqttTopic, mqttPayload); }
@@ -437,8 +439,6 @@ function processGlobalCounterMessages(mqttTopic, mqttPayload) {
 }
 
 function processEvuMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/counter/0
-	// called by handleMessage
 	if (mqttTopic == 'openWB/counter/' + evuCounterIndex + '/get/power') {
 		var unit = 'W';
 		var powerEvu = parseInt(mqttPayload, 10);
@@ -500,6 +500,27 @@ function processCounterMessages(mqttTopic, mqttPayload) {
 		processEvuMessages(mqttTopic, mqttPayload);
 	} else {
 		/* nothing here yet */
+	}
+}
+
+function processComponentMessages(mqttTopic, mqttPayload) {
+	// let deviceIndex = getIndex(mqttTopic, 0);  // first number in topic
+	// let componentIndex = getIndex(mqttTopic, 1);  // second number in topic
+	if (mqttTopic.match(/^openWB\/system\/device\/[0-9]+\/component\/[0-9]+\/config$/i)) {
+		// JSON data
+		// name: str
+		// type: str
+		// id: int
+		// configuration: JSON
+		var configMessage = JSON.parse(mqttPayload);
+		// chart label
+		if (configMessage.type.includes("counter")) {
+			let key = `counter${configMessage.id}-power`;
+			if (configMessage.id == evuCounterIndex) {
+				key = "grid";
+			}
+			chartLabels[key] = configMessage.name;
+		}
 	}
 }
 

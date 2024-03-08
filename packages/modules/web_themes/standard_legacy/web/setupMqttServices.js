@@ -34,7 +34,7 @@ var topicsToSubscribe = [
 	["openWB/bat/get/daily_exported", 1], // total daily imported energy; float, unit: kWh
 	["openWB/bat/get/daily_imported", 1], // total daily imported energy; float, unit: kWh
 
-	// counter topics, counter with index 0 is always main grid counter
+	// counter topics
 	["openWB/counter/set/home_consumption", 1], // actual home power
 	["openWB/counter/set/daily_yield_home_consumption", 1], // daily home energy
 	["openWB/counter/+/get/power", 1], // actual power; int, unit: W
@@ -54,6 +54,9 @@ var topicsToSubscribe = [
 	["openWB/chargepoint/+/set/manual_lock", 1], // is manual lock active? int, 0 = off, 1 = on
 	["openWB/chargepoint/+/get/enabled", 1], // is the chargepoint enabled? int, 0 = disabled, 1 = enabled
 	["openWB/chargepoint/+/set/current", 1], // actual set current; float, unit: A
+
+	// devices and components
+	["openWB/system/device/+/component/+/config", 1], // configuration of components
 
 	// information for connected vehicle
 	["openWB/chargepoint/+/get/connected_vehicle/info", 1], // general info of the vehicle; JSON { "id": int, "name": str }
