@@ -257,7 +257,10 @@ def fix_values(new_entry: Dict, previous_entry: Dict) -> Dict:
     def find_and_fix_value(value_name):
         if value.get(value_name) is not None:
             if value[value_name] == 0:
-                value[value_name] = previous_entry[group][component][value_name]
+                try:
+                    value[value_name] = previous_entry[group][component][value_name]
+                except KeyError:
+                    log.exception("Es konnte kein vorheriger Wert gefunden werden.")
     for group, value in new_entry.items():
         if group not in ("bat", "counter", "cp", "pv", "hc"):
             continue
