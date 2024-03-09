@@ -96,8 +96,8 @@ const yScale = computed(() => {
 const zeroPath = computed(() => {
 	const generator = line()
 	const points = [
-		[margin.left, yScale.value(0)],
-		[width - margin.right, yScale.value(0)],
+		[margin.left +0.5, yScale.value(0)-1],
+		[width - margin.right +3, yScale.value(0)-1],
 	]
 	return generator(points as [number, number][])
 })
@@ -109,7 +109,7 @@ const xAxisGenerator = computed(() => {
 })
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
-		.ticks(6)
+		.ticks(yDomain.value[1]-yDomain.value[0])
 		.tickSizeInner(-(width - margin.right))
 		.tickFormat((d) => d.toString())
 })
@@ -128,8 +128,8 @@ const draw = computed(() => {
 	bargroups
 		.append('rect')
 		.attr('class', 'bar')
-		.attr('x', (d) => xScale.value(d[0]))
-		.attr('y', (d) => yScale.value(d[1]))
+		.attr('x', (d) => xScale.value(d[0])+0.5)
+		.attr('y', (d) => yScale.value(d[1])-1)
 		.attr('width', barwidth.value)
 		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
 		.attr('fill', 'var(--color-charging)')
@@ -148,7 +148,7 @@ const draw = computed(() => {
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
 	const yAxis = svg.append('g').attr('class', 'axis').call(yAxisGenerator.value)
-	yAxis.attr('transform', 'translate(' + margin.left + ',' + 0 + ')')
+	yAxis.attr('transform', 'translate(' + margin.left + ',-1)')
 	yAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
