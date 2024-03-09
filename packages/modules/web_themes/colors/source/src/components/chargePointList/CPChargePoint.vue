@@ -69,24 +69,6 @@
 				>
 					<span class="targetCurrent">{{ chargeAmpereString }}</span>
 				</InfoItem>
-
-				<!-- Chargemode buttons -->
-				<RadioBarInput
-					:id="'chargemode-' + chargepoint.name"
-					v-model="chargeMode"
-					class="chargemodes mt-3"
-					:options="
-						Object.keys(chargemodes).map((v) => {
-							return {
-								text: chargemodes[v].name,
-								value: v,
-								color: chargemodes[v].color,
-								icon: chargemodes[v].icon,
-								active: chargemodes[v].mode == chargepoint.chargeMode,
-							}
-						})
-					"
-				/>
 			</div>
 		</div>
 		<div v-if="configmode" class="row m-0 mt-0 p-0">
@@ -117,6 +99,23 @@
 					</div>
 				</div>
 				<div class="grid12">
+					<!-- Chargemode buttons -->
+					<RadioBarInput
+						:id="'chargemode-' + chargepoint.name"
+						v-model="chargeMode"
+						class="chargemodes mt-3 mb-3"
+						:options="
+							Object.keys(chargemodes).map((v) => {
+								return {
+									text: chargemodes[v].name,
+									value: v,
+									color: chargemodes[v].color,
+									icon: chargemodes[v].icon,
+									active: chargemodes[v].mode == chargepoint.chargeMode,
+								}
+							})
+						"
+					/>
 					<!-- Car info -->
 					<InfoItem
 						v-if="chargepoint.isSocConfigured"
@@ -452,6 +451,7 @@ const editPrice = ref(false)
 	grid-column: 1 / 13;
 	justify-self: center;
 }
+
 .chargeinfo {
 	display: grid;
 	grid-template-columns: repeat(12, auto);
