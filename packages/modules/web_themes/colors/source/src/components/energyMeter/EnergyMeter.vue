@@ -8,6 +8,7 @@
 				widgetid="graphsettings"
 				:show-left-button="true"
 				:show-right-button="true"
+				:ignore-live="true"
 				@shift-left="shiftLeft"
 				@shift-right="shiftRight"
 				@shift-up="shiftUp"
