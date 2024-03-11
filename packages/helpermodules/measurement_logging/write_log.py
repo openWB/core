@@ -270,14 +270,16 @@ def fix_values(new_entry: Dict, previous_entry: Dict) -> Dict:
     return new_entry
 
 
-def get_names(totals: Dict, sh_names: Dict) -> Dict:
+def get_names(elements: Dict, sh_names: Dict) -> Dict:
     names = sh_names
-    for group in totals.items():
-        if group[0] not in ("bat", "counter", "cp", "pv"):
+    for group in elements.items():
+        if group[0] not in ("bat", "counter", "cp", "pv", "ev"):
             continue
         for entry in group[1]:
             try:
-                if "cp" in entry:
+                if "ev" in entry:
+                    names.update({entry: data.data.ev_data[entry].data.name})
+                elif "cp" in entry:
                     names.update({entry: data.data.cp_data[entry].data.config.name})
                 elif "all" != entry:
                     id = entry.strip(string.ascii_letters)
