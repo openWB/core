@@ -286,7 +286,7 @@ var chartDatasets = [
 		}
 	},
 	{
-		label: 'Hausverbrauch',
+		label: 'Hausverbr.',
 		jsonKey: 'house-power',
 		borderColor: homeColor,
 		backgroundColor: homeBgColor,
@@ -528,7 +528,6 @@ function getDatasetIndex(datasetId) {
 		return index;
 	}
 	// console.debug('no index found for "' + datasetId + '"');
-	return
 }
 
 function addDataset(datasetId) {
@@ -546,16 +545,23 @@ function addDataset(datasetId) {
 	} else {
 		console.warn('no matching template found: ' + datasetId);
 	}
-	return
 }
 
 function initDataset(datasetId) {
 	var index = getDatasetIndex(datasetId);
-	if (index == undefined) {
+	if (index === undefined) {
 		index = addDataset(datasetId);
 	}
-	if (index != undefined) {
-		if (chartLabels[datasetId] !== undefined) {
+	if (index !== undefined) {
+		if(chartLabels[datasetId] === undefined) {
+			// add index to dataset label if no label is defined
+			if (number = datasetId.match(/([\d]+)/g)) {
+				chartDatasets[index].label = chartDatasets[index].label + ' ' + number[0];
+			} else {
+				console.warn('no label found for index: ' + datasetId);
+			}
+		} else {
+			// use label from chartLabels
 			chartDatasets[index].label = chartLabels[datasetId];
 		}
 		chartDatasets[index].data = allChartData;
