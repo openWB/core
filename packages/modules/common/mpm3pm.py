@@ -30,9 +30,13 @@ class Mpm3pm(AbstractCounter):
         return self.client.read_input_registers(0x0004, ModbusDataType.UINT_32, unit=self.id) * 10
 
     def get_power_factors(self) -> List[float]:
-        # Faktorisierung anders als in der Dokumentation angegeben
-        return [val / 10 for val in self.client.read_input_registers(
+        # Faktorisierung anders als in der Dokumentation angegeben?
+        factors = [val / 10 for val in self.client.read_input_registers(
             0x20, [ModbusDataType.UINT_32]*3, unit=self.id)]
+        # check if the absolute value of an entry in factors is greater 1
+        if any([abs(factor) > 1 for factor in factors]):
+            factors = [factor / 100 for factor in factors]
+        return factors
 
     def get_frequency(self) -> float:
         return self.client.read_input_registers(0x2c, ModbusDataType.UINT_32, unit=self.id) / 100
