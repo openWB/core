@@ -12,7 +12,15 @@ var schedulePlan = {};
 var timeChargePlan = {};
 var vehicleSoc = {};
 var evuCounterIndex = undefined;
-var chartLabels = {};
+var chartLabels = {
+	// define some default labels, they will be extended for components and vehicles
+	"grid": "EVU",
+	"house-power": "Hausverbr.",
+	"charging-all": "LP ges.",
+	"pv-all": "PV ges.",
+	"bat-all-power": "Speicher ges.",
+	"bat-all-soc": "Speicher ges. SoC",
+};
 
 function getIndex(topic, position=0) {
 	// get occurrence of numbers between / / in topic

@@ -116,7 +116,6 @@ function parseData(allData) {
 let datasetTemplates = {
 	// optional components
 	"pv-all": {
-		label: 'PV ges.',
 		jsonKey: null,
 		borderColor: pvAllColor,
 		backgroundColor: pvAllBgColor,
@@ -132,7 +131,6 @@ let datasetTemplates = {
 		}
 	},
 	"bat-all-power": {
-		label: 'Speicher ges.',
 		jsonKey: null,
 		borderColor: batAllColor,
 		backgroundColor: batAllBgColor,
@@ -148,7 +146,6 @@ let datasetTemplates = {
 		}
 	},
 	"bat-all-soc": {
-		label: 'Speicher ges. SoC',
 		jsonKey: null,
 		borderColor: batAllSocColor,
 		backgroundColor: batAllSocBgColor,
@@ -270,7 +267,6 @@ let datasetTemplates = {
 var chartDatasets = [
 	// always available elements
 	{
-		label: 'EVU',
 		jsonKey: 'grid',
 		borderColor: evuColor,
 		backgroundColor: evuBgColor,
@@ -286,7 +282,6 @@ var chartDatasets = [
 		}
 	},
 	{
-		label: 'Hausverbr.',
 		jsonKey: 'house-power',
 		borderColor: homeColor,
 		backgroundColor: homeBgColor,
@@ -302,7 +297,6 @@ var chartDatasets = [
 		}
 	},
 	{
-		label: 'LP ges.',
 		jsonKey: 'charging-all',
 		borderColor: cpAllColor,
 		backgroundColor: cpAllBgColor,
