@@ -19,7 +19,7 @@
 				:small="false"
 				class="grid-right grid-col-4"
 			>
-				{{ props.vehicle.range }} km
+				{{ Math.round(props.vehicle.range) }} km
 			</InfoItem>
 		</div>
 	</WbSubwidget>
