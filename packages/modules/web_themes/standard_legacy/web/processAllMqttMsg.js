@@ -12,7 +12,15 @@ var schedulePlan = {};
 var timeChargePlan = {};
 var vehicleSoc = {};
 var evuCounterIndex = undefined;
-var chartLabels = {};
+var chartLabels = {
+	// define some default labels, they will be extended for components and vehicles
+	"grid": "EVU",
+	"house-power": "Hausverbr.",
+	"charging-all": "LP ges.",
+	"pv-all": "PV ges.",
+	"bat-all-power": "Speicher ges.",
+	"bat-all-soc": "Speicher ges. SoC",
+};
 
 function getIndex(topic, position=0) {
 	// get occurrence of numbers between / / in topic
@@ -921,8 +929,6 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		parent.find('.charge-point-vehicle-data[data-ev]').attr('data-ev', infoData.id).data('ev', infoData.id); // set data-ev setting for this charge point
 		// "name" str
 		parent.find('.charge-point-vehicle-name').text(infoData.name);
-		// chart label
-		chartLabels[`ev${infoData.id}-soc`] = infoData.name;
 		refreshVehicleSoc(infoData.id);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/config$/i)) {
 		// settings of the vehicle if connected
@@ -1049,17 +1055,20 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 	if (mqttTopic.match(/^openwb\/vehicle\/[0-9]+\/name$/i)) {
 		// this topic is used to populate the charge point list
 		var index = getIndex(mqttTopic); // extract number between two / /
+		var vehicleName = JSON.parse(mqttPayload)
 		$('.charge-point-vehicle-select').each(function () {
 			myOption = $(this).find('option[value=' + index + ']');
 			if (myOption.length > 0) {
-				myOption.text(JSON.parse(mqttPayload)); // update vehicle name if option with index is present
+				myOption.text(vehicleName); // update vehicle name if option with index is present
 			} else {
-				$(this).append('<option value="' + index + '">' + JSON.parse(mqttPayload) + '</option>'); // add option with index
+				$(this).append(`<option value="${index}">${vehicleName}</option>`); // add option with index
 				if (parseInt($(this).closest('.charge-point-vehicle-data[data-ev]').data('ev')) == index) { // update selected element if match with our index
 					$(this).val(index);
 				}
 			}
 		});
+		// chart label
+		chartLabels[`ev${index}-soc`] = vehicleName;
 	} else if (mqttTopic.match(/^openwb\/vehicle\/[0-9]+\/soc_module\/config$/i)) {
 		// { "type": "<selected module>", "configuration": { <module specific data> } }
 		// we use the data "type" to detect, if a soc module is configure (type != None) or manual soc is selected (type == manual)

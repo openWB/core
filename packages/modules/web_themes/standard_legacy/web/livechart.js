@@ -116,7 +116,6 @@ function parseData(allData) {
 let datasetTemplates = {
 	// optional components
 	"pv-all": {
-		label: 'PV ges.',
 		jsonKey: null,
 		borderColor: pvAllColor,
 		backgroundColor: pvAllBgColor,
@@ -132,7 +131,6 @@ let datasetTemplates = {
 		}
 	},
 	"bat-all-power": {
-		label: 'Speicher ges.',
 		jsonKey: null,
 		borderColor: batAllColor,
 		backgroundColor: batAllBgColor,
@@ -148,7 +146,6 @@ let datasetTemplates = {
 		}
 	},
 	"bat-all-soc": {
-		label: 'Speicher ges. SoC',
 		jsonKey: null,
 		borderColor: batAllSocColor,
 		backgroundColor: batAllSocBgColor,
@@ -270,7 +267,6 @@ let datasetTemplates = {
 var chartDatasets = [
 	// always available elements
 	{
-		label: 'EVU',
 		jsonKey: 'grid',
 		borderColor: evuColor,
 		backgroundColor: evuBgColor,
@@ -286,7 +282,6 @@ var chartDatasets = [
 		}
 	},
 	{
-		label: 'Hausverbrauch',
 		jsonKey: 'house-power',
 		borderColor: homeColor,
 		backgroundColor: homeBgColor,
@@ -302,7 +297,6 @@ var chartDatasets = [
 		}
 	},
 	{
-		label: 'LP ges.',
 		jsonKey: 'charging-all',
 		borderColor: cpAllColor,
 		backgroundColor: cpAllBgColor,
@@ -528,7 +522,6 @@ function getDatasetIndex(datasetId) {
 		return index;
 	}
 	// console.debug('no index found for "' + datasetId + '"');
-	return
 }
 
 function addDataset(datasetId) {
@@ -546,16 +539,23 @@ function addDataset(datasetId) {
 	} else {
 		console.warn('no matching template found: ' + datasetId);
 	}
-	return
 }
 
 function initDataset(datasetId) {
 	var index = getDatasetIndex(datasetId);
-	if (index == undefined) {
+	if (index === undefined) {
 		index = addDataset(datasetId);
 	}
-	if (index != undefined) {
-		if (chartLabels[datasetId] !== undefined) {
+	if (index !== undefined) {
+		if(chartLabels[datasetId] === undefined) {
+			// add index to dataset label if no label is defined
+			if (number = datasetId.match(/([\d]+)/g)) {
+				chartDatasets[index].label = chartDatasets[index].label + ' ' + number[0];
+			} else {
+				console.warn('no label found for index: ' + datasetId);
+			}
+		} else {
+			// use label from chartLabels
 			chartDatasets[index].label = chartLabels[datasetId];
 		}
 		chartDatasets[index].data = allChartData;
