@@ -145,7 +145,7 @@ def save_log(log_type: LogType):
         with open(filepath, "r") as jsonFile:
             content = json.load(jsonFile)
 
-    previous_entry = get_prevoius_entry(parent_file, content)
+    previous_entry = get_previous_entry(parent_file, content)
 
     sh_log_data = LegacySmartHomeLogData()
     new_entry = create_entry(log_type, sh_log_data, previous_entry)
@@ -160,7 +160,7 @@ def save_log(log_type: LogType):
     return content["entries"]
 
 
-def get_prevoius_entry(parent_file: Path, content: Dict):
+def get_previous_entry(parent_file: Path, content: Dict):
     try:
         previous_entry = content["entries"][-1]
     except IndexError:
