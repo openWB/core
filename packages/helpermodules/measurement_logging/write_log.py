@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import string
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
-from typing import Dict
+from typing import Dict, Optional
 
 from control import data
 from helpermodules.broker import InternalBrokerClient
@@ -270,20 +270,42 @@ def fix_values(new_entry: Dict, previous_entry: Dict) -> Dict:
     return new_entry
 
 
-def get_names(elements: Dict, sh_names: Dict) -> Dict:
+def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None) -> Dict:
+    """ Ermittelt die Namen der Komponenten, Fahrzeuge, Ladepunkte und SmartHome-Geräte, welche
+    in elements vorhanden sind und gibt diese als Dictionary zurück.
+    Parameter
+    ---------
+    elements: dict
+        Dictionary, das die Messwerte enthält.
+    sh_names: dict
+        Dictionary, das die Namen der SmartHome-Geräte enthält.
+    valid_names: dict
+        Dictionary mit allen gültigen Namen, die in der Konfiguration hinterlegt sind.
+        Ist None, wenn die Namen aus data ermittelt werden sollen.
+    """
     names = sh_names
     for group in elements.items():
-        if group[0] not in ("bat", "counter", "cp", "pv", "ev"):
+        if group[0] not in ("bat", "counter", "cp", "pv", "ev", "sh"):
             continue
         for entry in group[1]:
-            try:
-                if "ev" in entry:
-                    names.update({entry: data.data.ev_data[entry].data.name})
-                elif "cp" in entry:
-                    names.update({entry: data.data.cp_data[entry].data.config.name})
-                elif "all" != entry:
-                    id = entry.strip(string.ascii_letters)
-                    names.update({entry: get_component_name_by_id(int(id))})
-            except (ValueError, KeyError, AttributeError):
-                names.update({entry: entry})
+            # valid_names wird aus update_config übergeben, da dort noch kein Zugriff auf data möglich ist
+            if valid_names is not None:
+                if "all" != entry:
+                    if entry in valid_names and (entry not in names or names[entry] == entry):
+                        names.update({entry: valid_names[entry]})
+                    else:
+                        names.update({entry: entry})
+            else:
+                if group[0] == "sh":
+                    continue
+                try:
+                    if "ev" in entry:
+                        names.update({entry: data.data.ev_data[entry].data.name})
+                    elif "cp" in entry:
+                        names.update({entry: data.data.cp_data[entry].data.config.name})
+                    elif "all" != entry:
+                        id = entry.strip(string.ascii_letters)
+                        names.update({entry: get_component_name_by_id(int(id))})
+                except (ValueError, KeyError, AttributeError):
+                    names.update({entry: entry})
     return names
