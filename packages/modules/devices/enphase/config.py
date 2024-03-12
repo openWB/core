@@ -49,3 +49,17 @@ class EnphaseInverterSetup(ComponentSetup[EnphaseInverterConfiguration]):
                  id: int = 0,
                  configuration: EnphaseInverterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or EnphaseInverterConfiguration())
+
+
+class EnphaseBatConfiguration:
+    def __init__(self):
+        pass
+
+
+class EnphaseBatSetup(ComponentSetup[EnphaseBatConfiguration]):
+    def __init__(self,
+                 name: str = "Enphase Speicher",
+                 type: str = "bat",
+                 id: int = 0,
+                 configuration: EnphaseBatConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or EnphaseBatConfiguration())
