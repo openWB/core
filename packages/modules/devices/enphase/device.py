@@ -57,7 +57,7 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        if self.device_config.configuration.version == EnphaseVersion.V2:
+        if self.device_config.configuration.version == EnphaseVersion.V2.value:
             # v2 requires token authentication
             if self.device_config.configuration.token is None:
                 if self.device_config.configuration.user is None or self.device_config.configuration.password is None:
@@ -69,11 +69,11 @@ class Device(AbstractDevice):
         log.debug("Start device reading " + str(self.components))
         if self.components:
             with MultiComponentUpdateContext(self.components):
-                if self.device_config.configuration.version == EnphaseVersion.V1:
+                if self.device_config.configuration.version == EnphaseVersion.V1.value:
                     json_live_data = None  # ToDo: available in V1?
                     json_response = req.get_http_session().get(
                         'http://'+self.device_config.configuration.hostname+'/ivp/meters/readings', timeout=5).json()
-                elif self.device_config.configuration.version == EnphaseVersion.V2:
+                elif self.device_config.configuration.version == EnphaseVersion.V2.value:
                     json_live_data = req.get_http_session().get(
                         'https://'+self.device_config.configuration.hostname+'/ivp/livedata/status',
                         timeout=5, verify=False,
@@ -85,7 +85,7 @@ class Device(AbstractDevice):
                         headers={"Authorization": f"Bearer {self.device_config.configuration.token}"}).json()
                     log.debug(f"meters/readings json response: {json_response}")
                 else:
-                    log.error("unknown version: " + self.device_config.configuration.version)
+                    log.error(f"unknown version: {self.device_config.configuration.version}")
                     return
                 for component in self.components:
                     self.components[component].update(json_response, json_live_data)
