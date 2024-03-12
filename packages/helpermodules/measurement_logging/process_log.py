@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple
 
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
-                                                         get_prevoius_entry)
+                                                         get_previous_entry)
 
 log = logging.getLogger(__name__)
 
@@ -152,7 +152,7 @@ def _collect_daily_log_data(date: str):
             if date == timecheck.create_timestamp_YYYYMMDD():
                 # beim aktuellen Tag den aktuellen Datensatz ergänzen
                 log_data["entries"].append(create_entry(
-                    LogType.DAILY, LegacySmartHomeLogData(), get_prevoius_entry(parent_file, log_data)))
+                    LogType.DAILY, LegacySmartHomeLogData(), get_previous_entry(parent_file, log_data)))
             else:
                 # bei älteren als letzten Datensatz den des nächsten Tags
                 try:

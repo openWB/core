@@ -37,7 +37,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 37
+    DATASTORE_VERSION = 38
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1275,3 +1275,48 @@ class UpdateConfig:
             Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
         hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
         self.__update_topic("openWB/system/datastore_version", 37)
+
+    def upgrade_datastore_37(self) -> None:
+        def collect_names(topic: str, payload) -> None:
+            if re.search("^openWB/vehicle/[0-9]+/name$", topic) is not None:
+                payload = decode_payload(payload)
+                names[f"ev{get_index(topic)}"] = payload
+            elif re.search("^openWB/chargepoint/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                names[f"cp{get_index(topic)}"] = payload["name"]
+            elif re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                if "inverter" in payload["type"]:
+                    prefix = "pv"
+                elif "counter" in payload["type"]:
+                    prefix = "counter"
+                else:
+                    prefix = payload["type"]
+                names[f"{prefix}{get_second_index(topic)}"] = payload["name"]
+            elif re.search("^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_name$", topic) is not None:
+                names[f"sh{get_index(topic)}"] = decode_payload(payload)
+
+        def convert_file(file):
+            log.debug(f"Prüfe Logdatei '{file}'")
+            try:
+                with open(file, "r+") as jsonFile:
+                    content: dict = json.load(jsonFile)
+                    new_names = get_names(content["entries"][-1], {}, names)
+                    if new_names != content["names"]:
+                        content["names"] = new_names
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format der Logdatei '{file}' aktualisiert.")
+            except FileNotFoundError:
+                pass
+            except Exception:
+                log.exception(f"Logfile '{file}' konnte nicht konvertiert werden.")
+        names = {}
+        self._loop_all_received_topics(collect_names)
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files.sort()
+        for file in files:
+            convert_file(file)
+        self.__update_topic("openWB/system/datastore_version", 38)
