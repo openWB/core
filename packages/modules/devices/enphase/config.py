@@ -1,9 +1,14 @@
+from typing import Optional
 from modules.common.component_setup import ComponentSetup
 
 
 class EnphaseConfiguration:
-    def __init__(self, hostname=None):
+    def __init__(self, hostname: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None,
+                 token: Optional[str] = None):
         self.hostname = hostname
+        self.user = user
+        self.password = password
+        self.token = token
 
 
 class Enphase:

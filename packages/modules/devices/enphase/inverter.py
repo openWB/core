@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class EnphaseInverter:
-    def __init__(self, component_config: Union[Dict, EnphaseInverterSetup]) -> None:
+    def __init__(self, device_id: int, component_config: Union[Dict, EnphaseInverterSetup]) -> None:
         self.component_config = dataclass_from_dict(EnphaseInverterSetup, component_config)
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

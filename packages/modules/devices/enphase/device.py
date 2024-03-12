@@ -42,7 +42,7 @@ class Device(AbstractDevice):
             component_type].component_descriptor.configuration_factory, component_config)
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component"+str(component_config.id)] = self.COMPONENT_TYPE_TO_CLASS[component_type](
-                component_config)
+                self.device_config.id, component_config)
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -50,11 +50,19 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
+        if self.device_config.configuration.token is None:
+            if self.device_config.configuration.user is None or self.device_config.configuration.password is None:
+                log.error("no credentials to authenticate!")
+            else:
+                log.info("no valid token found, trying to receive token with user/pass")
         log.debug("Start device reading " + str(self.components))
         if self.components:
             with MultiComponentUpdateContext(self.components):
                 response = req.get_http_session().get(
-                    'http://'+self.device_config.configuration.hostname+'/ivp/meters/readings', timeout=5)
+                    'https://'+self.device_config.configuration.hostname+'/ivp/meters/readings',
+                    timeout=5, verify=False,
+                    headers={"Authorization": f"Bearer {self.device_config.configuration.token}"})
+                log.debug(f"meters/readings json response: {response.json()}")
                 for component in self.components:
                     self.components[component].update(response.json())
         else:
