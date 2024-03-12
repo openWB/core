@@ -8,7 +8,8 @@ from modules.common import req
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import MultiComponentUpdateContext
 from modules.devices.enphase import counter, inverter, bat
-from modules.devices.enphase.config import (Enphase,
+from modules.devices.enphase.config import (EnphaseVersion,
+                                            Enphase,
                                             EnphaseConfiguration,
                                             EnphaseCounterConfiguration,
                                             EnphaseCounterSetup,
@@ -56,26 +57,38 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        if self.device_config.configuration.token is None:
-            if self.device_config.configuration.user is None or self.device_config.configuration.password is None:
-                log.error("no credentials to authenticate!")
-            else:
-                log.info("no valid token found, trying to receive token with user/pass")
+        if self.device_config.configuration.version == EnphaseVersion.V2:
+            # v2 requires token authentication
+            if self.device_config.configuration.token is None:
+                if self.device_config.configuration.user is None or self.device_config.configuration.password is None:
+                    log.error("no valid token found and no credentials to authenticate!")
+                    # ToDo: throw error and set fault state
+                else:
+                    log.info("no valid token found, trying to receive token with user/pass")
+                    # ToDo: fetch token with user/pass
         log.debug("Start device reading " + str(self.components))
         if self.components:
             with MultiComponentUpdateContext(self.components):
-                live_data = req.get_http_session().get(
-                    'https://'+self.device_config.configuration.hostname+'/ivp/livedata/status',
-                    timeout=5, verify=False,
-                    headers={"Authorization": f"Bearer {self.device_config.configuration.token}"})
-                log.debug(f"livedata/status json response: {live_data.json()}")
-                response = req.get_http_session().get(
-                    'https://'+self.device_config.configuration.hostname+'/ivp/meters/readings',
-                    timeout=5, verify=False,
-                    headers={"Authorization": f"Bearer {self.device_config.configuration.token}"})
-                log.debug(f"meters/readings json response: {response.json()}")
+                if self.device_config.configuration.version == EnphaseVersion.V1:
+                    json_live_data = None  # ToDo: available in V1?
+                    json_response = req.get_http_session().get(
+                        'http://'+self.device_config.configuration.hostname+'/ivp/meters/readings', timeout=5).json()
+                elif self.device_config.configuration.version == EnphaseVersion.V2:
+                    json_live_data = req.get_http_session().get(
+                        'https://'+self.device_config.configuration.hostname+'/ivp/livedata/status',
+                        timeout=5, verify=False,
+                        headers={"Authorization": f"Bearer {self.device_config.configuration.token}"}).json()
+                    log.debug(f"livedata/status json response: {json_live_data}")
+                    json_response = req.get_http_session().get(
+                        'https://'+self.device_config.configuration.hostname+'/ivp/meters/readings',
+                        timeout=5, verify=False,
+                        headers={"Authorization": f"Bearer {self.device_config.configuration.token}"}).json()
+                    log.debug(f"meters/readings json response: {json_response}")
+                else:
+                    log.error("unknown version: " + self.device_config.configuration.version)
+                    return
                 for component in self.components:
-                    self.components[component].update(response.json(), live_data.json())
+                    self.components[component].update(json_response, json_live_data)
         else:
             log.warning(
                 self.device_config.name +
