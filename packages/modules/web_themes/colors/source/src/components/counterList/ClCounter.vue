@@ -16,14 +16,18 @@
 				>
 			</div>
 		</template>
-		<div class="d-flex justify-content-between pb-2">
-			<InfoItem heading="Leistung:" :small="true">
+		<div class="subgrid pt-1">
+			<InfoItem heading="Leistung:" :small="true" class="grid-left grid-col-4">
 				<FormatWatt :watt="Math.abs(props.counter.power)"></FormatWatt>
 			</InfoItem>
-			<InfoItem heading="Bezogen:" :small="true">
+			<InfoItem heading="Bezogen:" :small="true" class="grid-col-4">
 				<FormatWattH :watt-h="props.counter.energy_imported"></FormatWattH>
 			</InfoItem>
-			<InfoItem heading="Exportiert:" :small="true">
+			<InfoItem
+				heading="Exportiert:"
+				:small="true"
+				class="grid-right grid-col-4"
+			>
 				<FormatWattH :watt-h="props.counter.energy_exported"></FormatWattH>
 			</InfoItem>
 		</div>

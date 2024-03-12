@@ -29,18 +29,16 @@
 				>
 			</div>
 		</template>
-		<div class="row m-1 mt-0 p-0">
-			<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
-				<InfoItem heading="Leistung:">
-					<FormatWatt :watt="device.power" />
-				</InfoItem>
-				<InfoItem heading="Energie:">
-					<FormatWattH :watt-h="device.energy" />
-				</InfoItem>
-				<InfoItem heading="Laufzeit:">
-					{{ formatTime(device.runningTime) }}
-				</InfoItem>
-			</div>
+		<div class="subgrid">
+			<InfoItem heading="Leistung:" class="grid-col-4 grid-left">
+				<FormatWatt :watt="device.power" />
+			</InfoItem>
+			<InfoItem heading="Energie:" class="grid-col-4">
+				<FormatWattH :watt-h="device.energy" />
+			</InfoItem>
+			<InfoItem heading="Laufzeit:" class="grid-col-4 grid-right">
+				{{ formatTime(device.runningTime) }}
+			</InfoItem>
 		</div>
 	</WbSubwidget>
 </template>
@@ -129,5 +127,8 @@ const deviceMode = computed(() => {
 	color: var(--color-bg);
 	font-size: var(--font-verysmall);
 	font-weight: normal;
+}
+.infolist {
+	justify-content: center;
 }
 </style>

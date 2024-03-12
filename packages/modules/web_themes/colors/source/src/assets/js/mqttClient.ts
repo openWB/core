@@ -106,7 +106,9 @@ export async function mqttPublish(topic: string, message: string) {
 			console.warn('MQTT publish: caught error: ' + error)
 		}
 	} else {
-		console.error('MQTT publish: Lost connection to MQTT server. Please reload the page')
+		console.error(
+			'MQTT publish: Lost connection to MQTT server. Please reload the page',
+		)
 	}
 }
 export function mqttClientId() {

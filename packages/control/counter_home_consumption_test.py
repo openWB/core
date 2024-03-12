@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from control.conftest import hierarchy_standard, hierarchy_hybrid, hierarchy_nested
+from packages.conftest import hierarchy_standard, hierarchy_hybrid, hierarchy_nested
 from control.counter_all import CounterAll
 from modules.common.fault_state import FaultStateLevel
 
