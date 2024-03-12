@@ -1286,7 +1286,12 @@ class UpdateConfig:
                 names[f"cp{get_index(topic)}"] = payload["name"]
             elif re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
                 payload = decode_payload(payload)
-                prefix = "pv" if payload["type"] == "inverter" else payload["type"]
+                if "inverter" in payload["type"]:
+                    prefix = "pv"
+                elif "counter" in payload["type"]:
+                    prefix = "counter"
+                else:
+                    prefix = payload["type"]
                 names[f"{prefix}{get_second_index(topic)}"] = payload["name"]
             elif re.search("^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_name$", topic) is not None:
                 names[f"sh{get_index(topic)}"] = decode_payload(payload)
