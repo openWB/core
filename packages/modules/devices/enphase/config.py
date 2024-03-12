@@ -1,11 +1,21 @@
+from enum import Enum
 from typing import Optional
 from modules.common.component_setup import ComponentSetup
 
 
+class EnphaseVersion(Enum):
+    V1 = 1
+    V2 = 2
+
+
 class EnphaseConfiguration:
-    def __init__(self, hostname: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None,
+    def __init__(self, hostname: Optional[str] = None,
+                 version: EnphaseVersion = EnphaseVersion.V1,
+                 user: Optional[str] = None,
+                 password: Optional[str] = None,
                  token: Optional[str] = None):
         self.hostname = hostname
+        self.version = version
         self.user = user
         self.password = password
         self.token = token
