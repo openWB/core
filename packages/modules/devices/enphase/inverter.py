@@ -18,7 +18,7 @@ class EnphaseInverter:
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, response) -> None:
+    def update(self, response, live_data) -> None:
         config = self.component_config.configuration
 
         meter = None
