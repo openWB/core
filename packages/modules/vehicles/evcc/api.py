@@ -60,7 +60,7 @@ def fetch_soc(
             # saving vehicle id in config
             topic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
             write_vehicle_id_mqtt(topic, vehicle_to_fetch, evcc_config)
-        else:  
+        else:
             log.debug("Vehicle id found in config: " + str(evcc_config.vehicle_id))
             vehicle_to_fetch = evcc_config.vehicle_id
         log.debug("Fetching SoC for vehicle id: " + str(vehicle_to_fetch))  # fetch SoC
