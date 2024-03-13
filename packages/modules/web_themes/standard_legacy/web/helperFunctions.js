@@ -16,23 +16,23 @@ function updateLabel(elementId) {
 		var suffix = label.attr('data-suffix');
 		var value = parseFloat(element.val());
 		var text;
-		if (list = $(element).attr('data-list')){
+		if (list = $(element).attr('data-list')) {
 			console.log("list detected", list);
 			jsonList = JSON.parse(list);
 			console.log("json list", jsonList);
-			if (Array.isArray(jsonList[value])){
+			if (Array.isArray(jsonList[value])) {
 				console.log("array detected", jsonList[value]);
 				text = jsonList[value][1];
 			} else {
 				console.log("value detected", jsonList[value]);
-				text = jsonList[value].toLocaleString(undefined, {maximumFractionDigits: 2});
+				text = jsonList[value].toLocaleString(undefined, { maximumFractionDigits: 2 });
 				if (suffix != '') {
 					text += ' ' + suffix;
 				}
 			}
 		} else {
 			console.log("no list detected");
-			text = value.toLocaleString(undefined, {maximumFractionDigits: 2});
+			text = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 			if (suffix != '') {
 				text += ' ' + suffix;
 			}
@@ -41,7 +41,7 @@ function updateLabel(elementId) {
 	}
 }
 
-function transformRangeValue(formula){
+function transformRangeValue(formula) {
 	return new Function('return ' + formula)();
 }
 
@@ -56,18 +56,18 @@ function setInputValue(elementId, value) {
 	 * if the element hat data-attribute 'transformation' the value will be calculated by the given formula
 	 */
 	// console.debug("input elementID", elementId);
-	if ( !isNaN(value) ) {
+	if (!isNaN(value)) {
 		var element = $('#' + $.escapeSelector(elementId));
-		if(list = $(element).attr('data-list')){
+		if (list = $(element).attr('data-list')) {
 			jsonList = JSON.parse(list);
 			value = jsonList.findIndex(item => {
-				if (Array.isArray(item)){
+				if (Array.isArray(item)) {
 					return item[0] == value;
 				} else {
 					return item == value;
 				}
 			});
-		} else if(formula = $(element).attr('data-transformation')){
+		} else if (formula = $(element).attr('data-transformation')) {
 			// console.log(formula);
 			formula = JSON.parse(formula);
 			// console.log(formula);
@@ -77,9 +77,9 @@ function setInputValue(elementId, value) {
 		}
 		var signCheckboxName = element.data('signCheckbox');
 		var signCheckbox = $('#' + signCheckboxName);
-		if ( signCheckbox.length == 1 ) {
+		if (signCheckbox.length == 1) {
 			// checkbox exists
-			if ( value < 0 ) {
+			if (value < 0) {
 				signCheckbox.prop('checked', true);
 				value *= -1;
 			} else {
@@ -87,18 +87,18 @@ function setInputValue(elementId, value) {
 			}
 		}
 		element.val(value);
-		if ( element.attr('type') == 'range' ) {
+		if (element.attr('type') == 'range') {
 			updateLabel(elementId);
 		}
-		if ( element.hasClass('charge-point-time-charging-active')){
+		if (element.hasClass('charge-point-time-charging-active')) {
 			timeChargeOptionsShowHide(element, value == 1);
 		}
-		} else {
+	} else {
 		console.error("invalid value for input element", elementId, value);
 	}
 }
 
-function getTopicToSendTo (elementId) {
+function getTopicToSendTo(elementId) {
 	var element = $('#' + $.escapeSelector(elementId));
 	// var topic = element.data('topicprefix') + elementId;
 	// topic = topic.replace('/get/', '/set/');
@@ -106,14 +106,14 @@ function getTopicToSendTo (elementId) {
 	//     topic = 'openWB/set/awattar/MaxPriceForCharging'
 	// }
 	var topic = $(element).data('topic');
-	if( topic != undefined ) {
+	if (topic != undefined) {
 		var cp = parseInt($(element).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
 		var ev = parseInt($(element).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
 		var ct = parseInt($(element).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
-		topic = topic.replace( '<cp>', cp );
-		topic = topic.replace( '<ev>', ev );
-		topic = topic.replace( '<ct>', ct );
-		if( topic.includes('/NaN/') ) {
+		topic = topic.replace('<cp>', cp);
+		topic = topic.replace('<ev>', ev);
+		topic = topic.replace('<ct>', ct);
+		if (topic.includes('/NaN/')) {
 			console.error('missing cp, ev or ct data', topic);
 			topic = undefined;
 		}
@@ -135,15 +135,15 @@ function setToggleBtnGroup(groupId, option) {
 	btnGroup.find('input[data-option=' + option + ']').prop('checked', true);
 	btnGroup.find('input[data-option=' + option + ']').closest('label').addClass('active');
 	// and uncheck all others
-	btnGroup.find('input').not('[data-option=' + option + ']').each(function() {
+	btnGroup.find('input').not('[data-option=' + option + ']').each(function () {
 		$(this).prop('checked', false);
 		$(this).closest('label').removeClass('active');
 	});
 	// show/hide respective option-values and progress
-	if (btnGroup.hasClass('charge-point-charge-mode')){
+	if (btnGroup.hasClass('charge-point-charge-mode')) {
 		chargemodeOptionsShowHide(btnGroup, option);
 	}
-	if (btnGroup.hasClass('charge-point-instant-charge-limit-selected')){
+	if (btnGroup.hasClass('charge-point-instant-charge-limit-selected')) {
 		chargemodeLimitOptionsShowHide(btnGroup, option);
 	}
 

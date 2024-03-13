@@ -22,7 +22,7 @@ var chartLabels = {
 	"bat-all-soc": "Speicher ges. SoC",
 };
 
-function getIndex(topic, position=0) {
+function getIndex(topic, position = 0) {
 	// get occurrence of numbers between / / in topic
 	// since this is supposed to be the index like in openwb/lp/4/w
 	// no lookbehind supported by safari, so workaround with replace needed
@@ -92,6 +92,7 @@ function createChargePoint(hierarchy) {
 
 function refreshChargeTemplate(templateIndex) {
 	if (chargeModeTemplate.hasOwnProperty(templateIndex)) {
+		console.debug("refreshing charge template", templateIndex);
 		parents = $('.charge-point-card[data-charge-template=' + templateIndex + ']');
 		if (parents.length > 0) {
 			// console.debug("selected elements", parents);
@@ -138,7 +139,7 @@ function refreshChargeTemplate(templateIndex) {
 				var max_price = parseFloat((chargeModeTemplate[templateIndex].et.max_price * 100000).toFixed(2));
 				element.data('max-price', max_price);
 				element.attr('data-max-price', max_price).data('max-price', max_price);
-				element.find('.charge-point-price-charging-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2}));
+				element.find('.charge-point-price-charging-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
 				// ***** pv_charging *****
 				// chargemode.pv_charging.min_current
@@ -371,7 +372,7 @@ function handleMessage(mqttTopic, mqttPayload) {
 	processPreloader(mqttTopic);
 	if (mqttTopic.match(/^openwb\/counter\/[0-9]+\//i)) { processCounterMessages(mqttTopic, mqttPayload) }
 	else if (mqttTopic.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttTopic, mqttPayload); }
-	else if (mqttTopic.match(/^openwb\/system\/device\/[0-9]+\/component\/[0-9]+\//i) ) { processComponentMessages(mqttTopic, mqttPayload); }
+	else if (mqttTopic.match(/^openwb\/system\/device\/[0-9]+\/component\/[0-9]+\//i)) { processComponentMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/bat\//i)) { processBatteryMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/pv\//i)) { processPvMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/chargepoint\//i)) { processChargePointMessages(mqttTopic, mqttPayload); }
@@ -1313,7 +1314,7 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		var actualMode = "";
 		if (mqttPayload == 0) {
 			actualMode = "Automatik"
-		} else if (mqttPayload == 1){
+		} else if (mqttPayload == 1) {
 			actualMode = "Manuell"
 		} else {
 			console.warn("unknown mode", mqttPayload);
@@ -1330,11 +1331,11 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		// device power
 		var element = deviceElement.find('.actualPowerDevice');  // now get parents child element
 		var actualPower = parseInt(mqttPayload, 10);
-		if ( isNaN(actualPower) ) {
+		if (isNaN(actualPower)) {
 			actualPower = 0;
 		}
 		if (actualPower > 999) {
-			actualPower = (actualPower / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			actualPower = (actualPower / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 			actualPower += '&nbsp;kW';
 		} else {
 			actualPower += '&nbsp;W';
@@ -1345,7 +1346,7 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		// device running time
 		var element = deviceElement.find('.actualRunningTimeDevice');  // now get parents child element
 		var runningTime = parseInt(mqttPayload, 10);
-		if ( isNaN(runningTime) ) {
+		if (isNaN(runningTime)) {
 			runningTime = 0;
 		}
 		var seconds = runningTime % 60;
@@ -1363,17 +1364,17 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Status$/i)) {
 		// device state
 		var element = deviceElement.find('.nameDevice');  // now get parents child element
-		// 10 device on (manual or automatic)
-		if ( mqttPayload == 10 ) {
+		if (mqttPayload == 10) {
+			// 10 device on (manual or automatic)
 			element.removeClass('charge-point-enabled').removeClass('text-blue').removeClass('text-white').removeClass('charge-point-waiting').addClass('charge-point-disabled');
-		// 11 device off (manual or automatic)
-		} else if ( mqttPayload == 11 ) {
+		} else if (mqttPayload == 11) {
+			// 11 device off (manual or automatic)
 			element.removeClass('charge-point-disabled').removeClass('text-blue').removeClass('text-white').removeClass('charge-point-waiting').addClass('charge-point-enabled');
-		// 20 startup detection active
-		} else if ( mqttPayload == 20) {
+		} else if (mqttPayload == 20) {
+			// 20 startup detection active
 			element.removeClass('charge-point-disabled').removeClass('charge-point-enabled').removeClass('text-white').removeClass('charge-point-waiting').addClass('text-blue');
-		// 30 finish time running
 		} else if (mqttPayload == 30) {
+			// 30 finish time running
 			element.removeClass('charge-point-disabled').removeClass('charge-point-enabled').removeClass('text-blue').removeClass('charge-point-waiting').addClass('text-white');
 		} else {
 			console.warn("unknown state message", mqttTopic, mqttPayload);
@@ -1383,11 +1384,11 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		// device daily yield
 		var element = deviceElement.find('.actualDailyYieldDevice');  // now get parents respective child element
 		var actualDailyYield = parseFloat(mqttPayload);
-		if ( isNaN(actualDailyYield) ) {
+		if (isNaN(actualDailyYield)) {
 			actualDailyYield = 0;
 		}
-		if ( actualDailyYield >= 0 ) {
-			var actualDailyYieldStr = '&nbsp;(' + actualDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '&nbsp;kWh)';
+		if (actualDailyYield >= 0) {
+			var actualDailyYieldStr = '&nbsp;(' + actualDailyYield.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '&nbsp;kWh)';
 			element.html(actualDailyYieldStr);
 		} else {
 			element.text("");
@@ -1400,18 +1401,18 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		var sensorElement = deviceTemperatureElement.find('[data-smart-home-temperature="' + sensorIndex + '"]');
 		var sensorValueElement = sensorElement.find('.temperature');
 		var actualTemp = parseFloat(mqttPayload);
-		if ( isNaN(actualTemp) ) {
+		if (isNaN(actualTemp)) {
 			actualTemp = 999;
 		}
 		if (actualTemp > 200) {
 			sensorValueElement.text(''); // display only something if we got a value
 			sensorElement.addClass('hide');
 		} else {
-			sensorValueElement.text('Temp' + sensorIndex + ' ' + actualTemp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+			sensorValueElement.text('Temp' + sensorIndex + ' ' + actualTemp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 			sensorElement.removeClass('hide');
 		}
 		var visibleRows = deviceTemperatureElement.find('[data-smart-home-temperature]').not('.hide');  // show/hide complete block depending on visible rows within
-		if ( visibleRows.length > 0 ) {
+		if (visibleRows.length > 0) {
 			deviceTemperatureElement.removeClass('hide');
 		} else {
 			deviceTemperatureElement.addClass('hide');
