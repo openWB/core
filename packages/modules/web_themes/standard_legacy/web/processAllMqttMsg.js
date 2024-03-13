@@ -938,8 +938,10 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		var configData = JSON.parse(mqttPayload);
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
 		// "charge_template" int
-		parent.attr('data-charge-template', configData.charge_template).data('charge-template', configData.charge_template);
-		refreshChargeTemplate(configData.charge_template);
+		if (parent.attr('data-charge-template') != configData.charge_template) {
+			parent.attr('data-charge-template', configData.charge_template).data('charge-template', configData.charge_template);
+			refreshChargeTemplate(configData.charge_template);
+		}
 		// "ev_template" int
 		parent.attr('data-ev-template', configData.ev_template).data('ev-template', configData.ev_template);
 		// "chargemode" str
