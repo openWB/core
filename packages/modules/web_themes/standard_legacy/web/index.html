@@ -535,7 +535,7 @@
 															data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm"
 															data-style="w-100">
 													</div>
-													<div class="col-2">
+													<div class="col-3">
 														<button type="button" class="charge-point-max-price-button btn btn-sm btn-secondary btn-block" data-max-price="">
 															<span class="charge-point-price-charging-max_price">--</span>&nbsp;ct/kWh
 														</button>
@@ -618,7 +618,7 @@
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/current"
 														min="6" max="32" step="1">
 												</div>
-												<label for="currentInstantChargeCpT" class="col-form-label valueLabel"
+												<label for="currentInstantChargeCpT" class="col-2 col-form-label valueLabel text-right"
 													data-suffix="A">-- A</label>
 											</div>
 										</div>
@@ -655,7 +655,7 @@
 															id="soclimitCpT" min="5" max="100" step="5"
 															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
 													</div>
-													<label for="soclimitCpT" class="col-form-label valueLabel"
+													<label for="soclimitCpT" class="col-2 col-form-label valueLabel text-right"
 														data-suffix="%">-- %</label>
 												</div>
 											</div>
@@ -674,7 +674,7 @@
 															data-transformation='{ "in": "<v>/1000", "out": "<v>*1000" }'
 															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
 													</div>
-													<label for="amountlimitCpT" class="col-form-label valueLabel"
+													<label for="amountlimitCpT" class="col-2 col-form-label valueLabel text-right"
 														data-suffix="kWh">-- kWh</label>
 												</div>
 											</div>
@@ -697,7 +697,7 @@
 														min="0" max="11" step="1"
 														data-list="0,6,7,8,9,10,11,12,13,14,15,16">
 												</div>
-												<label for="minCurrentPvCpT" class="col-form-label valueLabel"
+												<label for="minCurrentPvCpT" class="col-2 col-form-label valueLabel text-right"
 													data-suffix="A">-- A</label>
 											</div>
 										</div>
@@ -715,7 +715,7 @@
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc"
 														min="0" max="99" step="1">
 												</div>
-												<label for="minSocPvCpT" class="col-form-label valueLabel"
+												<label for="minSocPvCpT" class="col-2 col-form-label valueLabel text-right"
 													data-suffix="%">-- %</label>
 											</div>
 										</div>
@@ -733,7 +733,7 @@
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current"
 														min="6" max="16" step="1">
 												</div>
-												<label for="minSocCurrentPvCpT" class="col-form-label valueLabel"
+												<label for="minSocCurrentPvCpT" class="col-2 col-form-label valueLabel text-right"
 													data-suffix="A">-- A</label>
 											</div>
 										</div>
@@ -751,7 +751,7 @@
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc"
 														min="1" max="100" step="1">
 												</div>
-												<label for="maxSocPvCpT" class="col-form-label valueLabel"
+												<label for="maxSocPvCpT" class="col-2 col-form-label valueLabel text-right"
 													data-suffix="%">-- %</label>
 											</div>
 										</div>
