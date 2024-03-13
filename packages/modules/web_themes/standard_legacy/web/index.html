@@ -695,7 +695,7 @@
 														id="minCurrentPvCpT"
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current"
 														min="0" max="11" step="1"
-														data-list="0,6,7,8,9,10,11,12,13,14,15,16">
+														data-list='[[0,"Aus"],6,7,8,9,10,11,12,13,14,15,16]'>
 												</div>
 												<label for="minCurrentPvCpT" class="col-2 col-form-label valueLabel text-right"
 													data-suffix="A">-- A</label>
@@ -713,7 +713,7 @@
 														class="charge-point-pv-charge-min-soc form-control-range rangeInput"
 														id="minSocPvCpT"
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc"
-														min="0" max="99" step="1">
+														min="0" max="95" step="5">
 												</div>
 												<label for="minSocPvCpT" class="col-2 col-form-label valueLabel text-right"
 													data-suffix="%">-- %</label>
@@ -749,7 +749,8 @@
 														class="charge-point-pv-charge-max-soc form-control-range rangeInput"
 														id="maxSocPvCpT"
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc"
-														min="1" max="100" step="1">
+														min="0" max="21" step="1"
+														data-list='[1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,[101,"Aus"]]'>
 												</div>
 												<label for="maxSocPvCpT" class="col-2 col-form-label valueLabel text-right"
 													data-suffix="%">-- %</label>
@@ -1307,21 +1308,23 @@
 				var element = $('#' + $.escapeSelector(elementId));
 				var label = $('label[for="' + elementId + '"].valueLabel');
 				label.addClass('text-danger');
-				// if ( $.escapeSelector(elementId) == 'MaxPriceForCharging') {
-				// 	// marks times in the price chart where the price is low enough so charging would be allowed
-				// 	var priceAnnotations = createPriceAnnotations();
-				// 	electricityPriceChart.options.annotation.annotations = priceAnnotations;
-				// 	electricityPriceChart.update();
-				// }
 
 				delayUserInput(elementId, function (id) {
 					// gets executed on callback, 2000ms after last input-change
 					// changes label color back to normal and sends input-value by mqtt
 					var elem = $('#' + $.escapeSelector(id));
 					var value = parseFloat(elem.val());
-					var label = $('label[for="' + id + '"].valueLabel');
+					console.log("value", value);
 					if (list = $(elem).attr('data-list')) {
-						value = parseFloat(list.split(',')[parseInt(value)]);
+						var jsonList = JSON.parse(list);
+						console.log("jsonList", jsonList);
+						if (Array.isArray(jsonList[parseInt(value)])) {
+							console.log("array detected", jsonList[parseInt(value)]);
+							value = jsonList[parseInt(value)][0];
+						} else {
+							console.log("no array detected", jsonList[parseInt(value)]);
+							value = jsonList[parseInt(value)];
+						}
 					} else if (formula = $(elem).attr('data-transformation')) {
 						formula = JSON.parse(formula);
 						formula = formula.out.replace('<v>', value);
@@ -1329,7 +1332,7 @@
 					}
 					var topic = getTopicToSendTo(id);
 					publish(value, topic);
-					label.removeClass('text-danger');
+					$('label[for="' + id + '"].valueLabel').removeClass('text-danger');
 				}, 2000);
 			});
 

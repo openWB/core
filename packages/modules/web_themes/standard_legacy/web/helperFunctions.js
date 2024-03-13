@@ -12,15 +12,30 @@ function updateLabel(elementId) {
 	 */
 	var element = $('#' + $.escapeSelector(elementId));
 	var label = $('label[for="' + elementId + '"].valueLabel');
-	if ( label.length == 1 ) {
+	if (label.length == 1) {
 		var suffix = label.attr('data-suffix');
 		var value = parseFloat(element.val());
-		if(list = $(element).attr('data-list')){
-			value = list.split(',')[parseInt(value)];
-		}
-		var text = value.toLocaleString(undefined, {maximumFractionDigits: 2});
-		if ( suffix != '' ) {
-			text += ' ' + suffix;
+		var text;
+		if (list = $(element).attr('data-list')){
+			console.log("list detected", list);
+			jsonList = JSON.parse(list);
+			console.log("json list", jsonList);
+			if (Array.isArray(jsonList[value])){
+				console.log("array detected", jsonList[value]);
+				text = jsonList[value][1];
+			} else {
+				console.log("value detected", jsonList[value]);
+				text = jsonList[value].toLocaleString(undefined, {maximumFractionDigits: 2});
+				if (suffix != '') {
+					text += ' ' + suffix;
+				}
+			}
+		} else {
+			console.log("no list detected");
+			text = value.toLocaleString(undefined, {maximumFractionDigits: 2});
+			if (suffix != '') {
+				text += ' ' + suffix;
+			}
 		}
 		label.text(text);
 	}
@@ -44,7 +59,14 @@ function setInputValue(elementId, value) {
 	if ( !isNaN(value) ) {
 		var element = $('#' + $.escapeSelector(elementId));
 		if(list = $(element).attr('data-list')){
-			value = parseInt(list.split(',').findIndex(item => item == value));
+			jsonList = JSON.parse(list);
+			value = jsonList.findIndex(item => {
+				if (Array.isArray(item)){
+					return item[0] == value;
+				} else {
+					return item == value;
+				}
+			});
 		} else if(formula = $(element).attr('data-transformation')){
 			// console.log(formula);
 			formula = JSON.parse(formula);
