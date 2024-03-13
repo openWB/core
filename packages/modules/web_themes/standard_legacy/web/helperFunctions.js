@@ -17,21 +17,16 @@ function updateLabel(elementId) {
 		var value = parseFloat(element.val());
 		var text;
 		if (list = $(element).attr('data-list')) {
-			console.log("list detected", list);
 			jsonList = JSON.parse(list);
-			console.log("json list", jsonList);
 			if (Array.isArray(jsonList[value])) {
-				console.log("array detected", jsonList[value]);
 				text = jsonList[value][1];
 			} else {
-				console.log("value detected", jsonList[value]);
 				text = jsonList[value].toLocaleString(undefined, { maximumFractionDigits: 2 });
 				if (suffix != '') {
 					text += ' ' + suffix;
 				}
 			}
 		} else {
-			console.log("no list detected");
 			text = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 			if (suffix != '') {
 				text += ' ' + suffix;

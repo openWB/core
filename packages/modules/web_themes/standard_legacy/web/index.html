@@ -1329,15 +1329,11 @@
 					// changes label color back to normal and sends input-value by mqtt
 					var elem = $('#' + $.escapeSelector(id));
 					var value = parseFloat(elem.val());
-					console.log("value", value);
 					if (list = $(elem).attr('data-list')) {
 						var jsonList = JSON.parse(list);
-						console.log("jsonList", jsonList);
 						if (Array.isArray(jsonList[parseInt(value)])) {
-							console.log("array detected", jsonList[parseInt(value)]);
 							value = jsonList[parseInt(value)][0];
 						} else {
-							console.log("no array detected", jsonList[parseInt(value)]);
 							value = jsonList[parseInt(value)];
 						}
 					} else if (formula = $(elem).attr('data-transformation')) {
