@@ -18,6 +18,7 @@ sys.modules['smb'] = type(sys)('smb')
 sys.modules['skodaconnect'] = type(sys)('skodaconnect')
 sys.modules['skodaconnect.Connection'] = type(sys)('skodaconnect.Connection')
 sys.modules['socketserver'] = type(sys)('socketserver')
+sys.modules['grpc'] = type(sys)('grpc')
 
 # sys.modules['telnetlib3'] = type(sys)('telnetlib3')
 
