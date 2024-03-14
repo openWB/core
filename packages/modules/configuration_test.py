@@ -3,11 +3,12 @@ from unittest.mock import Mock, patch
 
 from modules.configuration import pub_configurable
 from modules import configuration
+from test_utils.test_environment import running_on_github
 
 
 def test_pub_configurable(monkeypatch):
     # setup
-    if str(configuration._get_packages_path()) == "/home/runner/work/core/core/packages":
+    if running_on_github():
         # run test on github
         mock_packages_path = Mock(name="get packages path", return_value=Path("/home/runner/work/core/core/packages"))
         monkeypatch.setattr(configuration, "_get_packages_path", mock_packages_path)

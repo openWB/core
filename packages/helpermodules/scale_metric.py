@@ -19,6 +19,8 @@ scale_factors = {
 
 
 def scale_metric(value: Union[float, int], metric: Optional[str], base_metric: str):
+    if value is None:
+        return value
 
     # If no unit or too short unit or the base unit is not matching, return the unmodified value
     # This is crucial for fallback cases where no unit is given at all

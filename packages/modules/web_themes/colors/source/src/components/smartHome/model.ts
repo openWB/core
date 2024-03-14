@@ -30,6 +30,9 @@ export class ShDevice {
 		this._showInGraph = val
 		savePrefs()
 	}
+	setShowInGraph(val: boolean) {
+		this._showInGraph = val
+	}
 }
 
 export const shDevices: { [key: number]: ShDevice } = reactive({})

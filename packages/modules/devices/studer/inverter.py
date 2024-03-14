@@ -18,7 +18,7 @@ class StuderInverter:
         self.component_config = dataclass_from_dict(StuderInverterSetup, component_config)
         self.__tcp_client = tcp_client
         self.store = get_inverter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
         vc_count = self.component_config.configuration.vc_count
@@ -32,7 +32,7 @@ class StuderInverter:
                 mb_unit = 20
                 mb_register = 8  # MB:8; ID: 11004; Power of the PV generator kW
             else:
-                raise FaultState.error("Unbekannter VC-Typ: "+str(vc_type))
+                raise ValueError("Unbekannter VC-Typ: "+str(vc_type))
             power = 0
             for i in range(1, vc_count+1):
                 mb_unit_dev = mb_unit+i

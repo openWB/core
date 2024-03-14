@@ -3,9 +3,9 @@ import {
 	type GraphDataItem,
 	type RawDayGraphDataItem,
 	setGraphData,
-	calculateAutarchy,
 	updateEnergyValues,
 	graphData,
+	calculateMonthlyAutarchy,
 } from './model'
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
 
@@ -37,13 +37,12 @@ export function processYearGraphMessages(topic: string, message: string) {
 	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
 	resetHistoricSummary()
 	gridCounters = []
-	consumerCategories.map((cat) => {
+	consumerCategories.forEach((cat) => {
 		historicSummary.items[cat].energyPv = 0
 		historicSummary.items[cat].energyBat = 0
 	})
 	setGraphData(transformDatatable(inputTable))
 	updateEnergyValues(energyValues, [])
-	// reloadMonthGraph(topic, message)
 }
 // transform the incoming format into the format used by the graph
 function transformDatatable(
@@ -55,7 +54,7 @@ function transformDatatable(
 	inputTable.map((inputRow) => {
 		currentItem = transformRow(inputRow)
 		outputTable.push(currentItem)
-		Object.keys(currentItem).map((field) => {
+		Object.keys(currentItem).forEach((field) => {
 			if (field != 'date') {
 				if (currentItem[field] < 0) {
 					console.warn(
@@ -73,21 +72,10 @@ function transformDatatable(
 	})
 	return outputTable
 }
-// initial/refresh delivery of all graph data
-/* export function reloadMonthGraph(topic: string, rawMessage: string) {
-	const graphRecords: RawDayGraphDataItem[] = JSON.parse(rawMessage).entries
-
-	const newGraphData: GraphDataItem[] = []
-	graphRecords.map((dayData) => {
-		const values = transformRow(dayData)
-		newGraphData.push(values)
-	})
-} */
-
 function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	const outputRow: GraphDataItem = {}
 	// date
-	const d = timeParse('%Y%m%d')(inputRow.date)
+	const d = timeParse('%Y%m%d')(inputRow.date as string)
 	if (d) {
 		outputRow.date =
 			graphData.graphMode == 'month' ? d.getDate() : d.getMonth() + 1
@@ -186,7 +174,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 			.keys()
 			.filter((key) => !nonPvCategories.includes(key))
 			.map((cat) => {
-				calculateAutarchy(cat, outputRow)
+				calculateMonthlyAutarchy(cat, outputRow)
 			})
 	} else {
 		consumerCategories.map((cat) => {

@@ -46,7 +46,7 @@ Hagen */
 			</button>
 		</div>
 		<ModalComponent :modal-id="modalId">
-			<template #title> Lademodus für {{ chargepoint.name }} </template>
+			<template #title> Lademodus für {{ chargepoint.vehicleName }} </template>
 			<BBSelect :cp-id="chargepoint.id" />
 		</ModalComponent>
 	</div>

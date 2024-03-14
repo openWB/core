@@ -33,11 +33,11 @@ def create_device(device_config: Varta):
         with client as c:
             for component in components:
                 if isinstance(component, (VartaBatModbus, VartaCounter)):
-                    with SingleComponentUpdateContext(component.component_info):
+                    with SingleComponentUpdateContext(component.fault_state):
                         component.update(c)
         for component in components:
             if isinstance(component, (VartaBatApi)):
-                with SingleComponentUpdateContext(component.component_info):
+                with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
     try:

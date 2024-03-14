@@ -16,7 +16,7 @@ class EnphaseCounter:
     def __init__(self, component_config: Union[Dict, EnphaseCounterSetup]) -> None:
         self.component_config = dataclass_from_dict(EnphaseCounterSetup, component_config)
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response):
         config = self.component_config.configuration
@@ -29,7 +29,7 @@ class EnphaseCounter:
 
         if meter is None:
             # configuration wrong or error
-            raise FaultState.error("Es konnten keine Daten vom Messgerät gelesen werden.")
+            raise ValueError("Es konnten keine Daten vom Messgerät gelesen werden.")
 
         counter_state = CounterState(
             imported=meter['actEnergyDlvd'],

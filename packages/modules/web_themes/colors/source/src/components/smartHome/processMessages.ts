@@ -33,6 +33,8 @@ function processSmarthomeConfigMessages(topic: string, message: string) {
 		)
 	) {
 		shDevices[index].name = message.toString()
+		shDevices[index].icon = message.toString()
+
 		masterData['sh' + index].name = message.toString()
 		masterData['sh' + index].icon = message.toString()
 	} else if (
@@ -77,11 +79,10 @@ function processSmarthomeDeviceMessages(topic: string, message: string) {
 	if (topic.match(/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/Watt$/i)) {
 		shDevices[index].power = +message
 		updateShSummary('power')
-	} //else if (topic.match(/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/Wh$/i,)) {
-	//shDevices[index].energy = 0 // TODO: change in the future
-	//updateShSummary('energy')
-	// }
-	else if (
+	} else if (topic.match(/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/Wh$/i)) {
+		//shDevices[index].energy = +message
+		//updateShSummary('energy')
+	} else if (
 		topic.match(/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/RunningTimeToday$/i)
 	) {
 		shDevices[index].runningTime = +message

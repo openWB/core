@@ -7,8 +7,7 @@ import pytest
 from modules.chargepoints.openwb_pro.config import OpenWBPro, OpenWBProConfiguration
 from modules.common.component_state import ChargepointState
 from modules.chargepoints.openwb_pro import chargepoint_module
-
-SAMPLE_IP = "1.1.1.1"
+from modules.conftest import SAMPLE_IP
 
 SAMPLE_CHARGEPOINT_STATE = ChargepointState(
     power=4302.7,
@@ -19,7 +18,9 @@ SAMPLE_CHARGEPOINT_STATE = ChargepointState(
     plug_state=True,
     charge_state=True,
     phases_in_use=3,
-    rfid="98:ED:5C:B4:EE:8D",
+    rfid="001180644",
+    rfid_timestamp=1700839714,
+    vehicle_id="98:ED:5C:B4:EE:8D",
     evse_current=6
 )
 
@@ -39,7 +40,9 @@ SAMPLE = {'charge_state': True,
           'serial': '823950',
           'timestamp': 1675104511,
           'v2g_ready': 0,
-          'vehicle_id': '98:ED:5C:B4:EE:8D'}
+          'vehicle_id': '98:ED:5C:B4:EE:8D',
+          'rfid_tag': "001180644",
+          "rfid_timestamp": 1700839714}
 
 SAMPLE_CHARGEPOINT_STATE_EXTENDED = ChargepointState(
     power=0,

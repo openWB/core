@@ -1,7 +1,7 @@
 <template>
 	<!-- <div v-if="true && !globalConfig.simpleCpList" class="p-0 m-0 d-flex align-items-stretch" :class="totalWidth"> -->
 	<swiper-container
-		v-if="!globalConfig.simpleCpList"
+		v-if="!props.shortlist"
 		:space-between="0"
 		:slides-per-view="1"
 		:pagination="{ clickable: true }"
@@ -21,7 +21,8 @@
 		</swiper-slide>
 	</swiper-container>
 	<!-- </div> -->
-	<CPSimpleList v-if="globalConfig.simpleCpList" />
+	<!-- <CPSimpleList v-if="props.shortlist" /> -->
+	<CpSimpleList2 v-if="props.shortlist" />
 </template>
 
 <script setup lang="ts">
@@ -29,14 +30,19 @@ import { computed, onMounted } from 'vue'
 import { chargePoints } from './model'
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import CPChargePoint from './CPChargePoint.vue'
-import CPSimpleList from './cpSimpleList/CPSimpleList.vue'
-import type Swiper from 'swiper'
+// import CPSimpleList from './cpSimpleList/CPSimpleList.vue'
+import Swiper from 'swiper'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import type { SwiperContainer } from 'swiper/element'
+import CpSimpleList2 from './cpSimpleList/CpSimpleList2.vue'
 
 let swiper: Swiper
 let swiperEl: SwiperContainer
+//props
+const props = defineProps<{
+	shortlist: boolean
+}>()
 
 const chargepointsToDisplay = computed(() => {
 	let cpArray = Object.values(chargePoints)
@@ -58,6 +64,11 @@ const totalWidth = computed(() => {
 })
 function updateLayout() {
 	// update swiper layout
+	let tmp = document.querySelector('.swiper-chargepoints')
+	if (tmp) {
+		swiperEl = tmp as SwiperContainer
+		swiper = swiperEl.swiper
+	}
 	if (swiper) {
 		let slidesPerView = '1'
 		if (widescreen.value) {
@@ -85,6 +96,7 @@ onMounted(() => {
 		swiper = swiperEl.swiper
 	}
 	window.addEventListener('resize', updateLayout)
+	window.document.addEventListener('visibilitychange', updateLayout)
 })
 </script>
 <style scoped></style>

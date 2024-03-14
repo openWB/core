@@ -63,17 +63,23 @@ function transformDatatable(
 function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	const currentItem: GraphDataItem = {}
 	if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
-		const d = timeParse('%H:%M')(currentRow.date)
-		if (d) {
-			d.setMonth(dayGraph.date.getMonth())
-			d.setDate(dayGraph.date.getDate())
-			d.setFullYear(dayGraph.date.getFullYear())
-			currentItem.date = d.getTime()
+		if (typeof currentRow.date == 'number') {
+			currentItem.date = new Date(+currentRow.date * 1000).getTime()
+		} else {
+			const d = timeParse('%H:%M')(currentRow.date)
+			if (d) {
+				d.setMonth(dayGraph.date.getMonth())
+				d.setDate(dayGraph.date.getDate())
+				d.setFullYear(dayGraph.date.getFullYear())
+				currentItem.date = d.getTime()
+			}
 		}
 	} else {
-		const d = timeParse('%Y%m%d')(currentRow.date)
-		if (d) {
-			currentItem.date = d.getDate()
+		if (typeof currentRow.date == 'string') {
+			const d = timeParse('%Y%m%d')(currentRow.date)
+			if (d) {
+				currentItem.date = d.getDate()
+			}
 		}
 	}
 	currentItem.evuOut = 0
@@ -95,7 +101,6 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		})
 	}
 	currentItem.pv = currentRow.pv.all.power_exported
-
 	if (Object.entries(currentRow.bat).length > 0) {
 		currentItem.batIn = currentRow.bat.all.power_imported
 		currentItem.batOut = currentRow.bat.all.power_exported
@@ -125,8 +130,8 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.devices = 0
 	Object.entries(currentRow.sh).forEach(([id, values]) => {
 		if (id != 'all') {
-			currentItem[id] = values.power_imported
-			currentItem.devices += values.power_imported
+			currentItem[id] = values.power_imported ?? 0
+			currentItem.devices += values.power_imported ?? 0
 			if (!historicSummary.keys().includes(id)) {
 				historicSummary.addItem(id)
 			}
@@ -164,62 +169,3 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	}
 	return currentItem
 }
-/* function updateEnergyValues(totals: RawDayGraphDataItem) {
-	console.log(totals)
-	if (Object.entries(totals).length > 0) {
-	Object.entries(totals.counter).forEach(([id, values]) => {
-		if (gridCounters.length == 0 || gridCounters.includes(id)) {
-			historicSummary.items.evuIn.energy += values.imported
-			historicSummary.items.evuOut.energy += values.exported
-		}
-	})
-	historicSummary.items.pv.energy = totals.pv.all.exported
-	if (totals.bat.all) {
-		historicSummary.items.batIn.energy = totals.bat.all.imported
-		historicSummary.items.batOut.energy = totals.bat.all.exported
-	}
-	Object.entries(totals.cp).forEach(([id, values]) => {
-		if (id == 'all') {
-			historicSummary.setEnergy('charging', values.imported)
-		} else {
-			historicSummary.setEnergy(id, values.imported)
-		}
-	})
-	historicSummary.setEnergy('devices', 0)
-	Object.entries(totals.sh).forEach(([id, values]) => {
-		historicSummary.setEnergy(id, values.imported)
-		const idNumber = id.substring(2)
-		if (!shDevices[+idNumber].countAsHouse) {
-			historicSummary.items.devices.energy += values.imported
-		}
-	})
-	if (totals.hc && totals.hc.all) {
-		historicSummary.setEnergy('house', totals.hc.all.imported)
-	} else {
-		historicSummary.calculateHouseEnergy()
-	}
-	historicSummary.keys().map((cat) => {
-		if (!nonPvCategories.includes(cat)) {
-			historicSummary.setPvPercentage(
-				cat,
-				Math.round(
-					((historicSummary.items[cat].energyPv +
-						historicSummary.items[cat].energyBat) /
-						historicSummary.items[cat].energy) *
-					100,
-				),
-			)
-			if (consumerCategories.includes(cat)) {
-				if (graphData.graphMode != 'today') {
-				usageSummary[cat].energy = historicSummary.items[cat].energy
-				}
-				usageSummary[cat].energyPv = historicSummary.items[cat].energyPv
-				usageSummary[cat].energyBat = historicSummary.items[cat].energyBat
-				usageSummary[cat].pvPercentage = historicSummary.items[cat].pvPercentage
-			}
-		}
-	})
-}
-console.log(sourceSummary)
-	energyMeterNeedsRedraw.value = true
-} */

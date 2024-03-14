@@ -1,8 +1,9 @@
 import logging
 import threading
 from typing import Optional, List, Union, Any, Dict
+from helpermodules.constants import NO_ERROR
 
-from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.fault_state import ComponentInfo, FaultState, FaultStateLevel
 
 log = logging.getLogger(__name__)
 
@@ -16,16 +17,18 @@ class SingleComponentUpdateContext:
                 component.update()
     """
 
-    def __init__(self, component_info: ComponentInfo, update_always: bool = True):
-        self.__component_info = component_info
+    def __init__(self, fault_state: FaultState, update_always: bool = True):
+        self.__fault_state = fault_state
         self.update_always = update_always
 
     def __enter__(self):
-        log.debug("Update Komponente ['"+self.__component_info.name+"']")
+        log.debug("Update Komponente ['"+self.__fault_state.component_info.name+"']")
+        if self.update_always:
+            self.__fault_state.no_error()
         return None
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        MultiComponentUpdateContext.override_subcomponent_state(self.__component_info, exception, self.update_always)
+        MultiComponentUpdateContext.override_subcomponent_state(self.__fault_state, exception, self.update_always)
         return True
 
 
@@ -49,15 +52,18 @@ class MultiComponentUpdateContext:
             raise Exception("Nesting MultiComponentUpdateContext is not supported")
         MultiComponentUpdateContext.__thread_local.active_context = self
         log.debug("Update Komponenten " +
-                  str([component.component_info.name for component in self.__device_components]))
+                  str([component.fault_state.component_info.name for component in self.__device_components]))
+        for component in self.__device_components:
+            component.fault_state.fault_state = FaultStateLevel.NO_ERROR
+            component.fault_state.fault_str = NO_ERROR
         return None
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        fault_state = FaultState.from_exception(exception)
         for component in self.__device_components:
-            component_info = component.component_info
-            if component_info not in self.__ignored_components:
-                fault_state.store_error(component_info)
+            fault_state = component.fault_state
+            if fault_state not in self.__ignored_components:
+                fault_state.from_exception(exception)
+                fault_state.store_error()
         delattr(MultiComponentUpdateContext.__thread_local, "active_context")
         return True
 
@@ -65,21 +71,18 @@ class MultiComponentUpdateContext:
         self.__ignored_components.append(component)
 
     @staticmethod
-    def override_subcomponent_state(component_info: ComponentInfo, exception, update_always: bool):
+    def override_subcomponent_state(fault_state: FaultState, exception, update_always: bool):
         active_context = getattr(
             MultiComponentUpdateContext.__thread_local, "active_context", None
         )  # type: Optional[MultiComponentUpdateContext]
         if active_context:
             # If a MultiComponentUpdateContext is active, we need make sure that it will not override
             # the value for the individual component
-            active_context.ignore_subcomponent_state(component_info)
+            active_context.ignore_subcomponent_state(fault_state)
 
         if exception:
-            fault_state = FaultState.from_exception(exception)
-        else:
+            fault_state.from_exception(exception)
+        elif update_always is False:
             # Fehlerstatus nicht überschreiben
-            if update_always:
-                fault_state = FaultState.no_error()
-            else:
-                return
-        fault_state.store_error(component_info)
+            return
+        fault_state.store_error()

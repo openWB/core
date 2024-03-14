@@ -7,22 +7,22 @@ from modules.chargepoints.external_openwb.config import OpenWBSeries
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 
 
 class ChargepointModule(AbstractChargepoint):
     def __init__(self, config: OpenWBSeries) -> None:
         self.config = config
-        self.component_info = ComponentInfo(
+        self.fault_state = FaultState(ComponentInfo(
             self.config.id,
-            "Ladepunkt", "chargepoint")
+            "Ladepunkt", "chargepoint"))
         self.__client_error_context = ErrorCounterContext(
             "Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke wird zurückgesetzt.")
 
     def set_current(self, current: float) -> None:
         if self.__client_error_context.error_counter_exceeded():
             current = 0
-        with SingleComponentUpdateContext(self.component_info, False):
+        with SingleComponentUpdateContext(self.fault_state, False):
             with self.__client_error_context:
                 if self.config.configuration.duo_num == 0:
                     pub.pub_single("openWB/set/internal_chargepoint/0/data/set_current", current,
@@ -36,7 +36,7 @@ class ChargepointModule(AbstractChargepoint):
                                    hostname=self.config.configuration.ip_address)
 
     def get_values(self) -> None:
-        with SingleComponentUpdateContext(self.component_info, update_always=False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.__client_error_context:
                 ip_address = self.config.configuration.ip_address
                 num = self.config.id
@@ -45,7 +45,7 @@ class ChargepointModule(AbstractChargepoint):
                 else:
                     my_ip_address = data.data.system_data["system"].data["ip_address"]
                 pub.pub_single("openWB/set/internal_chargepoint/global_data",
-                               {"heartbeat": timecheck.create_timestamp_unix(), "parent_ip": my_ip_address},
+                               {"heartbeat": timecheck.create_timestamp(), "parent_ip": my_ip_address},
                                hostname=ip_address)
                 pub.pub_single("openWB/set/isss/heartbeat", 0, hostname=ip_address)
                 pub.pub_single("openWB/set/isss/parentWB", my_ip_address,
@@ -59,7 +59,7 @@ class ChargepointModule(AbstractChargepoint):
                 self.__client_error_context.reset_error_counter()
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
-        with SingleComponentUpdateContext(self.component_info, False):
+        with SingleComponentUpdateContext(self.fault_state, False):
             with self.__client_error_context:
                 pub.pub_single(
                     f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/phases_to_use",
@@ -74,7 +74,7 @@ class ChargepointModule(AbstractChargepoint):
                 time.sleep(6+duration-1)
 
     def interrupt_cp(self, duration: int) -> None:
-        with SingleComponentUpdateContext(self.component_info, False):
+        with SingleComponentUpdateContext(self.fault_state, False):
             with self.__client_error_context:
                 ip_address = self.config.configuration.ip_address
                 if (self.config.configuration.duo_num == 1):
@@ -88,7 +88,7 @@ class ChargepointModule(AbstractChargepoint):
                 time.sleep(duration)
 
     def clear_rfid(self) -> None:
-        with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state):
             with self.__client_error_context:
                 ip_address = self.config.configuration.ip_address
                 pub.pub_single("openWB/set/isss/ClearRfid", 1, hostname=ip_address)

@@ -3,6 +3,7 @@ import pytest
 
 from modules.common.component_state import BatState, InverterState
 from modules.common.modbus import ModbusClient
+from modules.conftest import SAMPLE_IP
 from modules.devices.sma_sunny_boy import device
 from modules.devices.sma_sunny_boy.bat import SunnyBoyBat
 from modules.devices.sma_sunny_boy.inverter import SmaSunnyBoyInverter
@@ -28,8 +29,6 @@ class Params:
         self.ip4 = ip4
         self.hybrid = hybrid
 
-
-SAMPLE_IP = "1.1.1.1"
 
 cases = [
     Params("no hybrid, one inverter", -5786, "none", "none", "none", 0),

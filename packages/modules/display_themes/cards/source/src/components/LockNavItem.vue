@@ -12,6 +12,7 @@ import {
 library.add(fasLock, fasLockOpen, fasDeleteLeft, fasEraser);
 
 import { useMqttStore } from "@/stores/mqtt.js";
+import CodeInputModal from "./CodeInputModal.vue";
 
 export default {
   name: "LockNavItem",
@@ -29,6 +30,7 @@ export default {
   },
   components: {
     FontAwesomeIcon,
+    CodeInputModal,
   },
   computed: {
     changesLocked: {
@@ -56,36 +58,25 @@ export default {
       }
     },
     unlockChanges() {
-      this.clearCode();
       this.modalPinEntryVisible = true;
     },
-    abortUnlockChanges() {
-      this.modalPinEntryVisible = false;
-    },
-    checkUnlockCode() {
-      if (this.mqttStore.checkChangesLockCode(this.code)) {
-        this.modalPinEntryColor = "success";
-        setTimeout(() => {
-          this.changesLocked = false;
-          this.modalPinEntryVisible = false;
-          if (this.mqttStore.getDisplayStandby > 0) {
-            this.countdown = this.mqttStore.getDisplayStandby;
-            this.countdownInterval = setInterval(this.updateCountdown, 1000);
-            this.events.forEach((event) => {
-              document.addEventListener(event, this.handleDocumentEvent, {
-                passive: true,
-              });
+    checkUnlockCode(event) {
+      console.log("checkUnlockCode", event);
+      if (this.mqttStore.checkChangesLockCode(event)) {
+        this.$refs.lockInput.success("success");
+        this.changesLocked = false;
+        if (this.mqttStore.getDisplayStandby > 0) {
+          this.countdown = this.mqttStore.getDisplayStandby;
+          this.countdownInterval = setInterval(this.updateCountdown, 1000);
+          this.events.forEach((event) => {
+            document.addEventListener(event, this.handleDocumentEvent, {
+              passive: true,
             });
-          }
-          this.modalPinEntryColor = "warning";
-        }, 2000);
+          });
+        }
       } else {
         console.warn("check unlock code failed!");
-        this.modalPinEntryColor = "danger";
-        setTimeout(() => {
-          this.code = "";
-          this.modalPinEntryColor = "warning";
-        }, 2000);
+        this.$refs.lockInput.error("danger");
       }
     },
     lockChanges() {
@@ -99,17 +90,6 @@ export default {
         clearInterval(this.countdownInterval);
         this.countdownInterval = undefined;
       }
-    },
-    addCodeDigit(digit) {
-      if (this.code.length < 8) {
-        this.code += digit;
-      }
-    },
-    removeCodeDigit() {
-      this.code = this.code.slice(0, -1);
-    },
-    clearCode() {
-      this.code = "";
     },
     updateCountdown() {
       this.countdown -= 1;
@@ -147,115 +127,17 @@ export default {
     </span>
   </i-button>
   <!-- modals -->
-  <Teleport to="body">
-    <i-modal v-model="modalPinEntryVisible" :color="modalPinEntryColor">
-      <template #header>
-        Bitte den PIN zu Freigabe von Änderungen eingeben.
-      </template>
-      <i-container>
-        <i-row center class="_padding-bottom:1">
-          <i-column>
-            <i-input
-              v-model="code"
-              placeholder="****"
-              readonly
-              size="lg"
-              type="password"
-              class="_text-align:center"
-            />
-          </i-column>
-        </i-row>
-        <i-row center class="_padding-bottom:1">
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('1')"
-              >1</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('2')"
-              >2</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('3')"
-              >3</i-button
-            >
-          </i-column>
-        </i-row>
-        <i-row center class="_padding-bottom:1">
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('4')"
-              >4</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('5')"
-              >5</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('6')"
-              >6</i-button
-            >
-          </i-column>
-        </i-row>
-        <i-row center class="_padding-bottom:1">
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('7')"
-              >7</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('8')"
-              >8</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('9')"
-              >9</i-button
-            >
-          </i-column>
-        </i-row>
-        <i-row center>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="clearCode">
-              <FontAwesomeIcon fixed-width :icon="['fas', 'fa-eraser']" />
-            </i-button>
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="addCodeDigit('0')"
-              >0</i-button
-            >
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" class="pinButton" @click="removeCodeDigit">
-              <FontAwesomeIcon fixed-width :icon="['fas', 'fa-delete-left']" />
-            </i-button>
-          </i-column>
-        </i-row>
-      </i-container>
-      <template #footer>
-        <i-container>
-          <i-row>
-            <!-- charge point data on left side -->
-            <i-column>
-              <i-button color="danger" @click="abortUnlockChanges">
-                Zurück
-              </i-button>
-            </i-column>
-            <i-column class="_text-align:right">
-              <i-button color="success" @click="checkUnlockCode"> OK </i-button>
-            </i-column>
-          </i-row>
-        </i-container>
-      </template>
-    </i-modal>
-  </Teleport>
+  <CodeInputModal
+    v-model="modalPinEntryVisible"
+    @update:input-value="checkUnlockCode"
+    ref="lockInput"
+    :minLength="4"
+    :maxLength="10"
+  >
+    <template #header>
+      Bitte den PIN zur Freigabe von Änderungen eingeben.
+    </template>
+  </CodeInputModal>
 </template>
 
-<style scoped>
-.pinButton {
-  min-width: 3em;
-  min-height: 3em;
-}
-</style>
+<style scoped></style>

@@ -52,3 +52,7 @@ def mock_simcount(monkeypatch) -> Mock:
     mock = Mock(return_value=(100, 200))
     monkeypatch.setattr(simcount.SimCounter, 'sim_count', mock)
     return mock
+
+
+SAMPLE_IP = "1.1.1.1"
+SAMPLE_PORT = 8899

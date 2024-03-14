@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass, field
 import logging
 
 from control import data
+from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
@@ -25,6 +26,8 @@ def config_factory() -> Config:
 @dataclass
 class Get:
     daily_exported: float = 0
+    fault_str: str = NO_ERROR
+    fault_state: int = 0
     monthly_exported: float = 0
     yearly_exported: float = 0
     exported: float = 0
@@ -52,21 +55,33 @@ class PvAll:
         try:
             if len(data.data.pv_data) >= 1:
                 # Summe von allen konfigurierten Modulen
-                self.data.get.exported = 0
-                self.data.get.daily_exported = 0
-                self.data.get.monthly_exported = 0
-                self.data.get.yearly_exported = 0
-                self.data.get.power = 0
+                exported = 0
+                power = 0
+                fault_state = 0
                 for module in data.data.pv_data:
                     try:
                         if "pv" in module:
                             module_data = data.data.pv_data[module].data
-                            self.data.get.power += module_data.get.power
-                            self.data.get.exported += module_data.get.exported
+                            if module_data.get.fault_state < 2:
+                                power += module_data.get.power
+                                exported += module_data.get.exported
+                            else:
+                                if fault_state < module_data.get.fault_state:
+                                    fault_state = module_data.get.fault_state
                     except Exception:
                         log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
+                if fault_state == 0:
+                    self.data.get.exported = exported
+                    Pub().pub("openWB/set/pv/get/exported", self.data.get.exported)
+                    self.data.get.fault_state = 0
+                    self.data.get.fault_str = NO_ERROR
+                else:
+                    self.data.get.fault_state = fault_state
+                    self.data.get.fault_str = "Bitte die Statusmeldungen der Wechselrichter prüfen."
+                self.data.get.power = power
                 Pub().pub("openWB/set/pv/get/power", self.data.get.power)
-                Pub().pub("openWB/set/pv/get/exported", self.data.get.exported)
+                Pub().pub("openWB/set/pv/get/fault_state", self.data.get.fault_state)
+                Pub().pub("openWB/set/pv/get/fault_str", self.data.get.fault_str)
                 self.data.config.configured = True
                 Pub().pub("openWB/set/pv/config/configured", self.data.config.configured)
             else:

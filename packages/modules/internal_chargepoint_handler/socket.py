@@ -56,7 +56,7 @@ class Socket(ChargepointModule):
         super().__init__(local_charge_point_num, client_handler, parent_hostname, parent_cp, hierarchy_id)
 
     def set_current(self, current: float) -> None:
-        with SingleComponentUpdateContext(self.component_info):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             try:
                 actor = ActorState(GPIO.input(19))
             except Exception:

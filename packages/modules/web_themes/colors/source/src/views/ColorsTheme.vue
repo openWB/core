@@ -14,7 +14,11 @@ Hagen */
 		<div v-if="false" class="row py-0 px-0 m-0">
 			<PowerMeter />
 			<PowerGraph />
-			<EnergyMeter :usage-details="usageDetails" />
+			<EnergyMeter />
+			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+			<GlobalPriceChart id="Hidden" />
+			<VehicleList />
+			<CounterList />
 		</div>
 		<div v-if="true" class="row py-0 px-0 m-0">
 			<CarouselFix>
@@ -25,7 +29,7 @@ Hagen */
 					<PowerGraph />
 				</template>
 				<template #item3>
-					<EnergyMeter :usage-details="usageDetails" />
+					<EnergyMeter />
 				</template>
 			</CarouselFix>
 		</div>
@@ -35,10 +39,15 @@ Hagen */
 			v-if="!globalConfig.showQuickAccess"
 			class="row py-0 m-0 d-flex justify-content-center"
 		>
-			<ChargePointList />
+			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+			<GlobalPriceChart
+				v-if="globalConfig.showPrices"
+				id="NoTabs"
+			></GlobalPriceChart>
+			<VehicleList v-if="globalConfig.showVehicles"></VehicleList>
 			<BatteryList />
 			<SmartHomeList v-if="showSH"></SmartHomeList>
-			<!-- <PriceChart /> -->
+			<CounterList v-if="globalConfig.showCounters"></CounterList>
 		</div>
 		<!-- Tabbed area -->
 		<nav
@@ -59,6 +68,24 @@ Hagen */
 				<span class="d-none d-md-inline ms-2">Ladepunkte</span>
 			</a>
 			<a
+				v-if="globalConfig.showPrices"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#pricecharttabbed"
+			>
+				<i class="fa-solid fa-lg fa-coins" />
+				<span class="d-none d-md-inline ms-2">Strompreis</span>
+			</a>
+			<a
+				v-if="globalConfig.showVehicles"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#vehiclelist"
+			>
+				<i class="fa-solid fa-lg fa-car" />
+				<span class="d-none d-md-inline ms-2">Fahrzeuge</span>
+			</a>
+			<a
 				v-if="globalData.isBatteryConfigured"
 				class="nav-link"
 				data-bs-toggle="tab"
@@ -76,15 +103,15 @@ Hagen */
 				<i class="fa-solid fa-lg fa-plug" />
 				<span class="d-none d-md-inline ms-2">Smart Home</span>
 			</a>
-			<!-- <a
-				v-if="etData.isEtEnabled"
+			<a
+				v-if="globalConfig.showCounters"
 				class="nav-link"
 				data-bs-toggle="tab"
-				data-bs-target="#etPricing"
+				data-bs-target="#counterlist"
 			>
-				<i class="fa-solid fa-lg fa-money-bill-1-wave" />
-				<span class="d-none d-md-inline ms-2">Strompreis</span>
-			</a> -->
+				<i class="fa-solid fa-lg fa-bolt" />
+				<span class="d-none d-md-inline ms-2">Zähler</span>
+			</a>
 		</nav>
 		<!-- Tab panes -->
 		<div
@@ -99,10 +126,12 @@ Hagen */
 				aria-labelledby="showall-tab"
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
-					<ChargePointList />
+					<ChargePointList :shortlist="globalConfig.shortCpList != 'no'" />
+					<GlobalPriceChart v-if="globalConfig.showPrices" id="Overview" />
+					<VehicleList v-if="globalConfig.showVehicles" />
 					<BatteryList />
 					<SmartHomeList v-if="showSH" />
-					<PriceChart />
+					<CounterList v-if="globalConfig.showCounters" />
 				</div>
 			</div>
 			<div
@@ -112,9 +141,23 @@ Hagen */
 				aria-labelledby="chargepoint-tab"
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
-					<ChargePointList />
+					<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
 				</div>
 			</div>
+			<div
+				id="vehiclelist"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="vehicle-tab"
+			>
+				<div
+					v-if="globalConfig.showVehicles"
+					class="row py-0 m-0 d-flex justify-content-center"
+				>
+					<VehicleList />
+				</div>
+			</div>
+
 			<div
 				id="batterylist"
 				class="tab-pane"
@@ -135,16 +178,32 @@ Hagen */
 					<SmartHomeList />
 				</div>
 			</div>
-			<!-- <div
-				id="etPricing"
+			<div
+				id="counterlist"
 				class="tab-pane"
 				role="tabpanel"
-				aria-labelledby="pricechart-tab"
+				aria-labelledby="counter-tab"
 			>
-				<div class="row py-0 m-0 d-flex justify-content-center">
-					<PriceChart />
+				<div
+					v-if="globalConfig.showCounters"
+					class="row py-0 m-0 d-flex justify-content-center"
+				>
+					<CounterList />
 				</div>
-			</div> -->
+			</div>
+			<div
+				id="pricecharttabbed"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="price-tab"
+			>
+				<div
+					v-if="globalConfig.showPrices"
+					class="row py-0 m-0 d-flex justify-content-center"
+				>
+					<GlobalPriceChart id="Tabbed" />
+				</div>
+			</div>
 		</div>
 	</div>
 	<!-- Footer -->
@@ -168,10 +227,8 @@ Hagen */
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { usageSummary, globalData } from '../assets/js/model'
+import { globalData } from '../assets/js/model'
 import { shDevices } from '@/components/smartHome/model'
-import { chargePoints } from '@/components/chargePointList/model'
-// import { etData } from '@/components/priceChart/model'
 import { initConfig } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
@@ -179,30 +236,23 @@ import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
 import ChargePointList from '@/components/chargePointList/ChargePointList.vue'
 import ButtonBar from '@/components/buttonBar/ButtonBar.vue'
 import BatteryList from '@/components/batteryList/BatteryList.vue'
-import PriceChart from '@/components/priceChart/PriceChart.vue'
 import SmartHomeList from '@/components/smartHome/SmartHomeList.vue'
 import CarouselFix from '@/components/shared/CarouselFix.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import MQTTViewer from '@/components/mqttViewer/MQTTViewer.vue'
 import ThemeSettings from '@/views/ThemeSettings.vue'
+import CounterList from '@/components/counterList/CounterList.vue'
+import VehicleList from '@/components/vehicleList/VehicleList.vue'
 import { resetArcs } from '@/assets/js/themeConfig'
 import {
 	globalConfig,
 	updateDimensions,
 	screensize,
 } from '@/assets/js/themeConfig'
+import GlobalPriceChart from '@/components/priceChart/GlobalPriceChart.vue'
+import { initGraph } from '@/components/powerGraph/model'
 
 // state
-const usageDetails = computed(() => {
-	return [usageSummary.evuOut, usageSummary.devices, usageSummary.charging]
-		.concat(Object.values(chargePoints).map((cp) => cp.toPowerItem()))
-		.concat(
-			Object.values(shDevices).filter(
-				(row) => row.configured && row.showInGraph,
-			),
-		)
-		.concat([usageSummary.batIn, usageSummary.house])
-})
 const showMQ = ref(false)
 const showSH = computed(() => {
 	return Object.values(shDevices).filter((dev) => dev.configured).length > 0
@@ -218,8 +268,24 @@ function toggleMqViewer() {
 onMounted(() => {
 	init()
 	window.addEventListener('resize', updateDimensions)
+	window.addEventListener('focus', haveFocus)
+	//window.addEventListener('blur',lostFocus)
 	msgInit()
 })
+
+function haveFocus() {
+	if (document.hasFocus()) {
+		//	console.log('I have focus')
+		initGraph()
+	}
+	//msgInit()
+}
+/* function lostFocus() {
+	if (!document.hasFocus()) {
+		console.log('I lost focus')
+	}
+//	msgStop()
+} */
 </script>
 
 <style scoped>
@@ -227,10 +293,12 @@ onMounted(() => {
 	border-bottom: 0.5px solid var(--color-menu);
 	background-color: var(--color-bg);
 }
+
 .nav-tabs .nav-link {
 	color: var(--color-menu);
 	opacity: 0.5;
 }
+
 .nav-tabs .nav-link.disabled {
 	color: var(--color-axis);
 	border: 0.5px solid var(--color-axis);
@@ -244,19 +312,32 @@ onMounted(() => {
 	border-bottom: 0px solid var(--color-menu);
 	box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
+
 .fa-circle-info {
 	color: var(--color-fg);
 }
+
 .fa-charging-station {
 	color: var(--color-charging);
 }
+
 .fa-car-battery {
 	color: var(--color-battery);
 }
+
 .fa-plug {
 	color: var(--color-devices);
 }
-.fa-money-bill-1-wave {
-	color: var(--color-pv);
+
+.fa-bolt {
+	color: var(--color-evu);
+}
+
+.fa-car {
+	color: var(--color-charging);
+}
+
+.fa-coins {
+	color: var(--color-battery);
 }
 </style>

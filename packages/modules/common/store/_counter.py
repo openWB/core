@@ -89,7 +89,7 @@ class PurgeCounterState:
                 self.exported += element.data.get.exported
 
             counter_all = data.data.counter_all_data
-            elements = counter_all.get_entry_of_element(self.delegate.delegate.num)["children"]
+            elements = counter_all.get_elements_for_downstream_calculation(self.delegate.delegate.num)
             for element in elements:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
                     chargepoint = data.data.cp_data[f"cp{element['id']}"]
@@ -100,9 +100,9 @@ class PurgeCounterState:
                                                      chargepoint.data.config.phase_1,
                                                      chargepoint.data.get.currents)))
                     except KeyError:
-                        raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
-                                               f" {chargepoint.data.config.name} an die Phasen der EVU angegeben "
-                                               "werden.")
+                        raise KeyError("Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
+                                       f" {chargepoint.data.config.name} an die Phasen der EVU angegeben "
+                                       "werden.")
 
                     self.power += chargepoint.data.get.power
                     self.imported += chargepoint.data.get.imported

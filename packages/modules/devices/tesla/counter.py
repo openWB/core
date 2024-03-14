@@ -6,7 +6,7 @@ from requests import HTTPError
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.devices.tesla.config import TeslaCounterSetup
 from modules.devices.tesla.http_client import PowerwallHttpClient
@@ -18,7 +18,7 @@ class TeslaCounter:
     def __init__(self, component_config: Union[Dict, TeslaCounterSetup]) -> None:
         self.component_config = dataclass_from_dict(TeslaCounterSetup, component_config)
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, client: PowerwallHttpClient, aggregate):
         # read firmware version

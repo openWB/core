@@ -7,7 +7,6 @@ from typing import List, Optional, Union
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
-from modules.common.fault_state import FaultState
 from modules.devices.sma_shm import counter
 from modules.devices.sma_shm import inverter
 from modules.devices.sma_shm.config import SmaHomeManagerCounterSetup, SmaHomeManagerInverterSetup, Speedwire, \
@@ -32,7 +31,7 @@ def update_components(components_todo: List[SpeedwireComponent]):
                     break
         except socket.timeout:
             pass
-        raise FaultState.error("Kein passendes Datagramm innerhalb des %ds timeout empfangen." % timeout_seconds)
+        raise Exception("Kein passendes Datagramm innerhalb des %ds timeout empfangen." % timeout_seconds)
 
 
 def create_device(device_config: Speedwire):

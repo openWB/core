@@ -67,6 +67,7 @@ def get_factory() -> Get:
 @dataclass
 class Set:
     charging_power_left: float = 0
+    regulate_up: bool = False
     switch_on_soc_reached: bool = False
     switch_on_soc_state = SwitchOnBatState = SwitchOnBatState.SWITCH_ON_SOC_NOT_REACHED
 
@@ -93,32 +94,37 @@ class BatAll:
                 Pub().pub("openWB/set/bat/config/configured", self.data.config.configured)
                 # Summe für alle konfigurierten Speicher bilden
                 exported = 0
-                fault_state = 0
                 imported = 0
                 power = 0
                 soc_sum = 0
                 soc_count = 0
-                self.data.get.fault_str = NO_ERROR
+                fault_state = 0
                 for battery in data.data.bat_data.values():
                     try:
-                        power += battery.data.get.power
-                        imported += battery.data.get.imported
-                        exported += battery.data.get.exported
-                        soc_sum += battery.data.get.soc
-                        soc_count += 1
-                        if fault_state < battery.data.get.fault_state:
-                            fault_state = battery.data.get.fault_state
-                            self.data.get.fault_str = (
-                                "Speicher-Leistung wird nicht in der Regelung berücksichtigt, da in einer der "
-                                "Batterie-Komponenten eine Warnung (zB während der Kalibrierung) oder ein Fehler "
-                                "aufgetreten ist. Bitte die Status-Meldungen der Batterie-Komponenten prüfen.")
+                        if battery.data.get.fault_state < 2:
+                            power += battery.data.get.power
+                            imported += battery.data.get.imported
+                            exported += battery.data.get.exported
+                            soc_sum += battery.data.get.soc
+                            soc_count += 1
+                        else:
+                            if fault_state < battery.data.get.fault_state:
+                                fault_state = battery.data.get.fault_state
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
-                self.data.get.fault_state = 0
+                if fault_state == 0:
+                    self.data.get.imported = imported
+                    self.data.get.exported = exported
+                    self.data.get.fault_state = 0
+                    self.data.get.fault_str = NO_ERROR
+                else:
+                    self.data.get.fault_state = fault_state
+                    self.data.get.fault_str = "Bitte die Statusmeldungen der Speicher prüfen."
                 self.data.get.power = power
-                self.data.get.imported = imported
-                self.data.get.exported = exported
-                self.data.get.soc = int(soc_sum / soc_count)
+                try:
+                    self.data.get.soc = int(soc_sum / soc_count)
+                except ZeroDivisionError:
+                    self.data.get.soc = 0
             else:
                 self.data.config.configured = False
                 Pub().pub("openWB/set/bat/config/configured", self.data.config.configured)
@@ -180,6 +186,7 @@ class BatAll:
                 self.data.get.power = 0
             Pub().pub("openWB/set/bat/set/charging_power_left", self.data.set.charging_power_left)
             Pub().pub("openWB/set/bat/set/switch_on_soc_reached", self.data.set.switch_on_soc_reached)
+            Pub().pub("openWB/set/bat/set/regulate_up", self.data.set.regulate_up)
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
@@ -189,6 +196,7 @@ class BatAll:
         try:
             config = data.data.general_data.data.chargemode_config.pv_charging
             self.data.set.charging_power_left = self.data.get.power
+            self.data.set.regulate_up = False
             if config.bat_prio:
                 # Speicher-Vorrang
                 # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden,
@@ -204,10 +212,10 @@ class BatAll:
                             config.rundown_power)
                     log.debug(f"Erlaubte Entlade-Leistung nutzen {self.data.set.charging_power_left}W")
                 else:
+                    self.data.set.charging_power_left = min(0, self.data.get.power)
                     # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
-                    # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher
-                    # schneller regelt als die LP, würde sonst der Speicher reduziert werden.
-                    self.data.set.charging_power_left = min(0, self.data.get.power) - 50
+                    # Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher reduziert werden.
+                    self.data.set.regulate_up = True
             else:
                 # Fahrzeug-Vorrang
                 log.debug(f'Verbleibende Speicher-Leistung: {self.data.set.charging_power_left}W')

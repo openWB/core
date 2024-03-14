@@ -55,6 +55,9 @@ export class ChargePoint {
 	private _pvMaxSoc = 0
 	private _pvMinSoc = 0
 	private _pvMinSocCurrent = 0
+	private _etActive = false
+	private _etMaxPrice = 20
+
 	constructor(index: number) {
 		this.id = index
 	}
@@ -226,7 +229,25 @@ export class ChargePoint {
 				return 0
 		}
 	}
-
+	get etActive() {
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].etActive
+		} else {
+			return false
+		}
+	}
+	set etActive(val) {
+		if (vehicles[this.connectedVehicle]) {
+			vehicles[this.connectedVehicle].etActive = val
+		}
+	}
+	get etMaxPrice() {
+		return vehicles[this.connectedVehicle].etMaxPrice ?? 0
+	}
+	set etMaxPrice(newPrice: number) {
+		console.log('Setting et max price needs to be implemented')
+		updateServer('cpEtMaxPrice', Math.round(newPrice * 10) / 1000000, this.id)
+	}
 	toPowerItem(): PowerItem {
 		return {
 			name: this.name,
@@ -249,6 +270,8 @@ export class Vehicle {
 	config = {}
 	soc = 0
 	range = 0
+	private _etActive = false
+	private _etMaxPrice = 20
 	constructor(index: number) {
 		this.id = index
 	}
@@ -271,6 +294,35 @@ export class Vehicle {
 	}
 	updateEvTemplateId(id: number) {
 		this._evTemplateId = id
+	}
+	get etActive() {
+		if (chargeTemplates[this.chargeTemplateId]) {
+			return chargeTemplates[this.chargeTemplateId].et.active
+		} else {
+			return false
+		}
+	}
+	set etActive(val) {
+		if (chargeTemplates[this.chargeTemplateId]) {
+			updateServer('priceCharging', val, this.chargeTemplateId)
+
+			// openWB/set/vehicle/template/charge_template/2/et/active -> false
+		}
+	}
+	get etMaxPrice() {
+		if (chargeTemplates[this.chargeTemplateId]) {
+			if (chargeTemplates[this.chargeTemplateId].et.active) {
+				return chargeTemplates[this.chargeTemplateId].et.max_price * 100000
+			}
+		}
+	}
+	get chargepoint(): ChargePoint | undefined {
+		for (const cp of Object.values(chargePoints)) {
+			if (cp.connectedVehicle == this.id) {
+				return cp
+			}
+		}
+		return undefined
 	}
 }
 export interface ConnectedVehicleConfig {
@@ -343,6 +395,10 @@ export interface ChargeTemplate {
 	}
 	disable_after_unplug: boolean
 	load_default: boolean
+	et: {
+		active: boolean
+		max_price: number
+	}
 }
 export interface EvTemplate {
 	name: string
@@ -376,7 +432,7 @@ export function addChargePoint(chargePointIndex: number) {
 	if (!(chargePointIndex in chargePoints)) {
 		chargePoints[chargePointIndex] = new ChargePoint(chargePointIndex)
 		chargePoints[chargePointIndex].color =
-			'var(--color-cp' + Object.values(chargePoints).length + ')'
+			'var(--color-cp' + (Object.values(chargePoints).length - 1) + ')'
 		// console.info('Added chargepoint ' + chargePointIndex)
 	} else {
 		// console.info('Duplicate chargepoint message: ' + chargePointIndex)

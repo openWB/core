@@ -10,6 +10,7 @@ from control.counter_all import CounterAll
 from modules.common.component_state import CounterState
 from modules.devices.virtual import counter
 from modules.devices.virtual.config import VirtualCounterConfiguration, VirtualCounterSetup
+from packages.conftest import hierarchy_standard, hierarchy_hybrid, hierarchy_nested
 
 
 @pytest.fixture(autouse=True)
@@ -62,6 +63,32 @@ def test_virtual_counter(mock_pub: Mock, params):
         try:
             if call.args[0] == 'openWB/set/counter/6/get/currents':
                 assert params.expected_state.currents == call.args[1]
+                break
+        except IndexError:
+            pass
+    else:
+        pytest.fail("Topic openWB/set/counter/6/get/currents is missing")
+
+
+@pytest.mark.parametrize("counter_all",
+                         [pytest.param(hierarchy_standard, id="standard"),
+                          pytest.param(hierarchy_hybrid, id="hybrid"),
+                          pytest.param(hierarchy_nested, id="nested")])
+def test_virtual_counter_hierarchies(counter_all: Callable[[], CounterAll], data_, mock_pub: Mock):
+    # setup
+    virtual_counter = counter.VirtualCounter(0, VirtualCounterSetup(
+        id=0, configuration=VirtualCounterConfiguration(external_consumption=0)))
+    data.data.counter_all_data = counter_all()
+
+    # execution
+    virtual_counter.update()
+    virtual_counter.store.update()
+
+    # evaluation
+    for call in mock_pub.mock_calls:
+        try:
+            if call.args[0] == 'openWB/set/counter/0/get/power':
+                assert 5700 == call.args[1]
                 break
         except IndexError:
             pass

@@ -34,7 +34,7 @@ var topicsToSubscribe = [
 	["openWB/bat/get/daily_exported", 1], // total daily imported energy; float, unit: kWh
 	["openWB/bat/get/daily_imported", 1], // total daily imported energy; float, unit: kWh
 
-	// counter topics, counter with index 0 is always main grid counter
+	// counter topics
 	["openWB/counter/set/home_consumption", 1], // actual home power
 	["openWB/counter/set/daily_yield_home_consumption", 1], // daily home energy
 	["openWB/counter/+/get/power", 1], // actual power; int, unit: W
@@ -55,6 +55,9 @@ var topicsToSubscribe = [
 	["openWB/chargepoint/+/get/enabled", 1], // is the chargepoint enabled? int, 0 = disabled, 1 = enabled
 	["openWB/chargepoint/+/set/current", 1], // actual set current; float, unit: A
 
+	// devices and components
+	["openWB/system/device/+/component/+/config", 1], // configuration of components
+
 	// information for connected vehicle
 	["openWB/chargepoint/+/get/connected_vehicle/info", 1], // general info of the vehicle; JSON { "id": int, "name": str }
 	["openWB/chargepoint/+/get/connected_vehicle/config", 1], // general configuration of the vehicle; JSON { "charge_template": int, "ev_template": int, "chargemode": str, "priority": bool, "average_consumption": int (Wh/100km) }
@@ -72,9 +75,8 @@ var topicsToSubscribe = [
 
 	// electricity tariff
 	["openWB/optional/et/active", 1], // et provider is configured
-	["openWB/optional/et/provider", 1], // et provider name
-	["openWB/optional/et/get/price", 1], // current price
-	["openWB/optional/et/config/max_price", 1], // configured max price
+	["openWB/optional/et/provider", 1], // et provider information
+	["openWB/optional/et/get/prices", 1], // current price list
 
 	// graph topics
 	["openWB/graph/config/duration", 1], // maximum duration to display in landing page

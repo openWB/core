@@ -6,7 +6,6 @@ import json
 from typing import Tuple
 
 from modules.common import req
-from modules.common.fault_state import FaultState
 from modules.vehicles.tesla.config import TeslaSocToken
 
 log = logging.getLogger(__name__)
@@ -52,6 +51,8 @@ def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float]
 
 
 def validate_token(token: TeslaSocToken) -> TeslaSocToken:
+    if token.access_token is None and token.refresh_token is None:
+        raise Exception("Konfiguration des Tesla SoC unvollständig! Keine Token vorhanden.")
     expiration = token.created_at + token.expires_in
     log.debug("No need to authenticate. Valid token already present.")
     if time.time() > expiration:
@@ -83,12 +84,12 @@ def __refresh_token(token: TeslaSocToken) -> TeslaSocToken:
 
 
 def __get_vehicle_id(index: int, token: TeslaSocToken) -> str:
-    vehicles = __request_data('vehicles', token)
+    products = __request_data('products', token)
     try:
-        vehicle_id = str(json.loads(vehicles)["response"][index]["id"])
+        vehicle_id = str(json.loads(products)["response"][index]["id"])
         log.debug("vehicle_id for entry %d: %s" % (index, vehicle_id))
     except IndexError:
-        raise FaultState.error("Zur Tesla-ID "+str(index)+" konnte kein Fahrzeug im Account gefunden werden.")
+        raise Exception("Zur Tesla-ID "+str(index)+" konnte kein Fahrzeug im Account gefunden werden.")
     return vehicle_id
 
 

@@ -106,39 +106,16 @@ function parseData(allData) {
 					console.error(e.name + ': ' + e.message);
 				}
 			}
-		} else {
-			console.debug('line too short:', line);
+		// } else {
+		// 	console.debug('line too short:', line);
 		}
 	});
 	return result;
 }
 
-// not used for time scale chart
-// function getXScaleData(matrix){
-// 	return matrix.map(function(row){
-// 		// return row.time;
-// 		return row.timestamp*1000;
-// 	});
-// }
-
-// not used, parsing is done in chart object
-// function getColData(matrix, colLabel){
-// 	console.log('getColData: '+colLabel);
-// 	return matrix.map(function(row){
-// 		data = {x:row.timestamp};
-// 		if(row[colLabel]){
-// 			data['y'] = row[colLabel];
-// 		} else {
-// 			data['y'] = 0;
-// 		}
-// 		return data;
-// 	});
-// }
-
 let datasetTemplates = {
 	// optional components
 	"pv-all": {
-		label: 'PV ges.',
 		jsonKey: null,
 		borderColor: pvAllColor,
 		backgroundColor: pvAllBgColor,
@@ -154,7 +131,6 @@ let datasetTemplates = {
 		}
 	},
 	"bat-all-power": {
-		label: 'Speicher ges.',
 		jsonKey: null,
 		borderColor: batAllColor,
 		backgroundColor: batAllBgColor,
@@ -170,7 +146,6 @@ let datasetTemplates = {
 		}
 	},
 	"bat-all-soc": {
-		label: 'Speicher ges. SoC',
 		jsonKey: null,
 		borderColor: batAllSocColor,
 		backgroundColor: batAllSocBgColor,
@@ -292,7 +267,6 @@ let datasetTemplates = {
 var chartDatasets = [
 	// always available elements
 	{
-		label: 'EVU',
 		jsonKey: 'grid',
 		borderColor: evuColor,
 		backgroundColor: evuBgColor,
@@ -308,7 +282,6 @@ var chartDatasets = [
 		}
 	},
 	{
-		label: 'Hausverbrauch',
 		jsonKey: 'house-power',
 		borderColor: homeColor,
 		backgroundColor: homeBgColor,
@@ -324,7 +297,6 @@ var chartDatasets = [
 		}
 	},
 	{
-		label: 'LP ges.',
 		jsonKey: 'charging-all',
 		borderColor: cpAllColor,
 		backgroundColor: cpAllBgColor,
@@ -546,11 +518,10 @@ function getDatasetIndex(datasetId) {
 		return dataset.jsonKey == datasetId;
 	});
 	if (index != -1) {
-		console.debug('index for dataset "' + datasetId + '": ' + index);
+		// console.debug('index for dataset "' + datasetId + '": ' + index);
 		return index;
 	}
-	console.debug('no index found for "' + datasetId + '"');
-	return
+	// console.debug('no index found for "' + datasetId + '"');
 }
 
 function addDataset(datasetId) {
@@ -559,34 +530,41 @@ function addDataset(datasetId) {
 	if (number = datasetId.match(/([\d]+)/g)) {
 		datasetIndex = number[0];
 	}
-	console.debug('template name: ' + datasetTemplate + ' index: ' + datasetIndex);
+	// console.debug(`id: ${datasetId} template name: ${datasetTemplate} index: ${datasetIndex}`);
 	if (datasetTemplates[datasetTemplate]) {
 		newDataset = JSON.parse(JSON.stringify(datasetTemplates[datasetTemplate]));
 		newDataset.parsing.yAxisKey = datasetId;
 		newDataset.jsonKey = datasetId;
-		if (datasetIndex) {
-			newDataset.label = newDataset.label + ' ' + datasetIndex;
-		}
 		return chartDatasets.push(newDataset) - 1;
 	} else {
 		console.warn('no matching template found: ' + datasetId);
 	}
-	return
 }
 
 function initDataset(datasetId) {
 	var index = getDatasetIndex(datasetId);
-	if (index == undefined) {
+	if (index === undefined) {
 		index = addDataset(datasetId);
 	}
-	if (index != undefined) {
+	if (index !== undefined) {
+		if(chartLabels[datasetId] === undefined) {
+			// add index to dataset label if no label is defined
+			if (number = datasetId.match(/([\d]+)/g)) {
+				chartDatasets[index].label = chartDatasets[index].label + ' ' + number[0];
+			} else {
+				console.warn('no label found for index: ' + datasetId);
+			}
+		} else {
+			// use label from chartLabels
+			chartDatasets[index].label = chartLabels[datasetId];
+		}
 		chartDatasets[index].data = allChartData;
 	}
 }
 
 function truncateData(data) {
 	if (typeof maxDisplayLength !== "undefined" && data.length > maxDisplayLength) {
-		console.debug("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
+		// console.debug("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
 		data.splice(0, data.length - maxDisplayLength);
 	}
 }
@@ -647,9 +625,9 @@ function updateGraph(dataset) {
 		truncateData(allChartData);
 		chartUpdateBuffer = [];
 		myLine.update();
-		console.debug('graph updated, last dataset:', allChartData[allChartData.length-1].timestamp, allChartData[allChartData.length-1].time);
-	} else {
-		console.debug('graph not yet initialized, data stored in buffer');
+		// console.debug('graph updated, last dataset:', allChartData[allChartData.length-1].timestamp, allChartData[allChartData.length-1].time);
+	// } else {
+	// 	console.debug('graph not yet initialized, data stored in buffer');
 	}
 }
 
@@ -689,7 +667,7 @@ function forceGraphLoad() {
 			showHideDataset('boolDisplayLegend');
 		}
 		if (typeof maxDisplayLength === "undefined") {
-			console.info("setting graph duration to default of 30 minutes");
+			console.warn("setting graph duration to default of 30 minutes");
 			maxDisplayLength = 30 * 6;
 		}
 		checkGraphLoad();
@@ -727,7 +705,7 @@ function showHide(theDataset) {
 }
 
 function subscribeMqttGraphSegments() {
-	console.debug('subscribing to graph topics');
+	// console.debug('subscribing to graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		topic = "openWB/graph/alllivevaluesJson" + segments;
 		client.subscribe(topic, { qos: 0 });
@@ -735,7 +713,7 @@ function subscribeMqttGraphSegments() {
 }
 
 function unsubscribeMqttGraphSegments() {
-	console.debug('unsubscribing from graph topics');
+	// console.debug('unsubscribing from graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		topic = "openWB/graph/alllivevaluesJson" + segments;
 		client.unsubscribe(topic);

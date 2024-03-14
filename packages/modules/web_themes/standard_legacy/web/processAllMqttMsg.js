@@ -12,12 +12,22 @@ var schedulePlan = {};
 var timeChargePlan = {};
 var vehicleSoc = {};
 var evuCounterIndex = undefined;
+var chartLabels = {
+	// define some default labels, they will be extended for components and vehicles
+	"grid": "EVU",
+	"house-power": "Hausverbr.",
+	"charging-all": "LP ges.",
+	"pv-all": "PV ges.",
+	"bat-all-power": "Speicher ges.",
+	"bat-all-soc": "Speicher ges. SoC",
+};
 
-function getIndex(topic) {
+function getIndex(topic, position=0) {
 	// get occurrence of numbers between / / in topic
 	// since this is supposed to be the index like in openwb/lp/4/w
 	// no lookbehind supported by safari, so workaround with replace needed
-	var index = topic.match(/(?:\/)([0-9]+)(?=\/)/g)[0].replace(/[^0-9]+/g, '');
+	// there may be multiple occurrences of numbers in the topic, so we need to specify the position
+	var index = topic.match(/(?:\/)([0-9]+)(?=\/)/g)[position].replace(/[^0-9]+/g, '');
 	if (typeof index === 'undefined') {
 		index = '';
 	}
@@ -29,7 +39,7 @@ function createChargePoint(hierarchy) {
 		var chargePointIndex = hierarchy.id;
 		if ($('.charge-point-card[data-cp=' + chargePointIndex + ']').length == 0) {
 			if (typeof chargePointIndex !== 'undefined') {
-				console.debug("creating charge-point " + chargePointIndex);
+				// console.debug("creating charge-point " + chargePointIndex);
 				var sourceElement = $('.charge-point-card.charge-point-template');
 				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
@@ -113,6 +123,22 @@ function refreshChargeTemplate(templateIndex) {
 				// chargemode.instant_charging.limit.soc
 				element = parent.find('.charge-point-instant-charge-limit-amount');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.instant_charging.limit.amount);
+				// et.active
+				headerElement = parent.find('.charge-point-vehicle-et-active')
+				toggleElement = parent.find('.charge-point-price-charging-active')
+				if (chargeModeTemplate[templateIndex].et.active) {
+					headerElement.removeClass("hide");
+					toggleElement.bootstrapToggle('on', true);
+				} else {
+					headerElement.addClass("hide");
+					toggleElement.bootstrapToggle('off', true);
+				}
+				// et.max_price
+				element = parent.find('.charge-point-max-price-button');
+				var max_price = parseFloat((chargeModeTemplate[templateIndex].et.max_price * 100000).toFixed(2));
+				element.data('max-price', max_price);
+				element.attr('data-max-price', max_price).data('max-price', max_price);
+				element.find('.charge-point-price-charging-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
 				// ***** pv_charging *****
 				// chargemode.pv_charging.min_current
@@ -148,7 +174,7 @@ function refreshChargeTemplate(templateIndex) {
 				if (templateIndex in schedulePlan) {
 					parent.find(".charge-point-schedule-plan-missing").addClass("hide");
 					for (const [key, value] of Object.entries(schedulePlan[templateIndex])) {
-						console.debug("schedule", key, value);
+						// console.debug("schedule", key, value);
 						if (parent.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
 							// console.log('creating schedule plan with id "'+key+'"');
 							var clonedElement = sourceElement.clone();
@@ -234,7 +260,7 @@ function refreshChargeTemplate(templateIndex) {
 					// console.log("time charge plan found", templateIndex, timeChargePlan[templateIndex]);
 					parent.find(".charge-point-time-charge-plan-missing").addClass("hide");
 					for (const [key, value] of Object.entries(timeChargePlan[templateIndex])) {
-						console.debug("schedule", key, value);
+						// console.debug("schedule", key, value);
 						if (parent.find('.charge-point-time-charge-plan[data-plan=' + key + ']').length == 0) {
 							// console.log('creating time charge plan with id "'+key+'"');
 							var clonedElement = sourceElement.clone();
@@ -345,6 +371,7 @@ function handleMessage(mqttTopic, mqttPayload) {
 	processPreloader(mqttTopic);
 	if (mqttTopic.match(/^openwb\/counter\/[0-9]+\//i)) { processCounterMessages(mqttTopic, mqttPayload) }
 	else if (mqttTopic.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttTopic, mqttPayload); }
+	else if (mqttTopic.match(/^openwb\/system\/device\/[0-9]+\/component\/[0-9]+\//i) ) { processComponentMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/bat\//i)) { processBatteryMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/pv\//i)) { processPvMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/chargepoint\//i)) { processChargePointMessages(mqttTopic, mqttPayload); }
@@ -380,7 +407,7 @@ function processGlobalCounterMessages(mqttTopic, mqttPayload) {
 					break
 				}
 			}
-			console.debug("EVU counter index: " + evuCounterIndex);
+			// console.debug("EVU counter index: " + evuCounterIndex);
 			createChargePoint(hierarchy[0]);
 			// subscribe to other topics relevant for charge points
 			topicsToSubscribe.forEach((topic) => {
@@ -420,8 +447,6 @@ function processGlobalCounterMessages(mqttTopic, mqttPayload) {
 }
 
 function processEvuMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/counter/0
-	// called by handleMessage
 	if (mqttTopic == 'openWB/counter/' + evuCounterIndex + '/get/power') {
 		var unit = 'W';
 		var powerEvu = parseInt(mqttPayload, 10);
@@ -480,15 +505,35 @@ function processEvuMessages(mqttTopic, mqttPayload) {
 function processCounterMessages(mqttTopic, mqttPayload) {
 	let counterIndex = getIndex(mqttTopic);
 	if (counterIndex == evuCounterIndex) {
-		console.debug("evu counter message received");
 		processEvuMessages(mqttTopic, mqttPayload);
 	} else {
 		/* nothing here yet */
 	}
 }
 
+function processComponentMessages(mqttTopic, mqttPayload) {
+	// let deviceIndex = getIndex(mqttTopic, 0);  // first number in topic
+	// let componentIndex = getIndex(mqttTopic, 1);  // second number in topic
+	if (mqttTopic.match(/^openWB\/system\/device\/[0-9]+\/component\/[0-9]+\/config$/i)) {
+		// JSON data
+		// name: str
+		// type: str
+		// id: int
+		// configuration: JSON
+		var configMessage = JSON.parse(mqttPayload);
+		// chart label
+		if (configMessage.type.includes("counter")) {
+			let key = `counter${configMessage.id}-power`;
+			if (configMessage.id == evuCounterIndex) {
+				key = "grid";
+			}
+			chartLabels[key] = configMessage.name;
+		}
+	}
+}
+
 function processBatteryMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/housebattery
+	// processes mqttTopic for topic openWB/bat
 	// called by handleMessage
 	if (mqttTopic == 'openWB/bat/config/configured') {
 		if (mqttPayload == "true") {
@@ -715,6 +760,8 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		// name
 		var element = parent.find('.charge-point-name'); // now get parents respective child element
 		$(element).text(configMessage.name);
+		// chart label
+		chartLabels[`cp${index}-power`] = configMessage.name;
 		// template
 		parent.attr('data-charge-point-template', configMessage.template).data('charge-point-template', configMessage.template);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/state_str$/i)) {
@@ -774,15 +821,14 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		// console.log("charged since plugged counter");
 		var index = getIndex(mqttTopic); // extract number between two / /
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
-		var element = parent.find('.charge-point-energy-since-plugged'); // now get parents respective child element
+		var element = parent.find('.charge-point-energy-since-mode-switch'); // now get parents respective child element
 		var logData = JSON.parse(mqttPayload);
-		var energyCharged = parseFloat(logData.imported_since_plugged) / 1000;
+		var energyCharged = parseFloat(logData.imported_since_mode_switch) / 1000;
 		if (isNaN(energyCharged)) {
 			energyCharged = 0;
 		}
 		element.text(energyCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kWh');
-		var rangeChargedElement = parent.find('.charge-point-range-since-plugged'); // now get parents child element
-		var consumption = parseFloat($(rangeChargedElement).data('consumption'));
+		var rangeChargedElement = parent.find('.charge-point-range-since-mode-switch'); // now get parents child element
 		var rangeCharged = parseFloat(logData.range_charged);
 		rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km';
 		$(rangeChargedElement).text(rangeCharged);
@@ -868,7 +914,8 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		var spinner = parent.find('.charge-point-reload-soc-symbol');
 		spinner.removeClass('fa-spin');
 		// "range" + "range_unit" + "timestamp"
-		element.attr('title', Math.round(socData.range) + socData.range_unit + " (" + socData.timestamp + ")");
+		let timeString = new Date(socData.timestamp * 1000).toLocaleString();
+		element.attr('title', Math.round(socData.range) + socData.range_unit + " (" + timeString + ")");
 		// "fault_stat" ToDo
 		// "fault_str" ToDo
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/info$/i)) {
@@ -914,17 +961,6 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 			// element.prop('checked', false);
 			priorityElement.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
 		}
-		// "average_consumption" int unit: Wh/100km
-		var rangeChargedElement = parent.find('.charge-point-range-since-plugged');
-		rangeChargedElement.data('consumption', configData.average_consumption).attr('data-consumption', configData.average_consumption);
-		// if already energyCharged-displayed, update rangeCharged
-		var energyCharged = parseFloat(parent.find('.charge-point-energy-since-plugged').text().replace(',', '.')); // now get parents respective energyCharged child element
-		var rangeCharged = '';
-		if (!isNaN(energyCharged) && configData.average_consumption > 0) {
-			rangeCharged = (energyCharged / configData.average_consumption) * 100;
-			rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km';
-		}
-		$(rangeChargedElement).text(rangeCharged);
 	}
 	// else if ( mqttTopic.match( /^openwb\/lp\/[0-9]+\/kWhactualcharged$/i ) ) {
 	// 	// energy charged since reset of limitation
@@ -1019,24 +1055,27 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 	if (mqttTopic.match(/^openwb\/vehicle\/[0-9]+\/name$/i)) {
 		// this topic is used to populate the charge point list
 		var index = getIndex(mqttTopic); // extract number between two / /
+		var vehicleName = JSON.parse(mqttPayload)
 		$('.charge-point-vehicle-select').each(function () {
 			myOption = $(this).find('option[value=' + index + ']');
 			if (myOption.length > 0) {
-				myOption.text(JSON.parse(mqttPayload)); // update vehicle name if option with index is present
+				myOption.text(vehicleName); // update vehicle name if option with index is present
 			} else {
-				$(this).append('<option value="' + index + '">' + JSON.parse(mqttPayload) + '</option>'); // add option with index
+				$(this).append(`<option value="${index}">${vehicleName}</option>`); // add option with index
 				if (parseInt($(this).closest('.charge-point-vehicle-data[data-ev]').data('ev')) == index) { // update selected element if match with our index
 					$(this).val(index);
 				}
 			}
 		});
+		// chart label
+		chartLabels[`ev${index}-soc`] = vehicleName;
 	} else if (mqttTopic.match(/^openwb\/vehicle\/[0-9]+\/soc_module\/config$/i)) {
 		// { "type": "<selected module>", "configuration": { <module specific data> } }
 		// we use the data "type" to detect, if a soc module is configure (type != None) or manual soc is selected (type == manual)
 		var vehicleIndex = getIndex(mqttTopic); // extract number between two / /
 		var configData = JSON.parse(mqttPayload);
 		vehicleSoc[vehicleIndex] = configData;
-		console.debug("update vehicle soc config", vehicleIndex, configData);
+		// console.debug("update vehicle soc config", vehicleIndex, configData);
 		refreshVehicleSoc(vehicleIndex);
 	} else if (mqttTopic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+$/i)) {
 		templateIndex = mqttTopic.match(/[0-9]+$/i);
@@ -1224,7 +1263,7 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 		}
 		graphRefreshCounter += 1;
 	} else if (mqttTopic == 'openWB/graph/config/duration') {
-		console.debug("graph duration: " + mqttPayload + " minutes");
+		// console.debug("graph duration: " + mqttPayload + " minutes");
 		var duration = JSON.parse(mqttPayload);
 		if (isNaN(duration) || duration < 10 || duration > 120) {
 			console.error("bad graph duration received: " + mqttPayload + " setting to default of 30");
@@ -1235,67 +1274,20 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 } // end processGraphMessages
 
 function processETProviderMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/global
-	// called by handleMessage
-	if (mqttTopic == 'openWB/optional/et/active') {
-		// console.log("et configured: "+mqttPayload);
+	// processes mqttTopic for topic openWB/optional/et
+	if (mqttTopic == 'openWB/optional/et/provider') {
 		data = JSON.parse(mqttPayload);
-		if (data == true) {
+		if (data.type) {
+			$('.et-name').text(data.name);
 			$('.et-configured').removeClass('hide');
 		} else {
 			$('.et-configured').addClass('hide');
 		}
-	} else if (mqttTopic == 'openWB/optional/et/get/price') {
-		var currentPrice = parseFloat(mqttPayload);
+	} else if (mqttTopic == 'openWB/optional/et/get/prices') {
+		electricityPriceList = JSON.parse(mqttPayload);
+		var currentPrice = electricityPriceList[Object.keys(electricityPriceList)[0]] * 100000;
 		$('.et-current-price').text(currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' ct/kWh');
-		var maxPrice = parseFloat($('.et-price-limit').first().text().split(" ")[0].replace(/,/, '.'));
-		// console.log("max: "+maxPrice+" current: "+currentPrice);
-		if (!isNaN(currentPrice) && !isNaN(maxPrice)) {
-			if (currentPrice <= maxPrice) {
-				$('.et-blocked').addClass('hide');
-				$('.et-not-blocked').removeClass('hide');
-			} else {
-				$('.et-not-blocked').addClass('hide');
-				$('.et-blocked').removeClass('hide');
-			}
-		}
-	} else if (mqttTopic == 'openWB/optional/et/config/max_price') {
-		var maxPrice = parseFloat(mqttPayload);
-		$('.et-price-limit').text(maxPrice.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' ct/kWh');
-		var currentPrice = parseFloat($('.et-current-price').first().text().split(" ")[0].replace(/,/, '.'));
-		// console.log("max: "+maxPrice+" current: "+currentPrice);
-		if (!isNaN(currentPrice) && !isNaN(maxPrice)) {
-			if (currentPrice <= maxPrice) {
-				$('.et-blocked').addClass('hide');
-				$('.et-not-blocked').removeClass('hide');
-			} else {
-				$('.et-not-blocked').addClass('hide');
-				$('.et-blocked').removeClass('hide');
-			}
-		}
-	} else if (mqttTopic == 'openWB/optional/et/provider') {
-		$('.et-name').text(JSON.parse(mqttPayload));
 	}
-	// else if ( mqttTopic == 'openWB/global/ETProvider/modulePath' ) {
-	// 	$('.etproviderLink').attr("href", "/openWB/modules/"+mqttPayload+"/stromtarifinfo/infopage.php");
-	// }
-	// else if ( mqttTopic == 'openWB/global/awattar/pricelist' ) {
-	// 	// read etprovider values and trigger graph creation
-	// 	// loadElectricityPriceChart will show electricityPriceChartCanvas if etprovideraktiv=1 in openwb.conf
-	// 	// graph will be redrawn after 5 minutes (new data pushed from cron5min.sh)
-	// 	var csvData = [];
-	// 	var rawcsv = mqttPayload.split(/\r?\n|\r/);
-	// 	// skip first entry: it is module-name responsible for list
-	// 	for (var i = 1; i < rawcsv.length; i++) {
-	// 		csvData.push(rawcsv[i].split(','));
-	// 	}
-	// 	// Timeline (x-Achse) ist UNIX Timestamp in UTC, deshalb Umrechnung (*1000) in Javascript-Timestamp (mit Millisekunden)
-	// 	electricityPriceTimeline = getCol(csvData, 0).map(function(x) { return x * 1000; });
-	// 	// Chartline (y-Achse) ist Preis in ct/kWh
-	// 	electricityPriceChartLine = getCol(csvData, 1);
-
-	// 	loadElectricityPriceChart();
-	// }
 }
 
 function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {

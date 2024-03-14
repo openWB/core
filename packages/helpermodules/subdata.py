@@ -16,6 +16,7 @@ from control import counter_all
 from control import ev
 from control import general
 from control.chargepoint.chargepoint_all import AllChargepoints
+from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from helpermodules import graph
@@ -81,6 +82,7 @@ class SubData:
                  event_start_internal_chargepoint: threading.Event,
                  event_stop_internal_chargepoint: threading.Event,
                  event_update_config_completed: threading.Event,
+                 event_update_soc: threading.Event,
                  event_soc: threading.Event,
                  event_jobs_running: threading.Event,
                  event_modbus_server: threading.Event,):
@@ -98,6 +100,7 @@ class SubData:
         self.event_start_internal_chargepoint = event_start_internal_chargepoint
         self.event_stop_internal_chargepoint = event_stop_internal_chargepoint
         self.event_update_config_completed = event_update_config_completed
+        self.event_update_soc = event_update_soc
         self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
         self.event_modbus_server = event_modbus_server
@@ -132,6 +135,7 @@ class SubData:
             # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
             # "openWB/system/subdata_initialized" empfangen werden!
             ("openWB/system/mqtt/bridge/+", 2),
+            ("openWB/system/mqtt/+", 2),
             # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
             ("openWB/system/+", 2),
             ("openWB/system/backup_cloud/#", 2),
@@ -264,10 +268,9 @@ class SubData:
 
                     if re.search("/vehicle/[0-9]+/get", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.get, msg)
-                    elif re.search("/vehicle/[0-9]+/set/ev_template$", msg.topic) is not None:
-                        var["ev"+index].data.set.ev_template.data = dataclass_from_dict(
-                            ev.EvTemplateData,
-                            decode_payload(msg.payload))
+                        if (re.search("/vehicle/[0-9]+/get/force_soc_update", msg.topic) is not None and
+                                decode_payload(msg.payload)):
+                            self.event_update_soc.set()
                     elif re.search("/vehicle/[0-9]+/set", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
                     elif re.search("/vehicle/[0-9]+/soc_module/general_config", msg.topic) is not None:
@@ -409,7 +412,7 @@ class SubData:
                     if re.search("/chargepoint/[0-9]+/set/", msg.topic) is not None:
                         if re.search("/chargepoint/[0-9]+/set/log$", msg.topic) is not None:
                             var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
-                                chargepoint.Log, decode_payload(msg.payload))
+                                Log, decode_payload(msg.payload))
                         else:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
@@ -561,8 +564,21 @@ class SubData:
         """
         try:
             if re.search("/general/", msg.topic) is not None:
-                if re.search("/general/ripple_control_receiver/", msg.topic) is not None:
+                if re.search("/general/ripple_control_receiver/module", msg.topic) is not None:
+                    config_dict = decode_payload(msg.payload)
+                    if config_dict["type"] is None:
+                        var.data.ripple_control_receiver.module = None
+                    else:
+                        mod = importlib.import_module(".ripple_control_receivers." +
+                                                      config_dict["type"]+".ripple_control_receiver", "modules")
+                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                        var.data.ripple_control_receiver.module = mod.create_ripple_control_receiver(config)
+                elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
+                elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
                     return
+                elif re.search("/general/prices/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.prices, msg)
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
                     if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.chargemode_config.pv_charging, msg)
@@ -618,10 +634,20 @@ class SubData:
                             str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")
                         ])
                 elif re.search("/optional/et/", msg.topic) is not None:
-                    if re.search("/optional/et/get/", msg.topic) is not None:
+                    if re.search("/optional/et/get/prices", msg.topic) is not None:
+                        var.data.et.get.prices = decode_payload(msg.payload)
+                    elif re.search("/optional/et/get/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.et.get, msg)
-                    elif re.search("/optional/et/config/", msg.topic) is not None:
-                        self.set_json_payload_class(var.data.et.config, msg)
+                    elif re.search("/optional/et/provider$", msg.topic) is not None:
+                        config_dict = decode_payload(msg.payload)
+                        if config_dict["type"] is None:
+                            var.et_module = None
+                        else:
+                            mod = importlib.import_module(
+                                f".electricity_tariffs.{config_dict['type']}.tariff", "modules")
+                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                            var.et_module = mod.create_electricity_tariff(config)
+                            var.et_get_prices()
                     else:
                         self.set_json_payload_class(var.data.et, msg)
                 else:
@@ -738,6 +764,10 @@ class SubData:
                                            MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
                 else:
                     log.debug("skipping mqtt bridge message on startup")
+            elif "mqtt" and "valid_partner_ids" in msg.topic:
+                # duplicate topic for remote support service
+                log.error(f"received valid partner ids: {decode_payload(msg.payload)}")
+                Pub().pub("openWB-remote/valid_partner_ids", decode_payload(msg.payload))
             # will be moved to separate handler!
             elif "GetRemoteSupport" in msg.topic:
                 log.warning("deprecated topic for remote support received!")

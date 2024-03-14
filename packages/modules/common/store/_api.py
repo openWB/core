@@ -32,7 +32,7 @@ class LoggingValueStore(Generic[T], ValueStore[T]):
 
 
 def update_values(component):
-    with SingleComponentUpdateContext(component.component_info, update_always=False):
+    with SingleComponentUpdateContext(component.fault_state, update_always=False):
         if hasattr(component, "store"):
             try:
                 component.store.update()

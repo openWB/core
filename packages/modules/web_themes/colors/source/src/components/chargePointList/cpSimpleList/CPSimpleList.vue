@@ -1,6 +1,14 @@
 <template>
-	<WBWidget>
+	<WBWidget :variable-width="true">
 		<template #title> Ladepunkte </template>
+		<template #buttons>
+			<div class="d-flex float-right justify-content-end align-items-center">
+				<span v-if="etData.active" class="badge rounded-pill pricebadge ms-2"
+					>Strompreis: {{ etData.etCurrentPriceString }}</span
+				>
+			</div>
+		</template>
+
 		<table class="table table-borderless px-0">
 			<thead>
 				<tr>
@@ -35,6 +43,7 @@ import { computed } from 'vue'
 import { chargePoints } from '../model'
 import WBWidget from '@/components/shared/WBWidget.vue'
 import CPSListItem from './CPSListItem.vue'
+import { etData } from '@/components/priceChart/model'
 const chargepointsToDisplay = computed(() => {
 	return Object.values(chargePoints)
 })
@@ -59,5 +68,9 @@ const chargepointsToDisplay = computed(() => {
 .table {
 	border-spacing: 1rem;
 	background-color: var(--color-bg);
+}
+.pricebadge {
+	background-color: var(--color-menu);
+	font-weight: normal;
 }
 </style>

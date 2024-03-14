@@ -1,25 +1,49 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
+from helpermodules import timecheck
 
 from helpermodules.auto_str import auto_str
 
 log = logging.getLogger(__name__)
 
 
-def _calculate_powers_and_currents(currents: Optional[List[float]],
-                                   powers: Optional[List[float]],
-                                   voltages: Optional[List[float]]) -> Tuple[
+def _check_none(values: Optional[List[Optional[Union[int, float]]]]) -> bool:
+    """Check if values is None or [None, None, None]
+    Args:
+        values: list of values
+        Returns:
+            True if values is None or [None, None, None]
+    """
+    return values is None or values == [None]*3
+
+
+def _calculate_powers_and_currents(currents: Optional[List[Optional[float]]],
+                                   powers: Optional[List[Optional[float]]],
+                                   voltages: Optional[List[Optional[float]]]) -> Tuple[
         Optional[List[float]], List[float], List[float]]:
-    if voltages is None:
+    """Calculate currents from powers and voltages or vice versa
+    All args are optional, if one is None or [None, None, None] it will be calculated from the others if possible.
+    Args:
+        currents: list of currents for 3 phases in A
+        powers: list of powers for 3 phases in W
+        voltages: list of voltages for 3 phases in V
+    Returns:
+        currents, powers, voltages
+    """
+    if _check_none(voltages):
         voltages = [230.0]*3
-    if powers is None:
-        if currents is None:
+    if _check_none(powers):
+        if _check_none(currents):
             powers = [0.0]*3
         else:
             powers = [currents[i]*voltages[i] for i in range(0, 3)]
-    if currents is None and powers:
-        currents = [powers[i]/voltages[i] for i in range(0, 3)]
-    if currents and powers:
+    if _check_none(currents) and not _check_none(powers):
+        try:
+            currents = [powers[i]/voltages[i] for i in range(0, 3)]
+        except ZeroDivisionError:
+            # some inverters (Sungrow) report 0V if in standby
+            currents = [0.0]*3
+    if not _check_none(currents) and not _check_none(powers):
         currents = [currents[i]*-1 if powers[i] < 0 and currents[i] > 0 else currents[i] for i in range(0, 3)]
     return currents, powers, voltages
 
@@ -52,10 +76,10 @@ class CounterState:
         imported: float = 0,
         exported: float = 0,
         power: float = 0,
-        voltages: Optional[List[float]] = None,
-        currents: Optional[List[float]] = None,
-        powers: Optional[List[float]] = None,
-        power_factors: Optional[List[float]] = None,
+        voltages: Optional[List[Optional[float]]] = None,
+        currents: Optional[List[Optional[float]]] = None,
+        powers: Optional[List[Optional[float]]] = None,
+        power_factors: Optional[List[Optional[float]]] = None,
         frequency: float = 50,
     ):
         """Args:
@@ -69,7 +93,7 @@ class CounterState:
             frequency: actual grid frequency in Hz
         """
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
-        if power_factors is None:
+        if _check_none(power_factors):
             power_factors = [0.0]*3
         self.power_factors = power_factors
         self.imported = imported
@@ -84,7 +108,7 @@ class InverterState:
         self,
         exported: float,
         power: float,
-        currents: Optional[List[float]] = None,
+        currents: Optional[List[Optional[float]]] = None,
         dc_power: Optional[float] = None
     ):
         """Args:
@@ -93,7 +117,7 @@ class InverterState:
             currents: actual currents for 3 phases in A
             dc_power: dc power in W
         """
-        if currents is None:
+        if _check_none(currents):
             currents = [0.0]*3
         else:
             if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
@@ -106,11 +130,11 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: Optional[str] = None):
+    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: float = 0):
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
-            soc_timestamp: timestamp of last request in %m/%d/%Y, %H:%M:%S
+            soc_timestamp: timestamp of last request as unix timestamp
         """
         self.soc = soc
         self.range = range
@@ -120,21 +144,23 @@ class CarState:
 @auto_str
 class ChargepointState:
     def __init__(self,
-                 phases_in_use: int,
+                 phases_in_use: int = 0,
                  imported: float = 0,
                  exported: float = 0,
                  power: float = 0,
-                 powers: Optional[List[float]] = None,
-                 voltages: Optional[List[float]] = None,
-                 currents: Optional[List[float]] = None,
-                 power_factors: Optional[List[float]] = None,
+                 powers: Optional[List[Optional[float]]] = None,
+                 voltages: Optional[List[Optional[float]]] = None,
+                 currents: Optional[List[Optional[float]]] = None,
+                 power_factors: Optional[List[Optional[float]]] = None,
                  charge_state: bool = False,
                  plug_state: bool = False,
                  rfid: Optional[str] = None,
+                 rfid_timestamp: Optional[float] = None,
                  frequency: float = 50,
                  soc: Optional[float] = None,
                  soc_timestamp: Optional[int] = None,
-                 evse_current: Optional[float] = None):
+                 evse_current: Optional[float] = None,
+                 vehicle_id: Optional[str] = None):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
@@ -144,9 +170,26 @@ class ChargepointState:
         self.charge_state = charge_state
         self.plug_state = plug_state
         self.rfid = rfid
-        if power_factors is None:
+        if self.rfid and rfid_timestamp is None:
+            self.rfid_timestamp = timecheck.create_timestamp()
+        else:
+            self.rfid_timestamp = rfid_timestamp
+        if _check_none(power_factors):
             power_factors = [0.0]*3
         self.power_factors = power_factors
         self.soc = soc
         self.soc_timestamp = soc_timestamp
         self.evse_current = evse_current
+        self.vehicle_id = vehicle_id
+
+
+@auto_str
+class TariffState:
+    def __init__(self,
+                 prices: Optional[Dict[int, float]] = None) -> None:
+        self.prices = prices
+
+
+class RcrState:
+    def __init__(self, override_value: float) -> None:
+        self.override_value = override_value

@@ -88,9 +88,8 @@ class Device(AbstractDevice):
 
     def __update_components(self, client: PowerwallHttpClient):
         if self.components:
+            aggregate = client.get_json("/api/meters/aggregates")
             for component in self.components:
-                # read aggregate
-                aggregate = client.get_json("/api/meters/aggregates")
                 self.components[component].update(client, aggregate)
         else:
             log.warning(
