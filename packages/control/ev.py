@@ -764,7 +764,7 @@ class ChargeTemplate:
     SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC = ("Falls vorhanden wird mit EVU-Überschuss geladen, da der Ziel-Soc "
                                                 "für Zielladen bereits erreicht wurde.")
     SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
-    SCHEDULED_CHARGING_NO_DATE_PENDING = "Kein Zielladen, da kein Ziel-Termin in den nächsten 24h ansteht."
+    SCHEDULED_CHARGING_NO_DATE_PENDING = "Kein Zielladen, da kein Ziel-Termin in den nächsten 24 Stunden ansteht."
     SCHEDULED_CHARGING_USE_PV = ("Kein Zielladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, "
                                  "wird mit Überschuss geladen.")
     SCHEDULED_CHARGING_MAX_CURRENT = ("Zielladen mit {}A. Der Ladestrom wurde erhöht, um den Zieltermin zu erreichen. "
