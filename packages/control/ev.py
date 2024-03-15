@@ -719,7 +719,7 @@ class ChargeTemplate:
                     if remaining_time:
                         # Wenn der Zeitpunkt vorüber, aber noch nicht abgelaufen ist oder
                         # wenn noch gar kein Plan vorhanden ist,
-                        if ((remaining_time < 0 and (missed_date_today is False or not plan_data)) or
+                        if ((remaining_time < 0 and missed_date_today is False) or
                                 # oder der Zeitpunkt noch nicht vorüber ist
                                 remaining_time > 0):
                             # Wenn die verbleibende Zeit geringer als die niedrigste bisherige verbleibende Zeit ist
@@ -764,6 +764,7 @@ class ChargeTemplate:
     SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC = ("Falls vorhanden wird mit EVU-Überschuss geladen, da der Ziel-Soc "
                                                 "für Zielladen bereits erreicht wurde.")
     SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
+    SCHEDULED_CHARGING_NO_DATE_PENDING = "Kein Zielladen, da kein Ziel-Termin in den nächsten 24h ansteht."
     SCHEDULED_CHARGING_USE_PV = ("Kein Zielladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, "
                                  "wird mit Überschuss geladen.")
     SCHEDULED_CHARGING_MAX_CURRENT = ("Zielladen mit {}A. Der Ladestrom wurde erhöht, um den Zieltermin zu erreichen. "
@@ -785,7 +786,10 @@ class ChargeTemplate:
         current = 0
         mode = "stop"
         if plan_data is None:
-            return current, mode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, control_parameter_phases
+            if len(self.data.chargemode.scheduled_charging.plans) == 0:
+                return current, mode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, control_parameter_phases
+            else:
+                return current, mode, self.SCHEDULED_CHARGING_NO_DATE_PENDING, control_parameter_phases
         current_plan = self.data.chargemode.scheduled_charging.plans[plan_data.num]
         limit = current_plan.limit
         phases = plan_data.phases
