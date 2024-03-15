@@ -32,6 +32,7 @@ class Device(AbstractDevice):
 
     def __init__(self, device_config: Union[Dict, Enphase]) -> None:
         self.components = {}  # type: Dict[str, enphase_component_classes]
+        self.read_live_data = False
         try:
             self.device_config = dataclass_from_dict(Enphase, device_config)
         except Exception:
@@ -50,6 +51,8 @@ class Device(AbstractDevice):
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component"+str(component_config.id)] = self.COMPONENT_TYPE_TO_CLASS[component_type](
                 self.device_config.id, component_config)
+            if "bat" in component_type:
+                self.read_live_data = True
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -69,15 +72,18 @@ class Device(AbstractDevice):
         log.debug("Start device reading " + str(self.components))
         if self.components:
             with MultiComponentUpdateContext(self.components):
+                json_live_data = None  # ToDo: available in V1?
                 if self.device_config.configuration.version == EnphaseVersion.V1.value:
-                    json_live_data = None  # ToDo: available in V1?
+                    # ToDo: live_data available in V1?
+                    # json_live_data = ...
                     json_response = req.get_http_session().get(
                         'http://'+self.device_config.configuration.hostname+'/ivp/meters/readings', timeout=5).json()
                 elif self.device_config.configuration.version == EnphaseVersion.V2.value:
-                    json_live_data = req.get_http_session().get(
-                        'https://'+self.device_config.configuration.hostname+'/ivp/livedata/status',
-                        timeout=5, verify=False,
-                        headers={"Authorization": f"Bearer {self.device_config.configuration.token}"}).json()
+                    if self.read_live_data:
+                        json_live_data = req.get_http_session().get(
+                            'https://'+self.device_config.configuration.hostname+'/ivp/livedata/status',
+                            timeout=5, verify=False,
+                            headers={"Authorization": f"Bearer {self.device_config.configuration.token}"}).json()
                     log.debug(f"livedata/status json response: {json_live_data}")
                     json_response = req.get_http_session().get(
                         'https://'+self.device_config.configuration.hostname+'/ivp/meters/readings',
