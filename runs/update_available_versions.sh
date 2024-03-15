@@ -31,7 +31,7 @@ fi
 		if [[ ${branches[$index]} == *"HEAD"* ]]; then
 			unset 'branches[$index]'
 		else
-			branches[index]="${branches[$index]//*\//}" # remove leading $GITREMOTE/ and whitespaces
+			branches[index]="${branches[$index]//*$GITREMOTE\//}" # remove leading whitespace and $GITREMOTE/
 			echo -n "checking commit for $GITREMOTE/${branches[$index]}..."
 			availableBranches[${branches[$index]}]=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1 "$GITREMOTE/${branches[$index]}")
 			echo "${availableBranches[${branches[$index]}]}"

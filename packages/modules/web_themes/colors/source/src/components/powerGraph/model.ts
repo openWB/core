@@ -301,6 +301,16 @@ export function calculateAutarchy(cat: string, values: GraphDataItem) {
 			(values.pv - values.evuOut + values.evuIn + values.batOut)
 	}
 }
+export function calculateMonthlyAutarchy(cat: string, values: GraphDataItem) {
+	if (values[cat] > 0) {
+		historicSummary.items[cat].energyPv +=
+			(1000 * (values[cat] * (values.pv - values.evuOut))) /
+			(values.pv - values.evuOut + values.evuIn + values.batOut)
+		historicSummary.items[cat].energyBat +=
+			(1000 * (values[cat] * values.batOut)) /
+			(values.pv - values.evuOut + values.evuIn + values.batOut)
+	}
+}
 const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
 export const noData = ref(false)
 

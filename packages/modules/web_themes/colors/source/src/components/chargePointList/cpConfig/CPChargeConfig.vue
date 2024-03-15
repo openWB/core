@@ -1,5 +1,7 @@
 <template>
-	<p class="settingsheader mt-2 ms-1">Ladepunkt:</p>
+	<p class="settingsheader mt-2 ms-1">
+		Ladeeinstellungen für {{ cp.vehicleName }}:
+	</p>
 	<!-- Select the charge mode -->
 	<ConfigItem
 		title="Lademodus"
@@ -21,7 +23,7 @@
 	</ConfigItem>
 	<!-- Select the vehicle -->
 	<ConfigItem
-		title="Fahrzeug"
+		title="Fahrzeug wechseln"
 		icon="fa-car"
 		:infotext="infotext['vehicle']"
 		:fullwidth="true"

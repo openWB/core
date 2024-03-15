@@ -411,7 +411,11 @@
 						<div class="col-3">
 							<span class="charge-point-vehicle-charge-mode">--</span>
 							<span class="et-configured hide">
-								<i class="charge-point-vehicle-et-active hide fas fa-xs fa-coins"></i>
+								<span class="charge-point-charge-mode-options">
+									<span class="chargemode-options chargemode-option-instant_charging chargemode-option-scheduled_charging">
+										<i class="charge-point-vehicle-et-active hide fas fa-xs fa-coins"></i>
+									</span>
+								</span>
 							</span>
 						</div>
 						<div class="col-3">
@@ -515,25 +519,28 @@
 										data-style="w-100">
 								</div>
 							</div>
-							<div class="et et-configured">
-								<div class="form-row mb-1">
-									<div class="col">
-										<i class="fas fa-coins"></i>
-										Strompreisbasiert Laden
-									</div>
-									<div class="col-md-8 text-right">
-										<div class="form-row">
+							<div class="et et-configured hide">
+								<div class="charge-point-charge-mode-options mb-0 hide">
+									<div class="chargemode-options chargemode-option-instant_charging chargemode-option-scheduled_charging">
+										<div class="form-row mb-1">
 											<div class="col">
-												<input class="charge-point-price-charging-active" type="checkbox" data-toggle="toggle"
-													data-topic="openWB/set/vehicle/template/charge_template/<ct>/et/active" data-on="Ja"
-													data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm"
-													data-style="w-100">
+												<i class="fas fa-coins"></i>
+												Strompreisbasiert Laden
 											</div>
-											<div class="col-2">
-												<button type="button" class="charge-point-max-price-button btn btn-sm btn-secondary btn-block" data-max-price="">
-													<span class="charge-point-price-charging-max_price">--</span>&nbsp;ct/kWh
-													<!-- <i class="fas fa-coins"></i> -->
-												</button>
+											<div class="col-md-8 text-right">
+												<div class="form-row">
+													<div class="col">
+														<input class="charge-point-price-charging-active" type="checkbox" data-toggle="toggle"
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/et/active" data-on="Ja"
+															data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm"
+															data-style="w-100">
+													</div>
+													<div class="col-2">
+														<button type="button" class="charge-point-max-price-button btn btn-sm btn-secondary btn-block" data-max-price="">
+															<span class="charge-point-price-charging-max_price">--</span>&nbsp;ct/kWh
+														</button>
+													</div>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -1146,13 +1153,13 @@
 				// some helper functions
 				'helperFunctions.js?ver=20221117',
 				// functions for processing messages
-				'processAllMqttMsg.js?ver=20240108',
+				'processAllMqttMsg.js?ver=20240311',
 				// respective Chart.js definition live
-				'livechart.js?ver=20221117',
+				'livechart.js?ver=20240308',
 				// respective Chart.js definition price based charging
 				'electricityPriceChart.js?ver=20240108',
 				// functions performing mqtt and start mqtt-service
-				'setupMqttServices.js?ver=20240108',
+				'setupMqttServices.js?ver=20240308',
 			];
 			scriptsToLoad.forEach(function (src) {
 				var script = document.createElement('script');

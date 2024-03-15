@@ -17,7 +17,12 @@
 				<span class="fa-solid fa-lg ps-1 fa-ellipsis-vertical" />
 			</span>
 		</template>
-		<SHListItem v-for="device in group" :key="device.id" :device="device" />
+		<SHListItem
+			v-for="device in group"
+			:key="device.id"
+			:device="device"
+			class="subgrid pb-2"
+		/>
 	</WbWidgetFlex>
 	<!-- Configuration -->
 	<WbWidgetFlex v-if="configmode">

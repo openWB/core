@@ -140,6 +140,7 @@ class SubData:
             # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
             # "openWB/system/subdata_initialized" empfangen werden!
             ("openWB/system/mqtt/bridge/+", 2),
+            ("openWB/system/mqtt/+", 2),
             # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
             ("openWB/system/+", 2),
             ("openWB/system/backup_cloud/#", 2),
@@ -807,6 +808,10 @@ class SubData:
                                            MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
                 else:
                     log.debug("skipping mqtt bridge message on startup")
+            elif "mqtt" and "valid_partner_ids" in msg.topic:
+                # duplicate topic for remote support service
+                log.error(f"received valid partner ids: {decode_payload(msg.payload)}")
+                Pub().pub("openWB-remote/valid_partner_ids", decode_payload(msg.payload))
             # will be moved to separate handler!
             elif "GetRemoteSupport" in msg.topic:
                 log.warning("deprecated topic for remote support received!")

@@ -13,43 +13,38 @@ Hagen */
 			>
 			<span class="sh-title py-4">Speicher</span>
 		</template>
-		<div class="row m-1 mt-0 p-0">
-			<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
-				<!-- Soc information -->
-				<InfoItem heading="Ladestand:">
-					<BatterySymbol :soc="globalData.batterySoc" class="me-2" />
-				</InfoItem>
-				<!-- Status information -->
-				<InfoItem heading="Status:">
-					<span>
-						{{ batteryState }}
-					</span>
-				</InfoItem>
+		<div class="m-1 mt-0 p-0 grid12">
+			<!-- Soc information -->
+			<InfoItem heading="Ladestand:" class="grid-left grid-col-4">
+				<BatterySymbol :soc="globalData.batterySoc" class="me-2" />
+			</InfoItem>
+			<!-- Status information -->
+			<InfoItem heading="Status:" class="grid-col-4">
+				<span>
+					{{ batteryState }}
+				</span>
+			</InfoItem>
 
-				<!-- Status information -->
-				<InfoItem heading="Leistung:">
-					<span>
-						{{ powerstring }}
-					</span>
-				</InfoItem>
-			</div>
-		</div>
-		<div class="row m-1 mt-0 p-0">
-			<div class="col m-0 mt-0 mb-1 p-0 d-flex justify-content-between">
-				<InfoItem heading="">
-					<span class="todaystring mt-4 float-right"> Heute:</span>
-				</InfoItem>
-				<InfoItem heading="Geladen:">
-					<span>
-						{{ formatWattH(usageSummary.batIn.energy) }}
-					</span>
-				</InfoItem>
-				<InfoItem heading="Geliefert">
-					<span>
-						{{ formatWattH(sourceSummary.batOut.energy) }}
-					</span>
-				</InfoItem>
-			</div>
+			<!-- Status information -->
+			<InfoItem heading="Leistung:" class="grid-right grid-col-4">
+				<span>
+					{{ powerstring }}
+				</span>
+			</InfoItem>
+
+			<InfoItem heading="" class="grid-left grid-col-4">
+				<span class="todaystring mt-4 float-right"> Heute:</span>
+			</InfoItem>
+			<InfoItem heading="Geladen:" class="grid-col-4">
+				<span>
+					{{ formatWattH(usageSummary.batIn.energy) }}
+				</span>
+			</InfoItem>
+			<InfoItem heading="Geliefert" class="grid-right grid-col-4">
+				<span>
+					{{ formatWattH(sourceSummary.batOut.energy) }}
+				</span>
+			</InfoItem>
 		</div>
 	</WbWidget>
 </template>
