@@ -54,15 +54,16 @@ class YcStatusHandler:
     # RFID scan
     def new_accounting(self, start_timestamp: datetime.datetime, meter_reading: float, charging: bool,
                        plugged: bool, rfid_tag: str) -> None:
-        self._accounting_info_cache = AccountingInfo(charge_start=f"{start_timestamp.isoformat()}Z",
-                                                    meter_at_start=meter_reading, charging=charging,
-                                                    plugged_in=plugged, starting_rfid=rfid_tag)
+        self._accounting_info_cache = AccountingInfo(
+            charge_start=f"{start_timestamp.isoformat()}Z",
+            meter_at_start=meter_reading, charging=charging,
+            plugged_in=plugged, starting_rfid=rfid_tag)
         self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
         if self._accounting_info_cache.starting_rfid is not None and self._accounting_info_cache.starting_rfid != "":
             self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
 
     def update_accounting_rfid(self, rfid_tag: str) -> None:
-        self.get_accounting() # initializes the cache field
+        self.get_accounting()  # initializes the cache field
         if (self._accounting_info_cache.starting_rfid is None or self._accounting_info_cache.starting_rfid == "") \
                 and rfid_tag is not None and rfid_tag != "":
             self._accounting_info_cache.starting_rfid = rfid_tag
@@ -71,11 +72,11 @@ class YcStatusHandler:
 
     def update_accounting(self, update_timestamp: datetime.datetime, current_meter: float, charging: bool,
                           plugged: bool) -> None:
-        self.get_accounting() # initializes the cache field
+        self.get_accounting()  # initializes the cache field
 
         # if we have a "corrupted" dataset, initialize it with current data
-        if plugged and (self._accounting_info_cache.charge_start is None \
-                       or self._accounting_info_cache.meter_at_start is None):
+        if plugged and (self._accounting_info_cache.charge_start is None
+                        or self._accounting_info_cache.meter_at_start is None):
             log.error("Detected corrupteda accounting data set while being plugged-in: Initializing charge start "
                       + "timestamp and meter value")
             self._accounting_info_cache.charge_start = f"{update_timestamp.isoformat()}Z"
@@ -111,8 +112,9 @@ class YcStatusHandler:
     def update_nightly_meter_reading(self, update_timestamp: datetime.datetime, current_meter: float) -> None:
         self._nightly_meter_reading_cache = MeterValueMark(timestamp=f"{update_timestamp.isoformat()}Z",
                                                            meter_reading=current_meter, day=update_timestamp.day)
-        self._update(self._cp_meter_at_last_night_meter_reading_control_topic,
-                    dataclasses.asdict(self._nightly_meter_reading_cache))
+        self._update(
+            self._cp_meter_at_last_night_meter_reading_control_topic,
+            dataclasses.asdict(self._nightly_meter_reading_cache))
 
     def get_nightly_meter_reading(self) -> MeterValueMark:
         if self._nightly_meter_reading_cache is None:
@@ -120,8 +122,9 @@ class YcStatusHandler:
                 self._nightly_meter_reading_cache = data.data.yc_data.data.yc_control.nightly_meter_reading
             else:
                 self.nightly_meter_reading = MeterValueMark()
-                self._update(self._cp_meter_at_last_night_meter_reading_control_topic,
-                            dataclasses.asdict(self.nightly_meter_reading))
+                self._update(
+                    self._cp_meter_at_last_night_meter_reading_control_topic,
+                    dataclasses.asdict(self.nightly_meter_reading))
         return self._nightly_meter_reading_cache
 
     def has_changed_nightly_meter_reading(self) -> bool:
@@ -231,15 +234,12 @@ class YcStatusHandler:
                 self._rfid_info_cache = json.loads(rfidinfo_string)
         return self._rfid_info_cache
 
-    def has_changed_rfid_scan(self) -> bool:
-        return self._scanned_rfid_topic in self._changed_keys
-
     # internal methods
     def _get_status(self, key: str):
         return self._status_dict.get(key)
 
     def _update(self, key: str, value: object):
-        if not key in self._status_dict or value != self._status_dict[key]:
+        if key not in self._status_dict or value != self._status_dict[key]:
             self._changed_keys.append(key)
             log.debug(f"Status change: {key} changed from '{self._status_dict.get(key)}' to '{value}'")
             self._status_dict[key] = value

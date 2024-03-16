@@ -184,33 +184,33 @@ class StandardSocketHandler:
     def _check_socket_active_transitions(self, valid_tag_seen: bool) -> None:
         yc_control = data.data.yc_data.data.yc_control
         if valid_tag_seen:
-            log.error(f"De-activation requested by RFID-tag: Turning off socket and changing to "
+            log.error("De-activation requested by RFID-tag: Turning off socket and changing to "
                       + f"{StandardSocketControlState.Idle}")
             self._transit_to_socket_disable_requested()
         elif yc_control.standard_socket_action != StandardSocketActions.Approve:
-            log.error(f"Controller no longer approves standard-socket: Turning off socket and changing to "
+            log.error("Controller no longer approves standard-socket: Turning off socket and changing to "
                       + f"{StandardSocketControlState.Idle}")
             self._transit_to_idle()
 
     # transitions from wait-for-EV-charge-end mode
     def _check_wait_for_charge_end_transitions(self, valid_tag_seen: bool) -> None:
         if valid_tag_seen:
-            log.error(f"De-activation requested by RFID-tag while waiting for EV charge end: Turning off socket and "
+            log.error("De-activation requested by RFID-tag while waiting for EV charge end: Turning off socket and "
                       + f"changing to {StandardSocketControlState.Idle}")
             self._transit_to_socket_disable_requested()
             return
 
         if self._internal_cp.data.get.charge_state:
-            log.error(f"EV still charging while waiting for charge end. Waiting started at "
+            log.error("EV still charging while waiting for charge end. Waiting started at "
                       + f"{self._ev_deactivation_start}")
             if self._ev_deactivation_start is not None \
                     and (datetime.datetime.utcnow() - self._ev_deactivation_start) > self.ev_charge_end_max_wait_time:
-                log.error(f"Timeout waiting for EV charge end: Switching to idle. Waiting started at "
+                log.error("Timeout waiting for EV charge end: Switching to idle. Waiting started at "
                           + f"{self._ev_deactivation_start}, waiting for "
                           + f"{datetime.datetime.now(datetime.UTC) - self._ev_deactivation_start}")
                 self._transit_to_idle()
         else:
-            log.error(f"EV stopped charging when waiting for charge end")
+            log.error("EV stopped charging when waiting for charge end")
             self._ev_deactivation_start = None
             self._transit_to_socket_requested()
 
@@ -296,7 +296,7 @@ class StandardSocketHandler:
     def _verify_standard_socket_presence(self) -> bool:
         if data.data.yc_data.data.yc_config.standard_socket_installed is not None \
                 and data.data.yc_data.data.yc_config.standard_socket_installed:
-            if self._standard_socket_handler == None:
+            if self._standard_socket_handler is None:
                 self._standard_socket_handler = SocketMeterHandler(
                     self._general_cp_handler.internal_chargepoint_handler.cp0_client_handler.client)
             if self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler is None:
@@ -305,7 +305,7 @@ class StandardSocketHandler:
             log.info(f"Standard-Socket data: {self._standard_socket_handler.data}")
             return True
         else:
-            if self._standard_socket_handler != None:
+            if self._standard_socket_handler is not None:
                 self._standard_socket_handler = None
             if self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler is not None:
                 self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler = None

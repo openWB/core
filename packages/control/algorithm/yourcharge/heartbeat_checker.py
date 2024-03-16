@@ -30,7 +30,7 @@ class HeartbeatChecker:
 
         if self._previous_lcs_publish == data.data.yc_data.data.last_controller_publish:
             # no new controller timestamp seen
-            if self._timeout_detection_time == None:
+            if self._timeout_detection_time is None:
                 # first time no change --> start timeout timer
                 log.error(f"No LCS heartbeat change (first time): now it is {now_it_is}, "
                           + f"last_controller_publish={data.data.yc_data.data.last_controller_publish}")
@@ -51,7 +51,7 @@ class HeartbeatChecker:
                     return False
         else:
             self._previous_lcs_publish = data.data.yc_data.data.last_controller_publish
-            if self._timeout_detection_time != None:
+            if self._timeout_detection_time is not None:
                 log.critical(f"LCS heartbeat returned: now it is {now_it_is}, last_controller_publish="
                              + f"{data.data.yc_data.data.last_controller_publish}")
                 self._timeout_detection_time = None
