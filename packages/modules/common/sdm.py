@@ -62,7 +62,7 @@ class Sdm120(Sdm):
 
     def get_voltages(self) -> List[float]:
         voltage = self.client.read_input_registers(0x00, ModbusDataType.FLOAT_32, unit=self.id)
-        return [ voltage, 0.0 , 0.0 ]
+        return [voltage, 0.0, 0.0]
 
     def get_power_factors(self) -> List[float]:
         return [self.client.read_input_registers(0x1E, ModbusDataType.FLOAT_32, unit=self.id), 0.0, 0.0]

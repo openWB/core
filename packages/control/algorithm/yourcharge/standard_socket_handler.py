@@ -37,7 +37,8 @@ class StandardSocketControlState(int, Enum):
 
 class StandardSocketHandler:
 
-    def __init__(self, general_chargepoint_handler: GeneralInternalChargepointHandler, status_handler: YcStatusHandler, internal_cp_key: str) -> None:
+    def __init__(self, general_chargepoint_handler: GeneralInternalChargepointHandler, status_handler: YcStatusHandler,
+                 internal_cp_key: str) -> None:
         self._general_cp_handler = general_chargepoint_handler
         self._status_handler: YcStatusHandler = status_handler
         self._internal_cp_key: str = internal_cp_key
@@ -66,6 +67,8 @@ class StandardSocketHandler:
 
     # the actual state machine handling socket activation/deactivation
     def handle_socket_algorithm(self, rfid_data: RfidData) -> bool:
+        yc_control = data.data.yc_data.data.yc_control
+
         if not self._verify_standard_socket_presence():
             # if no socket is installed, just return
             return False
@@ -86,12 +89,14 @@ class StandardSocketHandler:
         elif self._current_control_state == StandardSocketControlState.Active:
             self._check_socket_active_transitions(valid_tag_seen)
         else:
-            log.critical(f"Unknown state '{self._current_control_state.name}': Turning off socket and resetting to Idle")
+            log.critical(f"Unknown state '{self._current_control_state.name}': "
+                         + "Turning off socket and resetting to Idle")
             self._socket_off()
             self._current_control_state = StandardSocketControlState.Idle
 
         # finally update approved status and return whether we've seen a valid socker RFID tag
-        self._status_handler.update_socket_approved(data.data.yc_data.data.yc_control.standard_socket_action == StandardSocketActions.Approve)
+        self._status_handler.update_socket_approved(
+            yc_control.standard_socket_action == StandardSocketActions.Approve)
         return valid_tag_seen
 
 
@@ -109,7 +114,8 @@ class StandardSocketHandler:
     def restore_previous(self) -> None:
         if self._previous_socket_action_for_restore == StandardSocketStatus.Off:
             self._socket_off()
-        elif self._previous_socket_action_for_restore == StandardSocketStatus.On and data.data.yc_data.data.yc_control.standard_socket_action == StandardSocketActions.Approve:
+        elif self._previous_socket_action_for_restore == StandardSocketStatus.On
+                and yc_control.standard_socket_action == StandardSocketActions.Approve:
             self._socket_on()
 
 
@@ -119,10 +125,12 @@ class StandardSocketHandler:
             self._transit_to_socket_disable_requested()
 
 
-    # returns True if there's any RFID tag in the passed rfid_data and that tag is among the list of valid standard-socket RFID tags
+    # returns True if there's any RFID tag in the passed rfid_data and that tag is among the list of valid
+    # standard-socket RFID tags
     def valid_socket_rfid_scanned(self, rfid_info: RfidData) -> bool:
         if rfid_info.last_tag is not None and rfid_info.last_tag != "":
-            log.debug(f"Detected RFID scan: {rfid_info.last_tag}: Still need to check if it's a valid standard-socket tag ...")
+            log.debug(f"Detected RFID scan: {rfid_info.last_tag}: Still need to check if it's a valid standard-socket "
+                      + "tag ...")
             if rfid_info.last_tag in data.data.yc_data.data.yc_config.allowed_rfid_std_socket:
                 log.error(f"!!! Detected RFID scan: {rfid_info.last_tag}: VALID SOCKET TAG !!!")
                 return True
@@ -133,63 +141,80 @@ class StandardSocketHandler:
 
     # transitions from Idle mode
     def _check_idle_transitions(self, valid_tag_seen: bool) -> None:
-        if data.data.yc_data.data.yc_control.standard_socket_action == StandardSocketActions.Approve and data.data.yc_data.data.yc_control.socket_activated:
-            log.critical(f"Socket marked 'active' and controller still approves socket request while in idle (maybe just wallbox just started): Turning on socket")
+        if yc_control.standard_socket_action == StandardSocketActions.Approve and yc_control.socket_activated:
+            log.critical("Socket marked 'active' and controller still approves socket request while in idle (maybe just"
+                         + " wallbox just started): Turning on socket")
             self._transit_to_socket_on()
             return
         if valid_tag_seen:
             if self._internal_cp.data.get.charge_state:
-                log.critical(f"Socket activation requestd by RFID scan but EV is still charging: Waiting for EV to finally stop charging")
+                log.critical("Socket activation requestd by RFID scan but EV is still charging: Waiting for EV to "
+                             + "finally stop charging")
                 self._transit_to_wait_for_ev_charge_end()
             else:
-                log.critical(f"Socket activation requestd by RFID scan and EV is not charging: Requesting socket activation right away")
+                log.critical("Socket activation requestd by RFID scan and EV is not charging: Requesting socket "
+                             + "activation right away")
                 self._transit_to_socket_requested()
 
 
     # transitions from ActivationRequested mode
     def _check_activation_requested_transitions(self, valid_tag_seen: bool) -> None:
-        if data.data.yc_data.data.yc_control.standard_socket_action == StandardSocketActions.Approve:
-            log.error(f"Controller approved socket request after {datetime.datetime.utcnow() - self._last_socket_request_time}: Turning on socket")
+        if yc_control.standard_socket_action == StandardSocketActions.Approve:
+            log.error(f"Controller approved socket request after {datetime.datetime.utcnow()
+                      - self._last_socket_request_time}: Turning on socket")
             self._transit_to_socket_on()
-        elif data.data.yc_data.data.yc_control.standard_socket_action == StandardSocketActions.Decline:
-            log.error(f"Controller explicitly DECLINED: Changing to {StandardSocketControlState.Idle} w/o turning on socket")
+        elif yc_control.standard_socket_action == StandardSocketActions.Decline:
+            log.error(f"Controller explicitly DECLINED: Changing to {StandardSocketControlState.Idle} w/o turning on "
+                      + "socket")
             self._transit_to_idle()
         elif datetime.datetime.utcnow() - self._last_socket_request_time >= self.socket_approval_max_wait_time:
-            log.critical(f"No controller response after {self.socket_approval_max_wait_time} on standard socket activation request at {self._last_socket_request_time}: No longer waiting, reverting to {StandardSocketControlState.Idle}")
+            log.critical(f"No controller response after {self.socket_approval_max_wait_time} on standard socket "
+                         + f"activation request at {self._last_socket_request_time}: No longer waiting, reverting to "
+                         + f"{StandardSocketControlState.Idle}")
             self._transit_to_idle()
 
 
     # transitions from DeactivationRequested mode
     def _check_deactivation_requested_transitions(self, valid_tag_seen: bool) -> None:
-        if data.data.yc_data.data.yc_control.standard_socket_action != StandardSocketActions.Approve:
-            log.error(f"Controller disapproved socket request after {datetime.datetime.utcnow() - self._last_socket_request_time}: Turning off socket")
+        if yc_control.standard_socket_action != StandardSocketActions.Approve:
+            log.error(f"Controller disapproved socket request after {datetime.datetime.utcnow()
+                - self._last_socket_request_time}: Turning off socket")
             self._transit_to_idle()
         elif datetime.datetime.utcnow() - self._last_socket_request_time >= self.socket_approval_max_wait_time:
-            log.critical(f"No controller response after {self.socket_approval_max_wait_time} on standard socket activation request at {self._last_socket_request_time}: No longer waiting, reverting to {StandardSocketControlState.Idle}")
+            log.critical(f"No controller response after {self.socket_approval_max_wait_time} on standard socket "
+                         + f"activation request at {self._last_socket_request_time}: No longer waiting, reverting to "
+                         + f"{StandardSocketControlState.Idle}")
             self._transit_to_idle()
 
 
     # transitions from Active mode
     def _check_socket_active_transitions(self, valid_tag_seen: bool) -> None:
         if valid_tag_seen:
-            log.error(f"De-activation requested by RFID-tag: Turning off socket and changing to {StandardSocketControlState.Idle}")
+            log.error(f"De-activation requested by RFID-tag: Turning off socket and changing to "
+                      + f"{StandardSocketControlState.Idle}")
             self._transit_to_socket_disable_requested()
-        elif data.data.yc_data.data.yc_control.standard_socket_action != StandardSocketActions.Approve:
-            log.error(f"Controller no longer approves standard-socket: Turning off socket and changing to {StandardSocketControlState.Idle}")
+        elif yc_control.standard_socket_action != StandardSocketActions.Approve:
+            log.error(f"Controller no longer approves standard-socket: Turning off socket and changing to "
+                      + f"{StandardSocketControlState.Idle}")
             self._transit_to_idle()
 
 
     # transitions from wait-for-EV-charge-end mode
     def _check_wait_for_charge_end_transitions(self, valid_tag_seen: bool) -> None:
         if valid_tag_seen:
-            log.error(f"De-activation requested by RFID-tag while waiting for EV charge end: Turning off socket and changing to {StandardSocketControlState.Idle}")
+            log.error(f"De-activation requested by RFID-tag while waiting for EV charge end: Turning off socket and "
+                      + f"changing to {StandardSocketControlState.Idle}")
             self._transit_to_socket_disable_requested()
             return
 
         if self._internal_cp.data.get.charge_state:
-            log.error(f"EV still charging while waiting for charge end. Waiting started at {self._ev_deactivation_start}")
-            if self._ev_deactivation_start is not None and (datetime.datetime.utcnow() - self._ev_deactivation_start) > self.ev_charge_end_max_wait_time:
-                log.error(f"Timeout waiting for EV charge end: Switching to idle. Waiting started at {self._ev_deactivation_start}, waiting for {datetime.datetime.utcnow() - self._ev_deactivation_start}")
+            log.error(f"EV still charging while waiting for charge end. Waiting started at "
+                      + f"{self._ev_deactivation_start}")
+            if self._ev_deactivation_start is not None
+                    and (datetime.datetime.utcnow() - self._ev_deactivation_start) > self.ev_charge_end_max_wait_time:
+                log.error(f"Timeout waiting for EV charge end: Switching to idle. Waiting started at "
+                          + f"{self._ev_deactivation_start}, waiting for {datetime.datetime.utcnow() -
+                          self._ev_deactivation_start}")
                 self._transit_to_idle()
         else:
             log.error(f"EV stopped charging when waiting for charge end")
@@ -236,7 +261,8 @@ class StandardSocketHandler:
             return
         self._current_control_state = StandardSocketControlState.ActivationRequested
         self._last_socket_request_time = datetime.datetime.utcnow()
-        log.error(f"Requesting activation of standard socket at {self._last_socket_request_time} by sending {yourcharge.SocketRequestStates.OnRequested}")
+        log.error(f"Requesting activation of standard socket at {self._last_socket_request_time} by sending "
+                  + f"{yourcharge.SocketRequestStates.OnRequested}")
         Pub().pub(yourcharge.yc_socket_requested_topic, yourcharge.SocketRequestStates.OnRequested)
 
 
@@ -247,11 +273,12 @@ class StandardSocketHandler:
         self._current_control_state = StandardSocketControlState.DeactivationRequested
         self._last_socket_request_time = datetime.datetime.utcnow()
         self._ev_deactivation_start = None
-        log.error(f"Requesting deactivation of standard socket at {self._last_socket_request_time} by sending {yourcharge.SocketRequestStates.OffRequested}")
+        log.error(f"Requesting deactivation of standard socket at {self._last_socket_request_time} by sending "
+                  + f"{yourcharge.SocketRequestStates.OffRequested}")
         Pub().pub(yourcharge.yc_socket_requested_topic, yourcharge.SocketRequestStates.OffRequested)
 
-        # following is not needed as socket would get turned off anyway when controller disapproves due to OffRequested above
-        # but this way, user in front of wallbox gets more direct "feedback"
+        # following is not needed as socket would get turned off anyway when controller disapproves due to OffRequested
+        # above but this way, user in front of wallbox gets more direct "feedback"
         self._gpio_off()
 
 
@@ -281,11 +308,14 @@ class StandardSocketHandler:
     # en/disable standard socket handler on internal CP handler as configured by YC config
     # then return true if standard socket is present, otherwise false
     def _verify_standard_socket_presence(self) -> bool:
-        if data.data.yc_data.data.yc_config.standard_socket_installed is not None and data.data.yc_data.data.yc_config.standard_socket_installed:
+        if data.data.yc_data.data.yc_config.standard_socket_installed is not None
+                and data.data.yc_data.data.yc_config.standard_socket_installed:
             if self._standard_socket_handler == None:
-                self._standard_socket_handler = SocketMeterHandler(self._general_cp_handler.internal_chargepoint_handler.cp0_client_handler.client)
+                self._standard_socket_handler = SocketMeterHandler(
+                    self._general_cp_handler.internal_chargepoint_handler.cp0_client_handler.client)
             if self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler is None:
-                self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler = self._standard_socket_handler
+                self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler =
+                    self._standard_socket_handler
             log.info(f"Standard-Socket data: {self._standard_socket_handler.data}")
             return True
         else:

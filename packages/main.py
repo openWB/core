@@ -162,7 +162,8 @@ class HandlerAlgorithm:
                 data.data.copy_data()
                 loadvars_.get_values()
                 changed_values_handler.pub_changed_values()
-                wait_for_module_update_completed(loadvars_.event_module_update_completed, "openWB/set/system/device/module_update_completed")
+                wait_for_module_update_completed(loadvars_.event_module_update_completed,
+                                                 "openWB/set/system/device/module_update_completed")
                 data.data.copy_data()
                 changed_values_handler.store_initial_values()
                 self.heartbeat = True
@@ -208,6 +209,7 @@ def schedule_jobs():
         handler.handler_random_nightly)
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
 
+
 def check_secondary_control_algorithm():
     if event_control_algorithm_set.isSet():
         # if control algorithm set event is triggered, check, which algorithm we need
@@ -220,6 +222,7 @@ def check_secondary_control_algorithm():
             if len(schedule.get_jobs("yc")) > 0:
                 log.critical("Disabling YourCharge algorithm")
                 schedule.clear("yc")
+
 
 try:
     log.debug("Start openWB2.service")

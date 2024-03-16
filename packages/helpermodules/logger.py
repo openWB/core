@@ -95,6 +95,7 @@ def setup_logging() -> None:
     logging.getLogger("pymodbus").setLevel(logging.WARNING)
     logging.getLogger("uModbus").setLevel(logging.WARNING)
 
+
 log = logging.getLogger(__name__)
 
 

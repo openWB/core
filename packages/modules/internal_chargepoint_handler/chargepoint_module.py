@@ -3,7 +3,6 @@ import logging
 import time
 from typing import Tuple
 from helpermodules.logger import ModifyLoglevelContext
-from control.algorithm.yourcharge.standard_socket_meter_handler import SocketMeterHandler
 
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext

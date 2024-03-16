@@ -46,8 +46,8 @@ class StandardSocketActions(str, Enum):
     Decline = "Decline"
 
     # Request immediate turn off of the socket.
-    # Use this action if socket use had been granted but socket now needs to be turned off (e.g. for load control reasons).
-    # To reject an activation request, use "Decline" as this allows more detailed feedback to user.
+    # Use this action if socket use had been granted but socket now needs to be turned off (e.g. for load control
+    # reasons). To reject an activation request, use "Decline" as this allows more detailed feedback to user.
     TurnOff = "TurnOff"
 
 
@@ -68,13 +68,16 @@ class SocketRequestStates(str, Enum):
 log = logging.getLogger(__name__)
 
 def three_false_bool_factory() -> List[bool]:
-    return [ False, False, False ]
+    return [False, False, False]
+
 
 def three_zero_ints_factory() -> List[int]:
-    return [ 0, 0, 0 ]
+    return [0, 0, 0]
+
 
 def three_zero_floatss_factory() -> List[float]:
-    return [ 0.0, 0.0, 0.0 ]
+    return [0.0, 0.0, 0.0]
+
 
 @dataclass
 class AccountingInfo:
@@ -86,17 +89,21 @@ class AccountingInfo:
     charging: bool = None
     current_meter: float = None
 
+
 def current_timestamp_factory() -> str:
     return f"{datetime.datetime.now().isoformat()}Z"
 
+
 def current_day_factory() -> int:
     return datetime.datetime.now().day
+
 
 @dataclass
 class MeterValueMark:
     timestamp: str = field(default_factory=current_timestamp_factory)
     day: int = field(default_factory=current_day_factory)
     meter_reading: float = None
+
 
 @dataclass
 class YcConfig:
@@ -116,6 +123,7 @@ class YcConfig:
     max_plugin_wait_time_s: float = 60.0
     min_current_for_charge_detect: float = 1.0
     energy_limit: float = 0.0
+
 
 @dataclass
 class YcControlData:
@@ -173,7 +181,7 @@ class YcData:
                 self._last_controller_publish = 0
             else:
                 self._last_controller_publish = intvalue
-        except:
+        except Exception:
             self._last_controller_publish = 0
 
 
@@ -181,6 +189,7 @@ class YcData:
 class YourCharge:
     """Config and data for use by YourCharge charge system algorithms
     """
+
 
     def __init__(self):
         self.data: YcData = YcData()
