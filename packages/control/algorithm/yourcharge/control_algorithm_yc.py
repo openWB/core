@@ -93,8 +93,8 @@ class ControlAlgorithmYc:
         # compute difference between allowed current on the total current of the phase that has the highest total
         # current and is actually used for charging
         # in floats for not to loose too much precision
-        lldiff = (data.data.yc_data.data.yc_config.allowed_total_current_per_phase
-                  - charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current)
+        lldiff = (data.data.yc_data.data.yc_config.allowed_total_current_per_phase \
+                  - charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current) \
                  / charging_phase_infos.charging_ev_adjusted_for_this_cp
 
         # limit this initial difference to the maximum allowed charge current of the charge point
@@ -113,8 +113,8 @@ class ControlAlgorithmYc:
                                  + "W) but total power consumption not availble (yc_control.total_power="
                                  + f"{data.data.yc_data.data.yc_control.total_power} W): Immediately stopping charge"
                                  + " and exiting")
-            power_diff = (data.data.yc_data.data.yc_config.allowed_peak_power
-                          - data.data.yc_data.data.yc_control.total_power)
+            power_diff = (data.data.yc_data.data.yc_config.allowed_peak_power \
+                          - data.data.yc_data.data.yc_control.total_power) \
                          / charging_phase_infos.charging_ev_adjusted_for_this_cp
             system_voltage = max(self._internal_cp.data.get.voltages)
             power_diff_as_current = power_diff / system_voltage / float(charging_phase_infos.number_of_charging_phases)
@@ -157,9 +157,9 @@ class ControlAlgorithmYc:
             elif lldiff < 0.0: # and > -1.0 else above conditions would have fired
                 # for negative adjustments we adjust at least down to the current maximum charge current minus the
                 # difference
-                actual_adjustment =
-                    self._internal_cp.data.get.currents[charging_phase_infos.charging_phase_with_maximum_total_current]
-                    + lldiff - llneu
+                actual_adjustment = \
+                  self._internal_cp.data.get.currents[charging_phase_infos.charging_phase_with_maximum_total_current] \
+                  + lldiff - llneu
 
             # if we're not charging, we always start off with minimum supported current
             if not charging_phase_infos.is_charging:
@@ -206,8 +206,8 @@ class ControlAlgorithmYc:
         # are we not contributing to maximum load phase
         # or we also contribute to minimal current phase
         # or we're not charging
-        if not charging_phase_infos.charging_on_phase_list[charging_phase_infos.phase_with_maximum_imbalance_current]
-            or charging_phase_infos.charging_on_phase_list[charging_phase_infos.phase_with_minimum_imbalance_current]
+        if not charging_phase_infos.charging_on_phase_list[charging_phase_infos.phase_with_maximum_imbalance_current] \
+            or charging_phase_infos.charging_on_phase_list[charging_phase_infos.phase_with_minimum_imbalance_current] \
             or not charging_phase_infos.is_charging:
             return llneu
 
@@ -224,7 +224,7 @@ class ControlAlgorithmYc:
         if charging_ev_to_use <= 0:
             charging_ev_to_use = 1
 
-        imbalance_available = (data.data.yc_data.data.yc_config.allowed_load_imbalance - current_load_imbalance)
+        imbalance_available = (data.data.yc_data.data.yc_config.allowed_load_imbalance - current_load_imbalance) \
                               / charging_ev_to_use
         log.error(f"Load Imbalance: Available imbalance {imbalance_available} A ({charging_ev_to_use} charging "
                   + f"vehicles), wanted charge current increase {ll_wanted_increase} A")
@@ -255,7 +255,7 @@ class ControlAlgorithmYc:
         return False
 
 
-    def _call_set_current(self, charging_phase_infos: _AggregatedData, current_to_set: float, status_reason: LmStatus)
+    def _call_set_current(self, charging_phase_infos: _AggregatedData, current_to_set: float, status_reason: LmStatus) \
              -> None:
         log.error(f"callSetCurent {current_to_set} {status_reason}")
         computed_reason = status_reason
@@ -300,7 +300,7 @@ class ControlAlgorithmYc:
                 charging_phase_infos.minimum_imbalance_current = phase_imbal_current
                 charging_phase_infos.phase_with_minimum_imbalance_current = i
 
-        charging_phase_infos.system_load_imbalance = charging_phase_infos.maximum_imbalance_current
+        charging_phase_infos.system_load_imbalance = charging_phase_infos.maximum_imbalance_current \
                                                      - charging_phase_infos.minimum_imbalance_current
 
         for i, phase_charge_current in enumerate(self._internal_cp.data.get.currents):
@@ -309,9 +309,9 @@ class ControlAlgorithmYc:
                 charging_phase_infos.is_charging |= True
                 charging_phase_infos.charging_on_phase_list[i] = True
                 charging_phase_infos.number_of_charging_phases = charging_phase_infos.number_of_charging_phases + 1
-                if yc_control.total_current_consumption[i] >
+                if yc_control.total_current_consumption[i] > \
                         charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current:
-                    charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current =
+                    charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current = \
                         yc_control.total_current_consumption[i]
                     charging_phase_infos.charging_phase_with_maximum_total_current = i
                 if yc_control.charging_vehicles[i] > charging_phase_infos.charging_ev_adjusted_for_this_cp:
@@ -334,9 +334,9 @@ class ControlAlgorithmYc:
                 for i, charging_on_phase in enumerate(self._previous_charging_phase_info):
                     if charging_on_phase:
                         previous_number_of_charging_phases = previous_number_of_charging_phases + 1
-                        if yc_control.total_current_consumption[i] >
+                        if yc_control.total_current_consumption[i] > \
                                 charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current:
-                            charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current =
+                            charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current = \
                                 yc_control.total_current_consumption[i]
                             charging_phase_infos.charging_phase_with_maximum_total_current = i
                         if yc_control.charging_vehicles[i] > charging_phase_infos.charging_ev_adjusted_for_this_cp:
@@ -346,7 +346,7 @@ class ControlAlgorithmYc:
             # not supposed to use last charging phase or last charging phase info not available --> use maximum number
             # of charging vehicles across all phases
             if charging_phase_infos.charging_phase_with_maximum_total_current == -1:
-                charging_phase_infos.charging_ev_adjusted_for_this_cp =
+                charging_phase_infos.charging_ev_adjusted_for_this_cp = \
                     charging_phase_infos.max_number_of_charging_vehicles_across_all_phases
                 for i, total_current in enumerate(yc_control.total_current_consumption):
                     if total_current > charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current:
