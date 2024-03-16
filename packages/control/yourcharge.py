@@ -67,6 +67,7 @@ class SocketRequestStates(str, Enum):
 
 log = logging.getLogger(__name__)
 
+
 def three_false_bool_factory() -> List[bool]:
     return [False, False, False]
 
@@ -189,7 +190,6 @@ class YcData:
 class YourCharge:
     """Config and data for use by YourCharge charge system algorithms
     """
-
 
     def __init__(self):
         self.data: YcData = YcData()

@@ -57,13 +57,11 @@ class StandardSocketHandler:
         # finally, for initialization, turn off the socket
         self._socket_off()
 
-
     def get_data(self) -> SocketMeterData:
         if self._standard_socket_handler is None:
             return None
         else:
             return self._standard_socket_handler.data
-
 
     # the actual state machine handling socket activation/deactivation
     def handle_socket_algorithm(self, rfid_data: RfidData) -> bool:
@@ -99,16 +97,13 @@ class StandardSocketHandler:
             yc_control.standard_socket_action == StandardSocketActions.Approve)
         return valid_tag_seen
 
-
     # gets the current status of the standard socket
     def current_socket_status(self) -> StandardSocketStatus:
         return self._current_status
 
-
     # returns a value indicating whether the EV could charge from standard socket control perspective
     def can_ev_charge(self) -> bool:
         return self._current_control_state == StandardSocketControlState.Idle
-
 
     # requests restore of the very last "pervious" state (mainly to be used when heartbeat returns)
     def restore_previous(self) -> None:
@@ -119,12 +114,10 @@ class StandardSocketHandler:
                 and yc_control.standard_socket_action == StandardSocketActions.Approve:
             self._socket_on()
 
-
     # turn off the socket (only use from outside in case of "emergency" e.g. heartbeat timeout)
     def socket_off(self) -> None:
         if self._current_control_state != StandardSocketControlState.Idle:
             self._transit_to_socket_disable_requested()
-
 
     # returns True if there's any RFID tag in the passed rfid_data and that tag is among the list of valid
     # standard-socket RFID tags
@@ -138,7 +131,6 @@ class StandardSocketHandler:
             else:
                 log.info(f"Detected RFID scan: {rfid_info.last_tag}: Is not a valid standard-socket RFID tag")
         return False
-
 
     # transitions from Idle mode
     def _check_idle_transitions(self, valid_tag_seen: bool) -> None:
@@ -158,7 +150,6 @@ class StandardSocketHandler:
                              + "activation right away")
                 self._transit_to_socket_requested()
 
-
     # transitions from ActivationRequested mode
     def _check_activation_requested_transitions(self, valid_tag_seen: bool) -> None:
         yc_control = data.data.yc_data.data.yc_control
@@ -176,7 +167,6 @@ class StandardSocketHandler:
                          + f"{StandardSocketControlState.Idle}")
             self._transit_to_idle()
 
-
     # transitions from DeactivationRequested mode
     def _check_deactivation_requested_transitions(self, valid_tag_seen: bool) -> None:
         yc_control = data.data.yc_data.data.yc_control
@@ -190,7 +180,6 @@ class StandardSocketHandler:
                          + f"{StandardSocketControlState.Idle}")
             self._transit_to_idle()
 
-
     # transitions from Active mode
     def _check_socket_active_transitions(self, valid_tag_seen: bool) -> None:
         yc_control = data.data.yc_data.data.yc_control
@@ -202,7 +191,6 @@ class StandardSocketHandler:
             log.error(f"Controller no longer approves standard-socket: Turning off socket and changing to "
                       + f"{StandardSocketControlState.Idle}")
             self._transit_to_idle()
-
 
     # transitions from wait-for-EV-charge-end mode
     def _check_wait_for_charge_end_transitions(self, valid_tag_seen: bool) -> None:
@@ -225,7 +213,6 @@ class StandardSocketHandler:
             log.error(f"EV stopped charging when waiting for charge end")
             self._ev_deactivation_start = None
             self._transit_to_socket_requested()
-
 
     # turn off the socket (only to be used internally)
     def _socket_off(self) -> None:
@@ -252,13 +239,11 @@ class StandardSocketHandler:
         self._current_status = StandardSocketStatus.On
         Pub().pub(yourcharge.yc_socket_activated_topic, self._current_status == StandardSocketStatus.On)
 
-
     # transition action when waiting for EV charge end
     def _transit_to_wait_for_ev_charge_end(self) -> None:
         self._ev_deactivation_start = datetime.datetime.utcnow()
         self._current_control_state = StandardSocketControlState.WaitForEvChargeEnd
         log.error(f"Socket requested by EV still charging: Waiting for EV charge end at {self._ev_deactivation_start}")
-
 
     # transition action when requesting ENABLE of socket
     def _transit_to_socket_requested(self) -> None:
@@ -269,7 +254,6 @@ class StandardSocketHandler:
         log.error(f"Requesting activation of standard socket at {self._last_socket_request_time} by sending "
                   + f"{yourcharge.SocketRequestStates.OnRequested}")
         Pub().pub(yourcharge.yc_socket_requested_topic, yourcharge.SocketRequestStates.OnRequested)
-
 
     # transition action when requesting DISABLE of socket
     def _transit_to_socket_disable_requested(self) -> None:
@@ -286,7 +270,6 @@ class StandardSocketHandler:
         # above but this way, user in front of wallbox gets more direct "feedback"
         self._gpio_off()
 
-
     # transition action when returning to idle
     def _transit_to_socket_on(self) -> None:
         if self._current_control_state == StandardSocketControlState.Active:
@@ -296,7 +279,6 @@ class StandardSocketHandler:
         self._ev_deactivation_start = None
         self._socket_on()
         Pub().pub(yourcharge.yc_socket_requested_topic, yourcharge.SocketRequestStates.NoRequest)
-
 
     # transition action when returning to idle
     def _transit_to_idle(self) -> None:
@@ -308,7 +290,6 @@ class StandardSocketHandler:
         log.error(f"Standard socket returning to {StandardSocketControlState.Idle}")
         self._socket_off()
         Pub().pub(yourcharge.yc_socket_requested_topic, yourcharge.SocketRequestStates.NoRequest)
-
 
     # en/disable standard socket handler on internal CP handler as configured by YC config
     # then return true if standard socket is present, otherwise false
@@ -332,7 +313,6 @@ class StandardSocketHandler:
             self._current_status = StandardSocketStatus.Unknown
             self._current_control_state = StandardSocketControlState.Idle
             return False
-
 
     def _init_gpio(self) -> None:
         GPIO.setwarnings(False)

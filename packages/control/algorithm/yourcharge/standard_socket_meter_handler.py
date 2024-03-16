@@ -1,7 +1,6 @@
 import logging
 import time
 import datetime
-from typing import List
 
 from dataclasses import dataclass
 
@@ -9,6 +8,7 @@ from modules.common import modbus
 from modules.common.sdm import Sdm120
 
 log = logging.getLogger(__name__)
+
 
 @dataclass
 class SocketMeterData:
@@ -21,6 +21,7 @@ class SocketMeterData:
     serial: str = None
     model: str = None
     last_update: str = None
+
 
 class SocketMeterHandler:
     def __init__(self, client: modbus.ModbusClient) -> None:
