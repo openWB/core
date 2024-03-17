@@ -635,11 +635,11 @@ class SubData:
                     self.set_json_payload_class(var.data.yc_config, msg)
                     if var.data.yc_config.active:
                         self.event_control_algorithm_set.set()
-                        log.info("Setting YC ACTIVE mode = " + str(var.data.yc_config.active)
+                        log.info(f"Setting YC ACTIVE mode = {var.data.yc_config.active}"
                                  + ": Switching to YourCharge control algorithm")
                     else:
                         self.event_control_algorithm_set.set()
-                        log.info("Setting YC ACTIVE mode = " + str(var.data.yc_config.active)
+                        log.info(f"Setting YC ACTIVE mode = {var.data.yc_config.active}"
                                  + ": Switching to openWB control algorithm")
                 elif re.search("yourCharge/config/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.yc_config, msg)
