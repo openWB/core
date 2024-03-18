@@ -5,7 +5,7 @@ import json
 
 from dataclasses import dataclass
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 from control import data, yourcharge
 from control.yourcharge import AccountingInfo, LmStatus, MeterValueMark
 from helpermodules.pub import Pub
@@ -16,8 +16,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class RfidInfo:
-    rfid: str = None
-    timestamp: str = None
+    rfid: Optional[str] = None
+    timestamp: Optional[str] = None
 
 
 class YcStatusHandler:

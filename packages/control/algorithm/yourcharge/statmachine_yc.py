@@ -188,7 +188,6 @@ class StatemachineYc():
         # then check for expired wait time
         if self._wait_for_plugin_entered is None:
             self._wait_for_plugin_entered = datetime.datetime.utcnow()
-            return
         else:
             elapsed = datetime.datetime.utcnow() - self._wait_for_plugin_entered
             if elapsed.total_seconds() >= data.data.yc_data.data.yc_config.max_plugin_wait_time_s:
@@ -328,7 +327,6 @@ class StatemachineYc():
             log.debug(f"---> {info_text}: Staying in state '{new_state.name}'")
 
     def _derive_state(self) -> LoadControlState:
-        return_state = LoadControlState.Startup
         if data.data.yc_data.data.yc_control.cp_enabled:
             if self._standard_socket_handler.can_ev_charge():
                 return_state = self._get_state_from_plugstate()

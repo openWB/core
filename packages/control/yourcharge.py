@@ -3,7 +3,7 @@
 import datetime
 import logging
 
-from typing import List
+from typing import List, Optional
 from enum import Enum
 
 from dataclasses import dataclass, field
@@ -82,13 +82,13 @@ def three_zero_floatss_factory() -> List[float]:
 
 @dataclass
 class AccountingInfo:
-    charge_start: str = None
-    starting_rfid: str = None
-    meter_at_start: float = None
-    currrent_time: str = None
-    plugged_in: bool = None
-    charging: bool = None
-    current_meter: float = None
+    charge_start: Optional[str] = None
+    starting_rfid: Optional[str] = None
+    meter_at_start: Optional[float] = None
+    currrent_time: Optional[str] = None
+    plugged_in: Optional[bool] = None
+    charging: Optional[bool] = None
+    current_meter: Optional[float] = None
 
 
 def current_timestamp_factory() -> str:
@@ -103,7 +103,7 @@ def current_day_factory() -> int:
 class MeterValueMark:
     timestamp: str = field(default_factory=current_timestamp_factory)
     day: int = field(default_factory=current_day_factory)
-    meter_reading: float = None
+    meter_reading: Optional[float] = None
 
 
 @dataclass
@@ -111,16 +111,16 @@ class YcConfig:
     active: bool = False
     allowed_rfid_ev: List[str] = field(default_factory=empty_list_factory)
     allowed_rfid_std_socket: List[str] = field(default_factory=empty_list_factory)
-    allowed_peak_power: float = None
-    allowed_total_current_per_phase: float = None
-    allowed_load_imbalance: float = None
-    max_evse_current_allowed: float = None
-    min_evse_current_allowed: float = None
-    minimum_adjustment_interval: int = None
-    slow_ramping: bool = None
-    standard_socket_installed: bool = None
-    use_last_charging_phase: bool = None
-    box_id: str = None
+    allowed_peak_power: Optional[float] = None
+    allowed_total_current_per_phase: Optional[float] = None
+    allowed_load_imbalance: Optional[float] = None
+    max_evse_current_allowed: Optional[float] = None
+    min_evse_current_allowed: Optional[float] = None
+    minimum_adjustment_interval: Optional[int] = None
+    slow_ramping: Optional[bool] = None
+    standard_socket_installed: Optional[bool] = None
+    use_last_charging_phase: Optional[bool] = None
+    box_id: Optional[str] = None
     max_plugin_wait_time_s: float = 60.0
     min_current_for_charge_detect: float = 1.0
     energy_limit: float = 0.0
@@ -133,13 +133,13 @@ class YcControlData:
 
     charging_vehicles: List[int] = field(default_factory=three_zero_ints_factory)
     total_current_consumption: List[float] = field(default_factory=three_zero_floatss_factory)
-    total_power: float = None
+    total_power: Optional[float] = None
     imbalance_current_consumption: List[float] = field(default_factory=three_zero_floatss_factory)
     standard_socket_action: StandardSocketActions = StandardSocketActions.Uninitialized
     socket_request: SocketRequestStates = SocketRequestStates.Uninitialized
     cp_enabled: bool = False
     socket_activated: bool = False
-    cp_meter_at_last_plugin: float = None
+    cp_meter_at_last_plugin: Optional[float] = None
     accounting: AccountingInfo = AccountingInfo()
     nightly_meter_reading: MeterValueMark = MeterValueMark()
 

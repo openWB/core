@@ -2,6 +2,7 @@ import datetime
 import logging
 
 from enum import Enum
+from typing import Optional
 from control import data
 from control import yourcharge
 from control.algorithm.yourcharge.standard_socket_meter_handler import SocketMeterData, SocketMeterHandler
@@ -47,7 +48,7 @@ class StandardSocketHandler:
         self.ev_charge_end_max_wait_time: datetime.timedelta = datetime.timedelta(seconds=35.0)
         self._current_status = StandardSocketStatus.Unknown
         self._current_control_state = StandardSocketControlState.Idle
-        self._standard_socket_handler: SocketMeterHandler = None
+        self._standard_socket_handler: Optional[SocketMeterHandler] = None
         self._previous_socket_action_for_restore = StandardSocketActions.Uninitialized
         self._last_socket_request_time = None
         self._ev_deactivation_start = None
@@ -57,7 +58,7 @@ class StandardSocketHandler:
         # finally, for initialization, turn off the socket
         self._socket_off()
 
-    def get_data(self) -> SocketMeterData:
+    def get_data(self) -> Optional[SocketMeterData]:
         if self._standard_socket_handler is None:
             return None
         else:
