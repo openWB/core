@@ -5,10 +5,17 @@
 		:full-width="props.fullWidth"
 	>
 		<template #title>
-			<span :style="cpNameStyle" @click="configmode = !configmode">
-				<span class="fa-solid fa-charging-station">&nbsp;</span>
-				{{ props.chargepoint.name }}</span
-			>
+			<span class="d-flex justify-content-center align-items-center">
+				<span :style="cpNameStyle" @click="configmode = !configmode">
+					<span class="fa-solid fa-charging-station">&nbsp;</span>
+					{{ props.chargepoint.name }}</span
+				>
+				<span
+					v-if="cp.faultState != 0"
+					class="badge rounded-pill errorbadge ms-3"
+					>Fehler</span
+				>
+			</span>
 		</template>
 
 		<template #buttons>
@@ -456,5 +463,10 @@ const editPrice = ref(false)
 	display: grid;
 	grid-template-columns: repeat(12, auto);
 	justify-content: space-between;
+}
+.errorbadge {
+	color: var(--color-bg);
+	background-color: var(--color-evu);
+	font-size: var(--font-small);
 }
 </style>
