@@ -141,15 +141,15 @@ class Device(AbstractDevice):
         try:
             token_exp = jwt.decode(
                 self.device_config.configuration.token, options={"verify_signature": False})["exp"]
-        except Exception as e:
-            log.error("invalid token stored, trying to receive new token" + str(e))
+        except jwt.exceptions.InvalidTokenError as e:
+            log.error("invalid token stored, trying to receive new token: " + str(e))
             if self.receive_token() is False:
                 return False
             try:
                 token_exp = jwt.decode(
                     self.device_config.configuration.token, options={"verify_signature": False})["exp"]
-            except Exception as e:
-                log.error("received token invalid" + str(e))
+            except jwt.exceptions.InvalidTokenError as e:
+                log.error("received token invalid: " + str(e))
                 return False
         if token_exp < (time.time() + 3600*24):
             log.info("token will expire in less than one day, trying to receive new token")
@@ -169,37 +169,38 @@ class Device(AbstractDevice):
                 self.device_config.configuration.serial is None):
             log.error("no credentials to authenticate to get token!")
             return False
-        response = req.get_http_session().post(
-            'https://enlighten.enphaseenergy.com/login/login.json?',
-            data={'user[email]': self.device_config.configuration.user,
-                  'user[password]': self.device_config.configuration.password},
-            timeout=5)
-        if response.ok is False:
-            log.error(f"could not authenticate at enphase, check credentials. "
-                      f"HTTP status code returned: {response.status_code}")
-            return False
-        response_json = response.json()
-        response = req.get_http_session().post(
-            'https://entrez.enphaseenergy.com/tokens',
-            json={'session_id': response_json['session_id'],
-                  'serial_num': self.device_config.configuration.serial,
-                  'username': self.device_config.configuration.user},
-            timeout=5)
-        if response.ok is False:
-            log.error(f"could not receive token from enphase, check Envoy serial number. "
-                      f"HTTP status code returned: {response.status_code}")
-            return False
-        self.token_tries = 0
-        token = response.text.strip()
-        log.info(f"received new token: {token}")
-        self.device_config.configuration.token = token
-        try:
-            log.debug("saving new access token")
-            Pub().pub("openWB/system/device/" + str(self.device_config.id) + "/config", asdict(self.device_config))
-        except Exception as e:
-            log.exception('Token mqtt write exception ' + str(e))
-            return False
-        return True
+        with req.get_http_session() as session:
+            response = session.post(
+                'https://enlighten.enphaseenergy.com/login/login.json?',
+                data={'user[email]': self.device_config.configuration.user,
+                      'user[password]': self.device_config.configuration.password},
+                timeout=5)
+            if response.ok is False:
+                log.error(f"could not authenticate at enphase, check credentials. "
+                          f"HTTP status code returned: {response.status_code}")
+                return False
+            response_json = response.json()
+            response = session.post(
+                'https://entrez.enphaseenergy.com/tokens',
+                json={'session_id': response_json['session_id'],
+                      'serial_num': self.device_config.configuration.serial,
+                      'username': self.device_config.configuration.user},
+                timeout=5)
+            if response.ok is False:
+                log.error(f"could not receive token from enphase, check Envoy serial number. "
+                          f"HTTP status code returned: {response.status_code}")
+                return False
+            self.token_tries = 0
+            token = response.text.strip()
+            log.info(f"received new token: {token}")
+            self.device_config.configuration.token = token
+            try:
+                log.debug("saving new access token")
+                Pub().pub("openWB/system/device/" + str(self.device_config.id) + "/config", asdict(self.device_config))
+            except Exception as e:
+                log.exception('Token mqtt write exception ' + str(e))
+                return False
+            return True
 
     def update(self) -> None:
         if self.device_config.configuration.version == EnphaseVersion.V2.value:
@@ -208,42 +209,44 @@ class Device(AbstractDevice):
                 log.error("no valid token to connect to envoy")
                 return
         log.debug("Start device reading " + str(self.components))
-        if self.components:
-            with MultiComponentUpdateContext(self.components):
-                json_live_data = None
-                if self.device_config.configuration.version == EnphaseVersion.V1.value:
-                    json_response = req.get_http_session().get(
-                        'http://'+self.device_config.configuration.hostname+'/ivp/meters/readings', timeout=5).json()
-                    # json_live_data does not exist on older firmware
-                elif self.device_config.configuration.version == EnphaseVersion.V2.value:
-                    response = req.get_http_session().get(
-                        'https://'+self.device_config.configuration.hostname+'/ivp/meters/readings',
-                        timeout=5, verify=False,
-                        headers={"Authorization": f"Bearer {self.device_config.configuration.token}"})
-                    if response.ok is False:
-                        log.info("token invalid, will be renewed if credentials are set")
-                        self.device_config.configuration.token = None
-                        self.token_fails += 1
-                        return
-                    self.token_fails = 0
-                    json_response = response.json()
-                    log.debug(f"meters/readings json response: {json_response}")
-                    if self.read_live_data:
-                        json_live_data = req.get_http_session().get(
-                            'https://'+self.device_config.configuration.hostname+'/ivp/livedata/status',
+        with req.get_http_session() as session:
+            if self.components:
+                with MultiComponentUpdateContext(self.components):
+                    json_live_data = None
+                    if self.device_config.configuration.version == EnphaseVersion.V1.value:
+                        json_response = session.get(
+                            'http://'+self.device_config.configuration.hostname+'/ivp/meters/readings',
+                            timeout=5).json()
+                        # json_live_data does not exist on older firmware
+                    elif self.device_config.configuration.version == EnphaseVersion.V2.value:
+                        response = session.get(
+                            'https://'+self.device_config.configuration.hostname+'/ivp/meters/readings',
                             timeout=5, verify=False,
-                            headers={"Authorization": f"Bearer {self.device_config.configuration.token}"}).json()
-                        log.debug(f"livedata/status json response: {json_live_data}")
-                else:
-                    log.error(f"unknown version: {self.device_config.configuration.version}")
-                    return
-                for component in self.components:
-                    self.components[component].update(json_response, json_live_data)
-        else:
-            log.warning(
-                self.device_config.name +
-                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
-            )
+                            headers={"Authorization": f"Bearer {self.device_config.configuration.token}"})
+                        if response.ok is False:
+                            log.info("token invalid, will be renewed if credentials are set")
+                            self.device_config.configuration.token = None
+                            self.token_fails += 1
+                            return
+                        self.token_fails = 0
+                        json_response = response.json()
+                        log.debug(f"meters/readings json response: {json_response}")
+                        if self.read_live_data:
+                            json_live_data = session.get(
+                                'https://'+self.device_config.configuration.hostname+'/ivp/livedata/status',
+                                timeout=5, verify=False,
+                                headers={"Authorization": f"Bearer {self.device_config.configuration.token}"}).json()
+                            log.debug(f"livedata/status json response: {json_live_data}")
+                    else:
+                        log.error(f"unknown version: {self.device_config.configuration.version}")
+                        return
+                    for component in self.components:
+                        self.components[component].update(json_response, json_live_data)
+            else:
+                log.warning(
+                    self.device_config.name +
+                    ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
+                )
 
 
 COMPONENT_TYPE_TO_MODULE = {
