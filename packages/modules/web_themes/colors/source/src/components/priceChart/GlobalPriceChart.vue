@@ -46,7 +46,6 @@ import {
 	timeFormat,
 	axisLeft,
 	select,
-	
 } from 'd3'
 
 const props = defineProps<{
@@ -79,8 +78,8 @@ const barwidth = computed(() => {
 const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
 	if (xdomain[1]) {
-			xdomain[1]= new Date (xdomain[1])
-			xdomain[1].setTime(xdomain[1].getTime()+3600000)
+		xdomain[1] = new Date(xdomain[1])
+		xdomain[1].setTime(xdomain[1].getTime() + 3600000)
 	}
 	return scaleTime()
 		.range([margin.left, width - margin.right])
@@ -103,11 +102,11 @@ const xAxisGenerator = computed(() => {
 		.ticks(plotdata.value.length)
 		.tickSize(5)
 		.tickSizeInner(-height)
-		.tickFormat((d) => (d.getHours() % 6 == 0)? timeFormat('%H:%M')(d) : '')
+		.tickFormat((d) => (d.getHours() % 6 == 0 ? timeFormat('%H:%M')(d) : ''))
 })
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
-		.ticks(yDomain.value[1]-yDomain.value[0])
+		.ticks(yDomain.value[1] - yDomain.value[0])
 		.tickSize(0)
 		.tickSizeInner(-(width - margin.right - margin.left))
 		.tickFormat((d) => d.toString())
@@ -143,7 +142,9 @@ const draw = computed(() => {
 	xAxis
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
-		.attr('stroke-width',(d) => ((d as Date).getHours()%6==0)?'2' :'0.5')
+		.attr('stroke-width', (d) =>
+			(d as Date).getHours() % 6 == 0 ? '2' : '0.5',
+		)
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
 	const yAxis = svg.append('g').attr('class', 'axis').call(yAxisGenerator.value)
@@ -155,7 +156,7 @@ const draw = computed(() => {
 	yAxis
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
-		.attr('stroke-width', (d) => (d as number % 5 == 0)? '2' : '0.5')
+		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 

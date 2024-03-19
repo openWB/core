@@ -160,7 +160,7 @@ def save_log(log_type: LogType):
     return content["entries"]
 
 
-def get_previous_entry(parent_file: Path, content: Dict):
+def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:
     try:
         previous_entry = content["entries"][-1]
     except IndexError:
@@ -168,13 +168,16 @@ def get_previous_entry(parent_file: Path, content: Dict):
         path_list = parent_file.glob('*.json')
         # sort path list by name
         path_list = sorted(path_list, key=lambda x: x.name)
-        with open(path_list[-2], "r") as jsonFile:
-            content = json.load(jsonFile)
-        previous_entry = content["entries"][-1]
+        try:
+            with open(path_list[-2], "r") as jsonFile:
+                content = json.load(jsonFile)
+            previous_entry = content["entries"][-1]
+        except IndexError:
+            previous_entry = None
     return previous_entry
 
 
-def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previous_entry: Dict) -> Dict:
+def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previous_entry: Optional[Dict]) -> Dict:
     if log_type == LogType.DAILY:
         date = timecheck.create_timestamp_HH_MM()
     else:
@@ -253,7 +256,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
     return fix_values(new_entry, previous_entry)
 
 
-def fix_values(new_entry: Dict, previous_entry: Dict) -> Dict:
+def fix_values(new_entry: Dict, previous_entry: Optional[Dict]) -> Dict:
     def find_and_fix_value(value_name):
         if value.get(value_name) is not None:
             if value[value_name] == 0:
@@ -261,12 +264,15 @@ def fix_values(new_entry: Dict, previous_entry: Dict) -> Dict:
                     value[value_name] = previous_entry[group][component][value_name]
                 except KeyError:
                     log.exception("Es konnte kein vorheriger Wert gefunden werden.")
-    for group, value in new_entry.items():
-        if group not in ("bat", "counter", "cp", "pv", "hc"):
-            continue
-        for component, value in value.items():
-            find_and_fix_value("exported")
-            find_and_fix_value("imported")
+    if previous_entry is not None:
+        for group, value in new_entry.items():
+            if group not in ("bat", "counter", "cp", "pv", "hc"):
+                continue
+            for component, value in value.items():
+                find_and_fix_value("exported")
+                find_and_fix_value("imported")
+    else:
+        log.warning("Keine vorherigen Werte vorhanden, um aktuelle Werte auf Plausibilität zu prüfen.")
     return new_entry
 
 

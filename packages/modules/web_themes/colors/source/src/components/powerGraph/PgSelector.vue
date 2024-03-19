@@ -126,7 +126,7 @@ const displayDate = computed(() => {
 				console.warn('Graph Data empty.')
 				return '???'
 			} */
-			return (props.ignoreLive)?'heute':`${liveGraph.duration} min`
+			return props.ignoreLive ? 'heute' : `${liveGraph.duration} min`
 		case 'today':
 			return 'heute'
 		case 'day':

@@ -8,7 +8,12 @@
 		<span class="status-string">{{ cp.stateStr }}</span>
 	</ConfigItem>
 
-	<ConfigItem v-if="cp.faultState != 0" title="Fehler" class="grid-col-12">
+	<ConfigItem
+		v-if="cp.faultState != 0"
+		title="Fehler"
+		class="grid-col-12"
+		icon="fa-triangle-exclamation"
+	>
 		<span style="color: red"> {{ cp.faultStr }} </span>
 	</ConfigItem>
 

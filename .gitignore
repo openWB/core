@@ -5,6 +5,7 @@
 *.log.lock
 .DS_Store
 .ftp*
+.vite
 .vscode/*
 __pycache__/
 node_modules/
