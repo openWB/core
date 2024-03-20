@@ -9,6 +9,7 @@ import subprocess
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
+from control.chargepoint.charging_type import ChargingType
 from control.general import ChargemodeConfig
 import dataclass_utils
 
@@ -37,7 +38,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 40
+    DATASTORE_VERSION = 41
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1333,7 +1334,6 @@ class UpdateConfig:
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 39)
-        Pub().pub("openWB/system/datastore_version", 39)
 
     def upgrade_datastore_39(self) -> None:
         def upgrade(topic: str, payload) -> None:
@@ -1357,3 +1357,17 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 40)
+
+    def upgrade_datastore_40(self) -> None:
+        if hardware_configuration.exists_hardware_configuration_setting("dc_charging") is False:
+            hardware_configuration.update_hardware_configuration({"dc_charging": False})
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/template/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                if "charging_type" not in payload:
+                    updated_payload = payload
+                    updated_payload["charging_type"] = ChargingType.AC.value
+                    return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 41)

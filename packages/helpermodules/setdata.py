@@ -587,6 +587,9 @@ class SetData:
         elif ("/get/daily_imported" in msg.topic or
                 "/get/daily_exported" in msg.topic or
                 "/get/power" in msg.topic or
+                "/get/charging_current" in msg.topic or
+                "/get/charging_power" in msg.topic or
+                "/get/charging_voltage" in msg.topic or
                 "/get/imported" in msg.topic or
                 "/get/exported" in msg.topic or
                 "/get/soc_timestamp" in msg.topic):

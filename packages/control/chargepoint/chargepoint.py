@@ -625,6 +625,7 @@ class Chargepoint(ChargepointRfidMixin):
                         self.cp_ev_support_phase_switch())
                     phases = self.set_phases(phases)
                     self._pub_connected_vehicle(charging_ev)
+                    required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = self.check_min_max_current(
                         required_current, self.data.control_parameter.phases)
