@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from control import data
 from control.bat_all import BatAll
@@ -83,9 +83,24 @@ def _update_pv_monthly_yields():
             # wurde)
             if monthly_log["entries"][i]["pv"].get(f"pv{pv_module.num}"):
                 monthly_yield = data.data.pv_data[f"pv{pv_module.num}"].data.get.exported - \
-                    monthly_log["entries"][i]["pv"]["all"]["exported"]
-                Pub().pub("openWB/set/pv/get/monthly_exported", monthly_yield)
+                    monthly_log["entries"][i]["pv"][f"pv{pv_module.num}"]["exported"]
+                Pub().pub(f"openWB/set/pv/{pv_module.num}/get/monthly_exported", monthly_yield)
                 break
+
+
+def pub_yearly_module_yield(sorted_path_list: List[str], pv_module: Pv):
+    for path in sorted_path_list:
+        with open(path, "r") as f:
+            monthly_log = json.load(f)
+        for i in range(0, len(monthly_log["entries"])):
+            # erster Eintrag im Jahr, in dem das PV-Modul existiert (falls ein Modul im laufenden Jahr hinzugefügt
+            # wurde)
+            log.debug(f'path {path} i {i} drin {monthly_log["entries"][i]["pv"].get(f"pv{pv_module.num}")}')
+            if monthly_log["entries"][i]["pv"].get(f"pv{pv_module.num}"):
+                yearly_yield = data.data.pv_data[f"pv{pv_module.num}"].data.get.exported - \
+                    monthly_log["entries"][i]["pv"][f"pv{pv_module.num}"]["exported"]
+                Pub().pub(f"openWB/set/pv/{pv_module.num}/get/yearly_exported", yearly_yield)
+                return
 
 
 def _update_pv_yearly_yields():
@@ -97,18 +112,9 @@ def _update_pv_yearly_yields():
         monthly_log = json.load(f)
     yearly_yield = data.data.pv_all_data.data.get.exported - monthly_log["entries"][0]["pv"]["all"]["exported"]
     Pub().pub("openWB/set/pv/get/yearly_exported", yearly_yield)
+    log.debug(f"sorted_path_list{sorted_path_list}")
     for pv_module in data.data.pv_data.values():
-        for path in sorted_path_list:
-            with open(path, "r") as f:
-                monthly_log = json.load(f)
-            for i in range(0, len(monthly_log["entries"])):
-                # erster Eintrag im Jahr, in dem das PV-Modul existiert (falls ein Modul im laufenden Jahr hinzugefügt
-                # wurde)
-                if monthly_log["entries"][i]["pv"].get(f"pv{pv_module.num}"):
-                    yearly_yield = data.data.pv_data[f"pv{pv_module.num}"].data.get.exported - \
-                        monthly_log["entries"][i]["pv"][f"pv{pv_module.num}"]["exported"]
-                    Pub().pub(f"openWB/set/pv/{pv_module.num}/get/yearly_exported", yearly_yield)
-                    break
+        pub_yearly_module_yield(sorted_path_list, pv_module)
 
 
 def _get_parent_path() -> Path:
