@@ -33,7 +33,7 @@ def check_meter_values(counter_state: CounterState) -> Optional[str]:
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
         return METER_BROKEN_VOLTAGES
-    interdependent_values = [sum(counter_state.currents), sum(counter_state.powers), counter_state.power]
+    interdependent_values = [sum(counter_state.currents), counter_state.power]
     if not (all(v == 0 for v in interdependent_values) or all(v != 0 for v in interdependent_values)):
         return METER_BROKEN
     return None
