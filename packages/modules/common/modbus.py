@@ -50,11 +50,11 @@ class ModbusClient:
     def __init__(self,
                  delegate: Union[ModbusSerialClient, ModbusTcpClient],
                  address: str, port: int = 502,
-                 sleep_after_connect: Optional[int] = None):
+                 sleep_after_connect: Optional[int] = 0):
         self._delegate = delegate
         self.address = address
         self.port = port
-        self.sleep_after_connect = sleep_after_connect or 0
+        self.sleep_after_connect = sleep_after_connect
 
     def __enter__(self):
         try:
