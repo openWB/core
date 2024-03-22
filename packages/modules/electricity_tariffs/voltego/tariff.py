@@ -3,7 +3,7 @@ import datetime
 import logging
 from typing import Dict
 import pytz
-import requests
+from requests.exceptions import HTTPError
 
 from dataclass_utils import asdict
 from helpermodules import timecheck
@@ -61,9 +61,12 @@ def fetch(config: VoltegoTariff) -> None:
     # Bei Voltego wird anscheinend nicht ein Token pro Client, sondern das letzte erzeugte gespeichert.
     try:
         raw_prices = get_raw_prices()
-    except requests.exceptions.HTTPError:
-        _refresh_token(config)
-        raw_prices = get_raw_prices()
+    except HTTPError as error:
+        if error.response.status_code == 401:
+            _refresh_token(config)
+            raw_prices = get_raw_prices()
+        else:
+            raise error
     prices: Dict[int, float] = {}
     for data in raw_prices:
         formatted_price = data["price"]/1000000  # €/MWh -> €/Wh
