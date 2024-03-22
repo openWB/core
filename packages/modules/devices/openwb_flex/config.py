@@ -54,6 +54,21 @@ class EvuKitFlexSetup(ComponentSetup[EvuKitFlexConfiguration]):
         super().__init__(name, type, id, configuration or EvuKitFlexConfiguration())
 
 
+class ConsumptionCounterFlexConfiguration:
+    def __init__(self, id: int = 115, type: str = "sdm630"):
+        self.id = id
+        self.type = type
+
+
+class ConsumptionCounterFlexSetup(ComponentSetup[ConsumptionCounterFlexConfiguration]):
+    def __init__(self,
+                 name: str = "openWB Verbrauchszähler flex",
+                 type: str = "consumption_counter",
+                 id: int = 0,
+                 configuration: ConsumptionCounterFlexConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or ConsumptionCounterFlexConfiguration())
+
+
 class PvKitFlexConfiguration:
     def __init__(self, id: int = 116, version: int = 2):
         self.id = id

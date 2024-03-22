@@ -1,99 +1,53 @@
+#!/usr/bin/env python3
 import logging
-from typing import Dict, Union, Optional, List
+from typing import Iterable, Union
 
-from dataclass_utils import dataclass_from_dict
-from helpermodules.cli import run_using_positional_cli_args
-from modules.common import modbus
-from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
+from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.openwb_flex import bat
-from modules.devices.openwb_flex import counter
-from modules.devices.openwb_flex import inverter
-from modules.devices.openwb_flex.config import Flex, BatKitFlexSetup, EvuKitFlexSetup, FlexConfiguration, PvKitFlexSetup
+from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
+from modules.common.modbus import ModbusTcpClient_
+from modules.devices.openwb_flex.bat import BatKitFlex
+from modules.devices.openwb_flex.config import (BatKitFlexSetup, ConsumptionCounterFlexSetup, EvuKitFlexSetup, Flex,
+                                                PvKitFlexSetup)
+from modules.devices.openwb_flex.consumption_counter import ConsumptionCounterFlex
+from modules.devices.openwb_flex.counter import EvuKitFlex
+from modules.devices.openwb_flex.inverter import PvKitFlex
 
 log = logging.getLogger(__name__)
 
 
-class Device(AbstractDevice):
-    COMPONENT_TYPE_TO_CLASS = {
-        "bat": bat.BatKitFlex,
-        "counter": counter.EvuKitFlex,
-        "inverter": inverter.PvKitFlex
-    }
+def create_device(device_config: Flex):
+    def create_bat_component(component_config: BatKitFlexSetup):
+        return BatKitFlex(device_config.id, component_config, client)
 
-    def __init__(self, device_config: Union[Dict, Flex]) -> None:
-        self.components = {}  # type: Dict[str, Union[counter.EvuKitFlex, inverter.PvKitFlex]]
-        try:
-            self.device_config = dataclass_from_dict(Flex, device_config)
-            ip_address = self.device_config.configuration.ip_address
-            port = self.device_config.configuration.port
-            self.client = modbus.ModbusTcpClient_(ip_address, port)
-        except Exception:
-            log.exception("Fehler im Modul " + self.device_config.name)
+    def create_counter_component(component_config: EvuKitFlexSetup):
+        return EvuKitFlex(device_config.id, component_config, client)
 
-    def add_component(self, component_config: Union[Dict, BatKitFlexSetup, EvuKitFlexSetup, PvKitFlexSetup]) -> None:
-        if isinstance(component_config, Dict):
-            component_type = component_config["type"]
-        else:
-            component_type = component_config.type
-        component_config = dataclass_from_dict(COMPONENT_TYPE_TO_MODULE[
-            component_type].component_descriptor.configuration_factory, component_config)
-        if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self.components["component"+str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config.id, component_config, self.client))
-        else:
-            raise Exception("illegal component type " + component_type +
-                            ". Allowed values: " +
-                            ','.join(self.COMPONENT_TYPE_TO_CLASS.keys()))
+    def create_consumption_counter_component(component_config: ConsumptionCounterFlexSetup):
+        return ConsumptionCounterFlex(device_config.id, component_config, client)
 
-    def update(self) -> None:
-        log.debug("Start device reading " + str(self.components))
-        if self.components:
-            for component in self.components:
-                # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                with SingleComponentUpdateContext(self.components[component].fault_state):
-                    self.components[component].update()
-        else:
-            log.warning(
-                self.device_config.name +
-                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
-            )
+    def create_inverter_component(component_config: PvKitFlexSetup):
+        return PvKitFlex(device_config.id, component_config, client)
 
+    def update_components(components: Iterable[Union[BatKitFlex, ConsumptionCounterFlex, EvuKitFlex, PvKitFlex]]):
+        for component in components:
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update()
 
-COMPONENT_TYPE_TO_MODULE = {
-    "bat": bat,
-    "counter": counter,
-    "inverter": inverter
-}
-
-
-def read_legacy(component_type: str, version: int, ip_address: str, port: int, id: int, num: Optional[int] = None):
-    """ Ausführung des Moduls als Python-Skript
-    """
-    log.debug('Start reading flex')
-    dev = Device(Flex(configuration=FlexConfiguration(ip_address=ip_address, port=port)))
-    if component_type in COMPONENT_TYPE_TO_MODULE:
-        component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
-    else:
-        raise Exception("illegal component type " + component_type +
-                        ". Allowed values: " +
-                        ','.join(COMPONENT_TYPE_TO_MODULE.keys()))
-
-    component_config.id = num
-    component_config.configuration.version = version
-    component_config.configuration.id = id
-    dev.add_component(component_config)
-
-    log.debug('openWB flex Version: ' + str(version))
-    log.debug('openWB flex-Kit IP-Adresse: ' + ip_address)
-    log.debug('openWB flex-Kit Port: ' + str(port))
-    log.debug('openWB flex-Kit ID: ' + str(id))
-
-    dev.update()
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(read_legacy, argv)
+    try:
+        client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
+    except Exception:
+        log.exception("Fehler in create_device")
+    return ConfigurableDevice(
+        device_config=device_config,
+        component_factory=ComponentFactoryByType(
+            bat=create_bat_component,
+            consumption_counter=create_consumption_counter_component,
+            counter=create_counter_component,
+            inverter=create_inverter_component,
+        ),
+        component_updater=MultiComponentUpdater(update_components)
+    )
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Flex)
