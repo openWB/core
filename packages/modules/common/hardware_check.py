@@ -1,7 +1,7 @@
 import pymodbus
 from typing import Any, Optional, Protocol, Tuple, Union
 
-from modules.common.component_state import CounterState
+from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.fault_state import FaultState
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
@@ -66,7 +66,7 @@ class SeriesHardwareCheckMixin:
         else:
             return False
 
-    def request_and_check_hardware(self: ClientHandlerProtocol) -> Tuple[Evse, CounterState]:
+    def request_and_check_hardware(self: ClientHandlerProtocol) -> Tuple[EvseState, CounterState]:
         try:
             with self.client:
                 evse_state = self.evse_client.get_evse_state()

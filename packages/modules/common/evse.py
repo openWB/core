@@ -57,8 +57,8 @@ class Evse:
 
     def get_evse_state(self) -> EvseState:
         plugged, charging, set_current = self.get_plug_charge_state()
-        state = EvseState(plugged=plugged,
-                          charging=charging,
+        state = EvseState(plug_state=plugged,
+                          charge_state=charging,
                           set_current=set_current,
                           version=self.get_firmware_version())
         return state
