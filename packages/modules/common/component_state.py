@@ -193,3 +193,11 @@ class TariffState:
 class RcrState:
     def __init__(self, override_value: float) -> None:
         self.override_value = override_value
+
+
+class EvseState:
+    def __init__(self, plugged: bool, charging: bool, set_current: int, version: int) -> None:
+        self.plugged = plugged
+        self.charging = charging
+        self.set_current = set_current
+        self.version = version

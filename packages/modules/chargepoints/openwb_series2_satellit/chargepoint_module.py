@@ -10,7 +10,6 @@ from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.hardware_check_context import SeriesHardwareCheckContext
 from modules.common.store import get_chargepoint_value_store
 from modules.common.component_state import ChargepointState
 from modules.common.version_by_telnet import get_version_by_telnet
@@ -74,28 +73,27 @@ class ChargepointModule(AbstractChargepoint):
             if self.version is not None:
                 with self.__client_error_context:
                     try:
-                        with SeriesHardwareCheckContext(self._client):
-                            if self.version is False:
-                                raise ValueError(
-                                    "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
-                                    "Bitte den Support kontaktieren.")
-                            self.delay_second_cp(self.CP0_DELAY)
-                            with self._client.client:
-                                currents = self._client.meter_client.get_currents()
-                                phases_in_use = sum(1 for current in currents if current > 3)
-                                plug_state, charge_state, _ = self._client.evse_client.get_plug_charge_state()
+                        evse_state, counter_state = self._client.request_and_check_hardware()
+                        if self.version is False:
+                            raise ValueError(
+                                "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
+                                "Bitte den Support kontaktieren.")
+                        self.delay_second_cp(self.CP0_DELAY)
 
-                                chargepoint_state = ChargepointState(
-                                    power=self._client.meter_client.get_power()[1],
-                                    currents=currents,
-                                    imported=self._client.meter_client.get_imported(),
-                                    exported=0,
-                                    voltages=self._client.meter_client.get_voltages(),
-                                    plug_state=plug_state,
-                                    charge_state=charge_state,
-                                    phases_in_use=phases_in_use,
-                                )
-                            self.store.set(chargepoint_state)
+                        currents = counter_state.currents
+                        phases_in_use = sum(1 for current in currents if current > 3)
+
+                        chargepoint_state = ChargepointState(
+                            power=counter_state.power,
+                            currents=currents,
+                            imported=counter_state.imported,
+                            exported=0,
+                            voltages=counter_state.voltages,
+                            plug_state=evse_state.plug_state,
+                            charge_state=evse_state.charge_state,
+                            phases_in_use=phases_in_use,
+                        )
+                        self.store.set(chargepoint_state)
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
@@ -108,13 +106,12 @@ class ChargepointModule(AbstractChargepoint):
             with SingleComponentUpdateContext(self.fault_state, update_always=False):
                 with self.__client_error_context:
                     try:
-                        with SeriesHardwareCheckContext(self._client):
-                            self.delay_second_cp(self.CP0_DELAY)
-                            with self._client.client:
-                                if self.version:
-                                    self._client.evse_client.set_current(int(current))
-                                else:
-                                    self._client.evse_client.set_current(0)
+                        self.delay_second_cp(self.CP0_DELAY)
+                        with self._client.client:
+                            if self.version:
+                                self._client.evse_client.set_current(int(current))
+                            else:
+                                self._client.evse_client.set_current(0)
                     except AttributeError:
                         self._create_client()
                         self._validate_version()

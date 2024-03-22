@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
+from modules.common.component_state import CounterState
 from modules.common.modbus import ModbusDataType
 
 
@@ -42,6 +43,19 @@ class Sdm630(Sdm):
     def get_voltages(self) -> List[float]:
         return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, unit=self.id)
 
+    def get_counter_state(self) -> CounterState:
+        powers, power = self.get_power()
+        return CounterState(
+            imported=self.get_imported(),
+            exported=self.get_exported(),
+            power=power,
+            voltages=self.get_voltages(),
+            currents=self.get_currents(),
+            powers=powers,
+            power_factors=self.get_power_factors(),
+            frequency=self.get_frequency()
+        )
+
 
 class Sdm120(Sdm):
     def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
@@ -53,3 +67,14 @@ class Sdm120(Sdm):
 
     def get_currents(self) -> List[float]:
         return [self.client.read_input_registers(0x06, ModbusDataType.FLOAT_32, unit=self.id), 0, 0]
+
+    def get_counter_state(self) -> CounterState:
+        powers, power = self.get_power()
+        return CounterState(
+            imported=self.get_imported(),
+            exported=self.get_exported(),
+            power=power,
+            currents=self.get_currents(),
+            powers=powers,
+            frequency=self.get_frequency()
+        )

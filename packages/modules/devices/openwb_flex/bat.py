@@ -34,16 +34,16 @@ class BatKitFlex:
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,
         # dass offene Verbindungen den Modbus-Adapter blockieren.
         with self.__tcp_client:
-            if isinstance(self.__client, Sdm630):
-                _, power = self.__client.get_power()
-                power = power * -1
-            else:
-                _, power = self.__client.get_power()
-            if isinstance(self.__client, Lovato):
-                imported, exported = self.sim_counter.sim_count(power)
-            else:
-                imported = self.__client.get_imported()
-                exported = self.__client.get_exported()
+            counter_state = self.__client.get_counter_state()
+
+        power = counter_state.power
+        if isinstance(self.__client, Sdm630):
+            power = power * -1
+        if isinstance(self.__client, Lovato):
+            imported, exported = self.sim_counter.sim_count(power)
+        else:
+            imported = counter_state.imported
+            exported = counter_state.exported
 
         bat_state = BatState(
             imported=imported,

@@ -54,6 +54,14 @@ class Evse:
         version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
         return version
 
+    def get_evse_state(self) -> EvseState:
+        plugged, charging, set_current = self.get_plug_charge_state()
+        state = EvseState(plugged=plugged,
+                          charging=charging,
+                          set_current=set_current,
+                          version=self.get_firmware_version())
+        return state
+
     def is_precise_current_active(self) -> bool:
         time.sleep(0.1)
         value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
