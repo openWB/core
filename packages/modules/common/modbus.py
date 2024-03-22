@@ -150,7 +150,12 @@ class ModbusClient:
                              byteorder: Endian = Endian.Big,
                              wordorder: Endian = Endian.Big,
                              **kwargs):
-        return self.__read_registers(self._delegate.read_input_registers, address, types, byteorder, wordorder, **kwargs)
+        return self.__read_registers(self._delegate.read_input_registers,
+                                     address,
+                                     types,
+                                     byteorder,
+                                     wordorder,
+                                     **kwargs)
 
     @overload
     def read_coils(self, address: int, types: Iterable[ModbusDataType], byteorder: Endian = Endian.Big,
@@ -197,7 +202,13 @@ class ModbusSerialClient_(ModbusClient):
                  port: int,
                  sleep_after_connect: Optional[int] = None,
                  **kwargs):
-        super().__init__(ModbusSerialClient(method="rtu", port=port, baudrate=9600, stopbits=1, bytesize=8, timeout=1, **kwargs),
+        super().__init__(ModbusSerialClient(method="rtu",
+                                            port=port,
+                                            baudrate=9600,
+                                            stopbits=1,
+                                            bytesize=8,
+                                            timeout=1,
+                                            **kwargs),
                          "Serial",
                          port,
                          sleep_after_connect)
