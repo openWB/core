@@ -4,7 +4,7 @@ Es kann immer mal passieren, dass etwas nicht wie gedacht funktioniert. Das kann
 Wenn nun eine Funktion nicht wie erwartet ausgeführt wird oder plötzlich ein Fehler auftritt, ist die erste Frage: 
 > Habe ich vor Kurzem etwas verändert?
 
-Dies betrifft ebenso Änderungen am Einstellungen im Fahrzeug, Wechselrichter (Softwareupdate?)  oder der Hauselektrik. Unter Umständen kann das Problem so schon gelöst werden.
+Dies betrifft ebenso Änderungen der Einstellungen im Fahrzeug, Wechselrichter (Softwareupdate?)  oder der Hauselektrik. Unter Umständen kann das Problem so schon gelöst werden.
 
 
 ## Wo bekomme ich Hilfe?
@@ -13,7 +13,7 @@ Mit Problemen bei Inbetriebnahme / Anschluss oder Hardwareproblemen mit openWB-H
 Im Forum kann durchaus mal etwas untergehen. Das führt zu Frust und soll nicht sein.
 
 ### Forum
-Im [Forum](https://forum.openwb.de/index.php) findet man folgende Hilfestellung für Hilfesuchende. Die hier erbetene Herangehensweise dient dazu, den Fehler mit dem für alle, niedrigsten Aufwand zu beheben. 
+Im [Forum](https://forum.openwb.de/index.php) findet man folgende Hilfestellung für Hilfesuchende. Die hier erbetene Herangehensweise dient dazu, den Fehler mit dem für alle niedrigsten Aufwand zu beheben. 
 
 > Bitte keine Mehrfach-Meldung per Mail, Support-Ticket und Forum.
 Das spart auf unserer Seite Supportzeit und bringt erfahrungsgemäß keine Beschleunigung des Vorgangs.
