@@ -1,6 +1,6 @@
 # MQTT
 
-##Grundsätzliches
+## Grundsätzliches
 MQTT bedeutet: Message Queuing Telemetry Transport. Es handelt sich hierbei um ein M2M (Machine to Machine) Protokoll.
 Für eine Kommunikation wird ein Broker (=Verwalter) benötigt, welcher die Nachrichten von den Sendern empfängt und an die Empfänger, welche sich für den Inhalt angemeldet haben, weiterleitet. Man spricht bei MQTT von publish und subscribe. Die Nachrichten werden in topics verschickt. 
 
@@ -8,7 +8,7 @@ OpenWB hat einen eigenen MQTT-Broker integriert, über den die Kommunikation lä
 
 ## Zähler
 
-Als EVU-Zähler können auch Werte über MQTT empfangen werden. Die Integration ist im Abschnitt [Zähler](https://github.com/openWB/core/wiki/Zaehler) beschrieben.
+Als EVU-Zähler können auch Werte über MQTT empfangen werden. Die Integration ist im Abschnitt [Zähler](https://github.com/openWB/core/wiki/Zähler) beschrieben.
 
 ## Smarthome
 
