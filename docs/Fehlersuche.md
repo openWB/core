@@ -37,7 +37,7 @@ Um aussagekräftige Logs zu erzeugen, müssen Log-Dateien im Debug-Modus erstell
 
 ![Debug-Einstellung](pictures/Fehlersuche_DebugLog.jpg)
 
-Aufgrund der nun auftretenden Datenflut, ist die Dauer der Aufnahme ca. auf die letzten zwei Stunden begrenzt.  Beachtet also, dass ihr sich der Fehler innerhalb des aufgezeichneten Abschnitts befindet.
+Aufgrund des detaillierten Loggings, ist die Dauer der Aufnahme ca. auf die letzten zwei Stunden begrenzt.  Beachtet also, dass ihr sich der Fehler innerhalb des aufgezeichneten Abschnitts befindet.
 Dann ist in den meisten Fällen das Main.log, aufzuklappen und mit der grünen Schaltfläche zu aktualisieren. Der entsprechende Auszug kann nun in eine Textdatei oder direkt in die Nachricht im Forum kopiert werden.
 
 ![Main-Log](pictures/Fehlersuche_Main-Log.jpg)

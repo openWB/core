@@ -5,7 +5,7 @@
 * [Ladepunkte](https://github.com/openWB/core/wiki/Ladepunkte)
 * [Fahrzeuge](https://github.com/openWB/core/wiki/Fahrzeuge)
 * Zähler
-  * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Zaehler)
+  * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Zähler)
   * [Lastmanagement und kaskadierte Zähler](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler)
   * [Hierarchie mit Hausverbrauchs-Zähler](https://github.com/openWB/core/wiki/Hausverbrauchs-Zähler)
 * Szenarien
@@ -25,4 +25,4 @@
     * [NextCloud](https://github.com/openWB/core/wiki/NextCloud-als-Sicherungs-Cloud-einrichten)
     * [Samba](https://github.com/openWB/core/wiki/Samba-als-Sicherung-einrichten)
 * Sonstiges
-  * [Fehlersuche](https://github.com/openWB/core/wiki/Feherlsuche)
+  * [Fehlersuche](https://github.com/openWB/core/wiki/Fehlersuche)
