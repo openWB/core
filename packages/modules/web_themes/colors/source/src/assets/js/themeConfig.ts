@@ -391,7 +391,7 @@ interface Preferences {
 
 function writeCookie() {
 	const prefs: Preferences = {}
-	prefs.hideSH = Object.values(shDevices)
+	prefs.hideSH = [...shDevices.values()]
 		.filter((device) => !device.showInGraph)
 		.map((device) => device.id)
 	prefs.showLG = globalConfig.graphPreference == 'live'
@@ -435,11 +435,11 @@ function readCookie() {
 			globalConfig.setSmartHomeColors(prefs.smartHomeC)
 		}
 		if (prefs.hideSH !== undefined) {
-			prefs.hideSH.map((i) => {
-				if (shDevices[i] == undefined) {
+			prefs.hideSH.forEach((i) => {
+				if (shDevices.get(i) == undefined) {
 					addShDevice(i)
 				}
-				shDevices[i].setShowInGraph(false)
+				shDevices.get(i)!.setShowInGraph(false)
 			})
 		}
 		if (prefs.showLG !== undefined) {

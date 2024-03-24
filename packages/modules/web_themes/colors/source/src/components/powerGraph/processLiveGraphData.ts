@@ -48,8 +48,8 @@ export function reloadLiveGraph(topic: string, rawMessage: string) {
 		const newGraphData: GraphDataItem[] = []
 		liveGraph.unsubscribeRefresh()
 		liveGraph.initialized = true
-		liveGraph.rawDataPacks.map((dataPack) => {
-			dataPack.map((rawItem) => {
+		liveGraph.rawDataPacks.forEach((dataPack) => {
+			dataPack.forEach((rawItem) => {
 				const values = extractValues(rawItem)
 				newGraphData.push(values)
 			})

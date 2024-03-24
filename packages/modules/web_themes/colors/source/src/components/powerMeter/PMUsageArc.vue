@@ -30,7 +30,7 @@ const draw = computed(() => {
 	}
 	const plotdata = [usageSummary.evuOut, usageSummary.charging]
 		.concat(
-			Object.values(shDevices)
+			[...shDevices.values()]
 				.filter((row) => row.configured && !row.countAsHouse)
 				.sort((a, b) => {
 					return b.power - a.power
@@ -38,6 +38,7 @@ const draw = computed(() => {
 		)
 		.concat([usageSummary.batIn, usageSummary.house])
 		.concat(emptyPowerItem)
+	console.log(plotdata)
 	const arcCount = plotdata.length - 1
 	const pieGenerator = pie<PowerItem>()
 		.value((record: PowerItem) => record.power)
