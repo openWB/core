@@ -14,4 +14,4 @@ Dies beginnt ihr in eurem eigenen Branch und wählt im Menü oben Pull-Request a
 
 ![Pull-Request](pictures/Wiki-Eintrag_erstellen_Pull.jpg)
 
-Für euren ersten Beitrag müsst ihr noch von einem Projektmitarbeiter freigeschaltet werden. Dies kann einige Zeit dauern. Eventuell werden auch noch Änderungen vorgeschlagen, die ihr dann über diskutieren oder einfach annehmen könnt. 
+Für euren ersten Beitrag müsst ihr noch von einem Projektmitarbeiter freigeschaltet werden. Dies kann einige Zeit dauern. Eventuell werden auch noch Änderungen vorgeschlagen, die ihr dann diskutieren oder einfach annehmen könnt. 
