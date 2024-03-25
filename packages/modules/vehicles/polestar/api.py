@@ -85,8 +85,7 @@ class PolestarApi:
                 else:
                     vins.append(cars[i]['vin'])
             if len(vins) > 0:
-                log.error("You probably specified a wrong VIN. We only found:%s", ",".join(vins))
-            return None
+                raise Exception("You probably specified a wrong VIN. We only found:%s", ",".join(vins))
 
 
 def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
