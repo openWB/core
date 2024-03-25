@@ -7,3 +7,5 @@ topic write openWB/system/messages/#
 pattern write openWB/command/%c/messages/#
 # allow global read access
 topic read openWB/#
+# allow read access for remote support topics
+topic read openWB-remote/#
