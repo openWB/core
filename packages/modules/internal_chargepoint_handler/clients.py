@@ -50,7 +50,7 @@ class ClientHandler(SeriesHardwareCheckMixin):
                 try:
                     if evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
                         log.debug(client)
-                        log.info("Modbus-ID der EVSE an LP"+str(self.local_charge_point_num)+": "+str(modbus_id))
+                        log.error("Modbus-ID der EVSE an LP"+str(self.local_charge_point_num)+": "+str(modbus_id))
                         return evse_client
                 except Exception:
                     pass
@@ -64,7 +64,7 @@ class ClientHandler(SeriesHardwareCheckMixin):
             with client:
                 try:
                     if meter_client.get_voltages()[0] > 200:
-                        log.info("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
+                        log.error("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
                         return meter_client
                 except Exception:
                     log.debug(client)
@@ -104,12 +104,12 @@ def client_factory(local_charge_point_num: int,
             evse_ids = EVSE_ID_ONE_BUS_CP1
     elif counter == 1 and resolved_devices[0] in BUS_SOURCES:
         if local_charge_point_num == 0:
-            log.info("LP0 Device: "+str(resolved_devices[0]))
+            log.error("LP0 Device: "+str(resolved_devices[0]))
             serial_client = ModbusSerialClient_(resolved_devices[0])
             evse_ids = EVSE_ID_CP0
         else:
             # Don't create two clients for one source!
-            log.info("LP1 gleiches Device wie LP0")
+            log.error("LP1 gleiches Device wie LP0")
             serial_client = created_client_handler.client
             evse_ids = EVSE_ID_ONE_BUS_CP1
     elif counter > 1:
