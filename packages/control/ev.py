@@ -810,8 +810,11 @@ class ChargeTemplate:
         # weniger als die berechnete Zeit verfügbar
         # Ladestart wurde um maximal 20 Min verpasst.
         elif plan_data.remaining_time <= 0 - soc_request_intervall_offset:
-            current = min(plan_data.missing_amount/((plan_data.duration +
-                          plan_data.remaining_time)/3600)/(phases*230), plan_data.max_current)
+            if plan_data.duration + plan_data.remaining_time < 0:
+                current = plan_data.max_current
+            else:
+                current = min(plan_data.missing_amount/((plan_data.duration + plan_data.remaining_time) /
+                              3600)/(phases*230), plan_data.max_current)
             message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(round(current, 2))
             mode = "instant_charging"
         else:
