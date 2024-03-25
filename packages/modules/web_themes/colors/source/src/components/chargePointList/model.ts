@@ -265,6 +265,7 @@ export class ChargePoint {
 export class Vehicle {
 	id: number
 	name = ''
+	visible = true
 	private _chargeTemplateId = 0
 	private _evTemplateId = 0
 	tags: Array<string> = []

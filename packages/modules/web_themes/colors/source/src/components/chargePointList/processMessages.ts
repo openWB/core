@@ -16,6 +16,7 @@ import type {
 	EvTemplate,
 	ChargeSchedule,
 } from './model'
+import { globalConfig } from '@/assets/js/themeConfig'
 
 export function processChargepointMessages(topic: string, message: string) {
 	const index = getIndex(topic)
@@ -141,6 +142,9 @@ export function processVehicleMessages(topic: string, message: string) {
 	if (index != undefined) {
 		if (!(index in vehicles)) {
 			const v = new Vehicle(index)
+			if (index == 0 && !globalConfig.showStandardVehicle) {
+				v.visible = false
+			}
 			vehicles[index] = v
 			// console.info('New vehicle created: ' + index)
 		}
