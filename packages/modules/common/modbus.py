@@ -180,8 +180,8 @@ class ModbusClient:
             e.args += (NO_VALUES.format(self.address, self.port),)
             raise e
 
-    def write_registers(self, address: int, value: Any, types: ModbusDataType):
-        self._delegate.write_registers(address, value, types)
+    def write_registers(self, address: int, value: Any, **kwargs):
+        self._delegate.write_registers(address, value, **kwargs)
 
 
 class ModbusTcpClient_(ModbusClient):
