@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { savePrefs } from '@/assets/js/themeConfig'
+import { historicSummary } from '@/assets/js/model'
 export class ShDevice {
 	id: number
 	name = 'Gerät'
@@ -28,6 +29,7 @@ export class ShDevice {
 	}
 	set showInGraph(val: boolean) {
 		this._showInGraph = val
+		historicSummary.items['sh' + this.id].showInGraph = val
 		savePrefs()
 	}
 	setShowInGraph(val: boolean) {

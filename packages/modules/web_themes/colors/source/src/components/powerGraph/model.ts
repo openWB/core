@@ -322,7 +322,6 @@ export function updateEnergyValues(
 	totals: RawDayGraphDataItem,
 	gridCounters: string[],
 ) {
-	console.log(totals)
 	if (Object.entries(totals).length > 0) {
 		noData.value = false
 		Object.entries(totals.counter).forEach(([id, values]) => {

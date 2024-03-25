@@ -258,6 +258,7 @@ export class ChargePoint {
 			pvPercentage: this.pvPercentage,
 			color: this.color,
 			icon: this.icon,
+			showInGraph: true,
 		}
 	}
 }

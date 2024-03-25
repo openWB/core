@@ -27,6 +27,7 @@ const draw = computed(() => {
 		pvPercentage: 0,
 		color: 'var(--color-bg)',
 		icon: '',
+		showInGraph: true,
 	}
 	const plotdata = [usageSummary.evuOut, usageSummary.charging]
 		.concat(
@@ -38,7 +39,6 @@ const draw = computed(() => {
 		)
 		.concat([usageSummary.batIn, usageSummary.house])
 		.concat(emptyPowerItem)
-	console.log(plotdata)
 	const arcCount = plotdata.length - 1
 	const pieGenerator = pie<PowerItem>()
 		.value((record: PowerItem) => record.power)

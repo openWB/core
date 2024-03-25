@@ -11,6 +11,7 @@ import {
 } from './model'
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
 import { globalConfig } from '@/assets/js/themeConfig'
+import { shDevices } from '../smartHome/model'
 // methods:
 
 const noAutarchyCalculation = [
@@ -141,6 +142,9 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem.devices += values.power_imported ?? 0
 			if (!historicSummary.keys().includes(id)) {
 				historicSummary.addItem(id)
+				historicSummary.items[id].showInGraph = shDevices.get(
+					+id.slice(2),
+				)!.showInGraph
 			}
 		}
 	})
