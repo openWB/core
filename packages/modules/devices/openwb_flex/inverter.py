@@ -35,7 +35,7 @@ class PvKitFlex:
         with self.__tcp_client:
             counter_state = self.__client.get_counter_state()
 
-        power = counter_state
+        power = counter_state.power
         if power > 10:
             power = power*-1
         if isinstance(self.__client, Lovato):
