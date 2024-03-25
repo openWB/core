@@ -37,7 +37,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 38
+    DATASTORE_VERSION = 39
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1320,3 +1320,16 @@ class UpdateConfig:
         for file in files:
             convert_file(file)
         self.__update_topic("openWB/system/datastore_version", 38)
+
+    def upgrade_datastore_38(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/[0-9]+/set/log$", topic) is not None:
+                payload = decode_payload(payload)
+                if isinstance(payload["timestamp_start_charging"], str):
+                    converted_timestamp = datetime.datetime.strptime(
+                        payload["timestamp_start_charging"], "%m/%d/%Y, %H:%M:%S").timestamp()
+                    updated_payload = payload
+                    updated_payload.update({"timestamp_start_charging": converted_timestamp})
+                    return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 39)

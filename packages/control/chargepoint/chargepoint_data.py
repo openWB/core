@@ -72,7 +72,7 @@ class Log:
     imported_since_plugged: float = 0
     range_charged: float = 0
     time_charged: str = "00:00"
-    timestamp_start_charging: Optional[str] = None
+    timestamp_start_charging: Optional[float] = None
     ev: int = -1
     prio: bool = False
     rfid: Optional[str] = None

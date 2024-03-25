@@ -3,7 +3,7 @@ from enum import Enum
 import json
 import logging
 import pathlib
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from control import data
 from dataclass_utils import asdict
@@ -39,7 +39,8 @@ def collect_data(chargepoint):
                 log_data.imported_at_plugtime = chargepoint.data.get.imported
                 log.debug(f"imported_at_plugtime {chargepoint.data.get.imported}")
             # Bisher geladene Energie ermitteln
-            log_data.imported_since_plugged = chargepoint.data.get.imported - log_data.imported_at_plugtime
+            log_data.imported_since_plugged = get_value_or_default(
+                lambda: chargepoint.data.get.imported - log_data.imported_at_plugtime)
             if log_data.imported_at_mode_switch == 0:
                 log_data.imported_at_mode_switch = chargepoint.data.get.imported
                 log.debug(f"imported_at_mode_switch {chargepoint.data.get.imported}")
@@ -54,11 +55,12 @@ def collect_data(chargepoint):
                 log_data.ev = chargepoint.data.set.charging_ev_data.num
                 log_data.prio = chargepoint.data.control_parameter.prio
                 log_data.rfid = chargepoint.data.set.rfid
-                log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
+                log_data.imported_since_mode_switch = get_value_or_default(
+                    lambda: chargepoint.data.get.imported - log_data.imported_at_mode_switch)
                 # log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
                 #           f"counter {chargepoint.data.get.imported}")
-                log_data.range_charged = log_data.imported_since_mode_switch / \
-                    charging_ev.ev_template.data.average_consump * 100
+                log_data.range_charged = get_value_or_default(lambda: log_data.imported_since_mode_switch /
+                                                              charging_ev.ev_template.data.average_consump * 100)
                 log_data.time_charged = timecheck.get_difference_to_now(log_data.timestamp_start_charging)[0]
             Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
@@ -113,6 +115,14 @@ def save_and_reset_data(chargepoint, charging_ev, immediately: bool = True):
         log.exception("Fehler im Ladelog-Modul")
 
 
+def get_value_or_default(func, default: Optional[Any] = None):
+    try:
+        return func()
+    except Exception:
+        log.exception(f"Error getting value for chargelog: {func}. Setting to default {default}.")
+        return default
+
+
 def save_data(chargepoint, charging_ev, immediately: bool = True):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
     beziehen, löschen.
@@ -129,47 +139,60 @@ def save_data(chargepoint, charging_ev, immediately: bool = True):
         imported_at_mode_switch notiert. Sonst schon, damit zwischen save_data und dem nächsten collect_data keine
         Daten verloren gehen.
     """
+    new_entry = _create_entry(chargepoint, charging_ev, immediately)
+    write_new_entry(new_entry)
+
+
+def _create_entry(chargepoint, charging_ev, immediately: bool = True):
     log_data = chargepoint.data.set.log
     # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
-    log_data.imported_since_plugged = chargepoint.data.get.imported - log_data.imported_at_plugtime
-    log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
-    log_data.range_charged = log_data.imported_since_mode_switch / charging_ev.ev_template.data.average_consump*100
+    log_data.imported_since_plugged = get_value_or_default(lambda: round(
+        chargepoint.data.get.imported - log_data.imported_at_plugtime, 2))
+    log_data.imported_since_mode_switch = get_value_or_default(lambda: round(
+        chargepoint.data.get.imported - log_data.imported_at_mode_switch, 2))
+    log_data.range_charged = get_value_or_default(lambda: round(
+        log_data.imported_since_mode_switch / 0, 2))
     log_data.time_charged, duration = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
     power = 0
     if duration > 0:
-        power = log_data.imported_since_mode_switch / duration
+        power = get_value_or_default(lambda: round(log_data.imported_since_mode_switch / duration, 2))
     calculate_charge_cost(chargepoint, True)
-    costs = log_data.costs
+    costs = round(log_data.costs, 2)
     new_entry = {
         "chargepoint":
         {
-            "id": chargepoint.num,
-            "name": chargepoint.data.config.name,
+            "id": get_value_or_default(lambda: chargepoint.num),
+            "name": get_value_or_default(lambda: chargepoint.data.config.name),
         },
         "vehicle":
         {
-            "id": log_data.ev,
-            "name": _get_ev_name(log_data.ev),
-            "chargemode": log_data.chargemode_log_entry,
-            "prio": log_data.prio,
-            "rfid": log_data.rfid
+            "id": get_value_or_default(lambda: log_data.ev),
+            "name": get_value_or_default(lambda: _get_ev_name(log_data.ev)),
+            "chargemode": get_value_or_default(lambda: log_data.chargemode_log_entry),
+            "prio": get_value_or_default(lambda: log_data.prio),
+            "rfid": get_value_or_default(lambda: log_data.rfid)
         },
         "time":
         {
-            "begin": datetime.datetime.fromtimestamp(log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S"),
-            "end": datetime.datetime.fromtimestamp(timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S"),
-            "time_charged": log_data.time_charged
+            "begin": get_value_or_default(lambda: datetime.datetime.fromtimestamp(
+                log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S")),
+            "end": get_value_or_default(lambda: datetime.datetime.fromtimestamp(
+                timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S")),
+            "time_charged": get_value_or_default(lambda: log_data.time_charged)
         },
         "data":
         {
-            "range_charged": round(log_data.range_charged, 2),
-            "imported_since_mode_switch": round(log_data.imported_since_mode_switch, 2),
-            "imported_since_plugged": round(log_data.imported_since_plugged, 2),
-            "power": round(power, 2),
-            "costs": round(costs, 2)
+            "range_charged": log_data.range_charged,
+            "imported_since_mode_switch": log_data.imported_since_mode_switch,
+            "imported_since_plugged": log_data.imported_since_plugged,
+            "power": power,
+            "costs": costs
         }
     }
+    return new_entry
 
+
+def write_new_entry(new_entry):
     # json-Objekt in Datei einfügen
     (_get_parent_file() / "data"/"charge_log").mkdir(mode=0o755, parents=True, exist_ok=True)
     filepath = str(_get_parent_file() / "data" / "charge_log" /

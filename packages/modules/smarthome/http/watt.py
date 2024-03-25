@@ -42,7 +42,10 @@ if not urlstate.startswith("none"):
         state = 0
 else:
     state = 0
-aktpowerfl = float(urllib.request.urlopen(urlrep, timeout=5).read().decode("utf-8"))
+try:
+    aktpowerfl = float(urllib.request.urlopen(urlrep, timeout=5).read().decode("utf-8"))
+except urllib.error.HTTPError as e:
+    raise ValueError(f"Keine Daten von {urlrep}") from e
 aktpower = int(aktpowerfl)
 if state == 1 or aktpower > 50:
     relais = 1

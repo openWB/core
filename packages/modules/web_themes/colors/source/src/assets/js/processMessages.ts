@@ -103,7 +103,7 @@ function processCounterMessages(topic: string, message: string) {
 	} else if (elements[3] == 'config') {
 		// console.warn('Ignored counter config message')
 	}
-	if (elements[3] == 'get') {
+	if (elements[3] == 'get' && id in counters) {
 		switch (elements[4]) {
 			case 'power':
 				counters[id].power = +message
