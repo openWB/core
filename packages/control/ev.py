@@ -296,11 +296,7 @@ class Ev:
                     used_amount
                 )
                 # Info vom Zielladen erhalten
-                if tmp_message is not None:
-                    if message is not None:
-                        message = f"{message} {tmp_message}"
-                    else:
-                        message = tmp_message
+                message = f"{message or ''} {tmp_message or ''}".strip()
                 if tmp_current > 0:
                     control_parameter.current_plan = name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
