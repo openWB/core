@@ -36,3 +36,11 @@ class AbstractCounter:
     @abstractmethod
     def get_voltages(self) -> List[float]:
         return [230]*3
+
+    @abstractmethod
+    def get_model(self) -> str:
+        return ""
+
+    @abstractmethod
+    def get_serial(self) -> str:
+        return ""

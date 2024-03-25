@@ -97,3 +97,9 @@ class B23(AbstractCounter):
         values = [self.check_nan(val, val / 10, data_type)
                   for val in self.client.read_holding_registers(0x5B00, [data_type]*3, unit=self.id)]
         return values
+
+    def get_serial(self) -> str:
+        return "n/a"
+
+    def get_model(self) -> str:
+        return "B23"
