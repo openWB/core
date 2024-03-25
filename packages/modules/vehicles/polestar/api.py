@@ -35,17 +35,14 @@ class PolestarApi:
 
         if result.status_code == 401:
             self.auth.delete_token()
-            log.error("query_params error: get response %d: unauthorized Exception", result.status_code)
-            return None
+           raise Exception("query_params error: get response %d: unauthorized Exception", result.status_code)
         if result.status_code != 200:
-            log.error("query_params error: get response %d: %s", result.status_code, result.text)
-            return None
+            raise Exception("query_params error: get response %d: %s", result.status_code, result.text)
 
         result_data = result.json()
         if result_data.get('errors'):
             error_message = result_data['errors'][0]['message']
-            log.error("query_params error: %s", error_message)
-            return None
+            raise Exception("query_params error: %s", error_message)
 
         log.debug(result_data)
         return result_data
