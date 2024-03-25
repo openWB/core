@@ -188,7 +188,7 @@ class ModbusTcpClient_(ModbusClient):
     def __init__(self,
                  address: str,
                  port: int = 502,
-                 sleep_after_connect: Optional[int] = None,
+                 sleep_after_connect: Optional[int] = 0,
                  **kwargs):
         parsed_url = parse_url(address)
         host = parsed_url.host
@@ -200,7 +200,7 @@ class ModbusTcpClient_(ModbusClient):
 class ModbusSerialClient_(ModbusClient):
     def __init__(self,
                  port: int,
-                 sleep_after_connect: Optional[int] = None,
+                 sleep_after_connect: Optional[int] = 0,
                  **kwargs):
         super().__init__(ModbusSerialClient(method="rtu",
                                             port=port,
