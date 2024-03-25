@@ -725,7 +725,8 @@
 														class="charge-point-pv-charge-min-soc form-control-range rangeInput"
 														id="minSocPvCpT"
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc"
-														min="0" max="95" step="5">
+														min="0" max="19" step="1"
+														data-list='[[0,"Aus"],5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95]'>
 												</div>
 												<label for="minSocPvCpT"
 													class="col-2 col-form-label valueLabel text-right"
@@ -744,7 +745,7 @@
 														class="charge-point-pv-charge-min-soc-current form-control-range rangeInput"
 														id="minSocCurrentPvCpT"
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current"
-														min="6" max="16" step="1">
+														min="6" max="32" step="1">
 												</div>
 												<label for="minSocCurrentPvCpT"
 													class="col-2 col-form-label valueLabel text-right"
