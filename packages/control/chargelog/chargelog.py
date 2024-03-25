@@ -3,7 +3,7 @@ from enum import Enum
 import json
 import logging
 import pathlib
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from control import data
 from dataclass_utils import asdict
@@ -115,12 +115,12 @@ def save_and_reset_data(chargepoint, charging_ev, immediately: bool = True):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def get_value_or_default(func):
+def get_value_or_default(func, default: Optional[Any] = None):
     try:
         return func()
     except Exception:
-        log.exception(f"Error getting value für chargelog: {func}. Setting to default.")
-        return "-"
+        log.exception(f"Error getting value for chargelog: {func}. Setting to default {default}.")
+        return default
 
 
 def save_data(chargepoint, charging_ev, immediately: bool = True):
@@ -151,7 +151,7 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
     log_data.imported_since_mode_switch = get_value_or_default(lambda: round(
         chargepoint.data.get.imported - log_data.imported_at_mode_switch, 2))
     log_data.range_charged = get_value_or_default(lambda: round(
-        log_data.imported_since_mode_switch / charging_ev.ev_template.data.average_consump*100, 2))
+        log_data.imported_since_mode_switch / 0, 2))
     log_data.time_charged, duration = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
     power = 0
     if duration > 0:
