@@ -1,5 +1,6 @@
 import { timeParse } from 'd3'
 import { globalData } from '../../assets/js/model'
+import { chargePoints } from '../chargePointList/model'
 import {
 	type GraphDataItem,
 	type RawGraphDataItem,
@@ -69,6 +70,9 @@ export function updateLiveGraph(topic: string, rawString: string) {
 	}
 }
 function extractValues(data: RawGraphDataItem): GraphDataItem {
+	const car1id = (Object.values(chargePoints).length >0) ? 'ev'+Object.values(chargePoints)[0].connectedVehicle+'-soc' : 'ev0-soc'
+	const car2id = (Object.values(chargePoints).length >1) ? 'ev'+Object.values(chargePoints)[1].connectedVehicle+'-soc' : 'ev1-soc'
+	
 	const values: GraphDataItem = {}
 	values.date = fullDate(data.time).valueOf()
 	if (+data.grid > 0) {
@@ -105,10 +109,10 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 	} else {
 		values.batterySoc = 0
 	}
-	if (data['ev0-soc']) {
+	if (data[car1id]) {
 		values.soc0 = +data['ev0-soc']
 	}
-	if (data['ev1-soc']) {
+	if (data[car2id]) {
 		values.soc1 = +data['ev1-soc']
 	}
 
