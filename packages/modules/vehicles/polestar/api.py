@@ -92,11 +92,7 @@ class PolestarApi:
 def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
     api = PolestarApi(user_id, password, vin)
     bat_data = api.get_battery_data()
-    if bat_data is not None:
         soc = bat_data['batteryChargeLevelPercentage']
         est_range = bat_data['estimatedDistanceToEmptyKm']
-    else:
-        soc = 0
-        est_range = 0
 
     return CarState(soc, est_range, time.strftime("%m/%d/%Y, %H:%M:%S"))
