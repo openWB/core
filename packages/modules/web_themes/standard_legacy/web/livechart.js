@@ -471,9 +471,11 @@ function initDataset(datasetId) {
 }
 
 function truncateData(data) {
-	if (typeof maxDisplayLength !== "undefined" && data.length > maxDisplayLength) {
-		// console.debug("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
-		data.splice(0, data.length - maxDisplayLength);
+	if (typeof maxDisplayLength !== "undefined") {
+		var limit = Date.now() - maxDisplayLength;
+		while (data[0].timestamp < limit) {
+			data.shift();
+		}
 	}
 }
 
@@ -559,7 +561,7 @@ function forceGraphLoad() {
 	if (graphLoaded == 0) {
 		if (typeof maxDisplayLength === "undefined") {
 			console.warn("setting graph duration to default of 30 minutes");
-			maxDisplayLength = 30 * 6;
+			maxDisplayLength = 30 * 60 * 1000;  // 30 minutes in milliseconds
 		}
 		checkGraphLoad();
 	}

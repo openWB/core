@@ -1046,10 +1046,10 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 		// console.debug("graph duration: " + mqttPayload + " minutes");
 		var duration = JSON.parse(mqttPayload);
 		if (isNaN(duration) || duration < 10 || duration > 120) {
-			console.error("bad graph duration received: " + mqttPayload + " setting to default of 30");
+			console.error("bad graph duration received: " + mqttPayload + " setting to default of 30 minutes");
 			duration = 30;
 		}
-		maxDisplayLength = duration * 6; // we get 6 measurements in every minute
+		maxDisplayLength = duration * 60 * 1000;  // convert minutes to milliseconds
 	}
 } // end processGraphMessages
 
