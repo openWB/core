@@ -28,7 +28,7 @@ def create_device(device_config: Solarmax):
                     component.update(c)
 
     try:
-        client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, 502)
+        client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
     except Exception:
         log.exception("Fehler in create_device")
     return ConfigurableDevice(

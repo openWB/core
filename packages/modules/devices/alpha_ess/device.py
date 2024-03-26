@@ -33,7 +33,8 @@ class Device(AbstractDevice):
             if self.device_config.configuration.source == 0:
                 self.client = modbus.ModbusTcpClient_("192.168.193.125", 8899)
             else:
-                self.client = modbus.ModbusTcpClient_(self.device_config.configuration.ip_address, 502)
+                self.client = modbus.ModbusTcpClient_(
+                    self.device_config.configuration.ip_address, self.device_config.configuration.port)
         except Exception:
             log.exception("Fehler im Modul "+self.device_config.name)
 

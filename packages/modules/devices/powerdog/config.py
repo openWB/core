@@ -4,8 +4,9 @@ from modules.common.component_setup import ComponentSetup
 
 
 class PowerdogConfiguration:
-    def __init__(self, ip_address: Optional[str] = None):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
         self.ip_address = ip_address
+        self.port = port
 
 
 class Powerdog:

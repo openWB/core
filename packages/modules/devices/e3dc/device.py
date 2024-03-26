@@ -49,7 +49,7 @@ def create_device(device_config: E3dc) -> ConfigurableDevice:
                     component.update(c)
 
     try:
-        client = modbus.ModbusTcpClient_(device_config.configuration.address, 502)
+        client = modbus.ModbusTcpClient_(device_config.configuration.address, device_config.configuration.port)
     except Exception:
         log.exception("Fehler in create_device")
 

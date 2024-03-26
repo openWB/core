@@ -22,7 +22,8 @@ class Device(AbstractDevice):
         self.components = {}  # type: Dict[str, bat.SunnyIslandBat]
         try:
             self.device_config = dataclass_from_dict(SmaSunnyIsland, device_config)
-            self.client = modbus.ModbusTcpClient_(self.device_config.configuration.ip_address, 502)
+            self.client = modbus.ModbusTcpClient_(
+                self.device_config.configuration.ip_address, self.device_config.configuration.port)
         except Exception:
             log.exception("Fehler im Modul "+self.device_config.name)
 
