@@ -20,6 +20,30 @@ chmod 666 "$LOGFILE"
 		fi
 	}
 
+	waitForServiceStop() {
+		# this function waits for a service to stop and kills the process if it takes too long
+		# this is necessary at least for mosquitto, as the service is stopped, but the process is still running
+		service=$1
+		pattern=$2
+		timeout=$3
+
+		counter=0
+		sudo systemctl stop "$service"
+		while pgrep --full "$pattern" >/dev/null && ((counter < timeout)); do
+			echo "process '$pattern' still running after ${counter}s, waiting..."
+			sleep 1
+			((counter++))
+		done
+		if ((counter >= timeout)); then
+			echo "process '$pattern' still running after ${timeout}s, killing process"
+			sudo pkill --full "$pattern" --signal 9
+			sleep 2
+			# if the process was killed, the service is in "active (exited)" state
+			# so we need to trigger a stop here to be able to start it again
+			sudo systemctl stop "$service"
+		fi
+	}
+
 	if ! id -u openwb >/dev/null 2>&1; then
 		echo "user 'openwb' missing"
 		echo "starting upgrade script..."
@@ -294,8 +318,7 @@ chmod 666 "$LOGFILE"
 	fi
 	if ((restartService == 1)); then
 		echo -n "restarting mosquitto service..."
-		sudo systemctl stop mosquitto
-		sleep 2
+		waitForServiceStop "mosquitto" "mosquitto.conf" 10
 		sudo systemctl start mosquitto
 		echo "done"
 	fi
@@ -318,8 +341,7 @@ chmod 666 "$LOGFILE"
 	fi
 	if ((restartService == 1)); then
 		echo -n "restarting mosquitto_local service..."
-		sudo systemctl stop mosquitto_local
-		sleep 2
+		waitForServiceStop "mosquitto_local" "mosquitto_local.conf" 10
 		sudo systemctl start mosquitto_local
 		echo "done"
 	fi
