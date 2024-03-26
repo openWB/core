@@ -92,7 +92,7 @@ export async function mqttPublish(topic: string, message: string) {
 		retries += 1
 	}
 	// console.warn ('MQTT publish: Now connected')
-	if (retries < 10) {
+	if (retries < 20) {
 		try {
 			client.publish(topic, message, { qos }, (error) => {
 				if (error) {
