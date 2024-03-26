@@ -149,7 +149,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		}
 	})
 	// Self Usage
-	currentItem.selfUsage = Math.min(0, currentItem.pv - currentItem.evuOut)
+	currentItem.selfUsage = Math.max(0, currentItem.pv - currentItem.evuOut)
 	// House
 	if (currentRow.hc && currentRow.hc.all) {
 		currentItem.house = currentRow.hc.all.power_imported - currentItem.devices
