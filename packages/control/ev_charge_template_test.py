@@ -189,7 +189,7 @@ def test_calculate_duration(selected: str, phases: int, expected_duration: float
     [
         pytest.param((-50, False), (60, False), 0, id="too late, but didn't miss date for today"),
         pytest.param((-50, True), (60, False), 1, id="too late and missed date for today"),
-        pytest.param((-50, True), (-60, True), 0, id="missed both"),
+        pytest.param((-50, True), (-60, True), None, id="missed both"),
         pytest.param((50, False), (60, False), 0, id="in time, plan 1"),
         pytest.param((50, False), (40, False), 1, id="in time, plan 2"),
     ])
@@ -209,16 +209,18 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
     plan_data = ct.search_plan(14, 60, EvTemplate(), 3, 200)
 
     # evaluation
-    assert plan_data is not None
-    assert plan_data.num == expected_plan_num
-    assert plan_data.duration == 100
+    if expected_plan_num is None:
+        assert plan_data is None
+    else:
+        assert plan_data.num == expected_plan_num
+        assert plan_data.duration == 100
 
 
 @pytest.mark.parametrize(
     "plan_data, soc, used_amount, selected, expected",
     [
         pytest.param(None, 0, 0, "none", (0, "stop",
-                     ChargeTemplate.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, 3), id="no plans configured"),
+                     ChargeTemplate.SCHEDULED_CHARGING_NO_DATE_PENDING, 3), id="no date pending"),
         pytest.param(SelectedPlan(duration=3600), 90, 0, "soc", (0, "stop",
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_LIMIT_SOC, 1), id="reached limit soc"),
         pytest.param(SelectedPlan(duration=3600), 80, 0, "soc", (6, "pv_charging",
@@ -260,6 +262,17 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
 
     # evaluation
     assert ret == expected
+
+
+def test_scheduled_charging_calc_current_no_plans():
+    # setup
+    ct = ChargeTemplate(0)
+
+    # execution
+    ret = ct.scheduled_charging_calc_current(None, 63, 5, 3, 6, 0)
+
+    # evaluation
+    assert ret == (0, "stop", ChargeTemplate.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, 3)
 
 
 @pytest.mark.parametrize(
