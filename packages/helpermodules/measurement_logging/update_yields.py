@@ -95,7 +95,6 @@ def pub_yearly_module_yield(sorted_path_list: List[str], pv_module: Pv):
         for i in range(0, len(monthly_log["entries"])):
             # erster Eintrag im Jahr, in dem das PV-Modul existiert (falls ein Modul im laufenden Jahr hinzugefügt
             # wurde)
-            log.debug(f'path {path} i {i} drin {monthly_log["entries"][i]["pv"].get(f"pv{pv_module.num}")}')
             if monthly_log["entries"][i]["pv"].get(f"pv{pv_module.num}"):
                 yearly_yield = data.data.pv_data[f"pv{pv_module.num}"].data.get.exported - \
                     monthly_log["entries"][i]["pv"][f"pv{pv_module.num}"]["exported"]
