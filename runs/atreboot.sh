@@ -218,10 +218,10 @@ chmod 666 "$LOGFILE"
 	# check for apache configuration
 	echo "apache default site..."
 	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/000-default.conf" "/etc/apache2/sites-available/000-default.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/000-default.conf"; then
 		echo "...ok"
 	else
-		sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" "/etc/apache2/sites-available/"
+		sudo cp "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/"
 		restartService=1
 		echo "...updated"
 	fi
@@ -247,10 +247,10 @@ chmod 666 "$LOGFILE"
 		sudo a2enmod proxy_wstunnel
 		restartService=1
 	fi
-	if ! versionMatch "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" "/etc/apache2/sites-available/apache-openwb-ssl.conf"; then
+	if ! versionMatch "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/apache-openwb-ssl.conf"; then
 		echo "installing ssl site configuration"
 		sudo a2dissite default-ssl
-		sudo cp "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" "/etc/apache2/sites-available/"
+		sudo cp "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/"
 		sudo a2ensite apache-openwb-ssl
 		restartService=1
 	fi
@@ -263,18 +263,25 @@ chmod 666 "$LOGFILE"
 	# check for mosquitto configuration
 	echo "check mosquitto installation..."
 	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
 		echo "mosquitto.conf already up to date"
 	else
 		echo "updating mosquitto.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
 		restartService=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
 		echo "mosquitto openwb.conf already up to date"
 	else
 		echo "updating mosquitto openwb.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
+		restartService=1
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
+		echo "mosquitto acl already up to date"
+	else
+		echo "updating mosquitto acl"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"
 		restartService=1
 	fi
 	if [[ ! -f "/etc/mosquitto/certs/openwb.key" ]]; then
@@ -295,18 +302,18 @@ chmod 666 "$LOGFILE"
 
 	#check for mosquitto_local instance
 	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
 		echo "mosquitto_local.conf already up to date"
 	else
 		echo "updating mosquitto_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
+		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
 		restartService=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
 		echo "mosquitto openwb_local.conf already up to date"
 	else
 		echo "updating mosquitto openwb_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
+		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
 		restartService=1
 	fi
 	if ((restartService == 1)); then

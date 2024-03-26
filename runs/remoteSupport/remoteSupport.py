@@ -21,6 +21,9 @@ REMOTE_PARTNER_TOPIC = BASE_TOPIC + "partner"
 REMOTE_PARTNER_IDS_TOPIC = BASE_TOPIC + "valid_partner_ids"
 CLOUD_TOPIC = BASE_TOPIC + "cloud"
 
+mqtt_broker_host = "localhost"
+mqtt_broker_port = 1886
+
 support_tunnel: Popen = None
 partner_tunnel: Popen = None
 cloud_tunnel: Popen = None
@@ -205,14 +208,13 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
 
 
 lt_executable = get_lt_executable()
-mqtt_broker_host = "localhost"
 client = mqtt.Client("openWB-remote-" + get_serial())
 client.on_connect = on_connect
 client.on_message = on_message
 client.will_set(STATE_TOPIC, json.dumps("offline"), qos=2, retain=True)
 
 log.debug("connecting to broker")
-client.connect(mqtt_broker_host, 1883)
+client.connect(mqtt_broker_host, mqtt_broker_port)
 log.debug("starting loop")
 client.loop_start()
 try:
