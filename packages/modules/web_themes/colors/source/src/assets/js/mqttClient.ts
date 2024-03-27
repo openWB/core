@@ -85,7 +85,7 @@ export async function mqttPublish(topic: string, message: string) {
 	const qos: QoS = 0
 	let connected = client.connected
 	let retries = 0
-	while (!connected && retries < 10) {
+	while (!connected && retries < 20) {
 		console.warn('MQTT publish: Not connected. Waiting 0.1 seconds')
 		await delay(100)
 		connected = client.connected
