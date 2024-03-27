@@ -18,6 +18,9 @@ METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
                  f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
 METER_BROKEN = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
                 f"Der Zähler ist defekt. {OPEN_TICKET}")
+METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
+                          "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
+                          "Funktionalität wird dadurch nicht beeinträchtigt!")
 EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. "
                f"Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. {OPEN_TICKET}")
 
@@ -77,13 +80,16 @@ class SeriesHardwareCheckMixin:
                 raise Exception(USB_ADAPTER_BROKEN)
         if meter_check_passed is False:
             raise Exception(meter_error_msg)
-        elif meter_check_passed and meter_error_msg == METER_BROKEN:
-            self.fault_state.warning(METER_BROKEN)
+        elif meter_check_passed and meter_error_msg is not None:
+            self.fault_state.warning(meter_error_msg)
         if evse_check_passed is False:
             raise Exception(EVSE_BROKEN)
 
     def check_meter(self: ClientHandlerProtocol) -> Tuple[bool, Optional[str]]:
         try:
+            serial_number = self.meter_client.get_serial_number()
+            if serial_number == "0" or serial_number is None:
+                return True, METER_NO_SERIAL_NUMBER
             return True, check_meter_values(self.meter_client.get_voltages())
         except Exception:
             return False, METER_PROBLEM
