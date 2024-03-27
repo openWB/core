@@ -1,0 +1,6 @@
+- This module has been tested for the Polestar2 only
+- Credits to Tuen Lee (https://github.com/leeyuentuen/polestar_api) which was taken as a basis for the authorisation
+- user_id must be the 'main' user email which has been used to purchase the car, not any other additional ids created for the Polestar app
+- The authorisation scheme is not officially released by Polestar and might change, so this module might no longer work
+- Copy this module into /var/www/html/openWB/packages/modules/vehicles/
+- Run sudo systemctl restart openwb2.service
