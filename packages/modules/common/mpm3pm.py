@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
+from modules.common.component_state import CounterState
 from modules.common.modbus import ModbusDataType
 
 
@@ -44,3 +45,16 @@ class Mpm3pm(AbstractCounter):
     def get_currents(self) -> List[float]:
         return [val / 100 for val in self.client.read_input_registers(
             0x0E, [ModbusDataType.UINT_32]*3, unit=self.id)]
+
+    def get_counter_state(self) -> CounterState:
+        powers, power = self.get_power()
+        return CounterState(
+            voltages=self.get_voltages(),
+            currents=self.get_currents(),
+            powers=powers,
+            power=power,
+            power_factors=self.get_power_factors(),
+            imported=self.get_imported(),
+            exported=self.get_exported(),
+            frequency=self.get_frequency()
+        )

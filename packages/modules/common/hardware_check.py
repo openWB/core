@@ -1,6 +1,7 @@
 import pymodbus
-from typing import Any, List, Optional, Protocol, Tuple, Union
+from typing import Any, Optional, Protocol, Tuple, Union
 
+from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.fault_state import FaultState
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
@@ -16,21 +17,26 @@ LAN_ADAPTER_BROKEN = (f"{RS485_ADPATER_BROKEN.format('der LAN-Konverter abgestü
                       "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
                  f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
-METER_BROKEN = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
+METER_BROKEN = ("Die Werte des Zählers konnten nicht korrekt ausgelesen werden. "
                 f"Der Zähler ist defekt. {OPEN_TICKET}")
+METER_BROKEN_VOLTAGES = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
+                         f"Der Zähler ist defekt. {OPEN_TICKET}")
 EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. "
                f"Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. {OPEN_TICKET}")
 
 
-def check_meter_values(voltages: List[float]) -> Optional[str]:
+def check_meter_values(counter_state: CounterState) -> Optional[str]:
     def valid_voltage(voltage) -> bool:
         return 200 < voltage < 250
-    if ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
+    voltages = counter_state.voltages
+    if not ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
-        return None
-    else:
+        return METER_BROKEN_VOLTAGES
+    interdependent_values = [sum(counter_state.currents), counter_state.power]
+    if not (all(v == 0 for v in interdependent_values) or all(v != 0 for v in interdependent_values)):
         return METER_BROKEN
+    return None
 
 
 class ClientHandlerProtocol(Protocol):
@@ -60,16 +66,17 @@ class SeriesHardwareCheckMixin:
         else:
             return False
 
-    def check_hardware(self: ClientHandlerProtocol):
-
+    def request_and_check_hardware(self: ClientHandlerProtocol) -> Tuple[EvseState, CounterState]:
         try:
-            if self.evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
+            with self.client:
+                evse_state = self.evse_client.get_evse_state()
+            if evse_state.version > EVSE_MIN_FIRMWARE:
                 evse_check_passed = True
             else:
                 evse_check_passed = False
         except Exception as e:
             evse_check_passed = self.handle_exception(e)
-        meter_check_passed, meter_error_msg = self.check_meter()
+        meter_check_passed, meter_error_msg, counter_state = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
             if isinstance(self.client, ModbusTcpClient_):
                 raise Exception(LAN_ADAPTER_BROKEN)
@@ -81,9 +88,12 @@ class SeriesHardwareCheckMixin:
             self.fault_state.warning(METER_BROKEN)
         if evse_check_passed is False:
             raise Exception(EVSE_BROKEN)
+        return evse_state, counter_state
 
-    def check_meter(self: ClientHandlerProtocol) -> Tuple[bool, Optional[str]]:
+    def check_meter(self: ClientHandlerProtocol) -> Tuple[bool, Optional[str], CounterState]:
         try:
-            return True, check_meter_values(self.meter_client.get_voltages())
+            with self.client:
+                counter_state = self.meter_client.get_counter_state()
+            return True, check_meter_values(counter_state), counter_state
         except Exception:
-            return False, METER_PROBLEM
+            return False, METER_PROBLEM, None
