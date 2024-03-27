@@ -293,32 +293,42 @@ def get_log_data(request: Dict):
 
                 # wenn wir hier ankommen, passt der Eintrag zum Filter
                 log_data["entries"].append(entry)
-
-        if len(log_data["entries"]) > 0:
-            # Summen bilden
-            duration = "00:00"
-            range_charged = 0
-            mode = 0
-            power = 0
-            costs = 0
-            for entry in log_data["entries"]:
-                duration = timecheck.duration_sum(
-                    duration, entry["time"]["time_charged"])
-                range_charged += entry["data"]["range_charged"]
-                mode += entry["data"]["imported_since_mode_switch"]
-                power += entry["data"]["power"]
-                costs += entry["data"]["costs"]
-            power = power / len(log_data["entries"])
-            log_data["totals"] = {
-                "time_charged": duration,
-                "range_charged": range_charged,
-                "imported_since_mode_switch": mode,
-                "power": power,
-                "costs": costs,
-            }
+            log_data["totals"] = get_totals_of_filtered_log_data(log_data)
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
     return log_data
+
+
+def get_totals_of_filtered_log_data(log_data: Dict) -> Dict:
+    def get_sum(entry_name: str) -> float:
+        sum = 0
+        try:
+            for entry in log_data["entries"]:
+                sum += entry["data"][entry_name]
+            return sum
+        except Exception:
+            return None
+    if len(log_data["entries"]) > 0:
+        # Summen bilden
+        duration_sum = "00:00"
+        try:
+            for entry in log_data["entries"]:
+                duration_sum = timecheck.duration_sum(
+                    duration_sum, entry["time"]["time_charged"])
+        except Exception:
+            duration_sum = None
+        range_charged_sum = get_sum("range_charged")
+        mode_sum = get_sum("imported_since_mode_switch")
+        power_sum = get_sum("power")
+        costs_sum = get_sum("costs")
+        power_sum = power_sum / len(log_data["entries"])
+        return {
+            "time_charged": duration_sum,
+            "range_charged": range_charged_sum,
+            "imported_since_mode_switch": mode_sum,
+            "power": power_sum,
+            "costs": costs_sum,
+        }
 
 
 def calculate_charge_cost(cp, create_log_entry: bool = False):
