@@ -150,7 +150,7 @@ export const dayGraph = reactive({
 				command: 'getDailyLog',
 				data: { day: dateString },
 			})
-			// graphData.data = []
+			graphData.data = []
 		}
 	},
 	deactivate() {
@@ -304,10 +304,10 @@ export function calculateAutarchy(cat: string, values: GraphDataItem) {
 export function calculateMonthlyAutarchy(cat: string, values: GraphDataItem) {
 	if (values[cat] > 0) {
 		historicSummary.items[cat].energyPv +=
-			((1000) * (values[cat] * (values.pv - values.evuOut))) /
+			(1000 * (values[cat] * (values.pv - values.evuOut))) /
 			(values.pv - values.evuOut + values.evuIn + values.batOut)
 		historicSummary.items[cat].energyBat +=
-			((1000) * (values[cat] * values.batOut)) /
+			(1000 * (values[cat] * values.batOut)) /
 			(values.pv - values.evuOut + values.evuIn + values.batOut)
 	}
 }

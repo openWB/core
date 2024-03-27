@@ -463,26 +463,7 @@ $numDevices = 9;
 									</div>
 								</div>
 							</div>
-							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-idm hide">
-								<hr class="border-secondary">
-								<div class="form-group">
-									<div class="form-row mb-1">
-										<label for="device_idmuebDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">Überschuss...</label>
-										<div class="col">
-											<select class="form-control" name="device_idmueb" id="device_idmuebDevices<?php echo $devicenum; ?>" data-default="UZ" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
-												<option value="UP" data-option="UP">Überschuss als positive Zahl übertragen, Bezug negativ</option>
-												<option value="UZ" data-option="UZ">Überschuss als positive Zahl übertragen, Bezug als 0</option>
-											</select>
-											<span class="form-text small">
-												Bezieht sich auf die Modbusadresse 74, wie ist Überschuss zu übertragen.<br>
-												Neue Möglichkeit  -> Überschuss als positive Zahl übertragen, Bezug negativ <br>
-												bisheriges Verhalten -> Überschuss als positive Zahl übertragen, Bezug als 0<br>
-											</span>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-http device<?php echo $devicenum; ?>-option-mqtt device<?php echo $devicenum;  ?>-option-askoheat device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-NXDACXX device<?php echo $devicenum; ?>-option-viessmann hide">
+							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-http device<?php echo $devicenum; ?>-option-mqtt device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-NXDACXX device<?php echo $devicenum; ?>-option-viessmann hide">
 								<hr class="border-secondary">
 								<div class="form-group">
 									<div class="form-row mb-1">

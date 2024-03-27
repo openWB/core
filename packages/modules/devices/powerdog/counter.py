@@ -19,10 +19,12 @@ class PowerdogCounter:
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, PowerdogCounterSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
+                 tcp_client: modbus.ModbusTcpClient_,
+                 modbus_id: int) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(PowerdogCounterSetup, component_config)
         self.__tcp_client = tcp_client
+        self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
@@ -30,11 +32,14 @@ class PowerdogCounter:
     def update(self, inverter_power: float):
         with self.__tcp_client:
             if self.component_config.configuration.position_evu:
-                export_power = self.__tcp_client.read_input_registers(40000, ModbusDataType.INT_32, unit=1) * -1
-                import_power = self.__tcp_client.read_input_registers(40024, ModbusDataType.INT_32, unit=1)
+                export_power = self.__tcp_client.read_input_registers(
+                    40000, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
+                import_power = self.__tcp_client.read_input_registers(
+                    40024, ModbusDataType.INT_32, unit=self.__modbus_id)
                 power = export_power + import_power
             else:
-                home_consumption = self.__tcp_client.read_input_registers(40026, ModbusDataType.INT_32, unit=1)
+                home_consumption = self.__tcp_client.read_input_registers(
+                    40026, ModbusDataType.INT_32, unit=self.__modbus_id)
                 power = home_consumption + inverter_power
                 log.debug("Powerdog Hausverbrauch[W]: " + str(home_consumption))
 

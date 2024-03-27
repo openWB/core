@@ -48,7 +48,8 @@ class Device(AbstractDevice):
         try:
             self.device_config = dataclass_from_dict(Solaredge, device_config)
             self.client = modbus.ModbusTcpClient_(self.device_config.configuration.ip_address,
-                                                  self.device_config.configuration.port)
+                                                  self.device_config.configuration.port,
+                                                  reconnect_delay=reconnect_delay)
             self.inverter_counter = 0
             self.synergy_units = 1
         except Exception:
