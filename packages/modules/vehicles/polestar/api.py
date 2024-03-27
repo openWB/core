@@ -35,7 +35,7 @@ class PolestarApi:
 
         if result.status_code == 401:
             self.auth.delete_token()
-           raise Exception("query_params error: get response %d: unauthorized Exception", result.status_code)
+            raise Exception("query_params error: get response %d: unauthorized Exception", result.status_code)
         if result.status_code != 200:
             raise Exception("query_params error: get response %d: %s", result.status_code, result.text)
 
@@ -91,7 +91,7 @@ class PolestarApi:
 def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
     api = PolestarApi(user_id, password, vin)
     bat_data = api.get_battery_data()
-        soc = bat_data['batteryChargeLevelPercentage']
-        est_range = bat_data['estimatedDistanceToEmptyKm']
+    soc = bat_data['batteryChargeLevelPercentage']
+    est_range = bat_data['estimatedDistanceToEmptyKm']
 
     return CarState(soc, est_range, time.strftime("%m/%d/%Y, %H:%M:%S"))
