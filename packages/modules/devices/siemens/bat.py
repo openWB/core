@@ -16,18 +16,20 @@ class SiemensBat:
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, SiemensBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
+                 tcp_client: modbus.ModbusTcpClient_,
+                 modbus_id: int) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(SiemensBatSetup, component_config)
         self.__tcp_client = tcp_client
+        self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(6, ModbusDataType.INT_32, unit=1) * -1
-            soc = int(self.__tcp_client.read_holding_registers(8, ModbusDataType.INT_32, unit=1))
+            power = self.__tcp_client.read_holding_registers(6, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
+            soc = int(self.__tcp_client.read_holding_registers(8, ModbusDataType.INT_32, unit=self.__modbus_id))
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(

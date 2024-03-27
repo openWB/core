@@ -21,7 +21,8 @@ class StuderBat:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        unit = 60
+        unit = self.component_config.configuration.modbus_id
+
         with self.__tcp_client:
             power = self.__tcp_client.read_input_registers(6, ModbusDataType.FLOAT_32, unit=unit)
             imported = self.__tcp_client.read_input_registers(14, ModbusDataType.FLOAT_32, unit=unit) * 48

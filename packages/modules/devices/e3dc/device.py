@@ -27,19 +27,23 @@ log = logging.getLogger(__name__)
 def create_device(device_config: E3dc) -> ConfigurableDevice:
     def create_bat_component(component_config: E3dcBatSetup) -> E3dcBat:
         return E3dcBat(device_config.id,
-                       component_config)
+                       component_config,
+                       device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: E3dcCounterSetup) -> E3dcCounter:
         return E3dcCounter(device_config.id,
-                           component_config)
+                           component_config,
+                           device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: E3dcInverterSetup) -> E3dcInverter:
         return E3dcInverter(device_config.id,
-                            component_config)
+                            component_config,
+                            device_config.configuration.modbus_id)
 
     def create_external_inverter_component(component_config: E3dcExternalInverterSetup) -> E3dcExternalInverter:
         return E3dcExternalInverter(device_config.id,
-                                    component_config)
+                                    component_config,
+                                    device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[E3dcBat, E3dcCounter, E3dcInverter,
                                                      E3dcExternalInverter]]) -> None:
@@ -112,12 +116,12 @@ def read_legacy_bat(address1: str,
     for address in addresses:
         log.debug("Ip: %s, read_external %s pv_other %s", address, read_ext, pv_other)
         with modbus.ModbusTcpClient_(address, port=502) as client:
-            soc_tmp, power_tmp = read_bat(client)
+            soc_tmp, power_tmp = read_bat(client, 1)
             soc += soc_tmp
             power += power_tmp
-            pv_tmp = read_inverter(client)
+            pv_tmp = read_inverter(client, 1)
             if read_ext:
-                pv_external_tmp = read_external_inverter(client)
+                pv_external_tmp = read_external_inverter(client, 1)
             else:
                 pv_external_tmp = 0
             pv += pv_tmp
