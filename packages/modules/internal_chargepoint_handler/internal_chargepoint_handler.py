@@ -110,7 +110,6 @@ class UpdateState:
             pub.pub_single(
                 f"openWB/set/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/trigger_phase_switch",
                 False)
-            pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=data.phases_to_use)
 
         if data.cp_interruption_duration > 0:
             self.__thread_cp_interruption(data.cp_interruption_duration)
