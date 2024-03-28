@@ -29,8 +29,6 @@ from control import counter_all
 from control import ev
 from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
-from modules.common.component_type import ComponentType
-from modules.devices.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
@@ -42,7 +40,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 49
+    DATASTORE_VERSION = 50
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -384,6 +382,7 @@ class UpdateConfig:
         "^openWB/system/current_commit",
         "^openWB/system/current_missing_commits",
         "^openWB/system/dataprotection_acknowledged$",
+        "^openWB/system/installAssistantDone$",
         "^openWB/system/datastore_version",
         "^openWB/system/debug_level$",
         "^openWB/system/device/[0-9]+/component/[0-9]+/config$",
@@ -478,6 +477,7 @@ class UpdateConfig:
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/backup_cloud/backup_before_update", True),
+        ("openWB/system/installAssistantDone", False),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/datastore_version", DATASTORE_VERSION),
         ("openWB/system/usage_terms_acknowledged", False),
@@ -1584,3 +1584,10 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 49)
+
+    def upgrade_datastore_49(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/installAssistantDone", topic) is not None:
+                Pub().pub("openWB/system/installAssistantDone", True)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 50)
