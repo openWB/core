@@ -34,11 +34,11 @@ const props = defineProps<{
 function autPct(item: PowerItem) {
 	if (item.name == 'PV') {
 		const src =
-			graphData.graphMode == 'live' || graphData.graphMode == 'day'
+			graphData.graphMode == 'live' || graphData.graphMode == 'today'
 				? sourceSummary
 				: historicSummary.items
 		const usg =
-			graphData.graphMode == 'live' || graphData.graphMode == 'day'
+			graphData.graphMode == 'live' || graphData.graphMode == 'today'
 				? usageSummary
 				: historicSummary.items
 		const exportedEnergy = usg.evuOut.energy
@@ -48,11 +48,11 @@ function autPct(item: PowerItem) {
 		)
 	} else if (item.name == 'Netz') {
 		const src =
-			graphData.graphMode == 'live' || graphData.graphMode == 'day'
+			graphData.graphMode == 'live' || graphData.graphMode == 'today'
 				? sourceSummary
 				: historicSummary.items
 		const usg =
-			graphData.graphMode == 'live' || graphData.graphMode == 'day'
+			graphData.graphMode == 'live' || graphData.graphMode == 'today'
 				? usageSummary
 				: historicSummary.items
 		const exportedEnergy = usg.evuOut.energy

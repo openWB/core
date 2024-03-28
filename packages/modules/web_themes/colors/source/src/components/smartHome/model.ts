@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { savePrefs } from '@/assets/js/themeConfig'
+import { historicSummary } from '@/assets/js/model'
 export class ShDevice {
 	id: number
 	name = 'Gerät'
@@ -28,6 +29,7 @@ export class ShDevice {
 	}
 	set showInGraph(val: boolean) {
 		this._showInGraph = val
+		historicSummary.items['sh' + this.id].showInGraph = val
 		savePrefs()
 	}
 	setShowInGraph(val: boolean) {
@@ -35,13 +37,15 @@ export class ShDevice {
 	}
 }
 
-export const shDevices: { [key: number]: ShDevice } = reactive({})
-
+// export const shDevices: { [key: number]: ShDevice } = reactive({})
+export const shDevices = reactive(new Map<number, ShDevice>())
 export function addShDevice(shIndex: number) {
-	if (!(shIndex in shDevices)) {
-		shDevices[shIndex] = new ShDevice(shIndex)
-		shDevices[shIndex].color =
-			'var(--color-sh' + Object.values(shDevices).length + ')'
+	if (!shDevices.has(shIndex)) {
+		// shDevices[shIndex] = new ShDevice(shIndex)
+		shDevices.set(shIndex, new ShDevice(shIndex))
+		//shDevices[shIndex].color =
+		//	'var(--color-sh' + Object.values(shDevices).length + ')'
+		shDevices.get(shIndex)!.color = 'var(--color-sh' + shDevices.size + ')'
 		// console.info('Added sh device ' + shIndex)
 	} else {
 		console.info('Duplicate sh device message: ' + shIndex)

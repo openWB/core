@@ -11,9 +11,17 @@ import {
 } from './model'
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
 import { globalConfig } from '@/assets/js/themeConfig'
+import { shDevices } from '../smartHome/model'
 // methods:
 
-const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
+const noAutarchyCalculation = [
+	'evuIn',
+	'pv',
+	'batOut',
+	'evuOut',
+	'charging',
+	'house',
+]
 let gridCounters: string[] = []
 
 export function processDayGraphMessages(_: string, message: string) {
@@ -21,7 +29,7 @@ export function processDayGraphMessages(_: string, message: string) {
 	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
 	resetHistoricSummary()
 	gridCounters = []
-	consumerCategories.map((cat) => {
+	consumerCategories.forEach((cat) => {
 		historicSummary.setEnergyPv(cat, 0)
 		historicSummary.setEnergyBat(cat, 0)
 	})
@@ -52,7 +60,7 @@ function transformDatatable(
 	const outputTable: GraphDataItem[] = []
 	let transformedRow: GraphDataItem = {}
 
-	inputTable.map((inputRow) => {
+	inputTable.forEach((inputRow) => {
 		transformedRow = transformRow(inputRow)
 		const values = transformedRow
 		outputTable.push(values)
@@ -134,11 +142,14 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem.devices += values.power_imported ?? 0
 			if (!historicSummary.keys().includes(id)) {
 				historicSummary.addItem(id)
+				historicSummary.items[id].showInGraph = shDevices.get(
+					+id.slice(2),
+				)!.showInGraph
 			}
 		}
 	})
 	// Self Usage
-	currentItem.selfUsage = currentItem.pv - currentItem.evuOut
+	currentItem.selfUsage = Math.max(0, currentItem.pv - currentItem.evuOut)
 	// House
 	if (currentRow.hc && currentRow.hc.all) {
 		currentItem.house = currentRow.hc.all.power_imported - currentItem.devices
@@ -157,12 +168,14 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	if (usedEnergy > 0) {
 		historicSummary
 			.keys()
-			.filter((key) => !nonPvCategories.includes(key))
-			.map((cat) => {
+			.filter(
+				(key) => !noAutarchyCalculation.includes(key) && key != 'charging',
+			)
+			.forEach((cat) => {
 				calculateAutarchy(cat, currentItem)
 			})
 	} else {
-		Object.keys(currentItem).map((cat) => {
+		Object.keys(currentItem).forEach((cat) => {
 			currentItem[cat + 'Pv'] = 0
 			currentItem[cat + 'Bat'] = 0
 		})

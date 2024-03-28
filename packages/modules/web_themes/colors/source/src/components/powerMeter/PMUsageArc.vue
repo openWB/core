@@ -27,10 +27,11 @@ const draw = computed(() => {
 		pvPercentage: 0,
 		color: 'var(--color-bg)',
 		icon: '',
+		showInGraph: true,
 	}
 	const plotdata = [usageSummary.evuOut, usageSummary.charging]
 		.concat(
-			Object.values(shDevices)
+			[...shDevices.values()]
 				.filter((row) => row.configured && !row.countAsHouse)
 				.sort((a, b) => {
 					return b.power - a.power

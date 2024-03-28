@@ -134,6 +134,7 @@ function createPowerItem(key: string): PowerItem {
 		pvPercentage: 0,
 		color: masterData[key] ? masterData[key].color : 'var(--color-charging)',
 		icon: masterData[key] ? masterData[key].icon : '',
+		showInGraph: true,
 	}
 	return p
 }

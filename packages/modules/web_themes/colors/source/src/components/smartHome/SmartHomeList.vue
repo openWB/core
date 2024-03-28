@@ -90,7 +90,7 @@ const devices = computed(() =>
 		: [activeDevices.value],
 )
 const activeDevices = computed(() => {
-	return Object.values(shDevices).filter((dev) => dev.configured)
+	return [...shDevices.values()].filter((dev) => dev.configured)
 })
 
 function title(index: number) {

@@ -255,7 +255,7 @@ import { initGraph } from '@/components/powerGraph/model'
 // state
 const showMQ = ref(false)
 const showSH = computed(() => {
-	return Object.values(shDevices).filter((dev) => dev.configured).length > 0
+	return [...shDevices.values()].filter((dev) => dev.configured).length > 0
 })
 // methods
 function init() {

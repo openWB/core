@@ -92,7 +92,7 @@ function statusButtonClicked() {
 		} else {
 			updateServer('shSwitchOn', 1, props.device.id)
 		}
-		shDevices[props.device.id].status = 'waiting'
+		shDevices.get(props.device.id)!.status = 'waiting'
 	}
 }
 function modeButtonClicked() {

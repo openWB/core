@@ -21,14 +21,14 @@ export function processMonthGraphMessages(topic: string, message: string) {
 	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
 	resetHistoricSummary()
 	gridCounters = []
-	consumerCategories.map((cat) => {
+	consumerCategories.forEach((cat) => {
 		historicSummary.items[cat].energyPv = 0
 		historicSummary.items[cat].energyBat = 0
 	})
 	if (inputTable.length > 0) {
 		setGraphData(transformDatatable(inputTable))
 	}
-	updateEnergyValues(energyValues, [])
+	updateEnergyValues(energyValues, gridCounters)
 
 	// reloadMonthGraph(topic, message)
 }
@@ -42,7 +42,7 @@ export function processYearGraphMessages(topic: string, message: string) {
 		historicSummary.items[cat].energyBat = 0
 	})
 	setGraphData(transformDatatable(inputTable))
-	updateEnergyValues(energyValues, [])
+	updateEnergyValues(energyValues, gridCounters)
 }
 // transform the incoming format into the format used by the graph
 function transformDatatable(
@@ -51,7 +51,7 @@ function transformDatatable(
 	const outputTable: GraphDataItem[] = []
 	let currentItem: GraphDataItem = {}
 	columnValues = {}
-	inputTable.map((inputRow) => {
+	inputTable.forEach((inputRow) => {
 		currentItem = transformRow(inputRow)
 		outputTable.push(currentItem)
 		Object.keys(currentItem).forEach((field) => {
@@ -173,7 +173,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		historicSummary
 			.keys()
 			.filter((key) => !nonPvCategories.includes(key))
-			.map((cat) => {
+			.forEach((cat) => {
 				calculateMonthlyAutarchy(cat, outputRow)
 			})
 	} else {

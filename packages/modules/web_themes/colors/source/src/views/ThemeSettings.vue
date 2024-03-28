@@ -154,25 +154,33 @@
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Zähler anzeigen (beta)"
+					title="Zähler anzeigen"
 					icon="fa-chart-bar"
-					infotext="Zeige die Werte zusätzlich angelegter Zähler (beta)"
+					infotext="Zeige die Werte zusätzlich angelegter Zähler"
 				>
 					<SwitchInput v-model="globalConfig.showCounters" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Fahrzeuge anzeigen (beta)"
+					title="Fahrzeuge anzeigen"
 					icon="fa-car"
-					infotext="Zeige alle Fahrzeuge mit Ladestand und Reichweite (beta)"
+					infotext="Zeige alle Fahrzeuge mit Ladestand und Reichweite"
 				>
 					<SwitchInput v-model="globalConfig.showVehicles" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
+					title="Standardfahrzeug anzeigen"
+					icon="fa-car"
+					infotext="Zeige das Standard-Fahrzeug in der Fahzeugliste"
+				>
+					<SwitchInput v-model="globalConfig.showStandardVehicle" />
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
 					title="Preistabelle anzeigen (beta)"
 					icon="fa-car"
-					infotext="Zeige die Strompreistabelle in einer separaten Box an (beta)"
+					infotext="Zeige die Strompreistabelle in einer separaten Box an"
 				>
 					<SwitchInput v-model="globalConfig.showPrices" />
 				</ConfigItem>

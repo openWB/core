@@ -78,6 +78,7 @@ export interface PowerItem {
 	pvPercentage: number
 	color: string
 	icon: string
+	showInGraph: boolean
 }
 
 export interface ItemList {

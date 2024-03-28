@@ -258,12 +258,14 @@ export class ChargePoint {
 			pvPercentage: this.pvPercentage,
 			color: this.color,
 			icon: this.icon,
+			showInGraph: true,
 		}
 	}
 }
 export class Vehicle {
 	id: number
 	name = ''
+	visible = true
 	private _chargeTemplateId = 0
 	private _evTemplateId = 0
 	tags: Array<string> = []
