@@ -28,7 +28,7 @@ export function processMonthGraphMessages(topic: string, message: string) {
 	if (inputTable.length > 0) {
 		setGraphData(transformDatatable(inputTable))
 	}
-	updateEnergyValues(energyValues, [])
+	updateEnergyValues(energyValues, gridCounters)
 
 	// reloadMonthGraph(topic, message)
 }
@@ -42,7 +42,7 @@ export function processYearGraphMessages(topic: string, message: string) {
 		historicSummary.items[cat].energyBat = 0
 	})
 	setGraphData(transformDatatable(inputTable))
-	updateEnergyValues(energyValues, [])
+	updateEnergyValues(energyValues, gridCounters)
 }
 // transform the incoming format into the format used by the graph
 function transformDatatable(
