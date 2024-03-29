@@ -11,7 +11,7 @@
 					{{ props.chargepoint.name }}</span
 				>
 				<span
-					v-if="cp.faultState != 0"
+					v-if="cp.faultState == 2"
 					class="badge rounded-pill errorbadge ms-3"
 					>Fehler</span
 				>
