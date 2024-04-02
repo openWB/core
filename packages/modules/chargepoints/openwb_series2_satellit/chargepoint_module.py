@@ -26,6 +26,7 @@ class ChargepointModule(AbstractChargepoint):
     }
     CP0_DELAY = 1
     CP0_DELAY_STARTUP = 4
+    ID_PHASE_SWITCH_UNIT = 3
 
     def __init__(self, config: OpenWBseries2Satellit) -> None:
         self.config = config
@@ -116,6 +117,29 @@ class ChargepointModule(AbstractChargepoint):
                                     self._client.evse_client.set_current(int(current))
                                 else:
                                     self._client.evse_client.set_current(0)
+                    except AttributeError:
+                        self._create_client()
+                        self._validate_version()
+
+    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+        if self.version is not None:
+            with SingleComponentUpdateContext(self.fault_state, update_always=False):
+                with self.__client_error_context:
+                    try:
+                        with SeriesHardwareCheckContext(self._client):
+                            with self._client.client:
+                                if phases_to_use == 1:
+                                    self._client.client.delegate.write_register(
+                                        0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)
+                                    time.sleep(1)
+                                    self._client.client.delegate.write_register(
+                                        0x0001, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+                                else:
+                                    self._client.client.delegate.write_register(
+                                        0x0002, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+                                    time.sleep(1)
+                                    self._client.client.delegate.write_register(
+                                        0x0002, 256, unit=self.ID_PHASE_SWITCH_UNIT)
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
