@@ -30,9 +30,8 @@ class Device(AbstractDevice):
         self.components = {}  # type: Dict[str, sungrow_component_classes]
         try:
             self.device_config = dataclass_from_dict(Sungrow, device_config)
-            ip_address = self.device_config.configuration.ip_address
-            port = self.device_config.configuration.port
-            self.client = modbus.ModbusTcpClient_(ip_address, port)
+            self.client = modbus.ModbusTcpClient_(
+                self.device_config.configuration.ip_address, self.device_config.configuration.port)
         except Exception:
             log.exception("Fehler im Modul " + self.device_config.name)
 

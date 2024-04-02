@@ -70,7 +70,7 @@ def test_get_switch_on_state(soc: float,
                              pytest.param({"id": 6, "type": "counter", "children": [
                                           {"id": 2, "type": "bat", "children": []}]}, -100, 150,
                                           id="kein Hybrid-System, Speicher wird entladen"),
-                             pytest.param({"id": 1, "type": "inverter", "children": []}, 600, 800,
+                             pytest.param({"id": 1, "type": "inverter", "children": []}, 600, 200,
                                           id="maximale Entladeleistung des WR"),
                          ])
 def test_max_bat_power_hybrid_system(parent, bat_power, expected_power, data_fixture, monkeypatch):

@@ -29,30 +29,6 @@ var smartHomeBgColor = style.getPropertyValue('--smartHomeDeviceBgCol');
 var initialRead = 0;
 var graphLoaded = 0;
 var maxDisplayLength;
-var boolDisplayHouseConsumption;
-var boolDisplayLoad1;
-var boolDisplayLoad2;
-var boolDisplayCp1Soc;
-var boolDisplayCp2Soc;
-var boolDisplayCp1;
-var boolDisplayCp2;
-var boolDisplayCp3;
-var boolDisplayCpAll;
-var boolDisplayBatterySoc;
-var boolDisplayBattery;
-var boolDisplayEvu;
-var boolDisplayPv;
-var boolDisplayLegend;
-var boolDisplayLiveGraph;
-var boolDisplaySHD1;
-var boolDisplaySHD2;
-var boolDisplaySHD3;
-var boolDisplaySHD4;
-var boolDisplaySHD5;
-var boolDisplaySHD6;
-var boolDisplaySHD7;
-var boolDisplaySHD8;
-var boolDisplaySHD9;
 var all1 = 0;
 var all2 = 0;
 var all3 = 0;
@@ -106,8 +82,8 @@ function parseData(allData) {
 					console.error(e.name + ': ' + e.message);
 				}
 			}
-		} else {
-			console.debug('line too short:', line);
+		// } else {
+		// 	console.debug('line too short:', line);
 		}
 	});
 	return result;
@@ -116,13 +92,12 @@ function parseData(allData) {
 let datasetTemplates = {
 	// optional components
 	"pv-all": {
-		label: 'PV ges.',
 		jsonKey: null,
 		borderColor: pvAllColor,
 		backgroundColor: pvAllBgColor,
 		fill: true,
 		lineTension: 0.2,
-		hidden: boolDisplayPv,
+		hidden: false,
 		borderWidth: 1,
 		data: null,
 		yAxisID: 'y1',
@@ -132,7 +107,6 @@ let datasetTemplates = {
 		}
 	},
 	"bat-all-power": {
-		label: 'Speicher ges.',
 		jsonKey: null,
 		borderColor: batAllColor,
 		backgroundColor: batAllBgColor,
@@ -140,7 +114,7 @@ let datasetTemplates = {
 		lineTension: 0.2,
 		borderWidth: 1,
 		data: null,
-		hidden: boolDisplayBattery,
+		hidden: false,
 		yAxisID: 'y1',
 		parsing: {
 			xAxisKey: 'timestamp',
@@ -148,12 +122,11 @@ let datasetTemplates = {
 		}
 	},
 	"bat-all-soc": {
-		label: 'Speicher ges. SoC',
 		jsonKey: null,
 		borderColor: batAllSocColor,
 		backgroundColor: batAllSocBgColor,
 		borderDash: [10, 5],
-		hidden: boolDisplayBatterySoc,
+		hidden: false,
 		fill: false,
 		lineTension: 0.2,
 		borderWidth: 2,
@@ -215,62 +188,11 @@ let datasetTemplates = {
 			yAxisKey: null
 		}
 	},
-	// SmartHome
-	"load-power": {
-		label: 'Verbraucher',
-		jsonKey: null,
-		borderColor: loadColor,
-		backgroundColor: loadBgColor,
-		fill: false,
-		lineTension: 0.2,
-		borderWidth: 2,
-		hidden: boolDisplayLoad1,
-		data: null,
-		yAxisID: 'y1',
-		parsing: {
-			xAxisKey: 'timestamp',
-			yAxisKey: null
-		}
-	},
-	// SmartHome 2.0 devices
-	"sh-power": {
-		label: "Gerät",
-		jsonKey: null,
-		borderColor: smartHomeColor,
-		backgroundColor: smartHomeBgColor,
-		fill: false,
-		lineTension: 0.2,
-		borderWidth: 2,
-		data: null,
-		yAxisID: 'y1',
-		hidden: boolDisplaySHD1,
-		parsing: {
-			xAxisKey: 'timestamp',
-			yAxisKey: null
-		}
-	},
-	// SmartHome 2.0 device temperatures
-	// "sh-temp": {
-	// 	label: 'Temperatur',
-	// 	borderColor: "rgba(250, 250, 155, 0.7)",
-	// 	backgroundColor: 'blue',
-	// 	fill: false,
-	// 	lineTension: 0.2,
-	// 	borderWidth: 2,
-	// 	data: null,
-	// 	yAxisID: 'y2',
-	// 	hidden: boolDisplaySHD1T1,
-	// 	parsing: {
-	// 	xAxisKey: 'timestamp',
-	// 		yAxisKey: null
-	// 	}
-	// }
 };
 
 var chartDatasets = [
 	// always available elements
 	{
-		label: 'EVU',
 		jsonKey: 'grid',
 		borderColor: evuColor,
 		backgroundColor: evuBgColor,
@@ -278,7 +200,7 @@ var chartDatasets = [
 		fill: true,
 		lineTension: 0.2,
 		data: allChartData,
-		hidden: boolDisplayEvu,
+		hidden: false,
 		yAxisID: 'y1',
 		parsing: {
 			xAxisKey: 'timestamp',
@@ -286,14 +208,13 @@ var chartDatasets = [
 		}
 	},
 	{
-		label: 'Hausverbrauch',
 		jsonKey: 'house-power',
 		borderColor: homeColor,
 		backgroundColor: homeBgColor,
 		fill: false,
 		lineTension: 0.2,
 		borderWidth: 2,
-		hidden: boolDisplayHouseConsumption,
+		hidden: false,
 		data: allChartData,
 		yAxisID: 'y1',
 		parsing: {
@@ -302,7 +223,6 @@ var chartDatasets = [
 		}
 	},
 	{
-		label: 'LP ges.',
 		jsonKey: 'charging-all',
 		borderColor: cpAllColor,
 		backgroundColor: cpAllBgColor,
@@ -310,7 +230,7 @@ var chartDatasets = [
 		lineTension: 0.2,
 		borderWidth: 2,
 		data: allChartData,
-		hidden: boolDisplayCpAll,
+		hidden: false,
 		yAxisID: 'y1',
 		parsing: {
 			xAxisKey: 'timestamp',
@@ -389,7 +309,7 @@ function loadGraph(animationDuration = 1000) {
 					enabled: true
 				},
 				legend: {
-					display: boolDisplayLegend,
+					display: true,
 					labels: {
 						color: fontColor,
 						// filter: function(item,chart) {
@@ -501,34 +421,15 @@ function loadGraph(animationDuration = 1000) {
 	$('#waitForGraphLoadingDiv').hide();
 }  // end loadGraph
 
-// Sichtbarkeit für SmartHome Devices im Graph
-function setVisibility(dataArray, hideVar, hideValue, boolDisplay) {
-	var arrayLength = dataArray.length;
-	var vis = 0
-	for (var i = 0; i < arrayLength; i++) {
-		if ((dataArray[i] >= 0.010) || (dataArray[i] <= -0.010)) {
-			vis = 1
-		}
-	}
-	if (vis == 0) {
-		window[hideVar] = hideValue;
-		window[boolDisplay] = true;
-	} else {
-		window[hideVar] = 'foo';
-		window[boolDisplay] = false;
-	}
-}
-
 function getDatasetIndex(datasetId) {
 	index = chartDatasets.findIndex(function(dataset) {
 		return dataset.jsonKey == datasetId;
 	});
 	if (index != -1) {
-		console.debug('index for dataset "' + datasetId + '": ' + index);
+		// console.debug('index for dataset "' + datasetId + '": ' + index);
 		return index;
 	}
-	console.debug('no index found for "' + datasetId + '"');
-	return
+	// console.debug('no index found for "' + datasetId + '"');
 }
 
 function addDataset(datasetId) {
@@ -537,35 +438,44 @@ function addDataset(datasetId) {
 	if (number = datasetId.match(/([\d]+)/g)) {
 		datasetIndex = number[0];
 	}
-	console.debug('template name: ' + datasetTemplate + ' index: ' + datasetIndex);
+	// console.debug(`id: ${datasetId} template name: ${datasetTemplate} index: ${datasetIndex}`);
 	if (datasetTemplates[datasetTemplate]) {
 		newDataset = JSON.parse(JSON.stringify(datasetTemplates[datasetTemplate]));
 		newDataset.parsing.yAxisKey = datasetId;
 		newDataset.jsonKey = datasetId;
-		if (datasetIndex) {
-			newDataset.label = newDataset.label + ' ' + datasetIndex;
-		}
 		return chartDatasets.push(newDataset) - 1;
 	} else {
 		console.warn('no matching template found: ' + datasetId);
 	}
-	return
 }
 
 function initDataset(datasetId) {
 	var index = getDatasetIndex(datasetId);
-	if (index == undefined) {
+	if (index === undefined) {
 		index = addDataset(datasetId);
 	}
-	if (index != undefined) {
+	if (index !== undefined) {
+		if(chartLabels[datasetId] === undefined) {
+			// add index to dataset label if no label is defined
+			if (number = datasetId.match(/([\d]+)/g)) {
+				chartDatasets[index].label = chartDatasets[index].label + ' ' + number[0];
+			} else {
+				console.warn('no label found for index: ' + datasetId);
+			}
+		} else {
+			// use label from chartLabels
+			chartDatasets[index].label = chartLabels[datasetId];
+		}
 		chartDatasets[index].data = allChartData;
 	}
 }
 
 function truncateData(data) {
-	if (typeof maxDisplayLength !== "undefined" && data.length > maxDisplayLength) {
-		console.debug("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
-		data.splice(0, data.length - maxDisplayLength);
+	if (typeof maxDisplayLength !== "undefined") {
+		var limit = Date.now() - maxDisplayLength;
+		while (data[0].timestamp < limit) {
+			data.shift();
+		}
 	}
 }
 
@@ -625,9 +535,9 @@ function updateGraph(dataset) {
 		truncateData(allChartData);
 		chartUpdateBuffer = [];
 		myLine.update();
-		console.debug('graph updated, last dataset:', allChartData[allChartData.length-1].timestamp, allChartData[allChartData.length-1].time);
-	} else {
-		console.debug('graph not yet initialized, data stored in buffer');
+		// console.debug('graph updated, last dataset:', allChartData[allChartData.length-1].timestamp, allChartData[allChartData.length-1].time);
+	// } else {
+	// 	console.debug('graph not yet initialized, data stored in buffer');
 	}
 }
 
@@ -637,75 +547,28 @@ function checkGraphLoad() {
 		loadGraph(0); // when reloading graph, no more "pumping" animations
 		return;
 	}
-	if (typeof boolDisplayHouseConsumption === "boolean" &&
-		typeof boolDisplayCpAll === "boolean" &&
-		typeof boolDisplayEvu === "boolean"
-	) {
-		if (initialRead != 0) {
-			if (graphLoaded == 0) {
-				graphLoaded = 1;
-			} else {
-				myLine.destroy();
-			}
-			loadGraph();
+	if (initialRead != 0) {
+		if (graphLoaded == 0) {
+			graphLoaded = 1;
+		} else {
+			myLine.destroy();
 		}
+		loadGraph();
 	}
 }
 
 function forceGraphLoad() {
 	if (graphLoaded == 0) {
-		if (!(typeof boolDisplayHouseConsumption === "boolean")) {
-			showHideDataset('boolDisplayHouseConsumption');
-		}
-		if (!(typeof boolDisplayCpAll === "boolean")) {
-			showHideDataset('boolDisplayCpAll');
-		}
-		if (!(typeof boolDisplayEvu === "boolean")) {
-			showHideDataset('boolDisplayEvu');
-		}
-		if (!(typeof boolDisplayLegend === "boolean")) {
-			showHideDataset('boolDisplayLegend');
-		}
 		if (typeof maxDisplayLength === "undefined") {
-			console.info("setting graph duration to default of 30 minutes");
-			maxDisplayLength = 30 * 6;
+			console.warn("setting graph duration to default of 30 minutes");
+			maxDisplayLength = 30 * 60 * 1000;  // 30 minutes in milliseconds
 		}
 		checkGraphLoad();
 	}
 } // end forceGraphLoad
 
-function showHideDataset(theDataset) {
-	if (window[theDataset] == true) {
-		publish("1", "openWB/graph/" + theDataset);
-	} else if (window[theDataset] == false) {
-		publish("0", "openWB/graph/" + theDataset);
-	} else {
-		publish("1", "openWB/graph/" + theDataset);
-	}
-}
-
-function showHideLegend(theDataset) {
-	if (window[theDataset] == true) {
-		publish("0", "openWB/graph/" + theDataset);
-	} else if (window[theDataset] == false) {
-		publish("1", "openWB/graph/" + theDataset);
-	} else {
-		publish("0", "openWB/graph/" + theDataset);
-	}
-}
-
-function showHide(theDataset) {
-	if (window[theDataset] == 0) {
-		publish("1", "openWB/graph/" + theDataset);
-	} else if (window[theDataset] == 1) {
-		publish("0", "openWB/graph/" + theDataset);
-	} else {
-		publish("1", "openWB/graph/" + theDataset);
-	}
-}
-
 function subscribeMqttGraphSegments() {
-	console.debug('subscribing to graph topics');
+	// console.debug('subscribing to graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		topic = "openWB/graph/alllivevaluesJson" + segments;
 		client.subscribe(topic, { qos: 0 });
@@ -713,7 +576,7 @@ function subscribeMqttGraphSegments() {
 }
 
 function unsubscribeMqttGraphSegments() {
-	console.debug('unsubscribing from graph topics');
+	// console.debug('unsubscribing from graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		topic = "openWB/graph/alllivevaluesJson" + segments;
 		client.unsubscribe(topic);

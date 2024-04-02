@@ -352,11 +352,12 @@ export function switchSmarthomeColors(setting: string) {
 }
 
 export const infotext: { [key: string]: string } = {
-	chargemode: 'Der Lademodus für diesen Ladepunkt',
+	chargemode: 'Der Lademodus für das Fahrzeug an diesem Ladepunkt',
 	vehicle: 'Das Fahrzeug, das an diesem Ladepounkt geladen wird',
-	locked: 'Diesen Ladepunkt sperren',
-	priority: 'Diesen Ladepunkt auf hohe Priorität setzen',
-	timeplan: 'An diesem Ladepunkt nach dem konfigurierten Zeitplan laden',
+	locked: 'Für das Laden sperren',
+	priority:
+		'Fahrzeuge mit Priorität werden bevorzugt mit mehr Leistung geladen, falls verfügbar',
+	timeplan: 'Das Laden nach Zeitplan für dieses Fahrzeug aktivieren',
 	minsoc:
 		'Immer mindestens bis zum eingestellten Ladestand laden. Wenn notwendig mit Netzstrom.',
 	minpv:
@@ -415,7 +416,9 @@ function writeCookie() {
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
-		'openWBColorTheme=' + JSON.stringify(prefs) + '; max-age=16000000'
+		'openWBColorTheme=' +
+		JSON.stringify(prefs) +
+		';max-age=16000000;samesite=strict'
 }
 
 function readCookie() {

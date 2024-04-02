@@ -14,7 +14,7 @@
 			</div>
 			<div class="px-4 pt-4 pb-2 wb-subwidget">
 				<div class="row">
-					<div class="col">
+					<div class="col m-0 p-0">
 						<div class="container-fluid m-0 p-0">
 							<slot />
 						</div>

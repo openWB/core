@@ -69,6 +69,10 @@ class B23(AbstractCounter):
         raw_value = self.client.read_holding_registers(0x5000, data_type, unit=self.id)
         return self.check_nan(raw_value, raw_value * 10, data_type)
 
+    def get_exported(self) -> float:
+        time.sleep(0.1)
+        return self.client.read_holding_registers(0x5004, ModbusDataType.UINT_64, unit=self.id) * 10
+
     def get_power(self) -> Tuple[List[float], float]:
         """Returns power per phase and total power.
         """

@@ -29,7 +29,7 @@
 				>
 			</div>
 		</template>
-		<div class="subgrid infolist">
+		<div class="subgrid">
 			<InfoItem heading="Leistung:" class="grid-col-4 grid-left">
 				<FormatWatt :watt="device.power" />
 			</InfoItem>

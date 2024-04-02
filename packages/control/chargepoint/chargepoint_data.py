@@ -72,10 +72,11 @@ class Log:
     imported_since_plugged: float = 0
     range_charged: float = 0
     time_charged: str = "00:00"
-    timestamp_start_charging: Optional[str] = None
+    timestamp_start_charging: Optional[float] = None
     ev: int = -1
     prio: bool = False
     rfid: Optional[str] = None
+    serial_number: Optional[str] = None
 
 
 def connected_vehicle_factory() -> ConnectedVehicle:
@@ -99,6 +100,7 @@ class Get:
     power: float = 0
     rfid_timestamp: Optional[float] = None
     rfid: Optional[int] = None
+    serial_number: Optional[str] = None
     soc: Optional[float] = None
     soc_timestamp: Optional[int] = None
     state_str: Optional[str] = None

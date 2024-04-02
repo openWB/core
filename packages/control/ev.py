@@ -260,6 +260,7 @@ class Ev:
                     used_amount,
                     max_phases_hw,
                     phase_switch_supported)
+                soc_request_intervall_offset = 0
                 if plan_data:
                     name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
@@ -267,15 +268,15 @@ class Ev:
                             selected == "amount" and
                             name != control_parameter.current_plan):
                         control_parameter.imported_at_plan_start = imported
+                    # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
+                    # Zielladen kannn nicht genauer arbeiten, als das Abfrageintervall vom SoC.
+                    if (self.soc_module and
+                            self.charge_template.data.chargemode.
+                            scheduled_charging.plans[plan_data.num].limit.selected == "soc"):
+                        soc_request_intervall_offset = self.soc_module.general_config.request_interval_charging
+                    control_parameter.current_plan = name
                 else:
-                    name = None
-                # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
-                # Zielladen kannn nicht genauer arbeiten, als das Abfrageintervall vom SoC.
-                if (self.soc_module and self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].
-                        limit.selected == "soc"):
-                    soc_request_intervall_offset = self.soc_module.general_config.request_interval_charging
-                else:
-                    soc_request_intervall_offset = 0
+                    control_parameter.current_plan = None
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
                     plan_data,
                     self.data.get.soc,
@@ -283,7 +284,6 @@ class Ev:
                     control_parameter.phases,
                     self.ev_template.data.min_current,
                     soc_request_intervall_offset)
-                control_parameter.current_plan = name
 
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
             if (submode != "instant_charging" and
@@ -296,11 +296,7 @@ class Ev:
                     used_amount
                 )
                 # Info vom Zielladen erhalten
-                if tmp_message is not None:
-                    if message is not None:
-                        message = f"{message} {tmp_message}"
-                    else:
-                        message = tmp_message
+                message = f"{message or ''} {tmp_message or ''}".strip()
                 if tmp_current > 0:
                     control_parameter.current_plan = name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
@@ -449,21 +445,22 @@ class Ev:
         if phases_in_use == 1:
             direction_str = f"Umschaltverzögerung von 1 auf {max_phases}"
             delay = pv_config.phase_switch_delay * 60
-            required_power = (self.ev_template.data.max_current_single_phase * 230 -
-                              self.ev_template.data.min_current * max_phases * 230)
+            required_reserved_power = (self.ev_template.data.min_current * max_phases * 230 -
+                                       self.ev_template.data.max_current_single_phase * 230)
+
             new_phase = max_phases
             new_current = self.ev_template.data.min_current
         else:
             direction_str = f"Umschaltverzögerung von {max_phases} auf 1"
             delay = (16 - pv_config.phase_switch_delay) * 60
-            required_power = (self.ev_template.data.min_current * max_phases * 230 -
-                              self.ev_template.data.max_current_single_phase * 230)
+            # Es kann einphasig mit entsprechend niedriger Leistung gestartet werden.
+            required_reserved_power = 0
             new_phase = 1
             new_current = self.ev_template.data.max_current_single_phase
 
         log.debug(
             f'Genutzter Strom: {max(get_currents)}A, Überschuss: {all_surplus}W, benötigte neue Leistung: '
-            f'{required_power}W')
+            f'{required_reserved_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
         if not self.ev_template.data.prevent_phase_switch:
             condition, condition_msg = self._check_phase_switch_conditions(control_parameter,
@@ -478,7 +475,7 @@ class Ev:
                     # Wenn nach der Umschaltung weniger Leistung benötigt wird, soll während der Verzögerung keine
                     # neuen eingeschaltet werden.
                     data.data.counter_all_data.get_evu_counter(
-                    ).data.set.reserved_surplus += max(0, required_power)
+                    ).data.set.reserved_surplus += max(0, required_reserved_power)
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
                     control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
             else:
@@ -489,7 +486,7 @@ class Ev:
                     else:
                         timestamp_auto_phase_switch = None
                         data.data.counter_all_data.get_evu_counter(
-                        ).data.set.reserved_surplus -= max(0, required_power)
+                        ).data.set.reserved_surplus -= max(0, required_reserved_power)
                         phases_to_use = new_phase
                         current = new_current
                         log.debug("Phasenumschaltung kann nun durchgeführt werden.")
@@ -497,7 +494,7 @@ class Ev:
                 else:
                     timestamp_auto_phase_switch = None
                     data.data.counter_all_data.get_evu_counter(
-                    ).data.set.reserved_surplus -= max(0, required_power)
+                    ).data.set.reserved_surplus -= max(0, required_reserved_power)
                     message = f"{direction_str} Phasen abgebrochen{condition_msg}"
                     control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
@@ -814,8 +811,11 @@ class ChargeTemplate:
         # weniger als die berechnete Zeit verfügbar
         # Ladestart wurde um maximal 20 Min verpasst.
         elif plan_data.remaining_time <= 0 - soc_request_intervall_offset:
-            current = min(plan_data.missing_amount/((plan_data.duration +
-                          plan_data.remaining_time)/3600)/(phases*230), plan_data.max_current)
+            if plan_data.duration + plan_data.remaining_time < 0:
+                current = plan_data.max_current
+            else:
+                current = min(plan_data.missing_amount/((plan_data.duration + plan_data.remaining_time) /
+                              3600)/(phases*230), plan_data.max_current)
             message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(round(current, 2))
             mode = "instant_charging"
         else:

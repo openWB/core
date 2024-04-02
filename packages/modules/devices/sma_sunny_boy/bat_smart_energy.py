@@ -29,7 +29,8 @@ class SunnyBoySmartEnergyBat:
         self.store.set(self.read())
 
     def read(self) -> BatState:
-        unit = 3
+        unit = self.component_config.configuration.modbus_id
+
         soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.UINT_32, unit=unit)
         current = self.__tcp_client.read_holding_registers(30843, ModbusDataType.INT_32, unit=unit)/-1000
         voltage = self.__tcp_client.read_holding_registers(30851, ModbusDataType.INT_32, unit=unit)/100

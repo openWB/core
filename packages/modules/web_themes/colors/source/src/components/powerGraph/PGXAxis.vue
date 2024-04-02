@@ -76,7 +76,7 @@ const xAxisGeneratorMonth2 = computed(() =>
 	axisBottom<number>(xScaleMonth.value)
 		.ticks(4)
 		.tickSizeInner(ticksize.value)
-		.tickFormat(d => ''),
+		.tickFormat(() => ''),
 )
 
 const ticksize = computed(() => {
@@ -165,7 +165,7 @@ const drawAxis2 = computed(() => {
 	}
 
 	axis.select('.domain').attr('stroke', 'var(--color-bg)')
-	
+
 	return 'PGXAxis2.vue'
 })
 </script>

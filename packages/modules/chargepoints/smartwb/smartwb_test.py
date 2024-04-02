@@ -27,7 +27,8 @@ class TestSmartWb:
         imported=54350.0,
         plug_state=True,
         charge_state=False,
-        phases_in_use=3
+        phases_in_use=3,
+        serial_number="94:B9:7E:69:F0:D1"
     )
     SAMPLE_V1 = {
         "type": "parameters",
@@ -59,7 +60,8 @@ class TestSmartWb:
         plug_state=True,
         charge_state=True,
         rfid="0a1b2c3d",
-        rfid_timestamp=1652683252
+        rfid_timestamp=1652683252,
+        serial_number="94:B9:7E:69:F0:D1"
     )
     SAMPLE_V2 = {
         "type": "parameters",
@@ -97,7 +99,8 @@ class TestSmartWb:
         charge_state=True,
         rfid="0a1b2c3d",
         rfid_timestamp=1652683252,
-        phases_in_use=1
+        phases_in_use=1,
+        serial_number="94:B9:7E:69:F0:D1"
     )
     SAMPLE_NOT_CHARGING_V2 = {
         "type": "parameters",
@@ -126,6 +129,22 @@ class TestSmartWb:
                 "RFIDUID": "0a1b2c3d"
             }]
     }
+    SAMPLE_HOST_DATA = {
+        "type": "evseHost",
+        "list": [
+            {
+                "ssid": "EVSE-WiFi",
+                "dns": "192.168.4.1",
+                "mac": "94:B9:7E:69:F0:D1",
+                "ip": "192.168.4.1",
+                "netmask": "255.255.255.0",
+                "gateway": "0.0.0.0",
+                "uptime": 1960,
+                "opMode": "normal",
+                "firmware": "2.2.5"
+            }
+        ]
+    }
 
     @pytest.fixture(autouse=True)
     def setup(self, monkeypatch):
@@ -147,6 +166,7 @@ class TestSmartWb:
     def test_get_values_v2(self, cp, requests_mock: requests_mock.mock, params: Params):
         # setup
         requests_mock.get("http://1.1.1.1/getParameters", json=params.sample_data)
+        requests_mock.get("http://1.1.1.1/evseHost", json=self.SAMPLE_HOST_DATA)
 
         # execution
         cp.get_values()

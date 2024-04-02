@@ -273,31 +273,30 @@ class SetData:
             Broker-Nachricht
         data_type: float, int
             Datentyp, den die Liste enthalten soll
-        min_value: int/float
-            Minimalwert, den die Elemente in der Liste nicht unterschreiten dürfen
-        max_value= int/float
-            Maximalwert, den die Elemente in der Liste nicht überschreiten dürfen
-        collection = list/dict
-            Angabe, ob und welche Kollektion erwartet wird
+        ranges: tuple, optional
+            (min_value, max_value), die die Minimal- und Maximalwerte angeben
+        collection: type, optional
+            Angabe, ob und welche Kollektion erwartet wird (list oder dict)
         """
         try:
             valid = False
             value = decode_payload(msg.payload)
-            if isinstance(value, list):
-                for item in value:
-                    if not self._validate_min_max_value(item, msg, data_type, ranges):
-                        break
-                else:
-                    valid = True
-            elif isinstance(value, dict):
-                for item in value.values():
-                    if not self._validate_min_max_value(item, msg, data_type, ranges):
-                        break
-                else:
-                    valid = True
-            else:
-                log.error("Payload ungültig: Topic "+str(msg.topic)+", Payload " +
-                          str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
+            if collection is not None and isinstance(value, collection):
+                if isinstance(value, list):
+                    if ranges is not None:
+                        valid = all(self._validate_min_max_value(item, msg, data_type, ranges) for item in value)
+                    else:
+                        valid = all(isinstance(item, data_type) for item in value)
+                elif isinstance(value, dict):
+                    if ranges is not None:
+                        valid = all(
+                            self._validate_min_max_value(item, msg, data_type, ranges) for item in value.values())
+                    else:
+                        valid = all(isinstance(item, data_type) for item in value.values())
+            if not valid:
+                log.error(f"Payload ungültig: Topic '{msg.topic}', Payload '{value}' "
+                          f"sollte eine Kollektion vom Typ {collection} sein "
+                          f"und nur Elemente vom Typ {data_type} enthalten.")
             return valid
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
@@ -607,7 +606,8 @@ class SetData:
                 "/get/state_str" in msg.topic or
                 "/get/heartbeat" in msg.topic or
                 "/get/rfid" in msg.topic or
-                "/get/vehicle_id" in msg.topic):
+                "/get/vehicle_id" in msg.topic or
+                "/get/serial_number"):
             self._validate_value(msg, str)
         elif "/get/rfid_timestamp" in msg.topic:
             self._validate_value(msg, float)
@@ -1010,6 +1010,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif "openWB/set/system/mqtt/bridge/" in msg.topic:
                 self._validate_value(msg, "json")
+            elif "openWB/set/system/mqtt/valid_partner_ids" == msg.topic:
+                self._validate_value(msg, str, collection=list)
             elif "configurable" in msg.topic:
                 self._validate_value(msg, None)
             elif "device" in msg.topic:

@@ -43,7 +43,10 @@ class ShellyInverter:
                 for meter in meters:
                     total = total + meter['power']
             else:
-                total = status['switch:0']['apower']
+                if 'switch:0' in status:
+                    total = status['switch:0']['apower']
+                else:
+                    total = status['em:0']['total_act_power']  # shelly Pro3EM
         except KeyError:
             log.exception("unsupported shelly device?")
         finally:

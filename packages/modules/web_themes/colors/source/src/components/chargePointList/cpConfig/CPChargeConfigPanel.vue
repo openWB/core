@@ -1,13 +1,23 @@
 <template>
-	<ConfigItem title="Status" icon="fa-info-circle" :fullwidth="true">
+	<ConfigItem
+		title="Status"
+		icon="fa-info-circle"
+		:fullwidth="true"
+		class="item"
+	>
 		<span class="status-string">{{ cp.stateStr }}</span>
 	</ConfigItem>
 
-	<ConfigItem v-if="cp.faultState != 0" title="Fehler">
+	<ConfigItem
+		v-if="cp.faultState != 0"
+		title="Fehler"
+		class="grid-col-12"
+		icon="fa-triangle-exclamation"
+	>
 		<span style="color: red"> {{ cp.faultStr }} </span>
 	</ConfigItem>
 
-	<div class="m-0 mt-4 p-0">
+	<div class="m-0 mt-4 p-0 grid-col-12 tabarea">
 		<nav class="nav nav-tabs nav-justified mx-1 mt-1" role="tablist">
 			<a
 				class="nav-link active"
@@ -205,5 +215,11 @@ onMounted(() => {})
 }
 .heading {
 	color: var(--color-menu);
+}
+.item {
+	grid-column: span 12;
+}
+.tabarea {
+	justify-self: stretch;
 }
 </style>

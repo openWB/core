@@ -4,7 +4,7 @@ from typing import Any
 
 
 def get_index(topic: str) -> str:
-    """extrahiert den Index aus einem Topic (Zahl zwischen zwei // oder am Stringende)
+    """extrahiert den Index aus einem Topic (Zahl zwischen zwei // oder am Ende eines Strings)
     """
     regex = re.search('(?!/)([0-9]*)(?=/|$)', topic)
     if regex is None:

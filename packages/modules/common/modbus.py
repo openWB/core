@@ -7,7 +7,8 @@ formatieren.
 import logging
 import struct
 from enum import Enum
-from typing import Callable, Iterable, Union, overload, List
+import time
+from typing import Any, Callable, Iterable, Optional, Union, overload, List
 
 import pymodbus
 from pymodbus.client.sync import ModbusTcpClient, ModbusSerialClient
@@ -46,28 +47,40 @@ NO_VALUES = ("TCP-Client {}:{} konnte keinen Wert abfragen. Falls vorhanden, par
 
 
 class ModbusClient:
-    def __init__(self, delegate: Union[ModbusSerialClient, ModbusTcpClient], address: str, port: int = 502):
-        self.delegate = delegate
+    def __init__(self,
+                 delegate: Union[ModbusSerialClient, ModbusTcpClient],
+                 address: str, port: int = 502,
+                 sleep_after_connect: Optional[int] = 0):
+        self._delegate = delegate
         self.address = address
         self.port = port
+        self.sleep_after_connect = sleep_after_connect
 
     def __enter__(self):
         try:
-            self.delegate.__enter__()
+            self._delegate.__enter__()
+            time.sleep(self.sleep_after_connect)
         except pymodbus.exceptions.ConnectionException as e:
             e.args += (NO_CONNECTION.format(self.address, self.port),)
             raise e
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.delegate.__exit__(exc_type, exc_value, exc_traceback)
+        self._delegate.__exit__(exc_type, exc_value, exc_traceback)
 
-    def close_connection(self) -> None:
+    def connect(self) -> None:
+        self._delegate.connect()
+        time.sleep(self.sleep_after_connect)
+
+    def close(self) -> None:
         try:
             log.debug("Close Modbus TCP connection")
-            self.delegate.close()
+            self._delegate.close()
         except Exception as e:
             raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
+
+    def is_socket_open(self) -> bool:
+        return self._delegate.is_socket_open()
 
     def __read_registers(self, read_register_method: Callable,
                          address: int,
@@ -118,7 +131,7 @@ class ModbusClient:
                                wordorder: Endian = Endian.Big,
                                **kwargs):
         return self.__read_registers(
-            self.delegate.read_holding_registers, address, types, byteorder, wordorder, **kwargs
+            self._delegate.read_holding_registers, address, types, byteorder, wordorder, **kwargs
         )
 
     @overload
@@ -137,7 +150,12 @@ class ModbusClient:
                              byteorder: Endian = Endian.Big,
                              wordorder: Endian = Endian.Big,
                              **kwargs):
-        return self.__read_registers(self.delegate.read_input_registers, address, types, byteorder, wordorder, **kwargs)
+        return self.__read_registers(self._delegate.read_input_registers,
+                                     address,
+                                     types,
+                                     byteorder,
+                                     wordorder,
+                                     **kwargs)
 
     @overload
     def read_coils(self, address: int, types: Iterable[ModbusDataType], byteorder: Endian = Endian.Big,
@@ -151,7 +169,7 @@ class ModbusClient:
 
     def read_coils(self, address: int, count: int, **kwargs):
         try:
-            response = self.delegate.read_coils(address, count, **kwargs)
+            response = self._delegate.read_coils(address, count, **kwargs)
             if response.isError():
                 raise Exception(__name__+" "+str(response))
             return response.bits[0] if count == 1 else response.bits[:count]
@@ -162,18 +180,35 @@ class ModbusClient:
             e.args += (NO_VALUES.format(self.address, self.port),)
             raise e
 
+    def write_registers(self, address: int, value: Any, **kwargs):
+        self._delegate.write_registers(address, value, **kwargs)
+
 
 class ModbusTcpClient_(ModbusClient):
-    def __init__(self, address: str, port: int = 502):
+    def __init__(self,
+                 address: str,
+                 port: int = 502,
+                 sleep_after_connect: Optional[int] = 0,
+                 **kwargs):
         parsed_url = parse_url(address)
         host = parsed_url.host
         if parsed_url.port is not None:
             port = parsed_url.port
-        super().__init__(ModbusTcpClient(host, port), address, port)
+        super().__init__(ModbusTcpClient(host, port, **kwargs), address, port, sleep_after_connect)
 
 
 class ModbusSerialClient_(ModbusClient):
-    def __init__(self, port: int):
-        super().__init__(ModbusSerialClient(method="rtu", port=port, baudrate=9600, stopbits=1, bytesize=8, timeout=1),
+    def __init__(self,
+                 port: int,
+                 sleep_after_connect: Optional[int] = 0,
+                 **kwargs):
+        super().__init__(ModbusSerialClient(method="rtu",
+                                            port=port,
+                                            baudrate=9600,
+                                            stopbits=1,
+                                            bytesize=8,
+                                            timeout=1,
+                                            **kwargs),
                          "Serial",
-                         port)
+                         port,
+                         sleep_after_connect)

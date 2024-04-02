@@ -25,8 +25,10 @@ class SmaSunnyBoyCounter:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        imp = self.__tcp_client.read_holding_registers(30865, ModbusDataType.UINT_32, unit=3)
-        exp = self.__tcp_client.read_holding_registers(30867, ModbusDataType.UINT_32, unit=3)
+        unit = self.component_config.configuration.modbus_id
+
+        imp = self.__tcp_client.read_holding_registers(30865, ModbusDataType.UINT_32, unit=unit)
+        exp = self.__tcp_client.read_holding_registers(30867, ModbusDataType.UINT_32, unit=unit)
         if imp > 5:
             power = imp
         else:
