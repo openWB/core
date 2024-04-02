@@ -260,6 +260,7 @@ class Ev:
                     used_amount,
                     max_phases_hw,
                     phase_switch_supported)
+                soc_request_intervall_offset = 0
                 if plan_data:
                     name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
@@ -267,15 +268,15 @@ class Ev:
                             selected == "amount" and
                             name != control_parameter.current_plan):
                         control_parameter.imported_at_plan_start = imported
+                    # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
+                    # Zielladen kannn nicht genauer arbeiten, als das Abfrageintervall vom SoC.
+                    if (self.soc_module and
+                            self.charge_template.data.chargemode.
+                            scheduled_charging.plans[plan_data.num].limit.selected == "soc"):
+                        soc_request_intervall_offset = self.soc_module.general_config.request_interval_charging
+                    control_parameter.current_plan = name
                 else:
-                    name = None
-                # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
-                # Zielladen kannn nicht genauer arbeiten, als das Abfrageintervall vom SoC.
-                if (self.soc_module and self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].
-                        limit.selected == "soc"):
-                    soc_request_intervall_offset = self.soc_module.general_config.request_interval_charging
-                else:
-                    soc_request_intervall_offset = 0
+                    control_parameter.current_plan = None
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
                     plan_data,
                     self.data.get.soc,
@@ -283,7 +284,6 @@ class Ev:
                     control_parameter.phases,
                     self.ev_template.data.min_current,
                     soc_request_intervall_offset)
-                control_parameter.current_plan = name
 
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
             if (submode != "instant_charging" and
