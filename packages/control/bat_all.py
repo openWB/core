@@ -140,7 +140,7 @@ class BatAll:
             # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
             if parent_data.config.max_ac_out > 0:
                 max_bat_discharge_power = parent_data.config.max_ac_out + parent_data.get.power
-                return max_bat_discharge_power
+                return max_bat_discharge_power - abs(battery.data.get.power)
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
                 battery.data.get.fault_str = ("Maximale Entladeleistung des Wechselrichters" +
