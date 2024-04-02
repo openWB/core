@@ -1,4 +1,3 @@
-import { timeParse } from 'd3'
 import {
 	graphData,
 	type GraphDataItem,
@@ -70,9 +69,12 @@ function transformDatatable(
 
 function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	const currentItem: GraphDataItem = {}
-	if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
+	//console.log (` Timestamp ${currentRow.timestamp} - Zeit ${new Date(currentRow.timestamp*1000)} - Netzbezug ${currentRow.counter['counter0'].power_imported} `)
+	currentItem.date = currentRow.timestamp * 1000
+	/* if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
 		if (typeof currentRow.date == 'number') {
-			currentItem.date = new Date(+currentRow.date * 1000).getTime()
+			
+			currentItem.date = +currentRow.timestamp*1000 //new Date(+currentRow.date * 1000).getTime()
 		} else {
 			const d = timeParse('%H:%M')(currentRow.date)
 			if (d) {
@@ -89,7 +91,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 				currentItem.date = d.getDate()
 			}
 		}
-	}
+	} */
 	currentItem.evuOut = 0
 	currentItem.evuIn = 0
 	Object.entries(currentRow.counter).forEach(([id, values]) => {

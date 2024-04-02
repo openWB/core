@@ -43,8 +43,8 @@ const statusString = computed(() => {
 		} else if (cp.isPluggedIn) {
 			result = 'Bereit (' + cp.name + ')'
 		}
-	} 
-		return result
+	}
+	return result
 })
 
 const statusColor = computed(() => {

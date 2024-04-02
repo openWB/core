@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue'
-import { extent, scaleBand } from 'd3'
+import { extent, scaleBand, scaleTime, scaleUtc } from 'd3'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig } from '@/assets/js/themeConfig'
@@ -408,6 +408,17 @@ export function updateEnergyValues(
 	}
 	energyMeterNeedsRedraw.value = true
 }
+export const xScale = computed(() => {
+	const e = extent(graphData.data, (d) => new Date(d.date))
+	if (e[0] && e[1]) {
+		return scaleUtc<number>()
+			.domain(e)
+			.range([0, width - margin.left - 2 * margin.right])
+	} else {
+		return scaleTime().range([0, 0])
+	}
+})
+
 function resetPvValues() {
 	historicSummary.keys().forEach((cat) => {
 		if (consumerCategories.includes(cat)) {

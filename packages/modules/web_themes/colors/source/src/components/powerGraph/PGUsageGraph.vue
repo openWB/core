@@ -24,6 +24,7 @@ import {
 	animateUsageGraph,
 	usageGraphIsInitialized,
 	xScaleMonth,
+	xScale,
 } from './model'
 const props = defineProps<{
 	width: number
@@ -95,19 +96,6 @@ const stackGen = computed(() => {
 })
 const stackedSeries = computed(() => stackGen.value(graphData.data))
 
-const iScale = computed(() => {
-	return scaleLinear()
-		.domain([0, graphData.data.length - 1])
-		.range([0, props.width])
-})
-
-/* const iScaleMonth = computed(() =>
-	scaleBand<number>()
-		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
-		.range([0, props.width + props.margin.right])
-		.paddingInner(0.4),
-) */
-
 const yScale = computed(() => {
 	return scaleLinear()
 		.range([props.height + 10, 2 * props.height])
@@ -178,10 +166,10 @@ const yAxisGenerator = computed(() => {
 })
 function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	const area0 = area()
-		.x((d, i) => iScale.value(i))
+		.x((d,i) => xScale.value(graphData.data[i].date))
 		.y(yScale.value(0))
 	const area1 = area()
-		.x((d, i) => iScale.value(i))
+		.x((d,i) => xScale.value(graphData.data[i].date))
 		.y0((d) => yScale.value(d[0]))
 		.y1((d) => yScale.value(d[1]))
 	if (globalConfig.showAnimations) {

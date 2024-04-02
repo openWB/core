@@ -7,7 +7,9 @@
 			<span>Fahrzeuge</span>
 		</template>
 		<div
-			v-for="(vehicle, index) in Object.values(vehicles).filter(v=>v.visible)"
+			v-for="(vehicle, index) in Object.values(vehicles).filter(
+				(v) => v.visible,
+			)"
 			:key="index"
 			class="subgrid"
 		>

@@ -397,7 +397,7 @@ interface Preferences {
 	showButtonBar?: boolean
 	showCounters?: boolean
 	showVehicles?: boolean
-	showStandardV? : boolean
+	showStandardV?: boolean
 	showPrices?: boolean
 	debug?: boolean
 }
