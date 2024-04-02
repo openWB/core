@@ -1,6 +1,6 @@
 import pytest
 
-from helpermodules.measurement_logging.update_daily_yields import update_module_yields
+from helpermodules.measurement_logging.update_yields import update_module_yields
 
 
 def test_update_module_yields(daily_log_totals, mock_pub):
