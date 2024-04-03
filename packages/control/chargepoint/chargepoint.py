@@ -212,7 +212,7 @@ class Chargepoint(ChargepointRfidMixin):
         # werden soll (-1), Daten zurücksetzen.
         if self.data.set.charging_ev_prev != -1:
             # Daten zurücksetzen, wenn nicht geladen werden soll.
-            self.reset_control_parameter_charge_stop()
+            self.reset_control_parameter_at_charge_stop()
             data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                 self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
             # Abstecken
@@ -305,7 +305,7 @@ class Chargepoint(ChargepointRfidMixin):
         self.data.set.log = Log()
         Pub().pub(f"openWB/set/chargepoint/{self.num}/set/log", asdict(self.data.set.log))
 
-    def reset_control_parameter_charge_stop(self) -> None:
+    def reset_control_parameter_at_charge_stop(self) -> None:
         # Wenn die Ladung zB wegen Autolock gestoppt wird, Zählerstände beibehalten, damit nicht nochmal die Ladung
         # gestartet wird.
         control_parameter = control_parameter_factory()
