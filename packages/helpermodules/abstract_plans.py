@@ -50,7 +50,7 @@ def scheduled_limit_factory() -> ScheduledLimit:
 
 @dataclass
 class PlanBase:
-    active: bool = False
+    active: bool = True
     frequency: Frequency = field(default_factory=frequency_factory)
 
 
