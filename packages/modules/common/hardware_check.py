@@ -27,7 +27,7 @@ EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. "
 
 def check_meter_values(voltages: List[float]) -> Optional[str]:
     def valid_voltage(voltage) -> bool:
-        return 200 < voltage < 250
+        return 200 < voltage < 260
     if ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
