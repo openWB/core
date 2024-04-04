@@ -30,16 +30,18 @@ def create_device(device_config: Huawei):
             client.connect()
         try:
             modbus_id = device_config.configuration.modbus_id
-            regs = client.read_holding_registers(32064, [ModbusDataType.INT_32]*5701, unit=modbus_id)
-            counter_currents_reg = regs[5043:5045]  # INT 32, 37107-9
-            counter_power_reg = regs[5049]  # INT32, 37113
-            bat_power_reg = regs[-1]  # INT32, 37765
-            inverter_power_reg = regs[0]  # INT32 32064
-            # Huawei darf nur mit Regelintervall sehr langsam betrieben werden, daher kann hier eine längere Pause
-            # eingelegt werden. Ob auch eine kürzere ausreichend ist, ist nicht getestet.
-            time.sleep(5)
-            bat_soc_reg = client.read_holding_registers(
-                37760, ModbusDataType.INT_16, unit=modbus_id)  # Int 16 37760
+
+            inverter_power_reg = client.read_holding_registers(32064, ModbusDataType.INT_32, unit=modbus_id)
+            time.sleep(1)
+            # Huawei darf nur mit Regelintervall sehr langsam betrieben werden, daher kann hier eine Pause
+            # zwischen den einzelnen Abfragen eingelegt werden. Ob auch eine kürzere ausreichend ist, ist nicht getestet.
+            counter_currents_reg = client.read_holding_registers(37107, [ModbusDataType.INT_32]*3, unit=modbus_id)
+            time.sleep(1)
+            counter_power_reg = client.read_holding_registers(37113, ModbusDataType.INT_32, unit=modbus_id)
+            time.sleep(1)
+            bat_power_reg = client.read_holding_registers(37765, ModbusDataType.INT_32, unit=modbus_id)
+            time.sleep(1)
+            bat_soc_reg = client.read_holding_registers(37760, ModbusDataType.INT_16, unit=modbus_id)  # Int 16 37760
 
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
