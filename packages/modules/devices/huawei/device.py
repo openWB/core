@@ -17,42 +17,21 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Huawei):
     def create_bat_component(component_config: HuaweiBatSetup):
-        return HuaweiBat(device_config.id, component_config)
+        return HuaweiBat(device_config.id, component_config, device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: HuaweiCounterSetup):
-        return HuaweiCounter(device_config.id, component_config)
+        return HuaweiCounter(device_config.id, component_config, device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: HuaweiInverterSetup):
-        return HuaweiInverter(device_config.id, component_config)
+        return HuaweiInverter(device_config.id, component_config, device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[HuaweiBat, HuaweiCounter, HuaweiInverter]]):
         if client.is_socket_open() is False:
             client.connect()
         try:
-            modbus_id = device_config.configuration.modbus_id
-
-            inverter_power_reg = client.read_holding_registers(32064, ModbusDataType.INT_32, unit=modbus_id)
-            time.sleep(1)
-            # Huawei darf nur mit Regelintervall sehr langsam betrieben werden, daher kann hier eine Pause
-            # zwischen den einzelnen Abfragen eingelegt werden.
-            # Ob auch eine kürzere ausreichend ist, ist nicht getestet.
-            counter_currents_reg = client.read_holding_registers(37107, [ModbusDataType.INT_32]*3, unit=modbus_id)
-            time.sleep(1)
-            counter_power_reg = client.read_holding_registers(37113, ModbusDataType.INT_32, unit=modbus_id)
-            time.sleep(1)
-            bat_power_reg = client.read_holding_registers(37765, ModbusDataType.INT_32, unit=modbus_id)
-            time.sleep(1)
-            bat_soc_reg = client.read_holding_registers(
-                37760, ModbusDataType.INT_16, unit=modbus_id)  # Int 16 37760
-
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    if isinstance(component, HuaweiBat):
-                        component.update(bat_power_reg, bat_soc_reg)
-                    elif isinstance(component, HuaweiCounter):
-                        component.update(counter_currents_reg, counter_power_reg)
-                    elif isinstance(component, HuaweiInverter):
-                        component.update(inverter_power_reg)
+                    component.update(client)
         except Exception as e:
             client.close()
             raise e
