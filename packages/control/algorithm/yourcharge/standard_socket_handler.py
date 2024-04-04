@@ -156,13 +156,13 @@ class StandardSocketHandler:
         yc_control = data.data.yc_data.data.yc_control
         if yc_control.standard_socket_action == StandardSocketActions.Approve:
             log.error("Controller approved socket request after "
-                      + f"{datetime.datetime.now(datetime.UTC) - self._last_socket_request_time}: Turning on socket")
+                      + f"{datetime.datetime.utcnow() - self._last_socket_request_time}: Turning on socket")
             self._transit_to_socket_on()
         elif yc_control.standard_socket_action == StandardSocketActions.Decline:
             log.error(f"Controller explicitly DECLINED: Changing to {StandardSocketControlState.Idle} w/o turning on "
                       + "socket")
             self._transit_to_idle()
-        elif datetime.datetime.now(datetime.UTC) - self._last_socket_request_time >= self.socket_approval_max_wait_time:
+        elif datetime.datetime.utcnow() - self._last_socket_request_time >= self.socket_approval_max_wait_time:
             log.critical(f"No controller response after {self.socket_approval_max_wait_time} on standard socket "
                          + f"activation request at {self._last_socket_request_time}: No longer waiting, reverting to "
                          + f"{StandardSocketControlState.Idle}")
@@ -173,9 +173,9 @@ class StandardSocketHandler:
         yc_control = data.data.yc_data.data.yc_control
         if yc_control.standard_socket_action != StandardSocketActions.Approve:
             log.error("Controller disapproved socket request after "
-                      + f"{datetime.datetime.now(datetime.UTC) - self._last_socket_request_time}: Turning off socket")
+                      + f"{datetime.datetime.utcnow() - self._last_socket_request_time}: Turning off socket")
             self._transit_to_idle()
-        elif datetime.datetime.now(datetime.UTC) - self._last_socket_request_time >= self.socket_approval_max_wait_time:
+        elif datetime.datetime.utcnow() - self._last_socket_request_time >= self.socket_approval_max_wait_time:
             log.critical(f"No controller response after {self.socket_approval_max_wait_time} on standard socket "
                          + f"activation request at {self._last_socket_request_time}: No longer waiting, reverting to "
                          + f"{StandardSocketControlState.Idle}")
