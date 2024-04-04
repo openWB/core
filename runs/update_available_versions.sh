@@ -73,6 +73,14 @@ validateTag() {
 							# invalid tag for this branch, skip
 							continue
 						fi
+						# special handling for last element in $tags
+						if (( key == ${#tags[@]}-1 )); then
+							# add tag *HEAD* if branch is not "Beta" or "Release"
+							if [[ ${branches[$index]} != "Beta" ]] && [[ ${branches[$index]} != "Release" ]]; then
+								echo "*HEAD*"
+								echo "Aktuellster Stand"
+							fi
+						fi
 					done |
 						jq -n -R -c 'reduce inputs as $key ({}; . + { ($key): (input) })'
 				)
