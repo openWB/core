@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import logging
-import time
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
-from modules.common.modbus import ModbusDataType, ModbusTcpClient_
+from modules.common.modbus import ModbusTcpClient_
 from modules.devices.huawei.bat import HuaweiBat
 from modules.devices.huawei.config import Huawei, HuaweiBatSetup, HuaweiCounterSetup, HuaweiInverterSetup
 from modules.devices.huawei.counter import HuaweiCounter
