@@ -8,6 +8,27 @@ if [ "$(id -u -n)" != "openwb" ]; then
 	exit 1
 fi
 
+validateTag() {
+	branch=$1
+	tag=$2
+
+	case $branch in
+	"release" | "Release")
+		if [[ $tag =~ ([Rr][Cc])|([Bb]eta)|([Aa]lpha) ]] || [[ $tag =~ 1.99 ]]; then
+			return 1
+		fi
+		;;
+	"beta" | "Beta")
+		if [[ $tag =~ [Aa]lpha ]] || [[ $tag =~ 1.99 ]]; then
+			return 1
+		fi
+		;;
+	*)
+		return 0
+		;;
+	esac
+}
+
 {
 	echo "#### updating available version info ####"
 
@@ -40,8 +61,13 @@ fi
 			echo "${tags[*]}"
 			tagsJson[${branches[$index]}]=$(
 				for key in "${!tags[@]}"; do
-					echo "${tags[${key}]//: */}"
-					echo "${tags[${key}]}"
+					if validateTag "${branches[$index]}" "${tags[${key}]//: */}"; then
+						echo "${tags[${key}]//: */}"
+						echo "${tags[${key}]}"
+					else
+						# invalid tag for this branch, skip
+						continue
+					fi
 				done |
 					jq -n -R -c 'reduce inputs as $key ({}; . + { ($key): (input) })'
 			)
