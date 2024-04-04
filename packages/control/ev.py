@@ -420,6 +420,8 @@ class Ev:
                 else:
                     return False, self.NOT_ENOUGH_POWER
 
+    PHASE_SWITCH_DELAY_TEXT = '{} Phasen in {}.'
+
     def auto_phase_switch(self,
                           control_parameter: ControlParameter,
                           cp_num: int,
@@ -443,7 +445,7 @@ class Ev:
         all_surplus = (-evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
                        evu_counter.data.set.reserved_surplus - feed_in_yield)
         if phases_in_use == 1:
-            direction_str = f"Umschaltverzögerung von 1 auf {max_phases}"
+            direction_str = f"Umschaltung von 1 auf {max_phases}"
             delay = pv_config.phase_switch_delay * 60
             required_reserved_power = (self.ev_template.data.min_current * max_phases * 230 -
                                        self.ev_template.data.max_current_single_phase * 230)
@@ -451,7 +453,7 @@ class Ev:
             new_phase = max_phases
             new_current = self.ev_template.data.min_current
         else:
-            direction_str = f"Umschaltverzögerung von {max_phases} auf 1"
+            direction_str = f"Umschaltung von {max_phases} auf 1"
             delay = (16 - pv_config.phase_switch_delay) * 60
             # Es kann einphasig mit entsprechend niedriger Leistung gestartet werden.
             required_reserved_power = 0
@@ -476,13 +478,17 @@ class Ev:
                     # neuen eingeschaltet werden.
                     data.data.counter_all_data.get_evu_counter(
                     ).data.set.reserved_surplus += max(0, required_reserved_power)
-                    message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
+                    message = self.PHASE_SWITCH_DELAY_TEXT.format(
+                        direction_str,
+                        timecheck.convert_timestamp_delta_to_time_string(timestamp_auto_phase_switch, delay))
                     control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
             else:
                 if condition:
                     # Timer laufen lassen
                     if timecheck.check_timestamp(timestamp_auto_phase_switch, delay):
-                        message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
+                        message = self.PHASE_SWITCH_DELAY_TEXT.format(
+                            direction_str,
+                            timecheck.convert_timestamp_delta_to_time_string(timestamp_auto_phase_switch, delay))
                     else:
                         timestamp_auto_phase_switch = None
                         data.data.counter_all_data.get_evu_counter(
@@ -495,7 +501,7 @@ class Ev:
                     timestamp_auto_phase_switch = None
                     data.data.counter_all_data.get_evu_counter(
                     ).data.set.reserved_surplus -= max(0, required_reserved_power)
-                    message = f"{direction_str} Phasen abgebrochen{condition_msg}"
+                    message = f"Verzögerung für die {direction_str} Phasen abgebrochen{condition_msg}"
                     control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
         if message:
