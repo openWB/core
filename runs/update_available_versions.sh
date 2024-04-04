@@ -40,7 +40,7 @@ validateTag() {
 	echo "$currentCommit" >"$OPENWBBASEDIR/web/lastcommit"
 
 	# fetch data from git
-	echo "fetching latest data from $GITREMOTE..."
+	echo "fetching latest data from '$GITREMOTE'..."
 	git -C "$OPENWBBASEDIR" fetch --verbose --prune --tags --prune-tags --force "$GITREMOTE" && echo "done"
 
 	# update branches from $GITREMOTE
@@ -98,7 +98,7 @@ validateTag() {
 
 	# update $currentBranch commit
 	currentBranchCommit=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1 "$GITREMOTE/$currentBranch")
-	echo "last commit to $currentBranch branch: $currentBranchCommit"
+	echo "last commit in '$currentBranch' branch: $currentBranchCommit"
 	mosquitto_pub -p 1886 -t "openWB/system/current_branch_commit" -r -m "\"$currentBranchCommit\""
 
 	# list missing commits
