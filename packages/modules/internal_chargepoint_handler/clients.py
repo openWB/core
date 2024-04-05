@@ -90,6 +90,13 @@ class ClientHandler(SeriesHardwareCheckMixin):
 def client_factory(local_charge_point_num: int,
                    fault_state: FaultState,
                    created_client_handler: Optional[ClientHandler] = None) -> ClientHandler:
+    serial_client, evse_ids = get_modbus_client(
+        local_charge_point_num, created_client_handler)
+    return ClientHandler(local_charge_point_num, serial_client, evse_ids, fault_state)
+
+
+def get_modbus_client(local_charge_point_num: int,
+                      created_client_handler: Optional[ClientHandler] = None):
     tty_devices = list(Path("/dev/serial/by-path").glob("*"))
     log.debug("tty_devices"+str(tty_devices))
     resolved_devices = [str(file.resolve()) for file in tty_devices]
@@ -129,4 +136,4 @@ def client_factory(local_charge_point_num: int,
                 if detected_device:
                     break
         log.error("LP"+str(local_charge_point_num)+" Device: "+str(device))
-    return ClientHandler(local_charge_point_num, serial_client, evse_ids, fault_state)
+    return serial_client, evse_ids
