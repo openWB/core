@@ -1,11 +1,16 @@
-Bei Hybrid-Systemen ist der Speicher an den Wechselrichter angeschlossen. Bei den meisten Herstellern wird dann die Speicherleistung mit der PV-Leistung des Wechselrichters verrechnet und die ins Hausnetz abgegebene Leistung ausgegeben. Auch die Zählerstände werden miteinander verrechnet. In openWB wird die PV-Leistung und Speicher-Leistung getrennt ausgegeben.
+Bei Hybrid-Systemen ist ein DC- Speicher an den Wechselrichter angeschlossen. Bei den meisten Herstellern wird dann die Wechselrichter-Leistung anstelle der PV-Leistung ausgegeben. Auch die Zählerstände werden miteinander verrechnet. 
 
-Wenn die PV-Leistung um die Ladeleistung des Speichers zu niedrig ist, liegt ein Hybrid-System vor. (Achtung: Auch der Hausverbrauch stimmt dann nicht, da dieser aus den gemessenen Größen berechnet wird.)
+Wechselrichter-Leistung: Summe aus PV- und Speicher-Leistung, die der Wechselrichter ins Hausnetz abgibt.
+PV-Leistung: Auf dem Dach erzeugte Leistung.
 
-Das Verrechnen von Hybrid-Systemen erfolgt automatisch und muss nicht im Wechselrichter-Modul implementiert werden. Wenn ein Hybrid-System vorhanden ist und die Speicher-Leistung aus der Wechselrichter-Leistung herausgerechnet werden muss, ordne den Speicher in der Hierarchie unter dem Wechselrichter an.
+In openWB wird die PV-Leistung ausgegeben. Wenn in der Struktur der Speicher hinter dem Wechselrichter angeordnet ist, berechnet die openWB aus der Wechselrichter- und Speicher-Leistung den Wert für die PV-Leistung.
 
-Bei einem Hybrid-System wird der Speicher in der Hierarchie hinter dem Wechselrichter angeordnet:
-![Hybrid-System](hybrid.png)
+Nicht alle Hersteller geben bei Hybrid-Systemen die Wechselrichter-Leistung aus. Daher können wir keine allgemein gültige Empfehlung zur Konfiguration der Struktur geben.
+Die Struktur muss wie in der ersten Abbildung angeordnet werden, wenn die PV-Leistung um die Ladeleistung des Speichers zu niedrig ist. (Achtung: Auch der Hausverbrauch stimmt dann nicht, da dieser aus den gemessenen Größen berechnet wird.)
 
-Im Vergleich dazu die Standard-Konfiguration:
-![Standard-System](standard.png)
+Hybrid-System, wenn die Wechselrichter-Leistung ausgegeben wird:
+
+<img src="hybrid.png" width="500">
+
+Hybrid-System, wenn die PV-Leistung ausgegeben wird:
+<img src="standard.png" width="500">

@@ -250,7 +250,7 @@ class Counter:
         return range_offset
 
     SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Einschaltverzögerung unterschritten."
-    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald nach {}s die Einschaltverzögerung abgelaufen ist."
+    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald in {} die Einschaltverzögerung abgelaufen ist."
     SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle nicht erreicht "
                               "wird.")
     SWITCH_ON_EXPIRED = "Einschaltschwelle für die Dauer der Einschaltverzögerung überschritten."
@@ -292,7 +292,8 @@ class Counter:
                                                not feed_in_limit):
                     timestamp_switch_on_off = timecheck.create_timestamp()
                     self.data.set.reserved_surplus += power_to_reserve
-                    message = self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay)
+                    message = self.SWITCH_ON_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
+                        timestamp_switch_on_off, pv_config.switch_on_delay))
                     control_parameter.state = ChargepointState.SWITCH_ON_DELAY
                 else:
                     # Einschaltschwelle nicht erreicht
@@ -320,7 +321,8 @@ class Counter:
             # Timer ist noch nicht abgelaufen
             if timecheck.check_timestamp(control_parameter.timestamp_switch_on_off,
                                          pv_config.switch_on_delay):
-                msg = self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay)
+                msg = self.SWITCH_ON_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
+                    control_parameter.timestamp_switch_on_off, pv_config.switch_on_delay))
             # Timer abgelaufen
             else:
                 control_parameter.timestamp_switch_on_off = None
@@ -332,7 +334,7 @@ class Counter:
             log.exception("Fehler im allgemeinen PV-Modul")
 
     SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
-    SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Abschaltverzögerung {}s gestoppt."
+    SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Abschaltverzögerung in {} gestoppt."
     SWITCH_OFF_NO_STOP = ("Der Ladevorgang wird trotz fehlenden Überschusses nicht gestoppt, da in dem Fahrzeug-Profil "
                           "die Einstellung 'Ladung aktiv halten' aktiviert ist.")
     SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."
@@ -354,7 +356,8 @@ class Counter:
                     msg = self.SWITCH_OFF_STOP
                     control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                 else:
-                    msg = self.SWITCH_OFF_WAITING.format(pv_config.switch_off_delay)
+                    msg = self.SWITCH_OFF_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
+                        control_parameter.timestamp_switch_on_off, pv_config.switch_off_delay))
             chargepoint.set_state_and_log(msg)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
@@ -427,8 +430,9 @@ class Counter:
                         timestamp_switch_on_off = timecheck.create_timestamp()
                         # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                         self.data.set.released_surplus += chargepoint.data.set.required_power
-                        msg = self.SWITCH_OFF_WAITING.format(
-                            data.data.general_data.data.chargemode_config.pv_charging.switch_off_delay)
+                        msg = self.SWITCH_OFF_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
+                            timestamp_switch_on_off,
+                            data.data.general_data.data.chargemode_config.pv_charging.switch_off_delay))
                         control_parameter.state = ChargepointState.SWITCH_OFF_DELAY
                     # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
                     # werden.

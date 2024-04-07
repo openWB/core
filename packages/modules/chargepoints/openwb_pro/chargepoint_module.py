@@ -57,7 +57,8 @@ class ChargepointModule(AbstractChargepoint):
                     charge_state=json_rsp["charge_state"],
                     phases_in_use=json_rsp["phases_in_use"],
                     vehicle_id=json_rsp["vehicle_id"],
-                    evse_current=json_rsp["offered_current"]
+                    evse_current=json_rsp["offered_current"],
+                    serial_number=json_rsp["serial"]
                 )
 
                 if json_rsp.get("voltages"):

@@ -21,6 +21,7 @@ class ChargepointModule(AbstractChargepoint):
         self.__client_error_context = ErrorCounterContext(
             "Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke wird zurückgesetzt.")
         self.phases_in_use = 1
+        self.session = req.get_http_session()
 
     def set_current(self, current: float) -> None:
         if self.__client_error_context.error_counter_exceeded():
@@ -31,14 +32,14 @@ class ChargepointModule(AbstractChargepoint):
                 timeout = self.config.configuration.timeout
                 # Stromvorgabe in Hundertstel Ampere
                 params = (('current', int(current*100)),)
-                req.get_http_session().get('http://'+ip_address+'/setCurrent', params=params, timeout=(timeout, None))
+                self.session.get('http://'+ip_address+'/setCurrent', params=params, timeout=(timeout, None))
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             with self.__client_error_context:
                 ip_address = self.config.configuration.ip_address
                 timeout = self.config.configuration.timeout
-                response = req.get_http_session().get('http://'+ip_address+'/getParameters', timeout=timeout)
+                response = self.session.get('http://'+ip_address+'/getParameters', timeout=timeout)
                 json_rsp = response.json()["list"][0]
 
                 ev_state = json_rsp["vehicleState"]
@@ -74,6 +75,9 @@ class ChargepointModule(AbstractChargepoint):
                 else:
                     tag = None
 
+                resp = self.session.get('http://'+ip_address+'/evseHost', timeout=timeout)
+                mac = resp.json()["list"][0]["mac"]
+
                 chargepoint_state = ChargepointState(
                     power=json_rsp["actualPower"] * 1000,
                     currents=currents,
@@ -82,7 +86,8 @@ class ChargepointModule(AbstractChargepoint):
                     charge_state=charge_state,
                     phases_in_use=self.phases_in_use,
                     voltages=voltages,
-                    rfid=tag
+                    rfid=tag,
+                    serial_number=mac
                 )
 
                 self.store.set(chargepoint_state)

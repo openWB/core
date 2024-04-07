@@ -149,3 +149,14 @@ def test_check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan], now: str, 
 
     # evaluation
     assert state == expected_state
+
+
+def test_convert_timestamp_delta_to_time_string():
+    # setup
+    delta = 90
+
+    # execution
+    time_string = timecheck.convert_timestamp_delta_to_time_string(1652683202, delta)
+
+    # evaluation
+    assert time_string == "40 Sek."

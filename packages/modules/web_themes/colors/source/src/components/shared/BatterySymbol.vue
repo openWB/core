@@ -1,7 +1,7 @@
 <template>
 	<span>
 		<i class="fa batIcon" :class="batterySymbol" />
-		{{ soc + '%' }}
+		{{ Math.round(soc) + '%' }}
 	</span>
 </template>
 <script setup lang="ts">

@@ -12,7 +12,7 @@ from threading import Thread
 from control.chargelog.chargelog import calculate_charge_cost
 
 from helpermodules.changed_values_handler import ChangedValuesHandler
-from helpermodules.measurement_logging.update_daily_yields import update_daily_yields
+from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
 from helpermodules.measurement_logging.write_log import LogType, save_log
 from modules import loadvars
 from modules import configuration
@@ -56,7 +56,7 @@ class HandlerAlgorithm:
                     wait_for_module_update_completed(loadvars_.event_module_update_completed,
                                                      "openWB/set/system/device/module_update_completed")
                     data.data.copy_data()
-                    changed_values_handler.store_inital_values()
+                    changed_values_handler.store_initial_values()
                     self.heartbeat = True
                     if data.data.system_data["system"].data["perform_update"]:
                         data.data.system_data["system"].perform_update()
@@ -86,9 +86,10 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
-            changed_values_handler.store_inital_values()
+            changed_values_handler.store_initial_values()
             totals = save_log(LogType.DAILY)
             update_daily_yields(totals)
+            update_pv_monthly_yearly_yields()
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
             data.data.counter_all_data.validate_hierarchy()
@@ -253,7 +254,7 @@ try:
     event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
-    changed_values_handler.store_inital_values()
+    changed_values_handler.store_initial_values()
     schedule_jobs()
 except Exception:
     log.exception("Fehler im Main-Modul")

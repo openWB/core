@@ -44,6 +44,7 @@ const topics: { [topic: string]: string } = {
 		'openWB/set/LegacySmartHome/config/set/Devices/%/device_manual_control',
 	socUpdate: 'openWB/set/vehicle/%/get/force_soc_update',
 	setSoc: 'openWB/set/vehicle/%/soc_module/calculated_soc_state/manual_soc',
+	priceCharging: 'openWB/set/vehicle/template/charge_template/%/et/active',
 }
 export function updateServer(
 	item: string,
@@ -72,7 +73,8 @@ export function updateServer(
 		case 'cpPvMaxSoc':
 		case 'cpPvMinSoc':
 		case 'cpEtMaxPrice':
-		case 'cpPvMinSocCurrent': // these values are set in the charge template
+		case 'cpPvMinSocCurrent':
+			// these values are set in the charge template
 			topic = topic.replace('%', chargePoints[index].chargeTemplate.toString())
 			break
 		default:

@@ -27,7 +27,7 @@ from control import data
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
 from control.chargepoint.chargepoint_template import CpTemplate
-from control.chargepoint.control_parameter import ControlParameter
+from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev import Ev
 from control import phase_switch
@@ -212,11 +212,12 @@ class Chargepoint(ChargepointRfidMixin):
         # werden soll (-1), Daten zurücksetzen.
         if self.data.set.charging_ev_prev != -1:
             # Daten zurücksetzen, wenn nicht geladen werden soll.
-            self.reset_control_parameter()
+            self.reset_control_parameter_at_charge_stop()
             data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                 self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
             # Abstecken
             if not self.data.get.plug_state:
+                self.data.control_parameter = control_parameter_factory()
                 # Standardprofil nach Abstecken laden
                 if data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template.data.load_default:
                     self.data.config.ev = 0
@@ -303,6 +304,14 @@ class Chargepoint(ChargepointRfidMixin):
     def reset_log_data(self) -> None:
         self.data.set.log = Log()
         Pub().pub(f"openWB/set/chargepoint/{self.num}/set/log", asdict(self.data.set.log))
+
+    def reset_control_parameter_at_charge_stop(self) -> None:
+        # Wenn die Ladung zB wegen Autolock gestoppt wird, Zählerstände beibehalten, damit nicht nochmal die Ladung
+        # gestartet wird.
+        control_parameter = control_parameter_factory()
+        control_parameter.imported_at_plan_start = self.data.control_parameter.imported_at_plan_start
+        control_parameter.imported_instant_charging = self.data.control_parameter.imported_instant_charging
+        self.data.control_parameter = control_parameter
 
     def prepare_cp(self) -> Tuple[int, Optional[str]]:
         try:
@@ -639,7 +648,7 @@ class Chargepoint(ChargepointRfidMixin):
                     message = message_ev if message_ev else message
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
-                    if charging_ev.chargemode_changed and self.data.get.charge_state and state:
+                    if charging_ev.chargemode_changed and self.data.set.log.imported_since_mode_switch != 0 and state:
                         chargelog.save_interim_data(self, charging_ev)
 
                     # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht

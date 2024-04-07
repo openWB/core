@@ -4,8 +4,10 @@ from helpermodules.auto_str import auto_str
 
 @auto_str
 class E3dcConfiguration:
-    def __init__(self, address: str = None):
+    def __init__(self, modbus_id: int = 1, address: str = None, port: int = 502):
+        self.modbus_id = modbus_id
         self.address = address
+        self.port = port
 
 
 @auto_str

@@ -410,8 +410,13 @@
 						</div>
 						<div class="col-3">
 							<span class="charge-point-vehicle-charge-mode">--</span>
-							<span class="charge-point-vehicle-et-active hide">
-								<i class="fas fa-xs fa-coins"></i>
+							<span class="et-configured hide">
+								<span class="charge-point-charge-mode-options">
+									<span
+										class="chargemode-options chargemode-option-instant_charging chargemode-option-scheduled_charging">
+										<i class="charge-point-vehicle-et-active hide fas fa-xs fa-coins"></i>
+									</span>
+								</span>
 							</span>
 						</div>
 						<div class="col-3">
@@ -419,8 +424,8 @@
 							<span class="charge-point-set-current">--</span>
 						</div>
 						<div class="col-3 collPlus">
-							<span class="charge-point-energy-since-plugged">--</span><span
-								class="charge-point-range-since-plugged" data-consumption="0"></span>
+							<span class="charge-point-energy-since-mode-switch">--</span><span
+								class="charge-point-range-since-mode-switch"></span>
 						</div>
 					</div>
 					<div class="form-row">
@@ -515,25 +520,34 @@
 										data-style="w-100">
 								</div>
 							</div>
-							<div class="et et-configured">
-								<div class="form-row mb-1">
-									<div class="col">
-										<i class="fas fa-coins"></i>
-										Strompreisbasiert Laden
-									</div>
-									<div class="col-md-8 text-right">
-										<div class="form-row">
+							<div class="et et-configured hide">
+								<div class="charge-point-charge-mode-options mb-0 hide">
+									<div
+										class="chargemode-options chargemode-option-instant_charging chargemode-option-scheduled_charging">
+										<div class="form-row mb-1">
 											<div class="col">
-												<input class="charge-point-price-charging-active" type="checkbox" data-toggle="toggle"
-													data-topic="openWB/set/vehicle/template/charge_template/<ct>/et/active" data-on="Ja"
-													data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm"
-													data-style="w-100">
+												<i class="fas fa-coins"></i>
+												Strompreisbasiert Laden
 											</div>
-											<div class="col-2">
-												<button type="button" class="charge-point-max-price-button btn btn-sm btn-secondary btn-block" data-max-price="">
-													<span class="charge-point-price-charging-max_price">--</span>&nbsp;ct/kWh
-													<!-- <i class="fas fa-coins"></i> -->
-												</button>
+											<div class="col-md-8 text-right">
+												<div class="form-row">
+													<div class="col">
+														<input class="charge-point-price-charging-active"
+															type="checkbox" data-toggle="toggle"
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/et/active"
+															data-on="Ja" data-off="Nein" data-onstyle="success"
+															data-offstyle="danger" data-size="sm" data-style="w-100">
+													</div>
+													<div class="col-3">
+														<button type="button"
+															class="charge-point-max-price-button btn btn-sm btn-secondary btn-block"
+															data-max-price="">
+															<span class="charge-point-price-charging-max_price">
+																--
+															</span>&nbsp;ct/kWh
+														</button>
+													</div>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -611,8 +625,10 @@
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/current"
 														min="6" max="32" step="1">
 												</div>
-												<label for="currentInstantChargeCpT" class="col-form-label valueLabel"
-													data-suffix="A">-- A</label>
+												<label for="currentInstantChargeCpT"
+													class="col-2 col-form-label valueLabel text-right" data-suffix="A">
+													-- A
+												</label>
 											</div>
 										</div>
 									</div>
@@ -648,7 +664,8 @@
 															id="soclimitCpT" min="5" max="100" step="5"
 															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
 													</div>
-													<label for="soclimitCpT" class="col-form-label valueLabel"
+													<label for="soclimitCpT"
+														class="col-2 col-form-label valueLabel text-right"
 														data-suffix="%">-- %</label>
 												</div>
 											</div>
@@ -667,7 +684,8 @@
 															data-transformation='{ "in": "<v>/1000", "out": "<v>*1000" }'
 															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
 													</div>
-													<label for="amountlimitCpT" class="col-form-label valueLabel"
+													<label for="amountlimitCpT"
+														class="col-2 col-form-label valueLabel text-right"
 														data-suffix="kWh">-- kWh</label>
 												</div>
 											</div>
@@ -688,9 +706,10 @@
 														id="minCurrentPvCpT"
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current"
 														min="0" max="11" step="1"
-														data-list="0,6,7,8,9,10,11,12,13,14,15,16">
+														data-list='[[0,"Aus"],6,7,8,9,10,11,12,13,14,15,16]'>
 												</div>
-												<label for="minCurrentPvCpT" class="col-form-label valueLabel"
+												<label for="minCurrentPvCpT"
+													class="col-2 col-form-label valueLabel text-right"
 													data-suffix="A">-- A</label>
 											</div>
 										</div>
@@ -706,9 +725,11 @@
 														class="charge-point-pv-charge-min-soc form-control-range rangeInput"
 														id="minSocPvCpT"
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc"
-														min="0" max="99" step="1">
+														min="0" max="19" step="1"
+														data-list='[[0,"Aus"],5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95]'>
 												</div>
-												<label for="minSocPvCpT" class="col-form-label valueLabel"
+												<label for="minSocPvCpT"
+													class="col-2 col-form-label valueLabel text-right"
 													data-suffix="%">-- %</label>
 											</div>
 										</div>
@@ -724,9 +745,10 @@
 														class="charge-point-pv-charge-min-soc-current form-control-range rangeInput"
 														id="minSocCurrentPvCpT"
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current"
-														min="6" max="16" step="1">
+														min="6" max="32" step="1">
 												</div>
-												<label for="minSocCurrentPvCpT" class="col-form-label valueLabel"
+												<label for="minSocCurrentPvCpT"
+													class="col-2 col-form-label valueLabel text-right"
 													data-suffix="A">-- A</label>
 											</div>
 										</div>
@@ -742,9 +764,11 @@
 														class="charge-point-pv-charge-max-soc form-control-range rangeInput"
 														id="maxSocPvCpT"
 														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc"
-														min="1" max="100" step="1">
+														min="0" max="21" step="1"
+														data-list='[1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,[101,"Aus"]]'>
 												</div>
-												<label for="maxSocPvCpT" class="col-form-label valueLabel"
+												<label for="maxSocPvCpT"
+													class="col-2 col-form-label valueLabel text-right"
 													data-suffix="%">-- %</label>
 											</div>
 										</div>
@@ -816,8 +840,9 @@
 				<div class="modal-content">
 					<!-- modal header -->
 					<div class="modal-header bg-warning">
-						<h4 class="modal-title text-dark">SoC-Eingabe - Fahrzeug <span
-								class="charge-point-soc"></span></h4>
+						<h4 class="modal-title text-dark">
+							SoC-Eingabe - Fahrzeug <span class="charge-point-soc"></span>
+						</h4>
 					</div>
 					<!-- modal body -->
 					<div class="modal-body">
@@ -921,7 +946,6 @@
 								<canvas id="electricityPriceChartCanvas"></canvas>
 							</div>
 						</div>
-		
 						<div class="row vaRow justify-content-center">
 							<div class="col-2 px-1 py-1">
 								<button type="button" id="maxPriceDecrement"
@@ -929,8 +953,8 @@
 							</div>
 							<div class="col py-1">
 								<div class="input-group input-group-lg">
-									<input id="maxPriceBox" type="number" step="0.01"
-										name="maxPriceBox" class="form-control text-right">
+									<input id="maxPriceBox" type="number" step="0.01" name="maxPriceBox"
+										class="form-control text-right">
 									<div class="input-group-append">
 										<div class="input-group-text">
 											ct/kWh
@@ -1144,15 +1168,15 @@
 				// load mqtt library
 				'js/mqttws31.js',
 				// some helper functions
-				'helperFunctions.js?ver=20221117',
+				'helperFunctions.js?ver=20240314',
 				// functions for processing messages
-				'processAllMqttMsg.js?ver=20240108',
+				'processAllMqttMsg.js?ver=20240425',
 				// respective Chart.js definition live
-				'livechart.js?ver=20221117',
+				'livechart.js?ver=20240425',
 				// respective Chart.js definition price based charging
 				'electricityPriceChart.js?ver=20240108',
 				// functions performing mqtt and start mqtt-service
-				'setupMqttServices.js?ver=20240108',
+				'setupMqttServices.js?ver=20240425',
 			];
 			scriptsToLoad.forEach(function (src) {
 				var script = document.createElement('script');
@@ -1300,21 +1324,19 @@
 				var element = $('#' + $.escapeSelector(elementId));
 				var label = $('label[for="' + elementId + '"].valueLabel');
 				label.addClass('text-danger');
-				// if ( $.escapeSelector(elementId) == 'MaxPriceForCharging') {
-				// 	// marks times in the price chart where the price is low enough so charging would be allowed
-				// 	var priceAnnotations = createPriceAnnotations();
-				// 	electricityPriceChart.options.annotation.annotations = priceAnnotations;
-				// 	electricityPriceChart.update();
-				// }
 
 				delayUserInput(elementId, function (id) {
 					// gets executed on callback, 2000ms after last input-change
 					// changes label color back to normal and sends input-value by mqtt
 					var elem = $('#' + $.escapeSelector(id));
 					var value = parseFloat(elem.val());
-					var label = $('label[for="' + id + '"].valueLabel');
 					if (list = $(elem).attr('data-list')) {
-						value = parseFloat(list.split(',')[parseInt(value)]);
+						var jsonList = JSON.parse(list);
+						if (Array.isArray(jsonList[parseInt(value)])) {
+							value = jsonList[parseInt(value)][0];
+						} else {
+							value = jsonList[parseInt(value)];
+						}
 					} else if (formula = $(elem).attr('data-transformation')) {
 						formula = JSON.parse(formula);
 						formula = formula.out.replace('<v>', value);
@@ -1322,7 +1344,7 @@
 					}
 					var topic = getTopicToSendTo(id);
 					publish(value, topic);
-					label.removeClass('text-danger');
+					$('label[for="' + id + '"].valueLabel').removeClass('text-danger');
 				}, 2000);
 			});
 

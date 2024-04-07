@@ -24,10 +24,10 @@ def create_device(device_config: Varta):
         return VartaBatApi(device_config.id, component_config, device_config.configuration.ip_address)
 
     def create_bat_modbus_component(component_config: VartaBatModbusSetup):
-        return VartaBatModbus(device_config.id, component_config)
+        return VartaBatModbus(device_config.id, component_config, device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: VartaCounterSetup):
-        return VartaCounter(device_config.id, component_config)
+        return VartaCounter(device_config.id, component_config, device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[VartaBatApi, VartaBatModbus, VartaCounter]]):
         with client as c:
@@ -41,7 +41,7 @@ def create_device(device_config: Varta):
                     component.update()
 
     try:
-        client = ModbusTcpClient_(device_config.configuration.ip_address, 502)
+        client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
     except Exception:
         log.exception("Fehler in create_device")
     return ConfigurableDevice(

@@ -1,5 +1,7 @@
 <template>
-	<p class="settingsheader mt-2 ms-1">Ladepunkt:</p>
+	<p class="settingsheader mt-2 ms-1">
+		Ladeeinstellungen für {{ cp.vehicleName }}:
+	</p>
 	<!-- Select the charge mode -->
 	<ConfigItem
 		title="Lademodus"
@@ -21,7 +23,7 @@
 	</ConfigItem>
 	<!-- Select the vehicle -->
 	<ConfigItem
-		title="Fahrzeug"
+		title="Fahrzeug wechseln"
 		icon="fa-car"
 		:infotext="infotext['vehicle']"
 		:fullwidth="true"
@@ -57,6 +59,16 @@
 	>
 		<SwitchInput v-model="cp.timedCharging" />
 	</ConfigItem>
+	<!-- Price based Charging -->
+	<ConfigItem
+		v-if="etData.active"
+		title="Strompreisbasiert laden"
+		icon="fa-money-bill"
+		:infotext="infotext['pricebased']"
+		:fullwidth="true"
+	>
+		<SwitchInput v-model="cp.etActive" />
+	</ConfigItem>
 </template>
 
 <script setup lang="ts">
@@ -66,7 +78,7 @@ import ConfigItem from '../../shared/ConfigItem.vue'
 import { infotext } from '@/assets/js/themeConfig'
 import SwitchInput from '../../shared/SwitchInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
-
+import { etData } from '@/components/priceChart/model'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
