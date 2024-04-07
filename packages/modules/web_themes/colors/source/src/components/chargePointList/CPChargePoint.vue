@@ -324,8 +324,11 @@ const realChargeAmpereString = computed(() => {
 	)
 })
 const chargedRangeString = computed(() => {
+	const rangeSincePlugged = props.chargepoint.rangeCharged
+	const energySincePlugged = props.chargepoint.chargedSincePlugged
+	const energyToday = props.chargepoint.dailyYield
 	return (
-		Math.round(props.chargepoint.rangeCharged).toString() +
+		Math.round(rangeSincePlugged / energySincePlugged * energyToday).toString() +
 		' ' +
 		props.chargepoint.rangeUnit
 	)
