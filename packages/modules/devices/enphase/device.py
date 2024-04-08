@@ -80,7 +80,7 @@ class Device(AbstractDevice):
             return
         try:
             log.debug("saving envoy version")
-            Pub().pub("openWB/system/device/" + str(self.device_config.id) + "/config", asdict(self.device_config))
+            Pub().pub("openWB/set/system/device/" + str(self.device_config.id) + "/config", asdict(self.device_config))
         except Exception as e:
             log.exception('Token mqtt write exception ' + str(e))
 
@@ -104,7 +104,7 @@ class Device(AbstractDevice):
         self.device_config.configuration.serial = match.group(1)
         try:
             log.debug("saving envoy serial")
-            Pub().pub("openWB/system/device/" + str(self.device_config.id) + "/config", asdict(self.device_config))
+            Pub().pub("openWB/set/system/device/" + str(self.device_config.id) + "/config", asdict(self.device_config))
         except Exception as e:
             log.exception('Token mqtt write exception ' + str(e))
 
@@ -196,7 +196,7 @@ class Device(AbstractDevice):
             self.device_config.configuration.token = token
             try:
                 log.debug("saving new access token")
-                Pub().pub("openWB/system/device/" + str(self.device_config.id) + "/config", asdict(self.device_config))
+                Pub().pub("openWB/set/system/device/" + str(self.device_config.id) + "/config", asdict(self.device_config))
             except Exception as e:
                 log.exception('Token mqtt write exception ' + str(e))
                 return False
