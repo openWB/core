@@ -365,6 +365,7 @@ class UpdateConfig:
         "^openWB/system/backup_cloud/config$",
         "^openWB/system/boot_done$",
         "^openWB/system/configurable/backup_clouds$",
+        "^openWB/system/backup_cloud/backup_before_update$"
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
@@ -469,6 +470,7 @@ class UpdateConfig:
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
+        ("openWB/system/backup_cloud/backup_before_update", True),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/datastore_version", DATASTORE_VERSION),
         ("openWB/system/usage_terms_acknowledged", False),
