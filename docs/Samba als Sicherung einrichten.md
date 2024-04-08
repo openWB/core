@@ -4,7 +4,7 @@ Nachfolgende Schritte müssen auf dem Bereitstellenden system gemacht werden
 1. SMB Freigabe erstellen (Auf NAS etc.)
 2. User einrichten und berechtigen - R/W
 
-Nachfolgende Schritte müssen in openwb gemacht werden.
+Nachfolgende Schritte müssen in openWB gemacht werden.
 1. IP Adresse oder Name (Am besten FQDN) im Feld Server hinterlegen
     * IP: z.B 192.168.178.1
     * Name z.B. mein-server
