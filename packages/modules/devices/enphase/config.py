@@ -13,11 +13,13 @@ class EnphaseConfiguration:
                  version: EnphaseVersion = EnphaseVersion.V1,
                  user: Optional[str] = None,
                  password: Optional[str] = None,
+                 serial: Optional[str] = None,
                  token: Optional[str] = None):
         self.hostname = hostname
         self.version = version
         self.user = user
         self.password = password
+        self.serial = serial
         self.token = token
 
 
