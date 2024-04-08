@@ -196,7 +196,8 @@ class Device(AbstractDevice):
             self.device_config.configuration.token = token
             try:
                 log.debug("saving new access token")
-                Pub().pub("openWB/set/system/device/" + str(self.device_config.id) + "/config", asdict(self.device_config))
+                Pub().pub("openWB/set/system/device/" + str(self.device_config.id) + "/config",
+                          asdict(self.device_config))
             except Exception as e:
                 log.exception('Token mqtt write exception ' + str(e))
                 return False
