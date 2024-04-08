@@ -4,7 +4,11 @@ Nachfolgende Schritte müssen auf dem Bereitstellenden system gemacht werden
 1. SMB Freigabe erstellen (Auf NAS etc.)
 2. User einrichten und berechtigen - R/W
 
+<<<<<<< HEAD
 Nachfolgende Schritte müssen in openWB gemacht werden.
+=======
+Nachfolgende Schritte müssen in openwb gemacht werden.
+>>>>>>> 00a0158e2 (backup_before_update)
 1. IP Adresse oder Name (Am besten FQDN) im Feld Server hinterlegen
     * IP: z.B 192.168.178.1
     * Name z.B. mein-server
