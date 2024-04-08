@@ -5,3 +5,12 @@ Zunächst einen neuen Ordner erstellen/auswählen, in den die Sicherungen hochge
 3. Link kopieren
 
 ![NextCloud Ordner freigeben](NextCloud.png)
+
+Lautet der Freigabelink z.B.: https://kim.nl.tab.digital/s/tUbHHrEdGltSRgx, dann wird der link folgendermaßen in den Reiter System -> Datenverwaltung -> Automatische Sicherung in einen Cloud-Dienst eingetragen:
+Wahl: BackupCloud: NextCloud
+Unterpunkt: Einstellungen für Backup-Cloud Modul "NextCloud"
+Cloud-URL: https://mydomain.de z.B.: https://kim.nl.tab.digital OHNE /s/ oder /
+Benutzername: dein shared token, also z.B.: tUbHHrEdGltSRgx
+Passwort: kann leergelassen oder irgendetwas eingetragen werden, spielt keine Rolle
+
+Stand 08. April 2024
