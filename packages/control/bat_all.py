@@ -119,7 +119,9 @@ class BatAll:
                     self.data.get.fault_str = NO_ERROR
                 else:
                     self.data.get.fault_state = fault_state
-                    self.data.get.fault_str = "Bitte die Statusmeldungen der Speicher prüfen."
+                    self.data.get.fault_str = ("Bitte die Statusmeldungen der Speicher prüfen. Es konnte kein "
+                                               "aktueller Zählerstand ermittelt werden, da nicht alle Module Werte "
+                                               "liefern.")
                 self.data.get.power = power
                 try:
                     self.data.get.soc = int(soc_sum / soc_count)
