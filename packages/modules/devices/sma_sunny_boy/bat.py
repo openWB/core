@@ -21,7 +21,8 @@ class SunnyBoyBat:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def read(self) -> BatState:
-        unit = 3
+        unit = self.component_config.configuration.modbus_id
+
         soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.UINT_32, unit=unit)
         imp = self.__tcp_client.read_holding_registers(31393, ModbusDataType.INT_32, unit=unit)
         exp = self.__tcp_client.read_holding_registers(31395, ModbusDataType.INT_32, unit=unit)
@@ -30,8 +31,8 @@ class SunnyBoyBat:
         else:
             power = exp * -1
 
-        exported = self.__tcp_client.read_holding_registers(31401, ModbusDataType.UINT_64, unit=3)
-        imported = self.__tcp_client.read_holding_registers(31397, ModbusDataType.UINT_64, unit=3)
+        exported = self.__tcp_client.read_holding_registers(31401, ModbusDataType.UINT_64, unit=unit)
+        imported = self.__tcp_client.read_holding_registers(31397, ModbusDataType.UINT_64, unit=unit)
 
         return BatState(
             power=power,

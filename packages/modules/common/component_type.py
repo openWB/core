@@ -8,6 +8,7 @@ class ComponentType(Enum):
     COUNTER = "counter"
     ELECTRICITY_TARIFF = "electricity_tariff"
     INVERTER = "inverter"
+    RIPPLE_CONTROL_RECEIVER = "ripple_control_receiver"
 
 
 def special_to_general_type_mapping(component_type: str) -> ComponentType:

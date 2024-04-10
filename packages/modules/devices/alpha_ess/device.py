@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 alpha_ess_component_classes = Union[bat.AlphaEssBat, counter.AlphaEssCounter, inverter.AlphaEssInverter]
-default_unit_id = 85
 
 
 class Device(AbstractDevice):
@@ -33,7 +32,8 @@ class Device(AbstractDevice):
             if self.device_config.configuration.source == 0:
                 self.client = modbus.ModbusTcpClient_("192.168.193.125", 8899)
             else:
-                self.client = modbus.ModbusTcpClient_(self.device_config.configuration.ip_address, 502)
+                self.client = modbus.ModbusTcpClient_(
+                    self.device_config.configuration.ip_address, self.device_config.configuration.port)
         except Exception:
             log.exception("Fehler im Modul "+self.device_config.name)
 
@@ -53,7 +53,8 @@ class Device(AbstractDevice):
                 self.device_config.id,
                 component_config,
                 self.client,
-                self.device_config.configuration))
+                self.device_config.configuration,
+                self.device_config.configuration.modbus_id))
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -67,7 +68,7 @@ class Device(AbstractDevice):
                 for component in self.components:
                     # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
                     with SingleComponentUpdateContext(self.components[component].fault_state):
-                        self.components[component].update(unit_id=default_unit_id)
+                        self.components[component].update()
         else:
             log.warning(
                 self.device_config.name +

@@ -1,5 +1,5 @@
 <template>
-	<div class="p-2 m-0 d-flex flex-fill" :class="widgetWidth">
+	<div class="p-2 m-0 d-flex" :class="widgetWidth">
 		<div class="wb-widget p-0 m-0 shadow">
 			<div class="d-flex justify-content-between">
 				<h3 class="m-4 me-0 mb-0">
@@ -14,7 +14,7 @@
 			</div>
 			<div class="px-4 pt-4 pb-2 wb-subwidget">
 				<div class="row">
-					<div class="col">
+					<div class="col m-0 p-0">
 						<div class="container-fluid m-0 p-0">
 							<slot />
 						</div>

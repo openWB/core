@@ -21,7 +21,8 @@ SAMPLE_CHARGEPOINT_STATE = ChargepointState(
     rfid="001180644",
     rfid_timestamp=1700839714,
     vehicle_id="98:ED:5C:B4:EE:8D",
-    evse_current=6
+    evse_current=6,
+    serial_number="823950"
 )
 
 SAMPLE = {'charge_state': True,
@@ -56,7 +57,8 @@ SAMPLE_CHARGEPOINT_STATE_EXTENDED = ChargepointState(
     phases_in_use=1,
     rfid=None,
     frequency=50.2,
-    evse_current=6
+    evse_current=6,
+    serial_number="493826"
 )
 
 SAMPLE_EXTENDED = {"date": "2023:09:18-15:13:41",

@@ -27,7 +27,7 @@ class SungrowBat:
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
         soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.INT_16, unit=unit) / 10)
-        resp = self.__tcp_client.delegate.read_input_registers(13000, 1, unit=unit)
+        resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
         binary = bin(resp.registers[0])[2:].zfill(8)
         power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit)
         imported = self.__tcp_client.read_input_registers(13026, ModbusDataType.UINT_32,

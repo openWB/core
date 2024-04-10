@@ -60,15 +60,19 @@ function autPct(item: PowerItem) {
 		const generatedEnergy = src.pv.energy
 		const batEnergy = src.batOut.energy
 		const storedEnergy = usg.batIn.energy
-		return Math.round(
-			((generatedEnergy + batEnergy - exportedEnergy - storedEnergy) /
-				(generatedEnergy +
-					batEnergy +
-					importedEnergy -
-					exportedEnergy -
-					storedEnergy)) *
-				100,
-		)
+		if (generatedEnergy + batEnergy - exportedEnergy - storedEnergy > 0) {
+			return Math.round(
+				((generatedEnergy + batEnergy - exportedEnergy - storedEnergy) /
+					(generatedEnergy +
+						batEnergy +
+						importedEnergy -
+						exportedEnergy -
+						storedEnergy)) *
+					100,
+			)
+		} else {
+			return 0
+		}
 	} else {
 		return item.pvPercentage
 	}

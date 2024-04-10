@@ -16,22 +16,28 @@ class JanitzaCounter:
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, JanitzaCounterSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
+                 tcp_client: modbus.ModbusTcpClient_,
+                 modbus_id: int) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(JanitzaCounterSetup, component_config)
         self.__tcp_client = tcp_client
+        self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, unit=1)
-            powers = self.__tcp_client.read_holding_registers(19020, [ModbusDataType.FLOAT_32] * 3, unit=1)
-            currents = self.__tcp_client.read_holding_registers(19012, [ModbusDataType.FLOAT_32] * 3, unit=1)
-            voltages = self.__tcp_client.read_holding_registers(19000, [ModbusDataType.FLOAT_32] * 3, unit=1)
-            power_factors = self.__tcp_client.read_holding_registers(19044, [ModbusDataType.FLOAT_32] * 3, unit=1)
-            frequency = self.__tcp_client.read_holding_registers(19050, ModbusDataType.FLOAT_32, unit=1)
+            power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+            powers = self.__tcp_client.read_holding_registers(
+                19020, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
+            currents = self.__tcp_client.read_holding_registers(
+                19012, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
+            voltages = self.__tcp_client.read_holding_registers(
+                19000, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
+            power_factors = self.__tcp_client.read_holding_registers(
+                19044, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
+            frequency = self.__tcp_client.read_holding_registers(19050, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
 
         imported, exported = self.sim_counter.sim_count(power)
 

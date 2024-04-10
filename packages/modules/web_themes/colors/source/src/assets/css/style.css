@@ -24,7 +24,12 @@ body>.container {
 /* No media query since this is the default in Bootstrap */
 html {
 	font-size: 12px;
+	.settingscolumn {
+		grid-column: span 12;
+	}
 }
+
+
 @media screen and (min-width: 240px) {
 	html {
 		font-size: 13px;
@@ -81,6 +86,9 @@ html {
 @media screen and (min-width: 992px) {
 	html {
 		font-size: 11px;
+		.settingscolumn {
+			grid-column: span 4;
+		}
 	}
 }
 /* Extra large devices (very large desktops, 1200px and up) */
@@ -157,14 +165,14 @@ body>.container-fluid {
 	--color-switchRed: #d12020;
 	--color-switchGreen: #4db662;
 	--color-switchBlue: steelblue;
-	--color-cp1: #6baed6;
-	--color-cp2: #4292c6;
-	--color-cp3: #2171b5;
-	--color-cp4: #9ecae1;
-	--color-cp5: #c6dbef;
-	--color-cp6: #deebf7;
-	--color-cp7: #08519c;
-	--color-cp8: #6baed6;
+	--color-cp0: #6baed6;
+	--color-cp1: #4292c6;
+	--color-cp2: #2171b5;
+	--color-cp3: #9ecae1;
+	--color-cp4: #c6dbef;
+	--color-cp5: #deebf7;
+	--color-cp6: #08519c;
+	--color-cp7: #6baed6;
 	--color-evu: firebrick;
 	--color-pv: #33a02c;
 	--color-house: #7f7f7f;
@@ -192,7 +200,7 @@ body>.container-fluid {
 	--color-subframe: lightgrey;
 	--color-fg: black;
 	--color-scale: lightgrey;
-	--color-title: black;
+	--color-title: rgba(0, 0, 0, 0.644);
 	--padding-widget: 5px;
 	--fontCol: rgba(255, 255, 255, 0.82);
 	--gridCol: rgba(255, 255, 255, 0.82);
@@ -291,6 +299,48 @@ body>.container-fluid {
 	padding: var(--padding-widget);
 }
 
+.grid12 {
+	display: grid;
+	grid-template-columns: repeat(12, auto);
+	gap: .2em;
+	justify-items: center;
+}
+.grid-col-3 {
+	grid-column: span 3;
+}
+.grid-col-4 {
+	grid-column: span 4;
+}
+.grid-col-6 {
+	grid-column: span 6;
+}
+.grid-col-12 {
+	grid-column: span 12;
+}
+
+@supports (grid-template-columns: subgrid) {
+	.subgrid {
+		display:grid;
+		grid-column: span 12; 
+		grid-template-columns: subgrid;
+		justify-content: top;
+	}
+}
+@supports not (grid-template-columns: subgrid) {
+	.subgrid {
+		display:grid;
+		grid-column: span 12; 
+		grid-template-columns: auto auto auto auto auto auto auto auto auto auto auto auto;
+		justify-content: top;
+		width: 100%;
+	}
+}
+.grid-left {
+	justify-self: start;
+}
+.grid-right {
+	justify-self: end;
+}
 th {
 	color: var(--color-axis);
 }
@@ -335,4 +385,8 @@ swiper-slide {
 
 option {
 	color: blue;
+}
+.ttarea .ttmessage {visibility: hidden}
+.ttarea:hover  .ttmessage {
+    visibility: visible;
 }

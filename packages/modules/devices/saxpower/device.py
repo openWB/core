@@ -22,8 +22,8 @@ class Device(AbstractDevice):
         self.components = {}  # type: Dict[str, bat.SaxpowerBat]
         try:
             self.device_config = dataclass_from_dict(Saxpower, device_config)
-            ip_address = self.device_config.configuration.ip_address
-            self.client = modbus.ModbusTcpClient_(ip_address, 3600)
+            self.client = modbus.ModbusTcpClient_(
+                self.device_config.configuration.ip_address, self.device_config.configuration.port)
         except Exception:
             log.exception("Fehler im Modul "+self.device_config.name)
 
@@ -36,7 +36,7 @@ class Device(AbstractDevice):
             component_type].component_descriptor.configuration_factory, component_config)
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component"+str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config.id, component_config, self.client))
+                self.device_config.id, component_config, self.client, self.device_config.configuration.modbus_id))
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +

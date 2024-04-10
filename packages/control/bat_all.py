@@ -94,32 +94,39 @@ class BatAll:
                 Pub().pub("openWB/set/bat/config/configured", self.data.config.configured)
                 # Summe für alle konfigurierten Speicher bilden
                 exported = 0
-                fault_state = 0
                 imported = 0
                 power = 0
                 soc_sum = 0
                 soc_count = 0
-                self.data.get.fault_str = NO_ERROR
+                fault_state = 0
                 for battery in data.data.bat_data.values():
                     try:
-                        power += battery.data.get.power
-                        imported += battery.data.get.imported
-                        exported += battery.data.get.exported
-                        soc_sum += battery.data.get.soc
-                        soc_count += 1
-                        if fault_state < battery.data.get.fault_state:
-                            fault_state = battery.data.get.fault_state
-                            self.data.get.fault_str = (
-                                "Speicher-Leistung wird nicht in der Regelung berücksichtigt, da in einer der "
-                                "Batterie-Komponenten eine Warnung (zB während der Kalibrierung) oder ein Fehler "
-                                "aufgetreten ist. Bitte die Status-Meldungen der Batterie-Komponenten prüfen.")
+                        if battery.data.get.fault_state < 2:
+                            power += battery.data.get.power
+                            imported += battery.data.get.imported
+                            exported += battery.data.get.exported
+                            soc_sum += battery.data.get.soc
+                            soc_count += 1
+                        else:
+                            if fault_state < battery.data.get.fault_state:
+                                fault_state = battery.data.get.fault_state
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
-                self.data.get.fault_state = 0
+                if fault_state == 0:
+                    self.data.get.imported = imported
+                    self.data.get.exported = exported
+                    self.data.get.fault_state = 0
+                    self.data.get.fault_str = NO_ERROR
+                else:
+                    self.data.get.fault_state = fault_state
+                    self.data.get.fault_str = ("Bitte die Statusmeldungen der Speicher prüfen. Es konnte kein "
+                                               "aktueller Zählerstand ermittelt werden, da nicht alle Module Werte "
+                                               "liefern.")
                 self.data.get.power = power
-                self.data.get.imported = imported
-                self.data.get.exported = exported
-                self.data.get.soc = int(soc_sum / soc_count)
+                try:
+                    self.data.get.soc = int(soc_sum / soc_count)
+                except ZeroDivisionError:
+                    self.data.get.soc = 0
             else:
                 self.data.config.configured = False
                 Pub().pub("openWB/set/bat/config/configured", self.data.config.configured)
@@ -135,7 +142,7 @@ class BatAll:
             # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
             if parent_data.config.max_ac_out > 0:
                 max_bat_discharge_power = parent_data.config.max_ac_out + parent_data.get.power
-                return max_bat_discharge_power
+                return max_bat_discharge_power - abs(battery.data.get.power)
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
                 battery.data.get.fault_str = ("Maximale Entladeleistung des Wechselrichters" +

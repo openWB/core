@@ -1,4 +1,4 @@
-import { mqttRegister, mqttSubscribe } from './mqttClient'
+import { mqttRegister, mqttSubscribe, mqttUnsubscribe } from './mqttClient'
 import type { Hierarchy } from './types'
 import {
 	correctHouseConsumption,
@@ -24,6 +24,8 @@ import {
 	processVehicleTemplateMessages,
 } from '@/components/chargePointList/processMessages'
 import { processSmarthomeMessages } from '@/components/smartHome/processMessages'
+import { addCounter, counters } from '@/components/counterList/model'
+import { mqttClientId } from './mqttClient'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -35,6 +37,7 @@ const topicsToSubscribe = [
 	'openWB/optional/et/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
+	'openWB/command/' + mqttClientId() + '/#',
 ]
 export function msgInit() {
 	mqttRegister(processMqttMessage)
@@ -42,6 +45,11 @@ export function msgInit() {
 		mqttSubscribe(topic)
 	})
 	initGraph()
+}
+export function msgStop() {
+	topicsToSubscribe.forEach((topic) => {
+		mqttUnsubscribe(topic)
+	})
 }
 function processMqttMessage(topic: string, payload: Buffer) {
 	const message = payload.toString()
@@ -74,34 +82,51 @@ function processMqttMessage(topic: string, payload: Buffer) {
 	} else if (topic.match(/^openwb\/optional\/et\//i)) {
 		processEtProviderMessages(topic, message)
 	} // else if ( mqttTopic.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttTopic, message); }
-	//else if (topic.match(/^openwb\/system\//i)) {
-	//	processSystemMessages(topic, message)
-	//}  else if ( mqttTopic.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttTopic, message); }
+	else if (topic.match(/^openwb\/system\//i)) {
+		processSystemMessages(topic, message)
+	} // else if ( mqttTopic.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttTopic, message); }
 	// else if ( mqttTopic.match( /^openwb\/hook\//i) ) { processHookMessages(mqttTopic, message); }
 	// else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesMessages(mqttTopic, message); }
 	else if (topic.match(/^openwb\/LegacySmartHome\//i)) {
 		processSmarthomeMessages(topic, message)
+	} else if (topic.match(/^openwb\/command\//i)) {
+		processCommandMessages(topic, message)
 	}
+
 	// else if ( mqttTopic.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttTopic, message); }
 }
 function processCounterMessages(topic: string, message: string) {
 	const elements = topic.split('/')
-	if (+elements[2] == globalData.evuId) {
+	const id = +elements[2]
+	if (id == globalData.evuId) {
 		processEvuMessages(topic, message)
 	} else if (elements[3] == 'config') {
 		// console.warn('Ignored counter config message')
-	} else {
+	}
+	if (elements[3] == 'get' && id in counters) {
 		switch (elements[4]) {
 			case 'power':
+				counters[id].power = +message
+				break
 			case 'config':
+				break
 			case 'fault_str':
+				break
 			case 'fault_state':
+				break
 			case 'power_factors':
+				break
 			case 'imported':
+				break
 			case 'exported':
+				break
 			case 'frequency':
-			case 'daily_yield_import':
-			case 'daily_yield_export':
+				break
+			case 'daily_imported':
+				counters[id].energy_imported = +message
+				break
+			case 'daily_exported':
+				counters[id].energy_exported = +message
 				break
 			default:
 			// console.warn('Ignored COUNTER message: ' + topic)
@@ -138,6 +163,7 @@ function processHierarchy(hierarchy: Hierarchy) {
 	switch (hierarchy.type) {
 		case 'counter':
 			// console.info('counter in hierachy: ' + hierarchy.id)
+			addCounter(hierarchy.id, hierarchy.type)
 			break
 		case 'cp':
 			addChargePoint(hierarchy.id)
@@ -152,6 +178,7 @@ function processHierarchy(hierarchy: Hierarchy) {
 		default:
 		// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
 	}
+
 	// recursively process the hierarchy
 	hierarchy.children.forEach((element) => processHierarchy(element))
 }
@@ -201,5 +228,28 @@ function processEvuMessages(topic: string, message: string) {
 			usageSummary.evuOut.energy = +message
 			break
 		default:
+	}
+}
+
+function processSystemMessages(topic: string, message: string) {
+	if (
+		topic.match(/^openWB\/system\/device\/[0-9]+\/component\/[0-9]+\/config$/i)
+	) {
+		const config = JSON.parse(message)
+		if (config.type == 'counter') {
+			counters[config.id].name = config.name
+		}
+	}
+}
+
+function processCommandMessages(topic: string, message: string) {
+	const tokens = topic.split('/')
+	if (topic.match(/^openWB\/command\/[a-z]+\/error$/i)) {
+		if (tokens[2] == mqttClientId()) {
+			const err = JSON.parse(message)
+			console.error(
+				`Error message from openWB: \nCommand: ${err.command}\nData: JSON.stringify(err.data)\nError:\n ${err.error}`,
+			)
+		}
 	}
 }

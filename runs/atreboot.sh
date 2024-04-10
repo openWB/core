@@ -20,6 +20,30 @@ chmod 666 "$LOGFILE"
 		fi
 	}
 
+	waitForServiceStop() {
+		# this function waits for a service to stop and kills the process if it takes too long
+		# this is necessary at least for mosquitto, as the service is stopped, but the process is still running
+		service=$1
+		pattern=$2
+		timeout=$3
+
+		counter=0
+		sudo systemctl stop "$service"
+		while pgrep --full "$pattern" >/dev/null && ((counter < timeout)); do
+			echo "process '$pattern' still running after ${counter}s, waiting..."
+			sleep 1
+			((counter++))
+		done
+		if ((counter >= timeout)); then
+			echo "process '$pattern' still running after ${timeout}s, killing process"
+			sudo pkill --full "$pattern" --signal 9
+			sleep 2
+			# if the process was killed, the service is in "active (exited)" state
+			# so we need to trigger a stop here to be able to start it again
+			sudo systemctl stop "$service"
+		fi
+	}
+
 	if ! id -u openwb >/dev/null 2>&1; then
 		echo "user 'openwb' missing"
 		echo "starting upgrade script..."
@@ -87,10 +111,15 @@ chmod 666 "$LOGFILE"
 
 	# check group membership
 	echo "Group membership..."
-	for group in "input" "dialout"; do
+	# ToDo: remove sudo group membership if possible
+	for group in "input" "dialout" "gpio" "sudo"; do
 		if ! groups openwb | grep --quiet "$group"; then
-			sudo usermod -G "$group" -a openwb
-			echo "added openwb to group '$group'"
+			if getent group | cut -d: -f1 | grep --quiet "$group"; then
+				sudo usermod -G "$group" -a openwb
+				echo "added openwb to group '$group'"
+			else
+				echo "required group '$group' missing on this system!"
+			fi
 		fi
 	done
 	echo -n "Final group membership: "
@@ -213,10 +242,10 @@ chmod 666 "$LOGFILE"
 	# check for apache configuration
 	echo "apache default site..."
 	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/000-default.conf" "/etc/apache2/sites-available/000-default.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/000-default.conf"; then
 		echo "...ok"
 	else
-		sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" "/etc/apache2/sites-available/"
+		sudo cp "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/"
 		restartService=1
 		echo "...updated"
 	fi
@@ -242,10 +271,10 @@ chmod 666 "$LOGFILE"
 		sudo a2enmod proxy_wstunnel
 		restartService=1
 	fi
-	if ! versionMatch "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" "/etc/apache2/sites-available/apache-openwb-ssl.conf"; then
+	if ! versionMatch "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/apache-openwb-ssl.conf"; then
 		echo "installing ssl site configuration"
 		sudo a2dissite default-ssl
-		sudo cp "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" "/etc/apache2/sites-available/"
+		sudo cp "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/"
 		sudo a2ensite apache-openwb-ssl
 		restartService=1
 	fi
@@ -258,18 +287,25 @@ chmod 666 "$LOGFILE"
 	# check for mosquitto configuration
 	echo "check mosquitto installation..."
 	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
 		echo "mosquitto.conf already up to date"
 	else
 		echo "updating mosquitto.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
 		restartService=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
 		echo "mosquitto openwb.conf already up to date"
 	else
 		echo "updating mosquitto openwb.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
+		restartService=1
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
+		echo "mosquitto acl already up to date"
+	else
+		echo "updating mosquitto acl"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"
 		restartService=1
 	fi
 	if [[ ! -f "/etc/mosquitto/certs/openwb.key" ]]; then
@@ -282,32 +318,30 @@ chmod 666 "$LOGFILE"
 	fi
 	if ((restartService == 1)); then
 		echo -n "restarting mosquitto service..."
-		sudo systemctl stop mosquitto
-		sleep 2
+		waitForServiceStop "mosquitto" "mosquitto.conf" 10
 		sudo systemctl start mosquitto
 		echo "done"
 	fi
 
 	#check for mosquitto_local instance
 	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
 		echo "mosquitto_local.conf already up to date"
 	else
 		echo "updating mosquitto_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
+		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
 		restartService=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
 		echo "mosquitto openwb_local.conf already up to date"
 	else
 		echo "updating mosquitto openwb_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
+		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
 		restartService=1
 	fi
 	if ((restartService == 1)); then
 		echo -n "restarting mosquitto_local service..."
-		sudo systemctl stop mosquitto_local
-		sleep 2
+		waitForServiceStop "mosquitto_local" "mosquitto_local.conf" 10
 		sudo systemctl start mosquitto_local
 		echo "done"
 	fi
@@ -343,6 +377,20 @@ chmod 666 "$LOGFILE"
 	# set restore dir permissions to allow file upload for apache
 	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
 	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
+
+	# cleanup some folders
+	folder="${OPENWBBASEDIR}/data/data_migration/var"
+	if [ -d "$folder" ]; then
+		echo "deleting temporary data migration folder"
+		rm -R "$folder"
+	fi
+	files=("${OPENWBBASEDIR}/data/data_migration/data_migration.tar" "${OPENWBBASEDIR}/data/data_migration/data_migration.tar.gz")
+	for file in "${files[@]}"; do
+		if [ -f "$file" ]; then
+			echo "deleting temporary data migration file '$file'"
+			rm "$file"
+		fi
+	done
 
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"

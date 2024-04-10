@@ -32,7 +32,7 @@ class BatKitFlexConfiguration:
 
 class BatKitFlexSetup(ComponentSetup[BatKitFlexConfiguration]):
     def __init__(self,
-                 name: str = "Speicher-Kit flex",
+                 name: str = "openWB Speicher-Kit flex",
                  type: str = "bat",
                  id: int = 0,
                  configuration: BatKitFlexConfiguration = None) -> None:
@@ -47,11 +47,26 @@ class EvuKitFlexConfiguration:
 
 class EvuKitFlexSetup(ComponentSetup[EvuKitFlexConfiguration]):
     def __init__(self,
-                 name: str = "EVU-Kit flex",
+                 name: str = "openWB EVU-Kit flex",
                  type: str = "counter",
                  id: int = 0,
                  configuration: EvuKitFlexConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or EvuKitFlexConfiguration())
+
+
+class ConsumptionCounterFlexConfiguration:
+    def __init__(self, id: int = 115, type: str = "sdm630"):
+        self.id = id
+        self.type = type
+
+
+class ConsumptionCounterFlexSetup(ComponentSetup[ConsumptionCounterFlexConfiguration]):
+    def __init__(self,
+                 name: str = "openWB Verbrauchszähler flex",
+                 type: str = "consumption_counter",
+                 id: int = 0,
+                 configuration: ConsumptionCounterFlexConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or ConsumptionCounterFlexConfiguration())
 
 
 class PvKitFlexConfiguration:
@@ -62,7 +77,7 @@ class PvKitFlexConfiguration:
 
 class PvKitFlexSetup(ComponentSetup[PvKitFlexConfiguration]):
     def __init__(self,
-                 name: str = "PV-Kit flex",
+                 name: str = "openWB PV-Kit flex",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: PvKitFlexConfiguration = None) -> None:

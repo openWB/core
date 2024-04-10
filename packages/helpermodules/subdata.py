@@ -135,6 +135,7 @@ class SubData:
             # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
             # "openWB/system/subdata_initialized" empfangen werden!
             ("openWB/system/mqtt/bridge/+", 2),
+            ("openWB/system/mqtt/+", 2),
             # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
             ("openWB/system/+", 2),
             ("openWB/system/backup_cloud/#", 2),
@@ -563,7 +564,18 @@ class SubData:
         """
         try:
             if re.search("/general/", msg.topic) is not None:
-                if re.search("/general/ripple_control_receiver/", msg.topic) is not None:
+                if re.search("/general/ripple_control_receiver/module", msg.topic) is not None:
+                    config_dict = decode_payload(msg.payload)
+                    if config_dict["type"] is None:
+                        var.data.ripple_control_receiver.module = None
+                    else:
+                        mod = importlib.import_module(".ripple_control_receivers." +
+                                                      config_dict["type"]+".ripple_control_receiver", "modules")
+                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                        var.data.ripple_control_receiver.module = mod.create_ripple_control_receiver(config)
+                elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
+                elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
                     return
                 elif re.search("/general/prices/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.prices, msg)
@@ -627,11 +639,13 @@ class SubData:
                     elif re.search("/optional/et/get/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.et.get, msg)
                     elif re.search("/optional/et/provider$", msg.topic) is not None:
-                        payload = decode_payload(msg.payload)
-                        if payload["type"] is not None:
+                        config_dict = decode_payload(msg.payload)
+                        if config_dict["type"] is None:
+                            var.et_module = None
+                        else:
                             mod = importlib.import_module(
-                                f".electricity_tariffs.{payload['type']}.tariff", "modules")
-                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
+                                f".electricity_tariffs.{config_dict['type']}.tariff", "modules")
+                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                             var.et_module = mod.create_electricity_tariff(config)
                             var.et_get_prices()
                     else:
@@ -750,6 +764,10 @@ class SubData:
                                            MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
                 else:
                     log.debug("skipping mqtt bridge message on startup")
+            elif "mqtt" and "valid_partner_ids" in msg.topic:
+                # duplicate topic for remote support service
+                log.error(f"received valid partner ids: {decode_payload(msg.payload)}")
+                Pub().pub("openWB-remote/valid_partner_ids", decode_payload(msg.payload))
             # will be moved to separate handler!
             elif "GetRemoteSupport" in msg.topic:
                 log.warning("deprecated topic for remote support received!")
@@ -768,6 +786,8 @@ class SubData:
                     mod = importlib.import_module(".backup_clouds."+config_dict["type"]+".backup_cloud", "modules")
                     config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                     var["system"].backup_cloud = mod.create_backup_cloud(config)
+            elif "openWB/system/backup_cloud/backup_before_update" in msg.topic:
+                self.set_json_payload(var["system"].data, msg)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()

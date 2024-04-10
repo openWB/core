@@ -77,6 +77,9 @@ class FroniusSmCounter:
             powers = [-1 * power - power_inverter/3 for power in powers]
         else:
             power = response_json_id["PowerReal_P_Sum"]
+        # for all meter locations except "grid", negative power is consumption!
+        if meter_location in (MeterLocation.external, MeterLocation.subload):
+            power *= -1
         voltages = [response_json_id["Voltage_AC_Phase_"+str(num)] for num in range(1, 4)]
         currents = [powers[i] / voltages[i] for i in range(0, 3)]
         power_factors = [response_json_id["PowerFactor_Phase_"+str(num)] for num in range(1, 4)]

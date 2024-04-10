@@ -36,7 +36,7 @@ const props = defineProps<{
 const keys = [
 	['house', 'charging', 'devices', 'batIn'],
 	['charging', 'devices', 'house', 'batIn'],
-	['devices', 'house', 'charging', 'batIn'],
+	['devices', 'charging', 'house', 'batIn'],
 ]
 const colors: { [key: string]: string } = {
 	house: 'var(--color-house)',
@@ -66,13 +66,12 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 // computed:
 const draw = computed(() => {
 	const graph = select('g#pgUsageGraph')
-
 	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
 		drawBarGraph(graph)
 	} else {
 		drawGraph(graph)
 	}
-
+	graph.selectAll('.axis').remove()
 	const yAxis = graph.append('g').attr('class', 'axis')
 	yAxis.call(yAxisGenerator.value)
 	yAxis
@@ -90,7 +89,10 @@ const draw = computed(() => {
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	return 'pgUsageGraph.vue'
 })
-const stackGen = computed(() => stack().keys(keys[props.stackOrder]))
+//const stackGen = computed(() => stack().keys(keys[props.stackOrder].concat(['cp3'])))
+const stackGen = computed(() => {
+	return stack().keys(keysToUse.value)
+})
 const stackedSeries = computed(() => stackGen.value(graphData.data))
 
 const iScale = computed(() => {
@@ -116,6 +118,34 @@ const yScale = computed(() => {
 		)
 })
 
+const keysToUse = computed(() => {
+	if (graphData.graphMode != 'today' && graphData.graphMode != 'day') {
+		return keys[props.stackOrder]
+	} else {
+		const k = keys[props.stackOrder].slice()
+		const idx = k.indexOf('charging')
+		k.splice(idx, 1)
+		const pattern = /cp\d+/
+		let additionalKeys: string[] = []
+		if (graphData.data.length > 0) {
+			additionalKeys = Object.keys(graphData.data[0]).reduce(
+				(list: string[], element: string) => {
+					if (element.match(pattern)) {
+						list.push(element)
+					}
+					return list
+				},
+				[],
+			)
+		}
+		additionalKeys.map((key, i) => {
+			k.splice(idx + i, 0, key)
+			colors[key] = 'var(--color-cp' + i + ')'
+		})
+		return k
+	}
+})
+
 const vrange = computed(() => {
 	let result = extent(
 		graphData.data,
@@ -132,15 +162,15 @@ const vrange = computed(() => {
 	}
 })
 
-const ticklength = computed(
-	() => graphData.graphMode == 'month' || graphData.graphMode == 'year',
-)
-	? -props.width - props.margin.right
-	: -props.width
+const ticklength = computed(() => {
+	return graphData.graphMode == 'month' || graphData.graphMode == 'year'
+		? -props.width - props.margin.right - 22
+		: -props.width
+})
 
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
-		.tickSizeInner(ticklength)
+		.tickSizeInner(ticklength.value)
 		.ticks(4)
 		.tickFormat((d: number) =>
 			(d == 0 ? '' : Math.round(d * 10) / 10).toLocaleString(undefined),
@@ -163,7 +193,7 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 				.enter()
 				.append('path')
 				.attr('d', (series) => area0(series))
-				.attr('fill', (d, i: number) => colors[keys[props.stackOrder][i]])
+				.attr('fill', (d, i: number) => colors[keysToUse.value[i]])
 			paths
 				.transition()
 				.duration(300)
@@ -172,12 +202,15 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 				.attr('d', (series) => area1(series))
 			usageGraphIsInitialized()
 		} else {
-			paths
+			graph.selectAll('*').remove()
+			graph
+				.selectAll('.usageareas')
+
 				.data(stackedSeries.value as [number, number][][])
-				.transition()
-				.duration(100)
-				.ease(easeLinear)
+				.enter()
+				.append('path')
 				.attr('d', (series) => area1(series))
+				.attr('fill', (d, i: number) => colors[keysToUse.value[i]])
 		}
 	} else {
 		graph.selectAll('*').remove()
@@ -187,7 +220,7 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.enter()
 			.append('path')
 			.attr('d', (series) => area1(series))
-			.attr('fill', (d, i: number) => colors[keys[props.stackOrder][i]])
+			.attr('fill', (d, i: number) => colors[keysToUse.value[i]])
 	}
 }
 function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {

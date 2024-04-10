@@ -2,21 +2,18 @@
 	<p class="settingsheader mt-2 ms-1">Preisbasiertes Laden:</p>
 	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
 	<hr />
-	<div class="row p-0 m-0">
-		<div class="col-12 pricechartColumn p-0 m-0">
-			<figure id="pricechart" class="p-0 m-0">
-				<svg viewBox="0 0 400 120">
-					<g
-						:id="'priceChartCanvas' + props.chargepoint.id"
-						:origin="draw"
-						:transform="'translate(' + margin.top + ',' + margin.right + ')'"
-					/>
-				</svg>
-			</figure>
-		</div>
+	<div class="container">
+		<figure id="pricechart" class="p-0 m-0">
+			<svg viewBox="0 0 400 300">
+				<g
+					:id="chartId"
+					:origin="draw"
+					:transform="'translate(' + margin.top + ',' + margin.right + ')'"
+				/>
+			</svg>
+		</figure>
 	</div>
-
-	<div class="p-3">
+	<div v-if="chargepoint != undefined" class="p-3">
 		<RangeInput
 			v-if="chargepoint.etActive"
 			id="foo"
@@ -28,9 +25,16 @@
 			unit="ct"
 		/>
 	</div>
-	<div class="d-flex justify-content-end">
+	<div v-if="chargepoint != undefined" class="d-flex justify-content-end">
 		<span class="me-3 pt-0" @click="setMaxPrice">
-			<span type="button" class="fa-solid fa-lg ps-1 fa-circle-check" />
+			<button
+				type="button"
+				class="btn btn-secondary"
+				:style="confirmButtonStyle"
+				:disabled="!maxPriceEdited"
+			>
+				Bestätigen
+			</button>
 		</span>
 	</div>
 </template>
@@ -51,18 +55,35 @@ import {
 import RangeInput from '../shared/RangeInput.vue'
 import { chargePoints, type ChargePoint } from '../chargePointList/model'
 const props = defineProps<{
-	chargepoint: ChargePoint
+	chargepoint?: ChargePoint
+	globalview?: boolean
 }>()
+
+let _maxPrice = props.chargepoint ? ref(props.chargepoint.etMaxPrice) : ref(0)
+const maxPriceEdited = ref(false)
 const cp = ref(props.chargepoint)
-const maxPrice = ref(props.chargepoint.etMaxPrice)
+const maxPrice = computed({
+	get() {
+		return _maxPrice.value
+		// ref(props.chargepoint.etMaxPrice)
+	},
+	set(newmax) {
+		_maxPrice.value = newmax
+		maxPriceEdited.value = true
+	},
+})
+
 function setMaxPrice() {
-	chargePoints[cp.value.id].etMaxPrice = maxPrice.value
+	if (cp.value) {
+		chargePoints[cp.value.id].etMaxPrice = maxPrice.value
+	}
+	maxPriceEdited.value = false
 }
 const needsUpdate = ref(false)
 let dummy = false
 const width = 400
-const height = 110
-const margin = { top: 0, bottom: 15, left: 15, right: 5 }
+const height = 250
+const margin = { top: 0, bottom: 15, left: 20, right: 5 }
 const axisfontsize = 12
 const plotdata = computed(() => {
 	let valueArray: [Date, number][] = []
@@ -80,6 +101,13 @@ const barwidth = computed(() => {
 		return 0
 	}
 })
+const confirmButtonStyle = computed(() => {
+	if (maxPriceEdited.value) {
+		return { background: 'var(--color-charging)' }
+	} else {
+		return { background: 'var(--color-menu)' }
+	}
+})
 const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
 
@@ -87,15 +115,16 @@ const xScale = computed(() => {
 		.range([margin.left, width - margin.left - margin.right])
 		.domain(xdomain)
 })
+const yDomain = computed(() => {
+	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
+	yd[0] = Math.floor(yd[0] - 1)
+	yd[1] = Math.floor(yd[1] + 1)
+	return yd
+})
 const yScale = computed(() => {
-	let ydomain = extent(plotdata.value, (d) => d[1]) as [number, number]
-	if (ydomain[0] > 0) {
-		ydomain[0] = 0
-	}
-	ydomain[1] = Math.floor(ydomain[1] + 1)
 	return scaleLinear()
 		.range([height - margin.bottom, 0])
-		.domain(ydomain)
+		.domain(yDomain.value)
 })
 const linePath = computed(() => {
 	const generator = line()
@@ -105,8 +134,20 @@ const linePath = computed(() => {
 	]
 	return generator(points as [number, number][])
 })
+const zeroPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(0)],
+		[width - margin.right, yScale.value(0)],
+	]
+	return generator(points as [number, number][])
+})
+
 const xAxisGenerator = computed(() => {
-	return axisBottom<Date>(xScale.value).ticks(4).tickFormat(timeFormat('%H:%M'))
+	return axisBottom<Date>(xScale.value)
+		.ticks(6)
+		.tickSize(5)
+		.tickFormat(timeFormat('%H:%M'))
 })
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
@@ -119,7 +160,7 @@ const draw = computed(() => {
 		dummy = !dummy
 	}
 
-	const svg = select('g#priceChartCanvas' + props.chargepoint.id)
+	const svg = select('g#' + chartId.value)
 	svg.selectAll('*').remove()
 	const bargroups = svg
 		.selectAll('bar')
@@ -130,31 +171,22 @@ const draw = computed(() => {
 		.append('rect')
 		.attr('class', 'bar')
 		.attr('x', (d) => xScale.value(d[0]))
-		.attr('y', (d) => {
-			return d[1] >= 0 ? yScale.value(d[1]) : yScale.value(0)
-		})
+		.attr('y', (d) => yScale.value(d[1]))
 		.attr('width', barwidth.value)
-		.attr('height', (d) =>
-			d[1] >= 0
-				? yScale.value(0) - yScale.value(d[1])
-				: yScale.value(d[1]) - yScale.value(0),
-		)
+		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
 		.attr('fill', (d) =>
 			d[1] <= maxPrice.value ? 'var(--color-charging)' : 'var(--color-axis)',
 		)
 	// X Axis
 	const xAxis = svg.append('g').attr('class', 'axis').call(xAxisGenerator.value)
-	xAxis.attr(
-		'transform',
-		'translate(' + margin.left + ',' + (height - margin.bottom) + ')',
-	)
+	xAxis.attr('transform', 'translate(0,' + (height - margin.bottom) + ')')
 	xAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
 		.attr('color', 'var(--color-bg)')
 	xAxis
 		.selectAll('.tick line')
-		.attr('stroke', 'var(--color-bg)')
+		.attr('stroke', 'var(--color-fg)')
 		.attr('stroke-width', '0.5')
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
@@ -169,16 +201,27 @@ const draw = computed(() => {
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
 		.attr('stroke-width', '0.5')
-
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+	// zero line
+	if (yDomain.value[0] < 0) {
+		svg
+			.append('path')
+			.attr('d', zeroPath.value)
+			.attr('stroke', 'var(--color-fg)')
+	}
 	// Line for max price
 	svg.append('path').attr('d', linePath.value).attr('stroke', 'yellow')
 
 	return 'PriceChart.vue'
 })
-
+const chartId = computed(() => {
+	if (props.chargepoint) {
+		return 'priceChartCanvas' + props.chargepoint.id
+	} else {
+		return 'priceChartCanvasGlobal'
+	}
+})
 onMounted(() => {
-	console.log('mounted')
 	needsUpdate.value = !needsUpdate.value
 })
 </script>

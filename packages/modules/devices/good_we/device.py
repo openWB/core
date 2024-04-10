@@ -29,8 +29,8 @@ class Device(AbstractDevice):
         self.components = {}  # type: Dict[str, good_we_component_classes]
         try:
             self.device_config = dataclass_from_dict(GoodWe, device_config)
-            ip_address = self.device_config.configuration.ip_address
-            self.client = modbus.ModbusTcpClient_(ip_address, 502)
+            self.client = modbus.ModbusTcpClient_(
+                self.device_config.configuration.ip_address, self.device_config.configuration.port)
         except Exception:
             log.exception("Fehler im Modul " + self.device_config.name)
 
@@ -90,7 +90,7 @@ def read_legacy(component_type: str, ip_address: str, id: int, num: Optional[int
     log.debug('GoodWe ID: ' + str(id))
 
     dev.update()
-    dev.client.close_connection()
+    dev.client.close()
 
 
 def main(argv: List[str]):

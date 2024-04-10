@@ -9,6 +9,7 @@
 					widgetid="graphsettings"
 					:show-left-button="true"
 					:show-right-button="true"
+					:ignore-live="false"
 					@shift-left="shiftLeft"
 					@shift-right="shiftRight"
 					@shift-up="shiftUp"
@@ -24,8 +25,18 @@
 				</span>
 			</div>
 		</template>
-
-		<figure id="powergraph" class="p-0 m-0" @click="changeStackOrder">
+		<div
+			v-if="graphData.data.length == 0"
+			class="d-flex justify-content-center waitsign rounded"
+		>
+			<span class="fa-solid fa-xl fa-spinner fa-spin"></span>
+		</div>
+		<figure
+			v-show="graphData.data.length > 0"
+			id="powergraph"
+			class="p-0 m-0"
+			@click="changeStackOrder"
+		>
 			<svg :viewBox="'0 0 ' + width + ' ' + height">
 				<!-- Draw the source graph -->
 				<PGSourceGraph
@@ -49,7 +60,8 @@
 					<PgSoc
 						v-if="
 							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today') &&
+								graphData.graphMode == 'today' ||
+								graphData.graphMode == 'live') &&
 							Object.values(chargePoints).length > 0
 						"
 						:width="width - margin.left - 2 * margin.right"
@@ -60,7 +72,8 @@
 					<PgSoc
 						v-if="
 							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today') &&
+								graphData.graphMode == 'today' ||
+								graphData.graphMode == 'live') &&
 							Object.values(chargePoints).length > 1
 						"
 						:width="width - margin.left - 2 * margin.right"
@@ -155,5 +168,15 @@ function zoomGraph() {
 	color: var(--color-bg);
 	font-size: var(--font-medium);
 	font-weight: normal;
+}
+.waitsign {
+	text-align: center;
+	font-size: var(--font-medium);
+	color: var(--color-fg);
+	border: 1px solid var(--color-bg);
+	padding: 2em;
+	margin: 2em;
+	margin-top: 4em;
+	background-color: var(--color-bg);
 }
 </style>
