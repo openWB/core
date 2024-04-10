@@ -145,7 +145,7 @@ class HandlerAlgorithm:
     @exit_after(10)
     def handler_random_nightly(self):
         try:
-            data.data.system_data["system"].create_backup_and_send_to_cloud()
+            data.data.system_data["system"].thread_backup_and_send_to_cloud()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
