@@ -758,13 +758,13 @@ class SetData:
                 self._validate_value(msg, int, [(0, 0), (1, 1), (3, 3)])
             elif "openWB/set/general/chargemode_config/pv_charging/bat_prio" in msg.topic:
                 self._validate_value(msg, bool)
-            elif ("openWB/set/general/chargemode_config/pv_charging/switch_on_soc" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/switch_off_soc" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/rundown_soc" in msg.topic):
+            elif "openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic:
                 self._validate_value(msg, int, [(0, 100)])
-            elif ("openWB/set/general/chargemode_config/pv_charging/rundown_power" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/charging_power_reserve" in msg.topic):
+            elif ("openWB/set/general/chargemode_config/pv_charging/bat_power_discharge" in msg.topic or
+                    "openWB/set/general/chargemode_config/pv_charging/ev_power_reserve" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
+            elif "openWB/set/general/chargemode_config/pv_charging/bat_mode" in msg.topic:
+                self._validate_value(msg, str)
             elif "openWB/set/general/chargemode_config/" in msg.topic and "/phases_to_use" in msg.topic:
                 self._validate_value(msg, int, [(1, 1), (3, 3)])
             elif ("openWB/set/general/grid_protection_configured" in msg.topic or
