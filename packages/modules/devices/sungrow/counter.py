@@ -30,10 +30,8 @@ class SungrowCounter:
         if self.device_config.configuration.version in (Version.SH, Version.SH_winet_dongle):
             power = self.__tcp_client.read_input_registers(13009, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -1
-            imported = self.__tcp_client.read_input_registers(13036, ModbusDataType.UINT_32,
-                                                              wordorder=Endian.Little, unit=unit) * 100
-            exported = self.__tcp_client.read_input_registers(13045, ModbusDataType.UINT_32,
-                                                              wordorder=Endian.Little, unit=unit) * 100
+            powers = self.__tcp_client.read_input_registers(5602, [ModbusDataType.INT_32] * 3,
+                                                            wordorder=Endian.Little, unit=unit)
         else:
             if pv_power != 0:
                 power = self.__tcp_client.read_input_registers(5082, ModbusDataType.INT_32,
@@ -41,7 +39,8 @@ class SungrowCounter:
             else:
                 power = self.__tcp_client.read_input_registers(5090, ModbusDataType.INT_32,
                                                                wordorder=Endian.Little, unit=unit)
-            imported, exported = self.sim_counter.sim_count(power)
+            powers = self.__tcp_client.read_input_registers(5084, [ModbusDataType.INT_32] * 3,
+                                                            wordorder=Endian.Little, unit=unit)
 
         frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
         if self.device_config.configuration.version == Version.SH_winet_dongle:
@@ -49,15 +48,25 @@ class SungrowCounter:
             frequency /= 10
 
         power_factor = self.__tcp_client.read_input_registers(5034, ModbusDataType.INT_16, unit=unit) / 1000
-        # These are actually output voltages of the inverter:
-        voltages = self.__tcp_client.read_input_registers(5018, [ModbusDataType.UINT_16] * 3,
-                                                          wordorder=Endian.Little, unit=unit)
-        voltages = [voltage / 10 for voltage in voltages]
+
+        if self.device_config.configuration.version == Version.SH:
+            # SH (LAN) provides accurate values from meter
+            voltages = self.__tcp_client.read_input_registers(5740, [ModbusDataType.UINT_16] * 3,
+                                                              wordorder=Endian.Little, unit=unit)
+        else:
+            # These are actually output voltages of the inverter:
+            voltages = self.__tcp_client.read_input_registers(5018, [ModbusDataType.UINT_16] * 3,
+                                                              wordorder=Endian.Little, unit=unit)
+
+        voltages = [value / 10 for value in voltages]
+
+        imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
             imported=imported,
             exported=exported,
             power=power,
+            powers=powers,
             voltages=voltages,
             frequency=frequency,
             power_factors=[power_factor] * 3

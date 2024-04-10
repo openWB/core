@@ -30,3 +30,12 @@
 | Netz: Akt. Leistungsfaktor          | 5034   | 5034     | 5034          | 0.001   | INT_16 little  | Nur über alle Phasen vorhanden                                   |
 | Netz: Zähler Netzentnahme           | 13036  | 13036    | --            | 0.1 kWh | UINT_32 mixed  |                                                                  |
 | Netz: Zähler Einspeisung            | 13045  | 13045    | --            | 0.1 kWh | UINT_32 mixed  |                                                                  |
+| Meter: AC Wirkleistung Phase A      | 5602   | 5602     | 5084          | 1 W     | INT_32 mixed   | Im Unterschied zu 13009 Vorzeichen korrekt                       |
+| Meter: AC Wirkleistung Phase B      | 5604   | 5604     | 5086          | 1 W     | INT_32 mixed   | Im Unterschied zu 13009 Vorzeichen korrekt                       |
+| Meter: AC Wirkleistung Phase C      | 5606   | 5606     | 5088          | 1 W     | INT_32 mixed   | Im Unterschied zu 13009 Vorzeichen korrekt                       |
+| Meter: AC Spannung Phase A          | 5740   | --       | --            | 0.1 V   | UINT_16 little |                                                                  |
+| Meter: AC Spannung Phase B          | 5741   | --       | --            | 0.1 V   | UINT_16 little |                                                                  |
+| Meter: AC Spannung Phase C          | 5742   | --       | --            | 0.1 V   | UINT_16 little |                                                                  |
+| Meter: AC Strom Phase A             | 5743   | --       | --            | 0.01 A  | UINT_16 little | Immer positiv, auch bei Einspeisung                              |
+| Meter: AC Strom Phase B             | 5744   | --       | --            | 0.01 A  | UINT_16 little | Immer positiv, auch bei Einspeisung                              |
+| Meter: AC Strom Phase C             | 5745   | --       | --            | 0.01 A  | UINT_16 little | Immer positiv, auch bei Einspeisung                              |
