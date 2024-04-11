@@ -203,7 +203,7 @@ class BatAll:
         """
         try:
             config = data.data.general_data.data.chargemode_config.pv_charging
-            self.data.set.charging_power_left = self.data.get.power
+
             self.data.set.regulate_up = False
             if config.bat_mode == BatConsiderationMode.BAT_MODE.value:
                 if self.data.get.power < 0:
@@ -216,12 +216,32 @@ class BatAll:
                 self.data.set.charging_power_left = self.data.get.power
             else:
                 if self.data.get.soc <= config.min_bat_soc:
-                    if config.ev_power_reserve != 0 and self.data.get.power > 0:
-                        # es darf maximal die Ladeleistung des Speichers zum Laden des EV verwendet werden.
-                        self.data.set.charging_power_left = max(config.ev_power_reserve, self.data.get.power)
+                    if self.data.get.power < 0:
+                        # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge
+                        # genutzt werden. Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher
+                        # reduziert werden.
+                        self.data.set.charging_power_left = self.data.get.power
+                        self.data.set.regulate_up = True
+                    else:
+                        # Speicher-Vorrang bis zum Min-Soc
+                        if config.bat_power_reserve != 0:
+                            if self.data.get.power > config.bat_power_reserve:
+                                self.data.set.charging_power_left = self.data.get.power - config.bat_power_reserve
+                            else:
+                                self.data.set.charging_power_left = config.bat_power_reserve + self.data.get.power
+                        else:
+                            # Speicher wird geladen
+                            self.data.set.charging_power_left = 0
                 else:
                     if config.bat_power_discharge > 0:
-                        self.data.set.charging_power_left = config.bat_power_discharge
+                        if self.data.get.power * -1 > config.bat_power_discharge:
+                            # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das vom
+                            # Überschuss subtrahiert werden.
+                            self.data.set.charging_power_left = config.bat_power_discharge + self.data.get.power
+                        else:
+                            self.data.set.charging_power_left = self._limit_rundown_power(
+                                config.bat_power_discharge)
+                        log.debug(f"Erlaubte Entlade-Leistung nutzen {self.data.set.charging_power_left}W")
                     else:
                         # Speicher sollte weder ge- noch entladen werden.
                         self.data.set.charging_power_left = self.data.get.power

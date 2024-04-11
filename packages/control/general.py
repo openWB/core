@@ -33,12 +33,12 @@ def control_range_factory() -> List:
 
 @dataclass
 class PvCharging:
-    ev_power_reserve: int = 200
+    bat_power_reserve: int = 0
     control_range: List = field(default_factory=control_range_factory)
     feed_in_yield: int = 15000
     phase_switch_delay: int = 7
     phases_to_use: int = 1
-    bat_power_discharge: int = 1000
+    bat_power_discharge: int = 0
     min_bat_soc: int = 50
     bat_mode: BatConsiderationMode = BatConsiderationMode.EV_MODE.value
     switch_off_delay: int = 60
