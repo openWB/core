@@ -4,8 +4,8 @@
 * TI_20230918_Communication Protocol of Residential and Commerical PV Grid-connected Inverter_V1.1.58_EN.pdf
 * TI_20231019_Communication Protocol of Residential Hybrid Inverter_V1.1.2_EN.pdf
 * modbus_finder.py an SH10RT-V112 (LAN) Firmware SAPPHIRE-H_B001.V000.P005-20231027
-* modbus_finder.py an SH10RT-V112 (WiNet-S) Firmware WINET-SV200.001.00.P020
-* modbus_finder.py an SG10RT (WiNet-S) Firmware BERYL-S_B000.V000.P039-20230626 / WINET-SV200.001.00.P020
+* modbus_finder.py an SH10RT-V112 (WiNet-S) Firmware WINET-SV200.001.00.P023
+* modbus_finder.py an SG10RT (WiNet-S) Firmware BERYL-S_B000.V000.P039-20230626 / WINET-SV200.001.00.P023
 
 ## Werte
 | Wert                                | SH_LAN | SH_WiNet | SG_WiNet      | Einheit | Typ            | Bemerkung                                                        |
@@ -16,7 +16,8 @@
 | WR: AC Ausgangsspannung Phase B     | 5019   | 5019     | 5019          | 0.1 V   | UINT_16 little | Unterscheidet sich pro WR (nicht vom Meter gemessen)             |
 | WR: AC Ausgangsspannung Phase C     | 5020   | 5020     | 5020          | 0.1 V   | UINT_16 little | Unterscheidet sich pro WR (nicht vom Meter gemessen)             |
 | WR: Akt. DC Bruttoleistung          | 5016   | 5016     | 5016          | 1 W     | INT_32 mixed   |                                                                  |
-| WR: Akt. AC Wirkleistung            | 5030   | --       | 5030          | 1 W     | INT_32 mixed   |                                                                  |
+| WR: Akt. AC Wirkleistung            | 13007  | 13007    | 5030          | 1 W     | INT_32 mixed   | 13007 und 5030 sind gleich für SH_LAN, 5030 etwas verzögert      |
+| WR: Akt. AC Wirkleistung            | 5030   | 13007    | 5030          | 1 W     | INT_32 mixed   | 13007 verfügbar über SH_*, 5030 über SH_LAN und SG_WiNet         |
 | WR: Akt. Leistungsfluss             | 13000  | 13000    | --            | ja/nein | 8-bit bitmask  | (v.r.) Bit0: PV-Erzeugung, Bit1: Batt. lädt, Bit2: Batt. entlädt |
 | BAT: Akt. Leistung (ein-/ausgehend) | 13021  | 13021    | --            | 1 W     | UINT16 little  | Immer positiv, bei Be- und Entladung. WR Leistungsfluss beachten |
 | BAT: SoC                            | 13022  | 13022    | --            | 0.1 %   | UINT16 little  |                                                                  |

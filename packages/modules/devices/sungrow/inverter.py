@@ -28,9 +28,8 @@ class SungrowInverter:
     def update(self) -> float:
         unit = self.device_config.configuration.modbus_id
 
-        if self.device_config.configuration.version == Version.SH_winet_dongle:
-            # Not recommended to use the SH WiNet-S-Dongle, but if, this is the most accurate data:
-            power = self.__tcp_client.read_input_registers(5016, ModbusDataType.INT_32,
+        if self.device_config.configuration.version in (Version.SH, Version.SH_winet_dongle):
+            power = self.__tcp_client.read_input_registers(13007, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -1
         else:
             power = self.__tcp_client.read_input_registers(5030, ModbusDataType.INT_32,
