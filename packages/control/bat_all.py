@@ -206,29 +206,25 @@ class BatAll:
             self.data.set.charging_power_left = self.data.get.power
             self.data.set.regulate_up = False
             if config.bat_mode == BatConsiderationMode.BAT_MODE.value:
-                # Speicher-Vorrang
-                # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden,
-                # wenn der Soc über dem minimalen Entlade-Soc liegt. Dazu wird Bezug generiert, damit der Speicher
-                # entlädt. Dabei darf ein Hybridspeicher noch nicht am Limit sein.
-                self.data.set.charging_power_left = min(0, self.data.get.power)
-                # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
-                # Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher reduziert werden.
-                self.data.set.regulate_up = True
+                if self.data.get.power < 0:
+                    # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
+                    # Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher reduziert werden.
+                    self.data.set.charging_power_left = self.data.get.power
+                    self.data.set.regulate_up = True
             elif config.bat_mode == BatConsiderationMode.EV_MODE.value:
-                # Fahrzeug-Vorrang
-                log.debug(f'Verbleibende Speicher-Leistung: {self.data.set.charging_power_left}W')
-                if config.charging_power_reserve != 0:
-                    if self.data.get.soc < 100:
-                        self.data.set.charging_power_left -= config.charging_power_reserve
-                        log.debug(f'Reservierte Ladeleistung ({config.charging_power_reserve}W) subtrahieren: '
-                                  f'{self.data.set.charging_power_left}')
-                    else:
-                        log.debug("Keine reservierte Ladeleistung für den Speicher vorhalten, da dieser bereits voll" +
-                                  " geladen ist.")
+                # Speicher sollte weder ge- noch entladen werden.
+                self.data.set.charging_power_left = self.data.get.power
             else:
-                if self.data.get.soc < config.min_soc_bat:
-                    # Mindest-Soc erreicht, Speicher darf nicht entladen werden.
-                    self.data.set.charging_power_left = 0
+                if self.data.get.soc <= config.min_bat_soc:
+                    if config.ev_power_reserve != 0 and self.data.get.power > 0:
+                        # es darf maximal die Ladeleistung des Speichers zum Laden des EV verwendet werden.
+                        self.data.set.charging_power_left = max(config.ev_power_reserve, self.data.get.power)
+                else:
+                    if config.bat_power_discharge > 0:
+                        self.data.set.charging_power_left = config.bat_power_discharge
+                    else:
+                        # Speicher sollte weder ge- noch entladen werden.
+                        self.data.set.charging_power_left = self.data.get.power
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
