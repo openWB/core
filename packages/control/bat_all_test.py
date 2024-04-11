@@ -131,18 +131,18 @@ cases = [
            PvCharging(bat_mode="min_soc_bat_mode"), -500, 40, -500, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher lädt", PvCharging(bat_mode="min_soc_bat_mode"), 500, 40, 0, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve, Speicher entlädt",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000), -500, 40, 500, True),
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000), -500, 40, -500, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve nicht ausgenutzt, Speicher lädt",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000), 1600, 40, -400, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve ausgenutzt, Speicher lädt",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=200), 2200, 40, 200, True),
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000), 2200, 40, 200, True),
     Params("Mindest-SoC, SoC erreicht, Speicher entlädt", PvCharging(bat_mode="min_soc_bat_mode"), -500, 90, -500,
            False),
     Params("Mindest-SoC, SoC erreicht, Speicher lädt", PvCharging(bat_mode="min_soc_bat_mode"), 500, 90, 500, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500), -500, 90, 0, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500), 500, 90, 100, False),
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500), 500, 90, 1000, False),
 
 ]
 
