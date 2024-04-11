@@ -20,48 +20,6 @@ def data_fixture() -> None:
                                                        config=Mock(spec=Config, max_ac_out=7200)))
 
 
-@pytest.mark.parametrize(
-    "soc, switch_on_soc_reached, switch_on_soc, switch_off_soc," +
-    "expected_switch_on_soc_state, expected_switch_on_soc_reached",
-    [pytest.param(41, True, 60, 40, SwitchOnBatState.CHARGE_FROM_BAT, True,
-                  id="Laderegelung freigegeben, Ausschalt-SoC nicht erreicht"),
-     pytest.param(60, True, 60, 0, SwitchOnBatState.REACH_ONLY_SWITCH_ON_SOC, True,
-                  id="Laderegelung freigegeben, Ausschalt-SoC nicht konfiguriert"),
-     pytest.param(40, True, 60, 40, SwitchOnBatState.SWITCH_OFF_SOC_REACHED, False,
-                  id="Laderegelung freigegeben, Ausschalt-SoC erreicht"),
-     pytest.param(40, False, 0, 40, SwitchOnBatState.SWITCH_OFF_SOC_REACHED, False,
-                  id="Laderegelung nicht freigegeben, Einschalt-SoC nicht konfiguriert, Ausschalt-SoC erreicht"),
-     pytest.param(41, False, 0, 40, SwitchOnBatState.CHARGE_FROM_BAT, True,
-                  id="Laderegelung nicht freigegeben, Einschalt-SoC nicht konfiguriert, Ausschalt-SoC nicht erreicht"),
-     pytest.param(60, False, 60, 40, SwitchOnBatState.CHARGE_FROM_BAT, True,
-                  id="Laderegelung nicht freigegeben, Einschalt-SoC erreicht"),
-     pytest.param(59, False, 60, 40, SwitchOnBatState.SWITCH_ON_SOC_NOT_REACHED, False,
-                  id="Laderegelung nicht freigegeben, Einschalt-SoC nicht erreicht"),
-     pytest.param(59, False, 0, 0, SwitchOnBatState.CHARGE_FROM_BAT, True,
-                  id="Ein/Ausschalt-SoC nicht konfiguriert")]
-
-)
-def test_get_switch_on_state(soc: float,
-                             switch_on_soc_reached: bool,
-                             switch_on_soc: int,
-                             switch_off_soc: int,
-                             expected_switch_on_soc_state: SwitchOnBatState,
-                             expected_switch_on_soc_reached: bool):
-    # setup
-    b = BatAll()
-    b.data.get.soc = soc
-    b.data.set.switch_on_soc_reached = switch_on_soc_reached
-    data.data.general_data.data.chargemode_config.pv_charging.switch_on_soc = switch_on_soc
-    data.data.general_data.data.chargemode_config.pv_charging.switch_off_soc = switch_off_soc
-
-    # execution
-    b._get_switch_on_state()
-
-    # evaluation
-    assert b.data.set.switch_on_soc_reached == expected_switch_on_soc_reached
-    assert b.data.set.switch_on_soc_state == expected_switch_on_soc_state
-
-
 @pytest.mark.parametrize("parent, bat_power, expected_power",
                          [
                              pytest.param({"id": 6, "type": "counter", "children": [
@@ -135,14 +93,14 @@ cases = [
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve nicht ausgenutzt, Speicher lädt",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000), 1600, 40, -400, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve ausgenutzt, Speicher lädt",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000), 2200, 40, 200, True),
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000), 2200, 40, 200, False),
     Params("Mindest-SoC, SoC erreicht, Speicher entlädt", PvCharging(bat_mode="min_soc_bat_mode"), -500, 90, -500,
            False),
     Params("Mindest-SoC, SoC erreicht, Speicher lädt", PvCharging(bat_mode="min_soc_bat_mode"), 500, 90, 500, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500), -500, 90, 0, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500), 500, 90, 1000, False),
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500), 400, 90, 500, False),
 
 ]
 
