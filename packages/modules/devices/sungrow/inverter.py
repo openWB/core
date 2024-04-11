@@ -29,7 +29,7 @@ class SungrowInverter:
         unit = self.device_config.configuration.modbus_id
 
         if self.device_config.configuration.version in (Version.SH, Version.SH_winet_dongle):
-            power = self.__tcp_client.read_input_registers(13007, ModbusDataType.INT_32,
+            power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -1
         else:
             power = self.__tcp_client.read_input_registers(5030, ModbusDataType.INT_32,

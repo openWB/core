@@ -16,8 +16,8 @@
 | WR: AC Ausgangsspannung Phase B     | 5019   | 5019     | 5019          | 0.1 V   | UINT_16 little | Unterscheidet sich pro WR (nicht vom Meter gemessen)             |
 | WR: AC Ausgangsspannung Phase C     | 5020   | 5020     | 5020          | 0.1 V   | UINT_16 little | Unterscheidet sich pro WR (nicht vom Meter gemessen)             |
 | WR: Akt. DC Bruttoleistung          | 5016   | 5016     | 5016          | 1 W     | INT_32 mixed   |                                                                  |
-| WR: Akt. AC Wirkleistung            | 13007  | 13007    | 5030          | 1 W     | INT_32 mixed   | 13007 und 5030 sind gleich für SH_LAN, 5030 etwas verzögert      |
-| WR: Akt. AC Wirkleistung            | 5030   | 13007    | 5030          | 1 W     | INT_32 mixed   | 13007 verfügbar über SH_*, 5030 über SH_LAN und SG_WiNet         |
+| WR: Akt. AC Wirkleistung            | 13033  | 13033    | --            | 1 W     | INT_32 mixed   | ggf. Speicherladung addieren für effektive PV-Leistung           |
+| WR: Akt. AC Wirkleistung            | 5030   | --       | 5030          | 1 W     | INT_32 mixed   | 5030 "altes" Register, 13033 bevorzugt für SH Versionen          |
 | WR: Akt. Leistungsfluss             | 13000  | 13000    | --            | ja/nein | 8-bit bitmask  | (v.r.) Bit0: PV-Erzeugung, Bit1: Batt. lädt, Bit2: Batt. entlädt |
 | BAT: Akt. Leistung (ein-/ausgehend) | 13021  | 13021    | --            | 1 W     | UINT16 little  | Immer positiv, bei Be- und Entladung. WR Leistungsfluss beachten |
 | BAT: SoC                            | 13022  | 13022    | --            | 0.1 %   | UINT16 little  |                                                                  |
