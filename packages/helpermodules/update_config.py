@@ -1406,6 +1406,15 @@ class UpdateConfig:
     def upgrade_datastore_41(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if "openWB/general/chargemode_config/pv_charging/bat_prio" == topic:
+                for mode_topic, mode_payload in self.all_received_topics.items():
+                    if ("openWB/general/chargemode_config/pv_charging/charging_power_reserve" == mode_topic and
+                            decode_payload(mode_payload) == 0):
+                        return {"openWB/general/chargemode_config/pv_charging/bat_mode": "ev_mode"}
+                    elif ("openWB/general/chargemode_config/pv_charging/rundown_power" == mode_topic and
+                            decode_payload(mode_payload) == 0):
+                        return {"openWB/general/chargemode_config/pv_charging/bat_mode": "bat_mode"}
+                    else:
+                        return {"openWB/general/chargemode_config/pv_charging/bat_mode": "min_soc_mode"}
                 return {"openWB/general/chargemode_config/pv_charging/bat_mode": "min_soc_mode"}
             elif "openWB/general/chargemode_config/pv_charging/rundown_soc" == topic:
                 return {"openWB/general/chargemode_config/pv_charging/min_bat_soc": decode_payload(payload)}
