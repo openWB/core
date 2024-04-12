@@ -12,7 +12,6 @@ import traceback
 from typing import List, Dict, Optional, Tuple
 
 from control import data
-from control.bat_all import SwitchOnBatState
 from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
 from control.chargepoint.control_parameter import ControlParameter
 from control.limiting_value import LimitingValue

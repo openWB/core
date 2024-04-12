@@ -65,8 +65,6 @@ def get_factory() -> Get:
 class Set:
     charging_power_left: float = 0
     regulate_up: bool = False
-    switch_on_soc_reached: bool = False
-    switch_on_soc_state = SwitchOnBatState = SwitchOnBatState.SWITCH_ON_SOC_NOT_REACHED
 
 
 def set_factory() -> Set:
@@ -183,7 +181,6 @@ class BatAll:
                 self.data.set.charging_power_left = 0
                 self.data.get.power = 0
             Pub().pub("openWB/set/bat/set/charging_power_left", self.data.set.charging_power_left)
-            Pub().pub("openWB/set/bat/set/switch_on_soc_reached", self.data.set.switch_on_soc_reached)
             Pub().pub("openWB/set/bat/set/regulate_up", self.data.set.regulate_up)
         except Exception:
             log.exception("Fehler im Bat-Modul")

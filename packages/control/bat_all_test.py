@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 from control.bat import Bat
 
-from control.bat_all import BatAll, SwitchOnBatState
+from control.bat_all import BatAll
 from control import data
 from control.chargepoint.chargepoint_all import AllChargepointData, AllChargepoints, AllGet
 from control.general import General, PvCharging

@@ -43,7 +43,6 @@ class UpdateConfig:
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
         "^openWB/bat/set/regulate_up$",
-        "^openWB/bat/set/switch_on_soc_reached$",
         "^openWB/bat/get/fault_state$",
         "^openWB/bat/get/fault_str$",
         "^openWB/bat/get/soc$",
@@ -1405,8 +1404,8 @@ class UpdateConfig:
 
     def upgrade_datastore_41(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
-            if "openWB/general/chargemode_config/pv_charging/bat_mode" == topic:
-                return {"openWB/general/chargemode_config/pv_charging/bat_mode": decode_payload(payload)}
+            if "openWB/general/chargemode_config/pv_charging/bat_prio" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/bat_mode": "min_soc_mode"}
             elif "openWB/general/chargemode_config/pv_charging/rundown_soc" == topic:
                 return {"openWB/general/chargemode_config/pv_charging/min_bat_soc": decode_payload(payload)}
             elif "openWB/general/chargemode_config/pv_charging/rundown_power" == topic:
