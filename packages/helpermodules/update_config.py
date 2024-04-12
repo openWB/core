@@ -499,11 +499,12 @@ class UpdateConfig:
         log.debug("Broker-Konfiguration aktualisieren")
         InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
         try:
+            # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
+            self.__solve_breaking_changes()
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
             self.__update_version()
-            self.__solve_breaking_changes()
         except Exception:
             log.exception("Fehler bei der Aktualisierung des Brokers.")
             pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Brokers.", MessageType.ERROR)
