@@ -7,6 +7,7 @@ import random
 from typing import List, Optional
 
 from control import data
+from control.bat_all import BatConsiderationMode
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -32,19 +33,17 @@ def control_range_factory() -> List:
 
 @dataclass
 class PvCharging:
-    bat_prio: bool = True
-    charging_power_reserve: int = 200
+    bat_power_reserve: int = 0
     control_range: List = field(default_factory=control_range_factory)
     feed_in_yield: int = 15000
     phase_switch_delay: int = 7
     phases_to_use: int = 1
-    rundown_power: int = 1000
-    rundown_soc: int = 50
+    bat_power_discharge: int = 0
+    min_bat_soc: int = 50
+    bat_mode: BatConsiderationMode = BatConsiderationMode.EV_MODE.value
     switch_off_delay: int = 60
-    switch_off_soc: int = 40
     switch_off_threshold: int = 5
     switch_on_delay: int = 30
-    switch_on_soc: int = 60
     switch_on_threshold: int = 1500
 
 
