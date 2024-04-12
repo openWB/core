@@ -37,7 +37,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 41
+    DATASTORE_VERSION = 42
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1365,17 +1365,17 @@ class UpdateConfig:
             if re.search("openWB/system/device/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
                 # Module mit separater Modbus ID für jede Komponente
-                if payload.get("name") == "Sma Sunny Boy/Tripower Speicher"\
-                        and "modbus_id" not in payload["configuration"]:
+                if payload.get("name") == "Sma Sunny Boy/Tripower Speicher" \
+                    and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 3})
-                if payload.get("name") == "Sma Sunny Boy Smart Energy Speicher"\
-                        and "modbus_id" not in payload["configuration"]:
+                if payload.get("name") == "Sma Sunny Boy Smart Energy Speicher" \
+                    and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 3})
-                if payload.get("name") == "Sma Sunny Boy/Tripower Zähler"\
-                        and "modbus_id" not in payload["configuration"]:
+                if payload.get("name") == "Sma Sunny Boy/Tripower Zähler" \
+                    and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 3})
-                if payload.get("name") == "Sma Sunny Boy/Tripower Wechselrichter"\
-                        and "modbus_id" not in payload["configuration"]:
+                if payload.get("name") == "Sma Sunny Boy/Tripower Wechselrichter" \
+                    and "modbus_id" not in payload["configuration"]:
                     if payload.get("configuration").get("version") == 1:
                         payload["configuration"].update({"modbus_id": 1})
                     elif payload.get("configuration").get("version") == 2:
@@ -1405,3 +1405,31 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 41)
+
+    def upgrade_datastore_41(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("type") == "sungrow" and "version" not in payload["configuration"]:
+                    index = get_index(topic)
+                    # Assume an SG_WiNet version as default if no battery or counter found:
+                    version = 2
+                    for other_topic, other_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{index}/component", other_topic) is not None:
+                            child_component_payload = decode_payload(other_payload)
+                            if child_component_payload.get("type") == "counter" and "version" in \
+                                child_component_payload["configuration"]:
+                                version = child_component_payload['configuration']['version']
+                                log.debug(f"Version {version} found at counter for sungrow device {index}")
+                                # Pre-defined value found, stop component search
+                                break
+                            elif child_component_payload.get("type") == "bat":
+                                # Assume a hybrid inverter since a battery is attached, take SH_WiNet as default
+                                # since it is more compatible than SH_LAN
+                                version = 3
+                    log.debug(f"Setting version {version} for sungrow device {index}")
+                    payload["configuration"].update({"version": version})
+                Pub().pub(topic, payload)
+
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 42)
