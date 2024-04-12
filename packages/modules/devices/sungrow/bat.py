@@ -30,13 +30,10 @@ class SungrowBat:
         resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
         binary = bin(resp.registers[0])[2:].zfill(8)
         power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit)
-        imported = self.__tcp_client.read_input_registers(13026, ModbusDataType.UINT_32,
-                                                          wordorder=Endian.Little, unit=unit) * 100
-        exported = self.__tcp_client.read_input_registers(13040, ModbusDataType.UINT_32,
-                                                          wordorder=Endian.Little, unit=unit) * 100
         if binary[5] == "1":
             power = power * -1
 
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,
