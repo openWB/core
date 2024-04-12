@@ -127,37 +127,41 @@ def save_log(log_type: LogType):
     folder: str
         gibt an, ob ein Tages-oder Monats-Log-Eintrag erstellt werden soll.
     """
-    parent_file = Path(__file__).resolve().parents[3] / "data" / \
-        ("daily_log" if log_type == LogType.DAILY else "monthly_log")
-    parent_file.mkdir(mode=0o755, parents=True, exist_ok=True)
-    if log_type == LogType.DAILY:
-        file_name = timecheck.create_timestamp_YYYYMMDD()
-    else:
-        file_name = timecheck.create_timestamp_YYYYMM()
-    filepath = str(parent_file / f"{file_name}.json")
-
     try:
-        with open(filepath, "r") as jsonFile:
-            content = json.load(jsonFile)
-    except FileNotFoundError:
-        with open(filepath, "w") as jsonFile:
-            json.dump({"entries": [], "names": {}}, jsonFile)
-        with open(filepath, "r") as jsonFile:
-            content = json.load(jsonFile)
+        parent_file = Path(__file__).resolve().parents[3] / "data" / \
+            ("daily_log" if log_type == LogType.DAILY else "monthly_log")
+        parent_file.mkdir(mode=0o755, parents=True, exist_ok=True)
+        if log_type == LogType.DAILY:
+            file_name = timecheck.create_timestamp_YYYYMMDD()
+        else:
+            file_name = timecheck.create_timestamp_YYYYMM()
+        filepath = str(parent_file / f"{file_name}.json")
 
-    previous_entry = get_previous_entry(parent_file, content)
+        try:
+            with open(filepath, "r") as jsonFile:
+                content = json.load(jsonFile)
+        except FileNotFoundError:
+            with open(filepath, "w") as jsonFile:
+                json.dump({"entries": [], "names": {}}, jsonFile)
+            with open(filepath, "r") as jsonFile:
+                content = json.load(jsonFile)
 
-    sh_log_data = LegacySmartHomeLogData()
-    new_entry = create_entry(log_type, sh_log_data, previous_entry)
+        previous_entry = get_previous_entry(parent_file, content)
 
-    # json-Objekt in Datei einfügen
+        sh_log_data = LegacySmartHomeLogData()
+        new_entry = create_entry(log_type, sh_log_data, previous_entry)
 
-    entries = content["entries"]
-    entries.append(new_entry)
-    content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
-    with open(filepath, "w") as jsonFile:
-        json.dump(content, jsonFile)
-    return content["entries"]
+        # json-Objekt in Datei einfügen
+
+        entries = content["entries"]
+        entries.append(new_entry)
+        content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
+        # with open(filepath, "w") as jsonFile:
+        #     json.dump(content, jsonFile)
+        return content["entries"]
+    except Exception:
+        log.exception("Fehler beim Speichern des Log-Eintrags")
+        return None
 
 
 def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:

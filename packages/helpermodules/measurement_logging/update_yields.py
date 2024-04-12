@@ -20,27 +20,33 @@ log = logging.getLogger(__name__)
 def update_daily_yields(entries):
     """ veröffentlicht die Tageserträge für Ladepunkte, Zähler, PV und Speicher.
     """
-    totals = get_totals(entries)
-    [update_module_yields(type, totals) for type in ("bat", "counter", "cp", "pv")]
-    data.data.counter_all_data.data.set.daily_yield_home_consumption = totals["hc"]["all"]["energy_imported"]
-    Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", totals["hc"]["all"]["energy_imported"])
+    try:
+        totals = get_totals(entries)
+        [update_module_yields(type, totals) for type in ("bat", "counter", "cp", "pv")]
+        data.data.counter_all_data.data.set.daily_yield_home_consumption = totals["hc"]["all"]["energy_imported"]
+        Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", totals["hc"]["all"]["energy_imported"])
+    except Exception:
+        log.exception("Fehler beim Veröffentlichen der Tageserträge.")
 
 
 def update_module_yields(module: str, totals: Dict) -> None:
-    def update_imported_exported(daily_imported: float, daily_exported: float) -> None:
-        module_data.data.get.daily_imported = daily_imported
-        module_data.data.get.daily_exported = daily_exported
-        if module == "cp":
-            topic = "chargepoint"
-        else:
-            topic = module
-        if isinstance(module_data, (Ev, Chargepoint, Pv, Bat, Counter)):
-            Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_imported", daily_imported)
-            Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_exported", daily_exported)
-        elif not isinstance(module_data, BatAll):
-            # wird im changed_values_handler an den Broker gesendet
-            Pub().pub(f"openWB/set/{topic}/get/daily_imported", daily_imported)
-            Pub().pub(f"openWB/set/{topic}/get/daily_exported", daily_exported)
+    try:
+        def update_imported_exported(daily_imported: float, daily_exported: float) -> None:
+            module_data.data.get.daily_imported = daily_imported
+            module_data.data.get.daily_exported = daily_exported
+            if module == "cp":
+                topic = "chargepoint"
+            else:
+                topic = module
+            if isinstance(module_data, (Ev, Chargepoint, Pv, Bat, Counter)):
+                Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_imported", daily_imported)
+                Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_exported", daily_exported)
+            elif not isinstance(module_data, BatAll):
+                # wird im changed_values_handler an den Broker gesendet
+                Pub().pub(f"openWB/set/{topic}/get/daily_imported", daily_imported)
+                Pub().pub(f"openWB/set/{topic}/get/daily_exported", daily_exported)
+    except Exception:
+        log.exception(f"Fehler beim Veröffentlichen der Tageserträge für {module}")
 
     def update_exported(daily_exported: float) -> None:
         module_data.data.get.daily_exported = daily_exported
@@ -73,19 +79,22 @@ def update_pv_monthly_yearly_yields():
 def _update_pv_monthly_yields():
     """ veröffentlicht die monatlichen Erträge für PV
     """
-    with open(f"data/monthly_log/{timecheck.create_timestamp_YYYYMM()}.json", "r") as f:
-        monthly_log = json.load(f)
-    monthly_yield = data.data.pv_all_data.data.get.exported - monthly_log["entries"][0]["pv"]["all"]["exported"]
-    Pub().pub("openWB/set/pv/get/monthly_exported", monthly_yield)
-    for pv_module in data.data.pv_data.values():
-        for i in range(0, len(monthly_log["entries"])):
-            # erster Eintrag im Monat, in dem das PV-Modul existiert (falls ein Modul im laufenden Monat hinzugefügt
-            # wurde)
-            if monthly_log["entries"][i]["pv"].get(f"pv{pv_module.num}"):
-                monthly_yield = data.data.pv_data[f"pv{pv_module.num}"].data.get.exported - \
-                    monthly_log["entries"][i]["pv"][f"pv{pv_module.num}"]["exported"]
-                Pub().pub(f"openWB/set/pv/{pv_module.num}/get/monthly_exported", monthly_yield)
-                break
+    try:
+        with open(f"data/monthly_log/{timecheck.create_timestamp_YYYYMM()}.json", "r") as f:
+            monthly_log = json.load(f)
+        monthly_yield = data.data.pv_all_data.data.get.exported - monthly_log["entries"][0]["pv"]["all"]["exported"]
+        Pub().pub("openWB/set/pv/get/monthly_exported", monthly_yield)
+        for pv_module in data.data.pv_data.values():
+            for i in range(0, len(monthly_log["entries"])):
+                # erster Eintrag im Monat, in dem das PV-Modul existiert (falls ein Modul im laufenden Monat hinzugefügt
+                # wurde)
+                if monthly_log["entries"][i]["pv"].get(f"pv{pv_module.num}"):
+                    monthly_yield = data.data.pv_data[f"pv{pv_module.num}"].data.get.exported - \
+                        monthly_log["entries"][i]["pv"][f"pv{pv_module.num}"]["exported"]
+                    Pub().pub(f"openWB/set/pv/{pv_module.num}/get/monthly_exported", monthly_yield)
+                    break
+    except Exception:
+        log.exception("Fehler beim Veröffentlichen der monatlichen Erträge für PV")
 
 
 def pub_yearly_module_yield(sorted_path_list: List[str], pv_module: Pv):
@@ -105,15 +114,18 @@ def pub_yearly_module_yield(sorted_path_list: List[str], pv_module: Pv):
 def _update_pv_yearly_yields():
     """ veröffentlicht die jährlichen Erträge für PV
     """
-    path_list = list(Path(_get_parent_path()/"data"/"monthly_log").glob(f"{timecheck.create_timestamp_YYYY()}*"))
-    sorted_path_list = sorted([str(p) for p in path_list])
-    with open(sorted_path_list[0], "r") as f:
-        monthly_log = json.load(f)
-    yearly_yield = data.data.pv_all_data.data.get.exported - monthly_log["entries"][0]["pv"]["all"]["exported"]
-    Pub().pub("openWB/set/pv/get/yearly_exported", yearly_yield)
-    log.debug(f"sorted_path_list{sorted_path_list}")
-    for pv_module in data.data.pv_data.values():
-        pub_yearly_module_yield(sorted_path_list, pv_module)
+    try:
+        path_list = list(Path(_get_parent_path()/"data"/"monthly_log").glob(f"{timecheck.create_timestamp_YYYY()}*"))
+        sorted_path_list = sorted([str(p) for p in path_list])
+        with open(sorted_path_list[0], "r") as f:
+            monthly_log = json.load(f)
+        yearly_yield = data.data.pv_all_data.data.get.exported - monthly_log["entries"][0]["pv"]["all"]["exported"]
+        Pub().pub("openWB/set/pv/get/yearly_exported", yearly_yield)
+        log.debug(f"sorted_path_list{sorted_path_list}")
+        for pv_module in data.data.pv_data.values():
+            pub_yearly_module_yield(sorted_path_list, pv_module)
+    except Exception:
+        log.exception("Fehler beim Veröffentlichen der jährlichen Erträge für PV")
 
 
 def _get_parent_path() -> Path:
