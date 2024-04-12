@@ -3,6 +3,6 @@ from enum import IntEnum
 
 class Version(IntEnum):
     SH = 0
-    SH_winet_dongle = 1
-    SG = 2
-    SG_winet_dongle = 3
+    SG = 1
+    SG_winet_dongle = 2
+    SH_winet_dongle = 3
