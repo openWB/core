@@ -1415,7 +1415,7 @@ class UpdateConfig:
                             decode_payload(mode_payload) == 0 and old_bat_prio):
                         return {"openWB/general/chargemode_config/pv_charging/bat_mode": "bat_mode"}
                 else:
-                    return {"openWB/general/chargemode_config/pv_charging/bat_mode": "min_soc_mode"}
+                    return {"openWB/general/chargemode_config/pv_charging/bat_mode": "min_soc_bat_mode"}
             elif "openWB/general/chargemode_config/pv_charging/rundown_soc" == topic:
                 return {"openWB/general/chargemode_config/pv_charging/min_bat_soc": decode_payload(payload)}
             elif "openWB/general/chargemode_config/pv_charging/rundown_power" == topic:
