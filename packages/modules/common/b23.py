@@ -102,8 +102,7 @@ class B23(AbstractCounter):
                   for val in self.client.read_holding_registers(0x5B00, [data_type]*3, unit=self.id)]
         return values
 
-    def get_serial(self) -> str:
-        return "n/a"
-
-    def get_model(self) -> str:
-        return "B23"
+    def get_model(self) -> Optional[str]:
+        """Returns the model name of the meter
+        """
+        return "ABB B23"

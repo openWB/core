@@ -61,7 +61,7 @@ class SocketMeterHandler:
         # log.info(f"standard-socket: frequency: {self.data.frequency}")
 
         if self.data.serial is None:
-            self.data.serial = self._meter.get_serial()
+            self.data.serial = self._meter.get_serial_number()
 
         if self.data.model is None:
             self.data.model = self._meter.get_model()

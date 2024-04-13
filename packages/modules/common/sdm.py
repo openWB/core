@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
@@ -23,7 +23,7 @@ class Sdm(AbstractCounter):
             frequency = frequency / 10
         return frequency
 
-    def get_serial(self) -> str:
+    def get_serial_number(self) -> Optional[str]:
         return str(self.client.read_holding_registers(0xFC00, ModbusDataType.INT_32, unit=self.id))
 
 
@@ -45,7 +45,7 @@ class Sdm630(Sdm):
     def get_voltages(self) -> List[float]:
         return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, unit=self.id)
 
-    def get_model(self) -> str:
+    def get_model(self) -> Optional[str]:
         return "EASTRON SDM630"
 
 
@@ -67,5 +67,5 @@ class Sdm120(Sdm):
     def get_power_factors(self) -> List[float]:
         return [self.client.read_input_registers(0x1E, ModbusDataType.FLOAT_32, unit=self.id), 0.0, 0.0]
 
-    def get_model(self) -> str:
+    def get_model(self) -> Optional[str]:
         return "EASTRON SDM120"

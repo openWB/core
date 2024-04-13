@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
@@ -45,9 +45,11 @@ class Mpm3pm(AbstractCounter):
         return [val / 100 for val in self.client.read_input_registers(
             0x0E, [ModbusDataType.UINT_32]*3, unit=self.id)]
 
-    def get_serial(self) -> str:
+    def get_serial_number(self) -> Optional[str]:
         # not tested !
         return str(self.client.read_input_registers(0x33, ModbusDataType.INT_32, unit=self.id))
 
-    def get_model(self) -> str:
+    def get_model(self) -> Optional[str]:
+        """Returns the model name of the meter
+        """
         return "Bernecker MPM3PM"
