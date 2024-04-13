@@ -39,12 +39,7 @@
 
 <script setup lang="ts">
 import type { AxisContainerElement, ScaleTime } from 'd3'
-import {
-	axisBottom,
-	axisTop,
-	select,
-	timeFormat,
-} from 'd3'
+import { axisBottom, axisTop, select, timeFormat } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { graphData, xScaleMonth, xScale } from './model'
 import { computed } from 'vue'

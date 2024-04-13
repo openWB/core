@@ -41,6 +41,8 @@ export function processDayGraphMessages(_: string, message: string) {
 		)
 		console.debug('--- Incoming graph data:')
 		console.debug(inputTable)
+		console.debug('--- Incoming energy data:')
+		console.debug(energyValues)
 		console.debug('data to be displayed:')
 		console.debug(transformedTable)
 		console.debug(
