@@ -4,8 +4,9 @@ from modules.common.component_setup import ComponentSetup
 
 
 class SmaSunnyIslandConfiguration:
-    def __init__(self, ip_address: Optional[str] = None):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
         self.ip_address = ip_address
+        self.port = port
 
 
 class SmaSunnyIsland:
@@ -21,8 +22,8 @@ class SmaSunnyIsland:
 
 
 class SmaSunnyIslandBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 3):
+        self.modbus_id = modbus_id
 
 
 class SmaSunnyIslandBatSetup(ComponentSetup[SmaSunnyIslandBatConfiguration]):

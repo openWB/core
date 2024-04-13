@@ -73,6 +73,7 @@ class ChargepointModule(AbstractChargepoint):
             imported = self._client.meter_client.get_imported()
             power_factors = self._client.meter_client.get_power_factors()
             frequency = self._client.meter_client.get_frequency()
+            serial_number = self._client.meter_client.get_serial_number()
             phases_in_use = sum(1 for current in currents if current > 3)
             if phases_in_use == 0:
                 phases_in_use = self.old_phases_in_use
@@ -113,7 +114,8 @@ class ChargepointModule(AbstractChargepoint):
                 phases_in_use=phases_in_use,
                 power_factors=power_factors,
                 rfid=last_tag,
-                evse_current=self.set_current_evse
+                evse_current=self.set_current_evse,
+                serial_number=serial_number
             )
         except Exception as e:
             self._client.read_error += 1

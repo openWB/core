@@ -35,7 +35,7 @@ class B23(AbstractCounter):
             return None
         return value
 
-    def get_serial_number(self) -> int:
+    def get_serial_number(self) -> str:
         """Returns serial number of the device.
         """
         # firmware version: 0x8908, 8 Registers, ASCII
@@ -43,7 +43,7 @@ class B23(AbstractCounter):
         data_type = ModbusDataType.UINT_32
         time.sleep(0.1)
         value = self.client.read_holding_registers(0x8900, data_type, unit=self.id)
-        return self.check_nan(value, value, data_type)
+        return str(self.check_nan(value, value, data_type))
 
     def get_currents(self) -> List[float]:
         """Returns currents for all 3 phases in A.
@@ -68,6 +68,10 @@ class B23(AbstractCounter):
         time.sleep(0.1)
         raw_value = self.client.read_holding_registers(0x5000, data_type, unit=self.id)
         return self.check_nan(raw_value, raw_value * 10, data_type)
+
+    def get_exported(self) -> float:
+        time.sleep(0.1)
+        return self.client.read_holding_registers(0x5004, ModbusDataType.UINT_64, unit=self.id) * 10
 
     def get_power(self) -> Tuple[List[float], float]:
         """Returns power per phase and total power.

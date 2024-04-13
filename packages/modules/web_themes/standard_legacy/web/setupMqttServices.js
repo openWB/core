@@ -71,7 +71,7 @@ var topicsToSubscribe = [
 	["openWB/vehicle/template/charge_template/+/time_charging/plans/+", 1], // populate a list of time charge plans
 
 	// charge mode config
-	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
+	["openWB/general/chargemode_config/pv_charging/bat_mode", 0],
 
 	// electricity tariff
 	["openWB/optional/et/active", 1], // et provider is configured
@@ -80,26 +80,6 @@ var topicsToSubscribe = [
 
 	// graph topics
 	["openWB/graph/config/duration", 1], // maximum duration to display in landing page
-	["openWB/graph/boolDisplayCp1", 1],
-	["openWB/graph/boolDisplayCp2", 1],
-	["openWB/graph/boolDisplayCp3", 1],
-	["openWB/graph/boolDisplayCp4", 1],
-	["openWB/graph/boolDisplayCp5", 1],
-	["openWB/graph/boolDisplayCp6", 1],
-	["openWB/graph/boolDisplayCp7", 1],
-	["openWB/graph/boolDisplayCp8", 1],
-	["openWB/graph/boolDisplayHouseConsumption", 1],
-	["openWB/graph/boolDisplayLoad1", 1],
-	["openWB/graph/boolDisplayLoad2", 1],
-	["openWB/graph/boolDisplayCp1Soc", 1],
-	["openWB/graph/boolDisplayCp2Soc", 1],
-	["openWB/graph/boolDisplayCpAll", 1],
-	["openWB/graph/boolDisplayBatterySoc", 1],
-	["openWB/graph/boolDisplayBattery", 1],
-	["openWB/graph/boolDisplayEvu", 1],
-	["openWB/graph/boolDisplayLegend", 1],
-	["openWB/graph/boolDisplayLiveGraph", 1],
-	["openWB/graph/boolDisplayPv", 1],
 	["openWB/graph/alllivevaluesJson1", 1],
 	["openWB/graph/alllivevaluesJson2", 1],
 	["openWB/graph/alllivevaluesJson3", 1],
@@ -118,123 +98,6 @@ var topicsToSubscribe = [
 	["openWB/graph/alllivevaluesJson16", 1],
 	["openWB/graph/lastlivevaluesJson", 1],
 
-	// // hook Konfiguration
-	// ["openWB/hook/1/boolHookConfigured", 0],
-	// ["openWB/hook/2/boolHookConfigured", 0],
-	// ["openWB/hook/3/boolHookConfigured", 0],
-	// // Verbraucher Konfiguration
-	// ["openWB/Verbraucher/1/Configured", 0],
-	// ["openWB/Verbraucher/1/Name", 1],
-	// ["openWB/Verbraucher/1/Watt", 1],
-	// ["openWB/Verbraucher/1/DailyYieldImportkWh", 1],
-	// ["openWB/Verbraucher/2/Configured", 0],
-	// ["openWB/Verbraucher/2/Name", 1],
-	// ["openWB/Verbraucher/2/Watt", 1],
-	// ["openWB/Verbraucher/2/DailyYieldImportkWh", 1],
-
-	// // global topics
-	// ["openWB/global/strLastmanagementActive", 1],
-
-	// ["openWB/config/get/pv/minCurrentMinPv", 1],
-	// // system topics
-	// ["openWB/system/Timestamp", 1],
-
-	// // geladene kWh seit anstecken des EV
-	// // geladene kWh seit Reset Lademengenbegrenzung
-	// ["openWB/lp/1/kWhActualCharged", 1],
-	// ["openWB/lp/2/kWhActualCharged", 1],
-	// ["openWB/lp/3/kWhActualCharged", 1],
-	// ["openWB/lp/4/kWhActualCharged", 1],
-	// ["openWB/lp/5/kWhActualCharged", 1],
-	// ["openWB/lp/6/kWhActualCharged", 1],
-	// ["openWB/lp/7/kWhActualCharged", 1],
-	// ["openWB/lp/8/kWhActualCharged", 1],
-	// // Status Nachtladen
-	// ["openWB/lp/1/boolChargeAtNight", 1],
-	// ["openWB/lp/2/boolChargeAtNight", 1],
-	// // Restzeit
-	// ["openWB/lp/1/TimeRemaining", 1],
-	// ["openWB/lp/2/TimeRemaining", 1],
-	// ["openWB/lp/3/TimeRemaining", 1],
-	// ["openWB/lp/4/TimeRemaining", 1],
-	// ["openWB/lp/5/TimeRemaining", 1],
-	// ["openWB/lp/6/TimeRemaining", 1],
-	// ["openWB/lp/7/TimeRemaining", 1],
-	// ["openWB/lp/8/TimeRemaining", 1],
-
-	// ["openWB/lp/1/boolDirectChargeMode_none_kwh_soc", 1],
-	// ["openWB/lp/2/boolDirectChargeMode_none_kwh_soc", 1],
-	// ["openWB/lp/3/boolDirectChargeMode_none_kwh_soc", 1],
-	// ["openWB/lp/4/boolDirectChargeMode_none_kwh_soc", 1],
-	// ["openWB/lp/5/boolDirectChargeMode_none_kwh_soc", 1],
-	// ["openWB/lp/6/boolDirectChargeMode_none_kwh_soc", 1],
-	// ["openWB/lp/7/boolDirectChargeMode_none_kwh_soc", 1],
-	// ["openWB/lp/8/boolDirectChargeMode_none_kwh_soc", 1],
-	//
-	// // Status Autolock konfiguriert
-	// ["openWB/lp/1/AutolockConfigured", 1],
-	// ["openWB/lp/2/AutolockConfigured", 1],
-	// ["openWB/lp/3/AutolockConfigured", 1],
-	// ["openWB/lp/4/AutolockConfigured", 1],
-	// ["openWB/lp/5/AutolockConfigured", 1],
-	// ["openWB/lp/6/AutolockConfigured", 1],
-	// ["openWB/lp/7/AutolockConfigured", 1],
-	// ["openWB/lp/8/AutolockConfigured", 1],
-	// // Status Autolock
-	// ["openWB/lp/1/AutolockStatus", 1],
-	// ["openWB/lp/2/AutolockStatus", 1],
-	// ["openWB/lp/3/AutolockStatus", 1],
-	// ["openWB/lp/4/AutolockStatus", 1],
-	// ["openWB/lp/5/AutolockStatus", 1],
-	// ["openWB/lp/6/AutolockStatus", 1],
-	// ["openWB/lp/7/AutolockStatus", 1],
-	// ["openWB/lp/8/AutolockStatus", 1],
-	// ["openWB/lp/1/ADirectModeAmps", 1],
-	// ["openWB/lp/2/ADirectModeAmps", 1],
-	// ["openWB/lp/3/ADirectModeAmps", 1],
-	// ["openWB/lp/4/ADirectModeAmps", 1],
-	// ["openWB/lp/5/ADirectModeAmps", 1],
-	// ["openWB/lp/6/ADirectModeAmps", 1],
-	// ["openWB/lp/7/ADirectModeAmps", 1],
-	// ["openWB/lp/8/ADirectModeAmps", 1],
-	// // Zielladen
-	// ["openWB/lp/1/boolFinishAtTimeChargeActive", 1],
-
-	// // hook status
-	// ["openWB/hook/1/boolHookStatus", 1],
-	// ["openWB/hook/2/boolHookStatus", 1],
-	// ["openWB/hook/3/boolHookStatus", 1],
-
-	// // Config Vars Sofort current
-	// ["openWB/config/get/sofort/lp/1/current", 1],
-	// ["openWB/config/get/sofort/lp/2/current", 1],
-	// ["openWB/config/get/sofort/lp/3/current", 1],
-	// ["openWB/config/get/sofort/lp/4/current", 1],
-	// ["openWB/config/get/sofort/lp/5/current", 1],
-	// ["openWB/config/get/sofort/lp/6/current", 1],
-	// ["openWB/config/get/sofort/lp/7/current", 1],
-	// ["openWB/config/get/sofort/lp/8/current", 1],
-	// ["openWB/config/get/sofort/lp/1/chargeLimitation", 1],
-	// ["openWB/config/get/sofort/lp/2/chargeLimitation", 1],
-	// ["openWB/config/get/sofort/lp/3/chargeLimitation", 1],
-	// ["openWB/config/get/sofort/lp/4/chargeLimitation", 1],
-	// ["openWB/config/get/sofort/lp/5/chargeLimitation", 1],
-	// ["openWB/config/get/sofort/lp/6/chargeLimitation", 1],
-	// ["openWB/config/get/sofort/lp/7/chargeLimitation", 1],
-	// ["openWB/config/get/sofort/lp/8/chargeLimitation", 1],
-	// ["openWB/config/get/sofort/lp/1/energyToCharge", 1],
-	// ["openWB/config/get/sofort/lp/2/energyToCharge", 1],
-	// ["openWB/config/get/sofort/lp/3/energyToCharge", 1],
-	// ["openWB/config/get/sofort/lp/4/energyToCharge", 1],
-	// ["openWB/config/get/sofort/lp/5/energyToCharge", 1],
-	// ["openWB/config/get/sofort/lp/6/energyToCharge", 1],
-	// ["openWB/config/get/sofort/lp/7/energyToCharge", 1],
-	// ["openWB/config/get/sofort/lp/8/energyToCharge", 1],
-	// ["openWB/config/get/sofort/lp/1/socToChargeTo", 1],
-	// ["openWB/config/get/sofort/lp/2/socToChargeTo", 1],
-
-	// ["openWB/pv/bool70PVDynStatus", 1],
-	// ["openWB/config/get/pv/nurpv70dynact", 1]
 ];
 
 // holds number of topics flagged 1 initially

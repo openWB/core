@@ -831,6 +831,8 @@ class SubData:
                     mod = importlib.import_module(".backup_clouds."+config_dict["type"]+".backup_cloud", "modules")
                     config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                     var["system"].backup_cloud = mod.create_backup_cloud(config)
+            elif "openWB/system/backup_cloud/backup_before_update" in msg.topic:
+                self.set_json_payload(var["system"].data, msg)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()

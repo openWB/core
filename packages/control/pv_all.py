@@ -77,7 +77,9 @@ class PvAll:
                     self.data.get.fault_str = NO_ERROR
                 else:
                     self.data.get.fault_state = fault_state
-                    self.data.get.fault_str = "Bitte die Statusmeldungen der Wechselrichter prüfen."
+                    self.data.get.fault_str = ("Bitte die Statusmeldungen der Wechselrichter prüfen. Es konnte kein "
+                                               "aktueller Zählerstand ermittelt werden, da nicht alle Module Werte "
+                                               "liefern.")
                 self.data.get.power = power
                 Pub().pub("openWB/set/pv/get/power", self.data.get.power)
                 Pub().pub("openWB/set/pv/get/fault_state", self.data.get.fault_state)

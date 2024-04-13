@@ -405,6 +405,8 @@ $numDevices = 9;
 												<option value="M3" data-option="M3">Acthor M3</option>
 												<option value="9s" data-option="9s">Acthor 9s</option>
 												<option value="9s18" data-option="9s18">Acthor 9s Dual 18k</option>
+												<option value="9s27" data-option="9s27">Acthor 9s Boost 27k</option>												
+												<option value="9s45" data-option="9s45">Acthor 9s Boost 45k</option>																								
 											</select>
 											<span class="form-text small">
 												Hier ist das installierte Modell auszuwählen.
@@ -414,7 +416,7 @@ $numDevices = 9;
 									<div class="form-row mb-1">
 										<label for="device_acthorpowerDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">Installierte Leistung</label>
 										<div class="col">
-											<input id="device_acthorpowerDevices<?php echo $devicenum; ?>" name="device_acthorpower" class="form-control" type="number" min="0" max="18000" step="100" required="required" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
+											<input id="device_acthorpowerDevices<?php echo $devicenum; ?>" name="device_acthorpower" class="form-control" type="number" min="0" max="50000" step="100" required="required" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 											<span class="form-text small">
 												Hier bitte die an den Acthor angeschlossene Leistung in Watt angeben.
 											</span>

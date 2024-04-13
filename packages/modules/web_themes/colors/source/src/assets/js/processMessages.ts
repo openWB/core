@@ -236,7 +236,7 @@ function processSystemMessages(topic: string, message: string) {
 		topic.match(/^openWB\/system\/device\/[0-9]+\/component\/[0-9]+\/config$/i)
 	) {
 		const config = JSON.parse(message)
-		if (config.type == 'counter') {
+		if (config.type == 'counter' && counters[config.id]) {
 			counters[config.id].name = config.name
 		}
 	}

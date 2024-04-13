@@ -4,8 +4,10 @@ from modules.common.component_setup import ComponentSetup
 
 
 class KostalPlenticoreConfiguration:
-    def __init__(self, ip_address: Optional[str] = None):
+    def __init__(self, modbus_id: int = 71, ip_address: Optional[str] = None, port: int = 1502):
+        self.modbus_id = modbus_id
         self.ip_address = ip_address
+        self.port = port
 
 
 class KostalPlenticore:

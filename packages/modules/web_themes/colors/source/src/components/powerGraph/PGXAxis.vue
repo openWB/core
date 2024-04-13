@@ -39,9 +39,14 @@
 
 <script setup lang="ts">
 import type { AxisContainerElement, ScaleTime } from 'd3'
-import { axisBottom, axisTop, extent, scaleTime, select, timeFormat } from 'd3'
+import {
+	axisBottom,
+	axisTop,
+	select,
+	timeFormat,
+} from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
-import { graphData, xScaleMonth } from './model'
+import { graphData, xScaleMonth, xScale } from './model'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -55,13 +60,13 @@ const fontsize = 12
 // computed
 const xAxisGenerator = computed(() => {
 	return axisBottom<Date>(xScale.value as ScaleTime<number, number, never>)
-		.ticks(4)
+		.ticks(6)
 		.tickSizeInner(ticksize.value)
 		.tickFormat(timeFormat('%H:%M'))
 })
 const xAxisGenerator2 = computed(() => {
 	return axisTop<Date>(xScale.value as ScaleTime<number, number, never>)
-		.ticks(4)
+		.ticks(6)
 		.tickSizeInner(ticksize.value + 3)
 		.tickFormat(timeFormat(''))
 })
@@ -87,15 +92,6 @@ const ticksize = computed(() => {
 	}
 })
 
-const xScale = computed(() => {
-	let e = extent(graphData.data, (d) => d.date)
-	if (e[0] && e[1]) {
-		return scaleTime<number>().domain(e).range([0, props.width])
-	} else {
-		return scaleTime().range([0, 0])
-	}
-})
-
 const drawAxis1 = computed(() => {
 	let axis = select<AxisContainerElement, number>('g#PGXAxis')
 	axis.selectAll('*').remove()
@@ -109,7 +105,7 @@ const drawAxis1 = computed(() => {
 		.selectAll('.tick > text')
 		//.attr('color', 'var(--color-axis)')
 		.attr('fill', (d, i) =>
-			i > 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
+			i >= 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
 				? 'var(--color-axis)'
 				: 'var(--color-bg)',
 		)
@@ -148,7 +144,7 @@ const drawAxis2 = computed(() => {
 		.selectAll('.tick > text')
 		//.attr('color', 'var(--color-axis)')
 		.attr('fill', (d, i) =>
-			i > 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
+			i >= 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
 				? 'var(--color-axis)'
 				: 'var(--color-bg)',
 		)

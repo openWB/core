@@ -18,25 +18,26 @@ class CarloGavazziCounter:
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, CarloGavazziCounterSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
+                 tcp_client: modbus.ModbusTcpClient_,
+                 modbus_id: int) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(CarloGavazziCounterSetup, component_config)
         self.__tcp_client = tcp_client
+        self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        unit = 1
         with self.__tcp_client:
             voltages = [val / 10 for val in self.__tcp_client.read_input_registers(
-                0x00, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit)]
+                0x00, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id)]
             powers = [val / 10 for val in self.__tcp_client.read_input_registers(
-                0x12, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit)]
+                0x12, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id)]
             power = sum(powers)
             currents = [(val / 1000) for val in self.__tcp_client.read_input_registers(
-                0x0C, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit)]
-            frequency = self.__tcp_client.read_input_registers(0x33, ModbusDataType.INT_16, unit=unit) / 10
+                0x0C, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id)]
+            frequency = self.__tcp_client.read_input_registers(0x33, ModbusDataType.INT_16, unit=self.__modbus_id) / 10
             if frequency > 100:
                 frequency = frequency / 10
 

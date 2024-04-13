@@ -68,8 +68,8 @@ def create_device(device_config: KostalPlenticore):
             update(components, reader)
 
     try:
-        tcp_client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, 1502)
-        reader = _create_reader(tcp_client)
+        tcp_client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
+        reader = _create_reader(tcp_client, device_config.configuration.modbus_id)
     except Exception:
         log.exception("Fehler in create_device")
     return ConfigurableDevice(
@@ -80,8 +80,8 @@ def create_device(device_config: KostalPlenticore):
     )
 
 
-def _create_reader(tcp_client: modbus.ModbusTcpClient_) -> Callable[[int, modbus.ModbusDataType], Any]:
-    return functools.partial(tcp_client.read_holding_registers, unit=71, wordorder=Endian.Little)
+def _create_reader(tcp_client: modbus.ModbusTcpClient_, modbus_id: int) -> Callable[[int, modbus.ModbusDataType], Any]:
+    return functools.partial(tcp_client.read_holding_registers, unit=modbus_id, wordorder=Endian.Little)
 
 
 def read_legacy_inverter(ip1: str, ip2: str, battery: int, ip3: str) -> InverterState:
@@ -93,12 +93,12 @@ def read_legacy_inverter(ip1: str, ip2: str, battery: int, ip3: str) -> Inverter
         battery_component = KostalPlenticoreBat(1, KostalPlenticoreBatSetup())
         with modbus.ModbusTcpClient_(ip, 1502) as client:
             return update(
-                [inverter_component, battery_component], _create_reader(client), set_inverter_state=False
+                [inverter_component, battery_component], _create_reader(client, 71), set_inverter_state=False
             )
 
     def get_standard_inverter_state(ip: str) -> InverterState:
         with modbus.ModbusTcpClient_(ip, 1502) as client:
-            return inverter_component.read_state(_create_reader(client))
+            return inverter_component.read_state(_create_reader(client, 71))
 
     def inverter_state_sum(a: InverterState, b: InverterState) -> InverterState:
         return InverterState(exported=a.exported + b.exported, power=a.power + b.power)
@@ -115,7 +115,7 @@ def read_legacy_inverter(ip1: str, ip2: str, battery: int, ip3: str) -> Inverter
 def read_legacy_counter(ip1: str, ip2: str, battery: int, ip3: str, position: int) -> None:
     log.debug("Kostal Plenticore: WR1: %s, Position: %s", ip1, position)
     client = modbus.ModbusTcpClient_(ip1, 1502)
-    reader = _create_reader(client)
+    reader = _create_reader(client, 71)
     counter_component = KostalPlenticoreCounter(None, KostalPlenticoreCounterSetup(id=None))
     if LegacyCounterPosition(position) == LegacyCounterPosition.GRID:
         with client:
