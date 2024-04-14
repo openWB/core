@@ -26,6 +26,7 @@ import {
 import { processSmarthomeMessages } from '@/components/smartHome/processMessages'
 import { addCounter, counters } from '@/components/counterList/model'
 import { mqttClientId } from './mqttClient'
+import { add } from '@/components/mqttViewer/model'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -42,7 +43,7 @@ const topicsToSubscribe = [
 export function msgInit() {
 	mqttRegister(processMqttMessage)
 	topicsToSubscribe.forEach((topic) => {
-		mqttSubscribe(topic)
+	mqttSubscribe(topic)
 	})
 	initGraph()
 }
@@ -52,6 +53,7 @@ export function msgStop() {
 	})
 }
 function processMqttMessage(topic: string, payload: Buffer) {
+	add(topic,payload.toString())
 	const message = payload.toString()
 	if (topic.match(/^openwb\/counter\/[0-9]+\//i)) {
 		processCounterMessages(topic, message)
