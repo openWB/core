@@ -380,8 +380,11 @@ class CounterAll:
         return elements_per_level
 
     def validate_hierarchy(self):
-        self._delete_obsolete_entries()
-        self._add_missing_entries()
+        try:
+            self._delete_obsolete_entries()
+            self._add_missing_entries()
+        except Exception:
+            log.exception("Fehler bei der Validierung der Hierarchie")
 
     def _delete_obsolete_entries(self):
         def check_and_remove(name, type_name: ComponentType, data_structure):

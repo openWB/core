@@ -38,7 +38,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 43
+    DATASTORE_VERSION = 44
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1362,17 +1362,17 @@ class UpdateConfig:
             if re.search("openWB/system/device/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
                 # Module mit separater Modbus ID für jede Komponente
-                if payload.get("name") == "Sma Sunny Boy/Tripower Speicher" \
-                    and "modbus_id" not in payload["configuration"]:
+                if payload.get("name") == "Sma Sunny Boy/Tripower Speicher"\
+                        and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 3})
-                if payload.get("name") == "Sma Sunny Boy Smart Energy Speicher" \
-                    and "modbus_id" not in payload["configuration"]:
+                if payload.get("name") == "Sma Sunny Boy Smart Energy Speicher"\
+                        and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 3})
-                if payload.get("name") == "Sma Sunny Boy/Tripower Zähler" \
-                    and "modbus_id" not in payload["configuration"]:
+                if payload.get("name") == "Sma Sunny Boy/Tripower Zähler"\
+                        and "modbus_id" not in payload["configuration"]:
                     payload["configuration"].update({"modbus_id": 3})
-                if payload.get("name") == "Sma Sunny Boy/Tripower Wechselrichter" \
-                    and "modbus_id" not in payload["configuration"]:
+                if payload.get("name") == "Sma Sunny Boy/Tripower Wechselrichter"\
+                        and "modbus_id" not in payload["configuration"]:
                     if payload.get("configuration").get("version") == 1:
                         payload["configuration"].update({"modbus_id": 1})
                     elif payload.get("configuration").get("version") == 2:
@@ -1426,6 +1426,17 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 42)
 
     def upgrade_datastore_42(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/chargemode_config/pv_charging/bat_power_discharge" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/bat_power_discharge_active": decode_payload(
+                    payload) > 0}
+            elif "openWB/general/chargemode_config/pv_charging/bat_power_reserve" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/bat_power_reserve_active": decode_payload(
+                    payload) > 0}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 43)
+
+    def upgrade_datastore_43(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
@@ -1451,4 +1462,4 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
 
         self._loop_all_received_topics(upgrade)
-        Pub().pub("openWB/system/datastore_version", 43)
+        Pub().pub("openWB/system/datastore_version", 44)
