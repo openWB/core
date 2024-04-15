@@ -101,7 +101,8 @@ cases = [
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500), -500, 90, 0, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500), 400, 90, 500, False),
-
+    Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher voll",
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=500, min_bat_soc=100), 0, 100, 0, False),
 ]
 
 

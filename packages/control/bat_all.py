@@ -212,13 +212,16 @@ class BatAll:
                     else:
                         # Speicher-Vorrang bis zum Min-Soc
                         if config.bat_power_reserve != 0:
-                            if self.data.get.power > config.bat_power_reserve:
-                                # die Differenz darf nicht zum Laden der EV genutzt werden.
-                                self.data.set.charging_power_left = self.data.get.power - config.bat_power_reserve
+                            if self.data.get.soc < 100:
+                                if self.data.get.power > config.bat_power_reserve:
+                                    # die Differenz darf nicht zum Laden der EV genutzt werden.
+                                    self.data.set.charging_power_left = self.data.get.power - config.bat_power_reserve
+                                else:
+                                    self.data.set.charging_power_left = (
+                                        config.bat_power_reserve - self.data.get.power) * -1
+                                    self.data.set.regulate_up = True
                             else:
-                                self.data.set.charging_power_left = (
-                                    config.bat_power_reserve - self.data.get.power) * -1
-                                self.data.set.regulate_up = True
+                                self.data.set.charging_power_left = 0
                         else:
                             # Speicher wird geladen
                             self.data.set.charging_power_left = 0
