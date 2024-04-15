@@ -17,6 +17,9 @@ log = logging.getLogger(__name__)
 
 
 class ChargepointModule(AbstractChargepoint):
+    WRONG_CHARGE_STATE = "Lade-Status ist nicht aktiv, aber Strom fließt."
+    WRONG_PLUG_STATE = "Ladepunkt ist nicht angesteckt, aber es wird geladen."
+
     def __init__(self, config: OpenWBPro) -> None:
         self.config = config
         self.store = get_chargepoint_value_store(self.config.id)
@@ -77,8 +80,15 @@ class ChargepointModule(AbstractChargepoint):
                 if json_rsp.get("rfid_timestamp"):
                     chargepoint_state.rfid_timestamp = json_rsp["rfid_timestamp"]
 
+                self.validate_values(chargepoint_state)
                 self.store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()
+
+    def validate_values(self, chargepoint_state: ChargepointState) -> None:
+        if chargepoint_state.charge_state is False and max(chargepoint_state.currents) > 1:
+            raise ValueError(self.WRONG_CHARGE_STATE)
+        if chargepoint_state.plug_state is False and chargepoint_state.power > 0:
+            raise ValueError(self.WRONG_PLUG_STATE)
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, False):
