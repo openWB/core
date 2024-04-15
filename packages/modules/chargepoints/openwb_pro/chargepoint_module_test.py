@@ -103,3 +103,19 @@ def test_openwb_pro(sample_state: Dict, expected_state: Dict, monkeypatch, reque
 
     # evaluation
     assert vars(mock_chargepoint_value_store.set.call_args[0][0]) == vars(expected_state)
+
+
+@pytest.mark.parametrize("chargepoint_state, expected_exception, expected_message", [
+    (ChargepointState(charge_state=False, currents=[0, 2, 0], plug_state=True,
+     power=0), ValueError, chargepoint_module.ChargepointModule.WRONG_CHARGE_STATE),
+    (ChargepointState(charge_state=True, currents=[0, 0, 0], plug_state=False,
+     power=10), ValueError, chargepoint_module.ChargepointModule.WRONG_PLUG_STATE),
+    (ChargepointState(charge_state=True, currents=[0, 2, 0], plug_state=True, power=10), None, None)
+])
+def test_validate_values(chargepoint_state, expected_exception, expected_message):
+    cp = chargepoint_module.ChargepointModule(OpenWBPro(configuration=OpenWBProConfiguration(ip_address=SAMPLE_IP)))
+    if expected_exception is not None:
+        with pytest.raises(expected_exception, match=expected_message):
+            cp.validate_values(chargepoint_state)
+    else:
+        cp.validate_values(chargepoint_state)  # Sollte keine Ausnahme auslösen
