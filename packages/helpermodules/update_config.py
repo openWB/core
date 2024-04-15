@@ -38,7 +38,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 42
+    DATASTORE_VERSION = 43
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -191,7 +191,9 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/pv_charging/phases_to_use$",
         "^openWB/general/chargemode_config/pv_charging/min_bat_soc$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_discharge$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_discharge_active$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_reserve$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_reserve_active$",
         "^openWB/general/chargemode_config/retry_failed_phase_switches$",
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
@@ -417,8 +419,10 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 3),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_discharge_active", False),
         ("openWB/general/chargemode_config/pv_charging/min_bat_soc", 50),
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_reserve_active", False),
         ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
         ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 50),
         ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
@@ -1424,3 +1428,14 @@ class UpdateConfig:
                 return {"openWB/general/chargemode_config/pv_charging/bat_power_reserve": decode_payload(payload)}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 42)
+
+    def upgrade_datastore_42(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/chargemode_config/pv_charging/bat_power_discharge" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/bat_power_discharge_active": decode_payload(
+                    payload) > 0}
+            elif "openWB/general/chargemode_config/pv_charging/bat_power_reserve" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/bat_power_reserve_active": decode_payload(
+                    payload) > 0}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 43)
