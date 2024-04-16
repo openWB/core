@@ -21,6 +21,7 @@ from helpermodules.subdata import SubData
 from control.counter import Counter
 from control.counter_all import CounterAll
 from control.ev import ChargeTemplate, Ev, EvTemplate
+from control.yourcharge import YourCharge
 from control.general import General
 from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
@@ -42,6 +43,7 @@ optional_data_lock = threading.Lock()
 pv_data_lock = threading.Lock()
 pv_all_data_lock = threading.Lock()
 system_data_lock = threading.Lock()
+yc_data_lock = threading.Lock()
 
 
 def locked(lock: threading.Lock):
@@ -72,6 +74,7 @@ class Data:
         self._ev_data: Dict[str, Ev] = {}
         self._ev_template_data: Dict[str, EvTemplate] = {}
         self._general_data = General()
+        self._yc_data = YourCharge()
         self._graph_data = Graph()
         self._optional_data = Optional()
         self._pv_data: Dict[str, Pv] = {}
@@ -196,6 +199,15 @@ class Data:
         self._general_data = value
 
     @property
+    def yc_data(self) -> YourCharge:
+        return self._yc_data
+
+    @yc_data.setter
+    @locked(yc_data_lock)
+    def yc_data(self, value):
+        self._yc_data = value
+
+    @property
     def optional_data(self) -> Optional:
         return self._optional_data
 
@@ -245,6 +257,7 @@ class Data:
         log.info(f"general_data\n{self._general_data.data}")
         log.info(f"general_data-display\n{self._general_data.data.extern_display_mode}")
         log.info(f"graph_data\n{self._graph_data.data}")
+        log.info(f"yc_data\n{self._yc_data.data}")
         log.info(f"optional_data\n{self._optional_data.data}")
         self._print_dictionaries(self._pv_data)
         log.info(f"pv_all_data\n{self._pv_all_data.data}")
@@ -299,6 +312,12 @@ class Data:
                 k: SubData.system_data[k] for k in SubData.system_data if "device" in k}
             self.general_data = copy.deepcopy(SubData.general_data)
             self.__copy_cp_data()
+        except Exception:
+            log.exception("Fehler im Prepare-Modul")
+
+    def __copy_yourcharge_data(self) -> None:
+        try:
+            self.yc_data = copy.deepcopy(SubData.yc_data)
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
@@ -392,11 +411,13 @@ class Data:
         with ModuleDataReceivedContext(self.event_module_update_completed):
             try:
                 self.general_data = copy.deepcopy(SubData.general_data)
+                self.yc_data = copy.deepcopy(SubData.yc_data)
                 self.optional_data = copy.deepcopy(SubData.optional_data)
                 self.__copy_ev_data()
                 self.__copy_cp_data()
                 self.__copy_counter_data()
                 self.__copy_system_data()
+                self.__copy_yourcharge_data()
                 self.__copy_module_data()
                 self.graph_data = copy.deepcopy(SubData.graph_data)
             except Exception:

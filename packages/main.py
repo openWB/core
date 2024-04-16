@@ -27,6 +27,7 @@ from control import prepare
 from control import data
 from control import process
 from control.algorithm import algorithm
+from control.algorithm.yourcharge import statmachine_yc
 from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
@@ -42,6 +43,7 @@ class HandlerAlgorithm:
     def __init__(self):
         self.interval_counter = 1
         self.current_day = None
+        self.control_yc = None
 
     def handler10Sec(self):
         """ führt den Algorithmus durch.
@@ -145,7 +147,41 @@ class HandlerAlgorithm:
     @exit_after(10)
     def handler_random_nightly(self):
         try:
-            data.data.system_data["system"].create_backup_and_send_to_cloud()
+            data.data.system_data["system"].thread_backup_and_send_to_cloud()
+        except KeyboardInterrupt:
+            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
+        except Exception:
+            log.exception("Fehler im Main-Modul")
+
+    # enable time guarding after completing integration (it makes debugging much harder)
+    def handler5Sec_yc(self):
+        """ führt den YourCharge Algorithmus durch.
+        """
+        try:
+            # @exit_after(5)
+            def handler_with_control_interval():
+                data.data.copy_data()
+                loadvars_.get_values()
+                changed_values_handler.pub_changed_values()
+                wait_for_module_update_completed(loadvars_.event_module_update_completed,
+                                                 "openWB/set/system/device/module_update_completed")
+                data.data.copy_data()
+                changed_values_handler.store_initial_values()
+                self.heartbeat = True
+                if data.data.system_data["system"].data["perform_update"]:
+                    data.data.system_data["system"].perform_update()
+                    return
+                elif data.data.system_data["system"].data["update_in_progress"]:
+                    log.info("Regelung pausiert, da ein Update durchgeführt wird.")
+                event_global_data_initialized.set()
+                if self.control_yc is None:
+                    # we need lazy instantiation here so general_internal_chargepoint_handler is safely assigned
+                    self.control_yc = statmachine_yc.StatemachineYc(general_internal_chargepoint_handler)
+                self.control_yc.perform_load_control()
+                changed_values_handler.pub_changed_values()
+            log.info("# ***Start*** ")
+            Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
+            handler_with_control_interval()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -175,6 +211,20 @@ def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
 
 
+def check_secondary_control_algorithm():
+    if event_control_algorithm_set.isSet():
+        # if control algorithm set event is triggered, check, which algorithm we need
+        event_control_algorithm_set.clear()
+        if sub.yc_data.data.yc_config.active:
+            if len(schedule.get_jobs("yc")) == 0:
+                log.critical("Enabling YourCharge algorithm")
+                [schedule.every().minute.at(f":{i:02d}").do(handler.handler5Sec_yc).tag("yc") for i in range(0, 60, 5)]
+        else:
+            if len(schedule.get_jobs("yc")) > 0:
+                log.critical("Disabling YourCharge algorithm")
+                schedule.clear("yc")
+
+
 try:
     log.debug("Start openWB2.service")
     loadvars_ = loadvars.Loadvars()
@@ -200,6 +250,8 @@ try:
     event_charge_template.set()
     event_cp_config = threading.Event()
     event_cp_config.set()
+    event_control_algorithm_set = threading.Event()
+    event_control_algorithm_set.set()
     event_scheduled_charging_plan = threading.Event()
     event_scheduled_charging_plan.set()
     event_time_charging_plan = threading.Event()
@@ -232,7 +284,8 @@ try:
                           event_update_config_completed,
                           event_update_soc,
                           event_soc,
-                          event_jobs_running, event_modbus_server)
+                          event_jobs_running, event_modbus_server,
+                          event_control_algorithm_set)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
@@ -257,14 +310,20 @@ try:
     changed_values_handler.store_initial_values()
     schedule_jobs()
 except Exception:
+    traceback.print_exc()
     log.exception("Fehler im Main-Modul")
 
 while True:
     try:
-        if event_jobs_running.is_set() and len(schedule.get_jobs("algorithm")) == 0:
-            schedule_jobs()
-        elif event_jobs_running.is_set() is False and len(schedule.get_jobs("algorithm")) > 0:
-            schedule.clear("algorithm")
+        if event_jobs_running.is_set():
+            if len(schedule.get_jobs("algorithm")) == 0:
+                schedule_jobs()
+            if len(schedule.get_jobs("yc")) > 0:
+                schedule.clear("yc")
+        elif event_jobs_running.is_set() is False:
+            check_secondary_control_algorithm()
+            if len(schedule.get_jobs("algorithm")) > 0:
+                schedule.clear("algorithm")
         schedule.run_pending()
         time.sleep(1)
     except Exception:

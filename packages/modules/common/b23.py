@@ -35,7 +35,7 @@ class B23(AbstractCounter):
             return None
         return value
 
-    def get_serial_number(self) -> int:
+    def get_serial_number(self) -> str:
         """Returns serial number of the device.
         """
         # firmware version: 0x8908, 8 Registers, ASCII
@@ -43,7 +43,7 @@ class B23(AbstractCounter):
         data_type = ModbusDataType.UINT_32
         time.sleep(0.1)
         value = self.client.read_holding_registers(0x8900, data_type, unit=self.id)
-        return self.check_nan(value, value, data_type)
+        return str(self.check_nan(value, value, data_type))
 
     def get_currents(self) -> List[float]:
         """Returns currents for all 3 phases in A.
@@ -101,3 +101,8 @@ class B23(AbstractCounter):
         values = [self.check_nan(val, val / 10, data_type)
                   for val in self.client.read_holding_registers(0x5B00, [data_type]*3, unit=self.id)]
         return values
+
+    def get_model(self) -> Optional[str]:
+        """Returns the model name of the meter
+        """
+        return "ABB B23"

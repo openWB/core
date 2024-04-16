@@ -38,5 +38,9 @@ class AbstractCounter:
         return [230]*3
 
     @abstractmethod
+    def get_model(self) -> Optional[str]:
+        return None
+
+    @abstractmethod
     def get_serial_number(self) -> Optional[str]:
         return None

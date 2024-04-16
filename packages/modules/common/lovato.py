@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from modules.common import modbus
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from modules.common.abstract_counter import AbstractCounter
 from modules.common.modbus import ModbusDataType
 
@@ -36,3 +36,8 @@ class Lovato(AbstractCounter):
     def get_currents(self) -> List[float]:
         return [val / 10000 for val in self.client.read_input_registers(
             0x0007, [ModbusDataType.INT_32]*3, unit=self.id)]
+
+    def get_model(self) -> Optional[str]:
+        """Returns the model name of the meter
+        """
+        return "Lovato DMED301/DMED330"
