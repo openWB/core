@@ -156,8 +156,8 @@ def save_log(log_type: LogType):
         entries = content["entries"]
         entries.append(new_entry)
         content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
-        # with open(filepath, "w") as jsonFile:
-        #     json.dump(content, jsonFile)
+        with open(filepath, "w") as jsonFile:
+            json.dump(content, jsonFile)
         return content["entries"]
     except Exception:
         log.exception("Fehler beim Speichern des Log-Eintrags")

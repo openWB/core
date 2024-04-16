@@ -363,7 +363,7 @@ class UpdateConfig:
         "^openWB/system/backup_cloud/config$",
         "^openWB/system/boot_done$",
         "^openWB/system/configurable/backup_clouds$",
-        "^openWB/system/backup_cloud/backup_before_update$"
+        "^openWB/system/backup_cloud/backup_before_update$",
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
