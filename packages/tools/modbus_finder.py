@@ -13,7 +13,7 @@ def try_read(function: Callable, **kwargs) -> str:
     result = "--"
     try:
         result = str(function(**kwargs))
-    except pymodbus.exceptions.ConnectionException:
+    except pymodbus.exceptions.ConnectionException as cex:
         # Can happen on concurrent access, retry once
         result = str(function(**kwargs))
     finally:
