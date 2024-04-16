@@ -366,12 +366,30 @@ def analyse_percentage_totals(entries, totals):
 
 
 def _process_entries(entries: List, calculation: CalculationType):
-    if entries and len(entries) > 0:
-        for i in range(0, len(entries)-1):
-            entry = entries[i]
-            next_entry = entries[i+1]
-            entries[i] = process_entry(entry, next_entry, calculation)
-        entries.pop()
+    if entries:
+        if len(entries) == 1:
+            # Wenn es nur einen Eintrag gibt, kann keine Differenz berechnet werden und die Werte sind 0.
+            entry = entries[0]
+            for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
+                if type in entry:
+                    for module in entry[type].keys():
+                        if calculation in [CalculationType.POWER, CalculationType.ALL]:
+                            entry[type][module].update({
+                                "power_average": 0,
+                                "power_imported": 0,
+                                "power_exported": 0
+                            })
+                        if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
+                            entry[type][module].update({
+                                "energy_imported": 0,
+                                "energy_exported": 0
+                            })
+        elif len(entries) > 1:
+            for i in range(0, len(entries)-1):
+                entry = entries[i]
+                next_entry = entries[i+1]
+                entries[i] = process_entry(entry, next_entry, calculation)
+            entries.pop()
     return entries
 
 
