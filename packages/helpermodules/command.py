@@ -630,6 +630,8 @@ class Command:
 
     def systemUpdate(self, connection_id: str, payload: dict) -> None:
         log.info("Update requested")
+        # notify system about running update, notify abput end update in script
+        Pub().pub("openWB/system/update_in_progress", True)
         if SubData.system_data["system"].data["backup_before_update"]:
             self.createCloudBackup(connection_id, {})
         parent_file = Path(__file__).resolve().parents[2]
