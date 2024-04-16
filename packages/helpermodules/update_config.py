@@ -1448,15 +1448,16 @@ class UpdateConfig:
                         if re.search(f"openWB/system/device/{index}/component", other_topic) is not None:
                             child_component_payload = decode_payload(other_payload)
                             if child_component_payload.get("type") == "counter" and "version" in \
-                                child_component_payload["configuration"]:
+                               child_component_payload["configuration"]:
                                 version = child_component_payload['configuration']['version']
                                 log.debug(f"Version {version} found at counter for sungrow device {index}")
                                 # Pre-defined value found, stop component search
                                 break
                             elif child_component_payload.get("type") == "bat":
-                                # Assume a hybrid inverter since a battery is attached, take SH_WiNet as default
-                                # since it is more compatible than SH_LAN
+                                # Assume a hybrid inverter since a battery is attached
                                 version = 3
+                    # Assume an SH_WiNet connection if SH_x has been set before, this is more compatible than SH_LAN:
+                    version = 3 if version == 0 else version
                     log.debug(f"Setting version {version} for sungrow device {index}")
                     payload["configuration"].update({"version": version})
                 Pub().pub(topic, payload)

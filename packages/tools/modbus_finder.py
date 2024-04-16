@@ -3,16 +3,21 @@ import sys
 import time
 from typing import Callable
 
+import pymodbus
 from pymodbus.constants import Endian
 
 from modules.common import modbus
 
 
 def try_read(function: Callable, **kwargs) -> str:
+    result = "--"
     try:
-        return str(function(**kwargs))
-    except Exception as e:
-        return "--"
+        result = str(function(**kwargs))
+    except pymodbus.exceptions.ConnectionException:
+        # Can happen on concurrent access, retry once
+        result = str(function(**kwargs))
+    finally:
+        return result
 
 
 host = sys.argv[1]
