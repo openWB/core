@@ -173,7 +173,7 @@ def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:
             with open(path_list[-2], "r") as jsonFile:
                 content = json.load(jsonFile)
             previous_entry = content["entries"][-1]
-        except IndexError:
+        except (IndexError, FileNotFoundError, json.decoder.JSONDecodeError):
             previous_entry = None
     return previous_entry
 
