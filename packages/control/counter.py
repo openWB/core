@@ -414,7 +414,14 @@ class Counter:
             # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
             min_current = (charging_ev_data.ev_template.data.min_current
                            + charging_ev_data.ev_template.data.nominal_difference)
-            if power_in_use > threshold and max(chargepoint.data.get.currents) <= min_current:
+            switch_off_condition = (power_in_use > threshold or
+                                    # Wenn der Speicher hochregeln soll, muss auch abgeschaltet werden.
+                                    (self.calc_raw_surplus() == 0 and
+                                     data.data.bat_all_data.data.set.regulate_up and
+                                     # Einen nach dem anderen abschalten, bis Ladeleistung des Speichers erreicht ist
+                                     # und wieder eingespeist wird.
+                                     self.data.set.reserved_surplus == 0))
+            if switch_off_condition and max(chargepoint.data.get.currents) <= min_current:
                 if not charging_ev_data.ev_template.data.prevent_charge_stop:
                     # EV, die ohnehin nicht laden, wird direkt die Ladefreigabe entzogen.
                     # Würde man required_power vom released_evu_surplus subtrahieren, würden keine anderen EVs
