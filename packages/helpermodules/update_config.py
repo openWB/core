@@ -203,6 +203,7 @@ class UpdateConfig:
         "^openWB/general/prices/bat$",
         "^openWB/general/prices/grid$",
         "^openWB/general/prices/pv$",
+        "^openWB/general/prices/bp$",
         "^openWB/general/web_theme$",
 
         "^openWB/graph/config/duration$",
@@ -450,6 +451,7 @@ class UpdateConfig:
         ("openWB/general/prices/bat", Prices().bat),
         ("openWB/general/prices/grid", Prices().grid),
         ("openWB/general/prices/pv", Prices().pv),
+        ("openWB/general/prices/basicprice", Prices().bp),
         ("openWB/general/range_unit", "km"),
         ("openWB/general/ripple_control_receiver/module", NO_MODULE),
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
