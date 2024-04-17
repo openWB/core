@@ -2,7 +2,7 @@ from typing import Optional
 
 
 class EnergyChartsTariffConfiguration:
-    def __init__(self, country: str = 'DE-LU'):
+    def __init__(self, country: str = 'de'):
         self.country = country
 
 
