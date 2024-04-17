@@ -87,7 +87,7 @@ class ChargepointModule(AbstractChargepoint):
     def validate_values(self, chargepoint_state: ChargepointState) -> None:
         if chargepoint_state.charge_state is False and max(chargepoint_state.currents) > 1:
             raise ValueError(self.WRONG_CHARGE_STATE)
-        if chargepoint_state.plug_state is False and chargepoint_state.power > 0:
+        if chargepoint_state.plug_state is False and chargepoint_state.power > 20:
             raise ValueError(self.WRONG_PLUG_STATE)
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
