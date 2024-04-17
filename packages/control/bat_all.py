@@ -197,6 +197,8 @@ class BatAll:
                     # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
                     # Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher reduziert werden.
                     self.data.set.charging_power_left = self.data.get.power
+                else:
+                    self.data.set.charging_power_left = 0
                 self.data.set.regulate_up = True
             elif config.bat_mode == BatConsiderationMode.EV_MODE.value:
                 # Speicher sollte weder ge- noch entladen werden.
