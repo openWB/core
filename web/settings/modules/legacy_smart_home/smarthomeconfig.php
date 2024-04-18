@@ -116,19 +116,23 @@ $numDevices = 9;
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-mqtt hide">
 											Generisches MQTT modul<br>
-											Wenn Einschaltbedingung erreicht (Beispiel hier mit Device 4)<br>
-											openWB/set/LegacySmartHome/Devices/4/ReqRelay = 1<br>
-											openWB/set/LegacySmartHome/Devices/4/Ueberschuss = in Watt<br>
+											Wenn Einschaltbedingung erreicht (Beispiel hier mit Device 2)<br>
+											openWB/set/LegacySmartHome/Devices/2/ReqRelay = 1<br>
+											openWB/set/LegacySmartHome/Devices/2/Ueberschuss = in Watt<br>
 											Wenn Ausschaltbedingung erreicht<br>
-											openWB/set/LegacySmartHome/Devices/4/ReqRelay = 0<br>
-											openWB/set/LegacySmartHome/Devices/4/Ueberschuss = in Watt<br>
+											openWB/set/LegacySmartHome/Devices/2/ReqRelay = 0<br>
+											openWB/set/LegacySmartHome/Devices/2/Ueberschuss = in Watt<br>
 											ReqRelay gibt den Status vom Gerät aus Sicht openWb an (1 = eingeschaltet, 0 = ausgeschaltet)<br>
 											Bei der periodischen Abfrage wird die aktuelle Leistung<br>
-											openWB/set/LegacySmartHome/Devices/4/Aktpower = in Watt erwartet<br>
+											openWB/set/LegacySmartHome/Devices/2/Aktpower = in Watt erwartet<br>
+											openWB/set/LegacySmartHome/Devices/2/Tempa = Temperatur in C mit max 2 Nachkommastellen<br>
+											openWB/set/LegacySmartHome/Devices/2/Tempb = Temperatur in C mit max 2 Nachkommastellen<br>
+											openWB/set/LegacySmartHome/Devices/2/Tempc = Temperatur in C mit max 2 Nachkommastellen<br>										
 											und der aktuelle Zähler in Wattstunden wird hier erwartet<br>
-											openWB/set/LegacySmartHome/Devices/4/Powerc<br>
+											openWB/set/LegacySmartHome/Devices/2/Powerc<br>
 											wenn kein Zähler übergeben oder 0 übergeben wird, wird der Zähler selber gerechnet<br>
-											openWB/set/LegacySmartHome/Devices/4/Ueberschuss = in Watt<br>
+											openWB/set/LegacySmartHome/Devices/2/Ueberschuss = in Watt<br>
+											alle Gerät können bezüglich manuell / automatisch von extern gestuert werden. Details hier: https://forum.openwb.de/viewtopic.php?t=8415
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-NXDACXX hide">
 											DAC angesteuert über Lan. Der anliegende Überschuss wird in eine Voltzahl zwischen 0.01V und 10.0V umgewandelt. Bezug wird als 0 Volt übertragen.
@@ -793,7 +797,7 @@ $numDevices = 9;
 									</div>
 								</div>
 							</div>
-							<div class="form-group device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly hide">
+							<div class="form-group device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-mqtt device<?php echo $devicenum;  ?>-option-shelly hide">
 								<hr class="border-secondary">
 								<div class="form-row mb-1">
 									<label class="col-md-4 col-form-label">Temperatursensoren</label>
