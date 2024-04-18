@@ -28,6 +28,8 @@ from control import counter_all
 from control import ev
 from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
+from modules.common.component_type import ComponentType
+from modules.devices.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
@@ -1439,37 +1441,49 @@ class UpdateConfig:
     def upgrade_datastore_43(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+", topic) is not None:
-                payload = decode_payload(payload)
-                if payload.get("type") == "sungrow" and "version" not in payload["configuration"]:
-                    index = get_index(topic)
+                device = decode_payload(payload)
+                if device.get("type") == "sungrow" and "version" not in device["configuration"]:
+                    device_id = get_index(topic)
+                    device_name = device.get("name")
                     version = None
-                    has_battery = False
+                    inverter_id = None
+                    battery_id = None
+                    hierarchy = None
                     for other_topic, other_payload in self.all_received_topics.items():
-                        if re.search(f"openWB/system/device/{index}/component", other_topic) is not None:
-                            child_component_payload = decode_payload(other_payload)
-                            if child_component_payload.get("type") == "counter" and "version" in \
-                               child_component_payload["configuration"]:
-                                version = child_component_payload['configuration']['version']
-                                log.debug(f"Version {version} found at counter for sungrow device {index}")
-                            elif child_component_payload.get("type") == "bat":
-                                has_battery = True
+                        if re.search(f"openWB/system/device/{device_id}/component/[0-9]+", other_topic) is not None:
+                            component = decode_payload(other_payload)
+                            component_id = int(get_second_index(other_topic))
+                            if component.get("type") == ComponentType.COUNTER.value \
+                               and "version" in component["configuration"]:
+                                version = component['configuration']['version']
+                                log.debug(f"Version {version} found for device {device_id} '{device_name}'")
+                            elif component.get("type") == ComponentType.BAT.value:
+                                battery_id = component_id
+                            elif component.get("type") == ComponentType.INVERTER.value:
+                                inverter_id = component_id
+                        elif re.search(f"openWB/counter/get/hierarchy", other_topic) is not None:
+                            hierarchy = decode_payload(other_payload)
 
-                    if has_battery or version == 0:
+                    if battery_id or version == Version.SH:
                         # Assume an SH_WiNet if hybrid inverter, this is compatible to SH_LAN (but not vice versa)
-                        version = 3
+                        version = Version.SH_winet_dongle
                     elif not version:
                         # Assume an SG_WiNet version as default if no battery or version from counter found
-                        version = 2
-                    log.debug(f"Setting version {version} for sungrow device {index}")
-                    payload["configuration"].update({"version": version})
-                    Pub().pub(topic, payload)
+                        version = Version.SG_winet_dongle
+                    log.debug(f"Setting version {version} for device {device_id} '{device_name}'")
+                    device["configuration"].update({"version": version})
+                    Pub().pub(topic, device)
+                    pub_system_message(device, f"Die Konfiguration von '{device_name}' wurde aktualisiert. "
+                                               f"Bitte in den Geräteeinstellungen sicherstellen, dass Version "
+                                               f"'{Version(version).name}' korrekt ist", MessageType.INFO)
 
-                    pub_system_message(payload, "Die Konfiguration von Sungrow Geräten wurde aktualisiert. \
-                        Bitte die Version in den Geräteeinstellungen überprüfen", MessageType.WARNING)
-                    if has_battery:
-                        pub_system_message(payload, "Das Auslesen von Sungrow Hybrid-Wechselrichtern wurde \
-                            aktualisiert. Bitte den Speicher im Lastmanagement innerhalb des zugehörigen \
-                            Hybrid-Wechselrichters anordnen", MessageType.WARNING)
+                    if battery_id and inverter_id and hierarchy:
+                        _counter_all = counter_all.CounterAll()
+                        _counter_all.data.get.hierarchy = hierarchy
+                        _counter_all.hierarchy_remove_item(battery_id)
+                        _counter_all.hierarchy_add_item_below(battery_id, ComponentType.BAT, inverter_id)
+                        log.debug(f"Moved battery {battery_id} below inverter {inverter_id} in hierarchy")
+                        Pub().pub("openWB/counter/get/hierarchy", _counter_all.data.get.hierarchy)
 
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 44)
