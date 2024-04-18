@@ -23,12 +23,12 @@ def data_fixture() -> None:
 @pytest.mark.parametrize("parent, bat_power, expected_power",
                          [
                              pytest.param({"id": 6, "type": "counter", "children": [
-                                          {"id": 2, "type": "bat", "children": []}]}, 100, 150,
+                                          {"id": 2, "type": "bat", "children": []}]}, 100, (150, False),
                                           id="kein Hybrid-System, Speicher wird geladen"),
                              pytest.param({"id": 6, "type": "counter", "children": [
-                                          {"id": 2, "type": "bat", "children": []}]}, -100, 150,
+                                          {"id": 2, "type": "bat", "children": []}]}, -100, (150, False),
                                           id="kein Hybrid-System, Speicher wird entladen"),
-                             pytest.param({"id": 1, "type": "inverter", "children": []}, 600, 200,
+                             pytest.param({"id": 1, "type": "inverter", "children": []}, 600, (200, True),
                                           id="maximale Entladeleistung des WR"),
                          ])
 def test_max_bat_power_hybrid_system(parent, bat_power, expected_power, data_fixture, monkeypatch):
@@ -52,10 +52,10 @@ def test_max_bat_power_hybrid_system(parent, bat_power, expected_power, data_fix
                          [
                              pytest.param(1100, 1000,
                                           id="maximale Entladeleistung erreicht"),
-                             pytest.param(900, 900,
+                             pytest.param(900, 1000,
                                           id="maximale Entladeleistung nicht erreicht/ kein Hybrid-System"),
                          ])
-def test_limit_rundown_power(return_max_bat_power_hybrid_system, expected_power, monkeypatch):
+def test_limit_bat_power_discharge(return_max_bat_power_hybrid_system, expected_power, monkeypatch):
     # setup
     data.data.bat_data = {"bat2": Bat(2)}
     mock_max_bat_power_hybrid_system = Mock(return_value=return_max_bat_power_hybrid_system)
@@ -64,7 +64,7 @@ def test_limit_rundown_power(return_max_bat_power_hybrid_system, expected_power,
     b = BatAll()
 
     # execution
-    power = b._limit_rundown_power(1000)
+    power = b._limit_bat_power_discharge(1000)
 
     # evaluation
     assert power == expected_power
@@ -83,8 +83,10 @@ class Params:
 cases = [
     Params("Speicher, Speicher lädt", PvCharging(bat_mode="bat_mode"), 500, 90, 0, True),
     Params("Speicher, Speicher entlädt", PvCharging(bat_mode="bat_mode"), -500, 90, -500, True),
+    Params("Speicher, Speicher ist voll", PvCharging(bat_mode="bat_mode"), 0, 100, 0, False),
     Params("EV, Speicher lädt", PvCharging(bat_mode="ev_mode"), 500, 90, 500, False),
     Params("EV, Speicher entlädt", PvCharging(bat_mode="ev_mode"), -500, 90, -500, False),
+    Params("EV, Speicher ist voll", PvCharging(bat_mode="ev_mode"), 0, 100, 0, False),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher entlädt",
            PvCharging(bat_mode="min_soc_bat_mode"), -500, 40, -500, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher lädt", PvCharging(bat_mode="min_soc_bat_mode"), 500, 40, 0, True),
@@ -100,12 +102,22 @@ cases = [
     Params("Mindest-SoC, SoC erreicht, Speicher entlädt", PvCharging(bat_mode="min_soc_bat_mode"), -500, 90, -500,
            False),
     Params("Mindest-SoC, SoC erreicht, Speicher lädt", PvCharging(bat_mode="min_soc_bat_mode"), 500, 90, 500, False),
-    Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt",
+    Params("Mindest-SoC, SoC erreicht, Speicher ist voll", PvCharging(bat_mode="min_soc_bat_mode"), 0, 100, 0, False),
+    Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, Entladeleistung nicht erreicht",
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           -400, 90, 100, False),
+    Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, mehr als Entladeleistung",
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           -600, 90, -100, False),
+    Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, Entladeleistung erreicht",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
            -500, 90, 0, False),
-    Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt",
+    Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt mit mehr als Entladeleistung",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
-           400, 90, 500, False),
+           650, 90, 1150, False),
+    Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt mit weniger als Entladeleistung",
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           400, 90, 900, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher voll",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=500, bat_power_reserve_active=True,
                       min_bat_soc=100), 0, 100, 0, False),
@@ -122,7 +134,7 @@ def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypat
     b.data.get.power = params.power
     data.data.bat_data["bat0"] = b
     data.data.general_data.data.chargemode_config.pv_charging = params.config
-    mock__max_bat_power_hybrid_system = Mock(return_value=500)
+    mock__max_bat_power_hybrid_system = Mock(return_value=(params.power, None))
     monkeypatch.setattr(BatAll, "_max_bat_power_hybrid_system", mock__max_bat_power_hybrid_system)
 
     # execution
