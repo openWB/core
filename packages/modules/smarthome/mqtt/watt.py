@@ -10,7 +10,7 @@ numberOfSupportedDevices = 9  # limit number of smart home devices
 
 def on_connect(client, userdata, flags, rc) -> None:
     global devicenumber
-    client.subscribe("openWB/set/LegacySmartHome/Devices/"+str(devicenumber) + "/#", 2)
+    client.subscribe("openWB/LegacySmartHome/Devices/"+str(devicenumber) + "/#", 2)
 
 
 def on_message(client, userdata, msg) -> None:
@@ -20,23 +20,23 @@ def on_message(client, userdata, msg) -> None:
     global tempa
     global tempb
     global tempc
-    if (("openWB/set/LegacySmartHome/Device" in msg.topic) and ("Aktpower" in msg.topic)):
+    if (("openWB/LegacySmartHome/Device" in msg.topic) and ("Aktpower" in msg.topic)):
         devicenumb = re.sub(r'\D', '', msg.topic)
         if (1 <= int(devicenumb) <= numberOfSupportedDevices):
             aktpower = int(msg.payload)
-    if (("openWB/set/LegacySmartHome/Device" in msg.topic) and ("Powerc" in msg.topic)):
+    if (("openWB/LegacySmartHome/Device" in msg.topic) and ("Powerc" in msg.topic)):
         devicenumb = re.sub(r'\D', '', msg.topic)
         if (1 <= int(devicenumb) <= numberOfSupportedDevices):
             powerc = int(msg.payload)
-    if (("openWB/set/LegacySmartHome/Device" in msg.topic) and ("Tempa" in msg.topic)):
+    if (("openWB/LegacySmartHome/Device" in msg.topic) and ("Tempa" in msg.topic)):
         devicenumb = re.sub(r'\D', '', msg.topic)
         if (1 <= int(devicenumb) <= numberOfSupportedDevices):
             tempa = str(float(msg.payload))
-    if (("openWB/set/LegacySmartHome/Device" in msg.topic) and ("Tempb" in msg.topic)):
+    if (("openWB/LegacySmartHome/Device" in msg.topic) and ("Tempb" in msg.topic)):
         devicenumb = re.sub(r'\D', '', msg.topic)
         if (1 <= int(devicenumb) <= numberOfSupportedDevices):
             tempb = str(float(msg.payload))
-    if (("openWB/set/LegacySmartHome/Device" in msg.topic) and ("Tempc" in msg.topic)):
+    if (("openWB/LegacySmartHome/Device" in msg.topic) and ("Tempc" in msg.topic)):
         devicenumb = re.sub(r'\D', '', msg.topic)
         if (1 <= int(devicenumb) <= numberOfSupportedDevices):
             tempc = str(float(msg.payload))

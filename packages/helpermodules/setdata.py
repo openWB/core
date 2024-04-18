@@ -1124,7 +1124,7 @@ class SetData:
                         f"openWB/set/LegacySmartHome/Devices/{index}/Tempa" in msg.topic or
                         f"openWB/set/LegacySmartHome/Devices/{index}/Tempb" in msg.topic or
                         f"openWB/set/LegacySmartHome/Devices/{index}/Tempc" in msg.topic):
-                    pass
+                    self._validate_value(msg, None)
                     # diese topics werden im Smarthomemodul mqtt bearbeitet
             else:
                 self.__unknown_topic(msg)
