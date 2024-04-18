@@ -197,7 +197,7 @@ class Slmqtt(Slbase):
                           str(self.device_nummer) + '_temp2', 'w') as f:
                     f.write(str(self.temp2))
             else:
-                self.temp2 = '300'            
+                self.temp2 = '300'
         except Exception as e1:
             log.warning("Leistungsmessung %s %d %s Fehlermeldung: %s "
                         % ('mqtt', self.device_nummer, ip, str(e1)))
