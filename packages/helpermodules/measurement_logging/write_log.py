@@ -141,10 +141,7 @@ def save_log(log_type: LogType):
             with open(filepath, "r") as jsonFile:
                 content = json.load(jsonFile)
         except FileNotFoundError:
-            with open(filepath, "w") as jsonFile:
-                json.dump({"entries": [], "names": {}}, jsonFile)
-            with open(filepath, "r") as jsonFile:
-                content = json.load(jsonFile)
+            content = {"entries": [], "names": {}}
 
         previous_entry = get_previous_entry(parent_file, content)
 
@@ -176,7 +173,7 @@ def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:
             with open(path_list[-2], "r") as jsonFile:
                 content = json.load(jsonFile)
             previous_entry = content["entries"][-1]
-        except IndexError:
+        except (IndexError, FileNotFoundError, json.decoder.JSONDecodeError):
             previous_entry = None
     return previous_entry
 

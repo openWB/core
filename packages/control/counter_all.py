@@ -31,6 +31,7 @@ def config_factory() -> Config:
 class Set:
     loadmanagement_active: bool = False
     home_consumption: float = 0
+    smarthome_power_excluded_from_home_consumption: float = 0
     invalid_home_consumption: int = 0
     daily_yield_home_consumption: float = 0
     imported_home_consumption: float = 0
@@ -143,7 +144,7 @@ class CounterAll:
             elif element["type"] == ComponentType.INVERTER.value:
                 power += data.data.pv_data[f"pv{element['id']}"].data.get.power
         evu = data.data.counter_data[self.get_evu_counter_str()].data.get.power
-        return evu - power, elements_to_sum_up
+        return evu - power - self.data.set.smarthome_power_excluded_from_home_consumption, elements_to_sum_up
 
     def _add_hybrid_bat(self, id: int) -> List:
         elements = []
