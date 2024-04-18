@@ -16,10 +16,12 @@ class CountryData:
     url: str
 
 
-current_dateTime = datetime.now().replace(microsecond=0)
+current_dateTime = datetime.now()
 tomorrow = datetime.now() + timedelta(1)
-start_time = current_dateTime.strftime("%Y-%m-%d") + 'T' + current_dateTime.strftime("%H") + '%3A' + current_dateTime.strftime("%M") + '%2B01%3A00'
-end_time = tomorrow.strftime("%Y-%m-%d") + 'T00%3A00%2B01%3A00'
+# start_time = current_dateTime.strftime("%Y-%m-%d") + 'T' + current_dateTime.strftime("%H") + '%3A'
+# + current_dateTime.strftime("%M") + '%2B01%3A00'
+start_time = current_dateTime.strftime("%Y-%m-%d") + 'T00%3A00%2B01%3A00'
+end_time = tomorrow.strftime("%Y-%m-%d") + 'T23%3A59%2B01%3A00'
 value = 'price'
 de = CountryData(url='https://api.energy-charts.info/' + value + '?bzn=DE-LU' + '&start='
                  + start_time + '&end=' + end_time)
@@ -113,6 +115,7 @@ sk = CountryData(url='https://api.energy-charts.info/' + value + '?bzn=SK' + '&s
 
 def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
     country_data: CountryData = globals()[config.country]
+    addPrice = config.servePrice
     a = urllib.request.urlopen(country_data.url)
     raw_prices = json.loads(a.read().decode())
     time_stamp_arr = []
@@ -120,7 +123,7 @@ def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
     for unix_sec in raw_prices['unix_seconds']:
         time_stamp_arr.append(unix_sec)  # Epoch from ms in s
     for x in raw_prices['price']:
-        price_arr.append(float(x)/1000000)  # €/MWh -> €/Wh
+        price_arr.append((float(x + (addPrice*10))/1000000))  # €/MWh -> €/Wh + Aufschlag
     prices: Dict[int, float] = {}
     prices = dict(zip(time_stamp_arr, price_arr))
     return prices

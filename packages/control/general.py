@@ -123,7 +123,7 @@ class Prices:
     cp: float = 0
     grid: float = 0.0003
     pv: float = 0.00015
-    bp: float = 0
+    sp: float = 0
 
 
 def prices_factory() -> Prices:
