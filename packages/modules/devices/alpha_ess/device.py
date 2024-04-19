@@ -40,10 +40,10 @@ def create_device(device_config: AlphaEss):
                                          device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[alpha_ess_component_classes]]):
-        with client as c:
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(c)
+                    component.update()
 
     try:
         if device_config.configuration.source == 0:
