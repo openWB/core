@@ -416,7 +416,7 @@ class Counter:
                            + charging_ev_data.ev_template.data.nominal_difference)
             switch_off_condition = (power_in_use > threshold or
                                     # Wenn der Speicher hochregeln soll, muss auch abgeschaltet werden.
-                                    (self.calc_raw_surplus() == 0 and
+                                    (self.calc_raw_surplus() <= 0 and
                                      data.data.bat_all_data.data.set.regulate_up and
                                      # Einen nach dem anderen abschalten, bis Ladeleistung des Speichers erreicht ist
                                      # und wieder eingespeist wird.
