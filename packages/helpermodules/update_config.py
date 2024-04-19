@@ -1461,7 +1461,7 @@ class UpdateConfig:
                                 battery_id = component_id
                             elif component.get("type") == ComponentType.INVERTER.value:
                                 inverter_id = component_id
-                        elif re.search(f"openWB/counter/get/hierarchy", other_topic) is not None:
+                        elif re.search("openWB/counter/get/hierarchy", other_topic) is not None:
                             hierarchy = decode_payload(other_payload)
 
                     if battery_id or version == Version.SH:
