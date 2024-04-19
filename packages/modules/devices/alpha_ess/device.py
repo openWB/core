@@ -2,7 +2,7 @@
 import logging
 from typing import Iterable, Union
 
-from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, IndependentComponentUpdater
+from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.alpha_ess.config import AlphaEss, AlphaEssBatSetup, AlphaEssCounterSetup, AlphaEssInverterSetup
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
@@ -60,7 +60,7 @@ def create_device(device_config: AlphaEss):
             counter=create_counter_component,
             inverter=create_inverter_component,
         ),
-        component_updater=IndependentComponentUpdater(update_components)
+        component_updater=MultiComponentUpdater(update_components)
     )
 
 
