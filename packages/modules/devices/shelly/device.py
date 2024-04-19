@@ -8,8 +8,12 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import (ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater)
 from modules.devices.shelly.inverter import ShellyInverter
+from modules.devices.shelly.counter import ShellyCounter
+from modules.devices.shelly.bat import ShellyBat
 from modules.devices.shelly.config import Shelly, ShellyConfiguration
 from modules.devices.shelly.config import ShellyInverterSetup, ShellyInverterConfiguration
+from modules.devices.shelly.config import ShellyCounterSetup, ShellyCounterConfiguration
+from modules.devices.shelly.config import ShellyBatSetup, ShellyBatConfiguration
 
 
 log = logging.getLogger(__name__)
@@ -29,13 +33,23 @@ def create_device(device_config: Shelly) -> ConfigurableDevice:
         return ShellyInverter(device_config.id, component_config, device_config.configuration.ip_address,
                               device_config.configuration.generation)
 
+    def create_counter_component(component_config: ShellyCounterSetup) -> ShellyCounter:
+        return ShellyCounter(device_config.id, component_config, device_config.configuration.ip_address,
+                             device_config.configuration.generation)
+
+    def create_bat_component(component_config: ShellyBatSetup) -> ShellyBat:
+        return ShellyBat(device_config.id, component_config, device_config.configuration.ip_address,
+                         device_config.configuration.generation)
+
     if device_config.configuration.generation is None and device_config.configuration.ip_address is not None:
         device_config.configuration.generation = get_device_generation(device_config.configuration.ip_address)
 
     return ConfigurableDevice(
         device_config=device_config,
         component_factory=ComponentFactoryByType(
-            inverter=create_inverter_component
+            inverter=create_inverter_component,
+            counter=create_counter_component,
+            bat=create_bat_component
         ),
         component_updater=IndependentComponentUpdater(lambda component: component.update())
     )
