@@ -785,8 +785,7 @@ class SetData:
                 self._validate_value(msg, bool)
             elif ("openWB/set/general/prices/bat" in msg.topic or
                   "openWB/set/general/prices/grid" in msg.topic or
-                  "openWB/set/general/prices/pv" in msg.topic or
-                  "openWB/set/general/prices/servePrice" in msg.topic):
+                  "openWB/set/general/prices/pv" in msg.topic):
                 self._validate_value(msg, float, [(0, 99.99)])
             elif ("openWB/set/general/range_unit" in msg.topic or
                   "openWB/set/general/ripple_control_receiver/override_reference" in msg.topic):

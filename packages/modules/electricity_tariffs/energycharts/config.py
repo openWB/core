@@ -1,10 +1,8 @@
-from typing import Optional
-
 
 class EnergyChartsTariffConfiguration:
-    def __init__(self, country: str = 'de', servePrice: float = 0):
+    def __init__(self, country: str = 'de', serve_price: float = 0):
         self.country = country
-        self.servePrice = servePrice
+        self.serve_price = serve_price
 
 
 class EnergyChartsTariff:
