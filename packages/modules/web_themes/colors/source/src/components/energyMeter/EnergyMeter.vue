@@ -96,9 +96,8 @@ const axisFontsize = 12
 const plotdata = computed(() => {
 	let sources = Object.values(sourceSummary)
 	let usage = usageDetails.value
-	let historic = historicSummary.values()
+	const historic = historicSummary.items
 	let result: PowerItem[] = []
-
 	if (globalConfig.debug) {
 		console.debug('----------------------- source summary -----------------')
 		console.debug(sourceSummary)
@@ -120,11 +119,13 @@ const plotdata = computed(() => {
 		case 'day':
 		case 'month':
 		case 'year':
-			if (historic.length == 0) {
+			if (Object.values(historic).length == 0) {
 				noData.value = true
 			} else {
 				noData.value = false
-				result = historic.filter((row) => row.energy > 0)
+				result = [historic.evuIn, historic.pv, historic.evuOut, historic.batOut]
+					.concat(usage)
+					.filter((row) => row.energy > 0)
 			}
 	}
 	return result
@@ -144,23 +145,27 @@ const heading = 'Energie'
 
 const usageDetails = computed(() => {
 	const cpcount = Object.values(chargePoints).length
-	const shcount = Object.values(shDevices).filter(
-		(dev) => dev.configured,
-	).length
-	return [usageSummary.evuOut, usageSummary.devices, usageSummary.charging]
-		.concat(
+	const shcount = [...shDevices.values()].filter((dev) => dev.configured).length
+	let usg = usageSummary
+	if (graphData.graphMode != 'live' && graphData.graphMode != 'today') {
+		usg = historicSummary.items
+	}
+	return [
+		...[usg.evuOut, usg.charging].concat(
 			cpcount > 1
 				? Object.values(chargePoints).map((cp) => cp.toPowerItem())
 				: [],
-		)
-		.concat(
-			shcount > 1
-				? Object.values(shDevices).filter(
-						(row) => row.configured && row.showInGraph,
-				  )
-				: [],
-		)
-		.concat([usageSummary.batIn, usageSummary.house])
+		),
+		...[usg.devices]
+			.concat(
+				shcount > 1
+					? [...shDevices.values()].filter(
+							(row) => row.configured && row.showInGraph,
+					  )
+					: [],
+			)
+			.concat([usageSummary.batIn, usageSummary.house]),
+	]
 })
 </script>
 

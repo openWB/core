@@ -22,7 +22,7 @@ var chartLabels = {
 	"bat-all-soc": "Speicher ges. SoC",
 };
 
-function getIndex(topic, position=0) {
+function getIndex(topic, position = 0) {
 	// get occurrence of numbers between / / in topic
 	// since this is supposed to be the index like in openwb/lp/4/w
 	// no lookbehind supported by safari, so workaround with replace needed
@@ -92,6 +92,7 @@ function createChargePoint(hierarchy) {
 
 function refreshChargeTemplate(templateIndex) {
 	if (chargeModeTemplate.hasOwnProperty(templateIndex)) {
+		console.debug("refreshing charge template", templateIndex);
 		parents = $('.charge-point-card[data-charge-template=' + templateIndex + ']');
 		if (parents.length > 0) {
 			// console.debug("selected elements", parents);
@@ -138,7 +139,7 @@ function refreshChargeTemplate(templateIndex) {
 				var max_price = parseFloat((chargeModeTemplate[templateIndex].et.max_price * 100000).toFixed(2));
 				element.data('max-price', max_price);
 				element.attr('data-max-price', max_price).data('max-price', max_price);
-				element.find('.charge-point-price-charging-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2}));
+				element.find('.charge-point-price-charging-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
 				// ***** pv_charging *****
 				// chargemode.pv_charging.min_current
@@ -371,7 +372,7 @@ function handleMessage(mqttTopic, mqttPayload) {
 	processPreloader(mqttTopic);
 	if (mqttTopic.match(/^openwb\/counter\/[0-9]+\//i)) { processCounterMessages(mqttTopic, mqttPayload) }
 	else if (mqttTopic.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttTopic, mqttPayload); }
-	else if (mqttTopic.match(/^openwb\/system\/device\/[0-9]+\/component\/[0-9]+\//i) ) { processComponentMessages(mqttTopic, mqttPayload); }
+	else if (mqttTopic.match(/^openwb\/system\/device\/[0-9]+\/component\/[0-9]+\//i)) { processComponentMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/bat\//i)) { processBatteryMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/pv\//i)) { processPvMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/chargepoint\//i)) { processChargePointMessages(mqttTopic, mqttPayload); }
@@ -380,11 +381,6 @@ function handleMessage(mqttTopic, mqttPayload) {
 	else if (mqttTopic.match(/^openwb\/graph\//i)) { processGraphMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/optional\/et\//i)) { processETProviderMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/LegacySmartHome\//i)) { processSmartHomeDeviceMessages(mqttTopic, mqttPayload); }
-	// else if ( mqttTopic.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttTopic, mqttPayload); }
-	// else if ( mqttTopic.match( /^openwb\/system\//i) ) { processSystemMessages(mqttTopic, mqttPayload); }
-	// else if ( mqttTopic.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttTopic, mqttPayload); }
-	// else if ( mqttTopic.match( /^openwb\/hook\//i) ) { processHookMessages(mqttTopic, mqttPayload); }
-	// else if ( mqttTopic.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttTopic, mqttPayload); }
 } // end handleMessage
 
 function processGlobalCounterMessages(mqttTopic, mqttPayload) {
@@ -651,46 +647,19 @@ function processPvMessages(mqttTopic, mqttPayload) {
 		}
 		$('.pv-sum-production').text(pvDailyYield + ' ' + unitPrefix + unit);
 	}
-	// else if ( mqttTopic == 'openWB/pv/bool70PVDynStatus') {
-	// 	switch (mqttPayload) {
-	// 		case '0':
-	// 			// deaktiviert
-	// 			$('#70PvBtn').removeClass('btn-success');
-	// 			break;
-	// 		case '1':
-	// 			// ev priority
-	// 			$('#70PvBtn').addClass('btn-success');
-	// 		break;
-	// 	}
-	// }
 }
 
 function processPvConfigMessages(mqttTopic, mqttPayload) {
-	if (mqttTopic == 'openWB/general/chargemode_config/pv_charging/bat_prio') {
-		var element = $('.house-battery-priority');
+	if (mqttTopic == 'openWB/general/chargemode_config/pv_charging/bat_mode') {
 		data = JSON.parse(mqttPayload);
-		if (data == true) {
-			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
-		} else {
-			element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
-		}
+		var element = $('.bat-consideration-mode input[type=radio][data-option="' + data + '"]');
+		element.prop('checked', true); // check selected batmode radio button
+		element.parent().addClass('active'); // activate selected batmode button
+		$('.bat-consideration-mode input[type=radio]').not('[data-option="' + data + '"]').each(function () {
+			$(this).prop('checked', false); // uncheck all other radio buttons
+			$(this).parent().removeClass('active'); // deselect all other batmode buttons
+		});
 	}
-	// else if ( mqttTopic == 'openWB/config/get/pv/nurpv70dynact' ) {
-	// 	//  and sets icon in mode select button
-	// 	switch (mqttPayload) {
-	// 		case '0':
-	// 			// deaktiviert
-	// 			$('#70ModeBtn').addClass('hide');
-	// 			break;
-	// 		case '1':
-	// 			// aktiviert
-	// 			$('#70ModeBtn').removeClass('hide');
-	// 		break;
-	// 	}
-	// }
-	// else if ( mqttTopic == 'openWB/config/get/pv/minCurrentMinPv' ) {
-	// 	setInputValue('minCurrentMinPv', mqttPayload);
-	// }
 }
 
 function processChargePointMessages(mqttTopic, mqttPayload) {
@@ -937,8 +906,10 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		var configData = JSON.parse(mqttPayload);
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
 		// "charge_template" int
-		parent.attr('data-charge-template', configData.charge_template).data('charge-template', configData.charge_template);
-		refreshChargeTemplate(configData.charge_template);
+		if (parent.attr('data-charge-template') != configData.charge_template) {
+			parent.attr('data-charge-template', configData.charge_template).data('charge-template', configData.charge_template);
+			refreshChargeTemplate(configData.charge_template);
+		}
 		// "ev_template" int
 		parent.attr('data-ev-template', configData.ev_template).data('ev-template', configData.ev_template);
 		// "chargemode" str
@@ -962,93 +933,6 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 			priorityElement.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
 		}
 	}
-	// else if ( mqttTopic.match( /^openwb\/lp\/[0-9]+\/kWhactualcharged$/i ) ) {
-	// 	// energy charged since reset of limitation
-	// 	var index = getIndex(mqttTopic);  // extract number between two / /
-	// 	if ( isNaN(mqttPayload) ) {
-	// 		mqttPayload = 0;
-	// 	}
-	// 	var parent = $('.charge-point-card[data-cp="' + index + '"]');  // get parent div element for charge limitation
-	// 	var element = parent.find('.progress-bar');  // now get parents progressbar
-	// 	element.data('actualCharged', mqttPayload);  // store value received
-	// 	var limitElementId = 'lp/' + index + '/energyToCharge';
-	// 	var limit = $('#' + $.escapeSelector(limitElementId)).val();  // slider value
-	// 	if ( isNaN(limit) || limit < 2 ) {
-	// 		limit = 2;  // minimum value
-	// 	}
-	// 	var progress = (mqttPayload / limit * 100).toFixed(0);
-	// 	element.width(progress+"%");
-	// }
-	// else if ( mqttTopic.match( /^openwb\/lp\/[0-9]+\/timeremaining$/i ) ) {
-	// 	// time remaining for charging to target value
-	// 	var index = getIndex(mqttTopic);  // extract number between two / /
-	// 	var parent = $('.charge-point-card[data-cp="' + index + '"]');  // get parent div element for charge limitation
-	// 	var element = parent.find('.restzeitLp');  // get element
-	// 	element.text('Restzeit ' + mqttPayload);
-	// }
-	// else if ( mqttTopic.match( /^openwb\/lp\/[0-9]+\/boolchargeatnight$/i ) ) {
-	// 	var index = getIndex(mqttTopic);  // extract number between two / /
-	// 	var parent = $('.charge-point-card[data-cp="' + index + '"]');  // get parent row element for charge point
-	// 	var element = parent.find('.nightChargingLp');  // now get parents respective child element
-	// 	if ( mqttPayload == 1 ) {
-	// 		element.removeClass('hide');
-	// 	} else {
-	// 		element.addClass('hide');
-	// 	}
-	// }
-	// else if ( mqttTopic.match( /^openwb\/lp\/[0-9]+\/autolockconfigured$/i ) ) {
-	// 	var index = getIndex(mqttTopic);  // extract first match = number from
-	// 	var parent = $('.charge-point-card[data-cp="' + index + '"]');  // get parent row element for charge point
-	// 	var element = parent.find('.autolockConfiguredLp');  // now get parents respective child element
-	// 	if ( mqttPayload == 0 ) {
-	// 		element.addClass('hide');
-	// 	} else {
-	// 		element.removeClass('hide');
-	// 	}
-	// }
-	// else if ( mqttTopic.match( /^openwb\/lp\/[0-9]+\/autolockstatus$/i ) ) {
-	// 	// values used for AutolockStatus flag:
-	// 	// 0 = standby
-	// 	// 1 = waiting for autolock
-	// 	// 2 = autolock performed
-	// 	// 3 = auto-unlock performed
-	// 	var index = getIndex(mqttTopic);  // extract number between two / /
-	// 	var parent = $('.charge-point-card[data-cp="' + index + '"]');  // get parent row element for charge point
-	// 	var element = parent.find('.autolockConfiguredLp');  // now get parents respective child element
-	// 	switch ( mqttPayload ) {
-	// 		case '0':
-	// 			// remove animation from span and set standard colored key icon
-	// 			element.removeClass('fa-lock fa-lock-open animate-alertPulsation text-red text-green');
-	// 			element.addClass('fa-key');
-	// 			break;
-	// 		case '1':
-	// 			// add animation to standard icon
-	// 			element.removeClass('fa-lock fa-lock-open text-red text-green');
-	// 			element.addClass('fa-key animate-alertPulsation');
-	// 			break;
-	// 		case '2':
-	// 			// add red locked icon
-	// 			element.removeClass('fa-lock-open fa-key animate-alertPulsation text-green');
-	// 			element.addClass('fa-lock text-red');
-	// 			break;
-	// 		case '3':
-	// 			// add green unlock icon
-	// 			element.removeClass('fa-lock fa-key animate-alertPulsation text-red');
-	// 			element.addClass('fa-lock-open text-green');
-	// 			break;
-	// 	}
-	// }
-	// else if ( mqttTopic.match( /^openwb\/lp\/[0-9]+\/boolfinishattimechargeactive$/i ) ) {
-	// 	// respective charge point configured
-	// 	var index = getIndex(mqttTopic);  // extract number between two / /
-	// 	var parent = $('.charge-point-card[data-cp="' + index + '"]');  // get parent row element for charge point
-	// 	var element = parent.find('.targetChargingLp');  // now get parents respective child element
-	// 	if (mqttPayload == 1) {
-	// 		element.removeClass('hide');
-	// 	} else {
-	// 		element.addClass('hide');
-	// 	}
-	// }
 }
 
 function processVehicleMessages(mqttTopic, mqttPayload) {
@@ -1122,110 +1006,7 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 function processGraphMessages(mqttTopic, mqttPayload) {
 	// processes mqttTopic for topic openWB/graph
 	// called by handleMessage
-	if (mqttTopic == 'openWB/graph/boolDisplayHouseConsumption') {
-		if (mqttPayload == 1) {
-			boolDisplayHouseConsumption = false;
-			hideHaus = 'foo';
-		} else {
-			boolDisplayHouseConsumption = true;
-			hideHaus = 'Hausverbrauch';
-		}
-		checkGraphLoad();
-	} else if (mqttTopic == 'openWB/graph/boolDisplayLegend') {
-		if (mqttPayload == 0) {
-			boolDisplayLegend = false;
-		} else {
-			boolDisplayLegend = true;
-		}
-		checkGraphLoad();
-	} else if (mqttTopic == 'openWB/graph/boolDisplayLiveGraph') {
-		if (mqttPayload == 0) {
-			$('#theGraph').addClass('hide');
-			boolDisplayLiveGraph = false;
-		} else {
-			$('#theGraph').removeClass('hide');
-			boolDisplayLiveGraph = true;
-		}
-	} else if (mqttTopic == 'openWB/graph/boolDisplayEvu') {
-		if (mqttPayload == 1) {
-			boolDisplayEvu = false;
-			hideEvu = 'foo';
-		} else {
-			boolDisplayEvu = true;
-			hideEvu = 'Bezug';
-		}
-		checkGraphLoad();
-	} else if (mqttTopic == 'openWB/graph/boolDisplayPv') {
-		if (mqttPayload == 1) {
-			boolDisplayPv = false;
-			hidePv = 'foo';
-		} else {
-			boolDisplayPv = true;
-			hidePv = 'PV';
-		}
-		checkGraphLoad();
-	} else if (mqttTopic.match(/^openwb\/graph\/booldisplaylp[0-9]+$/i)) {
-		var index = mqttTopic.match(/(\d+)(?!.*\d)/g)[0]; // extract last match = number from mqttTopic
-		// now call functions or set variables corresponding to the index
-		if (mqttPayload == 1) {
-			window['boolDisplayCp' + index] = false;
-			window['hideCp' + index] = 'foo';
-		} else {
-			window['boolDisplayCp' + index] = true;
-			window['hideCp' + index] = 'Lp' + index;
-		}
-		checkGraphLoad();
-	} else if (mqttTopic == 'openWB/graph/boolDisplayCpAll') {
-		if (mqttPayload == 1) {
-			boolDisplayCpAll = false;
-			hideCpa = 'foo';
-		} else {
-			boolDisplayCpAll = true;
-			hideCpa = 'LP Gesamt';
-		}
-		checkGraphLoad();
-	} else if (mqttTopic == 'openWB/graph/boolDisplayBattery') {
-		if (mqttPayload == 1) {
-			boolDisplayBattery = false;
-			hideBattery = 'foo';
-		} else {
-			hideBattery = 'Speicher';
-			boolDisplayBattery = true;
-		}
-		checkGraphLoad();
-	} else if (mqttTopic == 'openWB/graph/boolDisplayBatterySoc') {
-		if (mqttPayload == 1) {
-			hideBatterySoc = 'foo';
-			boolDisplayBatterySoc = false;
-		} else {
-			hideBatterySoc = 'Speicher SoC';
-			boolDisplayBatterySoc = true;
-		}
-		checkGraphLoad();
-	} else if (mqttTopic.match(/^openwb\/graph\/booldisplaylp[0-9]+soc$/i)) {
-		var index = mqttTopic.match(/(\d+)(?!.*\d)/g)[0]; // extract last match = number from mqttTopic
-		if (mqttPayload == 1) {
-			$('#socenabledlp' + index).removeClass('hide');
-			window['boolDisplayCp' + index + 'Soc'] = false;
-			window['hideCp' + index + 'soc'] = 'foo';
-		} else {
-			$('#socenabledlp' + index).addClass('hide');
-			window['boolDisplayCp' + index + 'Soc'] = true;
-			window['hideCp' + index + 'soc'] = 'CP' + index + ' SoC';
-		}
-		checkGraphLoad();
-	} else if (mqttTopic.match(/^openwb\/graph\/booldisplayload[1-9][0-9]*$/i)) {
-		var index = mqttTopic.match(/(\d+)(?!.*\d)/g)[0]; // extract last match = number from mqttTopic
-		// now call functions or set variables corresponding to the index
-		if (mqttPayload == 1) {
-			window['hideLoad' + index] = 'foo';
-			window['boolDisplayLoad' + index] = false;
-		} else {
-			window['hideLoad' + index] = 'Verbraucher ' + index;
-			window['boolDisplayLoad' + index] = true;
-		}
-		checkGraphLoad();
-	} else if (mqttTopic.match(/^openwb\/graph\/alllivevaluesJson[1-9][0-9]*$/i)) {
+	if (mqttTopic.match(/^openwb\/graph\/alllivevaluesJson[1-9][0-9]*$/i)) {
 		// graph messages if local connection
 		var index = mqttTopic.match(/(\d+)$/g)[0]; // extract last match = number from mqttTopic
 		// now call functions or set variables corresponding to the index
@@ -1266,10 +1047,10 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 		// console.debug("graph duration: " + mqttPayload + " minutes");
 		var duration = JSON.parse(mqttPayload);
 		if (isNaN(duration) || duration < 10 || duration > 120) {
-			console.error("bad graph duration received: " + mqttPayload + " setting to default of 30");
+			console.error("bad graph duration received: " + mqttPayload + " setting to default of 30 minutes");
 			duration = 30;
 		}
-		maxDisplayLength = duration * 6; // we get 6 measurements in every minute
+		maxDisplayLength = duration * 60 * 1000;  // convert minutes to milliseconds
 	}
 } // end processGraphMessages
 
@@ -1313,7 +1094,7 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		var actualMode = "";
 		if (mqttPayload == 0) {
 			actualMode = "Automatik"
-		} else if (mqttPayload == 1){
+		} else if (mqttPayload == 1) {
 			actualMode = "Manuell"
 		} else {
 			console.warn("unknown mode", mqttPayload);
@@ -1330,11 +1111,11 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		// device power
 		var element = deviceElement.find('.actualPowerDevice');  // now get parents child element
 		var actualPower = parseInt(mqttPayload, 10);
-		if ( isNaN(actualPower) ) {
+		if (isNaN(actualPower)) {
 			actualPower = 0;
 		}
 		if (actualPower > 999) {
-			actualPower = (actualPower / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			actualPower = (actualPower / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 			actualPower += '&nbsp;kW';
 		} else {
 			actualPower += '&nbsp;W';
@@ -1345,7 +1126,7 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		// device running time
 		var element = deviceElement.find('.actualRunningTimeDevice');  // now get parents child element
 		var runningTime = parseInt(mqttPayload, 10);
-		if ( isNaN(runningTime) ) {
+		if (isNaN(runningTime)) {
 			runningTime = 0;
 		}
 		var seconds = runningTime % 60;
@@ -1363,17 +1144,17 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Status$/i)) {
 		// device state
 		var element = deviceElement.find('.nameDevice');  // now get parents child element
-		// 10 device on (manual or automatic)
-		if ( mqttPayload == 10 ) {
+		if (mqttPayload == 10) {
+			// 10 device on (manual or automatic)
 			element.removeClass('charge-point-enabled').removeClass('text-blue').removeClass('text-white').removeClass('charge-point-waiting').addClass('charge-point-disabled');
-		// 11 device off (manual or automatic)
-		} else if ( mqttPayload == 11 ) {
+		} else if (mqttPayload == 11) {
+			// 11 device off (manual or automatic)
 			element.removeClass('charge-point-disabled').removeClass('text-blue').removeClass('text-white').removeClass('charge-point-waiting').addClass('charge-point-enabled');
-		// 20 startup detection active
-		} else if ( mqttPayload == 20) {
+		} else if (mqttPayload == 20) {
+			// 20 startup detection active
 			element.removeClass('charge-point-disabled').removeClass('charge-point-enabled').removeClass('text-white').removeClass('charge-point-waiting').addClass('text-blue');
-		// 30 finish time running
 		} else if (mqttPayload == 30) {
+			// 30 finish time running
 			element.removeClass('charge-point-disabled').removeClass('charge-point-enabled').removeClass('text-blue').removeClass('charge-point-waiting').addClass('text-white');
 		} else {
 			console.warn("unknown state message", mqttTopic, mqttPayload);
@@ -1383,11 +1164,11 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		// device daily yield
 		var element = deviceElement.find('.actualDailyYieldDevice');  // now get parents respective child element
 		var actualDailyYield = parseFloat(mqttPayload);
-		if ( isNaN(actualDailyYield) ) {
+		if (isNaN(actualDailyYield)) {
 			actualDailyYield = 0;
 		}
-		if ( actualDailyYield >= 0 ) {
-			var actualDailyYieldStr = '&nbsp;(' + actualDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '&nbsp;kWh)';
+		if (actualDailyYield >= 0) {
+			var actualDailyYieldStr = '&nbsp;(' + actualDailyYield.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '&nbsp;kWh)';
 			element.html(actualDailyYieldStr);
 		} else {
 			element.text("");
@@ -1400,18 +1181,18 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		var sensorElement = deviceTemperatureElement.find('[data-smart-home-temperature="' + sensorIndex + '"]');
 		var sensorValueElement = sensorElement.find('.temperature');
 		var actualTemp = parseFloat(mqttPayload);
-		if ( isNaN(actualTemp) ) {
+		if (isNaN(actualTemp)) {
 			actualTemp = 999;
 		}
 		if (actualTemp > 200) {
 			sensorValueElement.text(''); // display only something if we got a value
 			sensorElement.addClass('hide');
 		} else {
-			sensorValueElement.text('Temp' + sensorIndex + ' ' + actualTemp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+			sensorValueElement.text('Temp' + sensorIndex + ' ' + actualTemp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 			sensorElement.removeClass('hide');
 		}
 		var visibleRows = deviceTemperatureElement.find('[data-smart-home-temperature]').not('.hide');  // show/hide complete block depending on visible rows within
-		if ( visibleRows.length > 0 ) {
+		if (visibleRows.length > 0) {
 			deviceTemperatureElement.removeClass('hide');
 		} else {
 			deviceTemperatureElement.addClass('hide');

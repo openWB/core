@@ -141,6 +141,7 @@ class SubData:
             ("openWB/system/backup_cloud/#", 2),
             ("openWB/system/device/module_update_completed", 2),
             ("openWB/system/device/+/config", 2),
+            ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
         ])
         Pub().pub("openWB/system/subdata_initialized", True)
 
@@ -177,6 +178,8 @@ class SubData:
             self.process_counter_topic(self.counter_data, msg)
         elif "openWB/system/" in msg.topic:
             self.process_system_topic(client, self.system_data, msg)
+        elif "openWB/LegacySmartHome/" in msg.topic:
+            self.process_legacy_smarthome_topic_topic(client, self.counter_all_data, msg)
         elif "openWB/command/command_completed" == msg.topic:
             self.event_command_completed.set()
         else:
@@ -786,6 +789,8 @@ class SubData:
                     mod = importlib.import_module(".backup_clouds."+config_dict["type"]+".backup_cloud", "modules")
                     config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                     var["system"].backup_cloud = mod.create_backup_cloud(config)
+            elif "openWB/system/backup_cloud/backup_before_update" in msg.topic:
+                self.set_json_payload(var["system"].data, msg)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
@@ -857,3 +862,20 @@ class SubData:
         else:
             internal_configured = False
         self.internal_chargepoint_data["global_data"].configured = internal_configured
+
+    def process_legacy_smarthome_topic_topic(self, client, var: counter_all.CounterAll, msg: mqtt.MQTTMessage):
+        """ Handler für die Graph-Topics
+
+        Parameter
+        ----------
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
+            enthält Topic und Payload
+        """
+        try:
+            if "openWB/LegacySmartHome/Status/wattnichtHaus" == msg.topic:
+                # keine automatische Zuordnung, da das Topic anders heißt als der Wert in der Datenstruktur
+                var.data.set.smarthome_power_excluded_from_home_consumption = decode_payload(msg.payload)
+        except Exception:
+            log.exception("Fehler im subdata-Modul")

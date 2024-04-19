@@ -24,6 +24,7 @@ import {
 	animateSourceGraph,
 	sourceGraphIsInitialized,
 	xScaleMonth,
+	xScale,
 } from './model'
 const props = defineProps<{
 	width: number
@@ -72,18 +73,7 @@ const keys = computed(() => {
 		? ['evuIn', 'batOut', 'selfUsage', 'evuOut']
 		: ['selfUsage', 'evuOut', 'batOut', 'evuIn']
 })
-const iScale = computed(() => {
-	return scaleLinear()
-		.domain([0, graphData.data.length - 1])
-		.range([0, props.width])
-})
 
-/* const iScaleMonth = computed(() =>
-	scaleBand<number>()
-		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
-		.range([0, props.width + props.margin.right])
-		.paddingInner(0.4),
-) */
 const stackGen = computed(() => stack().keys(keys.value))
 const stackedSeries = computed(() => stackGen.value(graphData.data))
 
@@ -138,10 +128,10 @@ const ticklineColor = computed(() => {
 
 function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	const area0 = area()
-		.x((d, i) => iScale.value(i))
+		.x((d, i) => xScale.value(graphData.data[i]['date']))
 		.y(yScale.value(0))
 	const area1 = area()
-		.x((d, i) => iScale.value(i))
+		.x((d, i) => xScale.value(graphData.data[i]['date']))
 		.y0((d) => yScale.value(graphData.graphMode == 'year' ? d[0] / 1000 : d[0]))
 		.y1((d) => yScale.value(graphData.graphMode == 'year' ? d[1] / 1000 : d[1]))
 	if (animateSourceGraph) {

@@ -5,10 +5,17 @@
 		:full-width="props.fullWidth"
 	>
 		<template #title>
-			<span :style="cpNameStyle" @click="configmode = !configmode">
-				<span class="fa-solid fa-charging-station">&nbsp;</span>
-				{{ props.chargepoint.name }}</span
-			>
+			<span class="d-flex justify-content-center align-items-center">
+				<span :style="cpNameStyle" @click="configmode = !configmode">
+					<span class="fa-solid fa-charging-station">&nbsp;</span>
+					{{ props.chargepoint.name }}</span
+				>
+				<span
+					v-if="cp.faultState == 2"
+					class="badge rounded-pill errorbadge ms-3"
+					>Fehler</span
+				>
+			</span>
 		</template>
 
 		<template #buttons>
@@ -317,8 +324,13 @@ const realChargeAmpereString = computed(() => {
 	)
 })
 const chargedRangeString = computed(() => {
+	const rangeSincePlugged = props.chargepoint.rangeCharged
+	const energySincePlugged = props.chargepoint.chargedSincePlugged
+	const energyToday = props.chargepoint.dailyYield
 	return (
-		Math.round(props.chargepoint.rangeCharged).toString() +
+		Math.round(
+			(rangeSincePlugged / energySincePlugged) * energyToday,
+		).toString() +
 		' ' +
 		props.chargepoint.rangeUnit
 	)
@@ -456,5 +468,10 @@ const editPrice = ref(false)
 	display: grid;
 	grid-template-columns: repeat(12, auto);
 	justify-content: space-between;
+}
+.errorbadge {
+	color: var(--color-bg);
+	background-color: var(--color-evu);
+	font-size: var(--font-small);
 }
 </style>

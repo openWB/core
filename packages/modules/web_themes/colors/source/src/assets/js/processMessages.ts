@@ -26,6 +26,7 @@ import {
 import { processSmarthomeMessages } from '@/components/smartHome/processMessages'
 import { addCounter, counters } from '@/components/counterList/model'
 import { mqttClientId } from './mqttClient'
+import { add } from '@/components/mqttViewer/model'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -42,7 +43,7 @@ const topicsToSubscribe = [
 export function msgInit() {
 	mqttRegister(processMqttMessage)
 	topicsToSubscribe.forEach((topic) => {
-		mqttSubscribe(topic)
+	mqttSubscribe(topic)
 	})
 	initGraph()
 }
@@ -52,6 +53,7 @@ export function msgStop() {
 	})
 }
 function processMqttMessage(topic: string, payload: Buffer) {
+	add(topic,payload.toString())
 	const message = payload.toString()
 	if (topic.match(/^openwb\/counter\/[0-9]+\//i)) {
 		processCounterMessages(topic, message)
@@ -103,7 +105,7 @@ function processCounterMessages(topic: string, message: string) {
 	} else if (elements[3] == 'config') {
 		// console.warn('Ignored counter config message')
 	}
-	if (elements[3] == 'get') {
+	if (elements[3] == 'get' && id in counters) {
 		switch (elements[4]) {
 			case 'power':
 				counters[id].power = +message
@@ -236,7 +238,7 @@ function processSystemMessages(topic: string, message: string) {
 		topic.match(/^openWB\/system\/device\/[0-9]+\/component\/[0-9]+\/config$/i)
 	) {
 		const config = JSON.parse(message)
-		if (config.type == 'counter') {
+		if (config.type == 'counter' && counters[config.id]) {
 			counters[config.id].name = config.name
 		}
 	}

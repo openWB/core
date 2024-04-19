@@ -21,7 +21,8 @@ SAMPLE_CHARGEPOINT_STATE = ChargepointState(
     rfid="001180644",
     rfid_timestamp=1700839714,
     vehicle_id="98:ED:5C:B4:EE:8D",
-    evse_current=6
+    evse_current=6,
+    serial_number="823950"
 )
 
 SAMPLE = {'charge_state': True,
@@ -56,7 +57,8 @@ SAMPLE_CHARGEPOINT_STATE_EXTENDED = ChargepointState(
     phases_in_use=1,
     rfid=None,
     frequency=50.2,
-    evse_current=6
+    evse_current=6,
+    serial_number="493826"
 )
 
 SAMPLE_EXTENDED = {"date": "2023:09:18-15:13:41",
@@ -101,3 +103,19 @@ def test_openwb_pro(sample_state: Dict, expected_state: Dict, monkeypatch, reque
 
     # evaluation
     assert vars(mock_chargepoint_value_store.set.call_args[0][0]) == vars(expected_state)
+
+
+@pytest.mark.parametrize("chargepoint_state, expected_exception, expected_message", [
+    (ChargepointState(charge_state=False, currents=[0, 2, 0], plug_state=True,
+     power=0), ValueError, chargepoint_module.ChargepointModule.WRONG_CHARGE_STATE),
+    (ChargepointState(charge_state=True, currents=[0, 0, 0], plug_state=False,
+     power=30), ValueError, chargepoint_module.ChargepointModule.WRONG_PLUG_STATE),
+    (ChargepointState(charge_state=True, currents=[0, 2, 0], plug_state=True, power=30), None, None)
+])
+def test_validate_values(chargepoint_state, expected_exception, expected_message):
+    cp = chargepoint_module.ChargepointModule(OpenWBPro(configuration=OpenWBProConfiguration(ip_address=SAMPLE_IP)))
+    if expected_exception is not None:
+        with pytest.raises(expected_exception, match=expected_message):
+            cp.validate_values(chargepoint_state)
+    else:
+        cp.validate_values(chargepoint_state)  # Sollte keine Ausnahme auslösen
