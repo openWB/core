@@ -105,7 +105,7 @@ class HistoricSummary {
 			this._items.devices.energy
 	}
 }
-export let historicSummary = new HistoricSummary()
+export let historicSummary = reactive(new HistoricSummary())
 export function resetHistoricSummary() {
 	historicSummary = new HistoricSummary()
 }
