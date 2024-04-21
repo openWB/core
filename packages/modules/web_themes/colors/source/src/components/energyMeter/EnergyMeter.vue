@@ -98,7 +98,6 @@ const plotdata = computed(() => {
 	let usage = usageDetails.value
 	const historic = historicSummary.items
 	let result: PowerItem[] = []
-
 	if (globalConfig.debug) {
 		console.debug('----------------------- source summary -----------------')
 		console.debug(sourceSummary)
@@ -148,7 +147,7 @@ const usageDetails = computed(() => {
 	const cpcount = Object.values(chargePoints).length
 	const shcount = [...shDevices.values()].filter((dev) => dev.configured).length
 	let usg = usageSummary
-	if (graphData.graphMode != 'live' && graphData.graphMode != 'day') {
+	if (graphData.graphMode != 'live' && graphData.graphMode != 'today') {
 		usg = historicSummary.items
 	}
 	return [

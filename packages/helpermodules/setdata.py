@@ -739,7 +739,9 @@ class SetData:
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
             elif ("openWB/set/general/chargemode_config/unbalanced_load" in msg.topic or
-                  "openWB/set/general/chargemode_config/retry_failed_phase_switches" in msg.topic):
+                  "openWB/set/general/chargemode_config/retry_failed_phase_switches" in msg.topic or
+                  "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge_active" in msg.topic or
+                    "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or
@@ -1101,19 +1103,29 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/LegacySmartHome/config" in msg.topic:
+            if ("openWB/set/LegacySmartHome/config" in msg.topic or "openWB/set/LegacySmartHome/Devices" in msg.topic):
                 index = get_index(msg.topic)
-                pub_single(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
-                           retain=True, no_json=True, port=1886)
-                pub_single(msg.topic, "", no_json=True, port=1886)
-                with open(self._get_ramdisk_path()/"rereadsmarthomedevices", 'w') as f:
-                    f.write(str(1))
-                if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/mode" in msg.topic:
-                    with open(self._get_ramdisk_path()/f"smarthome_device_manual_{index}", 'w') as f:
-                        f.write(str(decode_payload(msg.payload)))
-                if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/device_manual_control" in msg.topic:
-                    with open(self._get_ramdisk_path()/f"smarthome_device_manual_control_{index}", 'w') as f:
-                        f.write(str(decode_payload(msg.payload)))
+                if "openWB/set/LegacySmartHome/config" in msg.topic:
+                    pub_single(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
+                               retain=True, no_json=True, port=1886)
+                    pub_single(msg.topic, "", no_json=True, port=1886)
+                    with open(self._get_ramdisk_path()/"rereadsmarthomedevices", 'w') as f:
+                        f.write(str(1))
+                    if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/mode" in msg.topic:
+                        with open(self._get_ramdisk_path()/f"smarthome_device_manual_{index}", 'w') as f:
+                            f.write(str(decode_payload(msg.payload)))
+                    if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/device_manual_control" in msg.topic:
+                        with open(self._get_ramdisk_path()/f"smarthome_device_manual_control_{index}", 'w') as f:
+                            f.write(str(decode_payload(msg.payload)))
+                elif (f"openWB/set/LegacySmartHome/Devices/{index}/Ueberschuss" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/ReqRelay" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Aktpower" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Powerc" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Tempa" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Tempb" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Tempc" in msg.topic):
+                    self._validate_value(msg, None)
+                    # diese topics werden im Smarthomemodul mqtt bearbeitet
             else:
                 self.__unknown_topic(msg)
         except Exception:
