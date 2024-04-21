@@ -141,6 +141,7 @@ export const dayGraph = reactive({
 	topic: 'openWB/log/daily/#',
 	date: new Date(),
 	activate() {
+		console.debug("ACTIVATE")
 		if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
 			if (graphData.graphMode == 'today') {
 				this.date = new Date()

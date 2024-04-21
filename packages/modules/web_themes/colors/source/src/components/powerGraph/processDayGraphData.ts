@@ -23,9 +23,10 @@ const noAutarchyCalculation = [
 ]
 let gridCounters: string[] = []
 
-export function processDayGraphMessages(_: string, message: string) {
+export function processDayGraphMessages(topic: string, message: string) {
 	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
 	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	console.log("processDayGraphMessages", topic, inputTable, energyValues)
 	resetHistoricSummary()
 	gridCounters = []
 	consumerCategories.forEach((cat) => {
@@ -122,7 +123,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.selfUsage = Math.max(0, currentItem.pv - currentItem.evuOut)
 	// House
 	if (currentRow.hc && currentRow.hc.all) {
-		currentItem.house = currentRow.hc.all.power_imported - currentItem.devices
+		currentItem.house = currentRow.hc.all.power_imported // (seems this is now centrally computed) - currentItem.devices
 	} else {
 		currentItem.house =
 			currentItem.evuIn +
@@ -153,7 +154,11 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	return currentItem
 }
 
-function printDebugOutput(inputTable: RawDayGraphDataItem[], energyValues: RawDayGraphDataItem, transformedTable: GraphDataItem[]) {
+function printDebugOutput(
+	inputTable: RawDayGraphDataItem[],
+	energyValues: RawDayGraphDataItem,
+	transformedTable: GraphDataItem[],
+) {
 	console.debug('---------------------------------------- Graph Data -')
 	console.debug(['--- Incoming graph data:', inputTable])
 	console.debug(['--- Incoming energy data:', energyValues])
