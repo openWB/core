@@ -26,7 +26,6 @@ let gridCounters: string[] = []
 export function processDayGraphMessages(topic: string, message: string) {
 	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
 	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
-	console.log("processDayGraphMessages", topic, inputTable, energyValues)
 	resetHistoricSummary()
 	gridCounters = []
 	consumerCategories.forEach((cat) => {
