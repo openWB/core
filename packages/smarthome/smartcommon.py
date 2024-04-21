@@ -16,7 +16,7 @@ from modules.smarthome.nxdacxx.smartnxdacxx import Snxdacxx
 from modules.smarthome.acthor.smartacthor import Sacthor
 from modules.smarthome.avmhomeautomation.smartavm import Savm
 from smarthome.smartbase import Sbase
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 import paho.mqtt.client as mqtt
 import re
 import time
@@ -42,7 +42,7 @@ maxspeicher = 0
 firststart = True
 
 
-def on_connect(client: Any, userdata: Any, flags: Any, rc: Any) -> None:
+def on_connect(client: mqtt.Client, userdata: Any, flags: Dict, rc: Any) -> None:
     global mqttcg
     global mqttsdevstat
     #  mqttcg = 'openWB/config/get/SmartHome/'
@@ -79,7 +79,7 @@ def logmqgl(keyword: str, value: str) -> None:
                           '" -r -m "' + str(value) + '"'), file=f)
 
 
-def on_message(client: Any, userdata: Any, msg: Any) -> None:
+def on_message(client: mqtt.Client, userdata: Any, msg: Any) -> None:
     # wenn exception hier wird mit nächster msg weitergemacht
     # macht paho unter phyton 3 immer so
     # für neuer python 3.7 version gibt es absturz
@@ -191,7 +191,7 @@ def getdevicevalues(uberschuss: int, uberschussoffset: int, pvwatt: int, charges
     sendmq(mqtt_all)
 
 
-def pub(client: Any, key: str, value: str) -> None:
+def pub(client: mqtt.Client, key: str, value: str) -> None:
     if ("TemperatureSensor" in key and "300" in value):
         client.publish(key, payload="", qos=0, retain=True)
     else:
@@ -213,7 +213,6 @@ def sendmq(mqtt_input: Dict[str, str]) -> None:
                 log.info("Mq no caching " + str(key))
             else:
                 mqtt_cache[key] = value
-            # client.publish(key, payload=value, qos=0, retain=True)
             pub(client, key, value)
             client.loop(timeout=2.0)
     client.disconnect()
@@ -323,7 +322,6 @@ def update_devices() -> None:
                         log.info("Mq pub " + str(key) + "=" +
                                  str(value) + " old " + str(valueold))
                         pub(client, key, value)
-                        # client.publish(key, payload=value, qos=0, retain=True)
                         client.loop(timeout=2.0)
                     mydevice.device_nummer = 0
                     mydevice._device_configured = '9'
