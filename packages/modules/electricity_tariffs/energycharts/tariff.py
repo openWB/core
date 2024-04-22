@@ -1,7 +1,6 @@
 from typing import Dict
 from datetime import datetime, timedelta
-import json
-import urllib.request
+from modules.common import req
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
@@ -17,8 +16,7 @@ def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
     end_time = tomorrow.strftime("%Y-%m-%d") + 'T23%3A59%2B01%3A00'
     url = f'https://api.energy-charts.info/price?bzn={config.country}&start={start_time}&end={end_time}'
     add_price = config.serve_price
-    a = urllib.request.urlopen(url)
-    raw_prices = json.loads(a.read().decode())
+    raw_prices = req.get_http_session().get(url).json()
     time_stamp_arr = []
     price_arr = []
     for unix_sec in raw_prices['unix_seconds']:
