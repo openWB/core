@@ -22,6 +22,8 @@ class EvuKit(EvuKitFlex):
             id = 2
         elif version == 2:
             id = 115
+        elif version == 3:
+            id = 105
         else:
             raise ValueError("Version " + str(version) + " unbekannt.")
 
