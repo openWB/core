@@ -15,18 +15,43 @@ from modules.vehicles.smarteq.config import SmartEQ, SmartEQConfiguration
 log = logging.getLogger(__name__)
 
 
+def fetch(vehicle_update_data: VehicleUpdateData, config: SmartEQ, vehicle: int) -> CarState:
+    soc, range, soc_ts = api.fetch_soc(config, vehicle)
+    log.debug("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts)
+    return CarState(soc, range)
+
+
 def create_vehicle(vehicle_config: SmartEQ, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
-        return api.fetch_soc(vehicle_config, vehicle)
+        return fetch(vehicle_update_data, vehicle_config, vehicle)
     return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
 
-# def smarteq_update(user_id: str, password: str, vin: str, refreshToken: str, charge_point: int):
 
-
-def smarteq_update(user_id: str, password: str, vin: str, charge_point: int):
-    log.debug("smarteq: user_id="+user_id+"vin="+vin+"charge_point="+str(charge_point))
+def smarteq_update(user_id: str,
+                   password: str,
+                   pin: str,
+                   vin: str,
+                   useWebSocket: bool,
+                   logFilter: str,
+                   refreshToken: str,
+                   opMode: str,
+                   charge_point: int):
+    log.debug("smarteq: user_id=" + user_id +
+              "vin="+vin +
+              "useWebSocker="+str(useWebSocket) +
+              "logFilter="+str(logFilter) +
+              "charge_point="+str(charge_point))
     store.get_car_value_store(charge_point).store.set(
-        api.fetch_soc(SmartEQ(configuration=SmartEQConfiguration(user_id, password, vin)), charge_point))
+        fetch(None,
+              SmartEQ(configuration=SmartEQConfiguration(user_id,
+                                                         password,
+                                                         pin,
+                                                         vin,
+                                                         useWebSocket,
+                                                         logFilter,
+                                                         refreshToken,
+                                                         opMode)),
+              charge_point))
 
 
 def main(argv: List[str]):
