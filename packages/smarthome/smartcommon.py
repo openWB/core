@@ -16,7 +16,7 @@ from modules.smarthome.nxdacxx.smartnxdacxx import Snxdacxx
 from modules.smarthome.acthor.smartacthor import Sacthor
 from modules.smarthome.avmhomeautomation.smartavm import Savm
 from smarthome.smartbase import Sbase
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 import paho.mqtt.client as mqtt
 import re
 import time
