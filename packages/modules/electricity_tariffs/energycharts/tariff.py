@@ -15,14 +15,13 @@ def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
     start_time = current_dateTime.strftime("%Y-%m-%d") + 'T00%3A00%2B01%3A00'
     end_time = tomorrow.strftime("%Y-%m-%d") + 'T23%3A59%2B01%3A00'
     url = f'https://api.energy-charts.info/price?bzn={config.country}&start={start_time}&end={end_time}'
-    add_price = config.surchar_price
     raw_prices = req.get_http_session().get(url).json()
     time_stamp_arr = []
     price_arr = []
     for unix_sec in raw_prices['unix_seconds']:
         time_stamp_arr.append(unix_sec)  # Epoch from ms in s
     for price in raw_prices['price']:
-        price_arr.append((float(price + (add_price*10))/1000000))  # €/MWh -> €/Wh + Aufschlag
+        price_arr.append((float(price + (config.surcharge*10))/1000000))  # €/MWh -> €/Wh + Aufschlag
     prices: Dict[int, float] = {}
     prices = dict(zip(time_stamp_arr, price_arr))
     return prices
