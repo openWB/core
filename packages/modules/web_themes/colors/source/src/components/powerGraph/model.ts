@@ -149,6 +149,8 @@ export const dayGraph = reactive({
 				this.date.getFullYear().toString() +
 				(this.date.getMonth() + 1).toString().padStart(2, '0') +
 				this.date.getDate().toString().padStart(2, '0')
+
+			this.topic = 'openWB/log/daily/' + dateString
 			mqttSubscribe(this.topic)
 			sendCommand({
 				command: 'getDailyLog',
@@ -460,8 +462,10 @@ export function shiftLeft() {
 			break
 		case 'today':
 			graphData.graphMode = 'day'
-			dayGraph.date = new Date()
+			dayGraph.deactivate()
+			//dayGraph.date = new Date()
 			dayGraph.back()
+			dayGraph.activate()
 			initGraph()
 			break
 		case 'day':

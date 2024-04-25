@@ -66,7 +66,6 @@ export function mqttSubscribe(toTopic: string) {
 		}
 		console.info('MQTT Subscription successful: ' + toTopic)
 		console.info(`mqtt client id: ${mqttConnection.clientId}`)
-		
 	})
 }
 export function mqttUnsubscribe(fromTopic: string) {
