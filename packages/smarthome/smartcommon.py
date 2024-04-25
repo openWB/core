@@ -24,9 +24,9 @@ import os
 import math
 import logging
 log = logging.getLogger(__name__)
-mydevices = []  # type: List[Any]
+mydevices = []
 mqtt_cache = {}  # type: Dict[str, str]
-parammqtt = []  # type: List[Any]
+parammqtt = []
 # will be populated with open 1.9 / openwb 2.0 specifc param
 mqttcg = 'none'
 mqttcs = 'none'
