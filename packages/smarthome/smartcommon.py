@@ -16,7 +16,7 @@ from modules.smarthome.nxdacxx.smartnxdacxx import Snxdacxx
 from modules.smarthome.acthor.smartacthor import Sacthor
 from modules.smarthome.avmhomeautomation.smartavm import Savm
 from smarthome.smartbase import Sbase
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 import paho.mqtt.client as mqtt
 import re
 import time
@@ -42,7 +42,7 @@ maxspeicher = 0
 firststart = True
 
 
-def on_connect(client: mqtt.Client, userdata: Any, flags: Dict, rc: Any) -> None:
+def on_connect(client: mqtt.Client, userdata,  flags: Dict, rc: int) -> None:
     global mqttcg
     global mqttsdevstat
     #  mqttcg = 'openWB/config/get/SmartHome/'
@@ -79,7 +79,7 @@ def logmqgl(keyword: str, value: str) -> None:
                           '" -r -m "' + str(value) + '"'), file=f)
 
 
-def on_message(client: mqtt.Client, userdata: Any, msg: Any) -> None:
+def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage) -> None:
     # wenn exception hier wird mit nächster msg weitergemacht
     # macht paho unter phyton 3 immer so
     # für neuer python 3.7 version gibt es absturz
