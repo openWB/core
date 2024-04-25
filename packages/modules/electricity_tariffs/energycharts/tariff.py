@@ -15,7 +15,7 @@ def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
     start_time = current_dateTime.strftime("%Y-%m-%d") + 'T00%3A00%2B01%3A00'
     end_time = tomorrow.strftime("%Y-%m-%d") + 'T23%3A59%2B01%3A00'
     url = f'https://api.energy-charts.info/price?bzn={config.country}&start={start_time}&end={end_time}'
-    add_price = config.serve_price
+    add_price = config.surchar_price
     raw_prices = req.get_http_session().get(url).json()
     time_stamp_arr = []
     price_arr = []
