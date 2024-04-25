@@ -1,5 +1,5 @@
 from typing import Optional
-import json
+from json import dumps
 
 
 class SmartEQConfiguration:
@@ -33,5 +33,5 @@ class SmartEQ:
         self.configuration = configuration or SmartEQConfiguration()
 
     def toJSON(self):
-        return json.dumps(self, default=lambda o: o.__dict__,
-                          sort_keys=True, indent=4)
+        return dumps(self, default=lambda o: o.__dict__,
+                     sort_keys=True, indent=4)
