@@ -42,7 +42,7 @@ maxspeicher = 0
 firststart = True
 
 
-def on_connect(client: mqtt.Client, userdata,  flags: Dict, rc: int) -> None:
+def on_connect(client: mqtt.Client, userdata, flags: Dict, rc: int) -> None:
     global mqttcg
     global mqttsdevstat
     #  mqttcg = 'openWB/config/get/SmartHome/'
