@@ -13,18 +13,19 @@ import logging
 from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
 
+import uuid
+import hashlib
+
 log = logging.getLogger(__name__)
 
 # ---------------Constants-------------------------------------------
 auth_server = 'customer.bmwgroup.com'
 api_server = 'cocoapi.bmwgroup.com'
 
-client_id = '31c357a0-7a1d-4590-aa99-33b97244d048'
-client_password = 'c0e3393d-70a2-4f6f-9d3c-8530af64d552'
 
-
+# ------------ Helper functions -------------------------------------
 def dump_json(data: dict, fout: str):
-    replyFile = str(RAMDISK_PATH) + fout
+    replyFile = str(RAMDISK_PATH) + fout + '.json'
     try:
         f = open(replyFile, 'w', encoding='utf-8')
     except Exception as e:
@@ -41,19 +42,16 @@ def dump_json(data: dict, fout: str):
         os.system("sudo chmod 0666 " + replyFile)
 
 
-# ---------------Helper Function-------------------------------------------
 def get_random_string(length: int) -> str:
     letters = string.ascii_letters
     result_str = ''.join(random.choice(letters) for i in range(length))
     return result_str
 
 
-def create_auth_string(client_id: str, client_password: str) -> str:
-    auth_string = client_id + ':' + client_password
-    auth_bytes = auth_string.encode("ascii")
-    b64bytes = base64.b64encode(auth_bytes)
-    auth_string = 'Basic ' + b64bytes.decode("ascii")
-    return auth_string
+def create_s256_code_challenge(code_verifier: str) -> str:
+    """Create S256 code_challenge with the given code_verifier."""
+    data = hashlib.sha256(code_verifier.encode("ascii")).digest()
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("UTF-8")
 
 
 # ---------------HTTP Function-------------------------------------------
@@ -75,10 +73,16 @@ def getHTTP(url: str = '', headers: str = '', cookies: str = '', timeout: int = 
 
 
 def postHTTP(url: str = '', data: str = '', headers: str = '', cookies: str = '',
-             timeout: int = 30, allow_redirects: bool = True) -> str:
+             timeout: int = 30, allow_redirects: bool = True,
+             authId: str = '', authSec: str = '') -> str:
     try:
-        response = requests.post(url, data=data, headers=headers, cookies=cookies,
-                                 timeout=timeout, allow_redirects=allow_redirects)
+        if authId != '':
+            response = requests.post(url, data=data, headers=headers, cookies=cookies,
+                                     timeout=timeout, auth=(authId, authSec),
+                                     allow_redirects=allow_redirects)
+        else:
+            response = requests.post(url, data=data, headers=headers, cookies=cookies,
+                                     timeout=timeout, allow_redirects=allow_redirects)
     except requests.Timeout:
         log.error("bmw.postHTTP: Connection Timeout")
         raise
@@ -96,33 +100,63 @@ def postHTTP(url: str = '', data: str = '', headers: str = '', cookies: str = ''
 
 
 # ---------------Authentication Function-------------------------------------------
-def authStage1(username: str, password: str, code_challenge: str, state: str) -> str:
+def authStage0(region: str, username: str, password: str) -> str:
     try:
-        response = {}     # initialize to avoid undefined var in exception handling
-        url = 'https://' + auth_server + '/gcdm/oauth/authenticate'
-        userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X) '
-        userAgent = userAgent + 'AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1'
+        id0 = str(uuid.uuid4())
+        id1 = str(uuid.uuid4())
+        apiKey = b'NGYxYzg1YTMtNzU4Zi1hMzdkLWJiYjYtZjg3MDQ0OTRhY2Zh'
+        ocp = base64.b64decode(apiKey).decode()
+        url = 'https://' + api_server + '/eadrax-ucs/v1/presentation/oauth/config'
+        headers = {
+            'ocp-apim-subscription-key': ocp,
+            'bmw-session-id': id0,
+            'x-identity-provider': 'gcdm',
+            'x-correlation-id': id1,
+            'bmw-correlation-Id': id1,
+            'user-agent': 'Dart/3.0 (dart:io)',
+            'x-user-agent': 'android(TQ2A.230405.003.B2);bmw;3.11.1(29513);0'}
+        response = getHTTP(url, headers)
+        cfg = json.loads(response)
+    except Exception as err:
+        log.error("bmw.authStage0: Authentication stage 0 Error" + f" {err=}, {type(err)=}")
+        dmp = {}
+        dmp['url'] = url
+        dmp['headers'] = headers
+        dmp['response'] = response
+        dump_json(dmp, '/soc_bmw_dump_authStage0')
+        raise
+
+    return cfg
+
+
+def authStage1(url: str,
+               username: str,
+               password: str,
+               code_challenge: str,
+               state: str,
+               nonce: str) -> str:
+    global config
+    try:
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': userAgent
-        }
-        scope = 'openid profile email offline_access smacc vehicle_data perseus dlm '
-        scope = scope + 'svds cesim vsapi remote_services fupo authenticate_user'
+            'user-agent': 'Dart/3.0 (dart:io)',
+            'x-user-agent': 'android(TQ2A.230405.003.B2);bmw;3.11.1(29513);0'}
         data = {
-            'client_id': client_id,
+            'client_id': config['clientId'],
             'response_type': 'code',
-            'scope': scope,
-            'redirect_uri': 'com.bmw.connected://oauth',
+            'scope': ' '.join(config['scopes']),
+            'redirect_uri': config['returnUrl'],
             'state': state,
-            'nonce': 'login_nonce',
+            'nonce': nonce,
             'code_challenge': code_challenge,
-            'code_challenge_method': 'plain',
+            'code_challenge_method': 'S256',
             'username': username,
             'password': password,
             'grant_type': 'authorization_code'}
 
-        response = json.loads(postHTTP(url, data, headers))
-        auth_code = dict(urllib.parse.parse_qsl(response["redirect_to"]))["authorization"]
+        resp = postHTTP(url, data, headers)
+        response = json.loads(resp)
+        authcode = dict(urllib.parse.parse_qsl(response["redirect_to"]))["authorization"]
     except Exception as err:
         log.error("bmw.authStage1: Authentication stage 1 Error" + f" {err=}, {type(err)=}")
         dmp = {}
@@ -133,38 +167,30 @@ def authStage1(username: str, password: str, code_challenge: str, state: str) ->
         dump_json(dmp, '/soc_bmw_dump_authStage1')
         raise
 
-    return auth_code
+    return authcode
 
 
-def authStage2(auth_code_1: str, code_challenge: str, state: str) -> str:
+def authStage2(url: str, authcode1: str, code_challenge: str, state: str, nonce: str) -> str:
     try:
-        response = {}      # initialize to avoid undefined var in exception handling
-        url = 'https://' + auth_server + '/gcdm/oauth/authenticate'
-        userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X) '
-        userAgent = userAgent + 'AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': userAgent
-        }
-        scope = 'openid profile email offline_access smacc vehicle_data perseus dlm '
-        scope = scope + 'svds cesim vsapi remote_services fupo authenticate_user'
+            'user-agent': 'Dart/3.0 (dart:io)',
+            'x-user-agent': 'android(TQ2A.230405.003.B2);bmw;3.11.1(29513);0'}
         data = {
-            'client_id': client_id,
+            'client_id': config['clientId'],
             'response_type': 'code',
-            'scope': scope,
-            'redirect_uri': 'com.bmw.connected://oauth',
+            'scope': ' '.join(config['scopes']),
+            'redirect_uri': config['returnUrl'],
             'state': state,
-            'nonce': 'login_nonce',
+            'nonce': nonce,
             'code_challenge': code_challenge,
-            'code_challenge_method': 'plain',
-            'authorization': auth_code_1
-        }
+            'code_challenge_method': 'S256',
+            'authorization': authcode1}
         cookies = {
-            'GCDMSSO': auth_code_1
-        }
+            'GCDMSSO': authcode1}
 
         response = postHTTP(url, data, headers, cookies, allow_redirects=False)
-        auth_code = dict(urllib.parse.parse_qsl(response.split("?", 1)[1]))["code"]
+        authcode = dict(urllib.parse.parse_qsl(response.split("?", 1)[1]))["code"]
     except Exception as err:
         log.error("bmw.authStage2: Authentication stage 2 Error" + f" {err=}, {type(err)=}")
         dmp = {}
@@ -176,23 +202,26 @@ def authStage2(auth_code_1: str, code_challenge: str, state: str) -> str:
         dump_json(dmp, '/soc_bmw_dump_authStage2')
         raise
 
-    return auth_code
+    return authcode
 
 
-def authStage3(auth_code_2: str, code_challenge: str) -> dict:
+def authStage3(token_url: str, authcode2: str, code_verifier: str) -> dict:
+    global config
     try:
-        response = {}      # initialize to avoid undefined var in exception handling
-        url = 'https://' + auth_server + '/gcdm/oauth/token'
+        url = token_url
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Authorization': create_auth_string(client_id, client_password)}
+            'Authorization': (config['clientId'], config['clientSecret'])}
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
         data = {
-            'code': auth_code_2,
-            'code_verifier': code_challenge,
-            'redirect_uri': 'com.bmw.connected://oauth',
+            'code': authcode2,
+            'code_verifier': code_verifier,
+            'redirect_uri': config['returnUrl'],
             'grant_type': 'authorization_code'}
-
-        response = postHTTP(url, data, headers, allow_redirects=False)
+        authId = config['clientId']
+        authSec = config['clientSecret']
+        response = postHTTP(url, data, headers, authId=authId, authSec=authSec, allow_redirects=False)
         token = json.loads(response)
     except Exception as err:
         log.error("bmw.authStage3: Authentication stage 3 Error" + f" {err=}, {type(err)=}")
@@ -200,6 +229,8 @@ def authStage3(auth_code_2: str, code_challenge: str) -> dict:
         dmp['url'] = url
         dmp['headers'] = headers
         dmp['data'] = data
+        dmp['authId'] = authId
+        dmp['authSec'] = authSec
         dmp['response'] = response
         dump_json(dmp, '/soc_bmw_dump_authStage3')
         raise
@@ -208,21 +239,31 @@ def authStage3(auth_code_2: str, code_challenge: str) -> dict:
 
 
 def requestToken(username: str, password: str) -> dict:
+    global config
     try:
+        config = {}           # initialize to avoid undefined var in exception handling
         code_challenge = {}   # initialize to avoid undefined var in exception handling
         state = {}            # initialize to avoid undefined var in exception handling
         auth_code_1 = {}      # initialize to avoid undefined var in exception handling
         auth_code_2 = {}      # initialize to avoid undefined var in exception handling
         token = {}            # initialize to avoid undefined var in exception handling
-        code_challenge = get_random_string(86)
-        state = get_random_string(22)
 
-        auth_code_1 = authStage1(username, password, code_challenge, state)
-        auth_code_2 = authStage2(auth_code_1, code_challenge, state)
-        token = authStage3(auth_code_2, code_challenge)
+        # new: get oauth config from server
+        config = authStage0('0', username, password)
+        token_url = config['tokenEndpoint']
+        authenticate_url = token_url.replace('/token', '/authenticate')
+        code_verifier = get_random_string(86)
+        code_challenge = create_s256_code_challenge(code_verifier)
+        state = get_random_string(22)
+        nonce = get_random_string(22)
+
+        authcode1 = authStage1(authenticate_url, username, password, code_challenge, state, nonce)
+        authcode2 = authStage2(authenticate_url, authcode1, code_challenge, state, nonce)
+        token = authStage3(token_url, authcode2, code_verifier)
     except Exception as err:
         log.error("bmw.requestToken: Login Error" + f" {err=}, {type(err)=}")
         dmp = {}
+        dmp['config'] = config
         dmp['code_challenge'] = code_challenge
         dmp['state'] = state
         dmp['auth_code_1'] = auth_code_1
@@ -234,22 +275,21 @@ def requestToken(username: str, password: str) -> dict:
     return token
 
 
-# ---------------Interface Function-------------------------------------------
+# ---------------Interface Function------------------------------------------------
 def requestData(token: str, vin: str) -> dict:
     try:
-        response = {}      # initialize to avoid undefined var in exception handling
         if vin[:2] == 'WB':
             brand = 'bmw'
         elif vin[:2] == 'WM':
             brand = 'mini'
         else:
-            log.error("bmw.requestData: Unknown VIN, must start with WB or WM")
+            print("Unknown VIN")
             raise RuntimeError
 
         url = 'https://' + api_server + '/eadrax-vcs/v4/vehicles/state'
         headers = {
-            'User-Agent': 'Dart/2.14 (dart:io)',
-            'x-user-agent': 'android(SP1A.210812.016.C1);' + brand + ';2.5.2(14945);row',
+            'user-agent': 'Dart/3.0 (dart:io)',
+            'x-user-agent': 'android(TQ2A.230405.003.B2);' + brand + ';3.11.1(29513);0',
             'bmw-vin': vin,
             'Authorization': (token["token_type"] + " " + token["access_token"])}
         body = getHTTP(url, headers)
@@ -266,6 +306,7 @@ def requestData(token: str, vin: str) -> dict:
     return response
 
 
+# ---------------fetch Function called by core ------------------------------------
 def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
 
     try:
@@ -274,6 +315,9 @@ def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
         dump_json(data, '/soc_bmw_reply_vehicle_' + str(vehicle))
         soc = int(data["state"]["electricChargingState"]["chargingLevelPercent"])
         range = float(data["state"]["electricChargingState"]["range"])
+        lastUpdated = data["state"]["lastUpdatedAt"]
+        log.info(" SOC/Range: " + str(soc) + '%/' + str(range) + 'KM@' + lastUpdated)
+
     except Exception as err:
         log.error("bmw.fetch_soc: requestData Error, vehicle: " + str(vehicle) + f" {err=}, {type(err)=}")
         raise
