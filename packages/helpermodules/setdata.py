@@ -1053,8 +1053,6 @@ class SetData:
                 self._validate_value(msg, int, [(-1, float("inf"))])
             elif "todo" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "error" in msg.topic:
-                self._validate_value(msg, "json")
             elif "messages" in msg.topic:
                 self._validate_value(msg, "json")
             elif "command_completed" in msg.topic:
