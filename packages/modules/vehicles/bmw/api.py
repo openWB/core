@@ -77,7 +77,7 @@ def load_store():
             init_store()
         tf.close()
     except FileNotFoundError:
-        log.error("load_store: store file not found, new authentication required")
+        log.warning("load_store: store file not found, new authentication required")
         store = {}
         init_store()
     except Exception as e:
