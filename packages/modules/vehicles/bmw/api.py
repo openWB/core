@@ -224,6 +224,7 @@ def authStage1(url: str,
 
 
 def authStage2(url: str, authcode1: str, code_challenge: str, state: str, nonce: str) -> str:
+    global config
     try:
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
