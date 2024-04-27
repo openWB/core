@@ -15,12 +15,16 @@ from modules.common.store import RAMDISK_PATH
 
 import uuid
 import hashlib
+import time
 
 log = logging.getLogger(__name__)
 
 # ---------------Constants-------------------------------------------
 auth_server = 'customer.bmwgroup.com'
 api_server = 'cocoapi.bmwgroup.com'
+REGION = '0'        # 0 = rest_of_world
+BLOCKED403 = 'Block-403'
+storeFile = ''
 
 
 # ------------ Helper functions -------------------------------------
@@ -54,6 +58,53 @@ def create_s256_code_challenge(code_verifier: str) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("UTF-8")
 
 
+# initialize store structures when no store is available
+def init_store():
+    global store
+    store = {}
+    store['Token'] = {}
+    store['expires_at'] = int(0)
+
+
+# load store from file, initialize store structure if no file exists
+def load_store():
+    global store
+    global storeFile
+    try:
+        tf = open(storeFile, 'r', encoding='utf-8')
+        store = json.load(tf)
+        if 'Token' not in store:
+            init_store()
+        tf.close()
+    except FileNotFoundError:
+        log.error("load_store: store file not found, new authentication required")
+        store = {}
+        init_store()
+    except Exception as e:
+        log.error("init: loading stored data failed, file: " +
+                  storeFile + ", error=" + str(e))
+        store = {}
+        init_store()
+
+
+# write store file
+def write_store():
+    global store
+    global storeFile
+    try:
+        tf = open(storeFile, 'w', encoding='utf-8')
+    except Exception as e:
+        log.error("write_store_file: Exception " + str(e))
+        os.system("sudo rm -f " + storeFile)
+        tf = open(storeFile, 'w', encoding='utf-8')
+    json.dump(store, tf, indent=4)
+    tf.close()
+    try:
+        os.chmod(storeFile, 0o777)
+    except Exception as e:
+        os.system("sudo chmod 0777 " + storeFile + ', error=' + str(e))
+
+
 # ---------------HTTP Function-------------------------------------------
 def getHTTP(url: str = '', headers: str = '', cookies: str = '', timeout: int = 30) -> str:
     try:
@@ -67,6 +118,8 @@ def getHTTP(url: str = '', headers: str = '', cookies: str = '', timeout: int = 
 
     if response.status_code == 200 or response.status_code == 204:
         return response.text
+    elif response.status_code == 403:
+        return BLOCKED403
     else:
         log.error('bmw.getHTTP: Request failed, StatusCode: ' + str(response.status_code))
         raise RuntimeError
@@ -100,7 +153,7 @@ def postHTTP(url: str = '', data: str = '', headers: str = '', cookies: str = ''
 
 
 # ---------------Authentication Function-------------------------------------------
-def authStage0(region: str, username: str, password: str) -> str:
+def authStage0(region: str) -> str:
     try:
         id0 = str(uuid.uuid4())
         id1 = str(uuid.uuid4())
@@ -240,7 +293,9 @@ def authStage3(token_url: str, authcode2: str, code_verifier: str) -> dict:
 
 def requestToken(username: str, password: str) -> dict:
     global config
+    global method
     try:
+        method += ' requestToken'
         config = {}           # initialize to avoid undefined var in exception handling
         code_challenge = {}   # initialize to avoid undefined var in exception handling
         state = {}            # initialize to avoid undefined var in exception handling
@@ -249,7 +304,7 @@ def requestToken(username: str, password: str) -> dict:
         token = {}            # initialize to avoid undefined var in exception handling
 
         # new: get oauth config from server
-        config = authStage0('0', username, password)
+        config = authStage0(REGION)
         token_url = config['tokenEndpoint']
         authenticate_url = token_url.replace('/token', '/authenticate')
         code_verifier = get_random_string(86)
@@ -275,9 +330,38 @@ def requestToken(username: str, password: str) -> dict:
     return token
 
 
+def refreshToken(refreshToken: str) -> dict:
+    global config
+    global method
+    try:
+        method += ' refreshToken'
+        config = authStage0(REGION)
+        url = config['tokenEndpoint']
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'user-agent': 'Dart/3.0 (dart:io)',
+            'x-user-agent': 'android(TQ2A.230405.003.B2);bmw;3.11.1(29513);0'}
+        data = {
+            'scope': ' '.join(config['scopes']),
+            'redirect_uri': config['returnUrl'],
+            'grant_type': 'refresh_token',
+            'refresh_token': refreshToken}
+        authId = config['clientId']
+        authSec = config['clientSecret']
+        resp = postHTTP(url, data, headers, authId=authId, authSec=authSec, allow_redirects=False)
+        token = json.loads(resp)
+    except Exception as e:
+        log.error("Login failed, Error=" + str(e))
+        raise
+
+    return token
+
+
 # ---------------Interface Function------------------------------------------------
 def requestData(token: str, vin: str) -> dict:
+    global method
     try:
+        method += ' requestData'
         if vin[:2] == 'WB':
             brand = 'bmw'
         elif vin[:2] == 'WM':
@@ -293,6 +377,17 @@ def requestData(token: str, vin: str) -> dict:
             'bmw-vin': vin,
             'Authorization': (token["token_type"] + " " + token["access_token"])}
         body = getHTTP(url, headers)
+
+        retry_count = 3
+        while body == BLOCKED403 and retry_count > 0:
+            log.warning('requestData: received error 403 (blocked by server) - retry after 3 seconds')
+            time.sleep(3)
+            retry_count -= 1
+            body = getHTTP(url, headers)
+        if retry_count == 0:
+            log.error('requestData: max retry reached, abort')
+            raise
+
         response = json.loads(body)
     except Exception as err:
         log.error("bmw.requestData: Data Request Error" + f" {err=}, {type(err)=}")
@@ -308,15 +403,70 @@ def requestData(token: str, vin: str) -> dict:
 
 # ---------------fetch Function called by core ------------------------------------
 def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
+    global method
+    global storeFile
+    global store
+    store = {}
+    storeFile = str(RAMDISK_PATH) + '/soc_bmw_vh_' + str(vehicle) + '.json'
+    method = ''
 
     try:
-        token = requestToken(user_id, password)
+        # try to read store file from ramdisk
+        expires_in = -1
+        load_store()
+        now = int(time.time())
+        log.debug('main: store=\n' + json.dumps(store, indent=4))
+        # if OK, check if refreshToken is required
+        if 'expires_at' in store and \
+           'Token' in store and \
+           'expires_in' in store['Token'] and \
+           'refresh_token' in store['Token']:
+            expires_in = store['Token']['expires_in']
+            expires_at = store['expires_at']
+            token = store['Token']
+            log.debug('main0: expires_in=' + str(expires_in) + ', now=' + str(now) +
+                      ', expires_at=' + str(expires_at) + ', diff=' + str(expires_at - now))
+            if now > expires_at - 120:
+                log.debug('call refreshToken')
+                token = refreshToken(token['refresh_token'])
+                if 'expires_in' in token:
+                    expires_in = int(token['expires_in'])
+                    expires_at = now + expires_in
+                    store['expires_at'] = expires_at
+                    store['Token'] = token
+                    write_store()
+                else:
+                    log.error("refreshToken failed, re-authenticate")
+                    expires_in = -1
+            else:
+                expires_in = store['Token']['expires_in']
+
+        # if refreshToken fails, call requestToken
+        if expires_in == -1:
+            log.debug('call requestToken')
+            token = requestToken(user_id, password)
+
+        # compute expires_at and store file in ramdisk
+        if 'expires_in' in token:
+            if expires_in != int(token['expires_in']):
+                expires_in = int(token['expires_in'])
+                expires_at = now + expires_in
+                store['expires_at'] = expires_at
+                store['Token'] = token
+                write_store()
+        else:
+            log.error("requestToken failed")
+            store['expires_at'] = 0
+            store['Token'] = token
+            write_store()
+        log.debug('main: token=\n' + json.dumps(token, indent=4))
         data = requestData(token, vin)
+
         dump_json(data, '/soc_bmw_reply_vehicle_' + str(vehicle))
         soc = int(data["state"]["electricChargingState"]["chargingLevelPercent"])
         range = float(data["state"]["electricChargingState"]["range"])
         lastUpdated = data["state"]["lastUpdatedAt"]
-        log.info(" SOC/Range: " + str(soc) + '%/' + str(range) + 'KM@' + lastUpdated)
+        log.info(" SOC/Range: " + str(soc) + '%/' + str(range) + 'KM@' + lastUpdated + ', method:' + method)
 
     except Exception as err:
         log.error("bmw.fetch_soc: requestData Error, vehicle: " + str(vehicle) + f" {err=}, {type(err)=}")
