@@ -198,7 +198,7 @@ function processPvMessages(topic: string, message: string) {
 	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/monthly_exported$/i)) {
 		pvSystems.value.get(index!)!.energy_month = +message
 	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/yearly_exported$/i)) {
-		pvSystems.value.get(index!)!.energy_total = +message
+		pvSystems.value.get(index!)!.energy_year = +message
 	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/exported$/i)) {
 		pvSystems.value.get(index!)!.energy_total = +message
 	} else {
