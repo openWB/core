@@ -51,6 +51,12 @@ class ChargepointRfidMixin:
                         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp",
                                   self.data.get.rfid_timestamp)
                         return
+                    if rfid not in self.template.data.valid_tags and self.template.data.rfid_enabling:
+                        self.data.get.rfid = None
+                        Pub().pub("openWB/chargepoint/"+str(self.num)+"/get/rfid", None)
+                        self.data.get.rfid_timestamp = None
+                        Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
+                        msg = f"Der ID-Tag {rfid} ist an diesem Ladepunkt nicht gültig."
                     else:
                         if (timecheck.check_timestamp(self.data.get.rfid_timestamp, 300) or
                                 self.data.get.plug_state is True):
