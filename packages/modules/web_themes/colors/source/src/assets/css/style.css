@@ -180,6 +180,15 @@ body>.container-fluid {
 	--color-export: #b2df8a;
 	--color-battery: goldenrod;
 	--color-input: lightgrey;
+	--color-pv1: #4db662;
+	--color-pv2: #c7e9c0;
+	--color-pv3: #a1d99b;
+	--color-pv4: #74c476;
+	--color-pv5: #41ab5d;
+	--color-pv6: #238b45;
+	--color-pv7: #006d2c;
+	--color-pv8: #00441b;
+	--color-pv9: #e5f5e0;
 	--font-normal: 1.4rem;
 	--font-large: 1.6rem;
 	--font-medium: 1.2rem;

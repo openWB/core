@@ -1,8 +1,10 @@
 import { mqttRegister, mqttSubscribe, mqttUnsubscribe } from './mqttClient'
-import type { Hierarchy } from './types'
+import { PvSystem, type Hierarchy } from './types'
 import {
+	addPvSystem,
 	correctHouseConsumption,
 	globalData,
+	pvSystems,
 	sourceSummary,
 	usageSummary,
 } from './model'
@@ -31,7 +33,7 @@ import { add } from '@/components/mqttViewer/model'
 const topicsToSubscribe = [
 	'openWB/counter/#',
 	'openWB/bat/#',
-	'openWB/pv/get/#',
+	'openWB/pv/#',
 	'openWB/chargepoint/#',
 	'openWB/vehicle/#',
 	'openWB/general/chargemode_config/pv_charging/#',
@@ -83,19 +85,13 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processYearGraphMessages(topic, message)
 	} else if (topic.match(/^openwb\/optional\/et\//i)) {
 		processEtProviderMessages(topic, message)
-	} // else if ( mqttTopic.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttTopic, message); }
-	else if (topic.match(/^openwb\/system\//i)) {
+	} else if (topic.match(/^openwb\/system\//i)) {
 		processSystemMessages(topic, message)
-	} // else if ( mqttTopic.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttTopic, message); }
-	// else if ( mqttTopic.match( /^openwb\/hook\//i) ) { processHookMessages(mqttTopic, message); }
-	// else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesMessages(mqttTopic, message); }
-	else if (topic.match(/^openwb\/LegacySmartHome\//i)) {
+	} else if (topic.match(/^openwb\/LegacySmartHome\//i)) {
 		processSmarthomeMessages(topic, message)
 	} else if (topic.match(/^openwb\/command\//i)) {
 		processCommandMessages(topic, message)
 	}
-
-	// else if ( mqttTopic.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttTopic, message); }
 }
 function processCounterMessages(topic: string, message: string) {
 	const elements = topic.split('/')
@@ -186,14 +182,26 @@ function processHierarchy(hierarchy: Hierarchy) {
 }
 
 function processPvMessages(topic: string, message: string) {
-	switch (topic) {
-		case 'openWB/pv/get/power':
-			sourceSummary.pv.power = -message
-			break
-		case 'openWB/pv/get/daily_exported':
-			sourceSummary.pv.energy = +message
-			break
-		default:
+	const index = getIndex(topic)
+	if (index && !pvSystems.value.has(index)) {
+		console.warn('Creating PV system: ' + index)
+		addPvSystem(index)
+	}
+	if (topic == 'openWB/pv/get/power') {
+		sourceSummary.pv.power = -message
+	} else if (topic == 'openWB/pv/get/daily_exported') {
+		sourceSummary.pv.energy = +message
+	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/power$/i)) {
+		pvSystems.value.get(index!)!.power = +message
+	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/daily_exported$/i)) {
+		pvSystems.value.get(index!)!.energy = +message
+	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/monthly_exported$/i)) {
+		pvSystems.value.get(index!)!.energy_month = +message
+	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/yearly_exported$/i)) {
+		pvSystems.value.get(index!)!.energy_total = +message
+	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/exported$/i)) {
+		pvSystems.value.get(index!)!.energy_total = +message
+	} else {
 		// console.warn('Ignored PV msg: [' + topic + '] ' + message)
 	}
 }
@@ -238,8 +246,16 @@ function processSystemMessages(topic: string, message: string) {
 		topic.match(/^openWB\/system\/device\/[0-9]+\/component\/[0-9]+\/config$/i)
 	) {
 		const config = JSON.parse(message)
-		if ((config.type == 'counter' || config.type == 'consumption_counter') && counters[config.id]) {
+		if (
+			(config.type == 'counter' || config.type == 'consumption_counter') &&
+			counters[config.id]
+		) {
 			counters[config.id].name = config.name
+		} else if (config.type == 'inverter') {
+			if (!pvSystems.value.has(config.id)) {
+				pvSystems.value.set(config.id, new PvSystem(config.id))
+			}
+			pvSystems.value.get(config.id)!.name = config.name
 		}
 	}
 }
@@ -253,5 +269,20 @@ function processCommandMessages(topic: string, message: string) {
 				`Error message from openWB: \nCommand: ${err.command}\nData: JSON.stringify(err.data)\nError:\n ${err.error}`,
 			)
 		}
+	}
+}
+
+function getIndex(topic: string): number | undefined {
+	let index = 0
+	try {
+		const matches = topic.match(/(?:\/)([0-9]+)(?=\/)/g)
+		if (matches) {
+			index = +matches[0].replace(/[^0-9]+/g, '')
+			return index
+		} else {
+			return undefined
+		}
+	} catch (e) {
+		console.warn('Parser error in getIndex for topic ' + topic)
 	}
 }

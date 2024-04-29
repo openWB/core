@@ -7,6 +7,7 @@ import {
 	calculateAutarchy,
 	consumerCategories,
 	updateEnergyValues,
+	graphInput,
 } from './model'
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
 import { globalConfig } from '@/assets/js/themeConfig'
@@ -25,6 +26,7 @@ let gridCounters: string[] = []
 
 export function processDayGraphMessages(topic: string, message: string) {
 	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
+	graphInput.value = inputTable
 	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
 	resetHistoricSummary()
 	gridCounters = []
@@ -78,7 +80,12 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem.evuIn += item[1].power_imported
 		})
 	}
-	currentItem.pv = currentRow.pv.all.power_exported
+	Object.entries(currentRow.pv).forEach(([id, values]) => {
+		if (id != 'all') {
+			currentItem[id] = values.power_exported
+		} else currentItem.pv = values.power_exported
+	})
+
 	if (Object.entries(currentRow.bat).length > 0) {
 		currentItem.batIn = currentRow.bat.all.power_imported
 		currentItem.batOut = currentRow.bat.all.power_exported
