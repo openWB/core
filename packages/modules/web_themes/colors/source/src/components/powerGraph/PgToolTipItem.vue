@@ -94,14 +94,11 @@
 </template>
 
 <script setup lang="ts">
-import type { GraphDataItem } from './model'
+import { itemNames, type GraphDataItem } from './model'
 import type { ScaleTime } from 'd3'
 import { timeFormat } from 'd3'
 import PgToolTipLine from './PgToolTipLine.vue'
 import { computed } from 'vue'
-import { pvSystems } from '@/assets/js/model'
-import { chargePoints } from '../chargePointList/model'
-import { shDevices } from '../smartHome/model'
 
 const props = defineProps<{
 	entry: GraphDataItem
@@ -119,9 +116,9 @@ const pvs = computed(() =>
 		.map(([k, v]) => {
 			return {
 				power: v,
-				name: pvSystems.value.get(+k.slice(2))
-					? trimName(pvSystems.value.get(+k.slice(2))!.name)
-					: 'System',
+				name: itemNames.value.get(k)
+					? trimName(itemNames.value.get(k)!)
+					: 'Wechselr.',
 				id: k,
 			}
 		}),
@@ -133,8 +130,8 @@ const cps = computed(() =>
 		.map(([k, v]) => {
 			return {
 				power: v,
-				name: chargePoints[+k.slice(2)]
-					? trimName(chargePoints[+k.slice(2)].name)
+				name: itemNames.value.get(k)
+					? trimName(itemNames.value.get(k)!)
 					: 'Ladep.',
 				id: k,
 			}
@@ -146,8 +143,8 @@ const devs = computed(() =>
 		.map(([k, v]) => {
 			return {
 				power: v,
-				name: shDevices.get(+k.slice(2))
-					? trimName(shDevices.get(+k.slice(2))!.name)
+				name: itemNames.value.get(k)
+					? trimName(itemNames.value.get(k)!)
 					: 'Gerät',
 				id: k,
 			}

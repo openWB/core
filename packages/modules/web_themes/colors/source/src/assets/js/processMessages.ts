@@ -2,6 +2,7 @@ import { mqttRegister, mqttSubscribe, mqttUnsubscribe } from './mqttClient'
 import { PvSystem, type Hierarchy } from './types'
 import {
 	addPvSystem,
+	// correctHouseConsumption,
 	globalData,
 	pvSystems,
 	sourceSummary,
@@ -18,7 +19,11 @@ import {
 	addChargePoint,
 	resetChargePoints,
 } from '@/components/chargePointList/model'
-import { addBattery, resetBatteries } from '@/components/batteryList/model'
+import {
+	addBattery,
+	batteries,
+	resetBatteries,
+} from '@/components/batteryList/model'
 import {
 	processChargepointMessages,
 	processVehicleMessages,
@@ -147,6 +152,7 @@ function processGlobalCounterMessages(topic: string, message: string) {
 		}
 	} else if (topic.match(/^openwb\/counter\/set\/home_consumption$/i)) {
 		usageSummary.house.power = +message
+		// correctHouseConsumption()
 	} else if (
 		topic.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)
 	) {
@@ -254,6 +260,11 @@ function processSystemMessages(topic: string, message: string) {
 				pvSystems.value.set(config.id, new PvSystem(config.id))
 			}
 			pvSystems.value.get(config.id)!.name = config.name
+		} else if (config.type == 'bat') {
+			if (!batteries.value.has(config.id)) {
+				addBattery(config.id)
+			}
+			batteries.value.get(config.id)!.name = config.name
 		}
 	}
 }

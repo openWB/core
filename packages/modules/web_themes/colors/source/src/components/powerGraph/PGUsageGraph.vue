@@ -27,8 +27,6 @@ import {
 	xScaleMonth,
 	xScale,
 	zoomedRange,
-	// graphInput,
-	//type RawDayGraphDataItem,
 } from './model'
 const props = defineProps<{
 	width: number
@@ -97,7 +95,9 @@ const draw = computed(() => {
 })
 //const stackGen = computed(() => stack().keys(keys[props.stackOrder].concat(['cp3'])))
 const stackGen = computed(() => {
-	return stack().keys(keysToUse.value)
+	return stack()
+		.value((d, key) => d[key] ?? 0)
+		.keys(keysToUse.value)
 })
 const stackedSeries = computed(() => stackGen.value(graphData.data))
 

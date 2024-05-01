@@ -8,24 +8,20 @@
 		<template #buttons>
 			<div class="d-flex float-right justify-content-end align-items-center">
 				<span
-					v-if="props.inverter.power > 0"
-					class="badge rounded-pill modebadge mx-2"
-					:style="modestyle"
-					>{{ modestring }}</span
-				>
+					v-if="props.inverter.power < 0"
+					class="my-0 badge rounded-pill modebadge mx-1"
+					>{{ formatWatt(-props.inverter.power) }}
+				</span>
 			</div>
 		</template>
 		<div class="subgrid pt-1">
-			<InfoItem heading="Leistung:" :small="true" class="grid-left grid-col-3">
-				<FormatWatt :watt="Math.abs(props.inverter.power)"></FormatWatt>
-			</InfoItem>
-			<InfoItem heading="Heute:" :small="true" class="grid-col-3">
+			<InfoItem heading="Heute:" :small="false" class="grid-col-4">
 				<FormatWattH :watt-h="props.inverter.energy"></FormatWattH>
 			</InfoItem>
-			<InfoItem heading="Monat:" :small="true" class="grid-right grid-col-3">
+			<InfoItem heading="Monat:" :small="false" class="grid-right grid-col-4">
 				<FormatWattH :watt-h="props.inverter.energy_month"></FormatWattH>
 			</InfoItem>
-			<InfoItem heading="Jahr:" :small="true" class="grid-right grid-col-3">
+			<InfoItem heading="Jahr:" :small="false" class="grid-right grid-col-4">
 				<FormatWattH :watt-h="props.inverter.energy_year"></FormatWattH>
 			</InfoItem>
 		</div>
@@ -36,38 +32,23 @@ import InfoItem from '../shared/InfoItem.vue'
 import WbSubwidget from '../shared/WbSubwidget.vue'
 import type { PvSystem } from '@/assets/js/types'
 import FormatWattH from '../shared/FormatWattH.vue'
-import FormatWatt from '../shared/FormatWatt.vue'
 import { computed } from 'vue'
+import { formatWatt } from '@/assets/js/helpers'
 const props = defineProps<{
 	inverter: PvSystem
 }>()
 
-const modestring = computed(() => {
-	if (props.inverter.power > 0) {
-		return 'Altiv'
-	} else {
-		return ''
-	}
-})
 const invertercolor = computed(() => {
 	return { color: props.inverter.color }
 })
-const modestyle = computed(() => {
-	let col = ''
-	if (props.inverter.power > 0) {
-		col = 'var(--color-pv)'
-	} else {
-		col = 'var(--color-evu)'
-	}
-	return { 'background-color': col, 'font-weight': 'normal' }
-})
 </script>
 <style scoped>
-.idbadge {
-	background-color: var(--color-menu);
+.modebadge {
+	background-color: var(--color-pv);
+	color: var(--color-bg);
+	font-size: var(--font-verysmall);
 	font-weight: normal;
 }
-
 .invertername {
 	font-size: var(--font-normal);
 }

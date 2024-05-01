@@ -55,6 +55,15 @@ export const masterData: { [key: string]: ItemProps } = reactive({
 	pv7: { name: 'PV', color: 'var(--color-pv7)', icon: 'Wechselrichter' },
 	pv8: { name: 'PV', color: 'var(--color-pv8)', icon: 'Wechselrichter' },
 	pv9: { name: 'PV', color: 'var(--color-pv9)', icon: 'Wechselrichter' },
+	bat1: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat2: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat3: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat4: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat5: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat6: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat7: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat8: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat9: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
 })
 class HistoricSummary {
 	private _items: { [key: string]: PowerItem } = {}

@@ -23,7 +23,6 @@ export interface GraphDataItem {
 export interface RawGraphDataItem {
 	[key: string]: string
 }
-export const graphInput = ref<RawDayGraphDataItem[]>([])
 export interface RawDayGraphDataItem {
 	timestamp: number
 	date: string
@@ -586,3 +585,4 @@ export function toggleMonthlyView() {
 			break
 	}
 }
+export const itemNames = ref(new Map<string, string>())

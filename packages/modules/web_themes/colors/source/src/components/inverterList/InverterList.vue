@@ -6,41 +6,30 @@
 			>
 			<span>Wechselrichter</span>
 		</template>
-		<div
-			v-for="(pvsystem, index) in inverters"
-			:key="index"
-			class="subgrid pb-2"
-		>
+		<template #buttons>
+			<span
+				v-if="sourceSummary.pv.power > 0"
+				class="badge powerbadge rounded-pill"
+			>
+				{{ formatWatt(sourceSummary.pv.power) }}
+			</span>
+		</template>
+		<div v-for="[key, pvsystem] in pvSystems" :key="key" class="subgrid pb-2">
 			<IlInverter :inverter="pvsystem" />
 		</div>
 	</WBWidgetFlex>
 </template>
 
 <script setup lang="ts">
-//import { computed } from 'vue'
-import { computed } from 'vue'
 import WBWidgetFlex from '../shared/WbWidgetFlex.vue'
 import IlInverter from './IlInverter.vue'
-import { pvSystems } from '@/assets/js/model'
-
-const inverters = computed(() => {
-	return pvSystems.value.values()
-})
+import { pvSystems, sourceSummary } from '@/assets/js/model'
+import { formatWatt } from '@/assets/js/helpers'
 </script>
 
 <style scoped>
-.statusbutton {
-	font-size: var(--font-large);
-}
-
-.modebutton {
-	background-color: var(--color-menu);
-	font-size: var(--font-verysmall);
-	font-weight: normal;
-}
-
-.tempbadge {
-	background-color: var(--color-battery);
+.powerbadge {
+	background-color: var(--color-pv);
 	color: var(--color-bg);
 	font-size: var(--font-verysmall);
 	font-weight: normal;

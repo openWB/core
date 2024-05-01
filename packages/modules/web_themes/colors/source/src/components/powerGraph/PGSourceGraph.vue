@@ -45,8 +45,6 @@ const colors: { [key: string]: string } = {
 	selfUsage: 'var(--color-pv)',
 	evuOut: 'var(--color-export)',
 	evuIn: 'var(--color-evu)',
-	pv1: 'var(--color-pv1)',
-	pv8: 'var(--color-pv2)',
 }
 var paths: Selection<SVGPathElement, [number, number][], BaseType, never>
 var rects: Selection<SVGRectElement, [number, number], BaseType, never>
@@ -274,7 +272,11 @@ function drawBarGraph(
 const autozoom = computed(() => {
 	const graph: Selection<SVGGElement, unknown, HTMLElement, unknown> =
 		select('g#pgSourceGraph')
-	if (graphData.graphMode != 'month' && graphData.graphMode != 'year' && graphData.data.length > 0) {
+	if (
+		graphData.graphMode != 'month' &&
+		graphData.graphMode != 'year' &&
+		graphData.data.length > 0
+	) {
 		xScale.value.range(zoomedRange.value)
 		const areaz = area()
 			.x((d, i) => xScale.value(graphData.data[i].date))
