@@ -2,7 +2,6 @@ import { mqttRegister, mqttSubscribe, mqttUnsubscribe } from './mqttClient'
 import { PvSystem, type Hierarchy } from './types'
 import {
 	addPvSystem,
-	correctHouseConsumption,
 	globalData,
 	pvSystems,
 	sourceSummary,
@@ -148,7 +147,6 @@ function processGlobalCounterMessages(topic: string, message: string) {
 		}
 	} else if (topic.match(/^openwb\/counter\/set\/home_consumption$/i)) {
 		usageSummary.house.power = +message
-		correctHouseConsumption()
 	} else if (
 		topic.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)
 	) {
