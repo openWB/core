@@ -9,3 +9,5 @@ pattern write openWB/command/%c/messages/#
 topic read openWB/#
 # allow read access for remote support topics
 topic read openWB-remote/#
+# allow brach "others" for devices other than openWB
+topic readwrite others/#
