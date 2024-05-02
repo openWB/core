@@ -66,9 +66,9 @@ const powerstring = computed(() => {
 const statusstyle = computed(() => {
 	const bgcolor =
 		sourceSummary.batOut.power > 0
-			? 'var(--color-evu)'
-			: usageSummary.batIn.power > 0
 			? 'var(--color-pv)'
+			: usageSummary.batIn.power > 0
+			? 'var(--color-battery)'
 			: 'var(--color-menu)'
 	return { 'background-color': bgcolor }
 })

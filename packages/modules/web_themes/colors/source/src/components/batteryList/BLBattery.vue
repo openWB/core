@@ -7,7 +7,9 @@ Hagen */
 			<span class="battery-title">{{ bat.name }}</span>
 		</template>
 		<template #buttons>
-			<BatterySymbol :soc="bat.soc" />
+			<span class="badge rounded-pill battery-mode me-2" :style="statusstyle">{{
+				batteryState
+			}}</span>
 		</template>
 		<div class="subgrid pt-1">
 			<InfoItem heading="Geliefert:" :small="true" class="grid-left grid-col-4">
@@ -33,27 +35,35 @@ import type { Battery } from './model'
 import BatterySymbol from '../shared/BatterySymbol.vue'
 import InfoItem from '../shared/InfoItem.vue'
 import FormatWattH from '../shared/FormatWattH.vue'
+import { computed } from 'vue'
+import { formatWatt } from '@/assets/js/helpers'
 // props
 const props = defineProps<{
 	bat: Battery
 }>()
+const batteryState = computed(() => {
+	if (props.bat.power < 0) {
+		return `Liefert (${formatWatt(-props.bat.power)})`
+	} else if (props.bat.power > 0) {
+		return `Lädt (${formatWatt(props.bat.power)})`
+	} else {
+		return `Bereit`
+	}
+})
+const statusstyle = computed(() => {
+	const bgcolor =
+		props.bat.power < 0
+			? 'var(--color-pv)'
+			: props.bat.power > 0
+			? 'var(--color-battery)'
+			: 'var(--color-menu)'
+	return { 'background-color': bgcolor }
+})
 </script>
 
 <style scoped>
 .battery-title {
 	color: var(--color-battery);
 	font-size: var(--font-medium);
-}
-
-.battery-color {
-	color: var(--color-battery);
-}
-
-.fg-color {
-	color: var(--color-fg);
-}
-
-.menu-color {
-	color: var(--color-menu);
 }
 </style>
