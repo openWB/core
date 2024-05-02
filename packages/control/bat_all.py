@@ -168,8 +168,7 @@ class BatAll:
             if bat_power_discharge > available_power:
                 log.debug(
                     f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {available_power}W begrenzt.")
-            # Begrenzung auf einen positiven Wert
-            return max(min(bat_power_discharge, available_power), 0)
+            return min(bat_power_discharge, available_power)
         else:
             return bat_power_discharge
 
