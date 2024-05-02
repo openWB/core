@@ -40,7 +40,7 @@ try {
 	client = connect(connectUrl, options)
 	client.on('connect', () => {
 		console.info('MQTT connection successful')
-		console.info (`mqtt client: ${mqttConnection.clientId}`)
+		//console.info (`mqtt client: ${mqttConnection.clientId}`)
 	})
 	client.on('disconnect', () => {
 		console.info('MQTT disconnected')

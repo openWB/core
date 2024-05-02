@@ -99,13 +99,7 @@ const plotdata = computed(() => {
 	const historic = historicSummary.items
 	let result: PowerItem[] = []
 	if (globalConfig.debug) {
-		console.debug('----------------------- source summary -----------------')
-		console.debug(sourceSummary)
-		console.debug('----------------------- usage details ------------------')
-		console.debug(usageDetails.value)
-		console.debug('----------------------- historic summary ---------------')
-		console.debug(historicSummary)
-		console.debug('--------------------------------------------------------')
+		printDebugOutput()
 	}
 	if (energyMeterNeedsRedraw.value == true) {
 		energyMeterNeedsRedraw.value = false
@@ -114,7 +108,7 @@ const plotdata = computed(() => {
 		default:
 		case 'live':
 		case 'today':
-			result = sources.concat(usage).filter((row) => row.energy > 0)
+			result = sources.concat(usage)
 			break
 		case 'day':
 		case 'month':
@@ -123,12 +117,28 @@ const plotdata = computed(() => {
 				noData.value = true
 			} else {
 				noData.value = false
-				result = [historic.evuIn, historic.pv, historic.evuOut, historic.batOut]
-					.concat(usage)
-					.filter((row) => row.energy > 0)
+				result = [
+					historic.evuIn,
+					historic.pv,
+					historic.evuOut,
+					historic.batOut,
+					historic.charging,
+				]
+				Object.keys(chargePoints).forEach((id) => {
+					if (historic['cp' + id]) {
+						result.push(historic['cp' + id])
+					}
+				})
+				result.push(historic.devices)
+				shDevices.forEach((dev, id) => {
+					if (historic['sh' + id]) {
+						result.push(historic['sh' + id])
+					}
+				})
+				result = result.concat([historic.batIn, historic.house])
 			}
 	}
-	return result
+	return result.filter((row) => row.energy && row.energy > 0)
 })
 const xScale = computed(() => {
 	return scaleBand()
@@ -143,30 +153,43 @@ const yScale = computed(() => {
 })
 const heading = 'Energie'
 
-const usageDetails = computed(() => {
-	const cpcount = Object.values(chargePoints).length
-	const shcount = [...shDevices.values()].filter((dev) => dev.configured).length
-	let usg = usageSummary
-	if (graphData.graphMode != 'live' && graphData.graphMode != 'today') {
-		usg = historicSummary.items
-	}
-	return [
-		...[usg.evuOut, usg.charging].concat(
-			cpcount > 1
-				? Object.values(chargePoints).map((cp) => cp.toPowerItem())
-				: [],
-		),
-		...[usg.devices]
-			.concat(
-				shcount > 1
-					? [...shDevices.values()].filter(
-							(row) => row.configured && row.showInGraph,
-					  )
+const usageDetails = computed(
+	() => {
+		const cpcount = Object.values(chargePoints).length
+		const shcount = [...shDevices.values()].filter(
+			(dev) => dev.configured,
+		).length
+		let usg = usageSummary
+		//if (graphData.graphMode != 'live' && graphData.graphMode != 'today') {
+		//	usg = historicSummary.items
+		//		console.log(usg)
+		//	return usg
+		//} else {
+
+		return [
+			...[usg.evuOut, usg.charging].concat(
+				cpcount > 1
+					? Object.values(chargePoints).map((cp) => cp.toPowerItem())
 					: [],
-			)
-			.concat([usageSummary.batIn, usageSummary.house]),
-	]
-})
+			),
+			...[usg.devices]
+				.concat(
+					shcount > 1
+						? [...shDevices.values()].filter(
+								(row) => row.configured && row.showInGraph,
+						  )
+						: [],
+				)
+				.concat([usageSummary.batIn, usageSummary.house]),
+		]
+	},
+	//}
+)
+function printDebugOutput() {
+	console.debug(['source summary:', sourceSummary])
+	console.debug(['usage details:', usageDetails.value])
+	console.debug(['historic summary:', historicSummary])
+}
 </script>
 
 <style scoped></style>

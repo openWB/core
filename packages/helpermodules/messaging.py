@@ -62,18 +62,3 @@ def _pub_message(payload: dict, connection_id: Optional[str], message: str,
             log.debug(f'Messaging: Meldung: {message}')
     except Exception:
         log.exception("Fehler im Messaging-Modul")
-
-
-def pub_error_global(payload: dict, connection_id: str, error_str: str) -> None:
-    """ sendet ein Fehler-Topic, warum der Befehl nicht ausgeführt werden konnte.
-    """
-    try:
-        error_payload = {
-            "command": payload["command"],
-            "data": payload["data"],
-            "error": error_str
-        }
-        Pub().pub(f'openWB/set/command/{connection_id}/error', error_payload)
-        log.error(f'Befehl konnte nicht ausgeführt werden: {error_payload}')
-    except Exception:
-        log.exception("Fehler im Messaging-Modul")

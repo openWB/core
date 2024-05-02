@@ -43,7 +43,7 @@ const topicsToSubscribe = [
 export function msgInit() {
 	mqttRegister(processMqttMessage)
 	topicsToSubscribe.forEach((topic) => {
-	mqttSubscribe(topic)
+		mqttSubscribe(topic)
 	})
 	initGraph()
 }
@@ -53,7 +53,7 @@ export function msgStop() {
 	})
 }
 function processMqttMessage(topic: string, payload: Buffer) {
-	add(topic,payload.toString())
+	add(topic, payload.toString())
 	const message = payload.toString()
 	if (topic.match(/^openwb\/counter\/[0-9]+\//i)) {
 		processCounterMessages(topic, message)
@@ -202,8 +202,8 @@ function processPvConfigMessages(topic: string, message: string) {
 	const elements = topic.split('/')
 	if (elements.length > 0) {
 		switch (elements[4]) {
-			case 'bat_prio':
-				globalData.updatePvBatteryPriority(message == 'true')
+			case 'bat_mode':
+				globalData.updatePvBatteryPriority(JSON.parse(message))
 				break
 			default:
 			// console.warn('Ignored PV CONFIG msg: [' + topic + '] ' + message)
@@ -238,7 +238,7 @@ function processSystemMessages(topic: string, message: string) {
 		topic.match(/^openWB\/system\/device\/[0-9]+\/component\/[0-9]+\/config$/i)
 	) {
 		const config = JSON.parse(message)
-		if (config.type == 'counter' && counters[config.id]) {
+		if ((config.type == 'counter' || config.type == 'consumption_counter') && counters[config.id]) {
 			counters[config.id].name = config.name
 		}
 	}

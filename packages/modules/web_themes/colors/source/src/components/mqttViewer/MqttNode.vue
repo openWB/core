@@ -1,23 +1,29 @@
 <template>
 	<div class="name py-2 px-2 m-0" :style="leafStyle" @click="toggle">
-		<span 
-		v-if="((expanded || props.expandAll )&& childCount >0) || showContent"
-		class="fas fa-caret-down"></span>
-		<span 
-		v-else
-		class="fas fa-caret-right"></span>
-	{{ displaytext }}{{ counter }}</div>
+		<span
+			v-if="((expanded || props.expandAll) && childCount > 0) || showContent"
+			class="fas fa-caret-down"
+		></span>
+		<span v-else class="fas fa-caret-right"></span>
+		{{ displaytext }}{{ counter }}
+	</div>
 	<div v-if="showContent" class="content p-2 m-2">
 		<code>{{ props.node.lastValue }}</code>
 	</div>
 
-	<div v-if="(expanded || props.expandAll) && childCount > 0" class="sublist col-md-9 m-0 p-0 ps-2">
-
-		<MqttNode 
-		v-for="(child, i) in items" :key="i" :level="props.level + 1" :node="child" :hide="true"
-			:expand-all="props.expandAll" />
+	<div
+		v-if="(expanded || props.expandAll) && childCount > 0"
+		class="sublist col-md-9 m-0 p-0 ps-2"
+	>
+		<MqttNode
+			v-for="(child, i) in items"
+			:key="i"
+			:level="props.level + 1"
+			:node="child"
+			:hide="true"
+			:expand-all="props.expandAll"
+		/>
 	</div>
-
 </template>
 
 <script setup lang="ts">
@@ -49,15 +55,15 @@ const childCount = computed(() => {
 })
 const leafStyle = computed(() => {
 	if (props.node.lastValue != '') {
-		return { 
-			'font-style': 'italic', 
+		return {
+			'font-style': 'italic',
 			'grid-column-start': props.level,
-			'grid-column-end': -1 
+			'grid-column-end': -1,
 		}
 	} else {
-		return { 
+		return {
 			'grid-column-start': props.level,
-			'grid-column-end': -1 
+			'grid-column-end': -1,
 		}
 	}
 })
@@ -69,7 +75,6 @@ function toggle() {
 		showContent.value = !showContent.value
 	}
 }
-
 </script>
 
 <style scoped>
