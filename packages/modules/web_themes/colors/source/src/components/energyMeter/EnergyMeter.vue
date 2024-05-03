@@ -124,14 +124,17 @@ const plotdata = computed(() => {
 					historic.batOut,
 					historic.charging,
 				]
-				Object.keys(chargePoints).forEach((id) => {
-					if (historic['cp' + id]) {
-						result.push(historic['cp' + id])
-					}
-				})
+				if (Object.values(chargePoints).length > 1) {
+					Object.keys(chargePoints).forEach((id) => {
+						if (historic['cp' + id]) {
+							result.push(historic['cp' + id])
+						}
+					})
+				}
+
 				result.push(historic.devices)
 				shDevices.forEach((dev, id) => {
-					if (historic['sh' + id]) {
+					if (dev.showInGraph && historic['sh' + id]) {
 						result.push(historic['sh' + id])
 					}
 				})

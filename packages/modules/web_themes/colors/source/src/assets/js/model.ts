@@ -10,6 +10,7 @@
 import { reactive, ref } from 'vue'
 import { GlobalData } from './types'
 import type { PowerItem, ItemProps } from './types'
+import { PvSystem } from './types'
 
 export const masterData: { [key: string]: ItemProps } = reactive({
 	evuIn: { name: 'Netz', color: 'var(--color-evu)', icon: '\uf275' },
@@ -45,6 +46,24 @@ export const masterData: { [key: string]: ItemProps } = reactive({
 	sh7: { name: 'Gerät', color: 'var(--color-sh7)', icon: 'Gerät' },
 	sh8: { name: 'Gerät', color: 'var(--color-sh8)', icon: 'Gerät' },
 	sh9: { name: 'Gerät', color: 'var(--color-sh9)', icon: 'Gerät' },
+	pv1: { name: 'PV', color: 'var(--color-pv1)', icon: 'Wechselrichter' },
+	pv2: { name: 'PV', color: 'var(--color-pv2)', icon: 'Wechselrichter' },
+	pv3: { name: 'PV', color: 'var(--color-pv3)', icon: 'Wechselrichter' },
+	pv4: { name: 'PV', color: 'var(--color-pv4)', icon: 'Wechselrichter' },
+	pv5: { name: 'PV', color: 'var(--color-pv5)', icon: 'Wechselrichter' },
+	pv6: { name: 'PV', color: 'var(--color-pv6)', icon: 'Wechselrichter' },
+	pv7: { name: 'PV', color: 'var(--color-pv7)', icon: 'Wechselrichter' },
+	pv8: { name: 'PV', color: 'var(--color-pv8)', icon: 'Wechselrichter' },
+	pv9: { name: 'PV', color: 'var(--color-pv9)', icon: 'Wechselrichter' },
+	bat1: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat2: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat3: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat4: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat5: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat6: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat7: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat8: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat9: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
 })
 class HistoricSummary {
 	private _items: { [key: string]: PowerItem } = {}
@@ -144,3 +163,9 @@ export function correctHouseConsumption() {
 }
 
 export const currentTime = ref(new Date())
+export const pvSystems = ref(new Map<number, PvSystem>())
+export const addPvSystem = (index: number) => {
+	pvSystems.value.set(index, new PvSystem(index))
+	pvSystems.value.get(index)!.color =
+		masterData['pv' + pvSystems.value.size].color
+}

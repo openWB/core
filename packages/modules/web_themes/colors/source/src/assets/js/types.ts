@@ -91,3 +91,18 @@ export interface MarginType {
 	right: number
 	bottom: number
 }
+
+export class PvSystem {
+	id: number
+	name = 'Wechselrichter'
+	color = 'var(--color-pv)'
+	power = 0
+	energy = 0
+	energy_month = 0
+	energy_year = 0
+	energy_total = 0
+
+	constructor(index: number) {
+		this.id = index
+	}
+}
