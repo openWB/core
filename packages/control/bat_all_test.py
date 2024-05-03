@@ -48,14 +48,15 @@ def test_max_bat_power_hybrid_system(parent, bat_power, expected_power, data_fix
     assert power == expected_power
 
 
-@pytest.mark.parametrize("return_max_bat_power_hybrid_system, expected_power",
-                         [
-                             pytest.param(1100, 1000,
-                                          id="maximale Entladeleistung erreicht"),
-                             pytest.param(900, 1000,
-                                          id="maximale Entladeleistung nicht erreicht/ kein Hybrid-System"),
-                         ])
-def test_limit_bat_power_discharge(return_max_bat_power_hybrid_system, expected_power, monkeypatch):
+@pytest.mark.parametrize(
+    "required_power, return_max_bat_power_hybrid_system, expected_power",
+    [
+        pytest.param(1000, (1100, True), 1000, id="maximale Entladeleistung nicht erreicht"),
+        pytest.param(1000, (900, True), 900, id="maximale Entladeleistung erreicht"),
+        pytest.param(-1000, (10, True), -1000, id="Speicher soll nicht mehr entladen werden"),
+        pytest.param(1000, (900, False), 1000, id="kein Hybrid-System"),
+    ])
+def test_limit_bat_power_discharge(required_power, return_max_bat_power_hybrid_system, expected_power, monkeypatch):
     # setup
     data.data.bat_data = {"bat2": Bat(2)}
     mock_max_bat_power_hybrid_system = Mock(return_value=return_max_bat_power_hybrid_system)
@@ -64,7 +65,7 @@ def test_limit_bat_power_discharge(return_max_bat_power_hybrid_system, expected_
     b = BatAll()
 
     # execution
-    power = b._limit_bat_power_discharge(1000)
+    power = b._limit_bat_power_discharge(required_power)
 
     # evaluation
     assert power == expected_power
