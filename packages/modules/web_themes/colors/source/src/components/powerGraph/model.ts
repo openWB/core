@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue'
-import { extent, scaleBand, scaleTime, scaleUtc } from 'd3'
+import { extent, scaleBand, scaleTime, scaleUtc, zoomIdentity } from 'd3'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig } from '@/assets/js/themeConfig'
@@ -71,6 +71,12 @@ export class GraphData {
 }
 
 export const graphData = reactive(new GraphData())
+export const mytransform = ref(zoomIdentity)
+export const zoomedRange = computed(() =>
+	[0, width - margin.left - 2 * margin.right].map((d) =>
+		mytransform.value.applyX(d),
+	),
+)
 export let animateSourceGraph = true
 export let animateUsageGraph = true
 export function sourceGraphIsInitialized() {
@@ -579,3 +585,4 @@ export function toggleMonthlyView() {
 			break
 	}
 }
+export const itemNames = ref(new Map<string, string>())

@@ -1,5 +1,7 @@
 <template>
 	<path
+		:id="'soc-' + cpName"
+		.origin="autozoom"
 		class="soc-baseline"
 		:d="myline"
 		stroke="var(--color-bg)"
@@ -7,6 +9,7 @@
 		fill="none"
 	/>
 	<path
+		:id="'socdashes-' + cpName"
 		class="soc-dashes"
 		:d="myline"
 		:stroke="cpColor"
@@ -27,9 +30,16 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { extent, scaleLinear, scaleTime, line } from 'd3'
+import {
+	extent,
+	scaleLinear,
+	scaleTime,
+	line,
+	type Selection,
+	select,
+} from 'd3'
 import { chargePoints } from '../chargePointList/model'
-import { graphData, type GraphDataItem } from './model'
+import { graphData, type GraphDataItem, zoomedRange } from './model'
 
 const props = defineProps<{
 	width: number
@@ -37,7 +47,6 @@ const props = defineProps<{
 	margin: { left: number; top: number; right: number; bottom: number }
 	order: number // 0, 1 or 2 (2 == battery)
 }>()
-// const evs = computed(() => Object.values(vehicles))
 const xScale = computed(() => {
 	let e = extent(graphData.data, (d) => d.date)
 	if (e[0] && e[1]) {
@@ -134,6 +143,27 @@ const textPosition = computed(() => {
 		default:
 			return 'middle'
 	}
+})
+
+const autozoom = computed(() => {
+	if (graphData.graphMode != 'month' && graphData.graphMode != 'year') {
+		const path1: Selection<SVGPathElement, unknown, HTMLElement, unknown> =
+			select('path#soc-' + cpName.value)
+		const path2: Selection<SVGPathElement, unknown, HTMLElement, unknown> =
+			select('path#socdashes-' + cpName.value)
+		xScale.value.range(zoomedRange.value)
+		const path = line<GraphDataItem>()
+			.x((d) => xScale.value(d.date))
+			.y(
+				(d) =>
+					yScale.value(
+						props.order == 2 ? d.batSoc : d['soc' + cp.value.connectedVehicle],
+					) ?? yScale.value(0),
+			)
+		path1.attr('d', path(graphData.data))
+		path2.attr('d', path(graphData.data))
+	}
+	return 'zoomed'
 })
 </script>
 <style scoped></style>

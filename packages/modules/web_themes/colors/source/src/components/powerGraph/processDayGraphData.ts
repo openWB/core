@@ -8,11 +8,12 @@ import {
 	consumerCategories,
 	updateEnergyValues,
 } from './model'
+
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { shDevices } from '../smartHome/model'
+import { itemNames } from './model'
 // methods:
-
 const noAutarchyCalculation = [
 	'evuIn',
 	'pv',
@@ -24,8 +25,15 @@ const noAutarchyCalculation = [
 let gridCounters: string[] = []
 
 export function processDayGraphMessages(topic: string, message: string) {
-	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
-	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	//const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
+	//const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	//const itemNames = JSON.parse(message).itemNames
+	const {
+		entries: inputTable,
+		names: itemNames2,
+		totals: energyValues,
+	} = JSON.parse(message)
+	itemNames.value = new Map(Object.entries(itemNames2))
 	resetHistoricSummary()
 	gridCounters = []
 	consumerCategories.forEach((cat) => {
@@ -78,7 +86,12 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem.evuIn += item[1].power_imported
 		})
 	}
-	currentItem.pv = currentRow.pv.all.power_exported
+	Object.entries(currentRow.pv).forEach(([id, values]) => {
+		if (id != 'all') {
+			currentItem[id] = values.power_exported
+		} else currentItem.pv = values.power_exported
+	})
+
 	if (Object.entries(currentRow.bat).length > 0) {
 		currentItem.batIn = currentRow.bat.all.power_imported
 		currentItem.batOut = currentRow.bat.all.power_exported
