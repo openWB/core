@@ -66,7 +66,7 @@ class ControlAlgorithmYc:
             return
 
         # check if control interval is actuall due
-        now_it_is = datetime.datetime.utcnow
+        now_it_is = datetime.datetime.utcnow()
         if (now_it_is -
                 self._last_control_run).total_seconds() < data.data.yc_data.data.yc_config.minimum_adjustment_interval:
             log.debug("Control loop not yet due")
