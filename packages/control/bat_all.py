@@ -251,7 +251,7 @@ class BatAll:
                     else:
                         # Speicher sollte weder ge- noch entladen werden.
                         charging_power_left = self.data.get.power
-            # Keine Ladeleistung einplanen und Entladung nicht durch Ladeleistung ausgleichen, wenn max
+            # Keine Ladeleistung vom Speicher für Fahrzeuge einplanen, wenn max
             # Ausgangsleistung erreicht ist.
             self.data.set.charging_power_left = self._limit_bat_power_discharge(charging_power_left)
         except Exception:
