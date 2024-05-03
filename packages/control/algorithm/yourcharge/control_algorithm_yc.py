@@ -150,7 +150,7 @@ class ControlAlgorithmYc:
             actual_adjustment = 0
             if lldiff >= 1.0:
                 actual_adjustment = 1.0
-            elif lldiff >= 0.0:    # and < 1.0 else above condition would have fired
+            elif lldiff >= 0.15:    # and < 1.0 else above condition would have fired
                 actual_adjustment = lldiff
             elif lldiff <= -3.0:
                 actual_adjustment = -3.0
@@ -162,6 +162,8 @@ class ControlAlgorithmYc:
                 actual_adjustment = \
                   self._internal_cp.data.get.currents[charging_phase_infos.charging_phase_with_maximum_total_current] \
                   + lldiff - llneu
+                if actual_adjustment > 0.0:
+                    actual_adjustment = 0
 
             # if we're not charging, we always start off with minimum supported current
             if not charging_phase_infos.is_charging:
