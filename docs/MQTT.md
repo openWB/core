@@ -12,11 +12,12 @@ Als EVU-Zähler können auch Werte über MQTT empfangen werden. Die Integration 
 
 ## Smarthome
 
-Lademodus des angesteckten Auto wird in den LP geschrieben. Solange immer dasselbe Auto dran steckt ist das gleich, aber wenn Du ein anderes Auto ansteckst, bei mir z.b. ein Gastauto und Du nur den Lademodus deines normalen Auto ausliest und damit steuerst, ist der dortige Lademodus halt dann nicht der eigentliche des LP
 
 ## Steuerbefehle
 
-Hierbei ist # immer durch den entsprechenden Ladepunkt/Zähler/Fahrzeug zu ersetzen.
+Auf eigene Gefahr! Die folgenden Einstellungen und Kommunikationsmöglichkeiten sind nicht spezifiziert und nur von kundigen Nutzern mit entpsrechendem Fachwissen über die Konsequenzen durchzuführen. 
+
+Bei den Steuerbefehlen ist # immer durch den entsprechenden Ladepunkt/Zähler/Fahrzeug zu ersetzen. Dies ist zwingend zu beachten, da ansonsten neue Fahrzeuge/Zähler etc. erstellt werden, wenn es nicht die ID eines Konfigurierten Gerätes ist.
 
 Lademodus auf "Sofortladen"
 `openWB/set/vehicle/template/charge_template/#/chargemode/selected -> instant_charging`
@@ -62,5 +63,9 @@ SoC Update triggern:
 
 SoC im manuellen Modus setzen:
 `openWB/set/vehicle/#/soc_module/calculated_soc_state/manual_soc`
+
+### Lademodus
+Lademodus des angesteckten Auto wird in den LP geschrieben. Solange immer dasselbe Auto dran steckt ist das gleich, aber wenn Du ein anderes Auto ansteckst, bei mir z.b. ein Gastauto und Du nur den Lademodus deines normalen Auto ausliest und damit steuerst, ist der dortige Lademodus halt dann nicht der eigentliche des LP
+
 
 _Work in Progress_
