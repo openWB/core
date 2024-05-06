@@ -153,7 +153,7 @@ const devs = computed(() =>
 
 function trimName(name: string) {
 	if (name.length > 6) {
-		return name.slice(0, 6)
+		return name.slice(0, 6) + '...'
 	}
 	return name
 }

@@ -1,6 +1,6 @@
 <template>
 	<path
-		:id="'soc-' + cpName"
+		:id="'soc-' + vID"
 		.origin="autozoom"
 		class="soc-baseline"
 		:d="myline"
@@ -9,7 +9,7 @@
 		fill="none"
 	/>
 	<path
-		:id="'socdashes-' + cpName"
+		:id="'socdashes-' + vID"
 		class="soc-dashes"
 		:d="myline"
 		:stroke="cpColor"
@@ -24,7 +24,7 @@
 		:style="{ fill: cpColor, fontSize: 10 }"
 		:text-anchor="textPosition"
 	>
-		{{ cpName }}
+		{{ vName }}
 	</text>
 </template>
 
@@ -73,13 +73,21 @@ const myline = computed(() => {
 	let p = path(graphData.data)
 	return p ? p : ''
 })
-const cpName = computed(() => {
+const vID = computed(() => {
+	if (props.order == 2) {
+		return 'Speicher'
+	} else {
+		return cp.value.connectedVehicle
+	}
+})
+const vName = computed(() => {
 	if (props.order == 2) {
 		return 'Speicher'
 	} else {
 		return cp.value.vehicleName
 	}
 })
+
 const cpColor = computed(() => {
 	switch (props.order) {
 		case 0:
@@ -114,14 +122,10 @@ const nameY = computed(() => {
 		switch (props.order) {
 			case 0:
 				index = graphData.data.length - 1
-				return yScale.value(
-					graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
-				)
+				return yScale.value(graphData.data[index]['soc' + vID.value] + 2)
 			case 1:
 				index = 0
-				return yScale.value(
-					graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
-				)
+				return yScale.value(graphData.data[index]['soc' + vID.value] + 2)
 			case 2:
 				index = Math.round(graphData.data.length / 2)
 				return yScale.value(graphData.data[index].batSoc + 2)
@@ -148,9 +152,9 @@ const textPosition = computed(() => {
 const autozoom = computed(() => {
 	if (graphData.graphMode != 'month' && graphData.graphMode != 'year') {
 		const path1: Selection<SVGPathElement, unknown, HTMLElement, unknown> =
-			select('path#soc-' + cpName.value)
+			select('path#soc-' + vID.value)
 		const path2: Selection<SVGPathElement, unknown, HTMLElement, unknown> =
-			select('path#socdashes-' + cpName.value)
+			select('path#socdashes-' + vID.value)
 		xScale.value.range(zoomedRange.value)
 		const path = line<GraphDataItem>()
 			.x((d) => xScale.value(d.date))
