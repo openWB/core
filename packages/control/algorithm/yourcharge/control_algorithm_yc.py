@@ -145,18 +145,20 @@ class ControlAlgorithmYc:
         llneu = self._adjust_for_imbalance(charging_phase_infos, llneu)
         lldiff = llneu - self._previous_expected_charge_current
 
+        status_to_use = LmStatus.InLoop
+
         # limit the change to +1, -1 or -3 if slow ramping is enabled, a value of 0 will be kept unchanged
         if data.data.yc_data.data.yc_config.slow_ramping:
             actual_adjustment = 0
             if lldiff >= 1.0:
                 actual_adjustment = 1.0
-            elif lldiff >= 0.15:    # and < 1.0 else above condition would have fired
+            elif lldiff >= 0.1:    # and < 1.0 else above condition would have fired
                 actual_adjustment = lldiff
             elif lldiff <= -3.0:
                 actual_adjustment = -3.0
             elif lldiff < -1.0:    # and > -3.0 else above condition would have fired
                 actual_adjustment = -1.0
-            elif lldiff < 0.0:    # and > -1.0 else above conditions would have fired
+            elif lldiff < -0.1:    # and > -1.0 else above conditions would have fired
                 # for negative adjustments we adjust at least down to the current maximum charge current minus the
                 # difference
                 actual_adjustment = \
@@ -167,12 +169,25 @@ class ControlAlgorithmYc:
 
             # if we're not charging, we always start off with minimum supported current
             if not charging_phase_infos.is_charging:
-                if lldiff < 0:
+                if llneu < data.data.yc_data.data.yc_config.min_evse_current_allowed:
+                    status_to_use = LmStatus.DownByLm
+                    log.error("Slow ramping: Not charging: Too few current left to start:"
+                              + f"llneu ({llneu}) < min_evse_current_allowed ("
+                              + f"{data.data.yc_data.data.yc_config.min_evse_current_allowed})")
                     llneu = 0
-                    log.error("Slow ramping: Not charging: Too few current left to start")
                 else:
                     llneu = data.data.yc_data.data.yc_config.min_evse_current_allowed
-                    log.error(f"Slow ramping: Not charging: Starting at minimal supported charge current {llneu} A")
+                    if llneu + charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current \
+                            > data.data.yc_data.data.yc_config.allowed_total_current_per_phase:
+                        log.error("Slow ramping: Not charging: Cannot start charging: "
+                                  + f"llneu ({llneu} A) + total_current_of_charging_phase_with_maximum_total_current ("
+                                  + str(charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current)
+                                  + " A) > (allowed_total_current_per_phase ("
+                                  + f"{data.data.yc_data.data.yc_config.allowed_total_current_per_phase})")
+                        llneu = 0
+                        status_to_use = LmStatus.DownByLm
+                    else:
+                        log.error(f"Slow ramping: Not charging: Starting at minimal supported charge current {llneu} A")
             else:
                 llneu = self._previous_expected_charge_current + actual_adjustment
                 log.error(f"Slow ramping: Limiting adjustment to {self._previous_expected_charge_current} + "
@@ -201,7 +216,7 @@ class ControlAlgorithmYc:
             else:
                 log.error(f"Fast ramping: Setting llneu={llneu} A")
 
-        self._call_set_current(charging_phase_infos, llneu, LmStatus.InLoop)
+        self._call_set_current(charging_phase_infos, llneu, status_to_use)
 
     def _adjust_for_imbalance(self, charging_phase_infos: _AggregatedData, llneu: float) -> None:
         ll_wanted_increase = llneu - self._previous_expected_charge_current
