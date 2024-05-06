@@ -138,17 +138,15 @@ class socUtils:
                 return False
         return True
 
-    def set_logFilter(self, filter):
+    def set_logFilter(self, filter: str = ''):
         global logFilter
-        if filter is None:
-            filter = ''
         logFilter = filter
 
-    def set_threadname(self, name):
+    def set_threadname(self, name: str):
         global threadname
         threadname = name
 
-    def _get_vehicleList(self):
+    def _get_vehicleList(self) -> Union[dict, dict]:
         global vehicleList
         global vehicleConfig
         try:
@@ -173,7 +171,7 @@ class socUtils:
 
         return vehicleList, vehicleConfig
 
-    def _get_logFilter(self):
+    def _get_logFilter(self) -> str:
         global logFilter
         try:
             logFilter = ''
@@ -189,7 +187,7 @@ class socUtils:
         return logFilter
 
     # publish a single message to 1883 broker
-    def pub(self, topic, payload):
+    def pub(self, topic: str, payload: str):
         try:
             _infoLog('q', "pub: topic=" + topic + ', payload=' + payload)
             client = mqtt.Client()
@@ -205,7 +203,7 @@ class socUtils:
             log.exception("pub mqtt error: %s", e)
 
     # publish CarState via MQTT to 1883 broker
-    def set_CarState(self, ev, soc, range, ts):
+    def set_CarState(self, ev: int, soc: int, range: float, ts: int):
         try:
             msgs = []
             topic = 'openWB/set/vehicle/' + str(ev) + '/get/soc'
