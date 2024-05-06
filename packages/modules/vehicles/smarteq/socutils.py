@@ -140,6 +140,8 @@ class socUtils:
 
     def set_logFilter(self, filter):
         global logFilter
+        if filter is None:
+            filter = ''
         logFilter = filter
 
     def set_threadname(self, name):
@@ -179,6 +181,8 @@ class socUtils:
             config = json.loads(str(msg.payload, 'utf-8'))
             if 'logFilter' in config['configuration']:
                 logFilter = config['configuration']['logFilter']
+                if logFilter is None:
+                    logFilter = ''
         except Exception as e:
             log.exception("_get_logFilter mqtt error: %s", e)
         _infoLog('Q', '_get_logFilter: logFilter=' + logFilter)
