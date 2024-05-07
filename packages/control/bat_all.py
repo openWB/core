@@ -79,6 +79,10 @@ class BatAllData:
 
 
 class BatAll:
+    ERROR_CONFIG_MAX_AC_OUT = ("Maximale Entladeleistung des Wechselrichters  muss bei einem Hybrid-System " +
+                               "konfiguriert werden. Bitte im Lastmanagement die maximale Ausgangsleistung des"
+                               + " Wechselrichters angeben.")
+
     def __init__(self):
         self.data = BatAllData()
 
@@ -140,14 +144,12 @@ class BatAll:
                 return max_bat_discharge_power - abs(battery.data.get.power), True
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
-                battery.data.get.fault_str = ("Maximale Entladeleistung des Wechselrichters" +
-                                              " muss bei einem Hybrid-System konfiguriert werden.")
+                battery.data.get.fault_str = self.ERROR_CONFIG_MAX_AC_OUT
                 Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_state",
                           battery.data.get.fault_state)
                 Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_str",
                           battery.data.get.fault_str)
-                raise ValueError("Maximale Entladeleistung des Wechselrichters" +
-                                 " muss bei einem Hybrid-System konfiguriert werden.")
+                raise ValueError(self.ERROR_CONFIG_MAX_AC_OUT)
         else:
             # Kein Hybrid-WR
             # Maximal die Speicher-Leistung als Entladeleistung nutzen, um nicht unnötig Bezug zu erzeugen.
