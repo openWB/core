@@ -141,7 +141,7 @@ class BatAll:
             # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
             if parent_data.config.max_ac_out > 0:
                 max_bat_discharge_power = parent_data.config.max_ac_out + parent_data.get.power
-                return max_bat_discharge_power - abs(battery.data.get.power), True
+                return max_bat_discharge_power, True
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
                 battery.data.get.fault_str = self.ERROR_CONFIG_MAX_AC_OUT
@@ -158,21 +158,22 @@ class BatAll:
     def _limit_bat_power_discharge(self, required_power):
         available_power = 0
         hybrid = False
-        for battery in data.data.bat_data.values():
-            try:
-                available_power_bat, hybrid_bat = self._max_bat_power_hybrid_system(battery)
-                if hybrid_bat:
-                    hybrid = True
-                    available_power += available_power_bat
-            except Exception:
-                log.exception(f"Fehler im Bat-Modul {battery.num}")
-        if hybrid:
-            if required_power > available_power:
-                log.debug(
-                    f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {available_power}W begrenzt.")
-            return min(required_power, available_power)
-        else:
-            return required_power
+        if required_power > 0:
+            # Nur wenn der Speicher entladen werden soll, fließt Leistung durch den WR.
+            for battery in data.data.bat_data.values():
+                try:
+                    available_power_bat, hybrid_bat = self._max_bat_power_hybrid_system(battery)
+                    if hybrid_bat:
+                        hybrid = True
+                        available_power += available_power_bat
+                except Exception:
+                    log.exception(f"Fehler im Bat-Modul {battery.num}")
+            if hybrid:
+                if required_power > available_power:
+                    log.debug(f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {available_power}W"
+                              " begrenzt.")
+                return min(required_power, available_power)
+        return required_power
 
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summen-Topics.
