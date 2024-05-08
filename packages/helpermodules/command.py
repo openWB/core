@@ -638,9 +638,9 @@ class Command:
             if SubData.system_data["system"].data["backup_before_update"]:
                 self.createCloudBackup(connection_id, {})
         except Exception:
-            pub_user_message(payload, connection_id, ("Fehler beim Erstellen der Cloud-Sicherung."
-                                 f" {traceback.format_exc()}<br />Fahre mit Update fort..."),
-                                 MessageType.WARNING)
+            pub_user_message(payload, connection_id,
+                             ("Fehler beim Erstellen der Cloud-Sicherung."
+                              f" {traceback.format_exc()}<br />Fahre mit Update fort..."),MessageType.WARNING)
         parent_file = Path(__file__).resolve().parents[2]
         if "branch" in payload["data"] and "tag" in payload["data"]:
             pub_user_message(
