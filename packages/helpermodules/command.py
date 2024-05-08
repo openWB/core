@@ -681,6 +681,9 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Backup-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
+            if SubData.system_data["system"].data["backup_before_update"]:
+                pub_user_message(payload, connection_id, "Fehler beim BackUp erstellen<br />Fahre mit Update fort...",
+                                 MessageType.WARNING)
 
     def createCloudBackup(self, connection_id: str, payload: dict) -> None:
         if SubData.system_data["system"].backup_cloud is not None:
