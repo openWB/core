@@ -640,7 +640,7 @@ class Command:
         except Exception:
             pub_user_message(payload, connection_id,
                              ("Fehler beim Erstellen der Cloud-Sicherung."
-                              f" {traceback.format_exc()}<br />Fahre mit Update fort..."),MessageType.WARNING)
+                              f" {traceback.format_exc()}<br />Fahre mit Update fort..."), MessageType.WARNING)
         parent_file = Path(__file__).resolve().parents[2]
         if "branch" in payload["data"] and "tag" in payload["data"]:
             pub_user_message(
