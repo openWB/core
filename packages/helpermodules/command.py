@@ -634,8 +634,13 @@ class Command:
         log.info("Update requested")
         # notify system about running update, notify about end update in script
         Pub().pub("openWB/system/update_in_progress", True)
-        if SubData.system_data["system"].data["backup_before_update"]:
-            self.createCloudBackup(connection_id, {})
+        try:
+            if SubData.system_data["system"].data["backup_before_update"]:
+                self.createCloudBackup(connection_id, {})
+        except Exception:
+            pub_user_message(payload, connection_id, ("Fehler beim Erstellen der Cloud-Sicherung."
+                                 f" {traceback.format_exc()}<br />Fahre mit Update fort..."),
+                                 MessageType.WARNING)
         parent_file = Path(__file__).resolve().parents[2]
         if "branch" in payload["data"] and "tag" in payload["data"]:
             pub_user_message(
@@ -681,13 +686,12 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Backup-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
-            if SubData.system_data["system"].data["backup_before_update"]:
-                pub_user_message(payload, connection_id, "Fehler beim BackUp erstellen<br />Fahre mit Update fort...",
-                                 MessageType.WARNING)
 
     def createCloudBackup(self, connection_id: str, payload: dict) -> None:
         if SubData.system_data["system"].backup_cloud is not None:
-            pub_user_message(payload, connection_id, "Backup wird erstellt...", MessageType.INFO)
+            pub_user_message(payload, connection_id, ("Backup wird erstellt. Dieser Vorgang kann je nach Umfang der "
+                             "Logdaten und Upload-Geschwindigkeit des Cloud-Dienstes einige Zeit in Anspruch nehmen."),
+                             MessageType.INFO)
             SubData.system_data["system"].create_backup_and_send_to_cloud()
             pub_user_message(payload, connection_id, "Backup erfolgreich erstellt.<br />", MessageType.SUCCESS)
         else:
