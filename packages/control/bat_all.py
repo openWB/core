@@ -139,8 +139,11 @@ class BatAll:
             parent_data = data.data.pv_data[f"pv{parent['id']}"].data
             # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
             # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
+            # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
+            # genutzt werden.
             if parent_data.config.max_ac_out > 0:
-                max_bat_discharge_power = parent_data.config.max_ac_out + parent_data.get.power
+                max_bat_discharge_power = parent_data.config.max_ac_out + \
+                    parent_data.get.power + max(battery.data.get.power, 0)
                 return max_bat_discharge_power, True
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
