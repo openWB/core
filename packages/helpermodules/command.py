@@ -640,22 +640,28 @@ class Command:
         except Exception:
             pub_user_message(payload, connection_id,
                              ("Fehler beim Erstellen der Cloud-Sicherung."
-                              f" {traceback.format_exc()}<br />Fahre mit Update fort..."), MessageType.WARNING)
-        parent_file = Path(__file__).resolve().parents[2]
-        if "branch" in payload["data"] and "tag" in payload["data"]:
-            pub_user_message(
-                payload, connection_id,
-                f'Wechsel auf Zweig \'{payload["data"]["branch"]}\' Tag \'{payload["data"]["tag"]}\' gestartet.',
-                MessageType.SUCCESS)
-            subprocess.run([
-                str(parent_file / "runs" / "update_self.sh"),
-                str(payload["data"]["branch"]),
-                str(payload["data"]["tag"])])
-        else:
-            pub_user_message(payload, connection_id, "Update gestartet.", MessageType.INFO)
-            subprocess.run([
-                str(parent_file / "runs" / "update_self.sh"),
-                SubData.system_data["system"].data["current_branch"]])
+                              f" {traceback.format_exc()}<br />Update abgebrochen!"
+                              "Bitte Fehlerstatus überprüfen!. " +
+                              "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
+                             MessageType.WARNING)
+            Pub().pub("openWB/system/update_in_progress", False)
+            return
+        if SubData.system_data["system"].data["update_in_progress"]:
+            parent_file = Path(__file__).resolve().parents[2]
+            if "branch" in payload["data"] and "tag" in payload["data"]:
+                pub_user_message(
+                    payload, connection_id,
+                    f'Wechsel auf Zweig \'{payload["data"]["branch"]}\' Tag \'{payload["data"]["tag"]}\' gestartet.',
+                    MessageType.SUCCESS)
+                subprocess.run([
+                    str(parent_file / "runs" / "update_self.sh"),
+                    str(payload["data"]["branch"]),
+                    str(payload["data"]["tag"])])
+            else:
+                pub_user_message(payload, connection_id, "Update gestartet.", MessageType.INFO)
+                subprocess.run([
+                    str(parent_file / "runs" / "update_self.sh"),
+                    SubData.system_data["system"].data["current_branch"]])
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
         log.info("Fetch versions requested")
