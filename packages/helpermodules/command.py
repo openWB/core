@@ -641,7 +641,7 @@ class Command:
             pub_user_message(payload, connection_id,
                              ("Fehler beim Erstellen der Cloud-Sicherung."
                               f" {traceback.format_exc()}<br />Update abgebrochen!"
-                              " Bitte Fehlerstatus überprüfen!. " +
+                              "Bitte Fehlerstatus überprüfen!. " +
                               "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
                              MessageType.WARNING)
             Pub().pub("openWB/system/update_in_progress", False)
