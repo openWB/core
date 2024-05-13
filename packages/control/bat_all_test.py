@@ -20,22 +20,27 @@ def data_fixture() -> None:
                                                        config=Mock(spec=Config, max_ac_out=7200)))
 
 
-@pytest.mark.parametrize("parent, bat_power, expected_power",
+@pytest.mark.parametrize("parent, bat_power, pv_power, expected_power",
                          [
                              pytest.param({"id": 6, "type": "counter", "children": [
-                                          {"id": 2, "type": "bat", "children": []}]}, 100, (150, False),
+                                          {"id": 2, "type": "bat", "children": []}]}, 100, -6400, (150, False),
                                           id="kein Hybrid-System, Speicher wird geladen"),
                              pytest.param({"id": 6, "type": "counter", "children": [
-                                          {"id": 2, "type": "bat", "children": []}]}, -100, (150, False),
+                                          {"id": 2, "type": "bat", "children": []}]}, -100, -6400, (150, False),
                                           id="kein Hybrid-System, Speicher wird entladen"),
-                             pytest.param({"id": 1, "type": "inverter", "children": []}, 600, (800, True),
-                                          id="maximale Entladeleistung des WR"),
+                             pytest.param({"id": 1, "type": "inverter", "children": []}, 600, -6400, (1400, True),
+                                          id="maximale Entladeleistung des WR, Speicher lädt"),
+                             pytest.param({"id": 1, "type": "inverter", "children": []}, 600, -7200, (600, True),
+                                          id="maximale Entladeleistung des WR, Speicher lädt"),
+                             pytest.param({"id": 1, "type": "inverter", "children": []}, -600, -6400, (800, True),
+                                          id="maximale Entladeleistung des WR, Speicher entlädt"),
                          ])
-def test_max_bat_power_hybrid_system(parent, bat_power, expected_power, data_fixture, monkeypatch):
+def test_max_bat_power_hybrid_system(parent, bat_power, pv_power, expected_power, data_fixture, monkeypatch):
     # setup
     # pv1-Data: max_ac_out 7200, power 6400
     mock_get_entry_of_parent = Mock(return_value=parent)
     monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_parent", mock_get_entry_of_parent)
+    data.data.pv_data["pv1"].data.get.power = pv_power
 
     b = BatAll()
     bat2 = Bat(2)
