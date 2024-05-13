@@ -640,14 +640,12 @@ class Command:
         except Exception:
             pub_user_message(payload, connection_id,
                              ("Fehler beim Erstellen der Cloud-Sicherung."
-                              f" {traceback.format_exc()}<br />Update wird abgebrochen.."), MessageType.WARNING)
-            time.sleep(1)
-            pub_user_message(payload, connection_id,
-                             ("Update abgebrochen! Bitte Fehlerstatus überprüfen!. " +
-                              "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."
-                              ), MessageType.WARNING)
+                              f" {traceback.format_exc()}<br />Update abgebrochen!"
+                              " Bitte Fehlerstatus überprüfen!. " +
+                              "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
+                             MessageType.WARNING)
             Pub().pub("openWB/system/update_in_progress", False)
-            time.sleep(1)
+            return
         if SubData.system_data["system"].data["update_in_progress"]:
             parent_file = Path(__file__).resolve().parents[2]
             if "branch" in payload["data"] and "tag" in payload["data"]:
