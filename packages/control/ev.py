@@ -197,6 +197,7 @@ class Ev:
             self.charge_template: ChargeTemplate = ChargeTemplate(0)
             self.soc_module: ConfigurableVehicle = None
             self.chargemode_changed = False
+            self.submode_changed = False
             self.num = index
             self.data = EvData()
         except Exception:
@@ -341,6 +342,9 @@ class Ev:
             log.debug("Änderung des Lademodus")
         else:
             self.chargemode_changed = False
+
+    def set_submode_changed(self, control_parameter: ControlParameter, submode: str) -> None:
+        self.submode_changed = (submode != control_parameter.submode)
 
     def check_min_max_current(self,
                               control_parameter: ControlParameter,
