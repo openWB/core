@@ -75,7 +75,7 @@ class PolestarApi:
             cars = result['data']['getConsumerCarsV2']
             if len(cars) == 0:
                 raise Exception("Es konnten keine Fahrzeuge im Account gefunden werden. Bitte in den Einstellungen " +
-                "prüfen, ob der Besitzer-Account des Polestars eingetragen ist.")
+                                "prüfen, ob der Besitzer-Account des Polestars eingetragen ist.")
 
             for i in range(0, len(cars)):
                 if cars[i]['vin'] == self.vin:
