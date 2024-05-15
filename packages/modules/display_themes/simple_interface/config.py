@@ -5,7 +5,7 @@ from modules.common.abstract_device import DeviceDescriptor
 
 
 @auto_str
-class CardsDisplayThemeConfiguration:
+class SimpleInterfaceDisplayThemeConfiguration:
     def __init__(self,
                  lock_changes: bool = False,
                  lock_changes_code: Optional[str] = None,
@@ -34,16 +34,16 @@ class CardsDisplayThemeConfiguration:
 
 
 @auto_str
-class CardsDisplayTheme:
+class SimpleInterfaceDisplayTheme:
     def __init__(self,
-                 name: str = "Cards",
-                 type: str = "cards",
+                 name: str = "Simple Interface",
+                 type: str = "simple_interface",
                  official: bool = True,
-                 configuration: CardsDisplayThemeConfiguration = None) -> None:
+                 configuration: SimpleInterfaceDisplayThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.official = official
-        self.configuration = configuration or CardsDisplayThemeConfiguration()
+        self.configuration = configuration or SimpleInterfaceDisplayThemeConfiguration()
 
 
-theme_descriptor = DeviceDescriptor(configuration_factory=CardsDisplayTheme)
+theme_descriptor = DeviceDescriptor(configuration_factory=SimpleInterfaceDisplayTheme)
