@@ -9,4 +9,19 @@ Das Speichern, Runden, Loggen und eine Plausibilitätsprüfung der Werte sowie d
 
 Wenn keine Einstellungsseite in vue für das SoC-Modul hinterlegt ist, sind die Einstellungen als json-Objekt editierbar.
 
+### Fehlerbehandlung
+Die Fehlerbehandlung erfolgt zentral für alle Module. Exceptions dürfen daher nur abgefangen werden, wenn sie 
+* behoben werden können.
+* weitere Aktionen vorgenommen werden sollen. Danach mit `raise e` die Exception erneut werfen, damit sie weiterverarbeitet werden kann.
+
+Bei Modulen, die einen http-Request ausführen, get/post-Requests immer mit `req.get_http_session().get/post()` stellen. [get_http_session](https://github.com/openWB/core/blob/02b34ff216b0dfc83fdc56a53b63d52d5d9a79d2/packages/modules/common/req.py#L8) prüft in einem Callback, ob ein Fehler aufgetreten ist und wirft eine Exception. Bei gängigen Fehlern wird diese in einen Text übersetzt, der auch für den Benutzer verständlich ist.  
+Dann muss sich der Modul-Entwickler nicht um die Fehlerbehandlung kümmern.
+
+Ein paar Hintergrund-Details, wie die Fehlerbehandlung umgesetzt ist:  
+Die update-Methode des Moduls wird immer mit dem [Kontextmanager](https://github.com/openWB/core/blob/02b34ff216b0dfc83fdc56a53b63d52d5d9a79d2/packages/modules/common/component_context.py#L11) aufgerufen. Dieser prüft nach dem Ende der Update-Methode, ob eine Exception aufgetreten ist und loggt diese und setzt die Topics `.../get/fault_state/ auf 2 und in `.../get/fault_str` den Text der Exception. fault_str wird dann im jeweiligen Modul auf der Status-Seite ausgegeben, um dem Benutzer eine Rückmeldung zu geben.
+
+Bei den Vehicle-Modulen für die SoC-Abfrage wird nach dreimaliger fehlgeschlagener Abfrage der SoC auf 0% gesetzt, damit in jedem Fall geladen wird. 
+
+
+
 _Bei Fragen programmiert Ihr das SoC-Modul vorerst, wie Ihr es versteht, und erstellt einen (Draft-)PR. Wir unterstützen Euch gerne per Review.
