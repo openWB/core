@@ -13,7 +13,7 @@ class Huawei_SmartloggerConfiguration:
 @auto_str
 class Huawei_Smartlogger:
     def __init__(self,
-                 name: str = "Huawei_Smartlogger",
+                 name: str = "Huawei Smartlogger",
                  type: str = "huawei_smartlogger",
                  id: int = 0,
                  configuration: Huawei_SmartloggerConfiguration = None) -> None:
