@@ -1,5 +1,5 @@
 import logging
-import requests
+from modules.common import req
 import time
 from modules.vehicles.polestar.auth import PolestarAuth
 from modules.common.component_state import CarState
@@ -13,7 +13,7 @@ class PolestarApi:
     def __init__(self, username: str, password: str, vin: str) -> None:
         self.auth = PolestarAuth(username, password, vin)
         self.vin = vin
-        self.client_session = requests.session()
+        self.client_session = req.get_http_session()
 
     def query_params(self, params: dict, url='https://pc-api.polestar.com/eu-north-1/mystar-v2/') -> dict or None:
         access_token = self.auth.get_auth_token()
@@ -29,15 +29,13 @@ class PolestarApi:
         log.info("query_params:%s", params['query'])
         try:
             result = self.client_session.get(url=url, params=params, headers=headers)
-        except requests.RequestException as e:
-            log.error("query_params:http error:%s", e)
-            return None
-
-        if result.status_code == 401:
-            self.auth.delete_token()
-            raise Exception("query_params error: get response %d: unauthorized Exception", result.status_code)
-        if result.status_code != 200:
-            raise Exception("query_params error: get response %d: %s", result.status_code, result.text)
+        except Exception as e:
+            if result.status_code == 401:
+                self.auth.delete_token()
+            if self.auth.access_token is not None:
+                # if we got an access code but the query failed, VIN could be wrong, so let`s check it
+                self.check_vin()
+            raise e
 
         result_data = result.json()
         if result_data.get('errors'):
@@ -60,9 +58,7 @@ class PolestarApi:
         if result is not None and result['data'] is not None and result['data']['getBatteryData'] is not None \
                 and result['data']['getBatteryData']['batteryChargeLevelPercentage'] is not None:
             return result['data']['getBatteryData']
-        elif self.auth.access_token is not None:
-            # if we got an access code but the query failed, VIN could be wrong, so let`s check it
-            self.check_vin()
+        else:
             return None
 
     def check_vin(self) -> None:
@@ -78,8 +74,7 @@ class PolestarApi:
             # get list of cars and store the ones not matching our vin
             cars = result['data']['getConsumerCarsV2']
             if len(cars) == 0:
-                raise Exception("Es konnten keine Fahrzeuge im Account gefunden werden. Bitte in den Einstellungen " +
-                                "prüfen, ob der Besitzer-Account des Polestars eingetragen ist.")
+                raise Exception("Es konnten keine Fahrzeuge im Account gefunden werden. Bitte in den Einstellungen prüfen, ob der Besitzer-Account des Polestars eingetragen ist.")
             for i in range(0, len(cars)):
                 if cars[i]['vin'] == self.vin:
                     pass
@@ -93,8 +88,8 @@ def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
     api = PolestarApi(user_id, password, vin)
     bat_data = api.get_battery_data()
     # preset values will be returned if api fails
-    soc = -1
-    est_range = -1
+    soc = 0
+    est_range = 0
     if bat_data is not None:
         soc = bat_data['batteryChargeLevelPercentage']
         est_range = bat_data['estimatedDistanceToEmptyKm']
