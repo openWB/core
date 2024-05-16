@@ -36,11 +36,10 @@ def init_store():
 # load store from file, if no store file exists initialize store structure
 def load_store():
     try:
-        tf = open(storeFile, 'r', encoding='utf-8')
-        store = json.load(tf)
-        if 'refresh_token' not in store:
-            store = init_store()
-        tf.close()
+        with open(storeFile, 'r', encoding='utf-8') as tf:
+            store = json.load(tf)
+            if 'refresh_token' not in store:
+                store = init_store()
     except FileNotFoundError:
         log.warning("load_store: store file not found, " +
                     "full authentication required")
@@ -49,39 +48,20 @@ def load_store():
         log.error("init: loading stored data failed, file: " +
                   storeFile + ", error=" + str(e))
         store = init_store()
-
     return store
 
 
 # write store file
 def write_store(store: dict):
-    try:
-        tf = open(storeFile, 'w', encoding='utf-8')
-    except Exception as e:
-        log.error("write_store_file: Exception " + str(e))
-        os.system("sudo rm -f " + storeFile)
-        tf = open(storeFile, 'w', encoding='utf-8')
-    json.dump(store, tf, indent=4)
-    tf.close()
+    with open(storeFile, 'w', encoding='utf-8') as tf:
+        json.dump(store, tf, indent=4)
 
 
 # write a dict as json file - useful for problem analysis
 def dump_json(data: dict, fout: str):
     replyFile = str(RAMDISK_PATH) + fout + '.json'
-    try:
-        f = open(replyFile, 'w', encoding='utf-8')
-    except Exception as e:
-        log.debug("bmwbc.dump_json: chmod File" + replyFile + ", exception, e=" + str(e))
-        os.system("sudo rm " + replyFile)
-        f = open(replyFile, 'w', encoding='utf-8')
-    json.dump(data, f, ensure_ascii=False, indent=4)
-    f.close()
-    try:
-        os.chmod(replyFile, 0o666)
-    except Exception as e:
-        log.debug("bmwbc.dump_json: chmod replyFile " + replyFile + ", exception, e=" + str(e))
-        log.debug("bmwbc.dump_json: use sudo, user: " + getpass.getuser())
-        os.system("sudo chmod 0666 " + replyFile)
+    with open(replyFile, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 
 # ---------------fetch Function called by core ------------------------------------
