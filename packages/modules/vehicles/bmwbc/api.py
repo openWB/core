@@ -4,12 +4,10 @@
 # https://github.com/bimmerconnected
 # https://bimmer-connected.readthedocs.io/en/latest/
 
-import os
 import json
 import asyncio
 import datetime
 import logging
-import getpass
 from typing import Union
 from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
