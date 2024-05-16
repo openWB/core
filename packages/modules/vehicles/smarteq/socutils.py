@@ -86,9 +86,8 @@ class socUtils:
 
     def read_token_file(self, path: str) -> str:
         try:
-            self.tf = open(path, "r")           # try to open Token file
-            token = self.tf.read()              # read token
-            self.tf.close()
+            with open(path, "r") as tf:           # try to open Token file
+                token = tf.read()              # read token
         except Exception:
             token = None                # if no old token found set Token_old to dummy value
         return token
@@ -96,9 +95,8 @@ class socUtils:
     def write_token_file(self, path: str, token: str, config={}):
         try:
             _infoLog('s', "store Token in file " + path)
-            self.tf = open(path, "w")
-            self.tf.write(token)         # write Token file
-            self.tf.close()
+            with open(path, "w") as tf:
+                tf.write(token)         # write Token file
         except Exception as e:
             log.exception('Token file write exception ' + str(e))
 
