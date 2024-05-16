@@ -276,9 +276,8 @@ class Api:
     # load store from file, initialize store structure if no file exists
     def load_store(self):
         try:
-            tf = open(self.storeFile + '.json', 'r', encoding='utf-8')
-            self.store = json.load(tf)
-            tf.close()
+            with open(self.storeFile + '.json', 'r', encoding='utf-8') as tf:
+                self.store = json.load(tf)
             if 'Tokens' not in self.store:
                 self._infoLog('i', "load_store: Tokens missing, calling init_store")
                 self.init_store(True)
@@ -316,13 +315,10 @@ class Api:
             self.store['Tokens']['refresh_token'] = initialToken
 
         try:
-            tf = open(self.storeFile + '.json', 'w', encoding='utf-8')
+            with open(self.storeFile + '.json', 'w', encoding='utf-8') as tf:
+                json.dump(self.store, tf, indent=4)
         except Exception as e:
             self._infoLog('i', "write_store_file: Exception " + str(e))
-            os.system("sudo rm -f " + self.storeFile + ".json")
-            tf = open(self.storeFile + ".json", 'w', encoding='utf-8')
-        json.dump(self.store, tf, indent=4)
-        tf.close()
 
         # check if refreshToken has changed and needs to be stored in mqtt?
         if self.refreshTokenMQTT != self.store['Tokens']['refresh_token']:
@@ -911,18 +907,15 @@ class Api:
     def load_ws_store(self, vin: str):
         try:
             tn = self.ws_fname(vin)
-            tf = open(tn, 'r', encoding='utf-8')
-            self.ws_store = json.load(tf)
-            tf.close()
+            with open(tn, 'r', encoding='utf-8') as tf:
+                self.ws_store = json.load(tf)
         except FileNotFoundError:
             self.log.warning("init: ws_store file not found")
             self.init_ws_store(vin)
-            return
         except Exception as e:
             self.log.error("init: loading stored ws data failed, file: " +
                            tn + ", error=" + str(e))
             self.init_ws_store(vin)
-            return
         return
 
     def ws_fname(self, vin: str):
@@ -932,26 +925,20 @@ class Api:
     def write_ws_store(self, vin: str):
         try:
             tn = self.ws_fname(vin)
-            tf = open(tn, 'w', encoding='utf-8')
+            with open(tn, 'w', encoding='utf-8') as tf:
+                json.dump(self.ws_store, tf, indent=4)
         except Exception as e:
             self._infoLog('i', "write_ws_store_file: Exception " + str(e))
-            os.system("sudo rm -f " + tn)
-            tf = open(tn, 'w', encoding='utf-8')
-        json.dump(self.ws_store, tf, indent=4)
-        tf.close()
 
     # write ws message file
     def write_ws_message(self, mtype: str, _json: str):
         if 'M' in self.logFilter or 'A' in self.logFilter:
             try:
                 tn = self.ws_messageFile + '_' + mtype + '.json'
-                tf = open(tn, 'w', encoding='utf-8')
+                with open(tn, 'w', encoding='utf-8') as tf:
+                    json.dump(_json, tf, indent=4)
             except Exception as e:
                 self._infoLog('i', "write_ws_message_file: Exception " + str(e))
-                os.system("sudo rm -f " + tn)
-                tf = open(tn, 'w', encoding='utf-8')
-            json.dump(_json, tf, indent=4)
-            tf.close()
 
     # wait till authState is authenticated
     def ws_wait_for_state_authenticated(self):
