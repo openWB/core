@@ -1,6 +1,6 @@
 Um die Programmierung neuer Module zu erleichtern, findet Ihr unter [docs/samples](https://github.com/openWB/core/tree/master/docs/samples?v30-12-2022) Muster für neue Geräte, Fahrzeuge, Cloud-Sicherung und Stromanbieter für strompreisbasiertes Laden.
 Die Muster sind nur als einheitlicher Ausgangspunkt zu verstehen! Es kann durchaus notwendig sein, Elemente der verschiedenen Muster zu kombinieren, weitere Einstellungs-Parameter hinzuzufügen oder bei einem Http-Request eine Authentifizierung durchzuführen.  
-Das Msuter kopiert Ihr in den _packages/modules/\*Modul-Typ\*/\*Gerätename\*_-Ordner. Ordnername und Typ in config.py->Sample->type müssen identisch sein, damit das Gerät in der automatisch generierten Auswahlliste im UI angezeigt wird.
+Das Muster kopiert Ihr in den _packages/modules/\*Modul-Typ\*/\*Modul-Name\*_-Ordner. Ordnername und Typ in config.py->Sample->type müssen identisch sein, damit das Gerät in der automatisch generierten Auswahlliste im UI angezeigt wird.
 
 Wenn keine Einstellungsseiten in vue hinterlegt sind, sind die Einstellungen als json-Objekt editierbar. Muster für die Einstellungsseiten findet Ihr im Ordner [samples/samples_gui](https://github.com/openWB/core/tree/02b34ff216b0dfc83fdc56a53b63d52d5d9a79d2/docs/samples/samples_gui)
 
