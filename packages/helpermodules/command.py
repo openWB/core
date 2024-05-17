@@ -634,34 +634,33 @@ class Command:
         log.info("Update requested")
         # notify system about running update, notify about end update in script
         Pub().pub("openWB/system/update_in_progress", True)
-        try:
-            if SubData.system_data["system"].data["backup_cloud"]["backup_before_update"]:
+        if SubData.system_data["system"].data["backup_cloud"]["backup_before_update"]:
+            try:
                 self.createCloudBackup(connection_id, {})
-        except Exception:
-            pub_user_message(payload, connection_id,
-                             ("Fehler beim Erstellen der Cloud-Sicherung."
-                              f" {traceback.format_exc()}<br />Update abgebrochen!"
-                              "Bitte Fehlerstatus überprüfen!. " +
-                              "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
-                             MessageType.WARNING)
-            Pub().pub("openWB/system/update_in_progress", False)
-            return
-        if SubData.system_data["system"].data["update_in_progress"]:
-            parent_file = Path(__file__).resolve().parents[2]
-            if "branch" in payload["data"] and "tag" in payload["data"]:
-                pub_user_message(
-                    payload, connection_id,
-                    f'Wechsel auf Zweig \'{payload["data"]["branch"]}\' Tag \'{payload["data"]["tag"]}\' gestartet.',
-                    MessageType.SUCCESS)
-                subprocess.run([
-                    str(parent_file / "runs" / "update_self.sh"),
-                    str(payload["data"]["branch"]),
-                    str(payload["data"]["tag"])])
-            else:
-                pub_user_message(payload, connection_id, "Update gestartet.", MessageType.INFO)
-                subprocess.run([
-                    str(parent_file / "runs" / "update_self.sh"),
-                    SubData.system_data["system"].data["current_branch"]])
+            except Exception:
+                pub_user_message(payload, connection_id,
+                                 ("Fehler beim Erstellen der Cloud-Sicherung."
+                                  f" {traceback.format_exc()}<br />Update abgebrochen!"
+                                  "Bitte Fehlerstatus überprüfen!. " +
+                                  "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
+                                 MessageType.WARNING)
+                Pub().pub("openWB/system/update_in_progress", False)
+                return
+        parent_file = Path(__file__).resolve().parents[2]
+        if "branch" in payload["data"] and "tag" in payload["data"]:
+            pub_user_message(
+                payload, connection_id,
+                f'Wechsel auf Zweig \'{payload["data"]["branch"]}\' Tag \'{payload["data"]["tag"]}\' gestartet.',
+                MessageType.SUCCESS)
+            subprocess.run([
+                str(parent_file / "runs" / "update_self.sh"),
+                str(payload["data"]["branch"]),
+                str(payload["data"]["tag"])])
+        else:
+            pub_user_message(payload, connection_id, "Update gestartet.", MessageType.INFO)
+            subprocess.run([
+                str(parent_file / "runs" / "update_self.sh"),
+                SubData.system_data["system"].data["current_branch"]])
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
         log.info("Fetch versions requested")
