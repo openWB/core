@@ -332,6 +332,22 @@ class CounterAll:
         else:
             return False
 
+    def hierarchy_add_item_below_evu(self, new_id: int, new_type: ComponentType) -> None:
+        try:
+            self.hierarchy_add_item_below(new_id, new_type, self.get_id_evu_counter())
+        except (TypeError, IndexError):
+            if new_type == ComponentType.COUNTER:
+                # es gibt noch keinen EVU-Zähler
+                hierarchy = [{
+                    "id": new_id,
+                    "type": ComponentType.COUNTER.value,
+                    "children": self.data.get.hierarchy
+                }]
+                Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
+                self.data.get.hierarchy = hierarchy
+            else:
+                raise ValueError("Bitte erst einen EVU-Zähler konfiguriere.")
+
     def hierarchy_add_item_below(self, new_id: int, new_type: ComponentType, id_to_find: int) -> None:
         """ruft die rekursive Funktion zum Hinzufügen eines Elements als Kind des angegebenen Elements.
         """
@@ -419,24 +435,21 @@ class CounterAll:
                         break
                 else:
                     try:
-                        self.hierarchy_add_item_below(entry_num, type_name, self.get_evu_counter().num)
-                    except (TypeError, IndexError):
-                        # es gibt noch keinen EVU-Zähler
-                        hierarchy = [{
-                            "id": entry_num,
-                            "type": ComponentType.COUNTER.value,
-                            "children": data.data.counter_all_data.data.get.hierarchy
-                        }]
-                        Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
-                        data.data.counter_all_data.data.get.hierarchy = hierarchy
+                        self.hierarchy_add_item_below_evu(entry_num, type_name)
+                    except ValueError:
+                        pub_system_message({}, "Die Struktur des Lastmanagements ist nicht plausibel. Bitte prüfe die "
+                                           "Konfiguration und Anordnung der Komponenten in der Hierarchie.",
+                                           MessageType.WARNING)
 
                     pub_system_message({}, f"{component_type_to_readable_text(type_name)} mit ID {element['id']} wurde"
-                                       " in der Hierarchie hinzugefügt, da kein Eintrag in der Hierarchie gefunden "
-                                       "wurde. Bitte prüfe die Anordnung der Komponenten in der Hierarchie.",
+                                       " in der Struktur des Lastmanagements hinzugefügt, da kein Eintrag in der "
+                                       "Struktur gefunden wurde. Bitte prüfe die Anordnung der Komponenten in der "
+                                       "Struktur.",
                                        MessageType.WARNING)
 
-        check_and_add(ComponentType.BAT, data.data.bat_data)
+        # Falls EVU-Zähler fehlt, zuerst hinzufügen.
         check_and_add(ComponentType.COUNTER, data.data.counter_data)
+        check_and_add(ComponentType.BAT, data.data.bat_data)
         check_and_add(ComponentType.CHARGEPOINT, data.data.cp_data)
         check_and_add(ComponentType.INVERTER, data.data.pv_data)
 

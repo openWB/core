@@ -434,22 +434,10 @@ class Command:
         component_default["id"] = new_id
         general_type = special_to_general_type_mapping(payload["data"]["type"])
         try:
-            data.data.counter_all_data.hierarchy_add_item_below(
-                new_id, general_type, data.data.counter_all_data.get_id_evu_counter())
-        except (TypeError, IndexError):
-            if general_type == ComponentType.COUNTER:
-                # es gibt noch keinen EVU-Zähler
-                hierarchy = [{
-                    "id": new_id,
-                    "type": ComponentType.COUNTER.value,
-                    "children": data.data.counter_all_data.data.get.hierarchy
-                }]
-                Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
-                data.data.counter_all_data.data.get.hierarchy = hierarchy
-            else:
-                pub_user_message(payload, connection_id,
-                                 "Bitte erst einen EVU-Zähler konfigurieren!", MessageType.ERROR)
-                return
+            data.data.counter_all_data.hierarchy_add_item_below_evu(new_id, general_type)
+        except ValueError:
+            pub_user_message(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!", MessageType.ERROR)
+            return
         # Bei Zählern müssen noch Standardwerte veröffentlicht werden.
         if general_type == ComponentType.BAT:
             topic = f"openWB/set/bat/{new_id}"
