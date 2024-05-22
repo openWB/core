@@ -5,7 +5,6 @@ import re
 from modules.backup_clouds.nextcloud.config import NextcloudBackupCloud, NextcloudBackupCloudConfiguration
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ def upload_backup(config: NextcloudBackupCloudConfiguration, backup_filename: st
 def create_backup_cloud(config: NextcloudBackupCloud):
     def updater(backup_filename: str, backup_file: bytes):
         upload_backup(config.configuration, backup_filename, backup_file)
-    return ConfigurableBackupCloud(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=NextcloudBackupCloud)

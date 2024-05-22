@@ -7,7 +7,6 @@ from modules.backup_clouds.onedrive.msdrive.onedrive import OneDrive
 from modules.backup_clouds.onedrive.api import get_tokens
 from modules.backup_clouds.onedrive.config import OneDriveBackupCloud, OneDriveBackupCloudConfiguration
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
 
 log = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ def upload_backup(config: OneDriveBackupCloudConfiguration, backup_filename: str
 def create_backup_cloud(config: OneDriveBackupCloud):
     def updater(backup_filename: str, backup_file: bytes):
         upload_backup(config.configuration, backup_filename, backup_file)
-    return ConfigurableBackupCloud(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=OneDriveBackupCloud)
