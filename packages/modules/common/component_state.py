@@ -192,6 +192,7 @@ class TariffState:
         self.prices = prices
 
 
+@auto_str
 class RcrState:
     def __init__(self, override_value: float) -> None:
         self.override_value = override_value
