@@ -31,6 +31,7 @@ from helpermodules import system
 from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
+from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
@@ -793,7 +794,7 @@ class SubData:
                 else:
                     mod = importlib.import_module(".backup_clouds."+config_dict["type"]+".backup_cloud", "modules")
                     config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                    var["system"].backup_cloud = mod.create_backup_cloud(config)
+                    var["system"].backup_cloud = ConfigurableBackupCloud(config, mod.create_backup_cloud)
             elif "openWB/system/backup_cloud/backup_before_update" in msg.topic:
                 self.set_json_payload(var["system"].data["backup_cloud"], msg)
             else:
