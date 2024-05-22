@@ -55,7 +55,6 @@ class PolestarApi:
 
         return result['data']['getBatteryData']
 
-
     def check_vin(self) -> None:
         # get Vehicle Data
         params = {
