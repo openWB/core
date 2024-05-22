@@ -18,8 +18,7 @@ class PolestarApi:
     def query_params(self, params: dict, url='https://pc-api.polestar.com/eu-north-1/mystar-v2/') -> dict or None:
         access_token = self.auth.get_auth_token()
         if access_token is None:
-            log.error("query_params:not yet authenticated")
-            return None
+            raise Exception("query_params error:could not get auth token")
 
         headers = {
             "Content-Type": "application/json",
@@ -42,7 +41,6 @@ class PolestarApi:
             error_message = result_data['errors'][0]['message']
             raise Exception("query_params error: %s", error_message)
 
-        log.debug(result_data)
         return result_data
 
     def get_battery_data(self) -> dict or None:
@@ -55,11 +53,8 @@ class PolestarApi:
 
         result = self.query_params(params)
 
-        if result is not None and result['data'] is not None and result['data']['getBatteryData'] is not None \
-                and result['data']['getBatteryData']['batteryChargeLevelPercentage'] is not None:
-            return result['data']['getBatteryData']
-        else:
-            return None
+        return result['data']['getBatteryData']
+
 
     def check_vin(self) -> None:
         # get Vehicle Data
@@ -89,11 +84,7 @@ class PolestarApi:
 def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
     api = PolestarApi(user_id, password, vin)
     bat_data = api.get_battery_data()
-    # preset values will be returned if api fails
-    soc = 0
-    est_range = 0
-    if bat_data is not None:
-        soc = bat_data['batteryChargeLevelPercentage']
-        est_range = bat_data['estimatedDistanceToEmptyKm']
+    soc = bat_data['batteryChargeLevelPercentage']
+    est_range = bat_data['estimatedDistanceToEmptyKm']
 
     return CarState(soc, est_range, time.strftime("%m/%d/%Y, %H:%M:%S"))
