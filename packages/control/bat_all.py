@@ -24,7 +24,6 @@ import logging
 from control import data
 from control.bat import Bat
 from helpermodules.constants import NO_ERROR
-from helpermodules.pub import Pub
 from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
@@ -38,7 +37,7 @@ class BatConsiderationMode(Enum):
 
 @dataclass
 class Config:
-    configured: bool = False
+    configured: bool = field(default=False, metadata={"topic": "config/configured", "mutable_by_algorithm": True})
 
 
 def config_factory() -> Config:
@@ -63,8 +62,9 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
-    charging_power_left: float = 0
-    regulate_up: bool = False
+    charging_power_left: float = field(
+        default=0, metadata={"topic": "set/charging_power_left", "mutable_by_algorithm": True})
+    regulate_up: bool = field(default=False, metadata={"topic": "set/regulate_up", "mutable_by_algorithm": True})
 
 
 def set_factory() -> Set:
@@ -90,7 +90,6 @@ class BatAll:
         try:
             if len(data.data.bat_data) >= 1:
                 self.data.config.configured = True
-                Pub().pub("openWB/set/bat/config/configured", self.data.config.configured)
                 # Summe für alle konfigurierten Speicher bilden
                 exported = 0
                 imported = 0
@@ -128,7 +127,6 @@ class BatAll:
                     self.data.get.soc = 0
             else:
                 self.data.config.configured = False
-                Pub().pub("openWB/set/bat/config/configured", self.data.config.configured)
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
@@ -148,10 +146,6 @@ class BatAll:
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
                 battery.data.get.fault_str = self.ERROR_CONFIG_MAX_AC_OUT
-                Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_state",
-                          battery.data.get.fault_state)
-                Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_str",
-                          battery.data.get.fault_str)
                 raise ValueError(self.ERROR_CONFIG_MAX_AC_OUT)
         else:
             # Kein Hybrid-WR
@@ -193,8 +187,6 @@ class BatAll:
             else:
                 self.data.set.charging_power_left = 0
                 self.data.get.power = 0
-            Pub().pub("openWB/set/bat/set/charging_power_left", self.data.set.charging_power_left)
-            Pub().pub("openWB/set/bat/set/regulate_up", self.data.set.regulate_up)
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
