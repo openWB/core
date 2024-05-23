@@ -12,13 +12,13 @@ class ConfigurableBackupCloud(Generic[T_BACKUP_CLOUD_CONFIG]):
     def __init__(self,
                  config: T_BACKUP_CLOUD_CONFIG,
                  component_initialiser: Callable[[], float]) -> None:
+        self.config = config
         self.fault_state = FaultState(ComponentInfo(None, self.config.name,
                                                     ComponentType.BACKUP_CLOUD.value))
         with SingleComponentUpdateContext(self.fault_state):
-            self.__component_updater = component_initialiser(config)
-        self.config = config
+            self._component_updater = component_initialiser(config)
 
     def update(self, backup_filename: str, backup_file: bytes):
-        if hasattr(self, "__component_updater"):
+        if hasattr(self, "_component_updater"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
-            self.__component_updater(backup_filename, backup_file)
+            self._component_updater(backup_filename, backup_file)
