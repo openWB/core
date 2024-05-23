@@ -41,13 +41,13 @@ def create_ripple_control_receiver(config: IoLanRcr):
             else:
                 version = False
                 raise ValueError
-    except (ConnectionRefusedError, ValueError) as e:
-        e.args += (("Firmware des openWB Dimm-& Control-Kit ist nicht mit openWB software2 kompatibel. "
-                    "Bitte den Support kontaktieren."),)
-        raise e
-    except socket.timeout as e:
-        e.args += (("Die IP-Adresse ist nicht erreichbar. Bitte den Support kontaktieren."),)
-        raise e
+    except (ConnectionRefusedError, ValueError):
+        log.exception("Dimm-Kit")
+        raise Exception("Firmware des openWB Dimm-& Control-Kit ist nicht mit openWB software2 kompatibel. "
+                        "Bitte den Support kontaktieren.")
+    except socket.timeout:
+        log.exception("Dimm-Kit")
+        raise Exception("Die IP-Adresse ist nicht erreichbar. Bitte den Support kontaktieren.")
     return updater
 
 
