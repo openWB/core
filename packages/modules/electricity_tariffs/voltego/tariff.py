@@ -8,7 +8,7 @@ from requests.exceptions import HTTPError
 from dataclass_utils import asdict
 from helpermodules import timecheck
 from helpermodules.pub import Pub
-from modules.common import configurable_tariff, req
+from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 from modules.electricity_tariffs.voltego.config import VoltegoTariff, VoltegoToken
@@ -81,7 +81,7 @@ def create_electricity_tariff(config: VoltegoTariff):
 
     def updater():
         return TariffState(prices=fetch(config))
-    return configurable_tariff.ConfigurableElectricityTariff(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=VoltegoTariff)
