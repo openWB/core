@@ -3,7 +3,6 @@ import logging
 
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
-from helpermodules.pub import Pub
 
 
 log = logging.getLogger(__name__)
@@ -11,11 +10,11 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class AllGet:
-    daily_imported: float = 0
-    daily_exported: float = 0
-    power: float = 0
-    imported: float = 0
-    exported: float = 0
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "mutable_by_algorithm": True})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "mutable_by_algorithm": True})
+    power: float = field(default=0, metadata={"topic": "get/power", "mutable_by_algorithm": True})
+    imported: float = field(default=0, metadata={"topic": "get/imported", "mutable_by_algorithm": True})
+    exported: float = field(default=0, metadata={"topic": "get/exported", "mutable_by_algorithm": True})
 
 
 def all_get_factory() -> AllGet:
@@ -79,11 +78,5 @@ class AllChargepoints:
                         exported = exported + chargepoint.data.get.exported
                 except Exception:
                     log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-            self.data.get.power = power
-            Pub().pub("openWB/set/chargepoint/get/power", power)
-            self.data.get.imported = imported
-            Pub().pub("openWB/set/chargepoint/get/imported", imported)
-            self.data.get.exported = exported
-            Pub().pub("openWB/set/chargepoint/get/exported", exported)
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
