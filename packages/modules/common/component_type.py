@@ -3,6 +3,7 @@ from typing import Type
 
 
 class ComponentType(Enum):
+    BACKUP_CLOUD = "backup_cloud"
     BAT = "bat"
     CHARGEPOINT = "cp"
     COUNTER = "counter"
