@@ -12,7 +12,7 @@ export default {
     firstView() {
       if (this.mqttStore.getThemeConfiguration) {
         if (this.mqttStore.getThemeConfiguration.enable_dashboard_view) {
-          return "dash-board";
+          return "simple-dashboard";
         }
         if (this.mqttStore.getThemeConfiguration.enable_charge_points_view) {
           return "charge-points";

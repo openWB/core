@@ -10,6 +10,11 @@ const router = createRouter({
       component: WelcomeView,
     },
     {
+      path: "/SimpleDashboard",
+      name: "simple-dashboard",
+      component: () => import("../views/DashBoardSimpleView.vue"),
+    },
+    {
       path: "/DashBoard",
       name: "dash-board",
       // route level code-splitting
@@ -26,7 +31,7 @@ const router = createRouter({
       path: "/Status",
       name: "status",
       component: () => import("../views/StatusView.vue"),
-    },
+    }
   ],
 });
 
