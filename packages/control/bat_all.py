@@ -37,7 +37,7 @@ class BatConsiderationMode(Enum):
 
 @dataclass
 class Config:
-    configured: bool = field(default=False, metadata={"topic": "config/configured", "mutable_by_algorithm": True})
+    configured: bool = field(default=False, metadata={"topic": "config/configured"})
 
 
 def config_factory() -> Config:
@@ -46,14 +46,14 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    soc: float = field(default=0, metadata={"topic": "get/soc", "mutable_by_algorithm": True})
-    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "mutable_by_algorithm": True})
-    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "mutable_by_algorithm": True})
-    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "mutable_by_algorithm": True})
-    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "mutable_by_algorithm": True})
-    imported: float = field(default=0, metadata={"topic": "get/imported", "mutable_by_algorithm": True})
-    exported: float = field(default=0, metadata={"topic": "get/exported", "mutable_by_algorithm": True})
-    power: float = field(default=0, metadata={"topic": "get/power", "mutable_by_algorithm": True})
+    soc: float = field(default=0, metadata={"topic": "get/soc"})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported"})
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
+    imported: float = field(default=0, metadata={"topic": "get/imported"})
+    exported: float = field(default=0, metadata={"topic": "get/exported"})
+    power: float = field(default=0, metadata={"topic": "get/power"})
 
 
 def get_factory() -> Get:
@@ -63,8 +63,8 @@ def get_factory() -> Get:
 @dataclass
 class Set:
     charging_power_left: float = field(
-        default=0, metadata={"topic": "set/charging_power_left", "mutable_by_algorithm": True})
-    regulate_up: bool = field(default=False, metadata={"topic": "set/regulate_up", "mutable_by_algorithm": True})
+        default=0, metadata={"topic": "set/charging_power_left"})
+    regulate_up: bool = field(default=False, metadata={"topic": "set/regulate_up"})
 
 
 def set_factory() -> Set:
