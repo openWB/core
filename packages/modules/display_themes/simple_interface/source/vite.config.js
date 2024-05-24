@@ -10,7 +10,7 @@ import rollupNodePolyfills from "rollup-plugin-polyfill-node";
 export default defineConfig(({ command, mode }) => {
   var myConfiguration = {
     plugins: [Vue()],
-    base: "/openWB/web/display/themes/cards/",
+    base: "/openWB/web/display/themes/simple_interface/",
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),

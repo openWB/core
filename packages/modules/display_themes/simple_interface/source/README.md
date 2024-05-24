@@ -41,3 +41,8 @@ npm run test:unit
 ```sh
 npm run lint
 ```
+
+### Path
+
+cd packages/modules/display_themes/simple_interface/source
+
