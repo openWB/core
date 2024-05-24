@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from control import data
 from control.bat_all import BatAll
-from control.counter_all import CounterAll
+from control.chargepoint.chargepoint_all import AllChargepoints
 from helpermodules import timecheck
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.pub import Pub
@@ -42,7 +42,7 @@ def update_module_yields(module: str, totals: Dict) -> None:
             if isinstance(module_data, (Ev, Chargepoint, Pv, Bat, Counter)):
                 Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_imported", daily_imported)
                 Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_exported", daily_exported)
-            elif not isinstance(module_data, (BatAll, CounterAll)):
+            elif not isinstance(module_data, (BatAll, AllChargepoints)):
                 # wird im changed_values_handler an den Broker gesendet
                 Pub().pub(f"openWB/set/{topic}/get/daily_imported", daily_imported)
                 Pub().pub(f"openWB/set/{topic}/get/daily_exported", daily_exported)
