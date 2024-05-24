@@ -1,4 +1,4 @@
-# openwb-version:1
+# openwb-version:2
 # allow publishing set topics
 topic write openWB/set/#
 # allow clearing system messages
