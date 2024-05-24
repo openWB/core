@@ -171,7 +171,7 @@
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Preistabelle anzeigen (beta)"
+					title="Preistabelle anzeigen"
 					icon="fa-car"
 					infotext="Zeige die Strompreistabelle in einer separaten Box an"
 				>
