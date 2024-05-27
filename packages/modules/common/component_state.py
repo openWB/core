@@ -135,6 +135,7 @@ class CarState:
             soc: actual state of charge in percent
             range: actual range in km
             soc_timestamp: timestamp of last request as unix timestamp
+            service_soc: service battery (12V battery) state of charge in percent
         """
         self.soc = soc
         self.range = range
