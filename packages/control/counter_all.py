@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Config:
+    home_consumption_source_id: Optional[str] = None
     reserve_for_not_charging: bool = False
 
 
@@ -41,7 +42,6 @@ class Set:
 @dataclass
 class Get:
     hierarchy: List = field(default_factory=empty_list_factory)
-    home_consumption_source: Optional[str] = None
 
 
 def get_factory() -> Get:
@@ -97,14 +97,15 @@ class CounterAll:
 
     def set_home_consumption(self) -> None:
         try:
+            self._validate_home_consumption_counter()
             home_consumption, elements = self._calc_home_consumption()
             if home_consumption < 0:
                 log.error(
                     f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
-                if self.data.get.home_consumption_source is None:
+                if self.data.config.home_consumption_source_id is None:
                     hc_counter_source = self.get_evu_counter_str()
                 else:
-                    hc_counter_source = self.data.get.home_consumption_source
+                    hc_counter_source = f"counter{self.data.config.home_consumption_source_id}"
                 hc_counter_data = data.data.counter_data[hc_counter_source].data
                 if hc_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
                     hc_counter_data.get.fault_state = FaultStateLevel.WARNING.value
@@ -135,12 +136,31 @@ class CounterAll:
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
+    EVU_IS_HC_COUNTER_ERROR = ("Der EVU-Zähler kann nicht als Quelle für den Hausverbrauch verwendet werden. Meist ist "
+                               "der Zähler am EVU-Punkt installiert, dann muss im Lastmanagement unter Hausverbrauch"
+                               " 'von openWB berechnen' ausgewählt werden. Wenn der Zähler im Hausverbrauchszweig "
+                               "installiert ist, einen virtuellen Zähler anlegen und im Lastmanagement ganz links "
+                               "anordnen.")
+
+    def _validate_home_consumption_counter(self):
+        if self.data.config.home_consumption_source_id is not None:
+            if self.data.config.home_consumption_source_id == self.get_id_evu_counter():
+                hc_counter_data = data.data.counter_data[self.get_evu_counter_str()].data
+                hc_counter_data.get.fault_state = FaultStateLevel.ERROR.value
+                hc_counter_data.get.fault_str = self.EVU_IS_HC_COUNTER_ERROR
+                evu_counter = self.get_id_evu_counter()
+                Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
+                          hc_counter_data.get.fault_state)
+                Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
+                          hc_counter_data.get.fault_str)
+                raise Exception(self.EVU_IS_HC_COUNTER_ERROR)
+
     def _calc_home_consumption(self) -> Tuple[float, List]:
         power = 0
-        if self.data.get.home_consumption_source is None:
+        if self.data.config.home_consumption_source_id is None:
             id_source = self.get_id_evu_counter()
         else:
-            id_source = int(self.data.get.home_consumption_source[7:])
+            id_source = self.data.config.home_consumption_source_id
         elements_to_sum_up = self.get_elements_for_downstream_calculation(id_source)
         for element in elements_to_sum_up:
             if element["type"] == ComponentType.CHARGEPOINT.value:
@@ -151,7 +171,7 @@ class CounterAll:
                 power += data.data.counter_data[f"counter{element['id']}"].data.get.power
             elif element["type"] == ComponentType.INVERTER.value:
                 power += data.data.pv_data[f"pv{element['id']}"].data.get.power
-        evu = data.data.counter_data[self.get_evu_counter_str()].data.get.power
+        evu = data.data.counter_data[f"counter{id_source}"].data.get.power
         return evu - power - self.data.set.smarthome_power_excluded_from_home_consumption, elements_to_sum_up
 
     def _add_hybrid_bat(self, id: int) -> List:
