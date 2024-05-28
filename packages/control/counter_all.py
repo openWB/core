@@ -4,7 +4,7 @@ import copy
 from dataclasses import dataclass, field
 import logging
 import re
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from control import data
 from control.counter import Counter
@@ -41,6 +41,7 @@ class Set:
 @dataclass
 class Get:
     hierarchy: List = field(default_factory=empty_list_factory)
+    home_consumption_source: Optional[str] = None
 
 
 def get_factory() -> Get:
@@ -100,17 +101,21 @@ class CounterAll:
             if home_consumption < 0:
                 log.error(
                     f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
-                evu_counter_data = data.data.counter_data[self.get_evu_counter_str()].data
-                if evu_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
-                    evu_counter_data.get.fault_state = FaultStateLevel.WARNING.value
-                    evu_counter_data.get.fault_str = ("Der Wert für den Hausverbrauch ist nicht plausibel (negativ). "
-                                                      "Bitte die Leistungen der Komponenten und die Anordnung in der "
-                                                      "Hierarchie prüfen.")
+                if self.data.get.home_consumption_source is None:
+                    hc_counter_source = self.get_evu_counter_str()
+                else:
+                    hc_counter_source = self.data.get.home_consumption_source
+                hc_counter_data = data.data.counter_data[hc_counter_source].data
+                if hc_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
+                    hc_counter_data.get.fault_state = FaultStateLevel.WARNING.value
+                    hc_counter_data.get.fault_str = ("Der Wert für den Hausverbrauch ist nicht plausibel (negativ). "
+                                                     "Bitte die Leistungen der Komponenten und die Anordnung in der "
+                                                     "Hierarchie prüfen.")
                     evu_counter = self.get_id_evu_counter()
                     Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
-                              evu_counter_data.get.fault_state)
+                              hc_counter_data.get.fault_state)
                     Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
-                              evu_counter_data.get.fault_str)
+                              hc_counter_data.get.fault_str)
                 if self.data.set.invalid_home_consumption < 3:
                     self.data.set.invalid_home_consumption += 1
                     Pub().pub("openWB/set/counter/set/invalid_home_consumption",
@@ -132,7 +137,11 @@ class CounterAll:
 
     def _calc_home_consumption(self) -> Tuple[float, List]:
         power = 0
-        elements_to_sum_up = self.get_elements_for_downstream_calculation(self.get_id_evu_counter())
+        if self.data.get.home_consumption_source is None:
+            id_source = self.get_id_evu_counter()
+        else:
+            id_source = int(self.data.get.home_consumption_source[7:])
+        elements_to_sum_up = self.get_elements_for_downstream_calculation(id_source)
         for element in elements_to_sum_up:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 power += data.data.cp_data[f"cp{element['id']}"].data.get.power
