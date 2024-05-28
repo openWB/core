@@ -15,9 +15,9 @@ def test_get_names(daily_log_totals, monkeypatch):
     assert names == {'bat2': "Speicher",
                      'counter0': "Zähler",
                      'cp3': "cp3",
-                     'cp4': "Standard-Ladepunkt",
-                     'cp5': "Standard-Ladepunkt",
-                     'cp6': "Standard-Ladepunkt",
+                     'cp4': "neuer Ladepunkt",
+                     'cp5': "neuer Ladepunkt",
+                     'cp6': "neuer Ladepunkt",
                      'pv1': "Wechselrichter",
                      "sh1": "Smarthome1"}
 

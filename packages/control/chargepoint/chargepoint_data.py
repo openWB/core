@@ -139,7 +139,7 @@ class Set:
 class Config:
     configuration: Dict = field(default_factory=empty_dict_factory)
     ev: int = 0
-    name: str = "Standard-Ladepunkt"
+    name: str = "neuer Ladepunkt"
     type: Optional[str] = None
     template: int = 0
     connected_phases: int = 3
