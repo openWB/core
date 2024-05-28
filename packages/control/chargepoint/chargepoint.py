@@ -508,7 +508,7 @@ class Chargepoint(ChargepointRfidMixin):
             mode = "time_charging"
         else:
             mode = charging_ev.charge_template.data.chargemode.selected
-        chargemode = data.data.general_data.get_phases_chargemode(mode)
+        chargemode = data.data.general_data.get_phases_chargemode(mode, self.data.control_parameter.submode)
 
         if chargemode is None:
             phases = self.data.get.phases_in_use
@@ -773,11 +773,14 @@ class Chargepoint(ChargepointRfidMixin):
     def cp_ev_chargemode_support_phase_switch(self) -> bool:
         control_parameter = self.data.control_parameter
         pv_auto_switch = (control_parameter.chargemode == Chargemode.PV_CHARGING and
-                          data.data.general_data.get_phases_chargemode(Chargemode.PV_CHARGING.value) == 0)
+                          data.data.general_data.get_phases_chargemode(
+                              Chargemode.PV_CHARGING.value,
+                              control_parameter.submode) == 0)
         scheduled_auto_switch = (
             control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
             control_parameter.submode == Chargemode.PV_CHARGING and
-            data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value) == 0)
+            data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value,
+                                                         control_parameter.submode) == 0)
         return (self.cp_ev_support_phase_switch() and
                 self.data.get.charge_state and
                 (pv_auto_switch or scheduled_auto_switch) and

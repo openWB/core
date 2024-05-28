@@ -56,6 +56,7 @@ def pv_charging_factory() -> PvCharging:
 @dataclass
 class ScheduledCharging:
     phases_to_use: int = 0
+    phases_to_use_pv: int = 0
 
 
 def scheduled_charging_factory() -> ScheduledCharging:
@@ -153,7 +154,7 @@ class General:
     def __init__(self):
         self.data: GeneralData = GeneralData()
 
-    def get_phases_chargemode(self, chargemode: str) -> Optional[int]:
+    def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
         Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
         die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
@@ -162,6 +163,9 @@ class General:
             if chargemode == "stop" or chargemode == "standby":
                 # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
                 return None
+            elif chargemode == "scheduled_charging" and submode == "pv_charging":
+                # Phasenumschaltung von PV-Laden nutzen
+                return getattr(self.data.chargemode_config, chargemode).phases_to_use_pv
             else:
                 return getattr(self.data.chargemode_config, chargemode).phases_to_use
         except Exception:
