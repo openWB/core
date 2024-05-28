@@ -198,6 +198,7 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/pv_charging/bat_power_reserve_active$",
         "^openWB/general/chargemode_config/retry_failed_phase_switches$",
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
+        "^openWB/general/chargemode_config/scheduled_charging/phases_to_use_pv$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
         "^openWB/general/chargemode_config/time_charging/phases_to_use$",
         # obsolet, Daten hieraus müssen nach prices/ überführt werden
@@ -436,6 +437,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/retry_failed_phase_switches",
          ChargemodeConfig().retry_failed_phase_switches),
         ("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 0),
+        ("openWB/general/chargemode_config/scheduled_charging/phases_to_use_pv", 0),
         ("openWB/general/chargemode_config/time_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/unbalanced_load", False),
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
