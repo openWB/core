@@ -164,7 +164,7 @@ class General:
                 # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
                 return None
             elif chargemode == "scheduled_charging" and submode == "pv_charging":
-                # Phasenumschaltung von PV-Laden nutzen
+                # Phasenumschaltung bei PV-Ueberschuss nutzen
                 return getattr(self.data.chargemode_config, chargemode).phases_to_use_pv
             else:
                 return getattr(self.data.chargemode_config, chargemode).phases_to_use
