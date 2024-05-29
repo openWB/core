@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from control import data
 from dataclass_utils import asdict
-from helpermodules.measurement_logging.process_log import CalculationType, analyse_percentage, process_entry
+from helpermodules.measurement_logging.process_log import CalculationType, analyse_percentage, get_log_from_date_until_now, process_entry
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -15,12 +15,47 @@ from helpermodules.utils.json_file_handler import write_and_check
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
 # Lademodus, ID-Tag
-# json-Objekt: {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
-# "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
-# "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34",
-# "data": {"range_charged": 34, "imported_since_mode_switch": 3400, "imported_since_plugged": 5000,
-#          "power": 110000, "costs": 3,42} }}
-
+# json-Objekt: new_entry = {
+#     "chargepoint":
+#     {
+#         "id": 22,
+#         "name": "LP 22",
+#         "serial_number": "0123456,"
+#         "imported_at_start": 1000,
+#         "imported_at_end": 2000,
+#     },
+#     "vehicle":
+#     {
+#         "id": 1,
+#         "name": "Auto",
+#         "chargemode": instant_charging,
+#         "prio": False,
+#         "rfid": "123"
+#         "soc_at_start": 50,
+#         "soc_at_end": 60,
+#         "range_at_start": 100,
+#         "range_at_end": 125,
+#     },
+#     "time":
+#     {
+#         "begin": "01.02.2024 15:00:00",
+#         "end": "01.02.2024 16:00:00",
+#         "time_charged": "1:00"
+#     },
+#     "data":
+#     {
+#         "range_charged": 100,
+#         "imported_since_mode_switch": 1000,
+#         "imported_since_plugged": 1000,
+#         "power": 1000,
+#         "costs": 0.95,
+#         "energy_source": {
+#                 "grid": 0.25,
+#                 "pv": 0.25,
+#                 "bat": 0.5,
+#                 "cp": 0}
+#     }
+# }
 log = logging.getLogger("chargelog")
 
 
@@ -38,6 +73,9 @@ def collect_data(chargepoint):
             # Zählerstand beim Einschalten merken
             if log_data.imported_at_plugtime == 0:
                 log_data.imported_at_plugtime = chargepoint.data.get.imported
+                if charging_ev.soc_module:
+                    log_data.soc_at_start = charging_ev.data.get.soc
+                    log_data.range_at_start = charging_ev.data.get.range
                 log.debug(f"imported_at_plugtime {chargepoint.data.get.imported}")
             # Bisher geladene Energie ermitteln
             log_data.imported_since_plugged = get_value_or_default(
@@ -158,6 +196,7 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
     if duration > 0:
         power = get_value_or_default(lambda: round(log_data.imported_since_mode_switch / duration, 2))
     calculate_charge_cost(chargepoint, True)
+    power_source = get_log_from_date_until_now(log_data.timestamp_start_charging)["totals"]["power_source"]
     costs = round(log_data.costs, 2)
     new_entry = {
         "chargepoint":
@@ -174,7 +213,11 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
             "name": get_value_or_default(lambda: _get_ev_name(log_data.ev)),
             "chargemode": get_value_or_default(lambda: log_data.chargemode_log_entry),
             "prio": get_value_or_default(lambda: log_data.prio),
-            "rfid": get_value_or_default(lambda: log_data.rfid)
+            "rfid": get_value_or_default(lambda: log_data.rfid),
+            "soc_at_start": get_value_or_default(lambda: log_data.soc_at_start),
+            "soc_at_end": get_value_or_default(lambda: charging_ev.data.get.soc),
+            "range_at_start": get_value_or_default(lambda: log_data.range_at_start),
+            "range_at_end": get_value_or_default(lambda: charging_ev.data.get.range),
         },
         "time":
         {
@@ -190,7 +233,8 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
             "imported_since_mode_switch": log_data.imported_since_mode_switch,
             "imported_since_plugged": log_data.imported_since_plugged,
             "power": power,
-            "costs": costs
+            "costs": costs,
+            "power_source": power_source
         }
     }
     return new_entry
