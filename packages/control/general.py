@@ -37,7 +37,6 @@ class PvCharging:
     bat_power_reserve_active: bool = False
     control_range: List = field(default_factory=control_range_factory)
     feed_in_yield: int = 15000
-    phase_switch_delay: int = 7
     phases_to_use: int = 1
     bat_power_discharge: int = 1500
     bat_power_discharge_active: bool = False
@@ -81,6 +80,7 @@ class ChargemodeConfig:
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = 18
     unbalanced_load: bool = False
+    phase_switch_delay: int = 7
 
 
 def chargemode_config_factory() -> ChargemodeConfig:
