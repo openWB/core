@@ -679,7 +679,8 @@ class ChargeTemplate:
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
         """
-        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging", "instant_charging") == 0:
+        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging",
+                                                                                   "instant_charging") == 0:
             max_current = ev_template.data.max_current_multi_phases
             plan_data = self.search_plan(max_current, soc, ev_template, max_phases, used_amount)
             if plan_data:
