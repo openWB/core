@@ -43,6 +43,7 @@ class CpTemplateData:
     name: str = "Standard Ladepunkt-Profil"
     rfid_enabling: bool = False
     valid_tags: List = field(default_factory=empty_list_factory)
+    disable_after_unplug: bool = False
 
 
 class CpTemplate:

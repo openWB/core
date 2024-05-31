@@ -446,7 +446,6 @@ class SetData:
                 if "/name" in msg.topic:
                     self._validate_value(msg, str, pub_json=True)
                 elif ("/load_default" in msg.topic or
-                        "/disable_after_unplug" in msg.topic or
                         "/prio" in msg.topic):
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/chargemode/selected" in msg.topic:
@@ -567,6 +566,8 @@ class SetData:
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
                     self._validate_value(msg, int, [(0, 7)])
+                elif "/disable_after_unplug" in msg.topic:
+                    self._validate_value(msg, bool, pub_json=True)
                 else:
                     self.__unknown_topic(msg)
             else:
