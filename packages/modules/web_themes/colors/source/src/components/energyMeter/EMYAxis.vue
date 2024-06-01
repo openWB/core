@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import type { AxisScale, AxisContainerElement } from 'd3'
 import { axisLeft, select } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
+import { graphData } from '../powerGraph/model'
 const props = defineProps<{
 	yScale: AxisScale<number>
 	width: number
@@ -16,7 +17,7 @@ const props = defineProps<{
 // computed
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(props.yScale)
-		.tickFormat((d) => (d > 0 ? (d / 1000).toString() : ''))
+		.tickFormat((d) => formatNumber(d))
 		.ticks(6)
 		.tickSizeInner(-props.width)
 })
@@ -43,6 +44,18 @@ const drawYAxis = computed(() => {
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	return 'emYAxis.vue'
 })
+
+function formatNumber(n: number) {
+	if (n > 0) {
+		if (graphData.graphMode == 'year') {
+			return (n / 1000000).toString()
+		} else {
+			return (n / 1000).toString()
+		}
+	} else {
+		return ''
+	}
+}
 </script>
 
 <style></style>

@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue'
-import { extent, scaleBand } from 'd3'
+import { extent, scaleBand, scaleTime, scaleUtc, zoomIdentity } from 'd3'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig } from '@/assets/js/themeConfig'
@@ -13,7 +13,7 @@ import { chargePoints } from '../chargePointList/model'
 
 export const width = 500
 export const height = 500
-export const margin = { top: 10, right: 20, bottom: 10, left: 25 }
+export const margin = { top: 15, right: 20, bottom: 10, left: 25 }
 
 export const consumerCategories = ['charging', 'house', 'batIn', 'devices']
 
@@ -35,6 +35,8 @@ export interface RawDayGraphDataItem {
 			power_imported: number
 			energy_imported: number
 			energy_exported: number
+			energy_imported_pv: number
+			energy_imported_bat: number
 			imported: number
 		}
 	}
@@ -43,6 +45,8 @@ export interface RawDayGraphDataItem {
 			power_imported: number
 			power_exported: number
 			energy_imported: number
+			energy_imported_pv: number
+			energy_imported_bat: number
 			energy_exported: number
 			imported: number
 			exported: number
@@ -57,6 +61,7 @@ export interface RawDayGraphDataItem {
 export class GraphData {
 	data: GraphDataItem[] = []
 	private _graphMode = ''
+	waitForData = true
 
 	get graphMode() {
 		return this._graphMode
@@ -67,6 +72,12 @@ export class GraphData {
 }
 
 export const graphData = reactive(new GraphData())
+export const mytransform = ref(zoomIdentity)
+export const zoomedRange = computed(() =>
+	[0, width - margin.left - 2 * margin.right].map((d) =>
+		mytransform.value.applyX(d),
+	),
+)
 export let animateSourceGraph = true
 export let animateUsageGraph = true
 export function sourceGraphIsInitialized() {
@@ -87,8 +98,10 @@ export function setInitializeUsageGraph(val: boolean) {
 }
 export function setGraphData(d: GraphDataItem[]) {
 	graphData.data = d
+	graphData.waitForData = false
 	// graphData.graphMode = graphData.graphMode
 }
+// LIVE GRAPH
 export const liveGraph = reactive({
 	refreshTopicPrefix: 'openWB/graph/' + 'alllivevaluesJson',
 	updateTopic: 'openWB/graph/lastlivevaluesJson',
@@ -99,10 +112,14 @@ export const liveGraph = reactive({
 	rawDataPacks: [] as RawGraphDataItem[][],
 	duration: 0,
 
-	activate() {
-		graphData.data = []
+	activate(erase?: boolean) {
+		// graphData.data = []
 		this.unsubscribeUpdates()
 		this.subscribeRefresh()
+		if (erase) {
+			graphData.data = []
+		}
+		graphData.waitForData = true
 		mqttSubscribe(this.configTopic)
 		this.initialized = false
 		this.initCounter = 0
@@ -133,10 +150,11 @@ export const liveGraph = reactive({
 		mqttUnsubscribe(this.updateTopic)
 	},
 })
+// DAY GRAPH
 export const dayGraph = reactive({
 	topic: 'openWB/log/daily/#',
 	date: new Date(),
-	activate() {
+	activate(erase?: boolean) {
 		if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
 			if (graphData.graphMode == 'today') {
 				this.date = new Date()
@@ -145,12 +163,17 @@ export const dayGraph = reactive({
 				this.date.getFullYear().toString() +
 				(this.date.getMonth() + 1).toString().padStart(2, '0') +
 				this.date.getDate().toString().padStart(2, '0')
+
+			this.topic = 'openWB/log/daily/' + dateString
 			mqttSubscribe(this.topic)
+			if (erase) {
+				graphData.data = []
+			}
+			graphData.waitForData = true
 			sendCommand({
 				command: 'getDailyLog',
 				data: { day: dateString },
 			})
-			graphData.data = []
 		}
 	},
 	deactivate() {
@@ -169,15 +192,20 @@ export const dayGraph = reactive({
 		return this.date
 	},
 })
+// MONTH GRAPH
 export const monthGraph = reactive({
 	topic: 'openWB/log/monthly/#',
 	month: new Date().getMonth() + 1,
 	year: new Date().getFullYear(),
-	activate() {
+	activate(erase?: boolean) {
 		const dateString =
 			this.year.toString() + this.month.toString().padStart(2, '0')
 		graphData.data = []
 		mqttSubscribe(this.topic)
+		if (erase) {
+			graphData.data = []
+		}
+		graphData.waitForData = true
 		sendCommand({
 			command: 'getMonthlyLog',
 			data: { month: dateString },
@@ -213,14 +241,19 @@ export const monthGraph = reactive({
 		return new Date(this.year, this.month)
 	},
 })
+// YEAR GRAPH
 export const yearGraph = reactive({
 	topic: 'openWB/log/yearly/#',
 	month: new Date().getMonth() + 1,
 	year: new Date().getFullYear(),
-	activate() {
+	activate(erase?: boolean) {
 		const dateString = this.year.toString()
-		graphData.data = []
+		// graphData.data = []
 		mqttSubscribe(this.topic)
+		if (erase) {
+			graphData.data = []
+		}
+		graphData.waitForData = true
 		sendCommand({
 			command: 'getYearlyLog',
 			data: { year: dateString },
@@ -243,7 +276,8 @@ export const yearGraph = reactive({
 		return new Date(this.year, this.month)
 	},
 })
-export function initGraph(reloadOnly = false) {
+// ----- initGraph -----
+export function initGraph(reloadOnly: boolean = false) {
 	if (graphData.graphMode == '') {
 		setGraphMode(globalConfig.graphPreference)
 	} else if (graphData.graphMode == 'live') {
@@ -260,31 +294,31 @@ export function initGraph(reloadOnly = false) {
 			dayGraph.deactivate()
 			monthGraph.deactivate()
 			yearGraph.deactivate()
-			liveGraph.activate()
+			liveGraph.activate(!reloadOnly)
 			break
 		case 'today':
 			liveGraph.deactivate()
 			monthGraph.deactivate()
 			yearGraph.deactivate()
-			dayGraph.activate()
+			dayGraph.activate(!reloadOnly)
 			break
 		case 'day':
 			liveGraph.deactivate()
 			monthGraph.deactivate()
 			yearGraph.deactivate()
-			dayGraph.activate()
+			dayGraph.activate(!reloadOnly)
 			break
 		case 'month':
 			liveGraph.deactivate()
 			dayGraph.deactivate()
 			yearGraph.deactivate()
-			monthGraph.activate()
+			monthGraph.activate(!reloadOnly)
 			break
 		case 'year':
 			liveGraph.deactivate()
 			dayGraph.deactivate()
 			monthGraph.deactivate()
-			yearGraph.activate()
+			yearGraph.activate(!reloadOnly)
 			break
 	}
 }
@@ -311,7 +345,7 @@ export function calculateMonthlyAutarchy(cat: string, values: GraphDataItem) {
 			(values.pv - values.evuOut + values.evuIn + values.batOut)
 	}
 }
-const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
+const noAutarchyCalculation = ['evuIn', 'pv', 'batOut', 'evuOut']
 export const noData = ref(false)
 
 export function updateEnergyValues(
@@ -334,6 +368,10 @@ export function updateEnergyValues(
 		Object.entries(totals.cp).forEach(([id, values]) => {
 			if (id == 'all') {
 				historicSummary.setEnergy('charging', values.energy_imported)
+				if (values.energy_imported_pv != undefined) {
+					historicSummary.setEnergyPv('charging', values.energy_imported_pv)
+					historicSummary.setEnergyBat('charging', values.energy_imported_bat)
+				}
 			} else {
 				historicSummary.setEnergy(id, values.energy_imported)
 			}
@@ -342,17 +380,22 @@ export function updateEnergyValues(
 		Object.entries(totals.sh).forEach(([id, values]) => {
 			historicSummary.setEnergy(id, values.energy_imported)
 			const idNumber = id.substring(2)
-			if (!shDevices[+idNumber].countAsHouse) {
+			//if (!shDevices[+idNumber].countAsHouse) {
+			if (!shDevices.get(+idNumber)!.countAsHouse) {
 				historicSummary.items.devices.energy += values.energy_imported
 			}
 		})
 		if (totals.hc && totals.hc.all) {
 			historicSummary.setEnergy('house', totals.hc.all.energy_imported)
+			if (totals.hc.all.energy_imported_pv != undefined) {
+				historicSummary.setEnergyPv('house', totals.hc.all.energy_imported_pv)
+				historicSummary.setEnergyBat('house', totals.hc.all.energy_imported_bat)
+			}
 		} else {
 			historicSummary.calculateHouseEnergy()
 		}
-		historicSummary.keys().map((cat) => {
-			if (!nonPvCategories.includes(cat)) {
+		historicSummary.keys().forEach((cat) => {
+			if (!noAutarchyCalculation.includes(cat)) {
 				historicSummary.setPvPercentage(
 					cat,
 					Math.round(
@@ -372,7 +415,7 @@ export function updateEnergyValues(
 			}
 		})
 		if (graphData.graphMode == 'today') {
-			Object.values(chargePoints).map((cp) => {
+			Object.values(chargePoints).forEach((cp) => {
 				const hcp = historicSummary.items['cp' + cp.id]
 				if (hcp) {
 					cp.energyPv = hcp.energyPv
@@ -380,7 +423,7 @@ export function updateEnergyValues(
 					cp.pvPercentage = hcp.pvPercentage
 				}
 			})
-			Object.values(shDevices).map((device) => {
+			shDevices.forEach((device) => {
 				const hDevice = historicSummary.items['sh' + device.id]
 				if (hDevice) {
 					device.energy = hDevice.energy
@@ -395,8 +438,19 @@ export function updateEnergyValues(
 	}
 	energyMeterNeedsRedraw.value = true
 }
+export const xScale = computed(() => {
+	const e = extent(graphData.data, (d) => new Date(d.date))
+	if (e[0] && e[1]) {
+		return scaleUtc<number>()
+			.domain(e)
+			.range([0, width - margin.left - 2 * margin.right])
+	} else {
+		return scaleTime().range([0, 0])
+	}
+})
+
 function resetPvValues() {
-	historicSummary.keys().map((cat) => {
+	historicSummary.keys().forEach((cat) => {
 		if (consumerCategories.includes(cat)) {
 			usageSummary[cat].energy = historicSummary.items[cat].energy
 			usageSummary[cat].energyPv = 0
@@ -404,12 +458,12 @@ function resetPvValues() {
 			usageSummary[cat].pvPercentage = 0
 		}
 	})
-	Object.values(chargePoints).map((cp) => {
+	Object.values(chargePoints).forEach((cp) => {
 		cp.energyPv = 0
 		cp.energyBat = 0
 		cp.pvPercentage = 0
 	})
-	Object.values(shDevices).map((device) => {
+	shDevices.forEach((device) => {
 		device.energyPv = 0
 		device.energyBat = 0
 		device.pvPercentage = 0
@@ -436,8 +490,10 @@ export function shiftLeft() {
 			break
 		case 'today':
 			graphData.graphMode = 'day'
-			dayGraph.date = new Date()
+			dayGraph.deactivate()
+			//dayGraph.date = new Date()
 			dayGraph.back()
+			dayGraph.activate()
 			initGraph()
 			break
 		case 'day':
@@ -551,3 +607,4 @@ export function toggleMonthlyView() {
 			break
 	}
 }
+export const itemNames = ref(new Map<string, string>())

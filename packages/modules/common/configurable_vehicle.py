@@ -66,7 +66,8 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             car_state = self._get_carstate_by_source(vehicle_update_data, source)
             log.debug(f"Requested start soc from {source.value}: {car_state.soc}%")
 
-            if source != SocSource.CALCULATION:
+            if (source != SocSource.CALCULATION or
+                    (vehicle_update_data.imported and self.calculated_soc_state.imported_start is None)):
                 # Wenn nicht berechnet wurde, SoC als Start merken.
                 self.calculated_soc_state.imported_start = vehicle_update_data.imported
                 self.calculated_soc_state.soc_start = car_state.soc
@@ -108,11 +109,12 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         if source == SocSource.API:
             return self.__component_updater(vehicle_update_data)
         elif source == SocSource.CALCULATION:
-            return CarState(soc=calc_soc.calc_soc(vehicle_update_data,
-                                                  vehicle_update_data.efficiency,
-                                                  self.calculated_soc_state.imported_start,
-                                                  self.calculated_soc_state.soc_start,
-                                                  vehicle_update_data.battery_capacity))
+            return CarState(soc=calc_soc.calc_soc(
+                vehicle_update_data,
+                vehicle_update_data.efficiency,
+                self.calculated_soc_state.imported_start or vehicle_update_data.imported,
+                self.calculated_soc_state.soc_start,
+                vehicle_update_data.battery_capacity))
         elif source == SocSource.CP:
             return CarState(vehicle_update_data.soc_from_cp)
         elif source == SocSource.MANUAL:

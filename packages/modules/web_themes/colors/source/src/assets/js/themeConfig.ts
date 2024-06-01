@@ -8,7 +8,7 @@ import { computed, reactive } from 'vue'
 import { select } from 'd3'
 import type { ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
-import { ChargeMode } from '@/components/chargePointList/model'
+import { ChargeMode, vehicles } from '@/components/chargePointList/model'
 import { sourceSummary } from './model'
 export class Config {
 	private _showRelativeArcs = false
@@ -30,7 +30,9 @@ export class Config {
 	private _showButtonBar = true
 	private _showCounters = false
 	private _showVehicles = false
+	private _showStandardVehicle = true
 	private _showPrices = false
+	private _showInverters = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -233,6 +235,17 @@ export class Config {
 	setShowVehicles(show: boolean) {
 		this._showVehicles = show
 	}
+	get showStandardVehicle() {
+		return this._showStandardVehicle
+	}
+	set showStandardVehicle(show: boolean) {
+		this._showStandardVehicle = show
+		vehicles[0].visible = show
+		savePrefs()
+	}
+	setShowStandardVehicle(show: boolean) {
+		this._showStandardVehicle = show
+	}
 	get showPrices() {
 		return this._showPrices
 	}
@@ -242,6 +255,16 @@ export class Config {
 	}
 	setShowPrices(show: boolean) {
 		this._showPrices = show
+	}
+	get showInverters() {
+		return this._showInverters
+	}
+	set showInverters(show: boolean) {
+		this._showInverters = show
+		savePrefs()
+	}
+	setShowInverters(show: boolean) {
+		this._showInverters = show
 	}
 }
 export const globalConfig = reactive(new Config())
@@ -385,13 +408,15 @@ interface Preferences {
 	showButtonBar?: boolean
 	showCounters?: boolean
 	showVehicles?: boolean
+	showStandardV?: boolean
 	showPrices?: boolean
+	showInv?: boolean
 	debug?: boolean
 }
 
 function writeCookie() {
 	const prefs: Preferences = {}
-	prefs.hideSH = Object.values(shDevices)
+	prefs.hideSH = [...shDevices.values()]
 		.filter((device) => !device.showInGraph)
 		.map((device) => device.id)
 	prefs.showLG = globalConfig.graphPreference == 'live'
@@ -412,7 +437,9 @@ function writeCookie() {
 	prefs.showButtonBar = globalConfig.showButtonBar
 	prefs.showCounters = globalConfig.showCounters
 	prefs.showVehicles = globalConfig.showVehicles
+	prefs.showStandardV = globalConfig.showStandardVehicle
 	prefs.showPrices = globalConfig.showPrices
+	prefs.showInv = globalConfig.showInverters
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
@@ -435,11 +462,11 @@ function readCookie() {
 			globalConfig.setSmartHomeColors(prefs.smartHomeC)
 		}
 		if (prefs.hideSH !== undefined) {
-			prefs.hideSH.map((i) => {
-				if (shDevices[i] == undefined) {
+			prefs.hideSH.forEach((i) => {
+				if (shDevices.get(i) == undefined) {
 					addShDevice(i)
 				}
-				shDevices[i].setShowInGraph(false)
+				shDevices.get(i)!.setShowInGraph(false)
 			})
 		}
 		if (prefs.showLG !== undefined) {
@@ -490,8 +517,14 @@ function readCookie() {
 		if (prefs.showVehicles !== undefined) {
 			globalConfig.setShowVehicles(prefs.showVehicles)
 		}
+		if (prefs.showStandardV !== undefined) {
+			globalConfig.setShowStandardVehicle(prefs.showStandardV)
+		}
 		if (prefs.showPrices !== undefined) {
 			globalConfig.setShowPrices(prefs.showPrices)
+		}
+		if (prefs.showInv !== undefined) {
+			globalConfig.setShowInverters(prefs.showInv)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)
