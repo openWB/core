@@ -29,7 +29,7 @@
 				>
 			</div>
 		</template>
-		<div class="subgrid infolist">
+		<div class="subgrid">
 			<InfoItem heading="Leistung:" class="grid-col-4 grid-left">
 				<FormatWatt :watt="device.power" />
 			</InfoItem>
@@ -92,7 +92,7 @@ function statusButtonClicked() {
 		} else {
 			updateServer('shSwitchOn', 1, props.device.id)
 		}
-		shDevices[props.device.id].status = 'waiting'
+		shDevices.get(props.device.id)!.status = 'waiting'
 	}
 }
 function modeButtonClicked() {

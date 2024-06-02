@@ -46,7 +46,7 @@ Hagen */
 			</button>
 		</div>
 		<ModalComponent :modal-id="modalId">
-			<template #title> Lademodus für {{ chargepoint.name }} </template>
+			<template #title> Lademodus für {{ chargepoint.vehicleName }} </template>
 			<BBSelect :cp-id="chargepoint.id" />
 		</ModalComponent>
 	</div>
@@ -132,10 +132,16 @@ const modeIcon = computed(() => {
 	}
 })
 const priorityIcon = computed(() => {
-	if (globalData.pvBatteryPriority) {
-		return 'fa-car-battery'
-	} else {
-		return 'fa-car'
+	switch (globalData.pvBatteryPriority) {
+		case 'ev_mode':
+			return 'fa-car'
+		case 'bat_mode':
+			return 'fa-car-battery'
+		case 'min_soc_bat_mode':
+			return 'fa-battery-half'
+		default:
+			console.log('default')
+			return ''
 	}
 })
 const plugPillClass = computed(() => {

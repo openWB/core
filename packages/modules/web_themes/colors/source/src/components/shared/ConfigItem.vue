@@ -1,6 +1,6 @@
 <template>
 	<WbSubwidget :fullwidth="fullwidth ? true : false">
-		<div class="col-12 m-0 mb-0 px-0 py-0 configitem">
+		<div class="grid-col-12 mt-2 mb-0 px-0 py-0 configitem">
 			<div class="titlecolumn m-0 p-0 d-flex align-items-center">
 				<span class="d-flex align-items-baseline m-0 p-0" @click="toggleInfo">
 					<i
@@ -28,14 +28,12 @@
 				<i class="me-1 fa-solid fa-sm fa-circle-info" />
 				{{ infotext }}
 			</p>
-			<div class="row ms-1 mb-2 p-0 pt-2 d-flex align-items-center">
-				<div class="col me-1 p-0 ps-4 selectors">
-					<span class="d-flex justify-content-stretch align-items-center">
-						<span>
-							<slot />
-						</span>
-					</span>
-				</div>
+			<div
+				class="ms-1 mb-2 p-0 pt-2 d-flex justify-content-stretch align-items-center"
+			>
+				<span class="justify-content-stretch d-flex">
+					<slot />
+				</span>
 			</div>
 		</div>
 	</WbSubwidget>

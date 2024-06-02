@@ -20,18 +20,16 @@
 				>
 			</div>
 		</template>
-		<div class="subgrid">
-			<div class="pricechart">
-				<figure id="pricechart" class="p-0 m-0">
-					<svg viewBox="0 0 400 280">
-						<g
-							:id="chartId"
-							:origin="draw"
-							:transform="'translate(' + margin.top + ',' + margin.right + ')'"
-						/>
-					</svg>
-				</figure>
-			</div>
+		<div class="grapharea">
+			<figure id="pricechart" class="p-1 m-0 pricefigure">
+				<svg viewBox="0 0 400 280">
+					<g
+						:id="chartId"
+						:origin="draw"
+						:transform="'translate(' + margin.top + ',' + margin.left + ') '"
+					/>
+				</svg>
+			</figure>
 		</div>
 	</WbWidgetFlex>
 </template>
@@ -48,7 +46,6 @@ import {
 	timeFormat,
 	axisLeft,
 	select,
-	line,
 } from 'd3'
 
 const props = defineProps<{
@@ -57,10 +54,11 @@ const props = defineProps<{
 
 const needsUpdate = ref(false)
 let dummy = false
-const width = 400
+const width = 380
 const height = 250
-const margin = { top: 0, bottom: 15, left: 20, right: 5 }
+const margin = { top: 0, bottom: 15, left: 20, right: 0 }
 const axisfontsize = 12
+
 const plotdata = computed(() => {
 	let valueArray: [Date, number][] = []
 	if (etData.etPriceList.size > 0) {
@@ -72,16 +70,19 @@ const plotdata = computed(() => {
 })
 const barwidth = computed(() => {
 	if (plotdata.value.length > 1) {
-		return (width - margin.left - margin.right) / plotdata.value.length - 1
+		return (width - margin.left - margin.right) / plotdata.value.length
 	} else {
 		return 0
 	}
 })
 const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
-
+	if (xdomain[1]) {
+		xdomain[1] = new Date(xdomain[1])
+		xdomain[1].setTime(xdomain[1].getTime() + 3600000)
+	}
 	return scaleTime()
-		.range([margin.left, width - margin.left - margin.right])
+		.range([margin.left, width - margin.right])
 		.domain(xdomain)
 })
 const yDomain = computed(() => {
@@ -95,33 +96,32 @@ const yScale = computed(() => {
 		.range([height - margin.bottom, 0])
 		.domain(yDomain.value)
 })
-const zeroPath = computed(() => {
-	const generator = line()
-	const points = [
-		[margin.left, yScale.value(0)],
-		[width - margin.right, yScale.value(0)],
-	]
-	return generator(points as [number, number][])
-})
+
 const xAxisGenerator = computed(() => {
 	return axisBottom<Date>(xScale.value)
-		.ticks(6)
+		.ticks(plotdata.value.length)
 		.tickSize(5)
-		.tickFormat(timeFormat('%H:%M'))
+		.tickSizeInner(-height)
+		.tickFormat((d) => (d.getHours() % 6 == 0 ? timeFormat('%H:%M')(d) : ''))
 })
 const yAxisGenerator = computed(() => {
-	return axisLeft<number>(yScale.value)
-		.ticks(6)
-		.tickSizeInner(-(width - margin.right))
-		.tickFormat((d) => d.toString())
+	return (
+		axisLeft<number>(yScale.value)
+			//.ticks(yDomain.value[1] - yDomain.value[0])
+			.ticks(15)
+			.tickSize(0)
+			.tickSizeInner(-(width - margin.right - margin.left))
+			.tickFormat((d) => d.toString())
+	)
 })
+// Draw the diagram
 const draw = computed(() => {
 	if (needsUpdate.value == true) {
 		dummy = !dummy
 	}
-
 	const svg = select('g#' + chartId.value)
 	svg.selectAll('*').remove()
+	// Bars
 	const bargroups = svg
 		.selectAll('bar')
 		.data(plotdata.value)
@@ -144,31 +144,75 @@ const draw = computed(() => {
 		.attr('color', 'var(--color-bg)')
 	xAxis
 		.selectAll('.tick line')
-		.attr('stroke', 'var(--color-fg)')
-		.attr('stroke-width', '0.5')
+		.attr('stroke', 'var(--color-bg)')
+		.attr('stroke-width', (d) =>
+			(d as Date).getHours() % 6 == 0 ? '2' : '0.5',
+		)
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
 	const yAxis = svg.append('g').attr('class', 'axis').call(yAxisGenerator.value)
-	yAxis.attr('transform', 'translate(' + margin.left + ',' + 0 + ')')
+	yAxis.attr('transform', 'translate(' + margin.left + ',0)')
 	yAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
 		.attr('color', 'var(--color-bg)')
-
 	yAxis
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
-		.attr('stroke-width', '0.5')
+		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 
-	// zero line
-	if (yDomain.value[0] < 0) {
-		svg
-			.append('path')
-			.attr('d', zeroPath.value)
-			.attr('stroke', 'var(--color-fg)')
-	}
+	// Tooltips
+	const ttips = svg
+		.selectAll('ttip')
+		.data(plotdata.value)
+		.enter()
+		.append('g')
+		.attr('class', 'ttarea')
+	ttips
+		.append('rect')
+		.attr('x', (d) => xScale.value(d[0]))
+		.attr('y', (d) => yScale.value(d[1]))
+		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
+		.attr('class', 'ttrect')
+		.attr('width', barwidth.value)
+		.attr('opacity', '1%')
+		.attr('fill', 'var(--color-charging)')
+	const tt = ttips
+		.append('g')
+		.attr('class', 'ttmessage')
+		.attr(
+			'transform',
+			(d) =>
+				'translate(' +
+				(xScale.value(d[0]) - 30 + barwidth.value / 2) +
+				',' +
+				(yScale.value(d[1]) - 16) +
+				')',
+		)
+	tt.append('rect')
+		.attr('rx', 5)
+		.attr('width', '60')
+		.attr('height', '30')
+		.attr('fill', 'var(--color-menu)')
+	const texts = tt
+		.append('text')
+		.attr('text-anchor', 'middle')
+		.attr('x', 30)
+		.attr('y', 12)
+		.attr('font-size', axisfontsize)
+		.attr('fill', 'var(--color-bg)')
+	texts
+		.append('tspan')
+		.attr('x', 30)
+		.attr('dy', '0em')
+		.text((d) => timeFormat('%H:%M')(d[0]))
+	texts
+		.append('tspan')
+		.attr('x', 30)
+		.attr('dy', '1.1em')
+		.text((d) => Math.round(d[1] * 10) / 10 + ' ct')
 	return 'PriceChart.vue'
 })
 const chartId = computed(() => {
@@ -180,25 +224,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.color-charging {
-	color: var(--color-charging);
-}
-
-.fa-circle-check {
-	color: var(--color-menu);
-}
-
-.settingsheader {
-	color: var(--color-charging);
-	font-size: 16px;
-	font-weight: bold;
-}
-
-.providername {
-	color: var(--color-axis);
-	font-size: 16px;
-}
-
 .pricebadge {
 	background-color: var(--color-charging);
 	font-weight: normal;
@@ -209,7 +234,17 @@ onMounted(() => {
 	font-weight: normal;
 }
 
-.pricechart {
-	grid-column: span 12;
+.grapharea {
+	grid-column-start: 1;
+	grid-column-end: 13;
+	width: 100%;
+	object-fit: cover;
+	max-height: 100%;
+
+	justify-items: stretch;
+}
+
+.pricefigure {
+	justify-self: stretch;
 }
 </style>

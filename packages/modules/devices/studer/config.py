@@ -4,8 +4,9 @@ from modules.common.component_setup import ComponentSetup
 
 
 class StuderConfiguration:
-    def __init__(self, ip_address: Optional[str] = None):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
         self.ip_address = ip_address
+        self.port = port
 
 
 class Studer:
@@ -21,8 +22,8 @@ class Studer:
 
 
 class StuderBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 60):
+        self.modbus_id = modbus_id
 
 
 class StuderBatSetup(ComponentSetup[StuderBatConfiguration]):

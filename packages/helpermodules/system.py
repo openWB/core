@@ -76,23 +76,26 @@ class System:
             self.data["ip_address"] = new_ip
             pub.Pub().pub("openWB/set/system/ip_address", new_ip)
 
-    def create_backup_and_send_to_cloud(self):
+    def thread_backup_and_send_to_cloud(self):
         def create():
             try:
-                if self.backup_cloud is not None:
-                    backup_filename = self.create_backup()
-                    with open(self._get_parent_file()/'data'/'backup'/backup_filename, 'rb') as f:
-                        data = f.read()
-                    self.backup_cloud.update(backup_filename, data)
-                    log.debug('Nächtliche Sicherung erstellt und hochgeladen.')
+                self.create_backup_and_send_to_cloud()
             except Exception as e:
-                raise e
+                log.exception(f"Error in cloud backup: {e}")
 
         for thread in threading.enumerate():
             if thread.name == "cloud backup":
                 log.debug("Don't start multiple instances of cloud backup thread.")
                 return
         threading.Thread(target=create, args=(), name="cloud backup").start()
+
+    def create_backup_and_send_to_cloud(self):
+        if self.backup_cloud is not None:
+            backup_filename = self.create_backup()
+            with open(self._get_parent_file()/'data'/'backup'/backup_filename, 'rb') as f:
+                data = f.read()
+            self.backup_cloud.update(backup_filename, data)
+            log.debug('Nächtliche Sicherung erstellt und hochgeladen.')
 
     def create_backup(self) -> str:
         result = subprocess.run([str(self._get_parent_file() / "runs" / "backup.sh"), "1"], stdout=subprocess.PIPE)

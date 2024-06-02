@@ -1,10 +1,11 @@
-from unittest.mock import Mock
+from typing import List, Optional, Tuple, Union
+from unittest.mock import Mock, patch
 
 import pytest
 from modules.common import sdm
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_PROBLEM, USB_ADAPTER_BROKEN,
+    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_NO_SERIAL_NUMBER, METER_PROBLEM, USB_ADAPTER_BROKEN,
     SeriesHardwareCheckMixin, check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
@@ -81,9 +82,37 @@ def test_hardware_check_succeeds(monkeypatch):
      pytest.param([230, 0, 230], METER_BROKEN, id="dreiphasig, L2 defekt"),
      ]
 )
-def test_check_meter(voltages, expected_msg, monkeypatch):
+def test_check_meter_values(voltages, expected_msg, monkeypatch):
     # setup & execution
     msg = check_meter_values(voltages)
 
     # assert
     assert msg == expected_msg
+
+
+@patch('modules.common.hardware_check.ClientHandlerProtocol')
+@pytest.mark.parametrize("serial_number_return, voltages_return, expected",
+                         [("0", [230]*3, (True, METER_NO_SERIAL_NUMBER)),
+                          (12345, [230]*3, (True, None)),
+                          (Exception(), [230]*3, (False, METER_PROBLEM))])
+def test_check_meter(
+    MockClientHandlerProtocol: Mock,
+    serial_number_return: Union[int, Exception],
+    voltages_return: List[int],
+    expected: Tuple[bool, Optional[str]],
+):
+    # Arrange
+    mock_meter_client = Mock()
+    if isinstance(serial_number_return, Exception):
+        mock_meter_client.get_serial_number.side_effect = serial_number_return
+    else:
+        mock_meter_client.get_serial_number.return_value = serial_number_return
+    mock_meter_client.get_voltages.return_value = voltages_return
+    MockClientHandlerProtocol.meter_client = mock_meter_client
+    mixin = SeriesHardwareCheckMixin
+
+    # Act
+    result = mixin.check_meter(MockClientHandlerProtocol)
+
+    # Assert
+    assert result == expected

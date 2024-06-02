@@ -8,41 +8,56 @@ import {
 	calculateMonthlyAutarchy,
 } from './model'
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
+import { itemNames } from './model'
 
 let columnValues: { [key: string]: number } = {}
 const consumerCategories = ['charging', 'house', 'batIn', 'devices']
-const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
+const nonPvCategories = ['evuIn', 'pv', 'batOut', 'evuOut']
 let gridCounters: string[] = []
 
 // methods:
 // Process a new message with monthly graph data. A single message contains all data
 export function processMonthGraphMessages(topic: string, message: string) {
-	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
-	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
-	resetHistoricSummary()
-	gridCounters = []
-	consumerCategories.map((cat) => {
-		historicSummary.items[cat].energyPv = 0
-		historicSummary.items[cat].energyBat = 0
-	})
-	if (inputTable.length > 0) {
-		setGraphData(transformDatatable(inputTable))
-	}
-	updateEnergyValues(energyValues, [])
-
-	// reloadMonthGraph(topic, message)
-}
-export function processYearGraphMessages(topic: string, message: string) {
-	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
-	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	//const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
+	//const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	const {
+		entries: inputTable,
+		names: itemNames2,
+		totals: energyValues,
+	} = JSON.parse(message)
+	itemNames.value = new Map(Object.entries(itemNames2))
 	resetHistoricSummary()
 	gridCounters = []
 	consumerCategories.forEach((cat) => {
 		historicSummary.items[cat].energyPv = 0
 		historicSummary.items[cat].energyBat = 0
 	})
-	setGraphData(transformDatatable(inputTable))
-	updateEnergyValues(energyValues, [])
+	if (inputTable.length > 0) {
+		setGraphData(transformDatatable(inputTable))
+	}
+	updateEnergyValues(energyValues, gridCounters)
+
+	// reloadMonthGraph(topic, message)
+}
+export function processYearGraphMessages(topic: string, message: string) {
+	//const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
+	//const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	const {
+		entries: inputTable,
+		names: itemNames2,
+		totals: energyValues,
+	} = JSON.parse(message)
+	itemNames.value = new Map(Object.entries(itemNames2))
+	resetHistoricSummary()
+	gridCounters = []
+	consumerCategories.forEach((cat) => {
+		historicSummary.items[cat].energyPv = 0
+		historicSummary.items[cat].energyBat = 0
+	})
+	if (inputTable.length > 0) {
+		setGraphData(transformDatatable(inputTable))
+	}
+	updateEnergyValues(energyValues, gridCounters)
 }
 // transform the incoming format into the format used by the graph
 function transformDatatable(
@@ -51,7 +66,7 @@ function transformDatatable(
 	const outputTable: GraphDataItem[] = []
 	let currentItem: GraphDataItem = {}
 	columnValues = {}
-	inputTable.map((inputRow) => {
+	inputTable.forEach((inputRow) => {
 		currentItem = transformRow(inputRow)
 		outputTable.push(currentItem)
 		Object.keys(currentItem).forEach((field) => {
@@ -158,13 +173,17 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		0,
 	)
 	// House
-	outputRow.house =
-		outputRow.pv +
-		outputRow.evuIn +
-		outputRow.batOut -
-		outputRow.evuOut -
-		outputRow.batIn -
-		outputRow.charging
+	if (inputRow.hc && inputRow.hc.all) {
+		outputRow.house = inputRow.hc.all.energy_imported // (seems this is now centrally computed) - currentItem.devices
+	} else {
+		outputRow.house =
+			outputRow.pv +
+			outputRow.evuIn +
+			outputRow.batOut -
+			outputRow.evuOut -
+			outputRow.batIn -
+			outputRow.charging
+	}
 	// Self usage
 	outputRow.selfUsage = outputRow.pv - outputRow.evuOut
 	// Autarchy
@@ -173,7 +192,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		historicSummary
 			.keys()
 			.filter((key) => !nonPvCategories.includes(key))
-			.map((cat) => {
+			.forEach((cat) => {
 				calculateMonthlyAutarchy(cat, outputRow)
 			})
 	} else {

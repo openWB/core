@@ -9,6 +9,6 @@ export function msgInit() {
 		mqttSubscribe(topic)
 	})
 }
-function processMqttMessage(topic: string, message: Buffer) {
-	add(topic, message.toString())
+function processMqttMessage(topic: string, payload: Buffer) {
+	add(topic, payload.toString())
 }

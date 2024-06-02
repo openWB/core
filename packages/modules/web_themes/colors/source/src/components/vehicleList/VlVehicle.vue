@@ -1,7 +1,7 @@
 <template>
 	<WbSubwidget titlecolor="var(--color-title)" :fullwidth="true">
 		<template #title>
-			<span class="vehiclename">{{ props.vehicle.name }} </span>
+			{{ props.vehicle.name }}
 		</template>
 		<div class="subgrid">
 			<InfoItem heading="Status:" :small="false" class="grid-left grid-col-4">
@@ -19,7 +19,7 @@
 				:small="false"
 				class="grid-right grid-col-4"
 			>
-				{{ props.vehicle.range }} km
+				{{ Math.round(props.vehicle.range) }} km
 			</InfoItem>
 		</div>
 	</WbSubwidget>
@@ -35,18 +35,16 @@ const props = defineProps<{
 }>()
 
 const statusString = computed(() => {
+	let result = 'Unterwegs'
 	let cp = props.vehicle.chargepoint
 	if (cp != undefined) {
-		let result = ''
 		if (cp.isCharging) {
 			result = 'Lädt (' + cp.name + ')'
-		} else {
+		} else if (cp.isPluggedIn) {
 			result = 'Bereit (' + cp.name + ')'
 		}
-		return result
-	} else {
-		return 'Unterwegs'
 	}
+	return result
 })
 
 const statusColor = computed(() => {
@@ -70,10 +68,6 @@ const statusColor = computed(() => {
 .idbadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
-}
-
-.vehiclename {
-	font-size: var(--font-large);
 }
 .status-string {
 	text-align: center;

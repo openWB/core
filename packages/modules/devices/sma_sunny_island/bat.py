@@ -21,7 +21,8 @@ class SunnyIslandBat:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def read(self) -> BatState:
-        unit = 3
+        unit = self.component_config.configuration.modbus_id
+
         with self.__tcp_client:
             soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.INT_32, unit=unit)
 

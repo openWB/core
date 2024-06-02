@@ -2,20 +2,17 @@
 	<p class="settingsheader mt-2 ms-1">Preisbasiertes Laden:</p>
 	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
 	<hr />
-	<div class="row p-0 m-0">
-		<div class="col-12 pricechartColumn p-0 m-0">
-			<figure id="pricechart" class="p-0 m-0">
-				<svg viewBox="0 0 400 300">
-					<g
-						:id="chartId"
-						:origin="draw"
-						:transform="'translate(' + margin.top + ',' + margin.right + ')'"
-					/>
-				</svg>
-			</figure>
-		</div>
+	<div class="container">
+		<figure id="pricechart" class="p-0 m-0">
+			<svg viewBox="0 0 400 300">
+				<g
+					:id="chartId"
+					:origin="draw"
+					:transform="'translate(' + margin.top + ',' + margin.right + ')'"
+				/>
+			</svg>
+		</figure>
 	</div>
-
 	<div v-if="chargepoint != undefined" class="p-3">
 		<RangeInput
 			v-if="chargepoint.etActive"

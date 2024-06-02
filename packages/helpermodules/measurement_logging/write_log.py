@@ -1,12 +1,11 @@
 from enum import Enum
 import json
 import logging
-import pathlib
 from pathlib import Path
 import re
 import string
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
-from typing import Dict
+from typing import Dict, Optional
 
 from control import data
 from helpermodules.broker import InternalBrokerClient
@@ -128,39 +127,58 @@ def save_log(log_type: LogType):
     folder: str
         gibt an, ob ein Tages-oder Monats-Log-Eintrag erstellt werden soll.
     """
-    sh_log_data = LegacySmartHomeLogData()
-    new_entry = create_entry(log_type, sh_log_data)
-
-    # json-Objekt in Datei einfügen
-    if log_type == LogType.DAILY:
-        (pathlib.Path(__file__).resolve().parents[3] / "data"/"daily_log").mkdir(mode=0o755,
-                                                                                 parents=True, exist_ok=True)
-        filepath = str(
-            Path(__file__).resolve().parents[3] / "data" / "daily_log" /
-            (timecheck.create_timestamp_YYYYMMDD() + ".json"))
-    else:
-        (pathlib.Path(__file__).resolve().parents[3] / "data"/"monthly_log").mkdir(mode=0o755,
-                                                                                   parents=True, exist_ok=True)
-        filepath = str(
-            Path(__file__).resolve().parents[3] / "data" / "monthly_log" /
-            (timecheck.create_timestamp_YYYYMM() + ".json"))
     try:
-        with open(filepath, "r") as jsonFile:
-            content = json.load(jsonFile)
-    except FileNotFoundError:
+        parent_file = Path(__file__).resolve().parents[3] / "data" / \
+            ("daily_log" if log_type == LogType.DAILY else "monthly_log")
+        parent_file.mkdir(mode=0o755, parents=True, exist_ok=True)
+        if log_type == LogType.DAILY:
+            file_name = timecheck.create_timestamp_YYYYMMDD()
+        else:
+            file_name = timecheck.create_timestamp_YYYYMM()
+        filepath = str(parent_file / f"{file_name}.json")
+
+        try:
+            with open(filepath, "r") as jsonFile:
+                content = json.load(jsonFile)
+        except FileNotFoundError:
+            content = {"entries": [], "names": {}}
+
+        previous_entry = get_previous_entry(parent_file, content)
+
+        sh_log_data = LegacySmartHomeLogData()
+        new_entry = create_entry(log_type, sh_log_data, previous_entry)
+
+        # json-Objekt in Datei einfügen
+
+        entries = content["entries"]
+        entries.append(new_entry)
+        content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
         with open(filepath, "w") as jsonFile:
-            json.dump({"entries": [], "names": {}}, jsonFile)
-        with open(filepath, "r") as jsonFile:
-            content = json.load(jsonFile)
-    entries = content["entries"]
-    entries.append(new_entry)
-    content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
-    with open(filepath, "w") as jsonFile:
-        json.dump(content, jsonFile)
-    return content["entries"]
+            json.dump(content, jsonFile)
+        return content["entries"]
+    except Exception:
+        log.exception("Fehler beim Speichern des Log-Eintrags")
+        return None
 
 
-def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData) -> Dict:
+def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:
+    try:
+        previous_entry = content["entries"][-1]
+    except IndexError:
+        # get all files in Folder
+        path_list = parent_file.glob('*.json')
+        # sort path list by name
+        path_list = sorted(path_list, key=lambda x: x.name)
+        try:
+            with open(path_list[-2], "r") as jsonFile:
+                content = json.load(jsonFile)
+            previous_entry = content["entries"][-1]
+        except (IndexError, FileNotFoundError, json.decoder.JSONDecodeError):
+            previous_entry = None
+    return previous_entry
+
+
+def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previous_entry: Optional[Dict]) -> Dict:
     if log_type == LogType.DAILY:
         date = timecheck.create_timestamp_HH_MM()
     else:
@@ -224,8 +242,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData) -> Dict
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
     hc_dict = {"all": {"imported": data.data.counter_all_data.data.set.imported_home_consumption}}
-
-    return {
+    new_entry = {
         "timestamp": current_timestamp,
         "date": date,
         "cp": cp_dict,
@@ -237,19 +254,65 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData) -> Dict
         "hc": hc_dict
     }
 
+    return fix_values(new_entry, previous_entry)
 
-def get_names(totals: Dict, sh_names: Dict) -> Dict:
+
+def fix_values(new_entry: Dict, previous_entry: Optional[Dict]) -> Dict:
+    def find_and_fix_value(value_name):
+        if value.get(value_name) is not None:
+            if value[value_name] == 0:
+                try:
+                    value[value_name] = previous_entry[group][component][value_name]
+                except KeyError:
+                    log.exception("Es konnte kein vorheriger Wert gefunden werden.")
+    if previous_entry is not None:
+        for group, value in new_entry.items():
+            if group not in ("bat", "counter", "cp", "pv", "hc"):
+                continue
+            for component, value in value.items():
+                find_and_fix_value("exported")
+                find_and_fix_value("imported")
+    else:
+        log.warning("Keine vorherigen Werte vorhanden, um aktuelle Werte auf Plausibilität zu prüfen.")
+    return new_entry
+
+
+def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None) -> Dict:
+    """ Ermittelt die Namen der Komponenten, Fahrzeuge, Ladepunkte und SmartHome-Geräte, welche
+    in elements vorhanden sind und gibt diese als Dictionary zurück.
+    Parameter
+    ---------
+    elements: dict
+        Dictionary, das die Messwerte enthält.
+    sh_names: dict
+        Dictionary, das die Namen der SmartHome-Geräte enthält.
+    valid_names: dict
+        Dictionary mit allen gültigen Namen, die in der Konfiguration hinterlegt sind.
+        Ist None, wenn die Namen aus data ermittelt werden sollen.
+    """
     names = sh_names
-    for group in totals.items():
-        if group[0] not in ("bat", "counter", "cp", "pv"):
+    for group in elements.items():
+        if group[0] not in ("bat", "counter", "cp", "pv", "ev", "sh"):
             continue
         for entry in group[1]:
-            try:
-                if "cp" in entry:
-                    names.update({entry: data.data.cp_data[entry].data.config.name})
-                elif "all" != entry:
-                    id = entry.strip(string.ascii_letters)
-                    names.update({entry: get_component_name_by_id(int(id))})
-            except (ValueError, KeyError, AttributeError):
-                names.update({entry: entry})
+            # valid_names wird aus update_config übergeben, da dort noch kein Zugriff auf data möglich ist
+            if valid_names is not None:
+                if "all" != entry:
+                    if entry in valid_names and (entry not in names or names[entry] == entry):
+                        names.update({entry: valid_names[entry]})
+                    else:
+                        names.update({entry: entry})
+            else:
+                if group[0] == "sh":
+                    continue
+                try:
+                    if "ev" in entry:
+                        names.update({entry: data.data.ev_data[entry].data.name})
+                    elif "cp" in entry:
+                        names.update({entry: data.data.cp_data[entry].data.config.name})
+                    elif "all" != entry:
+                        id = entry.strip(string.ascii_letters)
+                        names.update({entry: get_component_name_by_id(int(id))})
+                except (ValueError, KeyError, AttributeError):
+                    names.update({entry: entry})
     return names

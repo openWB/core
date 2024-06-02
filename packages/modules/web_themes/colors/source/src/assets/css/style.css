@@ -24,7 +24,12 @@ body>.container {
 /* No media query since this is the default in Bootstrap */
 html {
 	font-size: 12px;
+	.settingscolumn {
+		grid-column: span 12;
+	}
 }
+
+
 @media screen and (min-width: 240px) {
 	html {
 		font-size: 13px;
@@ -81,6 +86,9 @@ html {
 @media screen and (min-width: 992px) {
 	html {
 		font-size: 11px;
+		.settingscolumn {
+			grid-column: span 4;
+		}
 	}
 }
 /* Extra large devices (very large desktops, 1200px and up) */
@@ -172,6 +180,15 @@ body>.container-fluid {
 	--color-export: #b2df8a;
 	--color-battery: goldenrod;
 	--color-input: lightgrey;
+	--color-pv1: #33a02c;
+	--color-pv2: #4db662;
+	--color-pv3: #a1d99b;
+	--color-pv4: #74c476;
+	--color-pv5: #41ab5d;
+	--color-pv6: #238b45;
+	--color-pv7: #006d2c;
+	--color-pv8: #00441b;
+	--color-pv9: #33a02c;
 	--font-normal: 1.4rem;
 	--font-large: 1.6rem;
 	--font-medium: 1.2rem;
@@ -309,11 +326,23 @@ body>.container-fluid {
 .grid-col-12 {
 	grid-column: span 12;
 }
-.subgrid {
-	display:grid;
-	grid-column: 1 / 13; 
-	grid-template-columns: subgrid;
-	justify-content: top;
+
+@supports (grid-template-columns: subgrid) {
+	.subgrid {
+		display:grid;
+		grid-column: span 12; 
+		grid-template-columns: subgrid;
+		justify-content: top;
+	}
+}
+@supports not (grid-template-columns: subgrid) {
+	.subgrid {
+		display:grid;
+		grid-column: span 12; 
+		grid-template-columns: auto auto auto auto auto auto auto auto auto auto auto auto;
+		justify-content: top;
+		width: 100%;
+	}
 }
 .grid-left {
 	justify-self: start;
@@ -365,4 +394,8 @@ swiper-slide {
 
 option {
 	color: blue;
+}
+.ttarea .ttmessage {visibility: hidden}
+.ttarea:hover  .ttmessage {
+    visibility: visible;
 }

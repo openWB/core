@@ -3,6 +3,7 @@ import datetime
 import logging
 from typing import Dict
 import pytz
+from requests.exceptions import HTTPError
 
 from dataclass_utils import asdict
 from helpermodules import timecheck
@@ -39,6 +40,14 @@ def _refresh_token(config: VoltegoTariff):
 
 
 def fetch(config: VoltegoTariff) -> None:
+    def get_raw_prices():
+        return req.get_http_session().get(
+            "https://api.voltego.de/market_data/day_ahead/DE_LU/60",
+            headers={"Content-Type": "application/json;charset=UTF-8",
+                     "Authorization": f'Bearer {config.configuration.token.access_token}'},
+            params={"from": start_date, "tz": timezone}
+        ).json()["elements"]
+
     validate_token(config)
     # start_date von voller Stunde sonst liefert die API die nächste Stunde
     start_date = datetime.datetime.fromtimestamp(
@@ -49,12 +58,15 @@ def fetch(config: VoltegoTariff) -> None:
         timezone = "UTC+2:00"
     else:
         timezone = "UTC+1:00"
-    raw_prices = req.get_http_session().get(
-        "https://api.voltego.de/market_data/day_ahead/DE_LU/60",
-        headers={"Content-Type": "application/json;charset=UTF-8",
-                 "Authorization": f'Bearer {config.configuration.token.access_token}'},
-        params={"from": start_date, "tz": timezone}
-    ).json()["elements"]
+    # Bei Voltego wird anscheinend nicht ein Token pro Client, sondern das letzte erzeugte gespeichert.
+    try:
+        raw_prices = get_raw_prices()
+    except HTTPError as error:
+        if error.response.status_code == 401:
+            _refresh_token(config)
+            raw_prices = get_raw_prices()
+        else:
+            raise error
     prices: Dict[int, float] = {}
     for data in raw_prices:
         formatted_price = data["price"]/1000000  # €/MWh -> €/Wh
