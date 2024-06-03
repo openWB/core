@@ -155,6 +155,8 @@ def test_check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan], now: str, 
                          [
                              pytest.param(1652683202, "40 Sek."),
                              pytest.param(1652683222, "1 Min."),
+                             pytest.param(1652683221.8, "59 Sek."),
+                             pytest.param(1652683222.2, "1 Min."),
                              pytest.param(1652683232, "1 Min. 10 Sek.")
                          ]
                          )
