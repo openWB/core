@@ -344,7 +344,7 @@ class Command:
             pub_user_message(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
                              MessageType.ERROR)
         if payload["data"]["id"] > 0:
-            Pub().pub(f'openWB/vehicle/template/charge_template/{payload["data"]["id"]}', "")
+            ProcessBrokerBranch(f'vehicle/template/charge_template/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(
                 payload, connection_id,
                 f'Lade-Profil mit ID \'{payload["data"]["id"]}\' gelöscht.',
@@ -503,7 +503,7 @@ class Command:
             pub_user_message(payload, connection_id,
                              "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         if payload["data"]["id"] > 0:
-            Pub().pub(f'openWB/vehicle/template/ev_template/{payload["data"]["id"]}', "")
+            ProcessBrokerBranch(f'vehicle/template/ev_template/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(
                 payload, connection_id,
                 f'Fahrzeug-Profil mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -850,6 +850,18 @@ class ProcessBrokerBranch:
                         f'openWB/set/internal_chargepoint/{payload["configuration"]["duo_num"]}/data/parent_cp',
                         None,
                         hostname=payload["configuration"]["ip_address"])
+            elif re.search("openWB/chargepoint/template/[0-9]+$", msg.topic) is not None:
+                for cp in SubData.cp_data.values():
+                    if cp.chargepoint.data.config.template == int(msg.topic.split("/")[-1]):
+                        pub_single(f'openWB/set/chargepoint/{cp.chargepoint.num}/config/template', 0)
+            elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
+                for vehicle in SubData.ev_data.values():
+                    if vehicle.data.charge_template == int(msg.topic.split("/")[-1]):
+                        pub_single(f'openWB/set/vehicle/{vehicle.num}/charge_template', 0)
+            elif re.search("openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
+                for vehicle in SubData.ev_data.values():
+                    if vehicle.data.ev_template == int(msg.topic.split("/")[-1]):
+                        pub_single(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
 
     def __on_message_max_id(self, client, userdata, msg):
         self.received_topics.append(msg.topic)
