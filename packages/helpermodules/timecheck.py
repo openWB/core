@@ -346,4 +346,10 @@ def convert_timedelta_to_time_string(timedelta_obj: datetime.timedelta) -> str:
 def convert_timestamp_delta_to_time_string(timestamp: int, delta: int) -> str:
     diff = delta - (create_timestamp() - timestamp)
     minute_diff = int(diff/60)
-    return f"{f'{minute_diff} Min. ' if minute_diff > 0 else ''}{math.ceil(diff%60)} Sek."
+    seconds_diff = math.ceil(diff % 60)
+    if minute_diff > 0 and seconds_diff > 0:
+        return f"{minute_diff} Min. {seconds_diff} Sek."
+    elif minute_diff > 0:
+        return f"{minute_diff} Min."
+    elif seconds_diff > 0:
+        return f"{seconds_diff} Sek."
