@@ -41,9 +41,8 @@ class CpTemplateData:
     max_current_multi_phases: int = 32
     max_current_single_phase: int = 32
     name: str = "Standard Ladepunkt-Profil"
-    rfid_enabling: bool = False
-    valid_tags: List = field(default_factory=empty_list_factory)
     disable_after_unplug: bool = False
+    valid_tags: List = field(default_factory=empty_list_factory)
 
 
 class CpTemplate:
@@ -91,11 +90,11 @@ class CpTemplate:
             if data.data.optional_data.data.rfid.active and (rfid is not None or vehicle_id is not None):
                 vehicle = ev_module.get_ev_to_rfid(rfid, vehicle_id)
                 if vehicle is None:
-                    if self.data.rfid_enabling:
+                    if len(self.data.valid_tags) == 0:
                         num = -1
                         message = (
                             f"Keine Ladung, da dem ID-Tag {rfid} kein Fahrzeug-Profil zugeordnet werden kann. Eine "
-                            "Freischaltung ist nur mit gültigen ID-Tag möglich.")
+                            "Freischaltung ist nur mit gültigem ID-Tag möglich.")
                     else:
                         num = assigned_ev
                 else:
