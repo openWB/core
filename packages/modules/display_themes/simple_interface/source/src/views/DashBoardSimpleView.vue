@@ -2,21 +2,25 @@
 import { useMqttStore } from "@/stores/mqtt.js";
 
 export default {
-  name: "DashboardSimpleView",
+  name: "DashboardCanvasView",
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
   },
   data() {
     return {
-      mqttStore: useMqttStore(),
-      isAnimatingEVU: false,
-      isAnimatingPV: false,
-      isAnimatingHouse: false,
-      isAnimatingBattery: false,
-      isAnimatingCharger_1: false,
-      isAnimatingCharger_2: false,
+      FPS: 24, // Animation Frames per second
+      speed: 0.03, // Arrowhead speed
+      arrowLength: 25,
+      arrowWidth: 13,
 
-      batteryAnimationDirection: '',
+      mqttStore: useMqttStore(),
+      images: {
+        evu: new Image(),
+        pv: new Image(),
+        house: new Image(),
+        battery: new Image(),
+        charge: new Image()
+      },
     };
   },
   computed: {
@@ -32,7 +36,6 @@ export default {
     batteryPower() {
       return parseFloat(this.mqttStore.getBatteryPower.replace('W', '').replace(',', ''));
     },
-    //Charge point id's may vary in the setup ..need method of confirmig them as LP 1 and LP 2
     chargePoint1Power() {
       return parseFloat(this.mqttStore.getChargePointPower(2).replace('W', '').replace(',', ''));
     },
@@ -41,384 +44,277 @@ export default {
     }
   },
   methods: {
-    animationDirection(){
-      if(this.pvPower > 80){
-        this.isAnimatingPV = true;
-      } else {
-        this.isAnimatingPV = false;
+    drawDiagram() {
+      const canvas = this.$refs.canvas;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw components
+      this.drawComponent(ctx, 150, 50, 'EVU', this.gridPower);
+      this.drawComponent(ctx, 450, 50, 'PV', this.pvPower);
+      this.drawComponent(ctx, 150, 215, 'Haus', this.homePower);
+      this.drawComponent(ctx, 450, 215, 'Speicher', this.batteryPower);
+      this.drawComponent(ctx, 150, 350, 'Ladepunkt-1', this.chargePoint1Power);
+      this.drawComponent(ctx, 450, 350, 'Ladepunkt-2', this.chargePoint2Power);
+      // Draw static white line connections
+      // EVU & PV
+      this.drawStaticLines(ctx, 150, 125, 300, 125);
+      this.drawStaticLines(ctx, 150, 85, 150, 125);
+      this.drawStaticLines(ctx, 300, 125, 450, 125);
+      this.drawStaticLines(ctx, 450, 85, 450, 125);
+      // joining line to house & battery
+      this.drawStaticLines(ctx, 300, 125, 300, 215);
+      // House & Battery
+      this.drawStaticLines(ctx, 300, 215, 415, 215);
+      this.drawStaticLines(ctx, 185, 215, 300, 215);
+      // joining line to charge points
+      this.drawStaticLines(ctx, 300, 215, 300, 350);
+      // Chargers
+      this.drawStaticLines(ctx, 185, 350, 300, 350);
+      this.drawStaticLines(ctx, 300, 350, 415, 350);
+    },
+    drawComponent(ctx, x, y, label, power) {
+      // Draw cirles
+      ctx.fillStyle = '#222';
+      ctx.beginPath();
+      ctx.arc(x, y, 35, 0, Math.PI * 2, true);
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      //Draw svg images
+      let img;
+      let scaleFactor;
+      switch (label) {
+        case 'EVU':
+          img = this.images.evu;
+          scaleFactor = 0.14;
+          break;
+        case 'PV':
+          img = this.images.pv;
+          scaleFactor = 0.1;
+          break;
+        case 'Haus':
+          img = this.images.house;
+          scaleFactor = 0.09;
+          break;
+        case 'Speicher':
+          img = this.images.battery;
+          scaleFactor = 0.09;
+          break;
+        case 'Ladepunkt-1':
+        case 'Ladepunkt-2':
+          img = this.images.charge;
+          scaleFactor = 0.07;
+          break;
       }
 
-      if(this.gridPower > 0){
-        this.isAnimatingEVU = true;
-      } else {
-        this.isAnimatingEVU = false;
+      if (img) {
+        const baseSize = Math.min(ctx.canvas.width, ctx.canvas.height); // Determine aspect ratio of the canvas.
+        const imgWidth = scaleFactor * baseSize;  // scale img
+        const imgHeight = scaleFactor * baseSize; //scale img
+        ctx.drawImage(img, x - imgWidth / 2, y - imgHeight / 2, imgWidth, imgHeight); //place img at component center
       }
+      //Draw label text left side
+      if (x < 200) {
+        ctx.textAlign = 'right';
+        ctx.fillStyle = 'white';
+        ctx.fillText(label, x - 50, y - 10);
+        ctx.fillStyle = '#c9a68f';
+        ctx.fillText(`${power} W`, x - 50, y + 10);
+        //Draw label text right side  
+      } else {
+        ctx.textAlign = 'left';
+        ctx.font = '15px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillText(label, x + 50, y - 10);
+        ctx.fillStyle = '#c9a68f';
+        ctx.fillText(`${power} W`, x + 50, y + 10);
+      }
+    },
+    drawStaticLines(ctx, x1, y1, x2, y2) {
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    },
+    animateArrows() {
+      const canvas = this.$refs.canvas;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
 
-      if (this.batteryPower > 0) {
-        this.isAnimatingBattery = true;
-        this.batteryAnimationDirection = 'right';
-        
-      } else if (this.batteryPower < 0) {
-        this.isAnimatingBattery = true;
-        this.batteryAnimationDirection = 'left';
-        
-      } else {
-        this.isAnimatingBattery = false;
-        this.batteryAnimationDirection = null;
-      }
+      const drawLine = (x1, y1, x2, y2) => {
+        ctx.strokeStyle = 'green';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      };
 
-      if(this.homePower > 0){
-        this.isAnimatingHouse = true;
-      } else {
-        this.isAnimatingHouse = false;
-      }
+      const drawArrowhead = (x, y, angle) => {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
 
-      if(this.chargePoint1Power > 0){
-        this.isAnimatingCharger_1 = true;
-      } else {
-        this.isAnimatingCharger_1 = false;
-      }
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-this.arrowLength, this.arrowWidth / 2);
+        ctx.lineTo(-this.arrowLength, -this.arrowWidth / 2);
+        ctx.closePath();
 
-      if(this.chargePoint2Power > 0){
-        this.isAnimatingCharger_2 = true;
-      } else {
-        this.isAnimatingCharger_2 = false;
-      }
-    
+        ctx.restore();
+        ctx.fillStyle = 'green';
+        ctx.fill();
+      };
+
+      const animateLine = (x1, y1, x2, y2, t) => {
+        const totalLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        const maxProgress = totalLength / (totalLength + this.arrowLength); // Calculate the maximum progress to stop the tip at the end
+        let progress = (t * totalLength) / totalLength;
+        if (progress > maxProgress) {
+          progress = 0; // Reset progress if it exceeds maxProgress
+        }
+        let angle = Math.atan2(y2 - y1, x2 - x1);
+        // Adjust position to move arrowhead forward along the line
+        let x = x1 + progress * (x2 - x1) + Math.cos(angle) * this.arrowLength;
+        let y = y1 + progress * (y2 - y1) + Math.sin(angle) * this.arrowLength;
+        drawLine(x1, y1, x2, y2);
+        drawArrowhead(x, y, angle);
+        return t + this.speed;
+      };
+      // Set the desired Frames per second for the amnimation
+      const interval = 1000 / this.FPS; // Interval in milliseconds
+      let lastTime = (new Date()).getTime();
+      let t1 = 0, t2 = 0, t3 = 0, t4 = 0, t5 = 0, t6 = 0, t7 = 0, t8 = 0, t9 = 0, t10 = 0, t11 = 0, t12 = 0, t13 = 0;
+      // Call the animateLine function based on energy flows
+      const animate = () => {
+        const currentTime = (new Date()).getTime();
+        const deltaTime = currentTime - lastTime;
+        //FPS refresh time reached
+        if (deltaTime > interval) {
+          lastTime = currentTime - (deltaTime % interval);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          this.drawDiagram();
+
+          if (this.chargePoint1Power > 0) {
+            t1 = animateLine(300, 350, 185, 350, t1);
+            if (t1 > 1) t1 = 0;
+            t4 = animateLine(300, 215, 300, 350, t4);
+            if (t4 > 1) t4 = 0;
+          }
+
+          if (this.chargePoint2Power > 0) {
+            t2 = animateLine(300, 350, 415, 350, t2);
+            if (t2 > 1) t2 = 0;
+            t9 = animateLine(300, 215, 300, 350, t9);
+            if (t9 > 1) t9 = 0;
+          }
+
+          if (this.homePower > 0) {
+            t3 = animateLine(300, 215, 185, 215, t3);
+            if (t3 > 1) t3 = 0;
+          }
+
+          if (this.homePower > 0 || this.chargePoint1Power > 0 || this.bhargePoint2Power > 0) {
+            t8 = animateLine(300, 125, 300, 215, t8);
+            if (t8 > 1) t8 = 0;
+          }
+
+          if (this.batteryPower > 0) {
+            t5 = animateLine(300, 215, 415, 215, t5);
+            if (t5 > 1) t5 = 0;
+          }
+
+          if (this.batteryPower < 0) {
+            t5 = animateLine(415, 215, 300, 215, t5);
+            if (t5 > 1) t5 = 0;
+          }
+
+          if (this.pvPower > 30) {
+            t6 = animateLine(450, 125, 300, 125, t6);
+            if (t6 > 1) t6 = 0;
+            t7 = animateLine(450, 85, 450, 125, t7);
+            if (t7 > 1) t7 = 0;
+          }
+
+          if (this.gridPower > 0) {
+            t10 = animateLine(150, 125, 300, 125, t10);
+            if (t10 > 1) t10 = 0;
+            t11 = animateLine(150, 85, 150, 125, t11);
+            if (t11 > 1) t11 = 0;
+          }
+
+          if (this.gridPower < 0) {
+            t12 = animateLine(300, 125, 145, 125, t12);
+            if (t12 > 1) t12 = 0;
+            t13 = animateLine(145, 125, 145, 85, t13);
+            if (t13 > 1) t13 = 0;
+          }
+        }
+        requestAnimationFrame(animate);
+      };
+      animate();
     },
   },
-  watch:{
-    gridPower: 'animationDirection',
-    pvPower: 'animationDirection',
-    homePower: 'animationDirection',
-    batteryPower: 'animationDirection',
-    chargePoint1Power: 'animationDirection',
-    chargePoint2Power: 'animationDirection'
+  mounted() {
+    this.images.evu.src = './icons/owbEVU.svg';
+    this.images.pv.src = './icons/owbPV.svg';
+    this.images.house.src = './icons/owbHouse.svg';
+    this.images.battery.src = './icons/owbBattery.svg';
+    this.images.charge.src = './icons/owbCharge.svg';
+    this.images.charge.onload = () => {
+      this.drawDiagram();
+      this.animateArrows();
+    };
   },
-  mounted(){
-    this.animationDirection();
-  },
-};
+  beforeDestroy() {
+    // Clear animation frames on component destroy
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    // Nullify the canvas reference to prevent accessing it after destruction
+    if (this.$refs.canvas) {
+      this.$refs.canvas = null;
+    }
+  }
+}
 </script>
 
 <template>
-  <div class="diagram-container">
-    <div id="bd-1" :class="['base-div', 'base-top-left', 'padding-top-20', { 'animate-arrow-right': isAnimatingEVU },{ 'animate-arrow-left': !isAnimatingEVU} ]">
-        <div class="flex-column-left text-width">
-          <span class="power-text">{{ mqttStore.getGridPower }}</span>
-          <span class="component-text">EVU</span>
-        </div>
-      <div class="component-EVU flex-center">
-        <img src="/icons/owbEVU.svg" style="width: 3.5em; height: 3.5em;">
-      </div>
-      <span class="text-width"></span>
-    </div>
-
-    <div id="bd-2" :class="['base-div', 'base-top-right', 'padding-top-20', { 'animate-arrow-left': isAnimatingPV }]">
-      <span class="text-width"></span>
-      <div class="component-PV flex-center">
-        <img src="/icons/owbPV.svg" style="width: 2.5em; height: 2.5em;">
-      </div>
-      <div class="flex-column-right text-width">
-          <span class="power-text">{{ mqttStore.getPvPower }}</span>
-          <span class="component-text">PV</span>
-        </div>
-            <!-- Div created as reference for verical line joining house-battery to charging points -->
-            <div id="center-div" :class="['center-div-top',{'animate-arrow-left': isAnimatingHouse || isAnimatingBattery } ]">
-          <div class="center-content"></div>
-        </div>
-    </div>
-
-    <div id="bd-3" :class="['base-div', 'middle-bottom-left', {'animate-arrow-left': isAnimatingHouse} ]">
-      <div class="flex-column-left text-width">
-          <span class="power-text">{{ mqttStore.getHomePower }}</span>
-          <span class="component-text">Haus</span>
-        </div>
-      <div class="component-EVU flex-center">
-        <img src="/icons/owbHouse.svg" style="width: 2.5em; height: 2.5em;">
-      </div>
-      <span class="text-width"></span>
-    </div>
-
-    <div id="bd-4" :class="['base-div', 'middle-bottom-right', { 'animate-arrow-right': isAnimatingBattery && batteryAnimationDirection === 'right' }, 
-                                                        { 'animate-arrow-left': isAnimatingBattery && batteryAnimationDirection === 'left' },
-                                                        { 'no-animation': batteryAnimationDirection === null }]">
-      <span class="text-width"></span>
-      <div class="component-PV flex-center">
-        <img src="/icons/owbBattery.svg" style="width: 2.5em; height: 2.5em;">
-      </div>
-      <div class="flex-column-right text-width">
-          <span class="power-text">{{ mqttStore.getBatteryPower }}</span>
-          <span class="component-text">Speicher</span>
-        </div>
-            <!-- Div created as reference for verical line joining house-battery to charging points -->
-        <div id="center-div" :class="['center-div',{'animate-arrow-left': isAnimatingCharger_1 || isAnimatingCharger_2 } ]">
-          <div class="center-content"></div>
-        </div>
-    </div>
-
-    <div id="bd-5" :class="['base-div', 'middle-bottom-left', {'animate-arrow-left': isAnimatingCharger_1}]">
-      <div class="flex-column-left text-width">
-          <span class="power-text">{{mqttStore.getChargePointPower(2)}}</span>
-          <span class="component-text">Ladepunkt-1</span>
-        </div>
-      <div class="component-EVU flex-center">
-        <img src="/icons/owbCharge.svg" style="width: 2em; height: 2em;">
-      </div>
-      <span class="text-width"></span>
-    </div>
-
-    <div id="bd-6" :class="['base-div', 'middle-bottom-right',{'animate-arrow-right': isAnimatingCharger_2}]">
-      <span class="text-width"></span>
-      <div class="component-PV flex-center">
-        <img src="/icons/owbCharge.svg" style="width: 2em; height: 2em;">
-      </div>
-      <div class="flex-column-right text-width">
-          <span class="power-text">{{mqttStore.getChargePointPower(3)}}</span>
-          <span class="component-text">Ladepunkt-2</span>
-        </div>
-    </div>
+  <div class="canvas-container">
+    <canvas ref="canvas" width="600px" height="400"></canvas>
   </div>
 </template>
 
 <style scoped>
-/* Keyframes for the animation moving to the right */
-@keyframes arrow-animation-right {
-  0% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0 50%;
-  }
-}
-
-/* Keyframes for the animation moving to the left */
-@keyframes arrow-animation-left {
-  0% {
-    background-position: 0 50%;
-  }
-  100% {
-    background-position: 100% 50%;
-  }
-}
-
-/* Diagram container styling */
-.diagram-container {
-  display: flex;
-  flex-wrap: wrap;
-  height: 400px;
+.canvas-container {
+  position: relative;
   width: 100%;
   margin-top: 0.5rem;
+  padding-bottom: 66.67%;
+  /* Aspect ratio 3:2 (height / width * 100) */
   background-color: #46444c;
-  color: white;
   border-radius: 5px;
 }
 
-/* Base div styling */
-.base-div {
-  height: 33.3%;
-  width: 50%;
-  display: flex;
-  flex-wrap: wrap;
-  background-color: transparent;
-  position: relative; /* Ensure pseudo-elements are positioned correctly */
-}
-
-/* Styling for top-left and top-right base divs */
-.base-top-left,
-.base-top-right {
-  display: flex;
-  justify-content: center;
-  position: relative;
-}
-
-/* Default state for pseudo-elements (lines) TOP -- EVU and PV*/
-.base-top-left::after,
-.base-top-right::after {
-  content: "";
+canvas {
   position: absolute;
-  background: white;
-  width: 50%; /* Horizontal line */
-  height: 2px;
-  bottom: 0;
-}
-
-.base-top-left::after {
-  right: 0; /* Horizontal alignment */
-}
-
-.base-top-right::after {
-  left: 0; /* Horizontal alignment */
-}
-
-.base-top-left::before,
-.base-top-right::before {
-  content: "";
-  position: absolute;
-  background: white;
-  width: 2px; /* Vertical line */
-  height: 50%;
-  bottom: 0;
-  right: 50%;
-}
-
-/* Centered reference div placed so that a line can connect EVU and PV to Home and battery */
-.center-div-top {
-  position: absolute;
-  bottom: -50%; 
-  left: 0; /* Horizontal alignment */
-  background-color: #0c0b0e;
-  min-width: 0px;
-  height: 50%; /* Line length relative to div*/
-  z-index: 10; 
-}
-
-.center-div-top::before {
-  content: "";
-  position: absolute;
-  background: white;
-  width: 2px; /* Vertical line */
-  height: 100%; /* Line length relative to div*/
-  bottom: 0; /* Vertical alignment */
-  left: -1px;
-}
-
-/* Styling for MIDDLE and BOTTOM base divs */
-.middle-bottom-left,
-.middle-bottom-right {
-  display: flex;
-  justify-content: center;
-  position: relative;
-  align-content: center;
-}
-
-.middle-bottom-left::before{
-  right: -1px; /* Horizontal alignment */
-}
-
-.middle-bottom-right::before{
-  left: -1px; /* Horizontal alignment */
-}
-
-.middle-bottom-left::after,
-.middle-bottom-right::after  {
-  content: "";
-  position: absolute;
-  background: white;
-  width: 50%; /* Horizontal line */
-  height: 2px;
-  top: 50%;
-}
-
-.middle-bottom-left::after {
-  right: 0; /* Horizontal alignment */
-}
-
-.middle-bottom-right::after {
-  left: 0; /* Horizontal alignment */
-}
-
-/* Centered reference div placed so that a line can connect house and battery to charge points */
-.center-div {
-  position: absolute;
-  top: 50%; /* Center vertically within the container */
-  left: 0; /* Center horizontally within the container */
-  min-width: 0px;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
-  z-index: 1;
+  display: block;
 }
 
-/* Seperate vertical line to charge points */
-.center-div::before {
-  content: "";
-  position: absolute;
-  background: white;
-  width: 2px; /* Vertical line */
-  height: 100%;
-  bottom: 0;
-  left: -1px;
-}
-
-/* Conditional animation and visibility for (animation moving to the right) TOP*/
-.animate-arrow-right::before,
-.animate-arrow-right::after {
-  background: repeating-linear-gradient(
-    135deg,
-    transparent,
-    transparent 10px,
-    green 15px,
-    green 30px
-  );
-  background-size: 200% 100%;
-  animation: arrow-animation-right 1.5s infinite linear;
-}
-
-/* Conditional animation and visibility for (animation moving to the left) TOP*/
-.animate-arrow-left::before,
-.animate-arrow-left::after {
-  background: repeating-linear-gradient(
-    135deg,
-    transparent,
-    transparent 10px,
-    green 15px,
-    green 30px
-  );
-  background-size: 200% 100%;
-  animation: arrow-animation-left 1.5s infinite linear;
-}
-
-/* No animation state */
-.no-animation::before,
-.no-animation::after {
-  animation: none;
-}
-
-.flex-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* Component styling */
-.component-EVU,
-.component-PV {
-  height: 70px;
-  width: 70px;
-  border-radius: 50%;
-  background-color: #222;
-  border: 2px solid white;
-  z-index: 1;
-}
-
-.text-width {
-  width: 120px;
-  padding-top: 20px;
-}
-
-.flex-column-left {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  padding-right: 10px
-}
-
-.flex-column-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding-left: 10px;
-}
-
-.power-text {
-  font-weight: 700;
-}
-
-.component-text {
-  font-weight: 700;
-  color: #c9a68f;
-}
-
-.padding-top-20 {
-  padding-top: 20px;  
+@media only screen and (max-width: 800px) {
+  .canvas-container {
+    padding-bottom: 66.67%;
+    /* Maintain aspect ratio */
+  }
 }
 </style>
