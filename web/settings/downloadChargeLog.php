@@ -94,8 +94,6 @@ if (is_array($charge_log_data)) {
 			}
 			if (is_bool($value)) {
 				$value = $value ? "true" : "false";
-			} elseif (is_array($value)) {
-				$value = '"' . implode(",", array_map(function($k, $v) { return $k . ":" . $v; }, array_keys($value), $value)) . '"';
 			}
 			$translated_key = translateHeading($section_key . " " . $key);
 				$csv_row[$translated_key] = translateChargeMode($value);
