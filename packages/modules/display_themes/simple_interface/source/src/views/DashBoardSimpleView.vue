@@ -251,7 +251,7 @@ export default {
           if (this.gridPower < 0) {
             t12 = animateLine(300, 125, 150, 125, t12);
             if (t12 > 1) t12 = 0;
-            t13 = animateLine(145, 125, 150, 85, t13);
+            t13 = animateLine(150, 125, 150, 85, t13);
             if (t13 > 1) t13 = 0;
           }
         }
