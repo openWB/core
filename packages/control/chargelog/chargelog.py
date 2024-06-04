@@ -196,7 +196,8 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
     if duration > 0:
         power = get_value_or_default(lambda: round(log_data.imported_since_mode_switch / duration, 2))
     calculate_charge_cost(chargepoint, True)
-    power_source = get_log_from_date_until_now(log_data.timestamp_start_charging)["totals"]["power_source"]
+    energy_source = get_value_or_default(lambda: analyse_percentage(get_log_from_date_until_now(
+        log_data.timestamp_start_charging)["totals"])["energy_source"])
     costs = round(log_data.costs, 2)
     new_entry = {
         "chargepoint":
@@ -234,7 +235,7 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
             "imported_since_plugged": log_data.imported_since_plugged,
             "power": power,
             "costs": costs,
-            "power_source": power_source
+            "power_source": energy_source
         }
     }
     return new_entry
