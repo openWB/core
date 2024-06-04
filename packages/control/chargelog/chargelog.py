@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Optional
 
 from control import data
 from dataclass_utils import asdict
-from helpermodules.measurement_logging.process_log import CalculationType, analyse_percentage, get_log_from_date_until_now, process_entry
+from helpermodules.measurement_logging.process_log import (CalculationType, analyse_percentage,
+                                                           get_log_from_date_until_now, process_entry)
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
 from helpermodules.pub import Pub
 from helpermodules import timecheck
