@@ -12,7 +12,7 @@ from threading import Thread
 from control.chargelog.chargelog import calculate_charge_cost
 
 from helpermodules.changed_values_handler import ChangedValuesHandler
-from helpermodules.measurement_logging.update_daily_yields import update_daily_yields
+from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
 from helpermodules.measurement_logging.write_log import LogType, save_log
 from modules import loadvars
 from modules import configuration
@@ -89,6 +89,7 @@ class HandlerAlgorithm:
             changed_values_handler.store_initial_values()
             totals = save_log(LogType.DAILY)
             update_daily_yields(totals)
+            update_pv_monthly_yearly_yields()
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
             data.data.counter_all_data.validate_hierarchy()
@@ -144,7 +145,7 @@ class HandlerAlgorithm:
     @exit_after(10)
     def handler_random_nightly(self):
         try:
-            data.data.system_data["system"].create_backup_and_send_to_cloud()
+            data.data.system_data["system"].thread_backup_and_send_to_cloud()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:

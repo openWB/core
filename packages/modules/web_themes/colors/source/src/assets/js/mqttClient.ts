@@ -40,6 +40,7 @@ try {
 	client = connect(connectUrl, options)
 	client.on('connect', () => {
 		console.info('MQTT connection successful')
+		//console.info (`mqtt client: ${mqttConnection.clientId}`)
 	})
 	client.on('disconnect', () => {
 		console.info('MQTT disconnected')
@@ -85,14 +86,14 @@ export async function mqttPublish(topic: string, message: string) {
 	const qos: QoS = 0
 	let connected = client.connected
 	let retries = 0
-	while (!connected && retries < 10) {
+	while (!connected && retries < 20) {
 		console.warn('MQTT publish: Not connected. Waiting 0.1 seconds')
 		await delay(100)
 		connected = client.connected
 		retries += 1
 	}
 	// console.warn ('MQTT publish: Now connected')
-	if (retries < 10) {
+	if (retries < 20) {
 		try {
 			client.publish(topic, message, { qos }, (error) => {
 				if (error) {

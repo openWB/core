@@ -79,26 +79,19 @@
 						:options="decimalDisplay"
 					/>
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
-				<!-- <ConfigItem :fullwidth="true" title="Kompakte Ladepunktliste" icon="fa-list"
-							infotext="Zeige eine einzelne Ladepunktliste statt separater Element pro Ladepunkt.">
-							<SwitchInput v-model="globalConfig.simpleCpList" />
-						</ConfigItem>
-						 -->
 				<ConfigItem
 					:fullwidth="true"
 					title="Uhrzeit anzeigen"
 					icon="fa-clock"
 					infotext="Zeige die aktuelle Uhrzeit an. In der Menüleiste oder neben den Lade-Buttons."
 				>
-					<!-- <SwitchInput v-model="globalConfig.showClock" /> -->
 					<RadioInput
 						v-model="globalConfig.showClock"
 						:options="clockModes"
 					></RadioInput>
 				</ConfigItem>
-
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Kompakte Ladepunktliste"
@@ -134,8 +127,6 @@
 				>
 					<SwitchInput v-model="globalConfig.preferWideBoxes" />
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Stufenlose Displaybreite"
@@ -152,29 +143,47 @@
 				>
 					<SwitchInput v-model="globalConfig.showAnimations" />
 				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
-					title="Zähler anzeigen (beta)"
+					title="Zähler anzeigen"
 					icon="fa-chart-bar"
-					infotext="Zeige die Werte zusätzlich angelegter Zähler (beta)"
+					infotext="Zeige die Werte zusätzlich angelegter Zähler"
 				>
 					<SwitchInput v-model="globalConfig.showCounters" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Fahrzeuge anzeigen (beta)"
+					title="Fahrzeuge anzeigen"
 					icon="fa-car"
-					infotext="Zeige alle Fahrzeuge mit Ladestand und Reichweite (beta)"
+					infotext="Zeige alle Fahrzeuge mit Ladestand und Reichweite"
 				>
 					<SwitchInput v-model="globalConfig.showVehicles" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Preistabelle anzeigen (beta)"
+					title="Standardfahrzeug anzeigen"
 					icon="fa-car"
-					infotext="Zeige die Strompreistabelle in einer separaten Box an (beta)"
+					infotext="Zeige das Standard-Fahrzeug in der Fahzeugliste"
+				>
+					<SwitchInput v-model="globalConfig.showStandardVehicle" />
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Preistabelle anzeigen"
+					icon="fa-car"
+					infotext="Zeige die Strompreistabelle in einer separaten Box an"
 				>
 					<SwitchInput v-model="globalConfig.showPrices" />
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Wechselrichter-Details anzeigen"
+					icon="fa-solar-panel"
+					infotext="Zeige Details zu den einzelnen Wechselrichtern"
+				>
+					<SwitchInput v-model="globalConfig.showInverters" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"

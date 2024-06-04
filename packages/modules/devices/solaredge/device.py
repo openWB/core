@@ -10,7 +10,7 @@ from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
 from modules.common.component_state import BatState, InverterState
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_inverter_value_store, get_bat_value_store
@@ -48,7 +48,8 @@ class Device(AbstractDevice):
         try:
             self.device_config = dataclass_from_dict(Solaredge, device_config)
             self.client = modbus.ModbusTcpClient_(self.device_config.configuration.ip_address,
-                                                  self.device_config.configuration.port)
+                                                  self.device_config.configuration.port,
+                                                  reconnect_delay=reconnect_delay)
             self.inverter_counter = 0
             self.synergy_units = 1
         except Exception:
@@ -122,11 +123,13 @@ class Device(AbstractDevice):
     def update(self) -> None:
         log.debug("Start device reading " + str(self.components))
         if self.components:
-            with self.client:
-                for component in self.components:
-                    # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                    with SingleComponentUpdateContext(self.components[component].fault_state):
-                        self.components[component].update()
+            with MultiComponentUpdateContext(self.components):
+                with self.client:
+                    for component in self.components:
+                        # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen
+                        # werden.
+                        with SingleComponentUpdateContext(self.components[component].fault_state):
+                            self.components[component].update()
         else:
             log.warning(
                 self.device_config.name +
