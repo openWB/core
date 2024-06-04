@@ -143,7 +143,7 @@ class Config:
     type: Optional[str] = None
     template: int = 0
     connected_phases: int = 3
-    phase_1: int = 0
+    phase_1: int = 1
     auto_phase_switch_hw: bool = False
     control_pilot_interruption_hw: bool = False
     id: int = 0
