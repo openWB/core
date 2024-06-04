@@ -2,8 +2,8 @@
 $charge_log_path = $_SERVER["DOCUMENT_ROOT"] . "/openWB/data/charge_log/";
 
 if (!preg_match("/[0-9]{4}/", $_GET["year"]) || !preg_match("/^((0?[1-9])|(1[0-2]))$/", $_GET["month"])) {
-	http_response_code(400);
-	die("invalid data");
+    http_response_code(400);
+    die("invalid data");
 }
 
 $file_name = sprintf('%04d%02d', $_GET["year"], $_GET["month"]);
@@ -56,20 +56,49 @@ function translateChargeMode($value) {
 }
 
 if (is_array($charge_log_data)) {
-	header("Content-Type: text/csv");
-	header("Content-Disposition: attachment; filename=ChargeLog-" . $file_name . ".csv");
+    header("Content-Type: text/csv");
+    header("Content-Disposition: attachment; filename=ChargeLog-" . $file_name . ".csv");
+
+    foreach ($charge_log_data as $log_entry) {
+		foreach ($log_entry as $section_key => $section_value) {
+			if (is_array($section_value)) {
+				foreach ($section_value as $key => $value) {
+					if (is_array($value)) {
+						foreach ($value as $sub_key => $sub_value) {
+							$all_keys[$section_key . " " . $key . " " . $sub_key] = true;
+						}
+					} else {
+						$all_keys[$section_key . " " . $key] = true;
+					}
+				}
+			} else {
+				$all_keys[$section_key] = true;
+			}
+		}
+	}
+
 	$header_done = false;
 	foreach ($charge_log_data as $log_entry) {
-		// prepare data
 		$csv_row = [];
-		foreach ($log_entry as $section_key => &$section_value) {
-			foreach ($section_value as $key => &$value) {
-				if (is_bool($value)) {
-					$value = $value ? "true" : "false";
-				}
-				$translated_key = translateHeading($section_key . " " . $key);
-				$csv_row[$translated_key] = translateChargeMode($value);
+		foreach ($all_keys as $key => $_) {
+			$parts = explode(" ", $key);
+			$section_key = $parts[0];
+			$sub_key = $parts[1];
+			$sub_sub_key = isset($parts[2]) ? $parts[2] : null;
+			if ($sub_sub_key !== null && isset($log_entry[$section_key][$sub_key][$sub_sub_key])) {
+				$value = $log_entry[$section_key][$sub_key][$sub_sub_key];
+			} elseif (isset($log_entry[$section_key][$sub_key])) {
+				$value = $log_entry[$section_key][$sub_key];
+			} else {
+				$value = "";
 			}
+			if (is_bool($value)) {
+				$value = $value ? "true" : "false";
+			} elseif (is_array($value)) {
+				$value = '"' . implode(",", array_map(function($k, $v) { return $k . ":" . $v; }, array_keys($value), $value)) . '"';
+			}
+			$translated_key = translateHeading($section_key . " " . $key);
+				$csv_row[$translated_key] = translateChargeMode($value);
 		}
 		if (!$header_done) {
 			print(implode(";", array_keys($csv_row)) . "\n");
