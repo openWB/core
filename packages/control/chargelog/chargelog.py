@@ -74,9 +74,6 @@ def collect_data(chargepoint):
             # Zählerstand beim Einschalten merken
             if log_data.imported_at_plugtime == 0:
                 log_data.imported_at_plugtime = chargepoint.data.get.imported
-                if charging_ev.soc_module:
-                    log_data.soc_at_start = charging_ev.data.get.soc
-                    log_data.range_at_start = charging_ev.data.get.range
                 log.debug(f"imported_at_plugtime {chargepoint.data.get.imported}")
             # Bisher geladene Energie ermitteln
             log_data.imported_since_plugged = get_value_or_default(
@@ -88,6 +85,9 @@ def collect_data(chargepoint):
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
+                    if charging_ev.soc_module:
+                        log_data.range_at_start = charging_ev.data.get.range
+                        log_data.soc_at_start = charging_ev.data.get.soc
                     if chargepoint.data.control_parameter.submode == "time_charging":
                         log_data.chargemode_log_entry = "time_charging"
                     else:
