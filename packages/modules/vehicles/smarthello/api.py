@@ -102,9 +102,17 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
             'sec-fetch-dest': 'document'
         }
     )
+    
+    if not response.ok:
+        log.error(f'Login failed with error code: {response.status_code}')
+        log.error(f'Response text: {response.text}')
+        log.error(f'Response headers: {response.headers}')
+        raise Exception(f'Login failed with error code: {response.status_code}')
+    
     parsed_url = urllib.parse.urlparse(response.url)  # Parse the URL
     query_params = urllib.parse.parse_qs(parsed_url.query)  # Parse the query parameters
     context = query_params.get('context', [''])[0]  # Get the 'context' parameter
+    log.debug(context)
 
     loginResponse = session.post(
         'https://auth.smart.com/accounts.login',
@@ -136,7 +144,7 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
             'format': 'json',
         }
     ).json()
-
+    log.debug(loginResponse)
     if not loginResponse:
         log.debug('Login failed #1')
         raise Exception('Login failed #1')
@@ -367,8 +375,8 @@ def fetch_soc(config: SmartHelloConfiguration,
     except Exception:
         raise Exception("Error requesting for vehicle: %s" % vehicle_id)
 
-    soc=data["additionalVehicleStatus"]["electricVehicleStatus"]["chargeLevel"]
-    range=data["additionalVehicleStatus"]["electricVehicleStatus"]["distanceToEmptyOnBatteryOnly"]
+    soc = data["additionalVehicleStatus"]["electricVehicleStatus"]["chargeLevel"]
+    range = data["additionalVehicleStatus"]["electricVehicleStatus"]["distanceToEmptyOnBatteryOnly"]
 
     log.info("Smart Hello Data: soc=%s%%, range=%s, timestamp=%s",
              soc, range, None)
