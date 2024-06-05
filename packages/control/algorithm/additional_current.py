@@ -28,8 +28,8 @@ class AdditionalCurrent:
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)
                     available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
-                    log.debug(
-                        f"cp {cp.num} available currents {available_currents} missing currents {missing_currents} limit {limit}")
+                    log.debug(f"cp {cp.num} available currents {available_currents} missing currents {missing_currents}"
+                              f" limit {limit}")
                     cp.data.control_parameter.limit = limit
                     available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
                     current = common.get_current_to_set(
@@ -51,7 +51,9 @@ class AdditionalCurrent:
                                    chargepoint: Chargepoint,
                                    counter: Counter) -> None:
         # Strom muss an diesem Zähler geändert werden
-        log.debug(f"current {current} target {chargepoint.data.set.target_current} set current {chargepoint.data.set.current} required currents {chargepoint.data.control_parameter.required_currents}")
+        log.debug(f"current {current} target {chargepoint.data.set.target_current} set current "
+                  f"{chargepoint.data.set.current} required currents "
+                  f"{chargepoint.data.control_parameter.required_currents}")
         if (current != max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0) and
                 # Strom erreicht nicht die vorgegebene Stromstärke
                 round(current, 2) != round(max(

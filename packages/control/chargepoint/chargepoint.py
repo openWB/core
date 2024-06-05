@@ -29,7 +29,6 @@ from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfi
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.chargepoint.charging_type import ChargingType
-from control.chargepoint.control_parameter import ControlParameter
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev import Ev
 from control import phase_switch
