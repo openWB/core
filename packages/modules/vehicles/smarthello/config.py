@@ -12,6 +12,7 @@ class SmartHelloConfiguration:
         self.password = password
         self.calculate_soc = calculate_soc
         self.vin = vin
+        self.sessioncache = sessioncache
 
 
 class SmartHello:
