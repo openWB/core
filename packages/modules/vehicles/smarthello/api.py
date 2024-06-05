@@ -48,32 +48,6 @@ def create_session(user_id: str, password: str, client_id: Optional[str], client
 '''
 
 
-def fetch_vehicle(vin: str, session: req.Session) -> dict:
-
-    vehicle_response = session.get(
-        "https://api.groupe-psa.com/connectedcar/v4/user/vehicles").json()
-    vehicles = vehicle_response['_embedded']['vehicles']
-
-    # Filter list for given VIN or select first entry if no VIN is provided
-    try:
-        vehicle_selected = next(
-            vehicle for vehicle in vehicles if vehicle['vin'] == vin) if vin else vehicles[0]
-    except StopIteration:
-        raise Exception("Cannot find VIN: '" + str(vin) + "'")
-
-    return vehicle_selected
-
-
-def fetch_energy(vin_id: str, session: req.Session) -> dict:
-    battery = session.get(
-        "https://api.groupe-psa.com/connectedcar/v4/user/vehicles/" + str(vin_id) + "/status").json()
-
-    # filter to only include type=Electric but remove all others. Seen type=Fuel and type=Electric being returned.
-    energies = battery['energy']
-    energy_selected = next(energy for energy in energies if energy['type'] == 'Electric')
-    return energy_selected
-
-
 def create_session():
     # add session restore functionality, include cookies jar and access tokens
 
@@ -83,10 +57,6 @@ def create_session():
     session.headers.update({'accept-language': 'de-DE,de;q=0.9,en-DE;q=0.8,en-US;q=0.7,en;q=0.6'})
     #session.cookies = requests.cookies.RequestsCookieJar()
     return session
-
-
-def onReady(self):
-    return
 
 
 def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
@@ -370,10 +340,8 @@ def fetch_soc(config: SmartHelloConfiguration,
             else:
                 raise Exception(f"VIN {config.vin} not found in vehicle list {vehicles}")
 
-            log.debug(data["additionalVehicleStatus"]["electricVehicleStatus"]["chargeLevel"])
-            log.debug(data["additionalVehicleStatus"]["electricVehicleStatus"]["distanceToEmptyOnBatteryOnly"])
-            log.debug(data["additionalVehicleStatus"]["electricVehicleStatus"])
             log.debug('Vehicle status updated')
+            log.debug(data["additionalVehicleStatus"]["electricVehicleStatus"])
 
     except Exception:
         raise Exception("Error requesting for vehicle: %s" % vehicle_id)
