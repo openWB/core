@@ -220,7 +220,7 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.config.ev = 0
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/config/ev", 0)
                 # Ladepunkt nach Abstecken sperren
-                if CpTemplateData.disable_after_unplug:
+                if self.template.data.disable_after_unplug:
                     self.data.set.manual_lock = True
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
                 # Ev wurde noch nicht aktualisiert.
