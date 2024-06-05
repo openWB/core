@@ -28,6 +28,7 @@ from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
+from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev import Ev
 from control import phase_switch
@@ -276,6 +277,10 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.set.charging_ev_data.charge_template.data.chargemode.selected)
             self.data.control_parameter.prio = self.data.set.charging_ev_data.charge_template.data.prio
             self.data.control_parameter.required_current = required_current
+            if self.template.data.charging_type == ChargingType.AC.value:
+                self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.min_current
+            else:
+                self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.dc_min_current
         except Exception:
             log.exception("Fehler im LP-Modul "+str(self.num))
 
@@ -583,14 +588,19 @@ class Chargepoint(ChargepointRfidMixin):
 
     def check_min_max_current(self, required_current: float, phases: int, pv: bool = False) -> float:
         required_current_prev = required_current
-        required_current, msg = self.data.set.charging_ev_data.check_min_max_current(self.data.control_parameter,
-                                                                                     required_current,
-                                                                                     phases,
-                                                                                     pv)
-        if phases == 1:
-            required_current = min(required_current, self.template.data.max_current_single_phase)
+        required_current, msg = self.data.set.charging_ev_data.check_min_max_current(
+            self.data.control_parameter,
+            required_current,
+            phases,
+            self.template.data.charging_type,
+            pv)
+        if self.template.data.charging_type == ChargingType.AC.value:
+            if phases == 1:
+                required_current = min(required_current, self.template.data.max_current_single_phase)
+            else:
+                required_current = min(required_current, self.template.data.max_current_multi_phases)
         else:
-            required_current = min(required_current, self.template.data.max_current_multi_phases)
+            required_current = min(required_current, self.template.data.dc_max_current)
         if required_current != required_current_prev and msg is None:
             msg = ("Die Einstellungen in dem Ladepunkt-Profil beschränken den Strom auf "
                    f"maximal {required_current} A.")
@@ -638,9 +648,11 @@ class Chargepoint(ChargepointRfidMixin):
                         self.data.control_parameter,
                         self.data.get.imported,
                         max_phase_hw,
-                        self.cp_ev_support_phase_switch())
+                        self.cp_ev_support_phase_switch(),
+                        self.template.data.charging_type)
                     phases = self.set_phases(phases)
                     self._pub_connected_vehicle(charging_ev)
+                    required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = self.check_min_max_current(
                         required_current, self.data.control_parameter.phases)
