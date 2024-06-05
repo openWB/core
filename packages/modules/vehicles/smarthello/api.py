@@ -4,9 +4,7 @@ import logging
 from typing import Optional
 
 from modules.common import req
-from typing import NamedTuple
 from modules.common.component_state import CarState
-import requests
 import json
 import hashlib
 import hmac
@@ -49,6 +47,7 @@ def create_session(user_id: str, password: str, client_id: Optional[str], client
     return session
 '''
 
+
 def fetch_vehicle(vin: str, session: req.Session) -> dict:
 
     vehicle_response = session.get(
@@ -78,7 +77,6 @@ def fetch_energy(vin_id: str, session: req.Session) -> dict:
 def create_session():
     # add session restore functionality, include cookies jar and access tokens
 
-    
     session = req.Session()
     session.headers.update({'user-agent': 'Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36'})
     session.headers.update({'x-requested-with': 'com.smart.hellosmart'})
@@ -91,7 +89,7 @@ def onReady(self):
     return
 
 
-def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict :
+def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
     log.debug('Login into Hello Smart')
     response = session.get(
         'https://awsapi.future.smart.com/login-app/api/v1/authorize?uiLocales=de-DE&uiLocales=de-DE',
@@ -163,7 +161,7 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict :
 
     parsed_url = urllib.parse.urlparse(TokenResponse.url)  # Parse the URL
     loginToken = urllib.parse.parse_qs(parsed_url.query)  # Parse the query parameters
-    
+
     log.debug('Login successful')
     return loginToken
 
@@ -244,7 +242,7 @@ def getDeviceListHello(session, tokens: dict, deviceId) -> list:
     url = '/device-platform/user/vehicle/secure'
 
     nonce, timestamp, sign, err = create_signature(method, url, params, '')
-    response =session.get(
+    response = session.get(
         'https://api.ecloudeu.com' + url,
         headers={
             'x-app-id': 'SmartAPPEU',
@@ -269,9 +267,8 @@ def getDeviceListHello(session, tokens: dict, deviceId) -> list:
     ).json()
 
     if not response or not response.get('data') or response['data'].get('list') == 0:
-        log.info('No vehicles found')
         log.debug(response)
-        return
+        Exception(f"No vehicles found in {response}")
 
     log.debug('Found ' + str(len(response['data']['list'])) + ' vehicles')
     log.debug(response['data']['list'])
@@ -279,13 +276,12 @@ def getDeviceListHello(session, tokens: dict, deviceId) -> list:
         vin = device['vin']
         log.debug('Found vehicle with VIN ' + vin)
         deviceArray.append(vin)
-    
+
     return deviceArray
 
 
 def updateDevicesHello(session, tokens, deviceId, vin) -> dict:
 
-        
     log.debug("Updating vehicle status for " + vin + " ...")
     params = {'latest': True, 'target': '', 'userId': tokens['userId']}
     method = 'GET'
@@ -322,7 +318,7 @@ def updateDevicesHello(session, tokens, deviceId, vin) -> dict:
 
     #if not response or not response.get('data') or not response['data'].get('vehicleStatus'):
     #    continue
-    
+
     return response['data']['vehicleStatus']
 
 
@@ -343,8 +339,6 @@ def random_hex(n):
 #    print(message)
 
 
-
-
 def fetch_soc(config: SmartHelloConfiguration,
               vehicle_id: int) -> CarState:
 
@@ -357,9 +351,9 @@ def fetch_soc(config: SmartHelloConfiguration,
 
         if tokens.get('accessToken'):
             log.debug('Login successful, retrieving vehicle list')
-            vehicles = getDeviceListHello(tokens)
+            vehicles = getDeviceListHello(session, tokens, deviceId)
             # check if configured VIN is empty or is in list
-            if not config.vin or config.vin in vehicles:    
+            if not config.vin or config.vin in vehicles:
                 log.debug('Retrieving vehicle status')
                 data = updateDevicesHello(session, tokens, deviceId, config.vin)
             else:
@@ -370,17 +364,12 @@ def fetch_soc(config: SmartHelloConfiguration,
             log.debug(data["additionalVehicleStatus"]["electricVehicleStatus"])
             log.debug('Vehicle status updated')
 
-
-            vehicle = fetch_vehicle(config.vin, session)
-            log.debug("Fetching details for VIN: %s with vehicle_id: %s", vehicle['vin'], vehicle['id'])
-            energy = fetch_energy(vehicle['id'], session)
-
     except Exception:
         raise Exception("Error requesting for vehicle: %s" % vehicle_id)
-    
+
     soc=data["additionalVehicleStatus"]["electricVehicleStatus"]["chargeLevel"]
     range=data["additionalVehicleStatus"]["electricVehicleStatus"]["distanceToEmptyOnBatteryOnly"]
 
     log.info("Smart Hello Data: soc=%s%%, range=%s, timestamp=%s",
              soc, range, None)
-    return CarState(soc=soc, range=range, soc_timestamp=None)
+    return CarState(soc=soc, range=range)
