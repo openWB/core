@@ -25,7 +25,8 @@ def filter_pos(name: str, record) -> bool:
 def setup_logging() -> None:
     def mb_to_bytes(megabytes: int) -> int:
         return megabytes * 1000000
-    main_file_handler = RotatingFileHandler(RAMDISK_PATH + 'main.log', maxBytes=mb_to_bytes(6), backupCount=1)
+    # Mehrere kleine Dateien verwenden, damit nicht zu viel verworfen wird, wenn die Datei voll ist.
+    main_file_handler = RotatingFileHandler(RAMDISK_PATH + 'main.log', maxBytes=mb_to_bytes(5.5), backupCount=4)
     main_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     logging.basicConfig(level=logging.DEBUG, handlers=[main_file_handler])
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
