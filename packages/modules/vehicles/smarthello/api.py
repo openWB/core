@@ -18,34 +18,6 @@ from typing import Tuple
 from modules.vehicles.smarthello.config import SmartHelloConfiguration
 
 log = logging.getLogger(__name__)
-'''
-def create_session(user_id: str, password: str, client_id: Optional[str], client_secret: Optional[str],
-                   manufacturer: str) -> req.Session:
-    manufacturer_config = manufacturer_configurations[manufacturer]
-    brand = manufacturer_config.brand
-    realm = manufacturer_config.realm
-    if not client_id or not client_secret:  # use defaults if no client_id and client_secret is specified
-        client_id = manufacturer_config.client_id
-        client_secret = manufacturer_config.client_secret
-        if not client_id or not client_secret:
-            raise Exception(
-                "No OAuth credentials configured and no default available for manufacturer %s" % manufacturer)
-
-    session = req.get_http_session()
-    data = {
-        'realm': realm, 'grant_type': 'password', 'password': password, 'username': user_id, 'scope': 'openid profile'
-    }
-
-    access_token = session.post(
-        "https://idpcvs." + str(brand) + "/am/oauth2/access_token", data=data, auth=(client_id, client_secret)
-    ).json()['access_token']
-
-    session.params = {"client_id": client_id}
-    session.headers = {
-        'Accept': 'application/hal+json', 'Authorization': 'Bearer %s' % access_token, 'x-introspect-realm': realm
-    }
-    return session
-'''
 
 
 def create_session():
@@ -72,13 +44,13 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
             'sec-fetch-dest': 'document'
         }
     )
-    
+
     if not response.ok:
         log.error(f'Login failed with error code: {response.status_code}')
         log.error(f'Response text: {response.text}')
         log.error(f'Response headers: {response.headers}')
         raise Exception(f'Login failed with error code: {response.status_code}')
-    
+
     parsed_url = urllib.parse.urlparse(response.url)  # Parse the URL
     query_params = urllib.parse.parse_qs(parsed_url.query)  # Parse the query parameters
     context = query_params.get('context', [''])[0]  # Get the 'context' parameter
@@ -140,7 +112,7 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
     parsed_url = urllib.parse.urlparse(TokenResponse.url)  # Parse the URL
     loginToken = urllib.parse.parse_qs(parsed_url.query)  # Parse the query parameters
 
-    log.debug('Login successful')
+    log.debug(f'Login as user {config.user_id} successful')
     return loginToken
 
 
@@ -300,21 +272,8 @@ def updateDevicesHello(session, tokens, deviceId, vin) -> dict:
     return response['data']['vehicleStatus']
 
 
-#def setState(self, state, value):
-#    # Add the setState functionality
-#    pass
-
-def getState(self, state):
-    # Add the getState functionality
-    pass
-
-
 def random_hex(n):
     return ''.join(random.choice(string.hexdigits) for _ in range(n))
-
-
-#def log(self, message):
-#    print(message)
 
 
 def fetch_soc(config: SmartHelloConfiguration,
@@ -346,9 +305,9 @@ def fetch_soc(config: SmartHelloConfiguration,
     except Exception:
         raise Exception("Error requesting for vehicle: %s" % vehicle_id)
 
-    soc = data["additionalVehicleStatus"]["electricVehicleStatus"]["chargeLevel"]
-    range = data["additionalVehicleStatus"]["electricVehicleStatus"]["distanceToEmptyOnBatteryOnly"]
+    soc = float(data["additionalVehicleStatus"]["electricVehicleStatus"]["chargeLevel"])
+    autonomy = float(data["additionalVehicleStatus"]["electricVehicleStatus"]["distanceToEmptyOnBatteryOnly"])
 
     log.info("Smart Hello Data: soc=%s%%, range=%s, timestamp=%s",
-             soc, range, None)
-    return CarState(soc=soc, range=range)
+             soc, autonomy, None)
+    return CarState(soc=soc, range=autonomy)
