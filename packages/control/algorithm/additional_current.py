@@ -52,9 +52,9 @@ class AdditionalCurrent:
                                    chargepoint: Chargepoint,
                                    counter: Counter) -> None:
         # Strom muss an diesem Zähler geändert werden
-        log.debug(f"current {current} target {chargepoint.data.set.target_current} set current "
-                  f"{chargepoint.data.set.current} required currents "
-                  f"{chargepoint.data.control_parameter.required_currents}")
+        log.debug(
+            f"current {current} target {chargepoint.data.set.target_current} set current {chargepoint.data.set.current}"
+            f" required currents {chargepoint.data.control_parameter.required_currents}")
         if (current != max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0) and
                 # Strom erreicht nicht die vorgegebene Stromstärke
                 round(current, 2) != round(max(
