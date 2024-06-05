@@ -77,6 +77,7 @@ var topicsToSubscribe = [
 	["openWB/optional/et/active", 1], // et provider is configured
 	["openWB/optional/et/provider", 1], // et provider information
 	["openWB/optional/et/get/prices", 1], // current price list
+	["openWB/optional/dc_charging", 1], // dc charging is configured
 
 	// graph topics
 	["openWB/graph/config/duration", 1], // maximum duration to display in landing page

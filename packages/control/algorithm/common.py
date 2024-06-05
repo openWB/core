@@ -62,12 +62,11 @@ def mode_and_counter_generator(chargemodes: List) -> Iterable[Tuple[Tuple[Option
 def get_min_current(chargepoint: Chargepoint) -> Tuple[List[float], List[int]]:
     min_currents = [0.0]*3
     counts = [0]*3
-    charging_ev_data = chargepoint.data.set.charging_ev_data
     required_currents = chargepoint.data.control_parameter.required_currents
     for i in range(3):
         if required_currents[i] != 0:
             counts[i] += 1
-            min_currents[i] = charging_ev_data.ev_template.data.min_current
+            min_currents[i] = chargepoint.data.control_parameter.min_current
         else:
             min_currents[i] = 0
     return min_currents, counts
@@ -131,19 +130,18 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
     for chargepoint in preferenced_chargepoints:
         if consider_not_charging_chargepoint_in_loadmanagement(chargepoint):
             continue
-        charging_ev_data = chargepoint.data.set.charging_ev_data
         required_currents = chargepoint.data.control_parameter.required_currents
         max_target_set_current = max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0)
 
         if diff_to_zero is False:
-            if charging_ev_data.ev_template.data.min_current < max_target_set_current:
-                diffs = [charging_ev_data.ev_template.data.min_current -
+            if chargepoint.data.control_parameter.min_current < max_target_set_current:
+                diffs = [chargepoint.data.control_parameter.min_current -
                          max_target_set_current if required_currents[i] != 0 else 0 for i in range(3)]
             else:
                 continue
         else:
-            if charging_ev_data.ev_template.data.min_current <= max_target_set_current:
-                diffs = [-charging_ev_data.ev_template.data.min_current if required_currents[i]
+            if chargepoint.data.control_parameter.min_current <= max_target_set_current:
+                diffs = [-chargepoint.data.control_parameter.min_current if required_currents[i]
                          != 0 else 0 for i in range(3)]
             else:
                 continue
@@ -166,15 +164,14 @@ def get_missing_currents_left(preferenced_chargepoints: List[Chargepoint]) -> Tu
     missing_currents = [0.0]*3
     counts = [0]*3
     for chargepoint in preferenced_chargepoints:
-        charging_ev_data = chargepoint.data.set.charging_ev_data
         required_currents = chargepoint.data.control_parameter.required_currents
         for i in range(0, 3):
             if required_currents[i] != 0:
                 counts[i] += 1
                 try:
-                    missing_currents[i] += required_currents[i] - charging_ev_data.ev_template.data.min_current
+                    missing_currents[i] += required_currents[i] - chargepoint.data.control_parameter.min_current
                 except KeyError:
-                    missing_currents[i] += max(required_currents) - charging_ev_data.ev_template.data.min_current
+                    missing_currents[i] += max(required_currents) - chargepoint.data.control_parameter.min_current
             else:
                 missing_currents[i] += 0
     return missing_currents, counts
