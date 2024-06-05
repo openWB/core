@@ -290,7 +290,7 @@ def getDeviceListHello(session, tokens: dict, deviceId) -> list:
 
 def updateDevicesHello(session, tokens, deviceId, vin) -> dict:
 
-    log.debug("Updating vehicle status for " + vin + " ...")
+    log.debug("Updating vehicle status for " + str(vin) + " ...")
     params = {'latest': True, 'target': '', 'userId': tokens['userId']}
     method = 'GET'
     url = '/remote-control/vehicle/status/' + vin
@@ -361,7 +361,10 @@ def fetch_soc(config: SmartHelloConfiguration,
             log.debug('Login successful, retrieving vehicle list')
             vehicles = getDeviceListHello(session, tokens, deviceId)
             # check if configured VIN is empty or is in list
-            if not config.vin or config.vin in vehicles:
+            if not config.vin:
+                log.debug(f'No VIN configured, using first vehicle in list: {vehicles[0]}')
+                data = updateDevicesHello(session, tokens, deviceId, vehicles[0])
+            elif config.vin in vehicles:
                 log.debug('Retrieving vehicle status')
                 data = updateDevicesHello(session, tokens, deviceId, config.vin)
             else:
