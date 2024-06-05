@@ -24,10 +24,12 @@ def create_session():
     # add session restore functionality, include cookies jar and access tokens
 
     session = req.Session()
-    session.headers.update({'user-agent': 'Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36'})
+    session.headers.update({'user-agent':
+                            ('Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36'
+                             ' (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36')})
     session.headers.update({'x-requested-with': 'com.smart.hellosmart'})
     session.headers.update({'accept-language': 'de-DE,de;q=0.9,en-DE;q=0.8,en-US;q=0.7,en;q=0.6'})
-    #session.cookies = requests.cookies.RequestsCookieJar()
+    # session.cookies = requests.cookies.RequestsCookieJar()
     return session
 
 
@@ -37,7 +39,9 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
         'https://awsapi.future.smart.com/login-app/api/v1/authorize?uiLocales=de-DE&uiLocales=de-DE',
         headers={
             'upgrade-insecure-requests': '1',
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept':
+            ('text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,'
+             'image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7'),
             'sec-fetch-site': 'none',
             'sec-fetch-mode': 'navigate',
             'sec-fetch-user': '?1',
@@ -51,9 +55,9 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
         log.error(f'Response headers: {response.headers}')
         raise Exception(f'Login failed with error code: {response.status_code}')
 
-    parsed_url = urllib.parse.urlparse(response.url)  # Parse the URL
-    query_params = urllib.parse.parse_qs(parsed_url.query)  # Parse the query parameters
-    context = query_params.get('context', [''])[0]  # Get the 'context' parameter
+    parsed_url = urllib.parse.urlparse(response.url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    context = query_params.get('context', [''])[0]
     log.debug(context)
 
     loginResponse = session.post(
@@ -65,7 +69,11 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
             'sec-fetch-site': 'same-site',
             'sec-fetch-mode': 'cors',
             'sec-fetch-dest': 'empty',
-            'cookie': 'gmid=gmid.ver4.AcbHPqUK5Q.xOaWPhRTb7gy-6-GUW6cxQVf_t7LhbmeabBNXqqqsT6dpLJLOWCGWZM07EkmfM4j.u2AMsCQ9ZsKc6ugOIoVwCgryB2KJNCnbBrlY6pq0W2Ww7sxSkUa9_WTPBIwAufhCQYkb7gA2eUbb6EIZjrl5mQ.sc3; ucid=hPzasmkDyTeHN0DinLRGvw; hasGmid=ver4; gig_bootstrap_3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a=auth_ver4',
+            'cookie':
+            ('gmid=gmid.ver4.AcbHPqUK5Q.xOaWPhRTb7gy-6-GUW6cxQVf_t7LhbmeabBNXqqqsT6dpLJLOWCGWZM07EkmfM4j.'
+             'u2AMsCQ9ZsKc6ugOIoVwCgryB2KJNCnbBrlY6pq0W2Ww7sxSkUa9_WTPBIwAufhCQYkb7gA2eUbb6EIZjrl5mQ.sc3; '
+             'ucid=hPzasmkDyTeHN0DinLRGvw; hasGmid=ver4; '
+             'gig_bootstrap_3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a=auth_ver4'),
         },
         data={
             'loginID': config.user_id,
@@ -76,7 +84,12 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
             'includeUserInfo': 'true',
             'loginMode': 'standard',
             'lang': 'de',
-            'riskContext': '{"b0":41187,"b1":[0,2,3,1],"b2":4,"b3":["-23|0.383","-81.33333587646484|0.236"],"b4":3,"b5":1,"b6":"Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36","b7":[],"b8":"16:33:26","b9":-60,"b10":null,"b11":false,"b12":{"charging":true,"chargingTime":null,"dischargingTime":null,"level":0.58},"b13":[5,"360|760|24",false,true]}',
+            'riskContext':
+            ('{"b0":41187,"b1":[0,2,3,1],"b2":4,"b3":["-23|0.383","-81.33333587646484|0.236"],"b4":3,"b5":1,'
+             '"b6":"Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36 '
+             '(KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36","b7":[],"b8":"16:33:26"'
+             ',"b9":-60,"b10":null,"b11":false,"b12":{"charging":true,"chargingTime":null,"dischargingTime":null,'
+             '"level":0.58},"b13":[5,"360|760|24",false,true]}'),
             'APIKey': '3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a',
             'source': 'showScreenSet',
             'sdk': 'js_latest',
@@ -97,15 +110,24 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
         raise Exception("Login failed no session found")
 
     TokenResponse = session.get(
-        'https://auth.smart.com/oidc/op/v1.0/3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a/authorize/continue',
+        ('https://auth.smart.com/oidc/op/v1.0/3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a'
+         '/authorize/continue'),
         params={'context': context, 'login_token': loginResponse['sessionInfo']['login_token']},
         headers={
             'upgrade-insecure-requests': '1',
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept':
+            ('text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;'
+             'q=0.8,application/signed-exchange;v=b3;q=0.7'),
             'sec-fetch-site': 'same-site',
             'sec-fetch-mode': 'navigate',
             'sec-fetch-dest': 'document',
-            'cookie': 'gmid=gmid.ver4.AcbHPqUK5Q.xOaWPhRTb7gy-6-GUW6cxQVf_t7LhbmeabBNXqqqsT6dpLJLOWCGWZM07EkmfM4j.u2AMsCQ9ZsKc6ugOIoVwCgryB2KJNCnbBrlY6pq0W2Ww7sxSkUa9_WTPBIwAufhCQYkb7gA2eUbb6EIZjrl5mQ.sc3; ucid=hPzasmkDyTeHN0DinLRGvw; hasGmid=ver4; gig_bootstrap_3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a=auth_ver4; glt_3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a=' + loginResponse['sessionInfo']['login_token'],
+            'cookie':
+            ('gmid=gmid.ver4.AcbHPqUK5Q.xOaWPhRTb7gy-6-GUW6cxQVf_t7LhbmeabBNXqqqsT6dpLJLOWCGWZM07EkmfM4j.'
+             'u2AMsCQ9ZsKc6ugOIoVwCgryB2KJNCnbBrlY6pq0W2Ww7sxSkUa9_WTPBIwAufhCQYkb7gA2eUbb6EIZjrl5mQ.sc3; '
+             'ucid=hPzasmkDyTeHN0DinLRGvw; hasGmid=ver4; '
+             'gig_bootstrap_3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a=auth_ver4; '
+             'glt_3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a='
+             + loginResponse['sessionInfo']['login_token']),
         },
         allow_redirects=True)
 
@@ -262,11 +284,11 @@ def updateDevicesHello(session, tokens, deviceId, vin) -> dict:
         params=params
     ).json()
 
-    #if response['code'] == '1402':
+    # if response['code'] == '1402':
     #    getCurrentToken(session, tokens, deviceId)
     #    continue
 
-    #if not response or not response.get('data') or not response['data'].get('vehicleStatus'):
+    # if not response or not response.get('data') or not response['data'].get('vehicleStatus'):
     #    continue
 
     return response['data']['vehicleStatus']
