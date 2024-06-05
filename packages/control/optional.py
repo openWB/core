@@ -7,6 +7,7 @@ import threading
 from typing import Dict, List
 
 from dataclass_utils.factories import empty_dict_factory
+from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_unix_timestamp_current_full_hour
@@ -74,6 +75,7 @@ class OptionalData:
     int_display: InternalDisplay = field(default_factory=int_display_factory)
     led: Led = field(default_factory=led_factory)
     rfid: Rfid = field(default_factory=rfid_factory)
+    dc_charging: bool = False
 
 
 class Optional:
@@ -81,6 +83,8 @@ class Optional:
         try:
             self.data = OptionalData()
             self.et_module: ConfigurableElectricityTariff = None
+            self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
+            Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
