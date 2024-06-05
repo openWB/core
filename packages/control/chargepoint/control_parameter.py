@@ -27,6 +27,9 @@ class ControlParameter:
     limit: Optional[LimitingValue] = field(
         default=None,
         metadata={"topic": "control_parameter/limit", "mutable_by_algorithm": True})
+    min_current: int = field(
+        default=6,
+        metadata={"topic": "control_parameter/min_current", "mutable_by_algorithm": True})
     phases: int = field(
         default=0,
         metadata={"topic": "control_parameter/phases", "mutable_by_algorithm": True})
