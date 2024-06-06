@@ -329,7 +329,8 @@ def fetch_soc(config: SmartHelloConfiguration,
 
     soc = float(data["additionalVehicleStatus"]["electricVehicleStatus"]["chargeLevel"])
     autonomy = float(data["additionalVehicleStatus"]["electricVehicleStatus"]["distanceToEmptyOnBatteryOnly"])
+    soctimestamp = int(data["updateTime"])
 
     log.info("Smart Hello Data: soc=%s%%, range=%s, timestamp=%s",
-             soc, autonomy, None)
-    return CarState(soc=soc, range=autonomy)
+             soc, autonomy, soctimestamp)
+    return CarState(soc=soc, range=autonomy, soc_timestamp=soctimestamp)
