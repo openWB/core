@@ -4,9 +4,9 @@ Dazu gibt es zwei grundlegende Konzepte:
 
 #### **A** Nach Abstecken des Fahrzeugs wird der Ladepunkt gesperrt (Sperre nach Abstecken)  
 Ein neuer Ladevorgang erfolgt erst nach Freischalten durch:
-- Eingeben einer **PIN** am openWB-Display (sofern mit Touchdisplay) oder
-- Vorhalten eines **RFID-Tags** an der openWB mit RFID-Reader oder
-- Direkt-tagging über den **Ladestecker** mit der openWB-Pro oder
+- Eingeben einer **PIN** am openWB-Display (sofern mit Touchdisplay)
+- Vorhalten eines **RFID-Tags** an der openWB mit RFID-Reader
+- Direkt-tagging über den **Ladestecker** mit der openWB-Pro
 - händisches Entsperren des Ladepunktes im User Interface
 
 #### **B** Nach Abstecken des Fahrzeugs wird auf das Standardfahrzeug (Standard nach Abstecken) mit Lademodus **Stop** gewechselt  
