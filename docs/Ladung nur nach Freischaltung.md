@@ -6,7 +6,7 @@ Dazu gibt es zwei grundlegende Konzepte:
 Ein neuer Ladevorgang erfolgt erst nach Freischalten durch:
 - Eingeben einer **PIN** am openWB-Display (sofern mit Touchdisplay)
 - Vorhalten eines **RFID-Tags** an der openWB mit RFID-Reader
-- Direkt-tagging über den **Ladestecker** mit der openWB-Pro
+- Fahrzeugerkennung über den **Ladestecker** mit der openWB-Pro
 - händisches Entsperren des Ladepunktes im User Interface
 
 #### **B** Nach Abstecken des Fahrzeugs wird auf das Standardfahrzeug (Standard nach Abstecken) mit Lademodus **Stop** gewechselt  
@@ -55,7 +55,7 @@ Startet ein Fahrzeug über einen ID-Tag den Ladevorgang und ist in diesem Fahrze
 ### Use Cases:
 
 #### Sperre nach Abstecken
-Sperre nach Abstecken kann an einem Ladepunkt verwendet werden, welcher das Laden gegenüber fremden Zugriff sichert. Wird der ID-Tag nur zum Sperren/Entsperren des Ladepunktes verwendet, dann startet immer das ausgewählte Fahrzeug den Ladevorgang. Dies kann im privaten Bereich mit nur einem Fahrzeug sinnvoll sein, damit nur dieses Fahrzeug auch laden darf. Die Option ist aber auch für Ladeparks sinnvoll, bei denen die Ladepunkte gegen Zugriff gesichert sind und dem ID-Tag zum Entsperren auch gleichzeitig Fahrzeuge zugeordnet sind. Damit können verschiedene Ladestationen für verschiedene Fahrzeuge eingerichtet werden.
+Sperre nach Abstecken kann an einem Ladepunkt verwendet werden, welcher das Laden gegenüber fremden Zugriff sichert. Wird der ID-Tag nur zum Sperren/Entsperren des Ladepunktes verwendet, dann startet immer das ausgewählte Fahrzeug den Ladevorgang. Dies kann im privaten Bereich mit nur einem Fahrzeug sinnvoll sein, damit nur dieses Fahrzeug auch laden darf. Die Option ist aber auch für Ladeparks sinnvoll, bei denen die Ladepunkte nur für eine Gruppe von ID-Tags freischaltbar sind und dem ID-Tag zum Entsperren auch gleichzeitig zugeordnet sind.
 
 #### Standard nach Abstecken:
 Standard nach Abstecken kann an einem Ladepunkt verwendet werden, welcher das Laden mehrere verschiedener Fahrzeuge ermöglichen soll. Werden mehrere Fahrzeuge mit verschiedenen Lade-Profilen und verschiedenen ID-Kennungen neben dem Standard-Fahrzeug angelegt, kann über die ID-Kennung zwischen den einzelnen Fahrzeugen gewechselt werden. Hier bietet sich beispielsweise ein privater Ladepunkt mit zwei Fahrzeugen an oder ein Ladepunkt in einer Firma mit verschiedenen Mitarbeitern.
