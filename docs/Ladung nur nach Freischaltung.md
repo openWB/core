@@ -3,7 +3,7 @@ Diese Option ist vor allem für öffentlich zugängliche Ladepunkte sinnvoll abe
 Dazu gibt es zwei grundlegende Konzepte:
 
 #### **A** Nach Abstecken des Fahrzeugs wird der Ladepunkt gesperrt (Sperre nach Abstecken)  
-Ein neuer Ladungevorgang erfolgt erst nach Freischalten durch:
+Ein neuer Ladevorgang erfolgt erst nach Freischalten durch:
 - Eingeben einer **PIN** am openWB-Display (sofern mit Touchdisplay) oder
 - Vorhalten eines **RFID-Tags** an der openWB mit RFID-Reader oder
 - Direkt-tagging über den **Ladestecker** mit der openWB-Pro oder
