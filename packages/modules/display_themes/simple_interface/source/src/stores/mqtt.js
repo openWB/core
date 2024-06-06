@@ -132,8 +132,9 @@ export const useMqttStore = defineStore("mqtt", {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
           });
-          while (scale && (value > 999 || value < -999)) {
-            value = value / 1000;
+          var scaledValue = value;
+          while (scale && (scaledValue > 999 || scaledValue < -999)) {
+            scaledValue = scaledValue / 1000;
             scaled = true;
             switch (unitPrefix) {
               case "":
@@ -147,12 +148,18 @@ export const useMqttStore = defineStore("mqtt", {
                 break;
             }
           }
-          textValue = value.toLocaleString(undefined, {
+          textValue = scaledValue.toLocaleString(undefined, {
             minimumFractionDigits: scaled ? 2 : 0,
             maximumFractionDigits: scaled ? 2 : 0,
           });
         }
-        return `${textValue} ${unitPrefix}${unit}`;
+        return {
+          textValue: `${textValue} ${unitPrefix}${unit}`,
+          value: value,
+          unit: unit,
+          scaledValue: scaledValue,
+          scaledUnit: `${unitPrefix}${unit}`,
+        };
       };
     },
     getChartData: (state) => {
@@ -262,11 +269,20 @@ export const useMqttStore = defineStore("mqtt", {
       return undefined;
     },
     getGridPower(state) {
-      let gridId = state.getGridId;
-      if (gridId === undefined) {
-        return "---";
+      return (returnType = "textValue") => {
+        let gridId = state.getGridId;
+        if (gridId === undefined) {
+          return "---";
+        }
+        let power = state.getValueString(`openWB/counter/${gridId}/get/power`, "W");
+        if (Object.hasOwnProperty.call(power, returnType)) {
+          return power[returnType];
+        }
+        if (returnType == "object") {
+          return power;
+        }
+        console.error("returnType not found!", returnType, power);
       }
-      return state.getValueString(`openWB/counter/${gridId}/get/power`, "W");
     },
     getGridPowerChartData(state) {
       let gridId = state.getGridId;
@@ -276,7 +292,16 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getChartData(`openWB/counter/${gridId}/get/power`);
     },
     getHomePower(state) {
-      return state.getValueString("openWB/counter/set/home_consumption", "W");
+      return (returnType = "textValue") => {
+        let power = state.getValueString("openWB/counter/set/home_consumption", "W");
+        if (Object.hasOwnProperty.call(power, returnType)) {
+          return power[returnType];
+        }
+        if (returnType == "object") {
+          return power;
+        }
+        console.error("returnType not found!", returnType, power);
+      }
     },
     getHomePowerChartData(state) {
       return state.getChartData("openWB/counter/set/home_consumption");
@@ -285,13 +310,22 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getValueBool("openWB/bat/config/configured");
     },
     getBatteryPower(state) {
-      return state.getValueString("openWB/bat/get/power", "W");
+      return (returnType = "textValue") => {
+        let power = state.getValueString("openWB/bat/get/power", "W");
+        if (Object.hasOwnProperty.call(power, returnType)) {
+          return power[returnType];
+        }
+        if (returnType == "object") {
+          return power;
+        }
+        console.error("returnType not found!", returnType, power);
+      }
     },
     getBatteryPowerChartData(state) {
       return state.getChartData("openWB/bat/get/power");
     },
     getBatterySoc(state) {
-      return state.getValueString("openWB/bat/get/soc", "%", "", false);
+      return state.getValueString("openWB/bat/get/soc", "%", "", false).textValue;
     },
     getBatterySocChartData(state) {
       return state.getChartData("openWB/bat/get/soc");
@@ -300,7 +334,16 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getValueBool("openWB/pv/config/configured");
     },
     getPvPower(state) {
-      return state.getValueString("openWB/pv/get/power", "W", "", true, true);
+      return (returnType = "textValue") => {
+        var power = state.getValueString("openWB/pv/get/power", "W", "", true, true);
+        if (Object.hasOwnProperty.call(power, returnType)) {
+          return power[returnType];
+        }
+        if (returnType == "object") {
+          return power;
+        }
+        console.error("returnType not found!", returnType, power);
+      }
     },
     getPvPowerChartData(state) {
       return state.getChartData("openWB/pv/get/power").map((point) => {
@@ -311,7 +354,7 @@ export const useMqttStore = defineStore("mqtt", {
     /* charge point getters */
 
     getChargePointSumPower(state) {
-      return state.getValueString("openWB/chargepoint/get/power", "W");
+      return state.getValueString("openWB/chargepoint/get/power", "W").textValue;
     },
     getChargePointSumPowerChartData(state) {
       return state.getChartData("openWB/chargepoint/get/power");
@@ -340,11 +383,18 @@ export const useMqttStore = defineStore("mqtt", {
       };
     },
     getChargePointPower(state) {
-      return (chargePointId) => {
-        return state.getValueString(
+      return (chargePointId, returnType = "textValue") => {
+        var power = state.getValueString(
           `openWB/chargepoint/${chargePointId}/get/power`,
           "W",
         );
+        if (Object.hasOwnProperty.call(power, returnType)) {
+          return power[returnType];
+        }
+        if (returnType == "object") {
+          return power;
+        }
+        console.error("returnType not found!", returnType, power);
       };
     },
     getChargePointImportedSincePlugged(state) {
@@ -358,7 +408,7 @@ export const useMqttStore = defineStore("mqtt", {
             false,
             "---",
             "imported_since_plugged",
-          ),
+          ).textValue,
           range: state.getValueString(
             `openWB/chargepoint/${chargePointId}/set/log`,
             "m",
@@ -367,7 +417,7 @@ export const useMqttStore = defineStore("mqtt", {
             false,
             "---",
             "range_charged",
-          ),
+          ).textValue,
         };
       };
     },
@@ -383,7 +433,7 @@ export const useMqttStore = defineStore("mqtt", {
         return state.getValueString(
           `openWB/chargepoint/${chargePointId}/set/current`,
           "A",
-        );
+        ).textValue;
       };
     },
     getChargePointPhasesInUse(state) {
