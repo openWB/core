@@ -36,7 +36,7 @@ Achtung: Ladepunkt-Profile müssen den Ladepunkten unter Ladepunkte zugeordnet w
 
 Zu **A. Sperre nach Abstecken** ist folgendes zu konfigurieren:  
 Die Option **Sperre nach Abstecken** ist im **Ladepunkt-Profil** bei Ladepunkte auswählbar und bewirkt, dass der Ladepunkt nach Abstecken eines Fahrzeugs gesperrt wird. Es gibt hier dann folgende zwei Möglichkeiten diesen Ladepunkt wieder zu entsperren:
-1. die Option *Ladepunkt sperren* händisch im User Interface Nein setzen. Dadurch startet nach Anstecken eines Fahrzeugs das voreingestellte Fahrzeug den Ladevorgang.
+1. die Option *Ladepunkt sperren* händisch im User Interface auf Nein setzen. Dadurch startet nach Anstecken eines Fahrzeugs das voreingestellte Fahrzeug den Ladevorgang.
 2. ein ID-Tag vorhalten, der im Ladepunkt-Profil hinterlegt ist. Dadurch wird der Ladepunkt automatisch entsperrt und das voreingestellte Fahrzeug startet den Ladevorgang. Ist der ID-Tag, welcher im Ladepunkt-Profil hinterlegt wurde identisch mit einem Id-Tag, der einem Fahrzeug zugeordnet ist, dann findet hier auch direkt eine Zuordnung zu einem Fahrzeug statt. Dabei wird der Ladepunkt entsperrt und das dem ID-Tag zugeordnete Fahrzeug startet den Ladevorgang. 
 Wurden mehrere Fahrzeuge mit demselben ID-Tag angelegt, dann startet das Fahrzeug den Ladevorgang, welches auf der Liste der Fahrzeuge dem ID-Tag zuerst zugeordnet wurde.
 Solange der Ladepunkt gesperrt ist, wird kein gültiger ausschliesslich einem Fahrzeug zugeordneter ID-Tag akzeptiert.
