@@ -27,7 +27,7 @@ Achtung: Lade-Profile müssen den Fahrzeugen unter Fahrzeuge zugeordnet werden!
 
 **II.** Ladepunkte  
 In der Navigationsbar auf Einstellungen klicken, dann den Reiter Konfiguration auswählen und **Ladepunkte** aufrufen.
-Standardmäßig ist hier das **Standard-Ladepunkt-Profil** angelegt, welches die option **Sperre nach Abstecken** bietet. Wird diese Option aktiviert, dann ist das Feld **Zugeordnete ID-Tags** zugänglich.
+Standardmäßig ist hier das **Standard-Ladepunkt-Profil** angelegt, welches die Option **Sperre nach Abstecken** bietet. Wird diese Option aktiviert, dann ist das Feld **Zugeordnete ID-Tags** zugänglich.
 Hier müssen die ID-Tags eingetragen werden, welche ausschliesslich zur Entsperrung des Ladepunktes verwendet werden. Sind mehrere Ladepunkte vorhanden (z.B. Duo oder mehrere ferngesteuerte openWBs) kann für jeden Ladepunkt ein eigenes Ladepunkt-Profil angelegt werden, wobei hier jeweils eine eigene ID-Kennung zur Freischaltung hinterlegbar ist. 
 
 Achtung: Ladepunkt-Profile müssen den Ladepunkten unter Ladepunkte zugeordnet werden!
@@ -37,10 +37,10 @@ Achtung: Ladepunkt-Profile müssen den Ladepunkten unter Ladepunkte zugeordnet w
 Zu **A. Sperre nach Abstecken** ist folgendes zu konfigurieren:  
 Die Option **Sperre nach Abstecken** ist im **Ladepunkt-Profil** bei Ladepunkte auswählbar und bewirkt, dass der Ladepunkt nach Abstecken eines Fahrzeugs gesperrt wird. Es gibt hier dann folgende zwei Möglichkeiten diesen Ladepunkt wieder zu entsperren:
 1. die Option *Ladepunkt sperren* händisch im User Interface auf Nein setzen. Dadurch startet nach Anstecken eines Fahrzeugs das voreingestellte Fahrzeug den Ladevorgang.
-2. ein ID-Tag vorhalten, der im Ladepunkt-Profil hinterlegt ist. Dadurch wird der Ladepunkt automatisch entsperrt und das voreingestellte Fahrzeug startet den Ladevorgang. Ist der ID-Tag, welcher im Ladepunkt-Profil hinterlegt wurde identisch mit einem Id-Tag, der einem Fahrzeug zugeordnet ist, dann findet hier auch direkt eine Zuordnung zu einem Fahrzeug statt. Dabei wird der Ladepunkt entsperrt und das dem ID-Tag zugeordnete Fahrzeug startet den Ladevorgang. 
+2. ein ID-Tag vorhalten, der im Ladepunkt-Profil hinterlegt ist. Dadurch wird der Ladepunkt automatisch entsperrt und das voreingestellte Fahrzeug startet den Ladevorgang. Ist der ID-Tag, welcher im Ladepunkt-Profil hinterlegt wurde identisch mit einem ID-Tag, der einem Fahrzeug zugeordnet ist, dann findet hier auch direkt eine Zuordnung zu einem Fahrzeug statt. Dabei wird der Ladepunkt entsperrt und das dem ID-Tag zugeordnete Fahrzeug startet den Ladevorgang. 
 Wurden mehrere Fahrzeuge mit demselben ID-Tag angelegt, dann startet das Fahrzeug den Ladevorgang, welches auf der Liste der Fahrzeuge dem ID-Tag zuerst zugeordnet wurde.
 Solange der Ladepunkt gesperrt ist, wird kein gültiger ausschliesslich einem Fahrzeug zugeordneter ID-Tag akzeptiert.
-Nach starten eines Ladevorgangs wird kein neuer ID-Tag akzeptiert.
+Nach Starten eines Ladevorgangs wird kein neuer ID-Tag akzeptiert.
 
 Zu **B. Standard nach Abstecken** ist folgendes zu konfigurieren:  
 Die Option **Standard nach Abstecken** ist im **Lade-Profil** bei Fahrzeuge auswählbar. Diese Option macht nur Sinn, wenn neben dem Standard-Lade-Profil mindestens ein weiteres Lade-Profil und mindestens ein weiteres Fahrzeug angelegt wurde. Dabei ist dem Standard-Fahrzeug das Standard-Lade-Profil und dem weiteren Fahrzeug das weitere Lade-Profil zuzuweisen.
