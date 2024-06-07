@@ -30,8 +30,5 @@ export default {
     <nav-item v-if="mqttStore.getStateEnabled" :to="{ name: 'status' }">
       Status
     </nav-item>
-    <nav-item v-if="mqttStore.getDashBoardEnabled" :to="{ name: 'simple-dashboard-SVG' }">
-      Übersicht Neu
-    </nav-item>
   </i-nav>
 </template>

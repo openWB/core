@@ -15,11 +15,6 @@ const router = createRouter({
       component: () => import("../views/DashBoardSimpleView.vue"),
     },
     {
-      path: "/SimpleDashboard-SVG",
-      name: "simple-dashboard-SVG",
-      component: () => import("../views/DashBoardSimpleViewSVG.vue"),
-    },
-    {
       path: "/DashBoard",
       name: "dash-board",
       // route level code-splitting
