@@ -1,57 +1,81 @@
 #!/usr/bin/env python3
-from datetime import datetime, timezone
+import datetime
+import logging
 from typing import Dict
-from helpermodules import timecheck
+import pytz
 
+from dataclass_utils import asdict
+from helpermodules import timecheck
+from helpermodules.pub import Pub
+from modules.common import configurable_tariff, req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
-from modules.common import req
-from modules.electricity_tariffs.rabot.config import RabotTariffConfiguration
-from modules.electricity_tariffs.rabot.config import RabotTariff
+from modules.electricity_tariffs.rabot.config import RabotTariff, RabotToken
+
+log = logging.getLogger(__name__)
 
 
-# Demo-Token: 5K4MVS-OjfWhK_4yrjOlFe1F6kJXPVf7eQYggo8ebAE
-
-
-def _get_sorted_price_data(response_json: Dict, key: str):
-    return sorted(response_json['data']['viewer']['home']['currentSubscription']
-                  ['priceInfo'][key], key=lambda k: (k['startsAt'], k['total']))
-
-
-def fetch_prices(config: RabotTariffConfiguration) -> Dict[int, float]:
-    headers = {'Authorization': 'Bearer ' + config.token, 'Content-Type': 'application/json'}
-    data = '{ XXX" }'
-    # raw_prices = req.get_http_session().get(url).json()
-    response = req.get_http_session().post('XXX', headers=headers, data=data, timeout=6)
-    response_json = response.json()
-    if response_json.get("errors") is None:
-        today_prices = _get_sorted_price_data(response_json, 'today')
-        tomorrow_prices = _get_sorted_price_data(response_json, 'tomorrow')
-        sorted_marketprices = today_prices + tomorrow_prices
-        prices: Dict[int, float] = {}
-        i = 0
-        for price_data in sorted_marketprices:
-            # konvertiere Time-String (Format 2021-02-06T00:00:00+01:00) ()':' nicht von strptime unterstützt)
-            time_str = ''.join(price_data['startsAt'].rsplit(':', 1))
-            startzeit_localized = datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S.%f%z')
-            starttime_utc = int(startzeit_localized.astimezone(timezone.utc).timestamp())
-            if timecheck.create_unix_timestamp_current_full_hour() <= starttime_utc:
-                if i < 24:
-                    prices.update({starttime_utc: price_data['total'] / 1000})
-                    i += 1
-                else:
-                    break
+def validate_token(config: RabotTariff) -> None:
+    if config.configuration.token.expires_in:
+        expiration = config.configuration.token.created_at + config.configuration.token.expires_in
+        log.debug("No need to authenticate. Valid token already present.")
+        if timecheck.create_timestamp() > expiration:
+            log.debug("Access token expired. Refreshing token.")
+            _refresh_token(config)
     else:
-        error = response_json['errors'][0]['message']
-        raise Exception(error)
+        _refresh_token(config)
+
+
+def _refresh_token(config: RabotTariff):
+    data = {
+        'client_id': {config.configuration.client_id},
+        'client_secret': {config.configuration.client_secret},
+        'grant_type': 'client_credentials',
+        'scope': 'openid offline_access api:hems',
+    }
+    response = req.get_http_session().post(
+        'https://test-auth.rabot-charge.de/connect/token?client_id=&client_secret=&username=&password=&scope=*&grant_type=client_credentials', data=data).json()
+    config.configuration.token = RabotToken(access_token=response["access_token"],
+                                            expires_in=response["expires_in"],
+                                            created_at=timecheck.create_timestamp())
+    Pub().pub("openWB/set/optional/et/provider", asdict(config))
+
+
+def fetch(config: RabotTariff) -> None:
+    def get_raw_prices():
+        return req.get_http_session().get(
+            "https://test-api.rabot-charge.de/hems/v1/day-ahead-prices/limited",
+            headers={"Content-Type": "application/json",
+                     "Authorization": f'Bearer {config.configuration.token.access_token}'},
+            params={"from": start_date, "tz": timezone}
+        ).json()["records"]
+
+    validate_token(config)
+    # start_date von voller Stunde sonst liefert die API die nächste Stunde
+    start_date = datetime.datetime.fromtimestamp(
+        timecheck.create_unix_timestamp_current_full_hour()).astimezone(
+            pytz.timezone("Europe/Berlin")).isoformat(sep="T", timespec="seconds")
+    if datetime.datetime.today().astimezone(pytz.timezone("Europe/Berlin")).dst().total_seconds()/3600:
+        # Sommerzeit
+        timezone = "UTC+2:00"
+    else:
+        timezone = "UTC+1:00"
+    raw_prices = get_raw_prices()
+    prices: Dict[int, float] = {}
+    for data in raw_prices:
+        formatted_price = data["priceInCentPerKwh"]/1000000  # €/MWh -> €/Wh
+        timestamp = datetime.datetime.fromisoformat(data["timestamp"]).astimezone(
+            pytz.timezone("Europe/Berlin")).timestamp()
+        prices.update({int(timestamp): formatted_price})
     return prices
 
 
 def create_electricity_tariff(config: RabotTariff):
+    validate_token(config)
+
     def updater():
-        return TariffState(prices=fetch_prices(config.configuration))
-    return ConfigurableElectricityTariff(config=config, component_updater=updater)
+        return TariffState(prices=fetch(config))
+    return configurable_tariff.ConfigurableElectricityTariff(config=config, component_updater=updater)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=RabotTariff)
