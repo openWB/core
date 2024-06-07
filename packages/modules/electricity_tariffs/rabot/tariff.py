@@ -3,6 +3,7 @@ import datetime
 import logging
 from typing import Dict
 import pytz
+from requests.exceptions import HTTPError
 
 from dataclass_utils import asdict
 from helpermodules import timecheck
@@ -34,7 +35,8 @@ def _refresh_token(config: RabotTariff):
         'scope': 'openid offline_access api:hems',
     }
     response = req.get_http_session().post(
-        'https://test-auth.rabot-charge.de/connect/token?client_id=&client_secret=&username=&password=&scope=*&grant_type=client_credentials', data=data).json()
+        'https://test-auth.rabot-charge.de/connect/token?client_id=&client_secret=&username=&password=&scope=*&'
+        + 'grant_type=client_credentials', data=data).json()
     config.configuration.token = RabotToken(access_token=response["access_token"],
                                             expires_in=response["expires_in"],
                                             created_at=timecheck.create_timestamp())
@@ -60,7 +62,14 @@ def fetch(config: RabotTariff) -> None:
         timezone = "UTC+2:00"
     else:
         timezone = "UTC+1:00"
-    raw_prices = get_raw_prices()
+    try:
+        raw_prices = get_raw_prices()
+    except HTTPError as error:
+        if error.response.status_code == 401:
+            _refresh_token(config)
+            raw_prices = get_raw_prices()
+        else:
+            raise error
     prices: Dict[int, float] = {}
     for data in raw_prices:
         formatted_price = data["priceInCentPerKwh"]/100000  # Cent/kWh -> €/Wh
