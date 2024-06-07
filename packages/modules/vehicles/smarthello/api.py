@@ -17,6 +17,8 @@ from typing import Tuple
 
 from modules.vehicles.smarthello.config import SmartHelloConfiguration
 
+MAX_RETRIES = 3
+
 log = logging.getLogger(__name__)
 
 
@@ -58,7 +60,6 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
     parsed_url = urllib.parse.urlparse(response.url)
     query_params = urllib.parse.parse_qs(parsed_url.query)
     context = query_params.get('context', [''])[0]
-    log.debug(context)
 
     loginResponse = session.post(
         'https://auth.smart.com/accounts.login',
@@ -99,15 +100,14 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
             'format': 'json',
         }
     ).json()
-    log.debug(loginResponse)
     if not loginResponse:
         log.debug('Login failed #1')
         raise Exception('Login failed #1')
 
     if not loginResponse.get('sessionInfo'):
         log.error('Login failed no session found:')
-        log.error(json.dumps(loginResponse))
-        raise Exception("Login failed no session found")
+        log.error(loginResponse)
+        raise Exception("Login failed, no session found")
 
     TokenResponse = session.get(
         ('https://auth.smart.com/oidc/op/v1.0/3_L94eyQ-wvJhWm7Afp1oBhfTGXZArUfSHHW9p9Pncg513hZELXsxCfMWHrF8f5P5a'
@@ -130,11 +130,12 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
              + loginResponse['sessionInfo']['login_token']),
         },
         allow_redirects=True)
+    log.debug(f'tokenResponse: {TokenResponse}')
 
     parsed_url = urllib.parse.urlparse(TokenResponse.url)  # Parse the URL
     loginToken = urllib.parse.parse_qs(parsed_url.query)  # Parse the query parameters
+    log.debug(f'Login as user {config.user_id} completed')
 
-    log.debug(f'Login as user {config.user_id} successful')
     return loginToken
 
 
@@ -167,42 +168,55 @@ x-api-signature-version:1.0
 
 
 def getCurrentToken(session, Tokens: dict, deviceId) -> dict:
+    log.debug("Fetching Tokens")
     params = {'identity_type': 'smart'}
     method = 'POST'
     url = '/auth/account/session/secure'
     data = {
         'accessToken': Tokens['access_token'][0]
     }
+    response = {}
 
     nonce, timestamp, sign, err = create_signature(method, url, params, json.dumps(data))
-    response = session.post(
-        'https://api.ecloudeu.com/auth/account/session/secure',
-        headers={
-            'x-app-id': 'SmartAPPEU',
-            'accept': 'application/json;responseformat=3',
-            'x-agent-type': 'android',
-            'x-device-type': 'mobile',
-            'x-operator-code': 'SMART',
-            'x-device-identifier': deviceId,
-            'x-env-type': 'production',
-            'x-version': 'smartNew',
-            'accept-language': 'en_US',
-            'x-api-signature-version': '1.0',
-            'x-api-signature-nonce': nonce,
-            'x-device-manufacture': 'HUAWEI',
-            'x-device-brand': 'ANE-LX1',
-            'x-device-model': 'ANE-LX1',
-            'x-device-release-date': '',
-            'x-agent-version': '9',
-            'content-type': 'application/json; charset=utf-8',
-            'user-agent': 'okhttp/4.11.0',
-            'x-signature': sign,
-            'x-timestamp': timestamp,
-        },
-        json=data,
-        params=params
-    ).json()
-    # add error handling if result is unexepcted or does not contain tokens
+    retrycounter = 0
+    while not response:
+        if retrycounter > MAX_RETRIES:
+            raise Exception(f'No tokens received after {retrycounter} retries')
+
+        retrycounter += 1
+
+        log.debug(f'Fetching Tokens, attempt {retrycounter}')
+        response = session.post(
+            'https://api.ecloudeu.com/auth/account/session/secure',
+            headers={
+                'x-app-id': 'SmartAPPEU',
+                'accept': 'application/json;responseformat=3',
+                'x-agent-type': 'android',
+                'x-device-type': 'mobile',
+                'x-operator-code': 'SMART',
+                'x-device-identifier': deviceId,
+                'x-env-type': 'production',
+                'x-version': 'smartNew',
+                'accept-language': 'en_US',
+                'x-api-signature-version': '1.0',
+                'x-api-signature-nonce': nonce,
+                'x-device-manufacture': 'HUAWEI',
+                'x-device-brand': 'ANE-LX1',
+                'x-device-model': 'ANE-LX1',
+                'x-device-release-date': '',
+                'x-agent-version': '9',
+                'content-type': 'application/json; charset=utf-8',
+                'user-agent': 'okhttp/4.11.0',
+                'x-signature': sign,
+                'x-timestamp': timestamp,
+            },
+            json=data,
+            params=params
+        ).json()
+
+        log.debug(response['code'])
+        log.debug(response.keys())
+
     return response['data']
 
 
@@ -304,32 +318,57 @@ def fetch_soc(config: SmartHelloConfiguration,
     try:
         session = create_session()
         deviceId = random_hex(16)
+        tokens = {}
+        LoginToken = {}
 
-        LoginToken = loginHello(session, config)
-        tokens = getCurrentToken(session, LoginToken, deviceId)
+        # get LoginToken
+        retrycounter = 0
+        while not LoginToken.get('access_token') or retrycounter > MAX_RETRIES:
+            retrycounter += 1
+            log.debug(f'Requesting login tokens, attempt {retrycounter}')
+            LoginToken = loginHello(session, config)
 
-        if tokens.get('accessToken'):
-            log.debug('Login successful, retrieving vehicle list')
-            vehicles = getDeviceListHello(session, tokens, deviceId)
-            # check if configured VIN is empty or is in list
-            if not config.vin:
-                log.debug(f'No VIN configured, using first vehicle in list: {vehicles[0]}')
-                data = updateDevicesHello(session, tokens, deviceId, vehicles[0])
-            elif config.vin in vehicles:
-                log.debug('Retrieving vehicle status')
-                data = updateDevicesHello(session, tokens, deviceId, config.vin)
-            else:
-                raise Exception(f"VIN {config.vin} not found in vehicle list {vehicles}")
+        if not LoginToken.get('access_token'):
+            log.error(f'Type of LoginToken:{type(LoginToken)}')
+            log.error(LoginToken)
+            raise Exception('login failed, no login token received')
 
-            log.debug('Vehicle status updated')
-            log.debug(data["additionalVehicleStatus"]["electricVehicleStatus"])
+        # get AccessToken
+        retrycounter = 0
+        while not tokens.get('accessToken') or retrycounter > MAX_RETRIES:
+            retrycounter += 1
+            log.debug(f'Requesting access tokens, attempt {retrycounter}')
+            tokens = getCurrentToken(session, LoginToken, deviceId)
+
+        log.debug(type(tokens))
+        if not tokens.get('accessToken'):
+            log.error(f'Type of tokens: {type(tokens)}')
+            log.error(tokens)
+            raise Exception('failed to retrieve access tokens')
+
+        # get Vehicles
+        log.debug('Login successful, retrieving vehicle list')
+        vehicles = getDeviceListHello(session, tokens, deviceId)
+
+        # check if configured VIN is empty or is in list
+        if not config.vin:
+            log.debug(f'No VIN configured, using first vehicle in list: {vehicles[0]}')
+            data = updateDevicesHello(session, tokens, deviceId, vehicles[0])
+        elif config.vin in vehicles:
+            log.debug('Retrieving vehicle status')
+            data = updateDevicesHello(session, tokens, deviceId, config.vin)
+        else:
+            raise Exception(f"VIN {config.vin} not found in vehicle list {vehicles}")
+
+        log.debug('Vehicle status retrieved:')
+        log.debug(data["additionalVehicleStatus"]["electricVehicleStatus"])
 
     except Exception:
         raise Exception("Error requesting for vehicle: %s" % vehicle_id)
 
     soc = float(data["additionalVehicleStatus"]["electricVehicleStatus"]["chargeLevel"])
     autonomy = float(data["additionalVehicleStatus"]["electricVehicleStatus"]["distanceToEmptyOnBatteryOnly"])
-    soctimestamp = int(data["updateTime"])
+    soctimestamp = float(data["updateTime"])
 
     log.info("Smart Hello Data: soc=%s%%, range=%s, timestamp=%s",
              soc, autonomy, soctimestamp)
