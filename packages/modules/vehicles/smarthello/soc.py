@@ -17,7 +17,7 @@ def create_vehicle(vehicle_config: SmartHello, vehicle: int):
     return ConfigurableVehicle(vehicle_config=vehicle_config,
                                component_updater=updater,
                                vehicle=vehicle,
-                               calc_while_charging=True)
+                               calc_while_charging=False)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=SmartHello)

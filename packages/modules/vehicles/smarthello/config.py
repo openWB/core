@@ -5,12 +5,10 @@ class SmartHelloConfiguration:
     def __init__(self,
                  user_id: Optional[str] = None,
                  password: Optional[str] = None,
-                 calculate_soc: bool = False,
                  vin: Optional[str] = None,
                  sessioncache: Optional[str] = None) -> None:
         self.user_id = user_id
         self.password = password
-        self.calculate_soc = calculate_soc
         self.vin = vin
         self.sessioncache = sessioncache
 
