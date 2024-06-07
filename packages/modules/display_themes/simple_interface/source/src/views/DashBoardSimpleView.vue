@@ -1,320 +1,273 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
+import DashBoardCard from "@/components/DashBoardCard.vue";
 
 export default {
   name: "DashboardCanvasView",
+  components: {
+    DashBoardCard,
+  },
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
   },
   data() {
     return {
-      FPS: 24, // Animation Frames per second
-      speed: 0.03, // Arrowhead speed
-      arrowLength: 25,
-      arrowWidth: 13,
-
-      mqttStore: useMqttStore(),
-      images: {
-        evu: new Image(),
-        pv: new Image(),
-        house: new Image(),
-        battery: new Image(),
-        charge: new Image()
-      },
+      mqttStore: useMqttStore()
     };
   },
   computed: {
     gridPower() {
-      return parseFloat(this.mqttStore.getGridPower.replace('W', '').replace(',', ''));
+      return this.mqttStore.getGridPower('object');
     },
     pvPower() {
-      return parseFloat(this.mqttStore.getPvPower.replace('W', '').replace(',', ''));
+      return this.mqttStore.getPvPower('object');
     },
     homePower() {
-      return parseFloat(this.mqttStore.getHomePower.replace('W', '').replace(',', ''));
+      return this.mqttStore.getHomePower('object');
     },
     batteryPower() {
-      return parseFloat(this.mqttStore.getBatteryPower.replace('W', '').replace(',', ''));
+      return this.mqttStore.getBatteryPower('object');
+    },
+    connectedChargers() {
+      return this.mqttStore.getChargePointIds;
     },
     chargePoint1Power() {
-      return parseFloat(this.mqttStore.getChargePointPower(2).replace('W', '').replace(',', ''));
+      if (this.connectedChargers.length > 0) {
+        return this.mqttStore.getChargePointPower(this.connectedChargers[0], 'object') || { textValue: "Loading..." };
+      }
+      return { textValue: "N/A" };
     },
     chargePoint2Power() {
-      return parseFloat(this.mqttStore.getChargePointPower(3).replace('W', '').replace(',', ''));
-    }
-  },
-  methods: {
-    drawDiagram() {
-      const canvas = this.$refs.canvas;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw components
-      this.drawComponent(ctx, 150, 50, 'EVU', this.gridPower);
-      this.drawComponent(ctx, 450, 50, 'PV', this.pvPower);
-      this.drawComponent(ctx, 150, 215, 'Haus', this.homePower);
-      this.drawComponent(ctx, 450, 215, 'Speicher', this.batteryPower);
-      this.drawComponent(ctx, 150, 350, 'Ladepunkt-1', this.chargePoint1Power);
-      this.drawComponent(ctx, 450, 350, 'Ladepunkt-2', this.chargePoint2Power);
-      // Draw static white line connections
-      // EVU & PV
-      this.drawStaticLines(ctx, 150, 125, 300, 125);
-      this.drawStaticLines(ctx, 150, 85, 150, 125);
-      this.drawStaticLines(ctx, 300, 125, 450, 125);
-      this.drawStaticLines(ctx, 450, 85, 450, 125);
-      // joining line to house & battery
-      this.drawStaticLines(ctx, 300, 125, 300, 215);
-      // House & Battery
-      this.drawStaticLines(ctx, 300, 215, 415, 215);
-      this.drawStaticLines(ctx, 185, 215, 300, 215);
-      // joining line to charge points
-      this.drawStaticLines(ctx, 300, 215, 300, 350);
-      // Chargers
-      this.drawStaticLines(ctx, 185, 350, 300, 350);
-      this.drawStaticLines(ctx, 300, 350, 415, 350);
+      if (this.connectedChargers.length > 1) {
+        return this.mqttStore.getChargePointPower(this.connectedChargers[1], 'object') || { textValue: "Loading..." };
+      }
+      return { textValue: "N/A" };
     },
-    drawComponent(ctx, x, y, label, power) {
-      // Draw cirles
-      ctx.fillStyle = '#222';
-      ctx.beginPath();
-      ctx.arc(x, y, 35, 0, Math.PI * 2, true);
-      ctx.fill();
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      //Draw svg images
-      let img;
-      let scaleFactor;
-      switch (label) {
-        case 'EVU':
-          img = this.images.evu;
-          scaleFactor = 0.14;
-          break;
-        case 'PV':
-          img = this.images.pv;
-          scaleFactor = 0.1;
-          break;
-        case 'Haus':
-          img = this.images.house;
-          scaleFactor = 0.09;
-          break;
-        case 'Speicher':
-          img = this.images.battery;
-          scaleFactor = 0.09;
-          break;
-        case 'Ladepunkt-1':
-        case 'Ladepunkt-2':
-          img = this.images.charge;
-          scaleFactor = 0.07;
-          break;
-      }
-
-      if (img) {
-        const baseSize = Math.min(ctx.canvas.width, ctx.canvas.height); // Determine aspect ratio of the canvas.
-        const imgWidth = scaleFactor * baseSize;  // scale img
-        const imgHeight = scaleFactor * baseSize; //scale img
-        ctx.drawImage(img, x - imgWidth / 2, y - imgHeight / 2, imgWidth, imgHeight); //place img at component center
-      }
-      //Draw label text left side
-      if (x < 200) {
-        ctx.textAlign = 'right';
-        ctx.fillStyle = 'white';
-        ctx.fillText(label, x - 50, y - 10);
-        ctx.fillStyle = '#c9a68f';
-        ctx.fillText(`${power} W`, x - 50, y + 10);
-        //Draw label text right side  
+    isAnimatedEVU() {
+      return this.gridPower.value > 0;
+    },
+    isAnimatedEVUReverse() {
+      return this.gridPower.value < 0;
+    },
+    isAnimatedPV() {
+      return this.pvPower.value > 100;
+    },
+    isAnimatedHome() {
+      return this.homePower.value > 0;
+    },
+    isAnimatedBattery() {
+      return this.batteryPower.value > 0;
+    },
+    isAnimatedBatteryReverse() {
+      return this.batteryPower.value < 0;
+    },
+    isAnimatedCharge1() {
+      return this.chargePoint1Power.value > 0;
+    },
+    isAnimatedCharge2() {
+      return this.chargePoint2Power.value > 0;
+    },
+    EVUPositive() {
+      return this.gridPower.value > 0;
+    },
+    PVPositive() {
+      return this.pvPower.value > 100;
+    },
+    HomePositive() {
+      return this.homePower.value > 0;
+    },
+    BatteryPositive() {
+      return this.batteryPower.value > 0;
+    },
+    batteryClass() {
+      if (this.batteryPower.value === 0) {
+        return ''; // No class if battery value is zero
       } else {
-        ctx.textAlign = 'left';
-        ctx.font = '15px Arial';
-        ctx.fillStyle = 'white';
-        ctx.fillText(label, x + 50, y - 10);
-        ctx.fillStyle = '#c9a68f';
-        ctx.fillText(`${power} W`, x + 50, y + 10);
+        return {
+          text_red: !this.BatteryPositive,
+          text_green: this.BatteryPositive
+        };
       }
     },
-    drawStaticLines(ctx, x1, y1, x2, y2) {
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+    LP1Positive() {
+      return this.chargePoint1Power.value > 0;
     },
-    animateArrows() {
-      const canvas = this.$refs.canvas;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-
-      const drawLine = (x1, y1, x2, y2) => {
-        ctx.strokeStyle = 'green';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-      };
-
-      const drawArrowhead = (x, y, angle) => {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle);
-
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(-this.arrowLength, this.arrowWidth / 2);
-        ctx.lineTo(-this.arrowLength, -this.arrowWidth / 2);
-        ctx.closePath();
-
-        ctx.restore();
-        ctx.fillStyle = 'green';
-        ctx.fill();
-      };
-
-      const animateLine = (x1, y1, x2, y2, t) => {
-        const totalLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-        const maxProgress = totalLength / (totalLength + this.arrowLength); // Calculate the maximum progress to stop the tip at the end
-        let progress = (t * totalLength) / totalLength;
-        if (progress > maxProgress) {
-          progress = 0; // Reset progress if it exceeds maxProgress
-        }
-        let angle = Math.atan2(y2 - y1, x2 - x1);
-        // Adjust position to move arrowhead forward along the line
-        let x = x1 + progress * (x2 - x1) + Math.cos(angle) * this.arrowLength;
-        let y = y1 + progress * (y2 - y1) + Math.sin(angle) * this.arrowLength;
-        drawLine(x1, y1, x2, y2);
-        drawArrowhead(x, y, angle);
-        return t + this.speed;
-      };
-      // Set the desired Frames per second for the amnimation
-      const interval = 1000 / this.FPS; // Interval in milliseconds
-      let lastTime = (new Date()).getTime();
-      let t1 = 0, t2 = 0, t3 = 0, t4 = 0, t5 = 0, t6 = 0, t7 = 0, t8 = 0, t9 = 0, t10 = 0, t11 = 0, t12 = 0, t13 = 0;
-      // Call the animateLine function based on energy flows
-      const animate = () => {
-        const currentTime = (new Date()).getTime();
-        const deltaTime = currentTime - lastTime;
-        //FPS refresh time reached
-        if (deltaTime > interval) {
-          lastTime = currentTime - (deltaTime % interval);
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          this.drawDiagram();
-
-          if (this.chargePoint1Power > 0) {
-            t1 = animateLine(300, 350, 185, 350, t1);
-            if (t1 > 1) t1 = 0;
-            t4 = animateLine(300, 215, 300, 350, t4);
-            if (t4 > 1) t4 = 0;
-          }
-
-          if (this.chargePoint2Power > 0) {
-            t2 = animateLine(300, 350, 415, 350, t2);
-            if (t2 > 1) t2 = 0;
-            t9 = animateLine(300, 215, 300, 350, t9);
-            if (t9 > 1) t9 = 0;
-          }
-
-          if (this.homePower > 0) {
-            t3 = animateLine(300, 215, 185, 215, t3);
-            if (t3 > 1) t3 = 0;
-          }
-
-          if (this.homePower > 0 || this.chargePoint1Power > 0 || this.bhargePoint2Power > 0) {
-            t8 = animateLine(300, 125, 300, 215, t8);
-            if (t8 > 1) t8 = 0;
-          }
-
-          if (this.batteryPower > 0) {
-            t5 = animateLine(300, 215, 415, 215, t5);
-            if (t5 > 1) t5 = 0;
-          }
-
-          if (this.batteryPower < 0) {
-            t5 = animateLine(415, 215, 300, 215, t5);
-            if (t5 > 1) t5 = 0;
-          }
-
-          if (this.pvPower > 30) {
-            t6 = animateLine(450, 125, 300, 125, t6);
-            if (t6 > 1) t6 = 0;
-            t7 = animateLine(450, 85, 450, 125, t7);
-            if (t7 > 1) t7 = 0;
-          }
-
-          if (this.gridPower > 0) {
-            t10 = animateLine(150, 125, 300, 125, t10);
-            if (t10 > 1) t10 = 0;
-            t11 = animateLine(150, 85, 150, 125, t11);
-            if (t11 > 1) t11 = 0;
-          }
-
-          if (this.gridPower < 0) {
-            t12 = animateLine(300, 125, 150, 125, t12);
-            if (t12 > 1) t12 = 0;
-            t13 = animateLine(150, 125, 150, 85, t13);
-            if (t13 > 1) t13 = 0;
-          }
-        }
-        requestAnimationFrame(animate);
-      };
-      animate();
-    },
-  },
-  mounted() {
-    this.images.evu.src = './icons/owbEVU.svg';
-    this.images.pv.src = './icons/owbPV.svg';
-    this.images.house.src = './icons/owbHouse.svg';
-    this.images.battery.src = './icons/owbBattery.svg';
-    this.images.charge.src = './icons/owbCharge.svg';
-    this.images.charge.onload = () => {
-      this.drawDiagram();
-      this.animateArrows();
-    };
-  },
-  beforeDestroy() {
-    // Clear animation frames on component destroy
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
+    LP2Positive() {
+      return this.chargePoint2Power.value > 0;
     }
-    // Nullify the canvas reference to prevent accessing it after destruction
-    if (this.$refs.canvas) {
-      this.$refs.canvas = null;
-    }
-  }
-}
+  },
+};
 </script>
 
 <template>
-  <div class="canvas-container">
-    <canvas ref="canvas" width="600px" height="400"></canvas>
-  </div>
+  <dash-board-card color="primary">
+    <template #headerLeft> Übersicht - Energiefluss </template>
+    <i-container>
+      <div class="svg-container">
+        <svg viewBox="0 0 170.09999 121.70834" version="1.1" id="diagram"
+          xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+          <defs id="defs2" />
+          <g inkscape:label="Ebene 1" inkscape:groupmode="layer" id="layer1" style="display:inline">
+            <path :class="[{ animated: isAnimatedEVU }, { animatedReverse: isAnimatedEVUReverse }]"
+              style="fill:none;fill-rule:evenodd;stroke:white;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;"
+              d="M 40,20 85,60" id="evu-line" inkscape:connector-type="polyline" inkscape:connector-curvature="0"
+              inkscape:connection-start="#path846" inkscape:connection-end="#path1109" />
+            <path :class="{ animated: isAnimatedPV }"
+              style="fill:none;fill-rule:evenodd;stroke:grey;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;"
+              d="M 130,20 85,60" id="pv-line" inkscape:connector-type="polyline" inkscape:connector-curvature="0"
+              inkscape:connection-start="#path846-2" inkscape:connection-end="#path1109" />
+            <path :class="{ animatedReverse: isAnimatedHome }"
+              style="fill:none;fill-rule:evenodd;stroke:gray;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;"
+              d="M 40,60 85,60" id="home-line" inkscape:connector-type="polyline" inkscape:connector-curvature="0"
+              inkscape:connection-start="#path846-6" inkscape:connection-end="#path1109" />
+            <path :class="[{ animatedReverse: isAnimatedBattery }, { animated: isAnimatedBatteryReverse }]"
+              style="fill:none;fill-rule:evenodd;stroke:gray;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;"
+              d="M 130,60 85,60" id="battery-line" inkscape:connector-type="polyline" inkscape:connector-curvature="0"
+              inkscape:connection-start="#path846-6-9" inkscape:connection-end="#path1109" />
+            <path :class="{ animatedReverse: isAnimatedCharge1 }"
+              style="fill:none;fill-rule:evenodd;stroke:gray;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;"
+              d="M 40,100 85,60" id="L1-line" inkscape:connector-type="polyline" inkscape:connector-curvature="0"
+              inkscape:connection-start="#path846-5" inkscape:connection-end="#path1109" />
+            <path :class="{ animatedReverse: isAnimatedCharge2 }"
+              style="fill:none;fill-rule:evenodd;stroke:gray;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;"
+              d="M 130,100 85,60" id="L2-line" inkscape:connector-type="polyline" inkscape:connector-curvature="0"
+              inkscape:connection-start="#path846-5-1" inkscape:connection-end="#path1109" />
+            <g id="g18913">
+              <circle
+                style="fill:black;fill-opacity:1;stroke:gray;stroke-width:0.75;stroke-miterlimit:2;stroke-opacity:1"
+                id="evu" cx="40" cy="20" r="10" />
+              <image href="/icons/owbEVU.svg" x="32.5" y="12" height="15px" width="15px" />
+              <circle
+                style="display:inline;fill:black;fill-opacity:1;stroke:gray;stroke-width:0.75;stroke-miterlimit:2;stroke-opacity:1"
+                id="home" cx="40" cy="60" r="10" />
+              <image href="/icons/owbHouse.svg" x="34.5" y="55" height="11px" width="11px" />
+              <circle
+                style="display:inline;fill:black;fill-opacity:1;stroke:gray;stroke-width:0.75;stroke-miterlimit:2;stroke-opacity:1"
+                id="L1" cx="40" cy="100" r="10" />
+              <image href="/icons/owbCharge.svg" x="35.5" y="95.5" height="9px" width="9px" />
+            </g>
+            <g id="g18908">
+              <circle
+                style="fill:Black;fill-opacity:1;stroke:gray;stroke-width:0.75;stroke-miterlimit:2;stroke-opacity:1"
+                id="pv" cx="130" cy="20" r="10" />
+              <image href="/icons/owbPV.svg" x="124" y="13" height="12px" width="12px" />
+              <circle
+                style="display:inline;fill:black;fill-opacity:1;stroke:gray;stroke-width:0.75;stroke-miterlimit:2;stroke-opacity:1"
+                id="battery" cx="130" cy="60" r="10" />
+              <image href="/icons/owbBattery.svg" x="124.5" y="55" height="11px" width="11px" />
+              <circle
+                style="display:inline;fill:black;fill-opacity:1;stroke:gray;stroke-width:0.75;stroke-miterlimit:2;stroke-opacity:1"
+                id="L2" cx="130" cy="100" r="10" />
+              <image href="/icons/owbCharge.svg" x="126" y="95.5" height="9px" width="9px" />
+            </g>
+            <circle style="fill:gray;fill-opacity:1;stroke-width:0.5;stroke-miterlimit:2" id="center" cx="85"
+              cy="60" r="2" />
+
+            <text xml:space="preserve"
+              style="font-style:normal;font-weight:normal;font-size:5px;line-height:1.25;font-family:Arial;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+              id="EVU" text-anchor="end">
+              <tspan sodipodi:role="line" style="fill:white;fill-opacity:1;stroke-width:0.264583" x="26" y="19">EVU</tspan>
+              <tspan sodipodi:role="line" :class="{ text_green: !EVUPositive, text_red: EVUPositive }"
+                style="fill:white;fill-opacity:1;stroke-width:0.264583" x="26" y="25">{{ this.gridPower.textValue }}
+              </tspan>
+            </text>
+
+            <text xml:space="preserve"
+              style="font-style:normal;font-weight:normal;font-size:5px;line-height:1.25;font-family:Arial;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+              id="PV" text-anchor="start">
+              <tspan sodipodi:role="line" style="fill:white;fill-opacity:1;stroke-width:0.264583" x="144" y="19">PV</tspan>
+              <tspan sodipodi:role="line" :class="{ text_green: PVPositive }"
+                style="fill:white;fill-opacity:1;stroke-width:0.264583" x="144" y="25">{{ this.pvPower.textValue }}
+              </tspan>
+            </text>
+
+            <text xml:space="preserve"
+              style="font-style:normal;font-weight:normal;font-size:5px;line-height:1.25;font-family:Arial;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+              id="Home" text-anchor="end">
+              <tspan sodipodi:role="line" style="fill:white;fill-opacity:1;stroke-width:0.264583" x="26" y="60">Haus</tspan>
+              <tspan sodipodi:role="line" :class="{ text_green: HomePositive }"
+                style="fill:white;fill-opacity:1;stroke-width:0.264583" x="26" y="66">{{ this.homePower.textValue }}
+              </tspan>
+            </text>
+
+            <text xml:space="preserve"
+              style="font-style:normal;font-weight:normal;font-size:5px;line-height:1.25;font-family:Arial;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+              id="Battery" text-anchor="start">
+              <tspan sodipodi:role="line" style="fill:white;fill-opacity:1;stroke-width:0.264583" x="144" y="60">Speicher</tspan>
+              <tspan sodipodi:role="line" :class="batteryClass" style="fill:white;fill-opacity:1;stroke-width:0.264583"
+                x="144" y="66">{{ this.batteryPower.textValue }}</tspan>
+            </text>
+
+            <text xml:space="preserve"
+              style="font-style:normal;font-weight:normal;font-size:5px;line-height:1.25;font-family:Arial;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+              id="LP1" text-anchor="end">
+              <tspan sodipodi:role="line" style="fill:white;fill-opacity:1;stroke-width:0.264583"
+                x="26" y="100">Ladepunkt1</tspan>
+              <tspan sodipodi:role="line" :class="{ text_green: LP1Positive }"
+                style="fill:white;fill-opacity:1;stroke-width:0.264583" x="26" y="106">{{
+                  this.chargePoint1Power.textValue
+                }}</tspan>
+            </text>
+
+            <text xml:space="preserve"
+              style="font-style:normal;font-weight:normal;font-size:5px;line-height:1.25;font-family:Arial;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+              id="LP2" text-anchor="start">
+              <tspan sodipodi:role="line" style="fill:white;fill-opacity:1;stroke-width:0.264583"
+                x="144" y="100">Ladepunkt2</tspan>
+              <tspan sodipodi:role="line" :class="{ text_green: LP2Positive }"
+                style="fill:white;fill-opacity:1;stroke-width:0.264583" x="144" y="106">{{
+                  this.chargePoint2Power.textValue
+                }}</tspan>
+            </text>
+          </g>
+        </svg>
+      </div>
+    </i-container>
+  </dash-board-card>
 </template>
 
 <style scoped>
-.canvas-container {
-  position: relative;
-  width: 100%;
-  margin-top: 0.5rem;
-  padding-bottom: 66.67%;
-  /* Aspect ratio 3:2 (height / width * 100) */
-  background-color: #46444c;
-  border-radius: 5px;
+.svg-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
+#diagram path {
+  transition: stroke 0.5s;
 }
 
-@media only screen and (max-width: 800px) {
-  .canvas-container {
-    padding-bottom: 66.67%;
-    /* Maintain aspect ratio */
+#diagram path.animated {
+  stroke: green !important;
+  stroke-dasharray: 5;
+  animation: dash 1s linear infinite;
+}
+
+#diagram path.animatedReverse {
+  stroke: green !important;
+  stroke-dasharray: 5;
+  animation: dashReverse 1s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
   }
+}
+
+@keyframes dashReverse {
+  to {
+    stroke-dashoffset: 20;
+  }
+}
+
+.text_green {
+  fill: green !important;
+  /* or any color you prefer for positive values */
+}
+
+.text_red {
+  fill: red !important;
+  /* or any color you prefer for negative values */
 }
 </style>
