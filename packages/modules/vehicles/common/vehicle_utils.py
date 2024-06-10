@@ -5,20 +5,30 @@
 
 from typing import Union, Optional
 import logging
+from asyncio import wait_for, get_event_loop, new_event_loop, set_event_loop, TimeoutError
+from functools import partial
 from datetime import datetime
 from time import time
 from jwt import decode
 from helpermodules.pub import Pub
 from json import dump, dumps, load, loads
 import paho.mqtt.subscribe as subscribe
-import paho.mqtt.publish as publish
-import paho.mqtt.client as mqtt
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from control import data
 from modules.common.component_state import CarState
+from modules.common.store._car import CarValueStoreBroker
+from modules.common import store
 
 
 DEF_LOGFILTER = '__'
+
+# define how to get core data, via 'core' (object tree access) or 'mqtt' (subscribe.simple)
+MODE_MQTT = 'mqtt'
+MODE_CORE = 'core'
+GET_MODE = MODE_CORE
+
+# timeout for mqtt subscribe.sumple
+MQTT_TIMEOUT = 1
 
 log = logging.getLogger(__name__)
 
@@ -36,22 +46,34 @@ class logUtils:
     def set_logFilter(self, filter: str = ''):
         self.logFilter = filter
 
-    # get logFilter via mqtt
-    def get_logFilter(self, vnum: str) -> str:
-        mq = mqttUtils(self)
-        try:
-            msg = mq.mqtt_get_topic("openWB/vehicle/" + vnum + "/soc_module/config", "localhost")
-            config = loads(str(msg.payload, 'utf-8'))
-            if 'logFilter' in config['configuration']:
-                self.logFilter = config['configuration']['logFilter']
-                if self.logFilter is None:
-                    self.logFilter = DEF_LOGFILTER
-            else:
+    # get logFilter via core data access
+    def get_logFilter(self, vehicle: int) -> str:
+        if GET_MODE == MODE_CORE:
+            su = socUtils(self)
+            try:
+                self.logFilter = su.get_vehicle_config_logFilter(vehicle)
+            except Exception as e:
+                log.exception("get_logFilter error: %s", e)
                 self.logFilter = DEF_LOGFILTER
-        except Exception as e:
-            log.exception("get_logFilter mqtt error: %s", e)
-            self.logFilter = DEF_LOGFILTER
-        self.infoLog('Q', 'get_logFilter: logFilter=' + self.logFilter)
+            self.infoLog('Q', 'get_logFilter: logFilter=' + self.logFilter)
+        elif GET_MODE == MODE_MQTT:
+            mq = mqttUtils(self)
+            try:
+                msg = mq.mqtt_get_topic("openWB/vehicle/" + vehicle + "/soc_module/config", "localhost")
+                config = loads(str(msg.payload, 'utf-8'))
+                if 'logFilter' in config['configuration']:
+                    self.logFilter = config['configuration']['logFilter']
+                    if self.logFilter is None:
+                        self.logFilter = DEF_LOGFILTER
+                else:
+                    self.logFilter = DEF_LOGFILTER
+            except Exception as e:
+                log.exception("get_logFilter mqtt error: %s", e)
+                self.logFilter = DEF_LOGFILTER
+            self.infoLog('Q', 'get_logFilter: logFilter=' + self.logFilter)
+        else:
+            log.ERROR("get_logFilter: unknown GET_MODE=" + str(GET_MODE))
+            raise
         return self.logFilter
 
     def infoLog(self, filter: str, txt: str):
@@ -79,51 +101,43 @@ class mqttUtils:
         except Exception as e:
             log.exception('Token mqtt write exception ' + str(e))
 
-    # publish a single message to 1883 broker
-    def pub(self, topic: str, payload: str):
-        try:
-            self.lu.infoLog('q', "pub: topic=" + topic + ', payload=' + payload)
-            client = mqtt.Client()
-            client.connect("localhost", 1883, 60)
-            ret, mid = client.publish(topic, payload)
-            if ret != 0:
-                self.lu.infoLog('q', "pub: topic=" + topic +
-                                ', payload=' + payload +
-                                ', ret=' + str(ret) +
-                                ', mid=' + str(mid))
-            client.disconnect()
-        except Exception as e:
-            log.exception("pub mqtt error: %s", e)
-
-    # get mqtt content by topic
-    def mqtt_get_topic(self, topic: str, host: str):
+    # get mqtt content by topic - async to avoid subscribe.simple from blocking
+    # this would be blocking if not called async
+    def _mqtt_get_topic(self, topic: str, host: str):
         try:
             msg = subscribe.simple(topic, hostname=host)
         except Exception as e:
-            log.exception("mqtt_get_topic error: %s", e)
+            log.exception("_mqtt_get_topic error: %s", e)
             raise
         return msg
 
-    # publish CarState via MQTT to 1883 broker
-    def set_CarState(self, ev: int, soc: int, range: float, ts: int):
+    # async function with timeout in case above function is blocking
+    async def _mqtt_get_topic_async(self, topic: str, host: str):
         try:
-            msgs = []
-            topic = 'openWB/set/vehicle/' + str(ev) + '/get/soc'
-            # self.pub(topic, str(soc))
-            msgs.append({'topic': topic, 'payload': str(soc)})
-            topic = 'openWB/set/vehicle/' + str(ev) + '/get/range'
-            # self.pub(topic, str(range))
-            msgs.append({'topic': topic, 'payload': str(range)})
-            topic = 'openWB/set/vehicle/' + str(ev) + '/get/soc_timestamp'
-            _ts = time()
-            # self.pub(topic, str(_ts))
-            msgs.append({'topic': topic, 'payload': str(_ts)})
-            self.lu.infoLog('Q', "set_CarState publish.multiple: msgs=\n" + dumps(msgs))
-            self.lu.infoLog('q', "set_CarState: " + str(soc) + '%/' + str(range) + 'KM@' + str(_ts))
-            publish.multiple(msgs, hostname='localhost', port=1883)
+            msg = await wait_for(
+                self.loop.run_in_executor(None, partial(self._mqtt_get_topic, topic, host)), timeout=MQTT_TIMEOUT)
+        except TimeoutError:
+            pass
+            msg = None
+        return msg
+
+    # get message from mqtt server in async mode
+    def mqtt_get_topic(self, topic: str, host: str):
+        try:
+            try:
+                self.loop = get_event_loop()
+            except Exception as e:
+                if str(e).startswith('There is no current event loop in thread'):
+                    self.loop = new_event_loop()
+                    set_event_loop(self.loop)
+                else:
+                    raise
+            msg = self.loop.run_until_complete(self._mqtt_get_topic_async(topic, host))
+            log.debug("mqtt_get_topic: msg.payload=" + str(msg.payload, 'utf-8'))
         except Exception as e:
-            log.exception("set_CarState error: %s", e)
-        return
+            log.exception("mqtt_get_topic error: %s", e)
+            msg = None
+        return msg
 
 
 # file utilities, loading and writing json files
@@ -170,7 +184,18 @@ class socUtils(fileUtils):
             self.lu = logUtils()
         self.mq = mqttUtils(self.lu)
 
-    # get CarState for vehicle
+    # publish CarState via core store
+    def set_CarState(self, vehicle: int, soc: int, range: float, ts: int):
+        try:
+            st: CarValueStoreBroker = store.get_car_value_store(vehicle)
+            carState: CarState = CarState(int(soc), float(range), round(time(), 2))
+            st.set(carState)
+            st.update()
+        except Exception as e:
+            log.exception("set_CarState Error: %s", e)
+        return
+
+    # get CarState for vehicle from core data
     def get_CarState(self, vehicle: int) -> CarState:
         for ev in data.data.ev_data.values():
             if ev.num == vehicle:
@@ -181,15 +206,56 @@ class socUtils(fileUtils):
             carState: CarState = CarState(None, None, None)
         return carState
 
+    # get config of vehicle by number
+    def get_vehicle_config(self, vehicle: int) -> dict:
+        try:
+            ev_data = data.data.ev_data.copy()
+            for ev in ev_data.values():
+                if int(ev.num) == int(vehicle):
+                    cv: ConfigurableVehicle = ev.soc_module
+                    se = cv.vehicle_config.toJSON()
+                    # sc = se.configuration.toJSON()
+                    break
+            else:
+                se = "{}"
+                # sc = "{}"
+                log.info('get_vehicle_config: ev=' + str(vehicle) + ' not found')
+        except Exception as e:
+            se = "{}"
+            # sc = "{}"
+            log.info('get_vehicle_config: Error: ' + str(e))
+        sed = loads(se)
+        # scd = loads(sc)
+        return sed
+        # return scd
+
+    # get logFilter from config of vehicle by number
+    def get_vehicle_config_logFilter(self, vehicle: int) -> str:
+        try:
+            sed = self.get_vehicle_config(vehicle)
+            scd = sed['configuration']
+            # scd = self.get_vehicle_config(vehicle)
+            try:
+                lf = scd['logFilter']
+                # log.info('get_vehicle_config_logFilter: ev=' + str(vehicle) + ", logFilter=" + lf)
+            except Exception as e:
+                log.info('get_vehicle_config_logFilter: Error: ' + str(e))
+                lf = DEF_LOGFILTER
+        except Exception as e:
+            log.info('get_vehicle_config_logFilter: Error: ' + str(e))
+            lf = DEF_LOGFILTER
+        return lf
+
     # get mapping of vehicle vin and number of type Type from core ev_data
     def get_vin_ev_map(self, Type: str) -> dict:
         vh_list = {}
         # get vin->ev.num mapping from ev_data object
-        for ev in data.data.ev_data.values():
+        ev_data = data.data.ev_data.copy()
+        for ev in ev_data.values():
             if isinstance(ev.soc_module, ConfigurableVehicle):
                 cv: ConfigurableVehicle = ev.soc_module
-                if cv.vehicle_config.type == Type:
-                    se = cv.vehicle_config
+                se = cv.vehicle_config
+                if se.type == Type:
                     sc = se.configuration
                     self.lu.infoLog('i', 'ev_data: ev=' + str(ev.num) + ', sc.vin=' + str(sc.vin))
                     vh_list[sc.vin] = ev.num
@@ -223,13 +289,18 @@ class socUtils(fileUtils):
                 return False
         return True
 
-    # update vehicle configuration with updatee
+    # update vehicle configuration with updates
     def update_vehicle_config(self, vehicle: int, conf_update: dict):
-        cfg_setTopic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
-        cfg_getTopic = "openWB/vehicle/" + str(vehicle) + "/soc_module/config"
-        # get config dict from broker
-        msg = self.mq.mqtt_get_topic(cfg_getTopic, "localhost")
-        confDict = loads(str(msg.payload, 'utf-8'))
+        if GET_MODE == MODE_CORE:
+            confDict = self.get_vehicle_config(vehicle)
+        elif GET_MODE == MODE_MQTT:
+            cfg_getTopic = "openWB/vehicle/" + str(vehicle) + "/soc_module/config"
+            # get config dict from broker
+            msg = self.mq.mqtt_get_topic(cfg_getTopic, "localhost")
+            confDict = loads(str(msg.payload, 'utf-8'))
+        else:
+            log.ERROR("update_vehicle_config: unknown GET_MODE=" + str(GET_MODE))
+            raise
 
         self.lu.infoLog('T', "update_vehicle_config: confDict_org=" + dumps(confDict, indent=4))
         # update values in conf_update
@@ -237,6 +308,8 @@ class socUtils(fileUtils):
             confDict['configuration'][k] = v
         self.lu.infoLog('T', "update_vehicle_config: confDict_new=" + dumps(confDict, indent=4))
 
+        cfg_setTopic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
         self.mq.write_config(
             cfg_setTopic,
             confDict)
+        return
