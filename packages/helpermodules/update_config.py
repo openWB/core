@@ -9,6 +9,7 @@ import subprocess
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
+from control.bat_all import BatConsiderationMode
 from control.general import ChargemodeConfig
 import dataclass_utils
 
@@ -27,6 +28,8 @@ from control import counter_all
 from control import ev
 from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
+from modules.common.component_type import ComponentType
+from modules.devices.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
@@ -37,12 +40,11 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 40
+    DATASTORE_VERSION = 45
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
         "^openWB/bat/set/regulate_up$",
-        "^openWB/bat/set/switch_on_soc_reached$",
         "^openWB/bat/get/fault_state$",
         "^openWB/bat/get/fault_str$",
         "^openWB/bat/get/soc$",
@@ -180,6 +182,7 @@ class UpdateConfig:
         "^openWB/general/ripple_control_receiver/override_reference$",
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
+        "^openWB/general/chargemode_config/pv_charging/bat_mode$",
         "^openWB/general/chargemode_config/pv_charging/feed_in_yield$",
         "^openWB/general/chargemode_config/pv_charging/switch_on_threshold$",
         "^openWB/general/chargemode_config/pv_charging/switch_on_delay$",
@@ -188,12 +191,11 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/pv_charging/phase_switch_delay$",
         "^openWB/general/chargemode_config/pv_charging/control_range$",
         "^openWB/general/chargemode_config/pv_charging/phases_to_use$",
-        "^openWB/general/chargemode_config/pv_charging/bat_prio$",
-        "^openWB/general/chargemode_config/pv_charging/switch_on_soc$",
-        "^openWB/general/chargemode_config/pv_charging/switch_off_soc$",
-        "^openWB/general/chargemode_config/pv_charging/rundown_soc$",
-        "^openWB/general/chargemode_config/pv_charging/rundown_power$",
-        "^openWB/general/chargemode_config/pv_charging/charging_power_reserve$",
+        "^openWB/general/chargemode_config/pv_charging/min_bat_soc$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_discharge$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_discharge_active$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_reserve$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_reserve_active$",
         "^openWB/general/chargemode_config/retry_failed_phase_switches$",
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
@@ -365,6 +367,7 @@ class UpdateConfig:
         "^openWB/system/backup_cloud/config$",
         "^openWB/system/boot_done$",
         "^openWB/system/configurable/backup_clouds$",
+        "^openWB/system/backup_cloud/backup_before_update$",
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
@@ -415,13 +418,13 @@ class UpdateConfig:
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
         ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData(min_current=10))),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
-        ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
-        ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),
-        ("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60),
-        ("openWB/general/chargemode_config/pv_charging/switch_off_soc", 40),
-        ("openWB/general/chargemode_config/pv_charging/rundown_power", 1000),
-        ("openWB/general/chargemode_config/pv_charging/rundown_soc", 50),
-        ("openWB/general/chargemode_config/pv_charging/charging_power_reserve", 200),
+        ("openWB/general/chargemode_config/instant_charging/phases_to_use", 3),
+        ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_discharge_active", True),
+        ("openWB/general/chargemode_config/pv_charging/min_bat_soc", 50),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_reserve_active", True),
         ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
         ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 50),
         ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
@@ -429,7 +432,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
         ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 0),
         ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
-        ("openWB/general/chargemode_config/pv_charging/phases_to_use", 1),
+        ("openWB/general/chargemode_config/pv_charging/phases_to_use", 0),
         ("openWB/general/chargemode_config/retry_failed_phase_switches",
          ChargemodeConfig().retry_failed_phase_switches),
         ("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 0),
@@ -469,6 +472,7 @@ class UpdateConfig:
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
+        ("openWB/system/backup_cloud/backup_before_update", True),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/datastore_version", DATASTORE_VERSION),
         ("openWB/system/usage_terms_acknowledged", False),
@@ -501,11 +505,12 @@ class UpdateConfig:
         log.debug("Broker-Konfiguration aktualisieren")
         InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
         try:
+            # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
+            self.__solve_breaking_changes()
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
             self.__update_version()
-            self.__solve_breaking_changes()
         except Exception:
             log.exception("Fehler bei der Aktualisierung des Brokers.")
             pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Brokers.", MessageType.ERROR)
@@ -1357,3 +1362,155 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 40)
+
+    def upgrade_datastore_40(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # Module mit separater Modbus ID für jede Komponente
+                if payload.get("name") == "Sma Sunny Boy/Tripower Speicher"\
+                        and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 3})
+                if payload.get("name") == "Sma Sunny Boy Smart Energy Speicher"\
+                        and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 3})
+                if payload.get("name") == "Sma Sunny Boy/Tripower Zähler"\
+                        and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 3})
+                if payload.get("name") == "Sma Sunny Boy/Tripower Wechselrichter"\
+                        and "modbus_id" not in payload["configuration"]:
+                    if payload.get("configuration").get("version") == 1:
+                        payload["configuration"].update({"modbus_id": 1})
+                    elif payload.get("configuration").get("version") == 2:
+                        payload["configuration"].update({"modbus_id": 2})
+                    else:
+                        payload["configuration"].update({"modbus_id": 3})
+                if payload.get("name") == "SMA Sunny Island Speicher" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 3})
+
+                # Module mit Modbus ID=1 für Gerät (alle Komponenten haben die gleiche ID)
+                modified_modules = ["powerdog", "carlo_gavazzi", "e3dc",
+                                    "janitza", "siemens", "siemens_sentron", "varta"]
+                for i in modified_modules:
+                    if payload.get("type") == i and "modbus_id" not in payload["configuration"]:
+                        payload["configuration"].update({"modbus_id": 1})
+
+                # Module mit spezieller Modbus ID für Gerät
+                if payload.get("type") == "alpha_ess" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 85})
+                if payload.get("type") == "kostal_plenticore" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 71})
+                if payload.get("type") == "kostal_sem" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 71})
+                if payload.get("type") == "saxpower" and "modbus_id" not in payload["configuration"]:
+                    payload["configuration"].update({"modbus_id": 64})
+
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 41)
+
+    def upgrade_datastore_41(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/chargemode_config/pv_charging/bat_prio" == topic:
+                old_bat_prio = decode_payload(payload)
+                for mode_topic, mode_payload in self.all_received_topics.items():
+                    if ("openWB/general/chargemode_config/pv_charging/charging_power_reserve" == mode_topic and
+                            decode_payload(mode_payload) == 0 and old_bat_prio is False):
+                        return {"openWB/general/chargemode_config/pv_charging/bat_mode": "ev_mode"}
+                    elif ("openWB/general/chargemode_config/pv_charging/rundown_power" == mode_topic and
+                            decode_payload(mode_payload) == 0 and old_bat_prio):
+                        return {"openWB/general/chargemode_config/pv_charging/bat_mode": "bat_mode"}
+                else:
+                    return {"openWB/general/chargemode_config/pv_charging/bat_mode": "min_soc_bat_mode"}
+            elif "openWB/general/chargemode_config/pv_charging/rundown_soc" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/min_bat_soc": decode_payload(payload)}
+            elif "openWB/general/chargemode_config/pv_charging/rundown_power" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/bat_power_discharge": decode_payload(payload)}
+            elif "openWB/general/chargemode_config/pv_charging/charging_power_reserve" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/bat_power_reserve": decode_payload(payload)}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 42)
+
+    def upgrade_datastore_42(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/chargemode_config/pv_charging/bat_power_discharge" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/bat_power_discharge_active": decode_payload(
+                    payload) > 0}
+            elif "openWB/general/chargemode_config/pv_charging/bat_power_reserve" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/bat_power_reserve_active": decode_payload(
+                    payload) > 0}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 43)
+
+    def upgrade_datastore_43(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                device = decode_payload(payload)
+                if device.get("type") == "sungrow" and "version" not in device["configuration"]:
+                    device_id = get_index(topic)
+                    device_name = device.get("name")
+                    version = None
+                    inverter_id = None
+                    battery_id = None
+                    hierarchy = None
+                    for other_topic, other_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{device_id}/component/[0-9]+", other_topic) is not None:
+                            component = decode_payload(other_payload)
+                            component_id = int(get_second_index(other_topic))
+                            if component.get("type") == ComponentType.COUNTER.value \
+                               and "version" in component["configuration"]:
+                                version = component['configuration']['version']
+                                log.debug(f"Version {version} found for device {device_id} '{device_name}'")
+                            elif component.get("type") == ComponentType.BAT.value:
+                                battery_id = component_id
+                            elif component.get("type") == ComponentType.INVERTER.value:
+                                inverter_id = component_id
+                        elif re.search("openWB/counter/get/hierarchy", other_topic) is not None:
+                            hierarchy = decode_payload(other_payload)
+
+                    if battery_id or version == Version.SH:
+                        # Assume an SH_WiNet if hybrid inverter, this is compatible to SH_LAN (but not vice versa)
+                        version = Version.SH_winet_dongle
+                    elif not version:
+                        # Assume an SG_WiNet version as default if no battery or version from counter found
+                        version = Version.SG_winet_dongle
+                    log.debug(f"Setting version {version} for device {device_id} '{device_name}'")
+                    device["configuration"].update({"version": version})
+                    Pub().pub(topic, device)
+                    pub_system_message(device, f"Die Konfiguration von '{device_name}' wurde aktualisiert. "
+                                               f"Bitte in den Geräteeinstellungen sicherstellen, dass Version "
+                                               f"'{Version(version).name}' korrekt ist", MessageType.INFO)
+
+                    if battery_id and inverter_id and hierarchy:
+                        _counter_all = counter_all.CounterAll()
+                        _counter_all.data.get.hierarchy = hierarchy
+                        _counter_all.hierarchy_remove_item(battery_id)
+                        _counter_all.hierarchy_add_item_below(battery_id, ComponentType.BAT, inverter_id)
+                        log.debug(f"Moved battery {battery_id} below inverter {inverter_id} in hierarchy")
+                        Pub().pub("openWB/counter/get/hierarchy", _counter_all.data.get.hierarchy)
+
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 44)
+
+    def upgrade_datastore_44(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "disable_after_unplug" in payload:
+                    updated_payload = payload
+                    disable_after_unplug = updated_payload["disable_after_payload"]
+                    payload.pop("disable_after_unplug")
+                    return {topic: updated_payload}
+            if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "rfid_enabling" in payload:
+                    updated_payload = payload
+                    updated_payload["rfid_enabling"] = {}
+                    payload.pop("rfid_enabling")
+                    return {topic: updated_payload}
+                if "disable_after_unplug" not in payload:
+                    updated_payload = payload
+                    updated_payload.update({"disable_after_unplug": disable_after_unplug})
+                    return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 45)
