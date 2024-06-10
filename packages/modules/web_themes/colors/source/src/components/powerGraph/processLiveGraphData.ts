@@ -1,5 +1,5 @@
-import { timeParse } from 'd3'
 import { globalData } from '../../assets/js/model'
+import { chargePoints } from '../chargePointList/model'
 import {
 	type GraphDataItem,
 	type RawGraphDataItem,
@@ -48,8 +48,8 @@ export function reloadLiveGraph(topic: string, rawMessage: string) {
 		const newGraphData: GraphDataItem[] = []
 		liveGraph.unsubscribeRefresh()
 		liveGraph.initialized = true
-		liveGraph.rawDataPacks.map((dataPack) => {
-			dataPack.map((rawItem) => {
+		liveGraph.rawDataPacks.forEach((dataPack) => {
+			dataPack.forEach((rawItem) => {
 				const values = extractValues(rawItem)
 				newGraphData.push(values)
 			})
@@ -69,8 +69,17 @@ export function updateLiveGraph(topic: string, rawString: string) {
 	}
 }
 function extractValues(data: RawGraphDataItem): GraphDataItem {
+	const car1id =
+		Object.values(chargePoints).length > 0
+			? 'ev' + Object.values(chargePoints)[0].connectedVehicle + '-soc'
+			: 'ev0-soc'
+	const car2id =
+		Object.values(chargePoints).length > 1
+			? 'ev' + Object.values(chargePoints)[1].connectedVehicle + '-soc'
+			: 'ev1-soc'
+
 	const values: GraphDataItem = {}
-	values.date = fullDate(data.time).valueOf()
+	values.date = +data.timestamp * 1000
 	if (+data.grid > 0) {
 		values.evuIn = +data.grid
 		values.evuOut = 0
@@ -105,10 +114,10 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 	} else {
 		values.batterySoc = 0
 	}
-	if (data['ev0-soc']) {
+	if (data[car1id]) {
 		values.soc0 = +data['ev0-soc']
 	}
-	if (data['ev1-soc']) {
+	if (data[car2id]) {
 		values.soc1 = +data['ev1-soc']
 	}
 
@@ -124,21 +133,4 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 	}
 	values.devices = 0
 	return values
-}
-function fullDate(timeString: string) {
-	const now = new Date(Date.now())
-	const mSecondsPerDay = 86400000 // milliseconds in a day
-	let date = new Date()
-	const parsedDate = timeParse('%H:%M:%S')(timeString)
-	if (parsedDate) {
-		date = parsedDate
-		date.setDate(now.getDate())
-		date.setMonth(now.getMonth())
-		date.setFullYear(now.getFullYear())
-		if (date.getHours() > now.getHours()) {
-			// this is an entry from yesterday
-			date = new Date(date.getTime() - mSecondsPerDay) // change date to yesterday
-		}
-	}
-	return date
 }

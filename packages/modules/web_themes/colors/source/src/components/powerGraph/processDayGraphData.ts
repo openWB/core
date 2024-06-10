@@ -1,4 +1,3 @@
-import { timeParse } from 'd3'
 import {
 	graphData,
 	type GraphDataItem,
@@ -9,19 +8,35 @@ import {
 	consumerCategories,
 	updateEnergyValues,
 } from './model'
+
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
 import { globalConfig } from '@/assets/js/themeConfig'
+import { shDevices } from '../smartHome/model'
+import { itemNames } from './model'
 // methods:
-
-const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
+const noAutarchyCalculation = [
+	'evuIn',
+	'pv',
+	'batOut',
+	'evuOut',
+	'charging',
+	'house',
+]
 let gridCounters: string[] = []
 
-export function processDayGraphMessages(_: string, message: string) {
-	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
-	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+export function processDayGraphMessages(topic: string, message: string) {
+	//const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
+	//const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	//const itemNames = JSON.parse(message).itemNames
+	const {
+		entries: inputTable,
+		names: itemNames2,
+		totals: energyValues,
+	} = JSON.parse(message)
+	itemNames.value = new Map(Object.entries(itemNames2))
 	resetHistoricSummary()
 	gridCounters = []
-	consumerCategories.map((cat) => {
+	consumerCategories.forEach((cat) => {
 		historicSummary.setEnergyPv(cat, 0)
 		historicSummary.setEnergyBat(cat, 0)
 	})
@@ -29,18 +44,8 @@ export function processDayGraphMessages(_: string, message: string) {
 	setGraphData(transformedTable)
 	updateEnergyValues(energyValues, gridCounters)
 	if (globalConfig.debug) {
-		console.debug(
-			'---------------------------------------- Graph Data ---------------------------',
-		)
-		console.debug('--- Incoming graph data:')
-		console.debug(inputTable)
-		console.debug('data to be displayed:')
-		console.debug(transformedTable)
-		console.debug(
-			'-------------------------------------------------------------------------------',
-		)
+		printDebugOutput(inputTable, energyValues, transformedTable)
 	}
-
 	if (graphData.graphMode == 'today') {
 		setTimeout(() => dayGraph.activate(), 300000)
 	}
@@ -52,7 +57,7 @@ function transformDatatable(
 	const outputTable: GraphDataItem[] = []
 	let transformedRow: GraphDataItem = {}
 
-	inputTable.map((inputRow) => {
+	inputTable.forEach((inputRow) => {
 		transformedRow = transformRow(inputRow)
 		const values = transformedRow
 		outputTable.push(values)
@@ -62,26 +67,7 @@ function transformDatatable(
 
 function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	const currentItem: GraphDataItem = {}
-	if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
-		if (typeof currentRow.date == 'number') {
-			currentItem.date = new Date(+currentRow.date * 1000).getTime()
-		} else {
-			const d = timeParse('%H:%M')(currentRow.date)
-			if (d) {
-				d.setMonth(dayGraph.date.getMonth())
-				d.setDate(dayGraph.date.getDate())
-				d.setFullYear(dayGraph.date.getFullYear())
-				currentItem.date = d.getTime()
-			}
-		}
-	} else {
-		if (typeof currentRow.date == 'string') {
-			const d = timeParse('%Y%m%d')(currentRow.date)
-			if (d) {
-				currentItem.date = d.getDate()
-			}
-		}
-	}
+	currentItem.date = currentRow.timestamp * 1000
 	currentItem.evuOut = 0
 	currentItem.evuIn = 0
 	Object.entries(currentRow.counter).forEach(([id, values]) => {
@@ -100,7 +86,12 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem.evuIn += item[1].power_imported
 		})
 	}
-	currentItem.pv = currentRow.pv.all.power_exported
+	Object.entries(currentRow.pv).forEach(([id, values]) => {
+		if (id != 'all') {
+			currentItem[id] = values.power_exported
+		} else currentItem.pv = values.power_exported
+	})
+
 	if (Object.entries(currentRow.bat).length > 0) {
 		currentItem.batIn = currentRow.bat.all.power_imported
 		currentItem.batOut = currentRow.bat.all.power_exported
@@ -134,14 +125,17 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem.devices += values.power_imported ?? 0
 			if (!historicSummary.keys().includes(id)) {
 				historicSummary.addItem(id)
+				historicSummary.items[id].showInGraph = shDevices.get(
+					+id.slice(2),
+				)!.showInGraph
 			}
 		}
 	})
 	// Self Usage
-	currentItem.selfUsage = currentItem.pv - currentItem.evuOut
+	currentItem.selfUsage = Math.max(0, currentItem.pv - currentItem.evuOut)
 	// House
 	if (currentRow.hc && currentRow.hc.all) {
-		currentItem.house = currentRow.hc.all.power_imported - currentItem.devices
+		currentItem.house = currentRow.hc.all.power_imported // (seems this is now centrally computed) - currentItem.devices
 	} else {
 		currentItem.house =
 			currentItem.evuIn +
@@ -157,15 +151,29 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	if (usedEnergy > 0) {
 		historicSummary
 			.keys()
-			.filter((key) => !nonPvCategories.includes(key))
-			.map((cat) => {
+			.filter(
+				(key) => !noAutarchyCalculation.includes(key) && key != 'charging',
+			)
+			.forEach((cat) => {
 				calculateAutarchy(cat, currentItem)
 			})
 	} else {
-		Object.keys(currentItem).map((cat) => {
+		Object.keys(currentItem).forEach((cat) => {
 			currentItem[cat + 'Pv'] = 0
 			currentItem[cat + 'Bat'] = 0
 		})
 	}
 	return currentItem
+}
+
+function printDebugOutput(
+	inputTable: RawDayGraphDataItem[],
+	energyValues: RawDayGraphDataItem,
+	transformedTable: GraphDataItem[],
+) {
+	console.debug('---------------------------------------- Graph Data -')
+	console.debug(['--- Incoming graph data:', inputTable])
+	console.debug(['--- Incoming energy data:', energyValues])
+	console.debug(['--- Data to be displayed:', transformedTable])
+	console.debug('-----------------------------------------------------')
 }

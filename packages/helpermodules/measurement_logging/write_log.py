@@ -127,37 +127,38 @@ def save_log(log_type: LogType):
     folder: str
         gibt an, ob ein Tages-oder Monats-Log-Eintrag erstellt werden soll.
     """
-    parent_file = Path(__file__).resolve().parents[3] / "data" / \
-        ("daily_log" if log_type == LogType.DAILY else "monthly_log")
-    parent_file.mkdir(mode=0o755, parents=True, exist_ok=True)
-    if log_type == LogType.DAILY:
-        file_name = timecheck.create_timestamp_YYYYMMDD()
-    else:
-        file_name = timecheck.create_timestamp_YYYYMM()
-    filepath = str(parent_file / f"{file_name}.json")
-
     try:
-        with open(filepath, "r") as jsonFile:
-            content = json.load(jsonFile)
-    except FileNotFoundError:
+        parent_file = Path(__file__).resolve().parents[3] / "data" / \
+            ("daily_log" if log_type == LogType.DAILY else "monthly_log")
+        parent_file.mkdir(mode=0o755, parents=True, exist_ok=True)
+        if log_type == LogType.DAILY:
+            file_name = timecheck.create_timestamp_YYYYMMDD()
+        else:
+            file_name = timecheck.create_timestamp_YYYYMM()
+        filepath = str(parent_file / f"{file_name}.json")
+
+        try:
+            with open(filepath, "r") as jsonFile:
+                content = json.load(jsonFile)
+        except FileNotFoundError:
+            content = {"entries": [], "names": {}}
+
+        previous_entry = get_previous_entry(parent_file, content)
+
+        sh_log_data = LegacySmartHomeLogData()
+        new_entry = create_entry(log_type, sh_log_data, previous_entry)
+
+        # json-Objekt in Datei einfügen
+
+        entries = content["entries"]
+        entries.append(new_entry)
+        content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
         with open(filepath, "w") as jsonFile:
-            json.dump({"entries": [], "names": {}}, jsonFile)
-        with open(filepath, "r") as jsonFile:
-            content = json.load(jsonFile)
-
-    previous_entry = get_previous_entry(parent_file, content)
-
-    sh_log_data = LegacySmartHomeLogData()
-    new_entry = create_entry(log_type, sh_log_data, previous_entry)
-
-    # json-Objekt in Datei einfügen
-
-    entries = content["entries"]
-    entries.append(new_entry)
-    content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
-    with open(filepath, "w") as jsonFile:
-        json.dump(content, jsonFile)
-    return content["entries"]
+            json.dump(content, jsonFile)
+        return content["entries"]
+    except Exception:
+        log.exception("Fehler beim Speichern des Log-Eintrags")
+        return None
 
 
 def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:
@@ -172,7 +173,7 @@ def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:
             with open(path_list[-2], "r") as jsonFile:
                 content = json.load(jsonFile)
             previous_entry = content["entries"][-1]
-        except IndexError:
+        except (IndexError, FileNotFoundError, json.decoder.JSONDecodeError):
             previous_entry = None
     return previous_entry
 

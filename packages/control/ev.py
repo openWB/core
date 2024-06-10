@@ -12,7 +12,6 @@ import traceback
 from typing import List, Dict, Optional, Tuple
 
 from control import data
-from control.bat_all import SwitchOnBatState
 from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
 from control.chargepoint.control_parameter import ControlParameter
 from control.limiting_value import LimitingValue
@@ -662,13 +661,7 @@ class ChargeTemplate:
                     return min_current, "pv_charging", message
                 else:
                     # Min PV
-                    if data.data.bat_all_data.data.config.configured is True:
-                        if data.data.bat_all_data.data.set.switch_on_soc_state == SwitchOnBatState.CHARGE_FROM_BAT:
-                            return pv_charging.min_current, "instant_charging", message
-                        else:
-                            return 0, "stop", data.data.bat_all_data.data.set.switch_on_soc_state.value
-                    else:
-                        return pv_charging.min_current, "instant_charging", message
+                    return pv_charging.min_current, "instant_charging", message
             else:
                 return 0, "stop", self.PV_CHARGING_SOC_REACHED
         except Exception:

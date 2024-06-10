@@ -4,11 +4,18 @@
  * Copyright (c) 2022 Claus Hagen
  */
 
-import { reactive } from 'vue'
+import { masterData } from '@/assets/js/model'
+import { reactive, ref } from 'vue'
 export class Battery {
 	id: number
+	name = 'Speicher'
+	color = 'var(--color-battery)'
 	dailyYieldExport = 0
 	dailyYieldImport = 0
+	monthlyYieldExport = 0
+	monthlyYieldImport = 0
+	yearlyYieldExport = 0
+	yearlyYieldImport = 0
 	exported = 0
 	faultState = 0
 	faultStr = ''
@@ -19,6 +26,7 @@ export class Battery {
 		this.id = index
 	}
 }
+
 export class BatterySummary {
 	dailyExport = 0
 	dailyImport = 0
@@ -27,19 +35,15 @@ export class BatterySummary {
 	power = 0
 	soc = 0
 }
-export const batteries: { [key: number]: Battery } = reactive({})
-export const batterySummary = reactive(new BatterySummary())
 
-export function addBattery(index: number) {
-	if (!(index in batteries)) {
-		batteries[index] = new Battery(index)
-	} else {
-		console.info('Duplicate battery message: ' + index)
-	}
+export const batterySummary = reactive(new BatterySummary())
+export const batteries = ref(new Map<number, Battery>())
+export const addBattery = (index: number) => {
+	batteries.value.set(index, new Battery(index))
+	batteries.value.get(index)!.color =
+		masterData['bat' + batteries.value.size].color
 }
 
 export function resetBatteries() {
-	Object.keys(batteries).forEach((key) => {
-		delete batteries[parseInt(key)]
-	})
+	batteries.value = new Map<number, Battery>()
 }

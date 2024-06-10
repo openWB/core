@@ -650,14 +650,15 @@ function processPvMessages(mqttTopic, mqttPayload) {
 }
 
 function processPvConfigMessages(mqttTopic, mqttPayload) {
-	if (mqttTopic == 'openWB/general/chargemode_config/pv_charging/bat_prio') {
-		var element = $('.house-battery-priority');
+	if (mqttTopic == 'openWB/general/chargemode_config/pv_charging/bat_mode') {
 		data = JSON.parse(mqttPayload);
-		if (data == true) {
-			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
-		} else {
-			element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
-		}
+		var element = $('.bat-consideration-mode input[type=radio][data-option="' + data + '"]');
+		element.prop('checked', true); // check selected batmode radio button
+		element.parent().addClass('active'); // activate selected batmode button
+		$('.bat-consideration-mode input[type=radio]').not('[data-option="' + data + '"]').each(function () {
+			$(this).prop('checked', false); // uncheck all other radio buttons
+			$(this).parent().removeClass('active'); // deselect all other batmode buttons
+		});
 	}
 }
 

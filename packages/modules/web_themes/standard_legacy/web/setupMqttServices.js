@@ -71,7 +71,7 @@ var topicsToSubscribe = [
 	["openWB/vehicle/template/charge_template/+/time_charging/plans/+", 1], // populate a list of time charge plans
 
 	// charge mode config
-	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
+	["openWB/general/chargemode_config/pv_charging/bat_mode", 0],
 
 	// electricity tariff
 	["openWB/optional/et/active", 1], // et provider is configured

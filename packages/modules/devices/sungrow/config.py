@@ -1,13 +1,19 @@
 from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
+from modules.devices.sungrow.version import Version
 
 
 class SungrowConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: int = 502, modbus_id: int = 1):
+    def __init__(self,
+                 ip_address: Optional[str] = None,
+                 port: int = 502,
+                 modbus_id: int = 1,
+                 version: Version = Version.SG):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
+        self.version = version
 
 
 class Sungrow:
@@ -37,8 +43,8 @@ class SungrowBatSetup(ComponentSetup[SungrowBatConfiguration]):
 
 
 class SungrowCounterConfiguration:
-    def __init__(self, version=1):
-        self.version = version
+    def __init__(self):
+        pass
 
 
 class SungrowCounterSetup(ComponentSetup[SungrowCounterConfiguration]):
