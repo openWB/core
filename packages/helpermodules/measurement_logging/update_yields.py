@@ -95,6 +95,9 @@ def _update_pv_monthly_yields():
                         entry["pv"][f"pv{pv_module.num}"]["exported"]
                     Pub().pub(f"openWB/set/pv/{pv_module.num}/get/monthly_exported", monthly_yield)
                     break
+    except FileNotFoundError:
+        # am Tag der Ersteinrichtung gibt es noch kein Monatslog-File, das wird erst um Mitternacht erstellt.
+        log.debug("No monthly logfile found for calculation of monthly yield")
     except Exception:
         log.exception("Fehler beim Veröffentlichen der monatlichen Erträge für PV")
 
@@ -130,11 +133,15 @@ def _update_pv_yearly_yields():
                     break
             if found_pv:
                 break
+        else:
+            # am Tag der Ersteinrichtung gibt es noch kein Monatslog-File, das wird erst um Mitternacht erstellt.
+            log.debug("No monthly logfile found for calculation of yearly yield")
+            return
         if found_pv:
             for pv_module in data.data.pv_data.values():
                 pub_yearly_module_yield(sorted_path_list, pv_module)
         else:
-            log.debug("PV not found in any entry or file")
+            log.debug("PV not found in any entry or file for calculation of yearly yield")
     except Exception:
         log.exception("Fehler beim Veröffentlichen der jährlichen Erträge für PV")
 
