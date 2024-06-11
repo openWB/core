@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
+# flake8: noqa: F402
 """Starten der benötigten Prozesse
 """
 import logging
+from helpermodules import logger
+# als erstes logging initalisieren, damit auch ImportError geloggt werden
+logger.setup_logging()  # ignore E402
+log = logging.getLogger()  # ignore E402
+
 from pathlib import Path
 from random import randrange
 import schedule
@@ -19,7 +25,6 @@ from modules import configuration
 from helpermodules import timecheck, update_config
 from helpermodules import subdata
 from helpermodules import setdata
-from helpermodules import logger
 from helpermodules import command
 from helpermodules.modbusserver import start_modbus_server
 from helpermodules.pub import Pub
