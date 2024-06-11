@@ -8,7 +8,7 @@ import time
 from control import data as data_module
 from modules.common.simcount._calculate import calculate_import_export
 from modules.common.simcount.simcounter_state import SimCounterState
-from modules.common.simcount._simcounter_store import get_sim_counter_store
+from modules.common.simcount._simcounter_store import get_sim_counter_store, restore_last_energy
 
 log = logging.getLogger(__name__)
 
@@ -31,16 +31,21 @@ def sim_count(power_present: float, topic: str = "", data: SimCounterState = Non
     timestamp_present = time.time()
     previous_state = store.load(prefix, topic) if data is None else data
 
-    if isinstance(power_present, (int, float)) and math.isnan(power_present) is False:
+    if math.isnan(power_present):
+        raise ValueError("power_present is NaN.")
+
+    if isinstance(power_present, (int, float)):
         if previous_state is None:
             log.debug("No previous state found. Starting new simulation.")
             return store.initialize(prefix, topic, power_present, timestamp_present)
         else:
             log.debug("Previous state: %s", previous_state)
-            if math.isnan(previous_state.imported) or math.isnan(previous_state.exported):
-                log.error("imported or exported is NaN. Reset simcount state.")
-                previous_state.imported = 0
-                previous_state.exported = 0
+            if math.isnan(previous_state.imported):
+                log.error("imported is NaN. Reset simcount state.")
+                previous_state.imported = restore_last_energy(topic, "imported")
+            if math.isnan(previous_state.exported):
+                log.error("exported is NaN. Reset simcount state.")
+                previous_state.exported = restore_last_energy(topic, "exported")
             control_interval = data_module.data.general_data.data.control_interval
             if 2 * control_interval < timestamp_present - previous_state.timestamp:
                 log.warning("Time difference between previous state and current state is too large. "
