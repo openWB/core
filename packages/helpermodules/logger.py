@@ -2,6 +2,8 @@ import functools
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+import sys
+import threading
 import typing_extensions
 
 FORMAT_STR_DETAILED = '%(asctime)s - {%(name)s:%(lineno)s} - {%(levelname)s:%(threadName)s} - %(message)s'
@@ -79,6 +81,15 @@ def setup_logging() -> None:
 
     logging.getLogger("pymodbus").setLevel(logging.WARNING)
     logging.getLogger("uModbus").setLevel(logging.WARNING)
+
+    def threading_excepthook(args):
+        logging.getLogger(__name__).error("Uncaught exception in threading.excepthook:", exc_info=(
+            args.exc_type, args.exc_value, args.exc_traceback))
+    threading.excepthook = threading_excepthook
+
+    def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
+        logging.getLogger(__name__).error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+    sys.excepthook = handle_unhandled_exception
 
 
 log = logging.getLogger(__name__)
