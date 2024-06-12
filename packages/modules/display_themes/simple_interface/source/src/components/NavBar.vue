@@ -15,7 +15,10 @@ export default {
 
 <template>
   <i-nav vertical class="_align-items:stretch">
-    <nav-item v-if="mqttStore.getDashBoardEnabled" :to="{ name: 'simple-dashboard' }">
+    <nav-item
+      v-if="mqttStore.getDashBoardEnabled"
+      :to="{ name: 'simple-dashboard' }"
+    >
       Übersicht
     </nav-item>
     <nav-item
