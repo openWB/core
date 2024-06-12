@@ -31,7 +31,7 @@ const router = createRouter({
       path: "/Status",
       name: "status",
       component: () => import("../views/StatusView.vue"),
-    }
+    },
   ],
 });
 

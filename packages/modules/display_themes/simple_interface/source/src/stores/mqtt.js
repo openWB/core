@@ -274,7 +274,10 @@ export const useMqttStore = defineStore("mqtt", {
         if (gridId === undefined) {
           return "---";
         }
-        let power = state.getValueString(`openWB/counter/${gridId}/get/power`, "W");
+        let power = state.getValueString(
+          `openWB/counter/${gridId}/get/power`,
+          "W",
+        );
         if (Object.hasOwnProperty.call(power, returnType)) {
           return power[returnType];
         }
@@ -282,7 +285,7 @@ export const useMqttStore = defineStore("mqtt", {
           return power;
         }
         console.error("returnType not found!", returnType, power);
-      }
+      };
     },
     getGridPowerChartData(state) {
       let gridId = state.getGridId;
@@ -293,7 +296,10 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getHomePower(state) {
       return (returnType = "textValue") => {
-        let power = state.getValueString("openWB/counter/set/home_consumption", "W");
+        let power = state.getValueString(
+          "openWB/counter/set/home_consumption",
+          "W",
+        );
         if (Object.hasOwnProperty.call(power, returnType)) {
           return power[returnType];
         }
@@ -301,7 +307,7 @@ export const useMqttStore = defineStore("mqtt", {
           return power;
         }
         console.error("returnType not found!", returnType, power);
-      }
+      };
     },
     getHomePowerChartData(state) {
       return state.getChartData("openWB/counter/set/home_consumption");
@@ -319,13 +325,14 @@ export const useMqttStore = defineStore("mqtt", {
           return power;
         }
         console.error("returnType not found!", returnType, power);
-      }
+      };
     },
     getBatteryPowerChartData(state) {
       return state.getChartData("openWB/bat/get/power");
     },
     getBatterySoc(state) {
-      return state.getValueString("openWB/bat/get/soc", "%", "", false).textValue;
+      return state.getValueString("openWB/bat/get/soc", "%", "", false)
+        .textValue;
     },
     getBatterySocChartData(state) {
       return state.getChartData("openWB/bat/get/soc");
@@ -335,7 +342,13 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getPvPower(state) {
       return (returnType = "textValue") => {
-        var power = state.getValueString("openWB/pv/get/power", "W", "", true, true);
+        var power = state.getValueString(
+          "openWB/pv/get/power",
+          "W",
+          "",
+          true,
+          true,
+        );
         if (Object.hasOwnProperty.call(power, returnType)) {
           return power[returnType];
         }
@@ -343,7 +356,7 @@ export const useMqttStore = defineStore("mqtt", {
           return power;
         }
         console.error("returnType not found!", returnType, power);
-      }
+      };
     },
     getPvPowerChartData(state) {
       return state.getChartData("openWB/pv/get/power").map((point) => {
@@ -354,7 +367,8 @@ export const useMqttStore = defineStore("mqtt", {
     /* charge point getters */
 
     getChargePointSumPower(state) {
-      return state.getValueString("openWB/chargepoint/get/power", "W").textValue;
+      return state.getValueString("openWB/chargepoint/get/power", "W")
+        .textValue;
     },
     getChargePointSumPowerChartData(state) {
       return state.getChartData("openWB/chargepoint/get/power");
