@@ -97,6 +97,12 @@ export default {
     chargePoint2Name() {
       return this.mqttStore.getChargePointName(this.connectedChargePoints[1]);
     },
+    chargePoint1VehicleConnected() {
+      return this.mqttStore.getChargePointPlugState(this.connectedChargePoints[0]);
+    },
+    chargePoint2VehicleConnected() {
+      return this.mqttStore.getChargePointPlugState(this.connectedChargePoints[1]);
+    },
     chargePoint1ConnectedVehicleName() {
       return this.mqttStore.getChargePointConnectedVehicleName(
         this.connectedChargePoints[0],
@@ -281,7 +287,7 @@ export default {
           icon: "icons/owbChargePoint.svg",
         });
       }
-      if (this.chargePoint1ConnectedVehicleName) {
+      if (this.chargePoint1VehicleConnected) {
         components.push({
           id: "vehicle-1",
           class: {
@@ -301,7 +307,7 @@ export default {
           icon: "icons/owbVehicle.svg",
         });
       }
-      if (this.chargePoint2ConnectedVehicleName) {
+      if (this.chargePoint2VehicleConnected) {
         components.push({
           id: "vehicle-2",
           class: {
