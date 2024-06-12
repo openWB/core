@@ -8,7 +8,7 @@ class SpeedwireComponentConfiguration:
 
 class Speedwire:
     def __init__(self,
-                 name: str = "SMA Sunny Home Manager 2.0",
+                 name: str = "SMA Sunny Home Manager 2.0, Energy Meter",
                  type: str = "sma_shm",
                  id: int = 0,
                  configuration: SpeedwireComponentConfiguration = None) -> None:
@@ -25,7 +25,7 @@ class SmaHomeManagerCounterConfiguration:
 
 class SmaHomeManagerCounterSetup(ComponentSetup[SmaHomeManagerCounterConfiguration]):
     def __init__(self,
-                 name: str = "SMA Sunny Home Manager 2.0 Zähler",
+                 name: str = "SMA Sunny Home Manager 2.0, Energy Meter Zähler",
                  type: str = "counter",
                  id: int = 0,
                  configuration: SmaHomeManagerCounterConfiguration = None) -> None:
@@ -39,7 +39,7 @@ class SmaHomeManagerInverterConfiguration:
 
 class SmaHomeManagerInverterSetup(ComponentSetup[SmaHomeManagerInverterConfiguration]):
     def __init__(self,
-                 name: str = "SMA Sunny Home Manager 2.0 Wechselrichter",
+                 name: str = "SMA Sunny Home Manager 2.0, Energy Meter Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: SmaHomeManagerInverterConfiguration = None) -> None:
