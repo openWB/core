@@ -144,15 +144,21 @@ export default {
       return this.homePower.value > 0;
     },
     isAnimatedBattery() {
-      return this.batteryPower.value > 0;
-    },
-    isAnimatedBatteryReverse() {
       return this.batteryPower.value < 0;
     },
+    isAnimatedBatteryReverse() {
+      return this.batteryPower.value > 0;
+    },
     isAnimatedChargePoint1() {
+      return this.chargePoint1Power.value < 0;
+    },
+    isAnimatedChargePoint1Reverse() {
       return this.chargePoint1Power.value > 0;
     },
     isAnimatedChargePoint2() {
+      return this.chargePoint2Power.value < 0;
+    },
+    isAnimatedChargePoint2Reverse() {
       return this.chargePoint2Power.value > 0;
     },
     gridPositive() {
@@ -230,7 +236,7 @@ export default {
             base: "battery",
             valueLabel: "",
             animated: this.isAnimatedBattery,
-            animatedReverse: this.batteryPositive,
+            animatedReverse: this.isAnimatedBatteryReverse,
           },
           position: {
             row: 1,
@@ -248,7 +254,7 @@ export default {
             base: "charge-point",
             valueLabel: "",
             animated: this.isAnimatedChargePoint1,
-            animatedReverse: this.chargePoint1Positive,
+            animatedReverse: this.isAnimatedChargePoint1Reverse,
           },
           position: {
             row: 2,
@@ -265,7 +271,7 @@ export default {
             base: "charge-point",
             valueLabel: "",
             animated: this.isAnimatedChargePoint2,
-            animatedReverse: this.chargePoint2Positive,
+            animatedReverse: this.isAnimatedChargePoint2Reverse,
           },
           position: {
             row: 2,
@@ -507,6 +513,29 @@ path.animatedReverse {
   stroke: white;
   stroke-dasharray: 5;
   animation: dashReverse 1s linear infinite;
+}
+
+path.animated.grid {
+  stroke: var(--color--danger);
+}
+
+path.animatedReverse.grid {
+  stroke: var(--color--success);
+}
+
+path.animated.pv,
+path.animatedReverse.pv {
+  stroke: var(--color--success);
+}
+
+path.animated.battery,
+path.animatedReverse.battery {
+  stroke: var(--color--warning);
+}
+
+path.animated.charge-point,
+path.animatedReverse.charge-point {
+  stroke: var(--color--primary);
 }
 
 circle {
