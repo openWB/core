@@ -47,13 +47,8 @@ def reset_current_by_chargemode(mode_tuple: Tuple[Optional[str], str, bool]) -> 
             cp.data.set.current = None
 
 
-def mode_range_list_factory() -> List[int]:
-    return [0, -1]
-
-
-def mode_and_counter_generator(
-        mode_range: List[int] = mode_range_list_factory()) -> Iterable[Tuple[Tuple[Optional[str], str, bool], Counter]]:
-    for mode_tuple in CHARGEMODES[mode_range[0]: mode_range[1]]:
+def mode_and_counter_generator(chargemodes: List) -> Iterable[Tuple[Tuple[Optional[str], str, bool], Counter]]:
+    for mode_tuple in chargemodes:
         levels = data.data.counter_all_data.get_list_of_elements_per_level()
         for level in reversed(levels):
             for element in level:
