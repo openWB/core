@@ -95,12 +95,9 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
         }
     ).json()
     if not loginResponse:
-        log.debug('Login failed #1')
         raise Exception('Login failed #1')
 
     if not loginResponse.get('sessionInfo'):
-        log.error('Login failed no session found:')
-        log.error(loginResponse)
         raise Exception("Login failed, no session found")
 
     TokenResponse = session.get(
@@ -363,6 +360,4 @@ def fetch_soc(config: SmartHelloConfiguration,
     autonomy = float(data["additionalVehicleStatus"]["electricVehicleStatus"]["distanceToEmptyOnBatteryOnly"])
     soctimestamp = float(data["updateTime"])
 
-    log.info("Smart Hello Data: soc=%s%%, range=%s, timestamp=%s",
-             soc, autonomy, soctimestamp)
     return CarState(soc=soc, range=autonomy, soc_timestamp=soctimestamp)
