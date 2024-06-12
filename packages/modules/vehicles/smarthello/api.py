@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 def create_session():
     # add session restore functionality, include cookies jar and access tokens
 
-    session = req.Session()
+    session = req.get_http_session()
     session.headers.update({'user-agent':
                             ('Mozilla/5.0 (Linux; Android 9; ANE-LX1 Build/HUAWEIANE-L21; wv) AppleWebKit/537.36'
                              ' (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36')})
@@ -50,12 +50,6 @@ def loginHello(session: req.Session, config: SmartHelloConfiguration) -> dict:
             'sec-fetch-dest': 'document'
         }
     )
-
-    if not response.ok:
-        log.error(f'Login failed with error code: {response.status_code}')
-        log.error(f'Response text: {response.text}')
-        log.error(f'Response headers: {response.headers}')
-        raise Exception(f'Login failed with error code: {response.status_code}')
 
     parsed_url = urllib.parse.urlparse(response.url)
     query_params = urllib.parse.parse_qs(parsed_url.query)
@@ -253,8 +247,7 @@ def getDeviceListHello(session, tokens: dict, deviceId) -> list:
     ).json()
 
     if not response or not response.get('data') or response['data'].get('list') == 0:
-        log.debug(response)
-        Exception(f"No vehicles found in {response}")
+        raise Exception(f"No vehicles found in {response}")
 
     log.debug('Found ' + str(len(response['data']['list'])) + ' vehicles')
     log.debug(response['data']['list'])
