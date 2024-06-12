@@ -834,7 +834,7 @@ class ChargeTemplate:
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR
                     current = plan_data.available_current
                     submode = "instant_charging"
-                if soc <= limit.soc_limit:
+                elif soc <= limit.soc_limit:
                     message = self.SCHEDULED_CHARGING_EXPENSIVE_HOUR
                     current = min_current
                     submode = "pv_charging"
