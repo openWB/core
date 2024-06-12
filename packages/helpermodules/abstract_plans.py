@@ -62,6 +62,7 @@ class TimeframePlan(PlanBase):
 @dataclass
 class ScheduledChargingPlan(PlanBase):
     current: int = 14
+    dc_current: float = 145
     name: str = "Zielladen-Standard"
     limit: ScheduledLimit = field(default_factory=scheduled_limit_factory)
     time: str = "07:00"  # ToDo: aktuelle Zeit verwenden
@@ -71,6 +72,7 @@ class ScheduledChargingPlan(PlanBase):
 class TimeChargingPlan(TimeframePlan):
     name: str = "Zeitladen-Standard"
     current: int = 16
+    dc_current: float = 145
     limit: Limit = field(default_factory=limit_factory)
 
 
