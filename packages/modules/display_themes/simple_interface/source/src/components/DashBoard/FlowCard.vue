@@ -40,7 +40,7 @@ export default {
         this.svgSize.numColumns
       );
     },
-    svgCircleStrokeWidth() {
+    svgStrokeWidth() {
       return this.svgSize.strokeWidth;
     },
     svgIconWidth() {
@@ -63,14 +63,17 @@ export default {
     batteryPower() {
       return this.mqttStore.getBatteryPower("object");
     },
-    connectedChargers() {
+    batterySoc() {
+      return this.mqttStore.getBatterySoc("object").value / 100;
+    },
+    connectedChargePoints() {
       return this.mqttStore.getChargePointIds;
     },
     chargePoint1Power() {
-      if (this.connectedChargers.length > 0) {
+      if (this.connectedChargePoints.length > 0) {
         return (
           this.mqttStore.getChargePointPower(
-            this.connectedChargers[0],
+            this.connectedChargePoints[0],
             "object",
           ) || { textValue: "Loading..." }
         );
@@ -78,10 +81,10 @@ export default {
       return { textValue: "N/A" };
     },
     chargePoint2Power() {
-      if (this.connectedChargers.length > 1) {
+      if (this.connectedChargePoints.length > 1) {
         return (
           this.mqttStore.getChargePointPower(
-            this.connectedChargers[1],
+            this.connectedChargePoints[1],
             "object",
           ) || { textValue: "Loading..." }
         );
@@ -89,10 +92,44 @@ export default {
       return { textValue: "N/A" };
     },
     chargePoint1Name() {
-      return this.mqttStore.getChargePointName(this.connectedChargers[0]);
+      return this.mqttStore.getChargePointName(this.connectedChargePoints[0]);
     },
     chargePoint2Name() {
-      return this.mqttStore.getChargePointName(this.connectedChargers[1]);
+      return this.mqttStore.getChargePointName(this.connectedChargePoints[1]);
+    },
+    chargePoint1ConnectedVehicleName() {
+      return this.mqttStore.getChargePointConnectedVehicleName(
+        this.connectedChargePoints[0],
+      );
+    },
+    chargePoint2ConnectedVehicleName() {
+      return this.mqttStore.getChargePointConnectedVehicleName(
+        this.connectedChargePoints[1],
+      );
+    },
+    chargePoint1ConnectedVehicleChargeMode() {
+      return this.mqttStore.getChargePointConnectedVehicleChargeMode(
+        this.connectedChargePoints[0],
+      );
+    },
+    chargePoint2ConnectedVehicleChargeMode() {
+      return this.mqttStore.getChargePointConnectedVehicleChargeMode(
+        this.connectedChargePoints[1],
+      );
+    },
+    chargePoint1ConnectedVehicleSoc() {
+      return (
+        this.mqttStore.getChargePointConnectedVehicleSoc(
+          this.connectedChargePoints[0],
+        ).soc / 100
+      );
+    },
+    chargePoint2ConnectedVehicleSoc() {
+      return (
+        this.mqttStore.getChargePointConnectedVehicleSoc(
+          this.connectedChargePoints[1],
+        ).soc / 100
+      );
     },
     isAnimatedGrid() {
       return this.gridPower.value > 0;
@@ -130,21 +167,155 @@ export default {
     batteryPositive() {
       return this.batteryPower.value > 0;
     },
-    batteryClass() {
-      if (this.batteryPower.value === 0) {
-        return ""; // No class if battery value is zero
-      } else {
-        return {
-          text_red: !this.BatteryPositive,
-          text_green: this.BatteryPositive,
-        };
-      }
-    },
     chargePoint1Positive() {
       return this.chargePoint1Power.value > 0;
     },
     chargePoint2Positive() {
       return this.chargePoint2Power.value > 0;
+    },
+    svgComponents() {
+      var components = [
+        {
+          id: "grid",
+          class: {
+            base: "grid",
+            valueLabel: this.gridPositive ? "fill-danger" : "fill-success",
+            animated: this.isAnimatedGrid,
+            animatedReverse: !this.gridPositive,
+          },
+          position: {
+            row: 0,
+            column: 0,
+          },
+          label: ["EVU", this.gridPower.textValue],
+          icon: "icons/owbGrid.svg",
+        },
+        {
+          id: "home",
+          class: {
+            base: "home",
+            valueLabel: "",
+            animated: this.isAnimatedHome,
+            animatedReverse: this.homePositive,
+          },
+          position: {
+            row: 0,
+            column: 2,
+          },
+          label: ["Haus", this.homePower.textValue],
+          icon: "icons/owbHouse.svg",
+        },
+      ];
+      if (this.mqttStore.getPvConfigured) {
+        components.push({
+          id: "pv",
+          class: {
+            base: "pv",
+            valueLabel: this.pvPositive ? "fill-success" : "",
+            animated: this.isAnimatedPV,
+            animatedReverse: !this.pvPositive,
+          },
+          position: {
+            row: 1,
+            column: 0,
+          },
+          label: ["PV", this.pvPower.textValue],
+          icon: "icons/owbPV.svg",
+        });
+      }
+      if (this.mqttStore.getBatteryConfigured) {
+        components.push({
+          id: "battery",
+          class: {
+            base: "battery",
+            valueLabel: "",
+            animated: this.isAnimatedBattery,
+            animatedReverse: this.batteryPositive,
+          },
+          position: {
+            row: 1,
+            column: 2,
+          },
+          label: ["Speicher", this.batteryPower.textValue],
+          soc: this.batterySoc,
+          icon: "icons/owbBattery.svg",
+        });
+      }
+      if (this.connectedChargePoints.length > 0) {
+        components.push({
+          id: "charge-point-1",
+          class: {
+            base: "charge-point",
+            valueLabel: "",
+            animated: this.isAnimatedChargePoint1,
+            animatedReverse: this.chargePoint1Positive,
+          },
+          position: {
+            row: 2,
+            column: 0,
+          },
+          label: [this.chargePoint1Name, this.chargePoint1Power.textValue],
+          icon: "icons/owbChargePoint.svg",
+        });
+      }
+      if (this.connectedChargePoints.length > 1) {
+        components.push({
+          id: "charge-point-2",
+          class: {
+            base: "charge-point",
+            valueLabel: "",
+            animated: this.isAnimatedChargePoint2,
+            animatedReverse: this.chargePoint2Positive,
+          },
+          position: {
+            row: 2,
+            column: 2,
+          },
+          label: [this.chargePoint2Name, this.chargePoint2Power.textValue],
+          icon: "icons/owbChargePoint.svg",
+        });
+      }
+      if (this.chargePoint1ConnectedVehicleName) {
+        components.push({
+          id: "vehicle-1",
+          class: {
+            base: "vehicle",
+            valueLabel:
+              "fill-" + this.chargePoint2ConnectedVehicleChargeMode.class,
+          },
+          position: {
+            row: 3,
+            column: 0,
+          },
+          label: [
+            this.chargePoint1ConnectedVehicleName || "---",
+            this.chargePoint1ConnectedVehicleChargeMode.label || "---",
+          ],
+          soc: this.chargePoint1ConnectedVehicleSoc,
+          icon: "icons/owbVehicle.svg",
+        });
+      }
+      if (this.chargePoint2ConnectedVehicleName) {
+        components.push({
+          id: "vehicle-2",
+          class: {
+            base: "vehicle",
+            valueLabel:
+              "fill-" + this.chargePoint2ConnectedVehicleChargeMode.class,
+          },
+          position: {
+            row: 3,
+            column: 2,
+          },
+          label: [
+            this.chargePoint2ConnectedVehicleName || "---",
+            this.chargePoint2ConnectedVehicleChargeMode.label || "---",
+          ],
+          soc: this.chargePoint2ConnectedVehicleSoc,
+          icon: "icons/owbVehicle.svg",
+        });
+      }
+      return components;
     },
   },
   methods: {
@@ -191,135 +362,25 @@ export default {
           xmlns="http://www.w3.org/2000/svg"
           xmlns:svg="http://www.w3.org/2000/svg"
         >
-          <defs id="defs2" />
-          <g
-            inkscape:label="Ebene 1"
-            inkscape:groupmode="layer"
-            id="layer1"
-            style="display: inline"
-          >
+          <g id="layer1" style="display: inline">
             <path
+              v-for="component in svgComponents"
+              :key="component.id"
               :class="[
-                { animated: isAnimatedGrid },
-                { animatedReverse: isAnimatedGridReverse },
+                component.class.base,
+                { animated: component.class.animated },
+                { animatedReverse: component.class.animatedReverse },
               ]"
               :d="
-                'M ' +
-                calcFlowLineAnchorX(0) +
-                ',' +
-                calcRowY(0) +
-                ' ' +
-                calcColumnX(1) +
-                ',' +
-                calcRowY(1)
+                component.class.base !== 'vehicle'
+                  ? `M ${calcFlowLineAnchorX(component.position.column)}, ` +
+                    `${calcRowY(component.position.row)} ${calcColumnX(1)}, ${calcRowY(1)}`
+                  : ''
               "
-              class="grid"
-              inkscape:connector-type="polyline"
-              inkscape:connector-curvature="0"
-              inkscape:connection-start="#path846"
-              inkscape:connection-end="#path1109"
-            />
-            <path
-              :class="{ animated: isAnimatedPV }"
-              :d="
-                'M ' +
-                calcFlowLineAnchorX(2) +
-                ',' +
-                calcRowY(0) +
-                ' ' +
-                calcColumnX(1) +
-                ',' +
-                calcRowY(1)
-              "
-              class="pv"
-              inkscape:connector-type="polyline"
-              inkscape:connector-curvature="0"
-              inkscape:connection-start="#path846-2"
-              inkscape:connection-end="#path1109"
-            />
-            <path
-              :class="{ animatedReverse: isAnimatedHome }"
-              :d="
-                'M ' +
-                calcFlowLineAnchorX(0) +
-                ',' +
-                calcRowY(1) +
-                ' ' +
-                calcColumnX(1) +
-                ',' +
-                calcRowY(1)
-              "
-              class="home"
-              inkscape:connector-type="polyline"
-              inkscape:connector-curvature="0"
-              inkscape:connection-start="#path846-6"
-              inkscape:connection-end="#path1109"
-            />
-            <path
-              :class="[
-                { animatedReverse: isAnimatedBattery },
-                { animated: isAnimatedBatteryReverse },
-              ]"
-              :d="
-                'M ' +
-                calcFlowLineAnchorX(2) +
-                ',' +
-                calcRowY(1) +
-                ' ' +
-                calcColumnX(1) +
-                ',' +
-                calcRowY(1)
-              "
-              class="battery"
-              inkscape:connector-type="polyline"
-              inkscape:connector-curvature="0"
-              inkscape:connection-start="#path846-6-9"
-              inkscape:connection-end="#path1109"
-            />
-            <path
-              :class="{ animatedReverse: isAnimatedChargePoint1 }"
-              :d="
-                'M ' +
-                calcFlowLineAnchorX(0) +
-                ',' +
-                calcRowY(2) +
-                ' ' +
-                calcColumnX(1) +
-                ',' +
-                calcRowY(1)
-              "
-              class="charge-point"
-              inkscape:connector-type="polyline"
-              inkscape:connector-curvature="0"
-              inkscape:connection-start="#path846-5"
-              inkscape:connection-end="#path1109"
-            />
-            <path
-              :class="{ animatedReverse: isAnimatedChargePoint2 }"
-              :d="
-                'M ' +
-                calcFlowLineAnchorX(2) +
-                ',' +
-                calcRowY(2) +
-                ' ' +
-                calcColumnX(1) +
-                ',' +
-                calcRowY(1)
-              "
-              class="charge-point"
-              inkscape:connector-type="polyline"
-              inkscape:connector-curvature="0"
-              inkscape:connection-start="#path846-5-1"
-              inkscape:connection-end="#path1109"
             />
           </g>
 
-          <g
-            inkscape:label="Ebene 2"
-            inkscape:groupmode="layer"
-            id="layer2"
-            style="display: inline"
-          >
+          <g id="layer2" style="display: inline">
             <!-- center dot -->
             <circle
               id="center"
@@ -328,10 +389,12 @@ export default {
               :r="svgSize.circleRadius / 3"
             />
 
-            <!-- grid -->
+            <!-- components -->
             <g
-              class="grid"
-              :transform="`translate(${calcColumnX(0)}, ${calcRowY(0)})`"
+              v-for="component in svgComponents"
+              :key="component.id"
+              :class="component.class.base"
+              :transform="`translate(${calcColumnX(component.position.column)}, ${calcRowY(component.position.row)})`"
             >
               <rect
                 :x="-svgRectWidth / 2"
@@ -344,9 +407,41 @@ export default {
               <g
                 :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
               >
-                <circle cx="0" cy="0" :r="svgSize.circleRadius" />
+                <defs>
+                  <clipPath
+                    v-if="component.soc"
+                    :id="`clip-soc-${component.id}`"
+                  >
+                    <rect
+                      :x="-svgSize.circleRadius - svgSize.strokeWidth"
+                      :y="
+                        (svgSize.circleRadius + svgSize.strokeWidth) *
+                        (1 - 2 * component.soc)
+                      "
+                      :width="(svgSize.circleRadius + svgSize.strokeWidth) * 2"
+                      :height="
+                        (svgSize.circleRadius + svgSize.strokeWidth) *
+                        2 *
+                        component.soc
+                      "
+                    />
+                  </clipPath>
+                </defs>
+                <circle
+                  cx="0"
+                  cy="0"
+                  :r="svgSize.circleRadius"
+                  :class="{ soc: component.soc }"
+                />
+                <circle
+                  v-if="component.soc"
+                  cx="0"
+                  cy="0"
+                  :r="svgSize.circleRadius"
+                  :clip-path="`url(#clip-soc-${component.id})`"
+                />
                 <image
-                  href="/icons/owbGrid.svg"
+                  :href="component.icon"
                   :x="-svgIconWidth / 2"
                   :y="-svgIconHeight / 2"
                   :height="svgIconHeight"
@@ -355,7 +450,6 @@ export default {
               </g>
               <text text-anchor="start">
                 <tspan
-                  sodipodi:role="line"
                   :x="
                     -svgRectWidth / 2 +
                     2 * svgSize.circleRadius +
@@ -363,14 +457,10 @@ export default {
                   "
                   :y="-svgSize.textSize / 2"
                 >
-                  EVU
+                  {{ component.label[0] }}
                 </tspan>
                 <tspan
-                  sodipodi:role="line"
-                  :class="{
-                    text_green: !gridPositive,
-                    text_red: gridPositive,
-                  }"
+                  :class="component.class.valueLabel"
                   :x="
                     -svgRectWidth / 2 +
                     2 * svgSize.circleRadius +
@@ -378,371 +468,7 @@ export default {
                   "
                   :y="svgSize.textSize"
                 >
-                  {{ this.gridPower.textValue }}
-                </tspan>
-              </text>
-            </g>
-
-            <!-- pv -->
-            <g
-              class="pv"
-              :transform="`translate(${calcColumnX(2)}, ${calcRowY(0)})`"
-            >
-              <rect
-                :x="-svgRectWidth / 2"
-                :y="-svgSize.circleRadius"
-                :width="svgRectWidth"
-                :height="svgSize.circleRadius * 2"
-                :rx="svgSize.circleRadius"
-                :ry="svgSize.circleRadius"
-              />
-              <g
-                :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
-              >
-                <circle cx="0" cy="0" :r="svgSize.circleRadius" />
-                <image
-                  href="/icons/owbPV.svg"
-                  :x="-svgIconWidth / 2"
-                  :y="-svgIconHeight / 2"
-                  :height="svgIconHeight"
-                  :width="svgIconWidth"
-                />
-              </g>
-              <text text-anchor="start">
-                <tspan
-                  sodipodi:role="line"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="-svgSize.textSize / 2"
-                >
-                  PV
-                </tspan>
-                <tspan
-                  sodipodi:role="line"
-                  :class="{ text_green: pvPositive }"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="svgSize.textSize"
-                >
-                  {{ this.pvPower.textValue }}
-                </tspan>
-              </text>
-            </g>
-
-            <!-- home -->
-            <g
-              class="home"
-              :transform="`translate(${calcColumnX(0)}, ${calcRowY(1)})`"
-            >
-              <rect
-                :x="-svgRectWidth / 2"
-                :y="-svgSize.circleRadius"
-                :width="svgRectWidth"
-                :height="svgSize.circleRadius * 2"
-                :rx="svgSize.circleRadius"
-                :ry="svgSize.circleRadius"
-              />
-              <g
-                :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
-              >
-                <circle cx="0" cy="0" :r="svgSize.circleRadius" />
-                <image
-                  href="/icons/owbHouse.svg"
-                  :x="-svgIconWidth / 2"
-                  :y="-svgIconHeight / 2"
-                  :height="svgIconHeight"
-                  :width="svgIconWidth"
-                />
-              </g>
-              <text text-anchor="start">
-                <tspan
-                  sodipodi:role="line"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="-svgSize.textSize / 2"
-                >
-                  Haus
-                </tspan>
-                <tspan
-                  sodipodi:role="line"
-                  :class="{ text_green: homePositive }"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="svgSize.textSize"
-                >
-                  {{ this.homePower.textValue }}
-                </tspan>
-              </text>
-            </g>
-
-            <!-- battery -->
-            <g
-              class="battery"
-              :transform="`translate(${calcColumnX(2)}, ${calcRowY(1)})`"
-            >
-              <rect
-                :x="-svgRectWidth / 2"
-                :y="-svgSize.circleRadius"
-                :width="svgRectWidth"
-                :height="svgSize.circleRadius * 2"
-                :rx="svgSize.circleRadius"
-                :ry="svgSize.circleRadius"
-              />
-              <g
-                :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
-              >
-                <circle cx="0" cy="0" :r="svgSize.circleRadius" />
-                <image
-                  href="/icons/owbBattery.svg"
-                  :x="-svgIconWidth / 2"
-                  :y="-svgIconHeight / 2"
-                  :height="svgIconHeight"
-                  :width="svgIconWidth"
-                />
-              </g>
-              <text text-anchor="start">
-                <tspan
-                  sodipodi:role="line"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="-svgSize.textSize / 2"
-                >
-                  Speicher
-                </tspan>
-                <tspan
-                  sodipodi:role="line"
-                  :class="{ text_green: batteryPositive }"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="svgSize.textSize"
-                >
-                  {{ this.batteryPower.textValue }}
-                </tspan>
-              </text>
-            </g>
-
-            <!-- charge point 1 -->
-            <g
-              class="charge-point"
-              :transform="`translate(${calcColumnX(0)}, ${calcRowY(2)})`"
-            >
-              <rect
-                :x="-svgRectWidth / 2"
-                :y="-svgSize.circleRadius"
-                :width="svgRectWidth"
-                :height="svgSize.circleRadius * 2"
-                :rx="svgSize.circleRadius"
-                :ry="svgSize.circleRadius"
-              />
-              <g
-                :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
-              >
-                <circle cx="0" cy="0" :r="svgSize.circleRadius" />
-                <image
-                  href="/icons/owbChargePoint.svg"
-                  :x="-svgIconWidth / 2"
-                  :y="-svgIconHeight / 2"
-                  :height="svgIconHeight"
-                  :width="svgIconWidth"
-                />
-              </g>
-              <text text-anchor="start">
-                <tspan
-                  sodipodi:role="line"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="-svgSize.textSize / 2"
-                >
-                  {{ chargePoint1Name }}
-                </tspan>
-                <tspan
-                  sodipodi:role="line"
-                  :class="{ text_green: chargePoint1Positive }"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="svgSize.textSize"
-                >
-                  {{ this.chargePoint1Power.textValue }}
-                </tspan>
-              </text>
-            </g>
-
-            <!-- charge point 2 -->
-            <g
-              class="charge-point"
-              :transform="`translate(${calcColumnX(2)}, ${calcRowY(2)})`"
-            >
-              <rect
-                :x="-svgRectWidth / 2"
-                :y="-svgSize.circleRadius"
-                :width="svgRectWidth"
-                :height="svgSize.circleRadius * 2"
-                :rx="svgSize.circleRadius"
-                :ry="svgSize.circleRadius"
-              />
-              <g
-                :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
-              >
-                <circle cx="0" cy="0" :r="svgSize.circleRadius" />
-                <image
-                  href="/icons/owbChargePoint.svg"
-                  :x="-svgIconWidth / 2"
-                  :y="-svgIconHeight / 2"
-                  :height="svgIconHeight"
-                  :width="svgIconWidth"
-                />
-              </g>
-              <text text-anchor="start">
-                <tspan
-                  sodipodi:role="line"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="-svgSize.textSize / 2"
-                >
-                  {{ chargePoint2Name }}
-                </tspan>
-                <tspan
-                  sodipodi:role="line"
-                  :class="{ text_green: chargePoint2Positive }"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="svgSize.textSize"
-                >
-                  {{ this.chargePoint2Power.textValue }}
-                </tspan>
-              </text>
-            </g>
-
-            <!-- vehicle at charge point 1 -->
-            <g
-              class="vehicle"
-              :transform="`translate(${calcColumnX(0)}, ${calcRowY(3)})`"
-            >
-              <rect
-                :x="-svgRectWidth / 2"
-                :y="-svgSize.circleRadius"
-                :width="svgRectWidth"
-                :height="svgSize.circleRadius * 2"
-                :rx="svgSize.circleRadius"
-                :ry="svgSize.circleRadius"
-              />
-              <g
-                :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
-              >
-                <circle cx="0" cy="0" :r="svgSize.circleRadius" />
-                <image
-                  href="/icons/owbVehicle.svg"
-                  :x="-svgIconWidth / 2"
-                  :y="-svgIconHeight / 2"
-                  :height="svgIconHeight"
-                  :width="svgIconWidth"
-                />
-              </g>
-              <text text-anchor="start">
-                <tspan
-                  sodipodi:role="line"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="-svgSize.textSize / 2"
-                >
-                  Vehicle 1
-                </tspan>
-                <tspan
-                  sodipodi:role="line"
-                  :class="{ text_green: chargePoint1Positive }"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="svgSize.textSize"
-                >
-                  Charge Mode
-                </tspan>
-              </text>
-            </g>
-
-            <!-- vehicle at charge point 2 -->
-            <g
-              class="vehicle"
-              :transform="`translate(${calcColumnX(2)}, ${calcRowY(3)})`"
-            >
-              <rect
-                :x="-svgRectWidth / 2"
-                :y="-svgSize.circleRadius"
-                :width="svgRectWidth"
-                :height="svgSize.circleRadius * 2"
-                :rx="svgSize.circleRadius"
-                :ry="svgSize.circleRadius"
-              />
-              <g
-                :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
-              >
-                <circle cx="0" cy="0" :r="svgSize.circleRadius" />
-                <image
-                  href="/icons/owbVehicle.svg"
-                  :x="-svgIconWidth / 2"
-                  :y="-svgIconHeight / 2"
-                  :height="svgIconHeight"
-                  :width="svgIconWidth"
-                />
-              </g>
-              <text text-anchor="start">
-                <tspan
-                  sodipodi:role="line"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="-svgSize.textSize / 2"
-                >
-                  Vehicle 2
-                </tspan>
-                <tspan
-                  sodipodi:role="line"
-                  :class="{ text_green: chargePoint2Positive }"
-                  :x="
-                    -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
-                  "
-                  :y="svgSize.textSize"
-                >
-                  Charge Mode
+                  {{ component.label[1] }}
                 </tspan>
               </text>
             </g>
@@ -787,7 +513,7 @@ circle {
   fill: black;
   fill-opacity: 1;
   stroke: gray;
-  stroke-width: v-bind(svgCircleStrokeWidth);
+  stroke-width: v-bind(svgStrokeWidth);
   stroke-miterlimit: 2;
   stroke-opacity: 1;
 }
@@ -816,14 +542,16 @@ text {
   fill-opacity: 1;
 }
 
-text .text_green {
+text .fill-success {
   fill: var(--color--success);
-  /* or any color you prefer for positive values */
 }
 
-text .text_red {
+text .fill-danger {
   fill: var(--color--danger);
-  /* or any color you prefer for negative values */
+}
+
+text .fill-dark {
+  fill: var(--color--dark);
 }
 
 .grid text {
@@ -861,7 +589,7 @@ text .text_red {
   stroke: var(--color--warning);
 }
 
-.battery circle {
+.battery circle:not(.soc) {
   fill: var(--color--warning-90);
 }
 
@@ -900,7 +628,7 @@ text .text_red {
   stroke: var(--color--teal);
 }
 
-.vehicle circle {
+.vehicle circle:not(.soc) {
   fill: var(--color--teal-85);
 }
 </style>

@@ -331,8 +331,16 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getChartData("openWB/bat/get/power");
     },
     getBatterySoc(state) {
-      return state.getValueString("openWB/bat/get/soc", "%", "", false)
-        .textValue;
+      return (returnType = "textValue") => {
+        let soc = state.getValueString("openWB/bat/get/soc", "%", "", false);
+        if (Object.hasOwnProperty.call(soc, returnType)) {
+          return soc[returnType];
+        }
+        if (returnType == "object") {
+          return soc;
+        }
+        console.error("returnType not found!", returnType, soc);
+      };
     },
     getBatterySocChartData(state) {
       return state.getChartData("openWB/bat/get/soc");
