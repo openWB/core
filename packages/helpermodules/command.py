@@ -639,11 +639,11 @@ class Command:
                 self.createCloudBackup(connection_id, {})
             except Exception:
                 pub_user_message(payload, connection_id,
-                                 ("Fehler beim Erstellen der Cloud-Sicherung."
-                                  f" {traceback.format_exc()}<br />Update abgebrochen!"
+                                 ("Fehler beim Erstellen der Cloud-Sicherung. Update abgebrochen!"
                                   "Bitte Fehlerstatus überprüfen!. " +
                                   "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
-                                 MessageType.WARNING)
+                                 MessageType.ERROR)
+                log.exception("Fehler beim Erstellen der Cloud-Sicherung: ", Exception)
                 Pub().pub("openWB/system/update_in_progress", False)
                 return
         parent_file = Path(__file__).resolve().parents[2]
@@ -771,7 +771,8 @@ class ErrorHandlingContext:
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
         if isinstance(exception, Exception):
             pub_user_message(self.payload, self.connection_id,
-                             f'Es ist ein interner Fehler aufgetreten: {traceback.format_exc()}', MessageType.ERROR)
+                             f'Es ist ein interner Fehler aufgetreten: {exception}', MessageType.ERROR)
+            log.debug({traceback.format_exc()})
             return True
         else:
             return False
