@@ -436,7 +436,7 @@ class Command:
         try:
             data.data.counter_all_data.hierarchy_add_item_below_evu(new_id, general_type)
         except ValueError:
-            pub_user_message(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!", MessageType.ERROR)
+            pub_user_message(payload, connection_id, counter_all.CounterAll.MISSING_EVU_COUNTER, MessageType.ERROR)
             return
         # Bei Zählern müssen noch Standardwerte veröffentlicht werden.
         if general_type == ComponentType.BAT:

@@ -59,8 +59,7 @@ class CounterAllData:
 
 
 class CounterAll:
-    """
-    """
+    MISSING_EVU_COUNTER = "Bitte erst einen EVU-Zähler konfigurieren."
 
     def __init__(self):
         self.data = CounterAllData()
@@ -346,7 +345,7 @@ class CounterAll:
                 Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
                 self.data.get.hierarchy = hierarchy
             else:
-                raise ValueError("Bitte erst einen EVU-Zähler konfiguriere.")
+                raise ValueError(self.MISSING_EVU_COUNTER)
 
     def hierarchy_add_item_below(self, new_id: int, new_type: ComponentType, id_to_find: int) -> None:
         """ruft die rekursive Funktion zum Hinzufügen eines Elements als Kind des angegebenen Elements.
