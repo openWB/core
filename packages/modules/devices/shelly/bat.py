@@ -33,20 +33,15 @@ class ShellyBat:
         else:
             status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
+
         try:
-            if self.generation == 1:
-                if 'meters' in status:
-                    meters = status['meters']  # shelly
-                else:
-                    meters = status['emeters']  # shellyEM & shelly3EM
+            if self.generation == 1:  # shelly3EM
+                meters = status['emeters']  # shellyEM & shelly3EM
                 # shellyEM has one meter, shelly3EM has three meters:
                 for meter in meters:
                     total = total + meter['power']
-            else:
-                if 'switch:0' in status:
-                    total = status['switch:0']['apower']
-                else:
-                    total = status['em:0']['total_act_power']  # shelly Pro3EM
+            else:  # shelly pro3EM
+                total = status['em:0']['total_act_power']  # shelly Pro3EM
         except KeyError:
             log.exception("unsupported shelly device?")
         finally:

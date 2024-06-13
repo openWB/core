@@ -12,8 +12,8 @@ from modules.devices.shelly.counter import ShellyCounter
 from modules.devices.shelly.bat import ShellyBat
 from modules.devices.shelly.config import Shelly, ShellyConfiguration
 from modules.devices.shelly.config import ShellyInverterSetup, ShellyInverterConfiguration
-from modules.devices.shelly.config import ShellyCounterSetup, ShellyCounterConfiguration
-from modules.devices.shelly.config import ShellyBatSetup, ShellyBatConfiguration
+from modules.devices.shelly.config import ShellyCounterSetup
+from modules.devices.shelly.config import ShellyBatSetup
 
 
 log = logging.getLogger(__name__)

@@ -65,7 +65,7 @@ class ShellyBatConfiguration:
 class ShellyBatSetup(ComponentSetup[ShellyBatConfiguration]):
     def __init__(self,
                  name: str = "Shelly Speicher",
-                 type: str = "counter",
+                 type: str = "bat",
                  id: int = 0,
                  configuration: ShellyBatConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or ShellyBatConfiguration())

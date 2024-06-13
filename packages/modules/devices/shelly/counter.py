@@ -27,29 +27,46 @@ class ShellyCounter:
         self.generation = generation
 
     def update(self) -> None:
-        status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
+        power = 0
+        if self.generation == 1:
+            status_url = "http://" + self.address + "/status"
+        else:
+            status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
         try:
-            if 'em:0' in status:  # 3 phased energy meter gen2 and above
+            if self.generation == 1:  # shelly3EM
+                meters = status['emeters']
+                # shelly3EM has three meters:
+                for meter in meters:
+                    power = power + meter['power']
+                power = power * -1
+
+                voltages = [status['emeters'][0]['voltage'], status['emeters']
+                            [1]['voltage'], status['emeters'][2]['voltage']]
+                currents = [status['emeters'][0]['current'], status['emeters']
+                            [1]['current'], status['emeters'][2]['current']]
+                powers = [status['emeters'][0]['power'], status['emeters'][1]['power'], status['emeters'][2]['power']]
+                power_factors = [status['emeters'][0]['pf'], status['emeters'][1]['pf'], status['emeters'][2]['pf']]
+                imported, exported = self.sim_counter.sim_count(power)
+            else:
+                # shelly Pro3EM
                 voltages = [status['em:0']['a_voltage'], status['em:0']['b_voltage'], status['em:0']['c_voltage']]
                 currents = [status['em:0']['a_current'], status['em:0']['b_current'], status['em:0']['c_current']]
                 powers = [status['em:0']['a_act_power'], status['em:0']['b_act_power'], status['em:0']['c_act_power']]
                 power_factors = [status['em:0']['a_pf'], status['em:0']['b_pf'], status['em:0']['c_pf']]
                 power = status['em:0']['total_act_power'] * -1
-                frequency = status['em:0']['a_freq']  # status['em:0']['b_freq'], status['em:0']['c_freq']
                 imported, exported = self.sim_counter.sim_count(power)
 
-                counter_state = CounterState(
-                    voltages=voltages,
-                    currents=currents,
-                    powers=powers,
-                    power_factors=power_factors,
-                    imported=imported,
-                    exported=exported,
-                    power=power,
-                    frequency=frequency
-                )
-                self.store.set(counter_state)
+            counter_state = CounterState(
+                voltages=voltages,
+                currents=currents,
+                powers=powers,
+                power_factors=power_factors,
+                imported=imported,
+                exported=exported,
+                power=power
+            )
+            self.store.set(counter_state)
         except KeyError:
             log.exception("unsupported shelly device?")
 
