@@ -14,6 +14,7 @@ class SimpleInterfaceDisplayThemeConfiguration:
                  enable_dashboard_card_battery_sum: bool = True,
                  enable_dashboard_card_inverter_sum: bool = True,
                  enable_dashboard_card_charge_point_sum: bool = True,
+                 enable_dashboard_card_vehicles: bool = True,
                  enable_energy_flow_view: bool = True,
                  enable_charge_points_view: bool = True,
                  enable_status_view: bool = True) -> None:
@@ -26,6 +27,7 @@ class SimpleInterfaceDisplayThemeConfiguration:
         self.enable_dashboard_card_battery_sum = enable_dashboard_card_battery_sum
         self.enable_dashboard_card_inverter_sum = enable_dashboard_card_inverter_sum
         self.enable_dashboard_card_charge_point_sum = enable_dashboard_card_charge_point_sum
+        self.enable_dashboard_card_vehicles = enable_dashboard_card_vehicles
         # energy flow settings
         self.enable_energy_flow_view = enable_energy_flow_view
         # charge point settings
