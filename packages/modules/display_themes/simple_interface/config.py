@@ -9,24 +9,25 @@ class SimpleInterfaceDisplayThemeConfiguration:
     def __init__(self,
                  lock_changes: bool = False,
                  lock_changes_code: Optional[str] = None,
-                 enable_dashboard_view: bool = True,
                  enable_dashboard_card_grid: bool = True,
                  enable_dashboard_card_home_consumption: bool = True,
                  enable_dashboard_card_battery_sum: bool = True,
                  enable_dashboard_card_inverter_sum: bool = True,
                  enable_dashboard_card_charge_point_sum: bool = True,
+                 enable_energy_flow_view: bool = True,
                  enable_charge_points_view: bool = True,
                  enable_status_view: bool = True) -> None:
         # display lock settings
         self.lock_changes = lock_changes
         self.lock_changes_code = lock_changes_code
         # dashboard settings
-        self.enable_dashboard_view = enable_dashboard_view
         self.enable_dashboard_card_grid = enable_dashboard_card_grid
         self.enable_dashboard_card_home_consumption = enable_dashboard_card_home_consumption
         self.enable_dashboard_card_battery_sum = enable_dashboard_card_battery_sum
         self.enable_dashboard_card_inverter_sum = enable_dashboard_card_inverter_sum
         self.enable_dashboard_card_charge_point_sum = enable_dashboard_card_charge_point_sum
+        # energy flow settings
+        self.enable_energy_flow_view = enable_energy_flow_view
         # charge point settings
         self.enable_charge_points_view = enable_charge_points_view
         # state settings

@@ -192,6 +192,13 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return true;
     },
+    getEnergyFlowEnabled(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.enable_energy_flow_view;
+      }
+      return true;
+    },
+
     getChargePointsEnabled(state) {
       if (state.getThemeConfiguration) {
         return state.getThemeConfiguration.enable_charge_points_view;
@@ -375,8 +382,19 @@ export const useMqttStore = defineStore("mqtt", {
     /* charge point getters */
 
     getChargePointSumPower(state) {
-      return state.getValueString("openWB/chargepoint/get/power", "W")
-        .textValue;
+      return (returnType = "textValue") => {
+        var power = state.getValueString(
+          "openWB/chargepoint/get/power",
+          "W",
+        );
+        if (Object.hasOwnProperty.call(power, returnType)) {
+          return power[returnType];
+        }
+        if (returnType == "object") {
+          return power;
+        }
+        console.error("returnType not found!", returnType, power);
+      };
     },
     getChargePointSumPowerChartData(state) {
       return state.getChartData("openWB/chargepoint/get/power");
@@ -451,11 +469,15 @@ export const useMqttStore = defineStore("mqtt", {
       };
     },
     getChargePointSetCurrent(state) {
-      return (chargePointId) => {
-        return state.getValueString(
-          `openWB/chargepoint/${chargePointId}/set/current`,
-          "A",
-        ).textValue;
+      return (chargePointId, returnType = "textValue") => {
+        let power = state.getValueString(`openWB/chargepoint/${chargePointId}/set/current`, "A");
+        if (Object.hasOwnProperty.call(power, returnType)) {
+          return power[returnType];
+        }
+        if (returnType == "object") {
+          return power;
+        }
+        console.error("returnType not found!", returnType, power);
       };
     },
     getChargePointPhasesInUse(state) {

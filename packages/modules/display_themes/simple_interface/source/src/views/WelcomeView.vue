@@ -11,8 +11,8 @@ export default {
   computed: {
     firstView() {
       if (this.mqttStore.getThemeConfiguration) {
-        if (this.mqttStore.getThemeConfiguration.enable_dashboard_view) {
-          return "simple-dashboard";
+        if (this.mqttStore.getThemeConfiguration.enable_energy_flow_view) {
+          return "energy-flow";
         }
         if (this.mqttStore.getThemeConfiguration.enable_charge_points_view) {
           return "charge-points";

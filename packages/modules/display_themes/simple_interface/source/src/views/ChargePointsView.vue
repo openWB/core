@@ -110,9 +110,7 @@ export default {
     filteredChargeModes() {
       return this.mqttStore.chargeModeList().filter((mode) => {
         return (
-          mode.id === "instant_charging" ||
-          mode.id === "pv_charging" ||
-          mode.id === "stop"
+          ["instant_charging", "pv_charging", "stop"].includes(mode.id)
         );
       });
     },
@@ -343,6 +341,7 @@ export default {
   },
 };
 </script>
+
 <template>
   <div class="charge-points-card-wrapper">
     <dash-board-card
@@ -610,6 +609,7 @@ export default {
         <i-tab-title for="tab-scheduled-charging"> Zielladen </i-tab-title>
         <i-tab-title for="tab-time-charging"> Zeitladen </i-tab-title>
       </template>
+
       <i-tab name="tab-instant-charging">
         <i-form>
           <i-form-group>

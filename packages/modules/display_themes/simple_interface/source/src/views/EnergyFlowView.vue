@@ -2,7 +2,7 @@
 import FlowCard from "@/components/DashBoard/FlowCard.vue";
 
 export default {
-  name: "DashboardFlowCard",
+  name: "EnergyFlowView",
   components: {
     FlowCard,
   },
