@@ -45,7 +45,7 @@ export default {
       {{
         mqttStore.getChargePointIds.length == 1
           ? mqttStore.getChargePointPower(mqttStore.getChargePointIds[0])
-          : mqttStore.getChargePointSumPower
+          : mqttStore.getChargePointSumPower()
       }}
       <charge-point-plug-badge
         :chargePointId="mqttStore.getChargePointIds"

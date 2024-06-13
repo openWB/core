@@ -14,6 +14,9 @@ export default {
         if (this.mqttStore.getThemeConfiguration.enable_dashboard_view) {
           return "dash-board";
         }
+        if (this.mqttStore.getThemeConfiguration.enable_energy_flow_view) {
+          return "energy-flow";
+        }
         if (this.mqttStore.getThemeConfiguration.enable_charge_points_view) {
           return "charge-points";
         }

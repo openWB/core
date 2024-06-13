@@ -19,6 +19,12 @@ export default {
       Übersicht
     </nav-item>
     <nav-item
+      v-if="mqttStore.getEnergyFlowEnabled"
+      :to="{ name: 'energy-flow' }"
+    >
+      Energiefluss
+    </nav-item>
+    <nav-item
       v-if="
         mqttStore.getChargePointsEnabled &&
         mqttStore.getChargePointIds.length > 0
