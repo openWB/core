@@ -79,6 +79,10 @@ class BatAllData:
 
 
 class BatAll:
+    ERROR_CONFIG_MAX_AC_OUT = ("Maximale Entladeleistung des Wechselrichters  muss bei einem Hybrid-System " +
+                               "konfiguriert werden. Bitte im Lastmanagement die maximale Ausgangsleistung des"
+                               + " Wechselrichters angeben.")
+
     def __init__(self):
         self.data = BatAllData()
 
@@ -135,42 +139,44 @@ class BatAll:
             parent_data = data.data.pv_data[f"pv{parent['id']}"].data
             # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
             # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
+            # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
+            # genutzt werden.
             if parent_data.config.max_ac_out > 0:
-                max_bat_discharge_power = parent_data.config.max_ac_out + parent_data.get.power
-                return max_bat_discharge_power - abs(battery.data.get.power), True
+                max_bat_discharge_power = parent_data.config.max_ac_out + \
+                    parent_data.get.power + max(battery.data.get.power, 0)
+                return max_bat_discharge_power, True
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
-                battery.data.get.fault_str = ("Maximale Entladeleistung des Wechselrichters" +
-                                              " muss bei einem Hybrid-System konfiguriert werden.")
+                battery.data.get.fault_str = self.ERROR_CONFIG_MAX_AC_OUT
                 Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_state",
                           battery.data.get.fault_state)
                 Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_str",
                           battery.data.get.fault_str)
-                raise ValueError("Maximale Entladeleistung des Wechselrichters" +
-                                 " muss bei einem Hybrid-System konfiguriert werden.")
+                raise ValueError(self.ERROR_CONFIG_MAX_AC_OUT)
         else:
             # Kein Hybrid-WR
             # Maximal die Speicher-Leistung als Entladeleistung nutzen, um nicht unnötig Bezug zu erzeugen.
             return abs(battery.data.get.power) + 50, False
 
-    def _limit_bat_power_discharge(self, bat_power_discharge):
+    def _limit_bat_power_discharge(self, required_power):
         available_power = 0
         hybrid = False
-        for battery in data.data.bat_data.values():
-            try:
-                available_power_bat, hybrid_bat = self._max_bat_power_hybrid_system(battery)
-                if hybrid_bat:
-                    hybrid = True
-                    available_power += available_power_bat
-            except Exception:
-                log.exception(f"Fehler im Bat-Modul {battery.num}")
-        if hybrid:
-            if bat_power_discharge > available_power:
-                log.debug(
-                    f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {available_power}W begrenzt.")
-            return min(bat_power_discharge, available_power)
-        else:
-            return bat_power_discharge
+        if required_power > 0:
+            # Nur wenn der Speicher entladen werden soll, fließt Leistung durch den WR.
+            for battery in data.data.bat_data.values():
+                try:
+                    available_power_bat, hybrid_bat = self._max_bat_power_hybrid_system(battery)
+                    if hybrid_bat:
+                        hybrid = True
+                        available_power += available_power_bat
+                except Exception:
+                    log.exception(f"Fehler im Bat-Modul {battery.num}")
+            if hybrid:
+                if required_power > available_power:
+                    log.debug(f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {available_power}W"
+                              " begrenzt.")
+                return min(required_power, available_power)
+        return required_power
 
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summen-Topics.
@@ -203,56 +209,57 @@ class BatAll:
                 if self.data.get.power < 0:
                     # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
                     # Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher reduziert werden.
-                    self.data.set.charging_power_left = self.data.get.power
+                    charging_power_left = self.data.get.power
                 else:
-                    self.data.set.charging_power_left = 0
+                    charging_power_left = 0
                 self.data.set.regulate_up = True if self.data.get.soc < 100 else False
             elif config.bat_mode == BatConsiderationMode.EV_MODE.value:
                 # Speicher sollte weder ge- noch entladen werden.
-                self.data.set.charging_power_left = self.data.get.power
+                charging_power_left = self.data.get.power
             else:
                 if self.data.get.soc < config.min_bat_soc:
                     if self.data.get.power < 0:
                         # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge
                         # genutzt werden. Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher
                         # reduziert werden.
-                        self.data.set.charging_power_left = self.data.get.power
+                        charging_power_left = self.data.get.power
                         self.data.set.regulate_up = True
                     else:
                         # Speicher-Vorrang bis zum Min-Soc
                         if config.bat_power_reserve_active:
                             if self.data.get.power > config.bat_power_reserve:
                                 # die Differenz darf nicht zum Laden der EV genutzt werden.
-                                self.data.set.charging_power_left = self.data.get.power - config.bat_power_reserve
+                                charging_power_left = self.data.get.power - config.bat_power_reserve
                             else:
-                                self.data.set.charging_power_left = (
+                                charging_power_left = (
                                     config.bat_power_reserve - self.data.get.power) * -1
                                 self.data.set.regulate_up = True
                         else:
                             # Speicher wird geladen
-                            self.data.set.charging_power_left = 0
+                            charging_power_left = 0
                             self.data.set.regulate_up = True
                 elif int(self.data.get.soc) == config.min_bat_soc:
                     # Speicher sollte weder ge- noch entladen werden, um den Mindest-SoC zu halten.
-                    self.data.set.charging_power_left = self.data.get.power
+                    charging_power_left = self.data.get.power
                 else:
                     if config.bat_power_discharge_active:
                         if self.data.get.power > 0:
                             # Speicher wird geladen
-                            self.data.set.charging_power_left = self.data.get.power + config.bat_power_discharge
+                            charging_power_left = self.data.get.power + config.bat_power_discharge
                         else:
                             if self.data.get.power * -1 >= config.bat_power_discharge:
                                 # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                                 # vom Überschuss subtrahiert werden.
-                                self.data.set.charging_power_left = config.bat_power_discharge + self.data.get.power
-                                log.debug(f"Erlaubte Entlade-Leistung nutzen {self.data.set.charging_power_left}W")
+                                charging_power_left = config.bat_power_discharge + self.data.get.power
+                                log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
                             else:
-                                self.data.set.charging_power_left = (self.data.get.power
-                                                                     + self._limit_bat_power_discharge(
-                                                                         config.bat_power_discharge))
+                                charging_power_left = self.data.get.power + config.bat_power_discharge
                     else:
                         # Speicher sollte weder ge- noch entladen werden.
-                        self.data.set.charging_power_left = self.data.get.power
+                        charging_power_left = self.data.get.power
+            # Keine Ladeleistung vom Speicher für Fahrzeuge einplanen, wenn max
+            # Ausgangsleistung erreicht ist.
+            self.data.set.charging_power_left = self._limit_bat_power_discharge(charging_power_left)
         except Exception:
             log.exception("Fehler im Bat-Modul")
 

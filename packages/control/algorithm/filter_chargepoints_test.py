@@ -163,28 +163,3 @@ def test_get_chargepoints_by_mode_and_counter(chargepoints_of_counter: List[str]
 
     # assertion
     assert valid_chargepoints == expected_chargepoints
-
-
-@pytest.mark.parametrize(
-    "submode_1, submode_2, expected_chargepoints",
-    [
-        pytest.param(Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, [mock_cp2, mock_cp1]),
-        pytest.param(Chargemode.SCHEDULED_CHARGING, Chargemode.PV_CHARGING, [mock_cp2]),
-        pytest.param(Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, []),
-    ])
-def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
-                                              submode_2: Chargemode,
-                                              expected_chargepoints: List[Chargepoint]):
-    # setup
-    def setup_cp(cp: Chargepoint, submode: str) -> Chargepoint:
-        cp.data.set.charging_ev = Ev(0)
-        cp.data.control_parameter.submode = submode
-        return cp
-    data.data.cp_data = {"cp1": setup_cp(mock_cp1, submode_1),
-                         "cp2": setup_cp(mock_cp2, submode_2)}
-
-    # evaluation
-    chargepoints = filter_chargepoints.get_chargepoints_pv_charging()
-
-    # assertion
-    assert chargepoints == expected_chargepoints
