@@ -109,9 +109,7 @@ export default {
     },
     filteredChargeModes() {
       return this.mqttStore.chargeModeList().filter((mode) => {
-        return (
-          ["instant_charging", "pv_charging", "stop"].includes(mode.id)
-        );
+        return ["instant_charging", "pv_charging", "stop"].includes(mode.id);
       });
     },
   },

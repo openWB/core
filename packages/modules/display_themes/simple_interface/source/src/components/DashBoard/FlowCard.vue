@@ -98,10 +98,14 @@ export default {
       return this.mqttStore.getChargePointName(this.connectedChargePoints[1]);
     },
     chargePoint1VehicleConnected() {
-      return this.mqttStore.getChargePointPlugState(this.connectedChargePoints[0]);
+      return this.mqttStore.getChargePointPlugState(
+        this.connectedChargePoints[0],
+      );
     },
     chargePoint2VehicleConnected() {
-      return this.mqttStore.getChargePointPlugState(this.connectedChargePoints[1]);
+      return this.mqttStore.getChargePointPlugState(
+        this.connectedChargePoints[1],
+      );
     },
     chargePoint1ConnectedVehicleName() {
       return this.mqttStore.getChargePointConnectedVehicleName(
@@ -188,44 +192,46 @@ export default {
     svgComponents() {
       var components = [];
       if (this.mqttStore.getThemeConfiguration.enable_dashboard_card_grid) {
-        components.push(
-          {
-            id: "grid",
-            class: {
-              base: "grid",
-              valueLabel: this.gridPositive ? "fill-danger" : "fill-success",
-              animated: this.isAnimatedGrid,
-              animatedReverse: !this.gridPositive,
-            },
-            position: {
-              row: 0,
-              column: 0,
-            },
-            label: ["EVU", this.gridPower.textValue],
-            icon: "icons/owbGrid.svg",
+        components.push({
+          id: "grid",
+          class: {
+            base: "grid",
+            valueLabel: this.gridPositive ? "fill-danger" : "fill-success",
+            animated: this.isAnimatedGrid,
+            animatedReverse: !this.gridPositive,
           },
-        );
-      }
-      if (this.mqttStore.getThemeConfiguration.enable_dashboard_card_home_consumption) {
-        components.push(
-          {
-            id: "home",
-            class: {
-              base: "home",
-              valueLabel: "",
-              animated: this.isAnimatedHome,
-              animatedReverse: this.homePositive,
-            },
-            position: {
-              row: 0,
-              column: 2,
-            },
-            label: ["Haus", this.homePower.textValue],
-            icon: "icons/owbHouse.svg",
+          position: {
+            row: 0,
+            column: 0,
           },
-        );
+          label: ["EVU", this.gridPower.textValue],
+          icon: "icons/owbGrid.svg",
+        });
       }
-      if (this.mqttStore.getPvConfigured && this.mqttStore.getThemeConfiguration.enable_dashboard_card_inverter_sum) {
+      if (
+        this.mqttStore.getThemeConfiguration
+          .enable_dashboard_card_home_consumption
+      ) {
+        components.push({
+          id: "home",
+          class: {
+            base: "home",
+            valueLabel: "",
+            animated: this.isAnimatedHome,
+            animatedReverse: this.homePositive,
+          },
+          position: {
+            row: 0,
+            column: 2,
+          },
+          label: ["Haus", this.homePower.textValue],
+          icon: "icons/owbHouse.svg",
+        });
+      }
+      if (
+        this.mqttStore.getPvConfigured &&
+        this.mqttStore.getThemeConfiguration.enable_dashboard_card_inverter_sum
+      ) {
         components.push({
           id: "pv",
           class: {
@@ -242,7 +248,10 @@ export default {
           icon: "icons/owbPV.svg",
         });
       }
-      if (this.mqttStore.getBatteryConfigured && this.mqttStore.getThemeConfiguration.enable_dashboard_card_battery_sum) {
+      if (
+        this.mqttStore.getBatteryConfigured &&
+        this.mqttStore.getThemeConfiguration.enable_dashboard_card_battery_sum
+      ) {
         components.push({
           id: "battery",
           class: {
@@ -260,7 +269,11 @@ export default {
           icon: "icons/owbBattery.svg",
         });
       }
-      if (this.connectedChargePoints.length > 0 && this.mqttStore.getThemeConfiguration.enable_dashboard_card_charge_point_sum) {
+      if (
+        this.connectedChargePoints.length > 0 &&
+        this.mqttStore.getThemeConfiguration
+          .enable_dashboard_card_charge_point_sum
+      ) {
         components.push({
           id: "charge-point-1",
           class: {
@@ -277,7 +290,11 @@ export default {
           icon: "icons/owbChargePoint.svg",
         });
       }
-      if (this.connectedChargePoints.length > 1 && this.mqttStore.getThemeConfiguration.enable_dashboard_card_charge_point_sum) {
+      if (
+        this.connectedChargePoints.length > 1 &&
+        this.mqttStore.getThemeConfiguration
+          .enable_dashboard_card_charge_point_sum
+      ) {
         components.push({
           id: "charge-point-2",
           class: {
@@ -294,7 +311,10 @@ export default {
           icon: "icons/owbChargePoint.svg",
         });
       }
-      if (this.chargePoint1VehicleConnected && this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles) {
+      if (
+        this.chargePoint1VehicleConnected &&
+        this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles
+      ) {
         components.push({
           id: "vehicle-1",
           class: {
@@ -314,7 +334,10 @@ export default {
           icon: "icons/owbVehicle.svg",
         });
       }
-      if (this.chargePoint2VehicleConnected && this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles) {
+      if (
+        this.chargePoint2VehicleConnected &&
+        this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles
+      ) {
         components.push({
           id: "vehicle-2",
           class: {
