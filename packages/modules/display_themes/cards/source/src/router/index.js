@@ -18,6 +18,11 @@ const router = createRouter({
       component: () => import("../views/DashBoardView.vue"),
     },
     {
+      path: "/EnergyFlow",
+      name: "energy-flow",
+      component: () => import("../views/EnergyFlowView.vue"),
+    },
+    {
       path: "/ChargePoints",
       name: "charge-points",
       component: () => import("../views/ChargePointsView.vue"),

@@ -29,7 +29,7 @@ export default {
       EVU
     </template>
     <template #headerRight>
-      {{ mqttStore.getGridPower }}
+      {{ mqttStore.getGridPower() }}
     </template>
     <spark-line
       color="var(--color--danger)"

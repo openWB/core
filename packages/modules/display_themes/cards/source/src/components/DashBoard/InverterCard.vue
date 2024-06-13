@@ -29,7 +29,7 @@ export default {
       PV
     </template>
     <template #headerRight>
-      {{ mqttStore.getPvPower }}
+      {{ mqttStore.getPvPower() }}
     </template>
     <spark-line
       color="var(--color--success)"

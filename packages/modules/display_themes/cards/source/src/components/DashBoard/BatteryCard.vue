@@ -29,8 +29,8 @@ export default {
       Speicher
     </template>
     <template #headerRight>
-      {{ mqttStore.getBatterySoc }} /
-      {{ mqttStore.getBatteryPower }}
+      {{ mqttStore.getBatterySoc() }} /
+      {{ mqttStore.getBatteryPower() }}
     </template>
     <spark-line
       color="var(--color--warning)"

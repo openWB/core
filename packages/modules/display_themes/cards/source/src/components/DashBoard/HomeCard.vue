@@ -29,7 +29,7 @@ export default {
       Hausverbrauch
     </template>
     <template #headerRight>
-      {{ mqttStore.getHomePower }}
+      {{ mqttStore.getHomePower() }}
     </template>
     <spark-line
       color="var(--color--light)"
