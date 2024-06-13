@@ -393,7 +393,6 @@ class UpdateConfig:
         "^openWB/system/device/module_update_completed$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
-        "^openWB/system/messages/[0-9]+$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/mqtt/valid_partner_ids$",
         "^openWB/system/release_train$",
