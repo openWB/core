@@ -28,14 +28,21 @@ def get_vehicle_default() -> dict:
     return {
         "charge_template": 0,
         "ev_template": 0,
-        "name": "Standard-Fahrzeug",
+        "name": "neues Fahrzeug",
         "tag_id": [],
         "get/soc": 0
     }
 
 
-def get_charge_template_default() -> dict:
+def get_new_charge_template() -> dict:
     ct_default = asdict(ChargeTemplateData())
+    ct_default["chargemode"]["scheduled_charging"].pop("plans")
+    ct_default["time_charging"].pop("plans")
+    return ct_default
+
+
+def get_charge_template_default() -> dict:
+    ct_default = asdict(ChargeTemplateData(name="Lade-Profil"))
     ct_default["chargemode"]["scheduled_charging"].pop("plans")
     ct_default["time_charging"].pop("plans")
     return ct_default
@@ -109,7 +116,7 @@ def et_factory() -> Et:
 
 @dataclass
 class ChargeTemplateData:
-    name: str = "Standard-Lade-Profil"
+    name: str = "neues Lade-Profil"
     disable_after_unplug: bool = False
     prio: bool = False
     load_default: bool = False
@@ -120,7 +127,7 @@ class ChargeTemplateData:
 
 @dataclass
 class EvTemplateData:
-    name: str = "Standard-Fahrzeug-Profil"
+    name: str = "neues Fahrzeug-Profil"
     max_current_multi_phases: int = 16
     max_phases: int = 3
     phase_switch_pause: int = 2
@@ -182,7 +189,7 @@ class EvData:
     set: Set = field(default_factory=set_factory)
     charge_template: int = 0
     ev_template: int = 0
-    name: str = "Standard-Fahrzeug"
+    name: str = "neues Fahrzeug"
     tag_id: List[str] = field(default_factory=empty_list_factory)
     get: Get = field(default_factory=get_factory)
 

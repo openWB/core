@@ -328,7 +328,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Lade-Profil erstellt werden soll.
         """
         new_id = self.max_id_charge_template + 1
-        charge_template_default = ev.get_charge_template_default()
+        charge_template_default = ev.get_new_charge_template()
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
                   str(new_id), charge_template_default)
         self.max_id_charge_template = new_id
