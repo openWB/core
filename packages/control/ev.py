@@ -756,7 +756,8 @@ class ChargeTemplate:
         return duration, missing_amount
 
     SCHEDULED_REACHED_LIMIT_SOC = ("Kein Zielladen, da noch Zeit bis zum Zieltermin ist. "
-                                   "Kein Zielladen mit Überschuss, da das SoC-Limit für Überschuss-Laden erreicht wurde.")
+                                   "Kein Zielladen mit Überschuss, da das SoC-Limit für Überschuss-Laden " +
+                                   "erreicht wurde.")
     SCHEDULED_CHARGING_REACHED_LIMIT_SOC = ("Kein Zielladen, da das Limit für Fahrzeug Laden mit Überschuss (SoC-Limit)"
                                             " sowie der Fahrzeug-SoC (Ziel-SoC) bereits erreicht wurde.")
     SCHEDULED_CHARGING_REACHED_AMOUNT = "Kein Zielladen, da die Energiemenge bereits erreicht wurde."
