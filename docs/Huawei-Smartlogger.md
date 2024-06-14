@@ -1,4 +1,4 @@
-Zunächts müssen auf dem Smartlogger300a folgdene Einstellungen festgelegt wernden
+Im Smartlogger3000a müssen folgende Einstellungen festgelegt werden:
 
 1. Zunächst unter Einstell.-> Bef.-Param. -> Modbus TCP
    Folgende Einstellungen festlegen:
