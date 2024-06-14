@@ -41,19 +41,17 @@ class ShellyCounter:
                     power = power + meter['power']
                 power = power * -1
 
-                voltages = [status['emeters'][0]['voltage'], status['emeters']
-                            [1]['voltage'], status['emeters'][2]['voltage']]
-                currents = [status['emeters'][0]['current'], status['emeters']
-                            [1]['current'], status['emeters'][2]['current']]
-                powers = [status['emeters'][0]['power'], status['emeters'][1]['power'], status['emeters'][2]['power']]
-                power_factors = [status['emeters'][0]['pf'], status['emeters'][1]['pf'], status['emeters'][2]['pf']]
+                voltages = [status['emeters'][i]['voltage'] for i in range(0, 3)]
+                currents = [status['emeters'][i]['current'] for i in range(0, 3)]
+                powers = [status['emeters'][i]['power'] for i in range(0, 3)]
+                power_factors = [status['emeters'][i]['pf'] for i in range(0, 3)]
                 imported, exported = self.sim_counter.sim_count(power)
             else:
                 # shelly Pro3EM
-                voltages = [status['em:0']['a_voltage'], status['em:0']['b_voltage'], status['em:0']['c_voltage']]
-                currents = [status['em:0']['a_current'], status['em:0']['b_current'], status['em:0']['c_current']]
-                powers = [status['em:0']['a_act_power'], status['em:0']['b_act_power'], status['em:0']['c_act_power']]
-                power_factors = [status['em:0']['a_pf'], status['em:0']['b_pf'], status['em:0']['c_pf']]
+                voltages = [status['em:0'][f'{i}_voltage'] for i in 'abc']
+                currents = [status['em:0'][f'{i}_current'] for i in 'abc']
+                powers = [status['em:0'][f'{i}_act_power'] for i in 'abc']
+                power_factors = [status['em:0'][f'{i}_pf'] for i in 'abc']
                 power = status['em:0']['total_act_power'] * -1
                 imported, exported = self.sim_counter.sim_count(power)
 
