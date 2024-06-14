@@ -14,12 +14,11 @@ def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
     current_dateTime = datetime.now()
     tomorrow = datetime.now() + timedelta(1)
     if datetime.today().astimezone(pytz.timezone("Europe/Berlin")).dst().total_seconds()/3600:
-        # Sommerzeit if = 1
-        current_dateTime = current_dateTime - timedelta(hours=1)
+        # UTC Zeit +02:00 = '%2B02%3A00'
         start_time = current_dateTime.strftime("%Y-%m-%d") + 'T' + current_dateTime.strftime("%H") + \
-            '%3A00' + '%2B01%3A00'
+            '%3A00' + '%2B02%3A00'
     else:
-        # keine Sommerzeit
+        # UTC Zeit +01:00 = '%2B01%3A00'
         start_time = current_dateTime.strftime("%Y-%m-%d") + 'T' + current_dateTime.strftime("%H") + \
             '%3A00' + '%2B01%3A00'
     end_time = tomorrow.strftime("%Y-%m-%d") + 'T23%3A59%2B01%3A00'
