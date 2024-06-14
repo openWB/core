@@ -183,20 +183,32 @@ def _pub_configurable_devices_components() -> None:
             if path.name.endswith("_test.py"):
                 # Tests überspringen
                 continue
-            comp_defaults = importlib.import_module(
-                f".devices.{path.parts[-2]}.{path.parts[-1][:-3]}",
-                "modules").component_descriptor.configuration_factory()
-            component.append({
-                "value": comp_defaults.type,
-                "text": comp_defaults.name
-            })
+            if len(path.parts == 11):
+                comp_defaults = importlib.import_module(
+                    f".devices.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                    "modules").component_descriptor.configuration_factory()
+                component.append({
+                    "value": comp_defaults.type,
+                    "text": comp_defaults.name
+                })
+            else:
+                comp_defaults = importlib.import_module(
+                    f".devices.{path.parts[-4]}.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                    "modules").component_descriptor.configuration_factory()
+                component.append({
+                    "value": comp_defaults.type,
+                    "text": comp_defaults.name
+                })
 
     try:
         devices_components = []
         path_list = Path(_get_packages_path()/"modules"/"devices").glob('**/device.py')
         for path in path_list:
             try:
-                device = path.parts[-2]
+                if len(path.parts) == 11:
+                    device = path.parts[-3]+"/"+path.parts[-2]
+                else:
+                    device = path.parts[-4]+"/"+path.parts[-3]+"/"+path.parts[-2]
                 component: List = []
                 add_components(device, "*bat*")
                 add_components(device, "*counter*")
