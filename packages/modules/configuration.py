@@ -183,38 +183,36 @@ def _pub_configurable_devices_components() -> None:
             if path.name.endswith("_test.py"):
                 # Tests überspringen
                 continue
-            if len(path.parts == 11):
-                comp_defaults = importlib.import_module(
-                    f".devices.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
-                    "modules").component_descriptor.configuration_factory()
-                component.append({
-                    "value": comp_defaults.type,
-                    "text": comp_defaults.name
-                })
-            else:
-                comp_defaults = importlib.import_module(
-                    f".devices.{path.parts[-4]}.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
-                    "modules").component_descriptor.configuration_factory()
-                component.append({
-                    "value": comp_defaults.type,
-                    "text": comp_defaults.name
-                })
+        if (len(path.parts) == 11):
+            comp_defaults = importlib.import_module(
+                f".devices.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                "modules").component_descriptor.configuration_factory()
+        else:
+            comp_defaults = importlib.import_module(
+                f".devices.{path.parts[-4]}.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                "modules").component_descriptor.configuration_factory()
+        component.append({
+            "value": comp_defaults.type,
+            "text": comp_defaults.name
+        })
 
     try:
         devices_components = []
         path_list = Path(_get_packages_path()/"modules"/"devices").glob('**/device.py')
         for path in path_list:
             try:
-                if len(path.parts) == 11:
+                if (len(path.parts) == 11):
                     device = path.parts[-3]+"/"+path.parts[-2]
+                    device_module_import = path.parts[-3]+"."+path.parts[-2]
                 else:
                     device = path.parts[-4]+"/"+path.parts[-3]+"/"+path.parts[-2]
+                    device_module_import = path.parts[-4]+"."+path.parts[-3]+"."+path.parts[-2]
                 component: List = []
                 add_components(device, "*bat*")
                 add_components(device, "*counter*")
                 add_components(device, "*inverter*")
                 dev_defaults = importlib.import_module(
-                    f".devices.{device}.device", "modules").device_descriptor.configuration_factory()
+                    f".devices.{device_module_import}.device", "modules").device_descriptor.configuration_factory()
                 devices_components.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
