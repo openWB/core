@@ -643,7 +643,7 @@ class Command:
                                   "Bitte Fehlerstatus überprüfen!. " +
                                   "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
                                  MessageType.ERROR)
-                log.exception("Fehler beim Erstellen der Cloud-Sicherung: ", Exception)
+                log.exception("Fehler beim Erstellen der Cloud-Sicherung: ")
                 Pub().pub("openWB/system/update_in_progress", False)
                 return
         parent_file = Path(__file__).resolve().parents[2]
@@ -772,7 +772,7 @@ class ErrorHandlingContext:
         if isinstance(exception, Exception):
             pub_user_message(self.payload, self.connection_id,
                              f'Es ist ein interner Fehler aufgetreten: {exception}', MessageType.ERROR)
-            log.debug({traceback.format_exc()})
+            log.error({traceback.format_exc()})
             return True
         else:
             return False
