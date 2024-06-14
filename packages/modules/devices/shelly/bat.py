@@ -33,14 +33,12 @@ class ShellyBat:
         else:
             status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
-
         try:
-            if self.generation == 1:  # shelly3EM
-                meters = status['emeters']  # shellyEM & shelly3EM
-                # shellyEM has one meter, shelly3EM has three meters:
+            if self.generation == 1:
+                meters = status['emeters']  # shelly3EM
                 for meter in meters:
                     total = total + meter['power']
-            else:  # shelly pro3EM
+            else:
                 total = status['em:0']['total_act_power']  # shelly Pro3EM
         except KeyError:
             log.exception("unsupported shelly device?")
@@ -48,12 +46,12 @@ class ShellyBat:
             return int(total)
 
     def update(self) -> None:
-        power = self.total_power_from_shelly() * -1
-        imported, exported = self.sim_counter.sim_count(power)
+        bat = self.total_power_from_shelly() * -1
+        imported, exported = self.sim_counter.sim_count(bat)
         bat_state = BatState(
+            power=bat,
             imported=imported,
-            exported=exported,
-            power=power
+            exported=exported
         )
         self.store.set(bat_state)
 
