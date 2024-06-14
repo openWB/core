@@ -14,10 +14,12 @@ class SiemensSentron:
     def __init__(self,
                  name: str = "Siemens Sentron",
                  type: str = "siemens_sentron",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SiemensSentronConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or SiemensSentronConfiguration()
 

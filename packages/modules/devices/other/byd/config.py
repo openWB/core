@@ -17,10 +17,12 @@ class BYD:
     def __init__(self,
                  name: str = "BYD",
                  type: str = "byd",
+                 group: str = "other",
                  id: int = 0,
                  configuration: BYDConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or BYDConfiguration()
 

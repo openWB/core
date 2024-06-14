@@ -13,10 +13,12 @@ class Solarmax:
     def __init__(self,
                  name: str = "Solarmax",
                  type: str = "solarmax",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SolarmaxConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or SolarmaxConfiguration()
 

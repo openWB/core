@@ -15,10 +15,12 @@ class E3dc:
     def __init__(self,
                  name: str = "E3DC",
                  type: str = "e3dc",
+                 group: str = "other",
                  id: int = 0,
                  configuration: E3dcConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or E3dcConfiguration()
 

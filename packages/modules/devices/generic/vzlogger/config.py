@@ -14,10 +14,12 @@ class VZLogger:
     def __init__(self,
                  name: str = "VZLogger",
                  type: str = "vzlogger",
+                 group: str = "generic",
                  id: int = 0,
                  configuration: VZLoggerConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or VZLoggerConfiguration()
 

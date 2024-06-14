@@ -13,10 +13,12 @@ class LG:
     def __init__(self,
                  name: str = "LG ESS V1.0",
                  type: str = "lg",
+                 group: str = "other",
                  id: int = 0,
                  configuration: LgConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or LgConfiguration()
 

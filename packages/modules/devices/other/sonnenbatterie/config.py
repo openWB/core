@@ -13,10 +13,12 @@ class SonnenBatterie:
     def __init__(self,
                  name: str = "SonnenBatterie",
                  type: str = "sonnenbatterie",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SonnenBatterieConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or SonnenBatterieConfiguration()
 

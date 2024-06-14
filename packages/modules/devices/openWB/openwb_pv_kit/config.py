@@ -10,10 +10,12 @@ class PvKit:
     def __init__(self,
                  name: str = "openWB PV-Kit",
                  type: str = "openwb_pv_kit",
+                 group: str = "openWB",
                  id: int = 0,
                  configuration: PvKitConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or PvKitConfiguration()
 

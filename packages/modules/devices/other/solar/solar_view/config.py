@@ -17,10 +17,12 @@ class SolarView:
     def __init__(self,
                  name: str = "SolarView",
                  type: str = "solar_view",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SolarViewConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or SolarViewConfiguration()
 

@@ -13,10 +13,12 @@ class Fems:
     def __init__(self,
                  name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control",
                  type: str = "fems",
+                 group: str = "other",
                  id: int = 0,
                  configuration: FemsConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or FemsConfiguration()
 

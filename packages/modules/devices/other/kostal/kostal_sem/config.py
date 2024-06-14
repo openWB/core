@@ -14,10 +14,12 @@ class KostalSem:
     def __init__(self,
                  name: str = "Kostal Smart Energy Meter oder TQ EM 410",
                  type: str = "kostal_sem",
+                 group: str = "other",
                  id: int = 0,
                  configuration: KostalSemConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or KostalSemConfiguration()
 

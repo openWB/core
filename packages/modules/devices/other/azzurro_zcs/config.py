@@ -14,10 +14,12 @@ class ZCS:
     def __init__(self,
                  name: str = "Azzurro - ZCS/Sofar HYD3-6k 1P",
                  type: str = "azzurro_zcs",
+                 group: str = "other",
                  id: int = 0,
                  configuration: ZCSConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or ZCSConfiguration()
 

@@ -14,10 +14,12 @@ class SmaSunnyBoy:
     def __init__(self,
                  name: str = "SMA Sunny Boy/Tripower",
                  type: str = "sma_sunny_boy",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SmaSunnyBoyConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or SmaSunnyBoyConfiguration()
 

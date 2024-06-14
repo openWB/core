@@ -13,10 +13,12 @@ class Discovergy:
     def __init__(self,
                  name: str = "Discovergy",
                  type: str = "discovergy",
+                 group: str = "other",
                  id: int = 0,
                  configuration: DiscovergyConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or DiscovergyConfiguration()
 

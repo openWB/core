@@ -7,10 +7,12 @@ class Mqtt:
     def __init__(self,
                  name: str = "MQTT",
                  type: str = "mqtt",
+                 group: str = "generic",
                  id: int = 0,
                  configuration: MqttConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or MqttConfiguration()
 

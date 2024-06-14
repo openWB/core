@@ -14,10 +14,12 @@ class Huawei:
     def __init__(self,
                  name: str = "Huawei Hybrid Wechselrichter",
                  type: str = "huawei",
+                 group: str = "other",
                  id: int = 0,
                  configuration: HuaweiConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or HuaweiConfiguration()
 
