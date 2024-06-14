@@ -44,10 +44,11 @@
 				<InfoItem heading="Geladen:" class="grid-col-4">
 					<FormatWattH :watt-h="chargepoint.dailyYield" />
 				</InfoItem>
+				<!-- geladene Reichweite-->
 				<InfoItem heading="gel. Reichw.:" class="grid-col-4 grid-right">
 					{{ chargedRangeString }}
 				</InfoItem>
-
+				<!-- Leistung -->
 				<InfoItem
 					v-if="props.chargepoint.power > 0"
 					heading="Leistung:"
@@ -327,11 +328,17 @@ const chargedRangeString = computed(() => {
 	const rangeSincePlugged = props.chargepoint.rangeCharged
 	const energySincePlugged = props.chargepoint.chargedSincePlugged
 	const energyToday = props.chargepoint.dailyYield
-	return (
-		Math.round(rangeSincePlugged / energySincePlugged * energyToday).toString() +
-		' ' +
-		props.chargepoint.rangeUnit
-	)
+	if (energySincePlugged > 0) {
+		return (
+			Math.round(
+				(rangeSincePlugged / energySincePlugged) * energyToday,
+			).toString() +
+			' ' +
+			props.chargepoint.rangeUnit
+		)
+	} else {
+		return '0'
+	}
 })
 const statusString = computed(() => {
 	if (props.chargepoint.isLocked) {

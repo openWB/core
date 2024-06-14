@@ -2,8 +2,10 @@ from typing import List
 from unittest.mock import Mock
 import pytest
 
+from control import data
 from control.algorithm import surplus_controlled
-from control.algorithm.surplus_controlled import SurplusControlled
+from control.algorithm.surplus_controlled import SurplusControlled, get_chargepoints_pv_charging
+from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Get, Set
 from control.chargepoint.control_parameter import ControlParameter
@@ -115,3 +117,29 @@ def test_add_unused_evse_current(evse_current: float, limited_current: float, ex
 
     # evaluation
     assert current == expected_current
+
+
+@pytest.mark.parametrize(
+    "submode_1, submode_2, expected_chargepoints",
+    [
+        pytest.param(Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, [mock_cp1, mock_cp2]),
+        pytest.param(Chargemode.INSTANT_CHARGING, Chargemode.PV_CHARGING, [mock_cp2]),
+        pytest.param(Chargemode.INSTANT_CHARGING, Chargemode.INSTANT_CHARGING, []),
+    ])
+def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
+                                              submode_2: Chargemode,
+                                              expected_chargepoints: List[Chargepoint]):
+    # setup
+    def setup_cp(cp: Chargepoint, submode: str) -> Chargepoint:
+        cp.data.set.charging_ev = Ev(0)
+        cp.data.control_parameter.chargemode = Chargemode.PV_CHARGING
+        cp.data.control_parameter.submode = submode
+        return cp
+    data.data.cp_data = {"cp1": setup_cp(mock_cp1, submode_1),
+                         "cp2": setup_cp(mock_cp2, submode_2)}
+
+    # evaluation
+    chargepoints = get_chargepoints_pv_charging()
+
+    # assertion
+    assert chargepoints == expected_chargepoints

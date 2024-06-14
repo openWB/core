@@ -2,13 +2,14 @@
 	<g
 		id="pgSourceGraph"
 		:origin="draw"
+		:origin2="autozoom"
 		:transform="'translate(' + margin.left + ',' + margin.top + ')'"
 	/>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Selection, BaseType } from 'd3'
+import type { Selection, BaseType, ScaleBand, ScaleTime } from 'd3'
 import {
 	select,
 	scaleLinear,
@@ -25,8 +26,10 @@ import {
 	sourceGraphIsInitialized,
 	xScaleMonth,
 	xScale,
-type GraphDataItem,
+	zoomedRange,
+	type GraphDataItem,
 } from './model'
+
 const props = defineProps<{
 	width: number
 	height: number
@@ -52,30 +55,38 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 
 // computed:
 const draw = computed(() => {
-	const graph = select('g#pgSourceGraph')
-	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
-		drawBarGraph(graph)
-	} else {
-		drawGraph(graph)
+	const graph: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+		select('g#pgSourceGraph')
+	if (graphData.data.length > 0) {
+		if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
+			drawBarGraph(graph, xScaleMonth.value)
+		} else {
+			drawGraph(graph, xScale.value)
+		}
+		graph.selectAll('.axis').remove()
+		//const yAxis: Selection<SVGGElement, unknown, HTMLElement, unknown> = select('g#x-axis')
+		const yAxis = graph.append('g').attr('class', 'axis')
+
+		yAxis.call(yAxisGenerator.value)
+
+		yAxis.selectAll('.tick').attr('font-size', 12)
+		yAxis
+			.selectAll('.tick line')
+			.attr('stroke', ticklineColor.value)
+			.attr('stroke-width', ticklineWidth.value)
+		yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	}
-	graph.selectAll('.axis').remove()
-	const yAxis = graph.append('g').attr('class', 'axis')
-	yAxis.call(yAxisGenerator.value)
-	yAxis.selectAll('.tick').attr('font-size', 12)
-	yAxis
-		.selectAll('.tick line')
-		.attr('stroke', ticklineColor.value)
-		.attr('stroke-width', ticklineWidth.value)
-	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	return 'pgSourceGraph.vue'
 })
-const keys = computed(() => {
-	return graphData.graphMode == 'month' || graphData.graphMode == 'year'
-		? ['evuIn', 'batOut', 'selfUsage', 'evuOut']
-		: ['selfUsage', 'evuOut', 'batOut', 'evuIn']
-})
 
-const stackGen = computed(() => stack().keys(keys.value))
+const stackGen = computed(() =>
+	stack()
+		.value((d, key) => {
+			return d[key] ?? 0
+		})
+		.keys(keysToUse.value),
+)
+
 const stackedSeries = computed(() => stackGen.value(graphData.data))
 
 const yScale = computed(() => {
@@ -86,6 +97,32 @@ const yScale = computed(() => {
 				? [0, Math.ceil(vrange.value[1] * 10) / 10]
 				: [0, Math.ceil(vrange.value[1])],
 		)
+})
+const keysToUse = computed(() => {
+	if (graphData.graphMode != 'today' && graphData.graphMode != 'day') {
+		return ['evuIn', 'batOut', 'selfUsage', 'evuOut']
+	} else if (globalConfig.showInverters) {
+		const k = ['batOut', 'evuIn']
+		const pattern = /pv\d+/
+		let additionalKeys: string[] = []
+		if (graphData.data.length > 0) {
+			additionalKeys = Object.keys(graphData.data[0]).reduce(
+				(list: string[], element: string) => {
+					if (element.match(pattern)) {
+						list.push(element)
+					}
+					return list
+				},
+				[],
+			)
+		}
+		additionalKeys.forEach((key, i) => {
+			colors[key] = 'var(--color-pv' + (i + 1) + ')'
+		})
+		return [...additionalKeys, ...k]
+	} else {
+		return ['selfUsage', 'evuOut', 'batOut', 'evuIn']
+	}
 })
 
 const vrange = computed(() => {
@@ -127,12 +164,15 @@ const ticklineColor = computed(() => {
 	return globalConfig.showGrid ? 'var(--color-grid)' : 'var(--color-bg)'
 })
 
-function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+function drawGraph(
+	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
+	xScale: ScaleTime<number, number, never>,
+) {
 	const area0 = area()
-		.x((d,i) => xScale.value(graphData.data[i]['date']))
+		.x((d, i) => xScale(graphData.data[i]['date']))
 		.y(yScale.value(0))
 	const area1 = area()
-		.x((d,i) => xScale.value(graphData.data[i]['date']))
+		.x((d, i) => xScale(graphData.data[i]['date']))
 		.y0((d) => yScale.value(graphData.graphMode == 'year' ? d[0] / 1000 : d[0]))
 		.y1((d) => yScale.value(graphData.graphMode == 'year' ? d[1] / 1000 : d[1]))
 	if (animateSourceGraph) {
@@ -142,7 +182,7 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
 			.append('path')
-			.attr('fill', (d, i) => colors[keys.value[i]])
+			.attr('fill', (d, i) => colors[keysToUse.value[i]])
 			.attr('d', (series) => area0(series))
 		paths
 			.transition()
@@ -160,69 +200,101 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.attr('d', (series) => area1(series))
 	}
 }
-function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
-	if (animateSourceGraph) {
-		graph.selectAll('*').remove()
-		rects = graph
-			.selectAll('.sourcebar')
-			.data(stackedSeries.value as [number, number][][])
-			.enter()
-			.append('g')
-			.attr('fill', (d, i) => colors[keys.value[i]])
-			.selectAll('rect')
-			.data((d) => d)
-			.enter()
-			.append('rect')
-			.attr('x', (d, i) => {
-				return xScaleMonth.value(graphData.data[i].date) ?? 0
-			})
-			.attr('y', () => yScale.value(0))
-			.attr('height', 0)
-			.attr('width', xScaleMonth.value.bandwidth())
-		rects
-			.transition()
-			.duration(duration)
-			.delay(delay)
-			.ease(easeLinear)
-			.attr('height', (d) =>
-				graphData.graphMode == 'year'
-					? yScale.value(d[0] / 1000) - yScale.value(d[1] / 1000)
-					: yScale.value(d[0]) - yScale.value(d[1]),
-			)
-			.attr('y', (d) =>
-				graphData.graphMode == 'year'
-					? yScale.value(d[1] / 1000)
-					: yScale.value(d[1]),
-			),
+function drawBarGraph(
+	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
+	xScaleMonth: ScaleBand<number>,
+) {
+	if (graphData.data.length > 0) {
+		if (animateSourceGraph) {
+			graph.selectAll('*').remove()
+			rects = graph
+				.selectAll('.sourcebar')
+				.data(stackedSeries.value as [number, number][][])
+				.enter()
+				.append('g')
+				.attr('fill', (d, i) => colors[keysToUse.value[i]])
+				.selectAll('rect')
+				.data((d) => d)
+				.enter()
+				.append('rect')
+				.attr('x', (d, i) => {
+					return xScaleMonth(graphData.data[i].date) ?? 0
+				})
+				.attr('y', () => yScale.value(0))
+				.attr('height', 0)
+				.attr('width', xScaleMonth.bandwidth())
+			rects
+				.transition()
+				.duration(duration)
+				.delay(delay)
+				.ease(easeLinear)
+				.attr('height', (d) =>
+					graphData.graphMode == 'year'
+						? yScale.value(d[0] / 1000) - yScale.value(d[1] / 1000)
+						: yScale.value(d[0]) - yScale.value(d[1]),
+				)
+				.attr('y', (d) =>
+					graphData.graphMode == 'year'
+						? yScale.value(d[1] / 1000)
+						: yScale.value(d[1]),
+				)
 			sourceGraphIsInitialized()
-	} else {
-		graph.selectAll('*').remove()
-		rects = graph
-			.selectAll('.sourcebar')
-			.data(stackedSeries.value as [number, number][][])
-			.enter()
-			.append('g')
-			.attr('fill', (d, i) => colors[keys.value[i]])
-			.selectAll('rect')
-			.data((d) => d)
-			.enter()
-			.append('rect')
-			.attr('x', (d, i) => {
-				return xScaleMonth.value(graphData.data[i].date) ?? 0
-			})
-			.attr('y', (d) =>
-				graphData.graphMode == 'year'
-					? yScale.value(d[1] / 1000)
-					: yScale.value(d[1]),
-			)
-			.attr('width', xScaleMonth.value.bandwidth())
-			.attr('height', (d) =>
-				graphData.graphMode == 'year'
-					? yScale.value(d[0] / 1000) - yScale.value(d[1] / 1000)
-					: yScale.value(d[0]) - yScale.value(d[1]),
-			)
+		} else {
+			graph.selectAll('*').remove()
+			rects = graph
+				.selectAll('.sourcebar')
+				.data(stackedSeries.value as [number, number][][])
+				.enter()
+				.append('g')
+				.attr('fill', (d, i) => colors[keysToUse.value[i]])
+				.selectAll('rect')
+				.data((d) => d)
+				.enter()
+				.append('rect')
+				.attr('x', (d, i) => {
+					return xScaleMonth(graphData.data[i].date) ?? 0
+				})
+				.attr('y', (d) =>
+					graphData.graphMode == 'year'
+						? yScale.value(d[1] / 1000)
+						: yScale.value(d[1]),
+				)
+				.attr('width', xScaleMonth.bandwidth())
+				.attr('height', (d) =>
+					graphData.graphMode == 'year'
+						? yScale.value(d[0] / 1000) - yScale.value(d[1] / 1000)
+						: yScale.value(d[0]) - yScale.value(d[1]),
+				)
+		}
 	}
 }
+
+const autozoom = computed(() => {
+	const graph: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+		select('g#pgSourceGraph')
+	if (
+		graphData.graphMode != 'month' &&
+		graphData.graphMode != 'year' &&
+		graphData.data.length > 0
+	) {
+		xScale.value.range(zoomedRange.value)
+		const areaz = area()
+			.x((d, i) => xScale.value(graphData.data[i].date))
+			.y0((d) => yScale.value(d[0]))
+			.y1((d) => yScale.value(d[1]))
+		graph
+			.selectAll('path')
+			.attr('d', (series) =>
+				series ? areaz(series as [number, number][]) : '',
+			)
+		graph
+			.selectAll('g#sourceToolTips')
+			.select('rect')
+			.attr('x', (d) => xScale.value((d as GraphDataItem).date))
+			.attr('width', props.width / graphData.data.length)
+	}
+	return 'zoomed'
+})
 </script>
 
 <style></style>

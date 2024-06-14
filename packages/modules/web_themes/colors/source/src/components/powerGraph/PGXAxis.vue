@@ -4,6 +4,7 @@
 			id="PGXAxis"
 			class="axis"
 			:origin="drawAxis1"
+			:origin2="autozoom"
 			:transform="'translate(0,' + (height / 2 - 6) + ')'"
 		/>
 		<g
@@ -38,15 +39,10 @@
 </template>
 
 <script setup lang="ts">
-import type { AxisContainerElement, ScaleTime } from 'd3'
-import {
-	axisBottom,
-	axisTop,
-	select,
-	timeFormat,
-} from 'd3'
+import type { AxisContainerElement, ScaleTime, Selection } from 'd3'
+import { axisBottom, axisTop, select, timeFormat } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
-import { graphData, xScaleMonth, xScale } from './model'
+import { graphData, xScaleMonth, xScale, zoomedRange } from './model'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -163,6 +159,27 @@ const drawAxis2 = computed(() => {
 	axis.select('.domain').attr('stroke', 'var(--color-bg)')
 
 	return 'PGXAxis2.vue'
+})
+
+const autozoom = computed(() => {
+	if (graphData.graphMode != 'month' && graphData.graphMode != 'year') {
+		const axis: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+			select('g#PGXAxis')
+		const axis2: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+			select('g#PGXAxis2')
+
+		if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
+			xScaleMonth.value.range(zoomedRange.value)
+			axis.call(xAxisGeneratorMonth.value)
+			axis2.call(xAxisGeneratorMonth2.value)
+		} else {
+			xScale.value.range(zoomedRange.value)
+			axis.call(xAxisGenerator.value)
+			axis2.call(xAxisGenerator2.value)
+		}
+	}
+
+	return 'zoomed'
 })
 </script>
 

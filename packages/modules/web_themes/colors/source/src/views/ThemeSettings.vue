@@ -79,26 +79,19 @@
 						:options="decimalDisplay"
 					/>
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
-				<!-- <ConfigItem :fullwidth="true" title="Kompakte Ladepunktliste" icon="fa-list"
-							infotext="Zeige eine einzelne Ladepunktliste statt separater Element pro Ladepunkt.">
-							<SwitchInput v-model="globalConfig.simpleCpList" />
-						</ConfigItem>
-						 -->
 				<ConfigItem
 					:fullwidth="true"
 					title="Uhrzeit anzeigen"
 					icon="fa-clock"
 					infotext="Zeige die aktuelle Uhrzeit an. In der Menüleiste oder neben den Lade-Buttons."
 				>
-					<!-- <SwitchInput v-model="globalConfig.showClock" /> -->
 					<RadioInput
 						v-model="globalConfig.showClock"
 						:options="clockModes"
 					></RadioInput>
 				</ConfigItem>
-
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Kompakte Ladepunktliste"
@@ -134,8 +127,6 @@
 				>
 					<SwitchInput v-model="globalConfig.preferWideBoxes" />
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Stufenlose Displaybreite"
@@ -152,6 +143,8 @@
 				>
 					<SwitchInput v-model="globalConfig.showAnimations" />
 				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Zähler anzeigen"
@@ -178,11 +171,19 @@
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Preistabelle anzeigen (beta)"
+					title="Preistabelle anzeigen"
 					icon="fa-car"
 					infotext="Zeige die Strompreistabelle in einer separaten Box an"
 				>
 					<SwitchInput v-model="globalConfig.showPrices" />
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Wechselrichter-Details anzeigen"
+					icon="fa-solar-panel"
+					infotext="Zeige Details zu den einzelnen Wechselrichtern"
+				>
+					<SwitchInput v-model="globalConfig.showInverters" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"

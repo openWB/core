@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue'
-import { extent, scaleBand, scaleTime, scaleUtc } from 'd3'
+import { extent, scaleBand, scaleTime, scaleUtc, zoomIdentity } from 'd3'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig } from '@/assets/js/themeConfig'
@@ -61,6 +61,7 @@ export interface RawDayGraphDataItem {
 export class GraphData {
 	data: GraphDataItem[] = []
 	private _graphMode = ''
+	waitForData = true
 
 	get graphMode() {
 		return this._graphMode
@@ -71,6 +72,12 @@ export class GraphData {
 }
 
 export const graphData = reactive(new GraphData())
+export const mytransform = ref(zoomIdentity)
+export const zoomedRange = computed(() =>
+	[0, width - margin.left - 2 * margin.right].map((d) =>
+		mytransform.value.applyX(d),
+	),
+)
 export let animateSourceGraph = true
 export let animateUsageGraph = true
 export function sourceGraphIsInitialized() {
@@ -91,8 +98,10 @@ export function setInitializeUsageGraph(val: boolean) {
 }
 export function setGraphData(d: GraphDataItem[]) {
 	graphData.data = d
+	graphData.waitForData = false
 	// graphData.graphMode = graphData.graphMode
 }
+// LIVE GRAPH
 export const liveGraph = reactive({
 	refreshTopicPrefix: 'openWB/graph/' + 'alllivevaluesJson',
 	updateTopic: 'openWB/graph/lastlivevaluesJson',
@@ -103,10 +112,14 @@ export const liveGraph = reactive({
 	rawDataPacks: [] as RawGraphDataItem[][],
 	duration: 0,
 
-	activate() {
-		graphData.data = []
+	activate(erase?: boolean) {
+		// graphData.data = []
 		this.unsubscribeUpdates()
 		this.subscribeRefresh()
+		if (erase) {
+			graphData.data = []
+		}
+		graphData.waitForData = true
 		mqttSubscribe(this.configTopic)
 		this.initialized = false
 		this.initCounter = 0
@@ -137,10 +150,11 @@ export const liveGraph = reactive({
 		mqttUnsubscribe(this.updateTopic)
 	},
 })
+// DAY GRAPH
 export const dayGraph = reactive({
 	topic: 'openWB/log/daily/#',
 	date: new Date(),
-	activate() {
+	activate(erase?: boolean) {
 		if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
 			if (graphData.graphMode == 'today') {
 				this.date = new Date()
@@ -149,12 +163,17 @@ export const dayGraph = reactive({
 				this.date.getFullYear().toString() +
 				(this.date.getMonth() + 1).toString().padStart(2, '0') +
 				this.date.getDate().toString().padStart(2, '0')
+
+			this.topic = 'openWB/log/daily/' + dateString
 			mqttSubscribe(this.topic)
+			if (erase) {
+				graphData.data = []
+			}
+			graphData.waitForData = true
 			sendCommand({
 				command: 'getDailyLog',
 				data: { day: dateString },
 			})
-			graphData.data = []
 		}
 	},
 	deactivate() {
@@ -173,15 +192,20 @@ export const dayGraph = reactive({
 		return this.date
 	},
 })
+// MONTH GRAPH
 export const monthGraph = reactive({
 	topic: 'openWB/log/monthly/#',
 	month: new Date().getMonth() + 1,
 	year: new Date().getFullYear(),
-	activate() {
+	activate(erase?: boolean) {
 		const dateString =
 			this.year.toString() + this.month.toString().padStart(2, '0')
 		graphData.data = []
 		mqttSubscribe(this.topic)
+		if (erase) {
+			graphData.data = []
+		}
+		graphData.waitForData = true
 		sendCommand({
 			command: 'getMonthlyLog',
 			data: { month: dateString },
@@ -217,14 +241,19 @@ export const monthGraph = reactive({
 		return new Date(this.year, this.month)
 	},
 })
+// YEAR GRAPH
 export const yearGraph = reactive({
 	topic: 'openWB/log/yearly/#',
 	month: new Date().getMonth() + 1,
 	year: new Date().getFullYear(),
-	activate() {
+	activate(erase?: boolean) {
 		const dateString = this.year.toString()
-		graphData.data = []
+		// graphData.data = []
 		mqttSubscribe(this.topic)
+		if (erase) {
+			graphData.data = []
+		}
+		graphData.waitForData = true
 		sendCommand({
 			command: 'getYearlyLog',
 			data: { year: dateString },
@@ -247,7 +276,8 @@ export const yearGraph = reactive({
 		return new Date(this.year, this.month)
 	},
 })
-export function initGraph(reloadOnly = false) {
+// ----- initGraph -----
+export function initGraph(reloadOnly: boolean = false) {
 	if (graphData.graphMode == '') {
 		setGraphMode(globalConfig.graphPreference)
 	} else if (graphData.graphMode == 'live') {
@@ -264,31 +294,31 @@ export function initGraph(reloadOnly = false) {
 			dayGraph.deactivate()
 			monthGraph.deactivate()
 			yearGraph.deactivate()
-			liveGraph.activate()
+			liveGraph.activate(!reloadOnly)
 			break
 		case 'today':
 			liveGraph.deactivate()
 			monthGraph.deactivate()
 			yearGraph.deactivate()
-			dayGraph.activate()
+			dayGraph.activate(!reloadOnly)
 			break
 		case 'day':
 			liveGraph.deactivate()
 			monthGraph.deactivate()
 			yearGraph.deactivate()
-			dayGraph.activate()
+			dayGraph.activate(!reloadOnly)
 			break
 		case 'month':
 			liveGraph.deactivate()
 			dayGraph.deactivate()
 			yearGraph.deactivate()
-			monthGraph.activate()
+			monthGraph.activate(!reloadOnly)
 			break
 		case 'year':
 			liveGraph.deactivate()
 			dayGraph.deactivate()
 			monthGraph.deactivate()
-			yearGraph.activate()
+			yearGraph.activate(!reloadOnly)
 			break
 	}
 }
@@ -460,8 +490,10 @@ export function shiftLeft() {
 			break
 		case 'today':
 			graphData.graphMode = 'day'
-			dayGraph.date = new Date()
+			dayGraph.deactivate()
+			//dayGraph.date = new Date()
 			dayGraph.back()
+			dayGraph.activate()
 			initGraph()
 			break
 		case 'day':
@@ -575,3 +607,4 @@ export function toggleMonthlyView() {
 			break
 	}
 }
+export const itemNames = ref(new Map<string, string>())

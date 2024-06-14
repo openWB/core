@@ -41,7 +41,7 @@ from helpermodules.timecheck import create_timestamp
 
 def get_chargepoint_config_default() -> dict:
     return {
-        "name": "Standard-Ladepunkt",
+        "name": "neuer Ladepunkt",
         "type": None,
         "ev": 0,
         "template": 0,
