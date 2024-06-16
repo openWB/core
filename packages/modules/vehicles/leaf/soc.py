@@ -51,7 +51,7 @@ def fetch_soc(username, password, chargepoint):
     requestSoc(leaf)            # Nissan server to request new SoC from car
     time.sleep(1)               # give Nissan server some time
     soc = readSoc(leaf)         # final read of SoC from server
-    return soc
+    return CarState(soc)
 
 
 def create_vehicle(vehicle_config: LeafSoc, vehicle: int):
