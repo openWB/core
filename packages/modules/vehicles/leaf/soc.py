@@ -17,7 +17,7 @@ import pycarwings2
 log = logging.getLogger(__name__)
 
 
-def fetch_soc(username, password, chargepoint):
+def fetch_soc(username, password, chargepoint) -> CarState:
 
     region = "NE"
 
