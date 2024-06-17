@@ -10,4 +10,4 @@ log = logging.getLogger(__name__)
 
 def fetch_soc(config: PSAConfiguration,
               vehicle_id: int) -> CarState:
-    raise Exception("Dieses Modul ist nicht mehr funktionstüchtig. Bitte auf anderen Anbeiter, z.b. Tronity, wechseln.")
+    raise Exception("Dieses Modul ist nicht mehr funktionstüchtig, da PSA die Schnittstelle entfernt hat. Bitte zu einem anderen Anbieter, z.B. Tronity, wechseln.")
