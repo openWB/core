@@ -13,7 +13,7 @@ class SolarWatt:
     def __init__(self,
                  name: str = "Solarwatt/My Reserve",
                  type: str = "solar_watt",
-                 group: str = "other",
+                 group: str = "other.solar",
                  id: int = 0,
                  configuration: SolarWattConfiguration = None) -> None:
         self.name = name

@@ -14,7 +14,7 @@ class SiemensSentron:
     def __init__(self,
                  name: str = "Siemens Sentron",
                  type: str = "siemens_sentron",
-                 group: str = "other",
+                 group: str = "other.siemens",
                  id: int = 0,
                  configuration: SiemensSentronConfiguration = None) -> None:
         self.name = name

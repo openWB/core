@@ -12,7 +12,7 @@ class SolarLog:
     def __init__(self,
                  name: str = "Solar-Log",
                  type: str = "solar_log",
-                 group: str = "other",
+                 group: str = "other.solar",
                  id: int = 0,
                  configuration: SolarLogConfiguration = None) -> None:
         self.name = name

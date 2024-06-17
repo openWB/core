@@ -12,7 +12,7 @@ class KostalPiko:
     def __init__(self,
                  name: str = "Kostal Piko",
                  type: str = "kostal_piko",
-                 group: str = "other",
+                 group: str = "other.kostal",
                  id: int = 0,
                  configuration: KostalPikoConfiguration = None) -> None:
         self.name = name

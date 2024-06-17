@@ -14,7 +14,7 @@ class SolarWorld:
     def __init__(self,
                  name: str = "SolarWorld",
                  type: str = "solar_world",
-                 group: str = "other",
+                 group: str = "other.solar",
                  id: int = 0,
                  configuration: SolarWorldConfiguration = None) -> None:
         self.name = name

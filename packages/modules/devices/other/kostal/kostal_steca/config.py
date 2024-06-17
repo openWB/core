@@ -14,7 +14,7 @@ class KostalSteca:
     def __init__(self,
                  name: str = "Kostal Piko MP oder Steca Grid Coolcept",
                  type: str = "kostal_steca",
-                 group: str = "other",
+                 group: str = "other.kostal",
                  id: int = 0,
                  configuration: KostalStecaConfiguration = None) -> None:
         self.name = name

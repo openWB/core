@@ -12,7 +12,7 @@ class SmaWebbox:
     def __init__(self,
                  name: str = "SMA Webbox",
                  type: str = "sma_webbox",
-                 group: str = "other",
+                 group: str = "other.sma",
                  id: int = 0,
                  configuration: SmaWWebboxConfiguration = None) -> None:
         self.name = name
