@@ -183,18 +183,18 @@ def _pub_configurable_devices_components() -> None:
             if path.name.endswith("_test.py"):
                 # Tests überspringen
                 continue
-        if (len(path.parts) == 11):
-            comp_defaults = importlib.import_module(
-                f".devices.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
-                "modules").component_descriptor.configuration_factory()
-        else:
-            comp_defaults = importlib.import_module(
-                f".devices.{path.parts[-4]}.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
-                "modules").component_descriptor.configuration_factory()
-        component.append({
-            "value": comp_defaults.type,
-            "text": comp_defaults.name
-        })
+            if (len(path.parts) == 11):
+                comp_defaults = importlib.import_module(
+                    f".devices.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                    "modules").component_descriptor.configuration_factory()
+            else:
+                comp_defaults = importlib.import_module(
+                    f".devices.{path.parts[-4]}.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                    "modules").component_descriptor.configuration_factory()
+            component.append({
+                "value": comp_defaults.type,
+                "text": comp_defaults.name
+            })
 
     try:
         devices_components = []
