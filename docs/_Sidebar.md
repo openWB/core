@@ -13,8 +13,7 @@
 * Mitarbeit am Projekt
   * [Wiki-Eintrag erstellen](https://github.com/openWB/core/wiki/Wiki-Eintrag_erstellen)
   * [Entwicklungsumgebung](https://github.com/openWB/core/wiki/Entwicklungsumgebung)
-  * [Neues Gerät programmieren](https://github.com/openWB/core/wiki/Neues-Gerät-programmieren)
-  * [Neues SoC-Modul programmieren](https://github.com/openWB/core/wiki/Neues-Soc-Modul-programmieren)
+  * [Neues Modul programmieren](https://github.com/openWB/core/wiki/Neues-Modul-programmieren)
   * [Einstellungs-Seite erstellen](https://github.com/openWB/core/wiki/Einstellungs-Seite-erstellen)
 * Konfiguration
   * [Cloud-Sicherung](https://github.com/openWB/core/wiki/Cloud-Sicherung)

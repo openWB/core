@@ -109,6 +109,30 @@ chmod 666 "$LOGFILE"
 		echo "new configuration active after next boot"
 	fi
 
+	ramdisk_config_source="${OPENWBBASEDIR}/data/config/ramdisk_config.txt"
+	ramdisk_config_target="/etc/fstab"
+	echo "checking ramdisk settings in $ramdisk_config_target..."
+	if versionMatch "$ramdisk_config_source" "$ramdisk_config_target"; then
+		echo "already up to date"
+	else
+		echo "openwb section not found or outdated"
+		# delete old settings with version tag
+		pattern_begin=$(grep -m 1 '#' "$ramdisk_config_source")
+		pattern_end=$(grep '#' "$ramdisk_config_source" | tail -n 1)
+		sudo sed -i "/$pattern_begin/,/$pattern_end/d" "$ramdisk_config_target"
+		# check for old settings without version tag
+		if grep -o "tmpfs ${OPENWBBASEDIR}/ramdisk" "$ramdisk_config_target"; then
+			echo "old setting without version tag found, removing"
+			sudo sed -i "\#tmpfs ${OPENWBBASEDIR}/ramdisk#D" "$ramdisk_config_target"
+		fi
+		# add new settings
+		echo "adding ramdisk settings to $ramdisk_config_target..."
+		sudo tee -a "$ramdisk_config_target" <"$ramdisk_config_source" >/dev/null
+		echo "done"
+		echo "rebooting system"
+		sudo reboot now &
+	fi
+
 	# check group membership
 	echo "Group membership..."
 	# ToDo: remove sudo group membership if possible

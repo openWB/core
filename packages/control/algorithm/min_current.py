@@ -8,11 +8,13 @@ log = logging.getLogger(__name__)
 
 
 class MinCurrent:
+    CONSIDERED_CHARGE_MODES = common.CHARGEMODES[0:-1]
+
     def __init__(self) -> None:
         pass
 
     def set_min_current(self) -> None:
-        for mode_tuple, counter in common.mode_and_counter_generator():
+        for mode_tuple, counter in common.mode_and_counter_generator(self.CONSIDERED_CHARGE_MODES):
             preferenced_chargepoints = get_chargepoints_by_mode_and_counter(mode_tuple, f"counter{counter.num}")
             if preferenced_chargepoints:
                 log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")

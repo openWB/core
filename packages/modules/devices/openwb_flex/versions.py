@@ -6,13 +6,15 @@ from modules.common import sdm
 
 
 def kit_counter_version_factory(
-        version: int) -> Type[Union[mpm3pm.Mpm3pm, lovato.Lovato, sdm.Sdm630]]:
+        version: int) -> Type[Union[mpm3pm.Mpm3pm, lovato.Lovato, sdm.Sdm630, b23.B23]]:
     if version == 0:
         return mpm3pm.Mpm3pm
     elif version == 1:
         return lovato.Lovato
     elif version == 2:
         return sdm.Sdm630
+    elif version == 3:
+        return b23.B23
     else:
         raise ValueError("Version "+str(version) + " unbekannt.")
 

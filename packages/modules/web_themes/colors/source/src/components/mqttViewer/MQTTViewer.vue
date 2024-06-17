@@ -47,7 +47,6 @@ const isActive = computed(() => {
 				:level="1"
 				:hide="true"
 				:expand-all="expandAll"
-				
 			/>
 		</div>
 	</div>
@@ -60,8 +59,7 @@ const isActive = computed(() => {
 }
 .topiclist {
 	display: grid;
-	grid-template-columns: repeat(40,1fr);
-	
+	grid-template-columns: repeat(40, 1fr);
 }
 .topnode {
 	grid-column-start: 1;
