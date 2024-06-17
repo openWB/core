@@ -221,7 +221,7 @@ class Command:
     MAX_NUM_REACHED = ("Es kann maximal ein interner Ladepunkt für eine openWB Series 1/2 Buchse, Custom, "
                        "Standard oder Standard+ konfiguriert werden. Wenn ein zweiter Ladepunkt für eine "
                        "Duo hinzugefügt werden soll, muss auch für den ersten Ladepunkt Bauart 'Duo' "
-                       "gewählt werden.")
+                       "gewählt und gespeichert werden.")
 
     def _check_max_num_of_internal_chargepoints(self, config: Dict) -> Optional[str]:
         if config["type"] == 'internal_openwb':
