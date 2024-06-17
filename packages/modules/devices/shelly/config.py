@@ -24,6 +24,22 @@ class Shelly:
 
 
 @auto_str
+class ShellyCounterConfiguration:
+    def __init__(self) -> None:
+        pass
+
+
+@auto_str
+class ShellyCounterSetup(ComponentSetup[ShellyCounterConfiguration]):
+    def __init__(self,
+                 name: str = "Shelly Zähler",
+                 type: str = "counter",
+                 id: int = 0,
+                 configuration: ShellyCounterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or ShellyCounterConfiguration())
+
+
+@auto_str
 class ShellyInverterConfiguration:
     def __init__(self) -> None:
         pass
@@ -37,3 +53,19 @@ class ShellyInverterSetup(ComponentSetup[ShellyInverterConfiguration]):
                  id: int = 0,
                  configuration: ShellyInverterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or ShellyInverterConfiguration())
+
+
+@auto_str
+class ShellyBatConfiguration:
+    def __init__(self) -> None:
+        pass
+
+
+@auto_str
+class ShellyBatSetup(ComponentSetup[ShellyBatConfiguration]):
+    def __init__(self,
+                 name: str = "Shelly Speicher",
+                 type: str = "bat",
+                 id: int = 0,
+                 configuration: ShellyBatConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or ShellyBatConfiguration())
