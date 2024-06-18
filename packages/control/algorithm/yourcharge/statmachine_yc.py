@@ -39,6 +39,7 @@ class StatemachineYc():
         self._internal_cp_key = key
         self._wait_for_socket_idle = False
         self._last_rfid_data = None
+        self._rfiddata_for_ev_activation = None
         self._valid_standard_socket_tag_found = False
         self._general_cp_handler = general_chargepoint_handler
         self._heartbeat_checker: HeartbeatChecker = HeartbeatChecker(timedelta(seconds=25))
@@ -78,11 +79,10 @@ class StatemachineYc():
             # get data that we need
             self._last_rfid_data = SubData.internal_chargepoint_data["rfid_data"]
             if self._last_rfid_data is not None and self._last_rfid_data.last_tag != "":
+                self._rfiddata_for_ev_activation = self._last_rfid_data
                 self._status_handler.update_rfid_scan(rfid=self._last_rfid_data.last_tag)
                 self._valid_standard_socket_tag_found = \
                     self._standard_socket_handler.valid_socket_rfid_scanned(self._last_rfid_data)
-                if not self._valid_standard_socket_tag_found:
-                    self._status_handler.update_accounting_rfid(self._last_rfid_data.last_tag)
             else:
                 self._valid_standard_socket_tag_found = False
 
@@ -95,10 +95,6 @@ class StatemachineYc():
                 # transition from unplugged -> plugged -> update meter value at plugin
                 plugin = True
                 self._status_handler.update_cp_meter_at_last_plugin(self._internal_cp.data.get.imported)
-                self._status_handler.new_accounting(now_it_is, self._internal_cp.data.get.imported,
-                                                    self._internal_cp.data.get.charge_state,
-                                                    self._internal_cp.data.get.plug_state,
-                                                    self._last_rfid_data.last_tag)
             elif self._previous_plug_state and not self._internal_cp.data.get.plug_state:
                 # transition from plugged -> unplugged
                 plugout = True
@@ -163,6 +159,14 @@ class StatemachineYc():
         if self._valid_ev_rfid_scanned(self._last_rfid_data):
             self._status_handler.update_cp_enabled(True)
             if self._internal_cp.data.get.plug_state:
+                if self._rfiddata_for_ev_activation is not None:
+                    self._status_handler.new_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported,
+                                                        self._internal_cp.data.get.charge_state,
+                                                        self._internal_cp.data.get.plug_state,
+                                                        self._rfiddata_for_ev_activation.last_tag)
+                    self._rfiddata_for_ev_activation = None
+                else:
+                    log.error("Internal error: Detected valid RFID scan but _rfiddata_for_ev_activation is still None")
                 self._state_change("Valid EV RFID tag scanned while idle but plugged-in", LoadControlState.EvActive)
             else:
                 self._state_change("Valid EV RFID tag scanned while idle and unplugged: Waiting "
@@ -183,6 +187,14 @@ class StatemachineYc():
 
         if self._internal_cp.data.get.plug_state:
             self._wait_for_plugin_entered = None
+            if self._rfiddata_for_ev_activation is not None:
+                self._status_handler.new_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported,
+                                                    self._internal_cp.data.get.charge_state,
+                                                    self._internal_cp.data.get.plug_state,
+                                                    self._rfiddata_for_ev_activation.last_tag)
+                self._rfiddata_for_ev_activation = None
+            else:
+                log.error("Internal error: Plugin while waiting for it but _rfiddata_for_ev_activation is still None")
             self._state_change("Detected plugin while waiting for plugin", LoadControlState.EvActive)
 
         # then check for expired wait time
@@ -307,7 +319,6 @@ class StatemachineYc():
             log.error(f"Detected RFID scan: {rfid_data.last_tag}: Still need to check if it's a valid EV tag ...")
             if rfid_data.last_tag in data.data.yc_data.data.yc_config.allowed_rfid_ev:
                 log.error(f"!!! Detected RFID scan: {rfid_data.last_tag}: VALID EV TAG !!!")
-                self._status_handler.update_accounting_rfid(rfid_data.last_tag)
                 return True
             else:
                 log.error(f"Detected RFID scan: {rfid_data.last_tag}: Is not a valid EV RFID tag")
