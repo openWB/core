@@ -125,14 +125,6 @@ class ChangedValuesHandler:
 
 
 class ChangedValuesContext:
-    """ Wenn die Werte der Komponenten nicht miteinander verrechnet werden, sollen, auch wenn bei einer Komponente ein
-    Fehler auftritt, alle anderen dennoch ausgelesen werden. WR-Werte dienen nur statistischen Zwecken, ohne
-    EVU-Werte ist aber keine Regelung möglich. Ein nicht antwortender WR soll dann nicht die Regelung verhindern.
-        for component in self.components:
-            with SingleComponentUpdateContext(component):
-                component.update()
-    """
-
     def __init__(self, event_module_update_completed: threading.Event):
         self.changed_values_handler = ChangedValuesHandler(event_module_update_completed)
 
