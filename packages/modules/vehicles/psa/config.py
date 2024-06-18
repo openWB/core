@@ -21,7 +21,7 @@ class PSAConfiguration:
 
 class PSA:
     def __init__(self,
-                 name: str = "PSA",
+                 name: str = "PSA (nicht mehr verwenden)",
                  type: str = "psa",
                  configuration: PSAConfiguration = None) -> None:
         self.name = name

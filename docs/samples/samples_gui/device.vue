@@ -22,7 +22,7 @@ export default {
 	emits: ["update:configuration"],
 	props: {
 		configuration: { type: Object, required: true },
-		deviceId: { default: undefined },
+		deviceId: { type: Number, default: undefined },
 	},
 	methods: {
 		updateConfiguration(event, path = undefined) {

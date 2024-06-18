@@ -28,6 +28,7 @@ from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, 
 from helpermodules.timecheck import convert_timedelta_to_time_string, get_difference
 from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
+from helpermodules.utils.json_file_handler import write_and_check
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 import re
 
@@ -154,8 +155,7 @@ class MigrateData:
                 except FileNotFoundError:
                     pass
                 new_entries.extend(content)
-                with open(filepath, "w") as jsonFile:
-                    json.dump(new_entries, jsonFile)
+                write_and_check(filepath, new_entries)
             except Exception:
                 log.exception(f"Fehler beim Konvertieren des Lade-Logs vom {old_file_name}")
 
@@ -278,8 +278,7 @@ class MigrateData:
                     with open(filepath, "r") as jsonFile:
                         content = json.load(jsonFile)
                 except FileNotFoundError:
-                    with open(filepath, "w+") as jsonFile:
-                        json.dump({"entries": [], "totals": {}}, jsonFile)
+                    write_and_check(filepath, {"entries": [], "totals": {}})
                     with open(filepath, "r") as jsonFile:
                         content = json.load(jsonFile)
                 entries = content["entries"]
@@ -288,8 +287,7 @@ class MigrateData:
                 content["totals"] = get_totals(merged_entries)
                 content["entries"] = merged_entries
                 content["names"] = get_names(content["totals"], LegacySmartHomeLogData().sh_names)
-                with open(filepath, "w") as jsonFile:
-                    json.dump(content, jsonFile)
+                write_and_check(filepath, content)
             except Exception:
                 log.exception(f"Fehler beim Konvertieren des Logs vom {old_file_name}")
 
@@ -559,8 +557,7 @@ class MigrateData:
     def _move_serial_number(self) -> None:
         serial_number = self._get_openwb_conf_value("snnumber")
         if serial_number is not None:
-            with open("/home/openwb/snnumber", "w") as file:
-                file.write(f"snnumber={serial_number}")
+            write_and_check("/home/openwb/snnumber", f"snnumber={serial_number}")
 
     def _move_cloud_data(self) -> None:
         cloud_user = self._get_openwb_conf_value("clouduser")
@@ -583,8 +580,7 @@ class MigrateData:
     def _move_pddate(self) -> None:
         pddate = self._get_openwb_conf_value("pddate")
         if pddate is not None:
-            with open("/home/openwb/pddate", "w") as file:
-                file.write(f"pddate={pddate}")
+            write_and_check("/home/openwb/pddate", f"pddate={pddate}")
 
     NOT_CONFIGURED = " wurde in openWB software2 nicht konfiguriert."
 

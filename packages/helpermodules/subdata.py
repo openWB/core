@@ -186,7 +186,7 @@ class SubData:
         elif "openWB/system/" in msg.topic:
             self.process_system_topic(client, self.system_data, msg)
         elif "openWB/LegacySmartHome/" in msg.topic:
-            self.process_legacy_smarthome_topic_topic(client, self.counter_all_data, msg)
+            self.process_legacy_smarthome_topic(client, self.counter_all_data, msg)
         elif "openWB/command/command_completed" == msg.topic:
             self.event_command_completed.set()
         elif "yourCharge/" in msg.topic:
@@ -873,7 +873,7 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_internal_chargepoint_topic(self, client, var, msg):
+    def process_internal_chargepoint_topic(self, client: mqtt.Client, var: dict, msg: mqtt.MQTTMessage):
         try:
             if re.search("/internal_chargepoint/[0-1]/data/parent_cp", msg.topic) is not None:
                 index = get_index(msg.topic)
@@ -908,8 +908,8 @@ class SubData:
             internal_configured = False
         self.internal_chargepoint_data["global_data"].configured = internal_configured
 
-    def process_legacy_smarthome_topic_topic(self, client, var: counter_all.CounterAll, msg: mqtt.MQTTMessage):
-        """ Handler für die Graph-Topics
+    def process_legacy_smarthome_topic(self, client: mqtt.Client, var: counter_all.CounterAll, msg: mqtt.MQTTMessage):
+        """ Handler für die SmartHome-Topics des alten
 
         Parameter
         ----------
