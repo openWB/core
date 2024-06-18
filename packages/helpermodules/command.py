@@ -628,8 +628,8 @@ class Command:
             except Exception:
                 pub_user_message(payload, connection_id,
                                  ("Fehler beim Erstellen der Cloud-Sicherung. Update abgebrochen!"
-                                  "Bitte Fehlerstatus überprüfen!. " +
-                                  "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
+                                  "Bitte die Cloud-Konfiguration überprüfen! Die Option " +
+                                  "Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
                                  MessageType.ERROR)
                 log.exception("Fehler beim Erstellen der Cloud-Sicherung: ")
                 Pub().pub("openWB/system/update_in_progress", False)
