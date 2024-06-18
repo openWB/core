@@ -5,9 +5,9 @@ import requests_mock
 
 from modules.common.fault_state import FaultState
 from modules.devices.json import bat, counter, inverter
-from modules.devices.json.config import Json, JsonConfiguration, JsonBatSetup, JsonBatConfiguration, \
+from modules.devices.generic.json.config import Json, JsonConfiguration, JsonBatSetup, JsonBatConfiguration, \
     JsonInverterConfiguration, JsonInverterSetup, JsonCounterSetup, JsonCounterConfiguration
-from modules.devices.json.device import create_device
+from modules.devices.generic.json.device import create_device
 
 
 @pytest.fixture
