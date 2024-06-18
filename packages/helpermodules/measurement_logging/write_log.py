@@ -211,13 +211,13 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
     counter_dict = {}
     for counter in data.data.counter_data.values():
         try:
-            if ("counter" in counter and
-                    counter.num != data.data.counter_all_data.data.config.home_consumption_source_id):
+            home_consumption_source_id = data.data.counter_all_data.data.config.home_consumption_source_id
+            if (home_consumption_source_id is None or counter.num != home_consumption_source_id):
                 counter_dict.update(
                     {f"counter{counter.num}": {
                         "imported": counter.data.get.imported,
                         "exported": counter.data.get.exported,
-                        "grid": True if data.data.counter_all_data.get_evu_counter_str() == counter else False}})
+                        "grid": True if data.data.counter_all_data.get_evu_counter() == counter.num else False}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
 
