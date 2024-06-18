@@ -40,7 +40,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 44
+    DATASTORE_VERSION = 45
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1492,3 +1492,74 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 44)
+
+    def upgrade_datastore_44(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                device = decode_payload(payload)
+                if (device.get("type") == "openwb_bat_kit" or device.get("type") == "openwb_evu_kit"
+                        or device.get("type") == "openwb_flex" or device.get("type") == "openwb_pv_kit"):
+                    if "group" not in device:
+                        updated_payload = device
+                        updated_payload.update({"group": 'openWB'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "http" or device.get("type") == "json" or device.get("type") == "mqtt"
+                        or device.get("type") == "virtual" or device.get("type") == "vzlogger"):
+                    if "group" not in device:
+                        updated_payload = device
+                        updated_payload.update({"group": 'generic'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "huawei" or device.get("type") == "huawei_smartlogger"):
+                    if "group" not in device:
+                        updated_payload = device
+                        updated_payload.update({"group": 'other.huawei'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "kostal_piko" or device.get("type") == "kostal_piko_old"
+                    or device.get("type") == "kostal_plenticore" or device.get("type") == "kostal_sem"
+                        or device.get("type") == "kostal_steca"):
+                    if "group" not in device:
+                        updated_payload = device
+                        updated_payload.update({"group": 'other.kostal'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "siemens" or device.get("type") == "siemens_sentron"):
+                    if "group" not in device:
+                        updated_payload = device
+                        updated_payload.update({"group": 'other.siemens'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "sma_shm" or device.get("type") == "sma_sunny_boy"
+                        or device.get("type") == "sma_sunny_island" or device.get("type") == "sma_webbox"):
+                    if "group" not in device:
+                        updated_payload = device
+                        updated_payload.update({"group": 'other.sma'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "solar_log" or device.get("type") == "solar_view"
+                        or device.get("type") == "solar_watt" or device.get("type") == "solar_world"):
+                    if "group" not in device:
+                        updated_payload = device
+                        updated_payload.update({"group": 'other.solar'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "alpha_ess" or device.get("type") == "azzurro_sofar"
+                    or device.get("type") == "azzurro_zcs" or device.get("type") == "batterx"
+                        or device.get("type") == "benning" or device.get("type") == "byd"
+                        or device.get("type") == "carlo_gavazzi" or device.get("type") == "deye"
+                        or device.get("type") == "discovergy" or device.get("type") == "e3dc"
+                        or device.get("type") == "enphase" or device.get("type") == "fems"
+                        or device.get("type") == "fronius" or device.get("type") == "good_we"
+                        or device.get("type") == "janitza" or device.get("type") == "lg"
+                        or device.get("type") == "opendtu" or device.get("type") == "powerdog"
+                        or device.get("type") == "powerfox" or device.get("type") == "qcells"
+                        or device.get("type") == "rct" or device.get("type") == "saxpower"
+                        or device.get("type") == "shelly" or device.get("type") == "smart_me"
+                        or device.get("type") == "smartfox" or device.get("type") == "solaredge"
+                        or device.get("type") == "solarmax" or device.get("type") == "solax"
+                        or device.get("type") == "sonnenbatterie" or device.get("type") == "studer"
+                        or device.get("type") == "sungrow" or device.get("type") == "sunways"
+                        or device.get("type") == "tasmota" or device.get("type") == "tesla"
+                        or device.get("type") == "varta" or device.get("type") == "victron"
+                        or device.get("type") == "youless"):
+                    if "group" not in device:
+                        updated_payload = device
+                        updated_payload.update({"group": 'other'})
+                        return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 45)
