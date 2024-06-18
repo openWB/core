@@ -627,7 +627,7 @@ class Command:
                 self.createCloudBackup(connection_id, {})
             except Exception:
                 pub_user_message(payload, connection_id,
-                                 ("Fehler beim Erstellen der Cloud-Sicherung. Update abgebrochen!"
+                                 ("Fehler beim Erstellen der Cloud-Sicherung. Update abgebrochen! "
                                   "Bitte die Cloud-Konfiguration überprüfen! Die Option " +
                                   "Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
                                  MessageType.ERROR)
