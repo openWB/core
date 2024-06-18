@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from modules.devices.generic.http.inverter import HttpInverter
+from modules.devices.generic.http.counter import HttpCounter
 import logging
 import re
 from typing import Union, List
@@ -8,10 +10,8 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
 from modules.devices.generic.http.bat import HttpBat
-from modules.devices.generic.http.config import HTTP, HTTPConfiguration, HttpBatSetup, HttpCounterSetup, HttpInverterSetup, \
-    HttpBatConfiguration, HttpCounterConfiguration, HttpInverterConfiguration
-from modules.devices.generic.http.counter import HttpCounter
-from modules.devices.generic.http.inverter import HttpInverter
+from modules.devices.generic.http.config import HTTP, HTTPConfiguration, HttpBatSetup, HttpCounterSetup, \
+    HttpInverterSetup, HttpBatConfiguration, HttpCounterConfiguration, HttpInverterConfiguration
 
 log = logging.getLogger(__name__)
 

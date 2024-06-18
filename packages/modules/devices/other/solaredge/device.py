@@ -22,7 +22,8 @@ from modules.devices.other.solaredge.inverter import SolaredgeInverter
 from modules.devices.other.solaredge.config import (Solaredge, SolaredgeBatConfiguration, SolaredgeBatSetup,
                                                     SolaredgeConfiguration,
                                                     SolaredgeCounterConfiguration, SolaredgeCounterSetup,
-                                                    SolaredgeExternalInverterConfiguration, SolaredgeExternalInverterSetup,
+                                                    SolaredgeExternalInverterConfiguration,
+                                                    SolaredgeExternalInverterSetup,
                                                     SolaredgeInverterConfiguration, SolaredgeInverterSetup)
 from modules.devices.other.solaredge.meter import SolaredgeMeterRegisters
 

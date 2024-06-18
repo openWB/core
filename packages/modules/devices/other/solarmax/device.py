@@ -9,7 +9,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.other.solarmax import inverter
 from modules.devices.other.solarmax.bat import SolarmaxBat
-from modules.devices.other.solarmax.config import Solarmax, SolarmaxBatSetup, SolarmaxConfiguration, SolarmaxInverterSetup
+from modules.devices.other.solarmax.config import Solarmax, SolarmaxBatSetup, SolarmaxConfiguration, \
+    SolarmaxInverterSetup
 
 log = logging.getLogger(__name__)
 

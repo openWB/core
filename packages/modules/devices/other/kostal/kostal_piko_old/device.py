@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from modules.devices.other.kostal.kostal_piko_old.inverter import KostalPikoOldInverter
 import logging
 import re
 from typing import Iterable, Optional, List
@@ -8,8 +9,8 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.other.kostal.kostal_piko_old import inverter
-from modules.devices.other.kostal.kostal_piko_old.config import KostalPikoOld, KostalPikoOldConfiguration, KostalPikoOldInverterSetup
-from modules.devices.other.kostal.kostal_piko_old.inverter import KostalPikoOldInverter
+from modules.devices.other.kostal.kostal_piko_old.config import KostalPikoOld, KostalPikoOldConfiguration, \
+    KostalPikoOldInverterSetup
 
 log = logging.getLogger(__name__)
 

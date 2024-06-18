@@ -8,7 +8,8 @@ from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.devices.other.siemens.siemens import bat, counter, inverter
-from modules.devices.other.siemens.siemens.config import Siemens, SiemensBatSetup, SiemensCounterSetup, SiemensInverterSetup
+from modules.devices.other.siemens.siemens.config import Siemens, SiemensBatSetup, SiemensCounterSetup, \
+    SiemensInverterSetup
 
 log = logging.getLogger(__name__)
 

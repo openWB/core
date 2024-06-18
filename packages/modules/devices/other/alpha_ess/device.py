@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
+from modules.devices.other.alpha_ess import inverter
+from modules.devices.other.alpha_ess import counter
+from modules.devices.other.alpha_ess import bat
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.abstract_device import DeviceDescriptor
+from modules.common import modbus
 import logging
 from typing import Iterable, Union
 
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
-from modules.devices.other.alpha_ess.config import AlphaEss, AlphaEssBatSetup, AlphaEssCounterSetup, AlphaEssInverterSetup
-from modules.common import modbus
-from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.other.alpha_ess import bat
-from modules.devices.other.alpha_ess import counter
-from modules.devices.other.alpha_ess import inverter
+from modules.devices.other.alpha_ess.config import AlphaEss, AlphaEssBatSetup, AlphaEssCounterSetup, \
+    AlphaEssInverterSetup
 
 log = logging.getLogger(__name__)
 

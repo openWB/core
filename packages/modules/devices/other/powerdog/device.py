@@ -9,7 +9,8 @@ from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
 from modules.devices.other.powerdog import counter
 from modules.devices.other.powerdog import inverter
-from modules.devices.other.powerdog.config import Powerdog, PowerdogConfiguration, PowerdogCounterSetup, PowerdogInverterSetup
+from modules.devices.other.powerdog.config import Powerdog, PowerdogConfiguration, PowerdogCounterSetup, \
+    PowerdogInverterSetup
 
 log = logging.getLogger(__name__)
 

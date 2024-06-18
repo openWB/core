@@ -10,7 +10,8 @@ from modules.common.component_context import MultiComponentUpdateContext
 from modules.devices.other.sungrow import bat
 from modules.devices.other.sungrow import counter
 from modules.devices.other.sungrow import inverter
-from modules.devices.other.sungrow.config import (Sungrow, SungrowBatSetup, SungrowCounterConfiguration, SungrowCounterSetup,
+from modules.devices.other.sungrow.config import (Sungrow, SungrowBatSetup, SungrowCounterConfiguration,
+                                                  SungrowCounterSetup,
                                                   SungrowInverterSetup)
 from modules.devices.other.sungrow.version import Version
 

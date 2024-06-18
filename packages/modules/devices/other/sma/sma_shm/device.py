@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from modules.devices.other.sma.sma_shm.utils import SpeedwireComponent
+from modules.devices.other.sma.sma_shm.speedwire_listener import SpeedwireListener
 import logging
 import socket
 import time
@@ -9,10 +11,8 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.other.sma.sma_shm import counter
 from modules.devices.other.sma.sma_shm import inverter
-from modules.devices.other.sma.sma_shm.config import SmaHomeManagerCounterSetup, SmaHomeManagerInverterSetup, Speedwire, \
-    SmaHomeManagerCounterConfiguration, SmaHomeManagerInverterConfiguration
-from modules.devices.other.sma.sma_shm.speedwire_listener import SpeedwireListener
-from modules.devices.other.sma.sma_shm.utils import SpeedwireComponent
+from modules.devices.other.sma.sma_shm.config import SmaHomeManagerCounterSetup, SmaHomeManagerInverterSetup, \
+    Speedwire, SmaHomeManagerCounterConfiguration, SmaHomeManagerInverterConfiguration
 
 log = logging.getLogger(__name__)
 timeout_seconds = 5

@@ -16,7 +16,8 @@ from modules.common.store import get_counter_value_store
 from modules.devices.other.kostal.kostal_plenticore.bat import KostalPlenticoreBat
 from modules.devices.other.kostal.kostal_plenticore.inverter import KostalPlenticoreInverter
 from modules.devices.other.kostal.kostal_plenticore.config import (KostalPlenticore, KostalPlenticoreBatSetup,
-                                                                   KostalPlenticoreCounterSetup, KostalPlenticoreInverterSetup)
+                                                                   KostalPlenticoreCounterSetup,
+                                                                   KostalPlenticoreInverterSetup)
 from modules.devices.other.kostal.kostal_plenticore.counter import KostalPlenticoreCounter
 
 
