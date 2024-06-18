@@ -511,6 +511,8 @@ class SetData:
                     "openWB/set/chargepoint/get/daily_imported" in msg.topic or
                     "openWB/set/chargepoint/get/daily_exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
+            elif re.search("chargepoint/[0-9]+/config/template$", msg.topic) is not None:
+                self._validate_value(msg, int, pub_json=True)
             elif "template" in msg.topic:
                 self._validate_value(msg, "json")
             elif re.search("chargepoint/[0-9]+/config$", msg.topic) is not None:
