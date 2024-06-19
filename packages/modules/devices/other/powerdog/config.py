@@ -13,7 +13,7 @@ class PowerdogConfiguration:
 class Powerdog:
     def __init__(self,
                  name: str = "Powerdog",
-                 type: str = "powerdog",
+                 type: str = "other.powerdog",
                  group: str = "other",
                  id: int = 0,
                  configuration: PowerdogConfiguration = None) -> None:

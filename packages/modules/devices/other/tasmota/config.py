@@ -11,7 +11,7 @@ class TasmotaConfiguration:
 class Tasmota:
     def __init__(self,
                  name: str = "Tasmota",
-                 type: str = "tasmota",
+                 type: str = "other.tasmota",
                  group: str = "other",
                  id: int = 0,
                  configuration: TasmotaConfiguration = None) -> None:

@@ -12,7 +12,7 @@ class SonnenBatterieConfiguration:
 class SonnenBatterie:
     def __init__(self,
                  name: str = "SonnenBatterie",
-                 type: str = "sonnenbatterie",
+                 type: str = "other.sonnenbatterie",
                  group: str = "other",
                  id: int = 0,
                  configuration: SonnenBatterieConfiguration = None) -> None:

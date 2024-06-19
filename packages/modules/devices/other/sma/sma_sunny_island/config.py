@@ -12,8 +12,8 @@ class SmaSunnyIslandConfiguration:
 class SmaSunnyIsland:
     def __init__(self,
                  name: str = "SMA Sunny Island, Sunny Tripower X",
-                 type: str = "sma_sunny_island",
-                 group: str = "other.sma",
+                 type: str = "other.sma.sma_sunny_island",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SmaSunnyIslandConfiguration = None) -> None:
         self.name = name

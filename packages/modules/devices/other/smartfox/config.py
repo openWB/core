@@ -11,7 +11,7 @@ class SmartfoxConfiguration:
 class Smartfox:
     def __init__(self,
                  name: str = "Smartfox",
-                 type: str = "smartfox",
+                 type: str = "other.smartfox",
                  group: str = "other",
                  id: int = 0,
                  configuration: SmartfoxConfiguration = None) -> None:

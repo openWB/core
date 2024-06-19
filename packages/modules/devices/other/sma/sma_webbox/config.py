@@ -11,8 +11,8 @@ class SmaWWebboxConfiguration:
 class SmaWebbox:
     def __init__(self,
                  name: str = "SMA Webbox",
-                 type: str = "sma_webbox",
-                 group: str = "other.sma",
+                 type: str = "other.sma.sma_webbox",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SmaWWebboxConfiguration = None) -> None:
         self.name = name

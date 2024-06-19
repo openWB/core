@@ -13,7 +13,7 @@ class TeslaConfiguration:
 class Tesla:
     def __init__(self,
                  name: str = "Tesla",
-                 type: str = "tesla",
+                 type: str = "other.tesla",
                  group: str = "other",
                  id: int = 0,
                  configuration: TeslaConfiguration = None) -> None:

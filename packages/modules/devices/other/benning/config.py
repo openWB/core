@@ -14,7 +14,7 @@ class BenningConfiguration(JsonConfiguration):
 class Benning(Json):
     def __init__(self,
                  name: str = "Benning",
-                 type: str = "benning",
+                 type: str = "other.benning",
                  group: str = "other",
                  id: int = 0,
                  configuration: BenningConfiguration = None) -> None:

@@ -19,7 +19,7 @@ class SungrowConfiguration:
 class Sungrow:
     def __init__(self,
                  name: str = "Sungrow",
-                 type: str = "sungrow",
+                 type: str = "other.sungrow",
                  group: str = "other",
                  id: int = 0,
                  configuration: SungrowConfiguration = None) -> None:

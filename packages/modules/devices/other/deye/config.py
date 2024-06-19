@@ -17,7 +17,7 @@ class DeyeConfiguration:
 class Deye:
     def __init__(self,
                  name: str = "Deye/Jinko (Anbindung per Modbus)",
-                 type: str = "deye",
+                 type: str = "other.deye",
                  group: str = "other",
                  id: int = 0,
                  configuration: DeyeConfiguration = None) -> None:

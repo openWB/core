@@ -15,7 +15,7 @@ class VartaConfiguration:
 class Varta:
     def __init__(self,
                  name: str = "Varta",
-                 type: str = "varta",
+                 type: str = "other.varta",
                  group: str = "other",
                  id: int = 0,
                  configuration: VartaConfiguration = None) -> None:

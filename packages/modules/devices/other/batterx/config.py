@@ -11,7 +11,7 @@ class BatterXConfiguration:
 class BatterX:
     def __init__(self,
                  name: str = "BatterX",
-                 type: str = "batterx",
+                 type: str = "other.batterx",
                  group: str = "other",
                  id: int = 0,
                  configuration: BatterXConfiguration = None) -> None:

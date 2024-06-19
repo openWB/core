@@ -9,7 +9,7 @@ class BatKitConfiguration:
 class BatKit:
     def __init__(self,
                  name: str = "openWB Speicher-Kit",
-                 type: str = "openwb_bat_kit",
+                 type: str = "openWB.openwb_bat_kit",
                  group: str = "openWB",
                  id: int = 0,
                  configuration: BatKitConfiguration = None) -> None:

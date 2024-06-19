@@ -12,7 +12,7 @@ class FemsConfiguration:
 class Fems:
     def __init__(self,
                  name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control",
-                 type: str = "fems",
+                 type: str = "other.fems",
                  group: str = "other",
                  id: int = 0,
                  configuration: FemsConfiguration = None) -> None:

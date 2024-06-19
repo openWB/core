@@ -16,7 +16,7 @@ class BYDConfiguration:
 class BYD:
     def __init__(self,
                  name: str = "BYD",
-                 type: str = "byd",
+                 type: str = "other.byd",
                  group: str = "other",
                  id: int = 0,
                  configuration: BYDConfiguration = None) -> None:

@@ -9,7 +9,7 @@ class VirtualConfiguration:
 class Virtual:
     def __init__(self,
                  name: str = "Virtuelles Gerät",
-                 type: str = "virtual",
+                 type: str = "generic.virtual",
                  group: str = "generic",
                  id: int = 0,
                  configuration: VirtualConfiguration = None) -> None:

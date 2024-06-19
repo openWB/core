@@ -6,7 +6,7 @@ class MqttConfiguration:
 class Mqtt:
     def __init__(self,
                  name: str = "MQTT",
-                 type: str = "mqtt",
+                 type: str = "generic.mqtt",
                  group: str = "generic",
                  id: int = 0,
                  configuration: MqttConfiguration = None) -> None:

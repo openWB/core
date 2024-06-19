@@ -13,7 +13,7 @@ class YoulessConfiguration:
 class Youless:
     def __init__(self,
                  name: str = "Youless",
-                 type: str = "youless",
+                 type: str = "other.youless",
                  group: str = "other",
                  id: int = 0,
                  configuration: YoulessConfiguration = None) -> None:

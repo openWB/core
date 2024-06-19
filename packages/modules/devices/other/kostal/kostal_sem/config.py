@@ -13,8 +13,8 @@ class KostalSemConfiguration:
 class KostalSem:
     def __init__(self,
                  name: str = "Kostal Smart Energy Meter oder TQ EM 410",
-                 type: str = "kostal_sem",
-                 group: str = "other.kostal",
+                 type: str = "other.kostal.kostal_sem",
+                 group: str = "other",
                  id: int = 0,
                  configuration: KostalSemConfiguration = None) -> None:
         self.name = name

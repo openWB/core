@@ -18,7 +18,7 @@ class AlphaEssConfiguration:
 class AlphaEss:
     def __init__(self,
                  name: str = "Alpha ESS",
-                 type: str = "alpha_ess",
+                 type: str = "other.alpha_ess",
                  group: str = "other",
                  id: int = 0,
                  configuration: AlphaEssConfiguration = None) -> None:

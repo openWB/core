@@ -13,7 +13,7 @@ class RctConfiguration:
 class Rct:
     def __init__(self,
                  name: str = "RCT",
-                 type: str = "rct",
+                 type: str = "other.rct",
                  group: str = "other",
                  id: int = 0,
                  configuration: RctConfiguration = None) -> None:

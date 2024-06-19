@@ -12,7 +12,7 @@ class VictronConfiguration:
 class Victron:
     def __init__(self,
                  name: str = "Victron",
-                 type: str = "victron",
+                 type: str = "other.victron",
                  group: str = "other",
                  id: int = 0,
                  configuration: VictronConfiguration = None) -> None:

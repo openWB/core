@@ -26,7 +26,7 @@ class EnphaseConfiguration:
 class Enphase:
     def __init__(self,
                  name: str = "Enphase",
-                 type: str = "enphase",
+                 type: str = "other.enphase",
                  group: str = "other",
                  id: int = 0,
                  configuration: EnphaseConfiguration = None) -> None:

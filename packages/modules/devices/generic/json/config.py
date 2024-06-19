@@ -10,7 +10,7 @@ class JsonConfiguration:
 class Json:
     def __init__(self,
                  name: str = "Json",
-                 type: str = "json",
+                 type: str = "generic.json",
                  group: str = "generic",
                  id: int = 0,
                  configuration: JsonConfiguration = None) -> None:

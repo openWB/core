@@ -14,7 +14,7 @@ class OpenDTUConfiguration(JsonConfiguration):
 class OpenDTU(Json):
     def __init__(self,
                  name: str = "OpenDTU",
-                 type: str = "opendtu",
+                 type: str = "other.opendtu",
                  group: str = "other",
                  id: int = 0,
                  configuration: OpenDTUConfiguration = None) -> None:

@@ -13,7 +13,7 @@ class ZCSConfiguration:
 class ZCS:
     def __init__(self,
                  name: str = "Azzurro - ZCS/Sofar HYD3-6k 1P",
-                 type: str = "azzurro_zcs",
+                 type: str = "other.azzurro_zcs",
                  group: str = "other",
                  id: int = 0,
                  configuration: ZCSConfiguration = None) -> None:

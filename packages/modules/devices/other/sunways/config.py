@@ -12,7 +12,7 @@ class SunwaysConfiguration:
 class Sunways:
     def __init__(self,
                  name: str = "Sunways",
-                 type: str = "sunways",
+                 type: str = "other.sunways",
                  group: str = "other",
                  id: int = 0,
                  configuration: SunwaysConfiguration = None) -> None:

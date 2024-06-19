@@ -12,8 +12,8 @@ class SolarWattConfiguration:
 class SolarWatt:
     def __init__(self,
                  name: str = "Solarwatt/My Reserve",
-                 type: str = "solar_watt",
-                 group: str = "other.solar",
+                 type: str = "other.solar.solar_watt",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SolarWattConfiguration = None) -> None:
         self.name = name

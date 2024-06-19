@@ -9,7 +9,7 @@ class PvKitConfiguration:
 class PvKit:
     def __init__(self,
                  name: str = "openWB PV-Kit",
-                 type: str = "openwb_pv_kit",
+                 type: str = "openWB.openwb_pv_kit",
                  group: str = "openWB",
                  id: int = 0,
                  configuration: PvKitConfiguration = None) -> None:

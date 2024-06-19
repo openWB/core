@@ -13,7 +13,7 @@ class SolaxConfiguration:
 class Solax:
     def __init__(self,
                  name: str = "Solax",
-                 type: str = "solax",
+                 type: str = "other.solax",
                  group: str = "other",
                  id: int = 0,
                  configuration: SolaxConfiguration = None) -> None:

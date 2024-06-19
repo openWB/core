@@ -12,7 +12,7 @@ class DiscovergyConfiguration:
 class Discovergy:
     def __init__(self,
                  name: str = "Discovergy",
-                 type: str = "discovergy",
+                 type: str = "other.discovergy",
                  group: str = "other",
                  id: int = 0,
                  configuration: DiscovergyConfiguration = None) -> None:

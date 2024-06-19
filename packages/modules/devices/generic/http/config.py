@@ -12,7 +12,7 @@ class HTTPConfiguration:
 class HTTP:
     def __init__(self,
                  name: str = "HTTP",
-                 type: str = "http",
+                 type: str = "generic.http",
                  group: str = "generic",
                  id: int = 0,
                  configuration: HTTPConfiguration = None) -> None:

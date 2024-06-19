@@ -13,8 +13,8 @@ class SmaSunnyBoyConfiguration:
 class SmaSunnyBoy:
     def __init__(self,
                  name: str = "SMA Sunny Boy/Tripower",
-                 type: str = "sma_sunny_boy",
-                 group: str = "other.sma",
+                 type: str = "other.sma.sma_sunny_boy",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SmaSunnyBoyConfiguration = None) -> None:
         self.name = name

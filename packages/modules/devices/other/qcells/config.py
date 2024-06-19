@@ -13,7 +13,7 @@ class QCellsConfiguration:
 class QCells:
     def __init__(self,
                  name: str = "QCells ESS",
-                 type: str = "qcells",
+                 type: str = "other.qcells",
                  group: str = "other",
                  id: int = 0,
                  configuration: QCellsConfiguration = None) -> None:

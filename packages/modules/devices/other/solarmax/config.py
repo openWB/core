@@ -12,7 +12,7 @@ class SolarmaxConfiguration:
 class Solarmax:
     def __init__(self,
                  name: str = "Solarmax",
-                 type: str = "solarmax",
+                 type: str = "other.solarmax",
                  group: str = "other",
                  id: int = 0,
                  configuration: SolarmaxConfiguration = None) -> None:

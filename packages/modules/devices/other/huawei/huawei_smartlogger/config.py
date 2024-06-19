@@ -14,8 +14,8 @@ class Huawei_SmartloggerConfiguration:
 class Huawei_Smartlogger:
     def __init__(self,
                  name: str = "Huawei Smartlogger",
-                 type: str = "huawei_smartlogger",
-                 group: str = "other.huawei",
+                 type: str = "other.huawei.huawei_smartlogger",
+                 group: str = "other",
                  id: int = 0,
                  configuration: Huawei_SmartloggerConfiguration = None) -> None:
         self.name = name

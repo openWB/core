@@ -12,7 +12,7 @@ class StuderConfiguration:
 class Studer:
     def __init__(self,
                  name: str = "Studer",
-                 type: str = "studer",
+                 type: str = "other.studer",
                  group: str = "other",
                  id: int = 0,
                  configuration: StuderConfiguration = None) -> None:

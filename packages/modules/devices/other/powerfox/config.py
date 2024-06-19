@@ -12,7 +12,7 @@ class PowerfoxConfiguration:
 class Powerfox:
     def __init__(self,
                  name: str = "Powerfox",
-                 type: str = "powerfox",
+                 type: str = "other.powerfox",
                  group: str = "other",
                  id: int = 0,
                  configuration: PowerfoxConfiguration = None) -> None:

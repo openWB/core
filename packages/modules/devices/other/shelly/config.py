@@ -14,7 +14,7 @@ class ShellyConfiguration:
 class Shelly:
     def __init__(self,
                  name: str = "Shelly",
-                 type: str = "shelly",
+                 type: str = "other.shelly",
                  group: str = "other",
                  id: int = 0,
                  configuration: ShellyConfiguration = None) -> None:

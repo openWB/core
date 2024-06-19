@@ -13,8 +13,8 @@ class SolarWorldConfiguration:
 class SolarWorld:
     def __init__(self,
                  name: str = "SolarWorld",
-                 type: str = "solar_world",
-                 group: str = "other.solar",
+                 type: str = "other.solar.solar_world",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SolarWorldConfiguration = None) -> None:
         self.name = name

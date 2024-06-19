@@ -13,7 +13,7 @@ class KostalPlenticoreConfiguration:
 class KostalPlenticore:
     def __init__(self,
                  name: str = "Kostal Plenticore",
-                 type: str = "kostal_plenticore",
+                 type: str = "other.kostal.kostal_plenticore",
                  group: str = "other",
                  id: int = 0,
                  configuration: KostalPlenticoreConfiguration = None) -> None:

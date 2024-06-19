@@ -14,7 +14,7 @@ class E3dcConfiguration:
 class E3dc:
     def __init__(self,
                  name: str = "E3DC",
-                 type: str = "e3dc",
+                 type: str = "other.e3dc",
                  group: str = "other",
                  id: int = 0,
                  configuration: E3dcConfiguration = None) -> None:

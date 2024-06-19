@@ -13,7 +13,7 @@ class VZLoggerConfiguration:
 class VZLogger:
     def __init__(self,
                  name: str = "VZLogger",
-                 type: str = "vzlogger",
+                 type: str = "generic.vzlogger",
                  group: str = "generic",
                  id: int = 0,
                  configuration: VZLoggerConfiguration = None) -> None:

@@ -13,8 +13,8 @@ class SiemensConfiguration:
 class Siemens:
     def __init__(self,
                  name: str = "Siemens",
-                 type: str = "siemens",
-                 group: str = "other.siemens",
+                 type: str = "other.siemens.siemens",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SiemensConfiguration = None) -> None:
         self.name = name

@@ -12,7 +12,7 @@ class LgConfiguration:
 class LG:
     def __init__(self,
                  name: str = "LG ESS V1.0",
-                 type: str = "lg",
+                 type: str = "other.lg",
                  group: str = "other",
                  id: int = 0,
                  configuration: LgConfiguration = None) -> None:

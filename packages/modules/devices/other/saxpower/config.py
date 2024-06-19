@@ -13,7 +13,7 @@ class SaxpowerConfiguration:
 class Saxpower:
     def __init__(self,
                  name: str = "Saxpower",
-                 type: str = "saxpower",
+                 type: str = "other.saxpower",
                  group: str = "other",
                  id: int = 0,
                  configuration: SaxpowerConfiguration = None) -> None:

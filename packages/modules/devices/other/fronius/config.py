@@ -32,7 +32,7 @@ class FroniusConfiguration:
 class Fronius:
     def __init__(self,
                  name: str = "Fronius",
-                 type: str = "fronius",
+                 type: str = "other.fronius",
                  group: str = "other",
                  id: int = 0,
                  configuration: FroniusConfiguration = None) -> None:

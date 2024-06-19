@@ -13,7 +13,7 @@ class CarloGavazziConfiguration:
 class CarloGavazzi:
     def __init__(self,
                  name: str = "Carlo Gavazzi",
-                 type: str = "carlo_gavazzi",
+                 type: str = "other.carlo_gavazzi",
                  group: str = "other",
                  id: int = 0,
                  configuration: CarloGavazziConfiguration = None) -> None:
