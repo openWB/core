@@ -241,8 +241,7 @@ def _pub_configurable_chargepoints() -> None:
                         "modules").chargepoint_descriptor.configuration_factory()
                     chargepoints.append({
                         "value": dev_defaults.type,
-                        "text": dev_defaults.name,
-                        # "group": dev_defaults.group,
+                        "text": dev_defaults.name
                     })
                 except Exception:
                     log.exception("Fehler im configuration-Modul")
