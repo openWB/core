@@ -8,7 +8,9 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.kostal.kostal_piko_old import inverter
-from modules.devices.kostal.kostal_piko_old.config import KostalPikoOld, KostalPikoOldConfiguration, KostalPikoOldInverterSetup
+from modules.devices.kostal.kostal_piko_old.config import (KostalPikoOld,
+                                                           KostalPikoOldConfiguration,
+                                                           KostalPikoOldInverterSetup)
 from modules.devices.kostal.kostal_piko_old.inverter import KostalPikoOldInverter
 
 log = logging.getLogger(__name__)

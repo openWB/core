@@ -10,7 +10,8 @@ from modules.devices.huawei.huawei_smartlogger import counter
 from modules.devices.huawei.huawei_smartlogger import inverter
 from modules.devices.huawei.huawei_smartlogger import bat
 from modules.devices.huawei.huawei_smartlogger.config import Huawei_Smartlogger, Huawei_SmartloggerBatSetup
-from modules.devices.huawei.huawei_smartlogger.config import Huawei_SmartloggerCounterSetup, Huawei_SmartloggerInverterSetup
+from modules.devices.huawei.huawei_smartlogger.config import (Huawei_SmartloggerCounterSetup,
+                                                              Huawei_SmartloggerInverterSetup)
 
 
 log = logging.getLogger(__name__)

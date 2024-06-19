@@ -8,7 +8,9 @@ from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.devices.sma.sma_sunny_island import bat
-from modules.devices.sma.sma_sunny_island.config import SmaSunnyIsland, SmaSunnyIslandBatSetup, SmaSunnyIslandConfiguration
+from modules.devices.sma.sma_sunny_island.config import (SmaSunnyIsland,
+                                                         SmaSunnyIslandBatSetup,
+                                                         SmaSunnyIslandConfiguration)
 
 log = logging.getLogger(__name__)
 
