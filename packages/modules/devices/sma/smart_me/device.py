@@ -6,11 +6,11 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, IndependentComponentUpdater
 from modules.common.req import get_http_session
-from modules.devices.smart_me.counter import SmartMeCounter
-from modules.devices.smart_me.config import (SmartMe, SmartMeConfiguration,
-                                             SmartMeCounterConfiguration, SmartMeCounterSetup,
-                                             SmartMeInverterConfiguration, SmartMeInverterSetup)
-from modules.devices.smart_me.inverter import SmartMeInverter
+from modules.devices.sma.smart_me.counter import SmartMeCounter
+from modules.devices.sma.smart_me.config import (SmartMe, SmartMeConfiguration,
+                                                 SmartMeCounterConfiguration, SmartMeCounterSetup,
+                                                 SmartMeInverterConfiguration, SmartMeInverterSetup)
+from modules.devices.sma.smart_me.inverter import SmartMeInverter
 log = logging.getLogger(__name__)
 
 

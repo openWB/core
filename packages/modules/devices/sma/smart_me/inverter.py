@@ -9,7 +9,7 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
-from modules.devices.smart_me.config import SmartMeInverterSetup
+from modules.devices.sma.smart_me.config import SmartMeInverterSetup
 
 log = logging.getLogger(__name__)
 

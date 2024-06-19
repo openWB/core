@@ -12,7 +12,7 @@ class SmartMeConfiguration:
 class SmartMe:
     def __init__(self,
                  name: str = "smart-me",
-                 type: str = "smart_me",
+                 type: str = "sma.smart_me",
                  group: str = "other",
                  id: int = 0,
                  configuration: SmartMeConfiguration = None) -> None:
