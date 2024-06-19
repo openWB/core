@@ -183,9 +183,14 @@ def _pub_configurable_devices_components() -> None:
             if path.name.endswith("_test.py"):
                 # Tests überspringen
                 continue
-            comp_defaults = importlib.import_module(
-                f".devices.{path.parts[-2]}.{path.parts[-1][:-3]}",
-                "modules").component_descriptor.configuration_factory()
+            if (len(path.parts) == 10):
+                comp_defaults = importlib.import_module(
+                    f".devices.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                    "modules").component_descriptor.configuration_factory()
+            else:
+                comp_defaults = importlib.import_module(
+                    f".devices.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                    "modules").component_descriptor.configuration_factory()
             component.append({
                 "value": comp_defaults.type,
                 "text": comp_defaults.name
@@ -196,16 +201,22 @@ def _pub_configurable_devices_components() -> None:
         path_list = Path(_get_packages_path()/"modules"/"devices").glob('**/device.py')
         for path in path_list:
             try:
-                device = path.parts[-2]
+                if (len(path.parts) == 10):
+                    device = path.parts[-2]
+                    device_module_import = path.parts[-2]
+                else:
+                    device = path.parts[-3]+"/"+path.parts[-2]
+                    device_module_import = path.parts[-3]+"."+path.parts[-2]
                 component: List = []
                 add_components(device, "*bat*")
                 add_components(device, "*counter*")
                 add_components(device, "*inverter*")
                 dev_defaults = importlib.import_module(
-                    f".devices.{device}.device", "modules").device_descriptor.configuration_factory()
+                    f".devices.{device_module_import}.device", "modules").device_descriptor.configuration_factory()
                 devices_components.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
+                    "group": dev_defaults.group,
                     "component": component
                 })
             except Exception:
@@ -230,7 +241,8 @@ def _pub_configurable_chargepoints() -> None:
                         "modules").chargepoint_descriptor.configuration_factory()
                     chargepoints.append({
                         "value": dev_defaults.type,
-                        "text": dev_defaults.name
+                        "text": dev_defaults.name,
+                        # "group": dev_defaults.group,
                     })
                 except Exception:
                     log.exception("Fehler im configuration-Modul")
