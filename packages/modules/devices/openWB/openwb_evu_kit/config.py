@@ -9,11 +9,13 @@ class EvuKitConfiguration:
 class EvuKit:
     def __init__(self,
                  name: str = "openWB EVU-Kit",
-                 type: str = "openwb_evu_kit",
+                 type: str = "openWB.openwb_evu_kit",
+                 group: str = "openWB",
                  id: int = 0,
                  configuration: EvuKitConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or EvuKitConfiguration()
 

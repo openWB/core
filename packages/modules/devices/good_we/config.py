@@ -14,10 +14,12 @@ class GoodWe:
     def __init__(self,
                  name: str = "GoodWe ET-Serie (5-10kW)",
                  type: str = "good_we",
+                 group: str = "other",
                  id: int = 0,
                  configuration: GoodWeConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or GoodWeConfiguration()
 

@@ -14,10 +14,12 @@ class QCells:
     def __init__(self,
                  name: str = "QCells ESS",
                  type: str = "qcells",
+                 group: str = "other",
                  id: int = 0,
                  configuration: QCellsConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or QCellsConfiguration()
 

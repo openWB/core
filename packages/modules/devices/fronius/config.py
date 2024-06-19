@@ -33,10 +33,12 @@ class Fronius:
     def __init__(self,
                  name: str = "Fronius",
                  type: str = "fronius",
+                 group: str = "other",
                  id: int = 0,
                  configuration: FroniusConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or FroniusConfiguration()
 

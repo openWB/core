@@ -14,10 +14,12 @@ class Janitza:
     def __init__(self,
                  name: str = "Janitza",
                  type: str = "janitza",
+                 group: str = "other",
                  id: int = 0,
                  configuration: JanitzaConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or JanitzaConfiguration()
 

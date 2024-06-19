@@ -13,10 +13,12 @@ class SmartMe:
     def __init__(self,
                  name: str = "smart-me",
                  type: str = "smart_me",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SmartMeConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or SmartMeConfiguration()
 

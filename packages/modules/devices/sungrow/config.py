@@ -20,10 +20,12 @@ class Sungrow:
     def __init__(self,
                  name: str = "Sungrow",
                  type: str = "sungrow",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SungrowConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or SungrowConfiguration()
 

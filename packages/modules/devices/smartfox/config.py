@@ -12,10 +12,12 @@ class Smartfox:
     def __init__(self,
                  name: str = "Smartfox",
                  type: str = "smartfox",
+                 group: str = "other",
                  id: int = 0,
                  configuration: SmartfoxConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
         self.id = id
         self.configuration = configuration or SmartfoxConfiguration()
 
