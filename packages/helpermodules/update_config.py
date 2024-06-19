@@ -1509,35 +1509,6 @@ class UpdateConfig:
                         updated_payload = device
                         updated_payload.update({"group": 'generic'})
                         return {topic: updated_payload}
-                if (device.get("type") == "huawei" or device.get("type") == "huawei_smartlogger"):
-                    if "group" not in device:
-                        updated_payload = device
-                        updated_payload.update({"group": 'other.huawei'})
-                        return {topic: updated_payload}
-                if (device.get("type") == "kostal_piko" or device.get("type") == "kostal_piko_old"
-                    or device.get("type") == "kostal_plenticore" or device.get("type") == "kostal_sem"
-                        or device.get("type") == "kostal_steca"):
-                    if "group" not in device:
-                        updated_payload = device
-                        updated_payload.update({"group": 'other.kostal'})
-                        return {topic: updated_payload}
-                if (device.get("type") == "siemens" or device.get("type") == "siemens_sentron"):
-                    if "group" not in device:
-                        updated_payload = device
-                        updated_payload.update({"group": 'other.siemens'})
-                        return {topic: updated_payload}
-                if (device.get("type") == "sma_shm" or device.get("type") == "sma_sunny_boy"
-                        or device.get("type") == "sma_sunny_island" or device.get("type") == "sma_webbox"):
-                    if "group" not in device:
-                        updated_payload = device
-                        updated_payload.update({"group": 'other.sma'})
-                        return {topic: updated_payload}
-                if (device.get("type") == "solar_log" or device.get("type") == "solar_view"
-                        or device.get("type") == "solar_watt" or device.get("type") == "solar_world"):
-                    if "group" not in device:
-                        updated_payload = device
-                        updated_payload.update({"group": 'other.solar'})
-                        return {topic: updated_payload}
                 if (device.get("type") == "alpha_ess" or device.get("type") == "azzurro_sofar"
                     or device.get("type") == "azzurro_zcs" or device.get("type") == "batterx"
                         or device.get("type") == "benning" or device.get("type") == "byd"
@@ -1545,21 +1516,292 @@ class UpdateConfig:
                         or device.get("type") == "discovergy" or device.get("type") == "e3dc"
                         or device.get("type") == "enphase" or device.get("type") == "fems"
                         or device.get("type") == "fronius" or device.get("type") == "good_we"
-                        or device.get("type") == "janitza" or device.get("type") == "lg"
-                        or device.get("type") == "opendtu" or device.get("type") == "powerdog"
-                        or device.get("type") == "powerfox" or device.get("type") == "qcells"
-                        or device.get("type") == "rct" or device.get("type") == "saxpower"
-                        or device.get("type") == "shelly" or device.get("type") == "smart_me"
-                        or device.get("type") == "smartfox" or device.get("type") == "solaredge"
-                        or device.get("type") == "solarmax" or device.get("type") == "solax"
-                        or device.get("type") == "sonnenbatterie" or device.get("type") == "studer"
-                        or device.get("type") == "sungrow" or device.get("type") == "sunways"
-                        or device.get("type") == "tasmota" or device.get("type") == "tesla"
-                        or device.get("type") == "varta" or device.get("type") == "victron"
-                        or device.get("type") == "youless"):
+                        or device.get("type") == "huawei" or device.get("type") == "huawei_smartlogger"
+                        or device.get("type") == "janitza" or device.get("type") == "kostal_piko"
+                        or device.get("type") == "kostal_piko_old" or device.get("type") == "kostal_plenticore"
+                        or device.get("type") == "kostal_sem" or device.get("type") == "kostal_steca"
+                        or device.get("type") == "lg" or device.get("type") == "opendtu"
+                        or device.get("type") == "powerdog" or device.get("type") == "powerfox"
+                        or device.get("type") == "qcells" or device.get("type") == "rct"
+                        or device.get("type") == "saxpower" or device.get("type") == "shelly"
+                        or device.get("type") == "siemens" or device.get("type") == "siemens_sentron"
+                        or device.get("type") == "sma_shm" or device.get("type") == "sma_sunny_boy"
+                        or device.get("type") == "sma_sunny_island" or device.get("type") == "sma_webbox"
+                        or device.get("type") == "smart_me" or device.get("type") == "smartfox"
+                        or device.get("type") == "solaredge" or device.get("type") == "solar_log"
+                        or device.get("type") == "solar_view" or device.get("type") == "solar_watt"
+                        or device.get("type") == "solar_world" or device.get("type") == "solarmax"
+                        or device.get("type") == "solax" or device.get("type") == "sonnenbatterie"
+                        or device.get("type") == "studer" or device.get("type") == "sungrow"
+                        or device.get("type") == "sunways" or device.get("type") == "tasmota"
+                        or device.get("type") == "tesla" or device.get("type") == "varta"
+                        or device.get("type") == "victron" or device.get("type") == "youless"):
                     if "group" not in device:
                         updated_payload = device
                         updated_payload.update({"group": 'other'})
                         return {topic: updated_payload}
+                # Hier type updaten - wird für den korrekten Pfad gebraucht für import module
+                # 1. openWB
+                if device.get("type") == "openwb_bat_kit":
+                    updated_payload = device
+                    updated_payload["openwb_bat_kit"].update({"openWB.openwb_bat_kit"})
+                    return {topic: updated_payload}
+                if device.get("type") == "openwb_evu_kit":
+                    updated_payload = device
+                    updated_payload["openwb_evu_kit"].update({"openWB.openwb_evu_kit"})
+                    return {topic: updated_payload}
+                if device.get("type") == "openwb_flex":
+                    updated_payload = device
+                    updated_payload["openwb_flex"].update({"openWB.openwb_flex"})
+                    return {topic: updated_payload}
+                if device.get("type") == "openwb_pv_kit":
+                    updated_payload = device
+                    updated_payload["openwb_pv_kit"].update({"openWB.openwb_pv_kit"})
+                    return {topic: updated_payload}
+                # 2. huawei
+                if device.get("type") == "huawei":
+                    updated_payload = device
+                    updated_payload["huawei"].update({"other.huawei.huawei"})
+                    return {topic: updated_payload}
+                if device.get("type") == "huawei_smartlogger":
+                    updated_payload = device
+                    updated_payload["huawei_smartlogger"].update({"other.huawei.huawei_smartlogger"})
+                    return {topic: updated_payload}
+                # 3. kostal
+                if device.get("type") == "kostal_piko":
+                    updated_payload = device
+                    updated_payload["kostal_piko"].update({"other.kostal.kostal_piko"})
+                    return {topic: updated_payload}
+                if device.get("type") == "kostal_piko_old":
+                    updated_payload = device
+                    updated_payload["kostal.kostal_piko_old"].update({"other.kostal.kostal_piko_old"})
+                    return {topic: updated_payload}
+                if device.get("type") == "kostal_plenticore":
+                    updated_payload = device
+                    updated_payload["kostal_plenticore"].update({"other.kostal.kostal_plenticore"})
+                    return {topic: updated_payload}
+                if device.get("type") == "kostal_sem":
+                    updated_payload = device
+                    updated_payload["kostal_sem"].update({"other.kostal.kostal_sem"})
+                    return {topic: updated_payload}
+                if device.get("type") == "kostal_steca":
+                    updated_payload = device
+                    updated_payload["kostal_steca"].update({"other.kostal.kostal_steca"})
+                    return {topic: updated_payload}
+                # 4. Siemens
+                if device.get("type") == "siemens":
+                    updated_payload = device
+                    updated_payload["siemens"].update({"other.siemens.siemens"})
+                    return {topic: updated_payload}
+                if device.get("type") == "siemens_sentron":
+                    updated_payload = device
+                    updated_payload["siemens_sentron"].update({"other.siemens.siemens_sentron"})
+                    return {topic: updated_payload}
+                # 5 sma
+                if device.get("type") == "sma_shm":
+                    updated_payload = device
+                    updated_payload["sma_shm"].update({"other.sma.sma_shm"})
+                    return {topic: updated_payload}
+                if device.get("type") == "sma_sunny_boy":
+                    updated_payload = device
+                    updated_payload["sma_sunny_boy"].update({"other.sma.sma_sunny_boy"})
+                    return {topic: updated_payload}
+                if device.get("type") == "sma_sunny_island":
+                    updated_payload = device
+                    updated_payload["sma_sunny_island"].update({"other.sma.sma_sunny_island"})
+                    return {topic: updated_payload}
+                if device.get("type") == "sma_webbox":
+                    updated_payload = device
+                    updated_payload["sma_webbox"].update({"other.sma.sma_webbox"})
+                    return {topic: updated_payload}
+                # 6 solar
+                if device.get("type") == "solar_log":
+                    updated_payload = device
+                    updated_payload["solar_log"].update({"other.solar.solar_log"})
+                    return {topic: updated_payload}
+                if device.get("type") == "solar_view":
+                    updated_payload = device
+                    updated_payload["solar_view"].update({"other.solar.solar_view"})
+                    return {topic: updated_payload}
+                if device.get("type") == "solar_watt":
+                    updated_payload = device
+                    updated_payload["solar_watt"].update({"other.solar.solar_watt"})
+                    return {topic: updated_payload}
+                if device.get("type") == "solar_world":
+                    updated_payload = device
+                    updated_payload["solar_world"].update({"other.solar.solar_world"})
+                    return {topic: updated_payload}
+                # 7 generische Module
+                if device.get("type") == "http":
+                    updated_payload = device
+                    updated_payload["http"].update({"generic.http"})
+                    return {topic: updated_payload}
+                if device.get("type") == "json":
+                    updated_payload = device
+                    updated_payload["json"].update({"generic.json"})
+                    return {topic: updated_payload}
+                if device.get("type") == "mqtt":
+                    updated_payload = device
+                    updated_payload["mqtt"].update({"generic.mqtt"})
+                    return {topic: updated_payload}
+                if device.get("type") == "virtual":
+                    updated_payload = device
+                    updated_payload["virtual"].update({"generic.virtual"})
+                    return {topic: updated_payload}
+                if device.get("type") == "vzlogger":
+                    updated_payload = device
+                    updated_payload["vzlogger"].update({"generic.vzlogger"})
+                    return {topic: updated_payload}
+                # andere Systemhersteller
+                if device.get("type") == "alpha_ess":
+                    updated_payload = device
+                    updated_payload["alpha_ess"].update({"other.alpha_ess"})
+                    return {topic: updated_payload}
+                if device.get("type") == "azzurro_sofar":
+                    updated_payload = device
+                    updated_payload["azzurro_sofar"].update({"other.azzurro_sofar"})
+                    return {topic: updated_payload}
+                if device.get("type") == "azzurro_zcs":
+                    updated_payload = device
+                    updated_payload["azzurro_zcs"].update({"other.azzurro_zcs"})
+                    return {topic: updated_payload}
+                if device.get("type") == "batterx":
+                    updated_payload = device
+                    updated_payload["batterx"].update({"other.batterx"})
+                    return {topic: updated_payload}
+                if device.get("type") == "benning":
+                    updated_payload = device
+                    updated_payload["benning"].update({"other.benning"})
+                    return {topic: updated_payload}
+                if device.get("type") == "byd":
+                    updated_payload = device
+                    updated_payload["byd"].update({"other.byd"})
+                    return {topic: updated_payload}
+                if device.get("type") == "carlo_gavazzi":
+                    updated_payload = device
+                    updated_payload["carlo_gavazzi"].update({"other.carlo_gavazzi"})
+                    return {topic: updated_payload}
+                if device.get("type") == "deye":
+                    updated_payload = device
+                    updated_payload["deye"].update({"other.deye"})
+                    return {topic: updated_payload}
+                if device.get("type") == "discovergy":
+                    updated_payload = device
+                    updated_payload["discovergy"].update({"other.discovergy"})
+                    return {topic: updated_payload}
+                if device.get("type") == "e3dc":
+                    updated_payload = device
+                    updated_payload["e3dc"].update({"other.e3dc"})
+                    return {topic: updated_payload}
+                if device.get("type") == "enphase":
+                    updated_payload = device
+                    updated_payload["enphase"].update({"other.enphase"})
+                    return {topic: updated_payload}
+                if device.get("type") == "fems":
+                    updated_payload = device
+                    updated_payload["fems"].update({"other.fems"})
+                    return {topic: updated_payload}
+                if device.get("type") == "fronius":
+                    updated_payload = device
+                    updated_payload["fronius"].update({"other.fronius"})
+                    return {topic: updated_payload}
+                if device.get("type") == "good_we":
+                    updated_payload = device
+                    updated_payload["good_we"].update({"other.good_we"})
+                    return {topic: updated_payload}
+                if device.get("type") == "janitza":
+                    updated_payload = device
+                    updated_payload["janitza"].update({"other.janitza"})
+                    return {topic: updated_payload}
+                if device.get("type") == "lg":
+                    updated_payload = device
+                    updated_payload["lg"].update({"other.lg"})
+                    return {topic: updated_payload}
+                if device.get("type") == "opendtu":
+                    updated_payload = device
+                    updated_payload["opendtu"].update({"other.opendtu"})
+                    return {topic: updated_payload}
+                if device.get("type") == "powerdog":
+                    updated_payload = device
+                    updated_payload["powerdog"].update({"other.powerdog"})
+                    return {topic: updated_payload}
+                if device.get("type") == "powerfox":
+                    updated_payload = device
+                    updated_payload["powerfox"].update({"other.powerfox"})
+                    return {topic: updated_payload}
+                if device.get("type") == "qcells":
+                    updated_payload = device
+                    updated_payload["qcells"].update({"other.qcells"})
+                    return {topic: updated_payload}
+                if device.get("type") == "rct":
+                    updated_payload = device
+                    updated_payload["rct"].update({"other.rct"})
+                    return {topic: updated_payload}
+                if device.get("type") == "saxpower":
+                    updated_payload = device
+                    updated_payload["saxpower"].update({"other.saxpower"})
+                    return {topic: updated_payload}
+                if device.get("type") == "shelly":
+                    updated_payload = device
+                    updated_payload["shelly"].update({"other.shelly"})
+                    return {topic: updated_payload}
+                if device.get("type") == "smart_me":
+                    updated_payload = device
+                    updated_payload["smart_me"].update({"other.smart_me"})
+                    return {topic: updated_payload}
+                if device.get("type") == "smartfox":
+                    updated_payload = device
+                    updated_payload["smartfox"].update({"other.smartfox"})
+                    return {topic: updated_payload}
+                if device.get("type") == "solaredge":
+                    updated_payload = device
+                    updated_payload["solaredge"].update({"other.solaredge"})
+                    return {topic: updated_payload}
+                if device.get("type") == "solarmax":
+                    updated_payload = device
+                    updated_payload["solarmax"].update({"other.solarmax"})
+                    return {topic: updated_payload}
+                if device.get("type") == "solax":
+                    updated_payload = device
+                    updated_payload["solax"].update({"other.solax"})
+                    return {topic: updated_payload}
+                if device.get("type") == "sonnenbatterie":
+                    updated_payload = device
+                    updated_payload["sonnenbatterie"].update({"other.sonnenbatterie"})
+                    return {topic: updated_payload}
+                if device.get("type") == "studer":
+                    updated_payload = device
+                    updated_payload["studer"].update({"other.studer"})
+                    return {topic: updated_payload}
+                if device.get("type") == "sungrow":
+                    updated_payload = device
+                    updated_payload["sungrow"].update({"other.sungrow"})
+                    return {topic: updated_payload}
+                if device.get("type") == "sunways":
+                    updated_payload = device
+                    updated_payload["sunways"].update({"other.sunways"})
+                    return {topic: updated_payload}
+                if device.get("type") == "tasmota":
+                    updated_payload = device
+                    updated_payload["tasmota"].update({"other.tasmota"})
+                    return {topic: updated_payload}
+                if device.get("type") == "tesla":
+                    updated_payload = device
+                    updated_payload["tesla"].update({"other.tesla"})
+                    return {topic: updated_payload}
+                if device.get("type") == "varta":
+                    updated_payload = device
+                    updated_payload["varta"].update({"other.varta"})
+                    return {topic: updated_payload}
+                if device.get("type") == "victron":
+                    updated_payload = device
+                    updated_payload["victron"].update({"other.victron"})
+                    return {topic: updated_payload}
+                if device.get("type") == "youless":
+                    updated_payload = device
+                    updated_payload["youless"].update({"other.youless"})
+                    return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 45)
+
+        
