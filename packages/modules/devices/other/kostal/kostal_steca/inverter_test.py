@@ -16,11 +16,11 @@ def test_get_values(measurements_file, expected_power, requests_mock):
     # setup
     inverter = KostalStecaInverter(KostalStecaInverterSetup(), SAMPLE_IP)
 
-    with open("packages/modules/devices/kostal_steca/"+measurements_file, "r") as f:
+    with open("packages/modules/devices/other/kostal/kostal_steca/"+measurements_file, "r") as f:
         measurements_sample = f.read()
     requests_mock.get("http://" + SAMPLE_IP + "/measurements.xml", text=measurements_sample)
 
-    with open("packages/modules/devices/kostal_steca/yields.xml", "r") as f:
+    with open("packages/modules/devices/other/kostal/kostal_steca/yields.xml", "r") as f:
         yields_sample = f.read()
     requests_mock.get("http://" + SAMPLE_IP + "/yields.xml", text=yields_sample)
 
