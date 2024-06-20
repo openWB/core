@@ -1495,39 +1495,40 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 44)
 
     def upgrade_datastore_44(self) -> None:
-        def upgrade(topic: str, payload) -> Optional[dict]:
-            corrupt_days = ["20240620", "20240619", "20240618"]
-            for topic, payload in self.all_received_topics.items():
-                if topic == "openWB/counter/get/hierarchy":
-                    top_entry = decode_payload(payload)[0]
-                    if top_entry["type"] != "counter":
-                        raise Exception("First item in hierarchy must be a counter")
-                    evu_counter_str = f"counter{top_entry['id']}"
-            for corrupt_day in corrupt_days:
-                try:
-                    filepath = f"{self.base_path}/data/daily_log/{corrupt_day}.json"
-                    with open(filepath, "r") as jsonFile:
-                        content = json.load(jsonFile)
-                    for entry in content["entries"]:
-                        for counter_entry in entry["counter"]:
-                            if evu_counter_str == counter_entry:
-                                entry["counter"][counter_entry]["grid"] = True
-                                break
-                    write_and_check(filepath, content)
-                except Exception:
-                    log.exception(f"Logdatei '{filepath}' konnte nicht konvertiert werden.")
+        corrupt_days = ["20240620", "20240619", "20240618"]
+        for topic, payload in self.all_received_topics.items():
+            if topic == "openWB/counter/get/hierarchy":
+                top_entry = decode_payload(payload)[0]
+                if top_entry["type"] != "counter":
+                    raise Exception("First item in hierarchy must be a counter")
+                evu_counter_str = f"counter{top_entry['id']}"
+        for corrupt_day in corrupt_days:
             try:
-                filepath = f"{self.base_path}/data/monthly_log/202406.json"
+                filepath = f"{self.base_path}/data/daily_log/{corrupt_day}.json"
                 with open(filepath, "r") as jsonFile:
                     content = json.load(jsonFile)
                 for entry in content["entries"]:
-                    if entry["date"] in corrupt_days:
-                        for counter_entry in entry["counter"]:
-                            if evu_counter_str == counter_entry:
-                                entry["counter"][counter_entry]["grid"] = True
-                                break
+                    for counter_entry in entry["counter"]:
+                        if evu_counter_str == counter_entry and entry["counter"][counter_entry]["grid"] is False:
+                            entry["counter"][counter_entry]["grid"] = True
+                            break
+                    else:
+                        log.debug("all grid: False-bug does not exist in this installtion")
+                        return
                 write_and_check(filepath, content)
             except Exception:
                 log.exception(f"Logdatei '{filepath}' konnte nicht konvertiert werden.")
-        self._loop_all_received_topics(upgrade)
+        try:
+            filepath = f"{self.base_path}/data/monthly_log/202406.json"
+            with open(filepath, "r") as jsonFile:
+                content = json.load(jsonFile)
+            for entry in content["entries"]:
+                if entry["date"] in corrupt_days:
+                    for counter_entry in entry["counter"]:
+                        if evu_counter_str == counter_entry:
+                            entry["counter"][counter_entry]["grid"] = True
+                            break
+            write_and_check(filepath, content)
+        except Exception:
+            log.exception(f"Logdatei '{filepath}' konnte nicht konvertiert werden.")
         self.__update_topic("openWB/system/datastore_version", 45)
