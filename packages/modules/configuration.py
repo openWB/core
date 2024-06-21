@@ -183,7 +183,7 @@ def _pub_configurable_devices_components() -> None:
             if path.name.endswith("_test.py"):
                 # Tests überspringen
                 continue
-            if (len(path.parts) == 10):
+            if (path.parts[-3] == "devices"):
                 comp_defaults = importlib.import_module(
                     f".devices.{path.parts[-2]}.{path.parts[-1][:-3]}",
                     "modules").component_descriptor.configuration_factory()
@@ -201,7 +201,7 @@ def _pub_configurable_devices_components() -> None:
         path_list = Path(_get_packages_path()/"modules"/"devices").glob('**/device.py')
         for path in path_list:
             try:
-                if (len(path.parts) == 10):
+                if (path.parts[-3] == "devices"):
                     device = path.parts[-2]
                     device_module_import = path.parts[-2]
                 else:
