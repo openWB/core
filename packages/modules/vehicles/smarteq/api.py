@@ -63,6 +63,9 @@ WEBSOCKET_API_BASE = "wss://websocket.emea-prod.mobilesdk.mercedes-benz.com/ws"
 WS_THREAD_NAME = 'soc_smarteq_ws'
 USER_AGENT_OAUTH = 'sOAF/202108260942 CFNetwork/978.0.7 Darwin/18.7.0'
 
+# test switch, 0: no impact, > 0 e.g. 0.2 will simulate range change
+TEST_RANGE_CHANGE = 0
+
 
 # helper functions
 def nested_key_exists(element: dict, *keys: str) -> bool:
@@ -109,30 +112,23 @@ class Api:
         if self.last_opmode is None:
             self.last_opmode = 'unknown'
         self.vehicle = vehicle
-        # configurable logging Filter, will come from configuration
-        self.logFilter = conf.configuration.logFilter
-        if self.logFilter is None:
-            self.logFilter = ''
         self.write_store_count = 0
 
         self.su = socUtils()
 
         self.storeFile = str(RAMDISK_PATH) + '/soc_smarteq_store_vh_' + str(vehicle)
         self.ws_storeFile = str(RAMDISK_PATH) + '/soc_smarteq_store_ws'
-        self.messageFile = str(RAMDISK_PATH) + '/soc_smarteq_message_vh_' + str(vehicle)
+        self.ws_messageFile = str(RAMDISK_PATH) + '/soc_smarteq_message_vh_' + str(vehicle)
 
         if self.useWebSocket is True:
-            self.vhList = self.su.get_vin_ev_map()
-            self._infoLog('i', "vehicle_vin_num_mapping=\n" + json.dumps(self.vhList, indent=4))
+            self.vhList = self.su.get_vin_ev_map('smarteq')
+            # self.log.debug("vehicle_vin_num_mapping=\n" + json.dumps(self.vhList, indent=4))
             tn = self.ws_fname(self.vin)
             if os.path.exists(tn):
                 self.load_ws_store(self.vin)
             else:
                 self.init_ws_store(self.vin)
                 self.write_ws_store(self.vin)
-
-        # LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
-        # logging.basicConfig(level=LOGLEVEL)
 
         # self.method keeps a high level trace of actions
         self.method = ''
@@ -141,21 +137,10 @@ class Api:
 
         self.session = req.get_http_session()
 
-        self._infoLog('i', "init: pre init_store, refreshToken=" + self.refreshToken)
         self.init_store(False)
-        self._infoLog('i', "init: pre load_store, refreshToken=" + self.refreshToken)
-        self._infoLog('i', "init: pre load_store, store-refreshToken=" + self.store['Tokens']['refresh_token'])
         self.opmode = self.last_opmode
         self.load_store()
-        self._infoLog('i', "init: post load_store, refreshToken=" + self.refreshToken)
-        self._infoLog('i', "init: post load_store, store-refreshToken=" + self.store['Tokens']['refresh_token'])
         self.store['Tokens']['refresh_token'] = self.refreshToken
-        self.store['logFilter'] = self.logFilter
-
-        self._infoLog('i', 'last_opmode from conf: ' + self.last_opmode)
-        # if 'opmode' in self.store:
-        #     self.last_opmode = self.store['opmode']
-        #     self._infoLog('i', 'last_opmode from store: ' + self.last_opmode)
 
         if self.password is not None and self.password != '':
             self.opmode = 'pw-rest'
@@ -163,16 +148,15 @@ class Api:
             self.opmode = 'pin-rest'
         else:
             self.opmode = 'pin-ws'
-        self._infoLog('i', 'current opmode: ' + self.opmode)
 
         if 'pin' in self.opmode and 'pin' in self.last_opmode:
-            self._infoLog('i', 'lst and current opmode are pin-based, last:' + self.last_opmode +
-                          ', current:' + self.opmode)
+            self.log.debug('last and current opmode are pin-based, last:' + self.last_opmode +
+                           ', current:' + self.opmode)
         else:
-            self._infoLog('i', 'switch opmode from ' + self.last_opmode + ' to ' + self.opmode)
+            self.log.debug('switch opmode from ' + self.last_opmode + ' to ' + self.opmode)
             self.store['opmode'] = self.opmode
             # forget old token
-            self._infoLog('i', 'forget old tokens to force new authentication')
+            self.log.debug('forget old tokens to force new authentication')
             self.refreshToken = initialToken
             self.refreshTokenMQTT = initialToken
             self.store['Tokens']['refresh_token'] = initialToken
@@ -180,15 +164,15 @@ class Api:
             self.authState = 'init'
 
         if self.refreshToken is not None and self.refreshToken != '':
-            self._infoLog('i', 'use refreshToken from config: ' + self.refreshToken)
+            # self.log.debug('use refreshToken from config: ' + self.refreshToken)
             self.store['Tokens']['refresh_token'] = self.refreshToken
             self.refreshTokenMQTT = self.refreshToken
         elif 'refresh_token' in self.store['Tokens']:
-            self._infoLog('i', 'use refreshToken from store: ' + self.store['Tokens']['refresh_token'])
+            # self.log.debug('use refreshToken from store: ' + self.store['Tokens']['refresh_token'])
             self.refreshTokenMQTT = self.store['Tokens']['refresh_token']
             self.refreshToken = self.store['Tokens']['refresh_token']
         else:
-            self._infoLog('i', 'reset refreshToken to initialToken')
+            self.log.debug('reset refreshToken to initialToken')
             self.refreshToken = initialToken
             self.refreshTokenMQTT = self.refreshToken
 
@@ -196,7 +180,7 @@ class Api:
             self.log.warning("smartEQ: in password auth mode WebSockets cant be used - set disable WebSocket")
             self.useWebSocket = False
 
-        self._infoLog('i', 'init, write store refreshToken: ' + self.store['Tokens']['refresh_token'])
+        # self.log.debug('init, write store refreshToken: ' + self.store['Tokens']['refresh_token'])
         self.write_store()
         self.oldTokens = copy.deepcopy(self.store['Tokens'])
 
@@ -205,41 +189,17 @@ class Api:
         # init thread for web socket interface if configured and not running yet
         if self.useWebSocket is True:
             self.ws_thread_name = WS_THREAD_NAME
-            self.su.set_threadname = self.ws_thread_name.replace('_ws', '_mqtt')
-            self.su.set_logFilter = self.logFilter
             self.ws_thread = None
             for t in threading.enumerate():
                 if t.name == self.ws_thread_name:
-                    self._infoLog('i', self.ws_thread_name + ' found: name = ' + t.name)
+                    self.log.debug(self.ws_thread_name + ' found: name = ' + t.name)
                     self.ws_thread = t
             if self.ws_thread is None:
-                self._infoLog('i', self.ws_thread_name + ' not found: starting now')
+                self.log.debug(self.ws_thread_name + ' not found: starting now')
                 self.ws_thread = threading.Thread(target=self.wsThread, name=self.ws_thread_name)
                 self.ws_thread.start()
         else:
-            self._infoLog('i', "useWebSocket not configured")
-
-    # configurable filtered logging
-    # log as info if filter is in configured filter string
-    # A: ALL
-    # f: fetch_soc
-    # i: initialization
-    # m: websocket message
-    # M: websocket message details
-    # q: mqtt logging
-    # Q: mqtt logging details
-    # r: smart eq rest api
-    # s: state changes
-    # t: token refresh
-    # T: token refresh details
-    # u: authentication
-    # U: authentication details
-    # w: webSocket interface
-    # W: webSocket interface details
-    # X: simulate range changes
-    def _infoLog(self, filter: str, txt: str):
-        if filter in self.logFilter or 'A' in self.logFilter:
-            self.log.info('(' + filter + '): ' + txt)
+            self.log.debug("useWebSocket not configured")
 
     # set_authState
     # authState: 'init'
@@ -253,7 +213,7 @@ class Api:
         else:
             old_state = 'n/a'
         self.store['authState'] = state
-        self._infoLog('s', 'set_authState from ' + old_state + ' to ' + state)
+        self.log.debug('set_authState from ' + old_state + ' to ' + state)
         self.write_store()
 
     # initialize store structures when no store is available
@@ -265,7 +225,6 @@ class Api:
         self.store['refresh_timestamp'] = int(0)
         self.store['last_pin_used'] = ''
         self.store['opmode'] = ''
-        self.store['logFilter'] = ''
         # if there is a refreshToken, try to use that
         if self.refreshToken != initialToken:
             if write:
@@ -279,11 +238,11 @@ class Api:
             with open(self.storeFile + '.json', 'r', encoding='utf-8') as tf:
                 self.store = json.load(tf)
             if 'Tokens' not in self.store:
-                self._infoLog('i', "load_store: Tokens missing, calling init_store")
+                self.log.debug("load_store: Tokens missing, calling init_store")
                 self.init_store(True)
-            self._infoLog('i', "load_store: authState=    " + self.store['authState'])
-            self._infoLog('i', "load_store: refresh_token=    " + self.store['Tokens']['refresh_token'])
-            self._infoLog('i', "load_store: self.refreshToken=" + self.refreshToken)
+            # self.log.debug("load_store: authState=    " + self.store['authState'])
+            # self.log.debug("load_store: refresh_token=    " + self.store['Tokens']['refresh_token'])
+            # self.log.debug("load_store: self.refreshToken=" + self.refreshToken)
         except FileNotFoundError:
             self.log.warning("init: store file not found, try token refresh")
             # try to refresh Token to avoid problem at 1st connect
@@ -301,8 +260,8 @@ class Api:
                 self.log.exception('load_store_file - reconnect failed' + str(e))
             return
         except Exception as e:
-            self._infoLog('i', "init: loading stored data failed, file: " +
-                          self.storeFile + ", error=" + str(e))
+            self.log.debug("init: loading stored data failed, file: " +
+                           self.storeFile + ", error=" + str(e))
             self.init_store(True)
             return
         return
@@ -311,14 +270,14 @@ class Api:
     def write_store(self):
         # make sure there is a refresh_token in store
         if 'refresh_token' not in self.store['Tokens']:
-            self._infoLog('i', "write_store: reset refresh_token to initialToken")
+            self.log.debug("write_store: reset refresh_token to initialToken")
             self.store['Tokens']['refresh_token'] = initialToken
 
         try:
             with open(self.storeFile + '.json', 'w', encoding='utf-8') as tf:
                 json.dump(self.store, tf, indent=4)
         except Exception as e:
-            self._infoLog('i', "write_store_file: Exception " + str(e))
+            self.log.debug("write_store_file: Exception " + str(e))
 
         # check if refreshToken has changed and needs to be stored in mqtt?
         if self.refreshTokenMQTT != self.store['Tokens']['refresh_token']:
@@ -334,9 +293,9 @@ class Api:
                 self.opmode,
                 self.conf.__dict__)
             self.write_store_count += 1
-            self._infoLog('i', "write_store: refreshTokenMQTT=   " + self.refreshTokenMQTT +
-                          ", write_store_count=" + str(self.write_store_count))
-        self._infoLog('i', "write_store: refresh_token_store=" + self.store['Tokens']['refresh_token'])
+            # self.log.debug("write_store: refreshTokenMQTT=   " + self.refreshTokenMQTT +
+            #                ", write_store_count=" + str(self.write_store_count))
+        # self.log.debug("write_store: refresh_token_store=" + self.store['Tokens']['refresh_token'])
         return
 
 # password authentication functions
@@ -361,14 +320,14 @@ class Api:
 
             for cd in soup.findAll(text=True):
                 if "CDATA" in cd:
-                    self._infoLog('u', "get_resume: cd.CData= " + str(cd))
+                    self.log.debug("get_resume: cd.CData= " + str(cd))
                     for w in cd.split(','):
                         if w.find("const initialState = ") != -1:
                             iS = w
             if iS:
                 js = iS.split('{')[1].split('}')[0].replace('\\', '').replace('\\"', '"').replace('""', '"')
                 self.resume = js[1:len(js)-1].split(':')[1][2:]
-            self._infoLog('u', "get_resume: resume = " + self.resume)
+            self.log.debug("get_resume: resume = " + self.resume)
         except Exception:
             self.log.exception('get_resume')
         return self.resume
@@ -377,7 +336,7 @@ class Api:
     def login(self) -> str:
         url = LOGIN_URL + "/pass"
         headers = {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE,
             "Accept": "application/json, text/plain, */*",
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X)\
             AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
@@ -390,16 +349,16 @@ class Api:
 
         try:
             response = self.session.post(url, headers=headers, data=data, verify=SSL_VERIFY_AUTH)
-            self._infoLog('u', "login: status_code = " + str(response.status_code))
+            self.log.debug("login: status_code = " + str(response.status_code))
             if response.status_code >= 400:
                 self.log.error("login: failed, status_code = " + str(response.status_code) +
                                ", check username/password")
                 token = ""
             else:
                 result_json = json.loads(str(bs4.BeautifulSoup(response.text, 'html.parser')))
-                self._infoLog('U', "login: result_json:\n" + json.dumps(result_json))
+                self.log.debug("login: result_json:\n" + json.dumps(result_json))
                 token = result_json['token']
-                self._infoLog('u', "login: token = " + token)
+                self.log.debug("login: token = " + token)
         except Exception:
             self.log.exception('login')
             token = ""
@@ -409,7 +368,7 @@ class Api:
     def get_code(self) -> str:
         url = BASE_URL + '/' + self.resume
         headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Type": CONTENT_TYPE_OAUTH,
             "Accept": "application/json, text/plain, */*",
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X)\
             AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
@@ -421,7 +380,7 @@ class Api:
         try:
             response = self.session.post(url, headers=headers, data=data, verify=SSL_VERIFY_AUTH)
             code = response.url.split('?')[1].split('=')[1]
-            self._infoLog('U', "get_code: code=" + code)
+            self.log.debug("get_code: code=" + code)
         except Exception:
             self.log.exception("get_code")
         return code
@@ -451,7 +410,7 @@ class Api:
             "Accept": ACCEPT,
             "User-Agent": USER_AGENT_OAUTH,
             "Accept-Language": ACCEPT_LANGUAGE,
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Type": CONTENT_TYPE_OAUTH
         }
         data = "grant_type=authorization_code&code=" + code + "&code_verifier=" + self.code_verifier +\
                "&redirect_uri=" + REDIRECT_URI + "&client_id=" + CLIENT_ID
@@ -463,7 +422,7 @@ class Api:
                 self.log.warning("get_tokens: no access_token found")
                 Tokens = {}
             else:
-                self._infoLog('U', "Tokens=\n" + json.dumps(Tokens, indent=4))
+                self.log.debug("Tokens=\n" + json.dumps(Tokens, indent=4))
                 self.set_authState('authenticated')
         except Exception:
             self.log.exception('get_tokens')
@@ -477,10 +436,10 @@ class Api:
         newTokens = {}
         if self.refreshToken != "" and self.refreshToken is not None:
             rt = self.refreshToken
-            self._infoLog('t', "refresh_token: old_refresh_token_self.refreshToken=" + rt)
+            # self.log.debug("refresh_token: old_refresh_token_self.refreshToken=" + rt)
         else:
             rt = self.store['Tokens']['refresh_token']
-            self._infoLog('t', "refresh_token: old_refresh_token_store=" + rt)
+            # self.log.debug("refresh_token: old_refresh_token_store=" + rt)
         headers = {
             "Accept": ACCEPT,
             "User-Agent": USER_AGENT_OAUTH,
@@ -489,31 +448,30 @@ class Api:
         }
         if self.password == '':
             data = {'grant_type': 'refresh_token', 'refresh_token': rt}
-            self._infoLog('t', "refresh_token: rt=" + rt)
         else:
             data = "grant_type=refresh_token&client_id=" + CLIENT_ID + "&refresh_token=" + rt
         try:
-            self._infoLog('T', "refresh_token-post: url=" + url +
-                          ", data=" + json.dumps(data, indent=4) +
-                          ", headers=" + json.dumps(headers, indent=4))
+            self.log.debug("refresh_token-post:\nurl=" + url +
+                           ", data=" + json.dumps(data, indent=4) +
+                           ", headers=" + json.dumps(headers, indent=4))
             response = self.session.post(url,
                                          headers=headers,
                                          data=data,
                                          verify=SSL_VERIFY_AUTH,
                                          allow_redirects=False,
                                          timeout=(30, 30))
-            self._infoLog('T', "refresh_tokens result: " + str(response.status_code) + " - " + str(response.text))
+            # self.log.debug("refresh_tokens result: " + str(response.status_code) + " - " + str(response.text))
 
             newTokens = json.loads(response.text)
             if 'error' in newTokens and newTokens['error'] == 'unauthorized':
                 self.log.warning("refresh_tokens: error: " + newTokens['error'] + ', ' + newTokens['error_description'])
             if 'access_token' not in newTokens:
-                self._infoLog('t', "refresh_tokens: new access_token not found")
+                self.log.debug("refresh_tokens: new access_token not found")
                 newTokens['access_token'] = ""
             if 'refresh_token' not in newTokens:
-                self._infoLog('t', "refresh_tokens: new refresh_token not found")
+                self.log.debug("refresh_tokens: new refresh_token not found")
                 newTokens['refresh_token'] = ""
-            self._infoLog('T', "refresh_tokens: newTokens=\n" + json.dumps(newTokens, indent=4))
+            self.log.debug("refresh_tokens: newTokens=\n" + json.dumps(newTokens, indent=4))
         except requests.exceptions.HTTPError as e:
             self.log.warning("refresh_tokens HTTPError: " + str(e.response.status_code) + " - " + str(e.response.text))
         except Exception:
@@ -523,7 +481,7 @@ class Api:
         if 'refresh_token' not in newTokens:
             self.log.error("refresh_token: new Token not delivered")
             newTokens['refresh_token'] = 'refresh failed'
-        self._infoLog('t', "refresh_token: new_refresh_token=" + newTokens['refresh_token'])
+        # self.log.debug("refresh_token: new_refresh_token=" + newTokens['refresh_token'])
         return newTokens
 
     # reconnect to Server
@@ -535,50 +493,45 @@ class Api:
             if secs_since_refresh > TOKENS_REFRESH_THRESHOLD or force:
                 # try to refresh tokens
                 self.set_authState('tokenRequested')
-                self._infoLog('t', "reconnect: call refresh_tokens")
+                # self.log.debug("reconnect: call refresh_tokens")
                 new_tokens = self.refresh_tokens()
-                self._infoLog('T', "reconnect: refresh_tokens result=" + json.dumps(new_tokens, indent=4))
+                # self.log.debug("reconnect: refresh_tokens result=" + json.dumps(new_tokens, indent=4))
                 self.store['refresh_timestamp'] = int(time.time())
                 _ref = True
             else:
                 # keep existing tokens
-                self._infoLog('t', "reconnect: keep existing Tokens")
+                self.log.debug("reconnect: keep existing Tokens")
                 return self.store['Tokens']
         else:
             self.log.error("reconnect: refresh_token not found in self.store['Tokens']=" +
                            json.dumps(self.store['Tokens'], indent=4))
             new_tokens = {'refresh_token': '', 'access_token': ''}
             _ref = False
-        self._infoLog('T', "reconnect: new_tokens=" + json.dumps(new_tokens, indent=4))
+        # self.log.debug("reconnect: new_tokens=" + json.dumps(new_tokens, indent=4))
         if 'access_token' not in new_tokens or new_tokens['access_token'] == '':
             if _ref:
                 self.log.warning("reconnect: refresh access_token failed, try full reconnect")
             # check if password not empty call get_tokens, else call 2fa
             Tokens = self.get_tokens()
         else:
-            self._infoLog('t', "reconnect: refresh token successful")
+            self.log.info("smarteq reconnect: refresh token successful")
             Tokens = self.store['Tokens']   # replace expired access and refresh token by new tokens
             for key in new_tokens:
                 Tokens[key] = new_tokens[key]
-                self._infoLog('T', "reconnect: replace Tokens[" + key + "], new value: " + str(Tokens[key]))
+                # self.log.debug("reconnect: replace Tokens[" + key + "], new value: " + str(Tokens[key]))
             self.set_authState('authenticated')
 
         if 'refresh_token' not in Tokens:
             self.log.error("reconnect: failed, Tokens=" + json.dumps(Tokens, indent=4))
             Tokens['refresh_token'] = 'reconnect-token failed'
-        self._infoLog('T', "reconnect: refresh_token=" + Tokens['refresh_token'])
+        # self.log.debug("reconnect: refresh_token=" + Tokens['refresh_token'])
         return Tokens
 
     # 2fa authentication functions
     # send request for new pin to oauth server
     def request_pin(self, email: str, nonce: str):
-        self._infoLog('u', "Start request_pin: email=" + email + ", nonce=" + nonce)
+        self.log.debug("Start request_pin: email=" + email + ", nonce=" + nonce)
 
-        #   "Accept-Language": ACCEPT_LANGUAGE,
-        #   "Accept-Language": "de-DE;q=1.0",
-        #   "device-id": str(uuid.uuid4()),
-        #   "X-Requestid": str(uuid.uuid4()),
-        #   "X-Authmode": "KEYCLOAK"
         headers = {
             "Host": "bff.emea-prod.mobilesdk.mercedes-benz.com",
             "Ris-Os-Name": RIS_OS_NAME,
@@ -596,10 +549,10 @@ class Api:
         }
 
         url = STATUS_URL_MERCEDES + "/v1/config"
-        self._infoLog('U', "request_pin-get: url=" + url +
-                      ", headers=" + json.dumps(headers, indent=4))
+        self.log.debug("request_pin-get: url=" + url +
+                       ", headers=" + json.dumps(headers, indent=4))
         response1 = self.session.get(url, headers=headers)
-        self._infoLog('U', "Result request_pin get: " + str(response1))
+        self.log.debug("Result request_pin get: " + str(response1))
 
         url = STATUS_URL_MERCEDES + "/v1/login"
         d = {
@@ -609,11 +562,11 @@ class Api:
         }
         data = json.dumps(d)
 
-        self._infoLog('U', "request_pin-post: url=" + url +
-                      ", data=" + json.dumps(data, indent=4) +
-                      ", headers=" + json.dumps(headers, indent=4))
+        self.log.debug("request_pin-post: url=" + url +
+                       ", data=" + json.dumps(data, indent=4) +
+                       ", headers=" + json.dumps(headers, indent=4))
         response = self.session.post(url, data=data, headers=headers)
-        self._infoLog('u', "Result request_pin post: " + str(response))
+        self.log.debug("Result request_pin post: " + str(response))
         self.set_authState('pinRequested')
         return response
 
@@ -624,13 +577,13 @@ class Api:
         self.set_authState('tokenRequested')
         self.store['last_pin_used'] = self.pin
         try:
-            self._infoLog('t', "calling request_access_token")
+            self.log.debug("calling request_access_token")
             result = self.request_access_token(self.username, self.pin, nonce)
         except Exception as error:
             errors = error
             self.log.error("Request token error: %s", errors)
         if not errors:
-            self._infoLog('t', "Token received: " + str(result))
+            self.log.debug("Token received: " + str(result))
 
     # authenticate: request pin and get tokens
     def authenticate(self):
@@ -640,10 +593,10 @@ class Api:
         user_input["nonce"] = nonce
 
         try:
-            self._infoLog('u', "authenticate: calling request_pin")
+            self.log.debug("authenticate: calling request_pin")
             response = self.request_pin(self.username, nonce)
-            self._infoLog('u', "authenticate: request_pin done, response=" + str(response))
-            self._infoLog('u', "authenticate: response.status_code = " + str(response.status_code))
+            self.log.debug("authenticate: request_pin done, response=" + str(response))
+            self.log.debug("authenticate: response.status_code = " + str(response.status_code))
             if response.status_code > 200:
                 errors["request_pin"] = "Authentication error " + str(response.status_code)
         except Exception as error:
@@ -652,7 +605,7 @@ class Api:
 
     # request_access_token - part of 2FA process
     def request_access_token(self, email: str, pin: str, nonce: str):
-        self._infoLog('t', "enter request_access_token: email=" + email + ", pin=" + pin + ", nonce=" + nonce)
+        self.log.debug("enter request_access_token: email=" + email + ", pin=" + pin + ", nonce=" + nonce)
         self.method += " 3-request_access_token"
         url = TOKEN_URL
         encoded_email = urllib.parse.quote_plus(email, safe="@")
@@ -672,17 +625,17 @@ class Api:
             "X-Device-Id": str(uuid.uuid4()),
             "X-Request-Id": str(uuid.uuid4())
         }
-        self._infoLog('T', "request_access_token-post: url=" + url +
-                      ", data=" + json.dumps(data, indent=4) +
-                      ", headers=" + json.dumps(headers, indent=4))
+        self.log.debug("request_access_token-post: url=" + url +
+                       ", data=" + json.dumps(data, indent=4) +
+                       ", headers=" + json.dumps(headers, indent=4))
         try:
             token_info = self.session.post(url, data=data, headers=headers)
-            self._infoLog('t', "request_access_token.status_code = " + str(token_info.status_code))
+            self.log.debug("request_access_token.status_code = " + str(token_info.status_code))
             Tokens = json.loads(token_info.text)
             if not Tokens['access_token']:
                 self.log.warning("request_access_token failed")
                 return None
-            self._infoLog('t', "Tokens=\n" + json.dumps(Tokens, indent=4))
+            self.log.debug("Tokens=\n" + json.dumps(Tokens, indent=4))
             self.store['Tokens'] = Tokens
 
             if token_info is not None:
@@ -735,22 +688,22 @@ class Api:
                 try:
                     soc = int(res['precond']['data']['soc']['value'])
                     range = float(res['precond']['data']['rangeelectric']['value'])
-                    self._infoLog('r', "get_status: result json:\n" + res_json)
+                    self.log.debug("get_status: result json:\n" + res_json)
                 except Exception:
                     soc = -1
                     range = 0.0
             elif 'error' in res and res['error'] == 'unauthorized':
                 self.log.warning("get_status: access_token expired - try refresh")
-                self._infoLog('r', "get_status: error - result json:\n" + res_json)
+                self.log.debug("get_status: error - result json:\n" + res_json)
                 soc = -1
                 range = 0.0
 
         except requests.exceptions.HTTPError as e:
             self.log.warning("get_status: authentication by access_token failed: " + str(e.response.status_code))
-            self._infoLog('r', "get_status HTTPError: " + str(e.response.status_code) + " - " + str(e.response.text))
+            self.log.debug("get_status HTTPError: " + str(e.response.status_code) + " - " + str(e.response.text))
         except Exception as e:
             self.log.warning("get_status: authentication by access_token failed: " + str(e.response.status_code))
-            self._infoLog('r', "get_status Exception: " + str(e.response.status_code) + " - " + str(e.response.text))
+            self.log.debug("get_status Exception: " + str(e.response.status_code) + " - " + str(e.response.text))
             res = json.loads(e.response.text)
             soc = -1
             range = 0.0
@@ -766,16 +719,16 @@ class Api:
     async def _fetch_soc(self) -> Union[int, float]:
         if self.password != "" and self.password is not None:
             self.set_authState('authenticated')
-            self._infoLog('f', "fetch_soc: password=" + str(self.password) + ", set authState to authenticated")
+            self.log.debug("fetch_soc: password=" + str(self.password) + ", set authState to authenticated")
 
-        self._infoLog('f', "fetch_soc/start: username=" + str(self.username) +
-                      ", password=" + str(self.password) +
-                      ", pin=" + str(self.pin) +
-                      ", vin=" + str(self.vin) +
-                      ", useWebSocket=" + str(self.useWebSocket) +
-                      ", refreshToken=" + str(self.refreshToken) +
-                      ", vehicle=" + str(self.vehicle) +
-                      ", authState=" + str(self.store['authState']))
+        self.log.debug("fetch_soc/start: username=" + str(self.username) +
+                       ", password=" + str(self.password) +
+                       ", pin=" + str(self.pin) +
+                       ", vin=" + str(self.vin) +
+                       ", useWebSocket=" + str(self.useWebSocket) +
+                       ", refreshToken=" + str(self.refreshToken) +
+                       ", vehicle=" + str(self.vehicle) +
+                       ", authState=" + str(self.store['authState']))
 
         soc = -1
         range = 0.0
@@ -799,18 +752,18 @@ class Api:
                         if 'access_token' in self.store['Tokens']:
                             soc, range = self.get_status(self.vin)
                             if soc >= 0:
-                                self._infoLog('f', "fetch_soc: 1st attempt successful")
+                                self.log.debug("fetch_soc: 1st attempt successful")
                             else:
-                                self._infoLog('f', "fetch_soc: 1st attempt failed - soc=" + str(soc))
+                                self.log.debug("fetch_soc: 1st attempt failed - soc=" + str(soc))
 
                         if soc == -1:
                             self.set_authState('accessTokenExpired')
-                            self._infoLog('f', "fetch_soc: (re)connecting ...")
+                            self.log.debug("fetch_soc: (re)connecting ...")
                             self.store['Tokens'] = self.reconnect(True)
                             if 'access_token' in self.store['Tokens']:
                                 soc, range = self.get_status(self.vin)
                                 if soc >= 0:
-                                    self._infoLog('f', "fetch_soc: 2nd attempt successful")
+                                    self.log.debug("fetch_soc: 2nd attempt successful")
                                 else:
                                     self.log.warning("fetch_soc: 2nd attempt failed - soc=" + str(soc))
                                     range = 0.0
@@ -831,7 +784,7 @@ class Api:
                             soc, range = self.get_status(self.vin)
 
                     if self.store['Tokens'] != self.oldTokens:
-                        self._infoLog('f', "fetch_soc: tokens changed, store token file")
+                        self.log.debug("fetch_soc: tokens changed, store token file")
                         self.write_store()
 
             # authState == pinRequested and pin != last_pin_used: get new token set
@@ -840,10 +793,10 @@ class Api:
                 if 'last_pin_used' not in self.store:
                     self.store['last_pin_used'] = ''
 
-                self._infoLog('f', 'fetch_soc/pinRequested: old_pin = ' + self.store['last_pin_used'] +
-                              ', pin=' + self.pin)
+                self.log.debug('fetch_soc/pinRequested: old_pin = ' + self.store['last_pin_used'] +
+                               ', pin=' + self.pin)
                 if self.store['last_pin_used'] != self.pin:
-                    self._infoLog('f', 'fetch_soc/pinRequested: call request_new_token_set')
+                    self.log.debug('fetch_soc/pinRequested: call request_new_token_set')
                     self.request_new_token_set()
                     self.write_store()
                     soc = -1
@@ -862,7 +815,7 @@ class Api:
                 self.loop = False
                 if self.password == "" or self.password in None:
                     if self.pin == "000000":
-                        self._infoLog('f', 'fetch_soc/init: request_pin')
+                        self.log.debug('fetch_soc/init: request_pin')
                         self.store['nonce'] = str(uuid.uuid4())
                         self.request_pin(self.username, self.store['nonce'])
                         self.write_store()
@@ -873,17 +826,17 @@ class Api:
                         self.log.warning('smartEQ: Öffne die Fahrzeug-SOC-Konfiguration' +
                                          ' und befolge die Anweisungen (?).')
                 else:
-                    self._infoLog('f', 'fetch_soc/init: reconnect')
+                    self.log.debug('fetch_soc/init: reconnect')
                     self.store['Tokens'] = self.reconnect(True)
             # looks like an unexpected state, set to init
             else:
-                self._infoLog('f', "fetch_soc: unexpected authState " + self.store['authState'] +
-                              ", restart with init ...")
+                self.log.debug("fetch_soc: unexpected authState " + self.store['authState'] +
+                               ", restart with init ...")
                 self.set_authState('init')
 
-            self._infoLog('f', 'fetch_soc/loop: cnt=' +
-                          str(cnt) + ', soc=' + str(soc) +
-                          ', authState=' + self.store['authState'])
+            self.log.debug('fetch_soc/loop: cnt=' +
+                           str(cnt) + ', soc=' + str(soc) +
+                           ', authState=' + self.store['authState'])
             cnt += 1
         self.log.info(" SOC/Range: " + str(soc) + '%/' + str(range) +
                       '@' + self.soc_ts +
@@ -928,67 +881,60 @@ class Api:
             with open(tn, 'w', encoding='utf-8') as tf:
                 json.dump(self.ws_store, tf, indent=4)
         except Exception as e:
-            self._infoLog('i', "write_ws_store_file: Exception " + str(e))
+            self.log.debug("write_ws_store_file: Exception " + str(e))
 
     # write ws message file
     def write_ws_message(self, mtype: str, _json: str):
-        if 'M' in self.logFilter or 'A' in self.logFilter:
+        logLevel = int(self.log.getEffectiveLevel())
+        tn = self.ws_messageFile + '_' + mtype + '.json'
+        if logLevel <= 10:   # DEBUG?
             try:
-                tn = self.ws_messageFile + '_' + mtype + '.json'
                 with open(tn, 'w', encoding='utf-8') as tf:
                     json.dump(_json, tf, indent=4)
             except Exception as e:
-                self._infoLog('i', "write_ws_message_file: Exception " + str(e))
+                self.log.debug("write_ws_message_file: Exception " + str(e))
 
     # wait till authState is authenticated
     def ws_wait_for_state_authenticated(self):
         while self.store['authState'] != 'authenticated':
-            self._infoLog('w', self.ws_thread_name + ': waiting for authState == authenticated' +
-                          ', currently:' + self.store['authState'])
+            self.log.debug(self.ws_thread_name + ': waiting for authState == authenticated' +
+                           ', currently:' + self.store['authState'])
             time.sleep(10)
             self.load_store()
 
     # wsThread
     def wsThread(self):
+        logging.getLogger('websocket').setLevel(logging.WARNING)
         self.store_reload_time = int(time.time())
         self.X_dir = 1
         self.X_ts = int(time.time())
         try:
-            # self.vhList, self.vhConfig = self.su._get_vehicleList()   # for test only
-            self.vhList = self.su.get_vin_ev_map()
-            self.logFilter = self.su._get_logFilter()  # for test only
-            self._infoLog('w', self.ws_thread_name + ": soc_smarteq_ws starting")
-            self._infoLog('i', "wsThread starting: logFilter=" + self.logFilter)
+            self.vhList = self.su.get_vin_ev_map('smarteq')
+            self.log.debug("vehicle_vin_num_mapping=\n" + json.dumps(self.vhList, indent=4))
+            self.log.debug(self.ws_thread_name + ": soc_smarteq_ws starting")
+            self.log.info("wsThread " + WS_THREAD_NAME + " starting")
             now = 0
             self.init_ws_store(self.vin)
             self.load_ws_store(self.vin)
             self.wsError = 0
-            # time.sleep(10)
             self.ws_wait_for_state_authenticated()
-            # refresh Token to avoid problem at 1st connect
-            # self.Tokens = self.reconnect(True)
-            # self.store['Tokens'] = self.Tokens
-            # self.refreshToken = self.store['Tokens']['refresh_token']
-            # self._infoLog('w', self.ws_thread_name + ': write_store, refresh_token =' +
-            #               self.Tokens['refresh_token'])
-            # self.write_store()
 
             while True:
-                self._infoLog('s', "wsThread main loop: logFilter=" + self.logFilter)
+                self.log.debug("wsThread main loop")
 
                 self.ws_wait_for_state_authenticated()
 
                 if self.wsError > 0:
                     while now + 120 > int(time.time()):
-                        self._infoLog('w', 'waiting 2 min before next ws_connect, now=' +
-                                      str(now) + ', time=' + str(int(time.time())))
+                        self.log.debug('waiting 2 min before next ws_connect, now=' +
+                                       str(now) + ', time=' + str(int(time.time())))
                         time.sleep(30)
                     self.wsError = 0
 
                 self.ws = self.ws_connect()
                 now = int(time.time())
                 self.ws_connect_time = str(now)
-                self._infoLog('w', 'calling ws.run.forever()')
+                self.log.debug('calling ws.run.forever()')
                 self.ws.run_forever()
 
                 # if we arrive here connection was lost
@@ -999,23 +945,23 @@ class Api:
                 self.write_ws_store(self.vin)
 
                 # try to refresh token
-                self._infoLog('w', 'pre-reconnect, refresh_token =' +
-                              self.store['Tokens']['refresh_token'])
+                # self.log.debug('pre-reconnect, refresh_token =' +
+                #                self.store['Tokens']['refresh_token'])
                 self.Tokens = self.store['Tokens']
                 self.Tokens = self.reconnect(True)
                 self.store['Tokens'] = self.Tokens
                 self.refreshToken = self.store['Tokens']['refresh_token']
-                self._infoLog('w', 'write_store, refresh_token =' +
-                              self.Tokens['refresh_token'])
+                self.log.debug('write_store, refresh_token =' +
+                               self.Tokens['refresh_token'])
                 self.write_store()
         except Exception as e:
             self.log.exception("main loop exception=" + str(e))
 
     # connect_ws
     def ws_connect(self):
-        self._infoLog('w', 'ws_connect: check token')
+        self.log.debug('ws_connect: check token')
         if self.store['Tokens']['access_token'] is None:
-            self._infoLog('w', 'ws_connect: no access_token found, do 2 Factor Authentication')
+            self.log.debug('ws_connect: no access_token found, do 2 Factor Authentication')
             self.step_user()
         if self.store['Tokens']['access_token'] is None:
             self.log.error('ws_connect: still no access token, abort!')
@@ -1032,16 +978,16 @@ class Api:
             "X-TrackingId": str(uuid.uuid4()),
             "X-ApplicationName": X_APPLICATIONNAME_ECE,
             "ris-application-version": RIS_APPLICATION_VERSION,
-            "ris-os-name": "ios",
+            "ris-os-name": RIS_OS_NAME,
             "ris-os-version": RIS_OS_VERSION,
             "ris-sdk-version": RIS_SDK_VERSION,
-            "X-Locale": "de-DE",
+            "X-Locale": X_LOCALE,
             "User-Agent": WEBSOCKET_USER_AGENT,
-            "Content-Type": "application/json; charset=UTF-8"
+            "Content-Type": CONTENT_TYPE + "; charset=UTF-8"
         }
         # self.session.cookies.clear()
-        self._infoLog('W', "ws_connect: url=" + ws_url +
-                      ", ws_header=" + json.dumps(ws_header, indent=4))
+        self.log.debug("ws_connect: url=" + ws_url +
+                       ", ws_header=" + json.dumps(ws_header, indent=4))
         try:
             self.ws_connection = websocket.WebSocketApp(ws_url,
                                                         on_open=self.ws_on_open,
@@ -1049,15 +995,15 @@ class Api:
                                                         on_error=self.ws_on_error,
                                                         on_close=self.ws_on_close,
                                                         header=ws_header)
-            self._infoLog('W',
-                          'ws_connect: post open WebSocketApp, ws_connection=' + repr(self.ws_connection))
+            # self.log.debug('ws_connect: post open WebSocketApp, ws_connection.readyState=' +
+            #                str(self.ws_connection.readyState))
             return self.ws_connection
         except Exception as e:
             self.log.exception("ws_connect Exception: " + str(e))
         return self.ws_connection
 
     def ws_on_open(self, ws):
-        self._infoLog('w', "ws_on_open")
+        self.log.debug("ws_on_open: connection established")
 
     def ws_decode_message(self, res_raw):
         res = vehicle_events_pb2.PushMessage()
@@ -1065,25 +1011,18 @@ class Api:
         return res
 
     def ws_on_message(self, ws, data):
-        # reload logFilter every 1 minute to update logFilter in wsThread context
-        if self.store_reload_time + 60 < int(time.time()):
-            self.store_reload_time = int(time.time())
-            self.logFilter = self.su._get_logFilter()
-            if self.logFilter is None:
-                self.logFilter = ''
-            self._infoLog('s', "on_message: logFilter=" + self.logFilter)
-
-        self._infoLog('M', "ws_on_message: data=" + str(data))
+        # self.log.debug("ws_on_message: data=" + str(data))
         message = self.ws_decode_message(data)
-        self._infoLog('M', "ws_on_message: message=" + str(message))
+        # self.log.debug("ws_on_message: message=" + str(message))
         jmsg = MessageToJson(message)
-        self._infoLog('M', "ws_on_message: json message=" + str(jmsg))
+        # self.log.debug("ws_on_message: json message=" + str(jmsg))
         dmsg = json.loads(jmsg)
         messageType = list(dmsg.keys())[0]
-        self._infoLog('M', "ws_on_message: messageType = " + str(messageType))
+        # self.log.debug("ws_on_message: messageType = " + str(messageType))
         if messageType == 'vepUpdates':
             self._vin = list(dmsg['vepUpdates']['updates'].keys())[0]
-            self._infoLog('M', "ws_on_message _vin found: " + self._vin)
+            # self.log.debug("ws_on_message _vin found: " + self._vin)
+            self.write_ws_message(messageType, dmsg)
             self.vin = self._vin
             if self.vin == self._vin:
                 try:
@@ -1099,25 +1038,24 @@ class Api:
                     self.ws_soc_ts = 'na'
                 self.ws_range_X = self.ws_range
                 # simulate a change for testing the set_CarState interface
-                if 'X' in self.logFilter and self.X_ts + 120 < int(time.time()):
+                if TEST_RANGE_CHANGE > 0:
                     self.X_ts = int(time.time())
                     if self.X_dir == 1:
-                        self.ws_range = str(float(self.ws_range) + 0.2)
+                        self.ws_range = str(float(self.ws_range) + TEST_RANGE_CHANGE)
                         self.X_dir = -1
                     else:
-                        self.ws_range = str(float(self.ws_range) - 0.2)
+                        self.ws_range = str(float(self.ws_range) - TEST_RANGE_CHANGE)
                         self.X_dir = 1
 
                 if self.ws_store['soc'] != self.ws_soc or self.ws_store['range'] != self.ws_range:
                     self.load_store()   # reload store to get actual state
-                    self.write_ws_message(messageType, dmsg)
-                    self._infoLog('m', "SoC/Range=" + self.ws_soc +
+                    self.log.info("SoC/Range=" + self.ws_soc +
                                   "%/" + self.ws_range +
                                   "KM@" + self.ws_soc_ts)
-                    self._infoLog('M', "ws_on_message: data=" + str(data))
+                    # self.log.debug("ws_on_message: data=" + str(data))
 
-                    self._infoLog('M', "ws_on_message: message=" + str(message))
-                    self._infoLog('M', "ws_on_message: json message=" + str(jmsg))
+                    # self.log.debug("ws_on_message: message=" + str(message))
+                    # self.log.debug("ws_on_message: json message=" + str(jmsg))
                     self.ws_store['vin'] = self._vin
                     self.ws_store['soc'] = self.ws_soc
                     self.ws_store['range'] = self.ws_range
@@ -1126,21 +1064,21 @@ class Api:
                     self.ws_store['connect_time'] = self.ws_connect_time
                     self.write_ws_store(self._vin)
                     if self._vin not in self.vhList:
-                        self.vhList = self.su.get_vin_ev_map()
+                        self.vhList = self.su.get_vin_ev_map('smarteq')
                     if self._vin in self.vhList:
                         ev = self.vhList[self._vin]
                         self.su.set_CarState(ev, self.ws_soc, self.ws_range, self.ws_ts)
                     else:
                         self.log.warning('ws_on_message: VIN not configured as smarteq vehicle: ' + self._vin)
                 # restore range if X flag is set for testing
-                if 'X' in self.logFilter:
+                if TEST_RANGE_CHANGE > 0:
                     self.ws_range = self.ws_range_X
                     self.ws_store['range'] = self.ws_range
 
                 # check time - if connect is more than TOKENS_REFRESH_THRESHOLD ago, stop connection
                 now = int(time.time())
                 if now > int(self.ws_connect_time) + TOKENS_REFRESH_THRESHOLD_WS:
-                    self._infoLog('m', "ws_on_message: close connection")
+                    self.log.debug("ws_on_message: close connection")
                     ws.keep_running = False
             else:
                 self.log.warning("ws_on_message: wrong VIN, continue listening")
@@ -1150,7 +1088,7 @@ class Api:
                 self.write_ws_message(messageType, dmsg)
                 self._vins = list(dmsg['assignedVehicles']['vins'])
                 for ivin in self._vins:
-                    self._infoLog('i', "ws_on_message: assignedVehicles: " + ivin)
+                    self.log.debug("ws_on_message: assignedVehicles: " + ivin)
                     tn = self.ws_fname(ivin)
                     if not os.path.exists(tn):
                         # ws file for vin does not extst. create new
@@ -1172,7 +1110,7 @@ class Api:
         try:
             ws.close()
         except Exception as e:
-            self._infoLog('w', "ws_on_error: close exception: " + ", error=" + str(e))
+            self.log.debug("ws_on_error: close exception: " + ", error=" + str(e))
         self.ws_soc = str(-1)
         self.ws_range = str(0.0)
         self.ws_soc_ts = 'na'
@@ -1180,8 +1118,8 @@ class Api:
         self.wsError = 1
 
     def ws_on_close(self, ws, status_code, message):
-        self._infoLog('w', "ws_on_close, status_code=" + str(status_code) +
-                      ", message=" + str(message))
+        self.log.debug("ws_on_close, status_code=" + str(status_code) +
+                       ", message=" + str(message))
         self.ws_soc = str(-1)
         self.ws_range = str(0.0)
         self.ws_soc_ts = 'na'

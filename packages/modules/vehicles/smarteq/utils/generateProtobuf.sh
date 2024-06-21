@@ -2,6 +2,8 @@
 
 # installing protobuf compiler protoc
 # protoc version should not be too old!
+# release url
+# PB_REL=https://github.com/protocolbuffers/protobuf/releases
 # create temp folder
 # mkdir proto; cd proto
 # download zip file from release page for linux x86_64
