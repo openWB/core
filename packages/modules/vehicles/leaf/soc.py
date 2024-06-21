@@ -12,7 +12,7 @@ from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.leaf.config import LeafSoc, LeafConfiguration
 
-import pycarwings2
+from modules.vehicles.leaf import pycarwings2
 
 log = logging.getLogger(__name__)
 
