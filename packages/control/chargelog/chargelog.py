@@ -11,6 +11,7 @@ from helpermodules.measurement_logging.process_log import CalculationType, analy
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from helpermodules.utils.json_file_handler import write_and_check
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
 # Lademodus, ID-Tag
@@ -210,8 +211,7 @@ def write_new_entry(new_entry):
         #     content = json.load(jsonFile)
         content = []
     content.append(new_entry)
-    with open(filepath, "w", encoding="utf-8") as json_file:
-        json.dump(content, json_file)
+    write_and_check(filepath, content)
     log.debug(f"Neuer Ladelog-Eintrag: {new_entry}")
 
 

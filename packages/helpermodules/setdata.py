@@ -607,7 +607,7 @@ class SetData:
                 "/get/heartbeat" in msg.topic or
                 "/get/rfid" in msg.topic or
                 "/get/vehicle_id" in msg.topic or
-                "/get/serial_number"):
+                "/get/serial_number" in msg.topic):
             self._validate_value(msg, str)
         elif "/get/rfid_timestamp" in msg.topic:
             self._validate_value(msg, float)
@@ -873,12 +873,12 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/counter/get/hierarchy" in msg.topic:
                 self._validate_value(msg, None)
+            elif "openWB/set/counter/config/home_consumption_source_id" in msg.topic:
+                self._validate_value(msg, int)
             elif "openWB/set/counter/set/simulation" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/set/consumption_left" in msg.topic:
                 self._validate_value(msg, float)
-            elif "/config/selected" in msg.topic:
-                self._validate_value(msg, str)
             elif "/module" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/config/max_currents" in msg.topic:
@@ -1052,8 +1052,6 @@ class SetData:
             if "openWB/set/command/max_id" in msg.topic:
                 self._validate_value(msg, int, [(-1, float("inf"))])
             elif "todo" in msg.topic:
-                self._validate_value(msg, "json")
-            elif "error" in msg.topic:
                 self._validate_value(msg, "json")
             elif "messages" in msg.topic:
                 self._validate_value(msg, "json")

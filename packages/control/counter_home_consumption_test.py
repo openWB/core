@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from packages.conftest import hierarchy_standard, hierarchy_hybrid, hierarchy_nested
+from packages.conftest import hierarchy_hc_counter, hierarchy_standard, hierarchy_hybrid, hierarchy_nested
 from control.counter_all import CounterAll
 from modules.common.fault_state import FaultStateLevel
 
@@ -13,14 +13,16 @@ from modules.common.fault_state import FaultStateLevel
                           pytest.param(hierarchy_hybrid, id="hybrid"),
                              pytest.param(hierarchy_nested, id="nested")])
 def test_calc_home_consumption(counter_all: Callable[[], CounterAll], data_):
-    #
     c = counter_all()
-
-    # execution
     home_consumption = c._calc_home_consumption()[0]
-
-    # evaluation
     assert home_consumption == 500
+
+
+def test_calc_home_consumption_hc_counter(data_hc_counter_):
+    c = hierarchy_hc_counter()
+    c.data.config.home_consumption_source_id = 6
+    home_consumption = c._calc_home_consumption()[0]
+    assert home_consumption == 1100
 
 
 @pytest.mark.parametrize(["home_consumption",
@@ -50,3 +52,15 @@ def test_set_home_consumption(home_consumption: int,
     # evaluation
     assert c.data.set.invalid_home_consumption == expected_invalid_home_consumption
     assert c.data.set.home_consumption == expected_home_consumption
+
+
+def test_validate_home_consumption_counter(monkeypatch):
+    c = CounterAll()
+    c.data.config.home_consumption_source_id = 0
+    monkeypatch.setattr(c, "get_id_evu_counter", lambda: 0)
+    monkeypatch.setattr(c, "get_evu_counter_str", lambda: "counter0")
+
+    with pytest.raises(Exception) as e:
+        c._validate_home_consumption_counter()
+
+    assert str(e.value) == CounterAll.EVU_IS_HC_COUNTER_ERROR
