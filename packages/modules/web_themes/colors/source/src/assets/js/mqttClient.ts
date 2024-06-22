@@ -14,7 +14,7 @@ const mqttConnection = {
 	host: location.hostname,
 	port: location.protocol == 'https:' ? 443 : 80,
 	endpoint: '/ws',
-	protocol: (location.protocol == 'https:' ? 'wss' : 'ws') as  mqtt.MqttProtocol,
+	protocol: (location.protocol == 'https:' ? 'wss' : 'ws') as mqtt.MqttProtocol,
 	connectTimeout: 4000,
 	reconnectPeriod: 4000,
 	clean: false,
@@ -27,12 +27,12 @@ const subscription = {
 	topic: '',
 	qos: defaultQoS,
 }
-let client:  mqtt.MqttClient
+let client: mqtt.MqttClient
 
 const { host, port, endpoint, ...options } = mqttConnection
 const connectUrl = `${options.protocol}://${host}:${port}${endpoint}`
 try {
-	console.debug("connectURL", connectUrl)
+	console.debug('connectURL', connectUrl)
 	client = mqtt.connect(connectUrl, options)
 	client.on('connect', () => {
 		console.info('MQTT connection successful')
@@ -48,7 +48,7 @@ try {
 }
 
 //}
-export function mqttRegister(callback:  mqtt.OnMessageCallback) {
+export function mqttRegister(callback: mqtt.OnMessageCallback) {
 	if (client) {
 		client.on('message', callback)
 	} else {

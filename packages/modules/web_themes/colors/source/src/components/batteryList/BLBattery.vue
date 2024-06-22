@@ -55,8 +55,8 @@ const statusstyle = computed(() => {
 		props.bat.power < 0
 			? 'var(--color-pv)'
 			: props.bat.power > 0
-			? 'var(--color-battery)'
-			: 'var(--color-menu)'
+				? 'var(--color-battery)'
+				: 'var(--color-menu)'
 	return { 'background-color': bgcolor }
 })
 </script>
