@@ -39,10 +39,12 @@ def fetch_soc(username, password, chargepoint) -> CarState:
         key = leaf.request_update()
         status = leaf.get_status_from_update(key)
         sleepsecs = 20
-        while status is None:
+        for i in range(0,3):
             log.debug("Waiting {0} seconds".format(sleepsecs))
             time.sleep(sleepsecs)
             status = leaf.get_status_from_update(key)
+            if status is not None:
+                break
         log.debug("LP%s: Finished updating" % (chargepoint))
 
     leaf = getNissanSession()   # start Https session with Nissan Server
