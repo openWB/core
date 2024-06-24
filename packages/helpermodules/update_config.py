@@ -1606,7 +1606,7 @@ class UpdateConfig:
                     return {topic: updated_payload}
                 if device.get("type") == "huawei_smartlogger":
                     updated_payload = device
-                    updated_payload["huawei_smartlogger"].update({"huawei.huawei_smartlogger"})
+                    updated_payload["huawei_smartlogger"].update({"huawei.huawei_smrtlogger"})
                     return {topic: updated_payload}
                 # 3. kostal
                 if device.get("type") == "kostal_piko":
@@ -1671,6 +1671,23 @@ class UpdateConfig:
                 if device.get("type") == "solar_world":
                     updated_payload = device
                     updated_payload["solar_world"].update({"solar.solar_world"})
+                    return {topic: updated_payload}
+                # 7 Pfade fuer Filterfunktion im Frontend anpassen
+                if device.get("type") == "smart_me":
+                    updated_payload = device
+                    updated_payload["smart_me"].update({"smrt_me"})
+                    return {topic: updated_payload}
+                if device.get("type") == "smartfox":
+                    updated_payload = device
+                    updated_payload["smartfox"].update({"smrtfox"})
+                    return {topic: updated_payload}
+                if device.get("type") == "solaredge":
+                    updated_payload = device
+                    updated_payload["solaredge"].update({"soledge"})
+                    return {topic: updated_payload}
+                if device.get("type") == "solarmax":
+                    updated_payload = device
+                    updated_payload["solarmax"].update({"solmax"})
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 46)
