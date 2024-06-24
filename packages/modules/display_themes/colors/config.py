@@ -14,6 +14,7 @@ class ColorsDisplayThemeConfiguration:
         self.lock_changes = lock_changes
         self.lock_changes_code = lock_changes_code
         
+				
 @auto_str
 class ColorsDisplayTheme:
     def __init__(self,
