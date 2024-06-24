@@ -26,6 +26,7 @@ import {
 import { processSmarthomeMessages } from '@/components/smartHome/processMessages'
 import { addCounter, counters } from '@/components/counterList/model'
 import { mqttClientId } from './mqttClient'
+import { displayConfig } from './model'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -38,7 +39,7 @@ const topicsToSubscribe = [
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
 	'openWB/command/' + mqttClientId() + '/#',
-	'openWB/optional/#',
+	'openWB/optional/int_display/#',
 ]
 export function msgInit() {
 	mqttRegister(processMqttMessage)
@@ -53,7 +54,6 @@ export function msgStop() {
 	})
 }
 function processMqttMessage(topic: string, payload: Buffer) {
-	//console.log(topic)
 	const message = payload.toString()
 	if (topic.match(/^openwb\/counter\/[0-9]+\//i)) {
 		processCounterMessages(topic, message)
@@ -94,7 +94,8 @@ function processMqttMessage(topic: string, payload: Buffer) {
 	} else if (topic.match(/^openwb\/command\//i)) {
 		processCommandMessages(topic, message)
 	} else if (topic.match(/^openwb\/optional\//i)) {
-		console.log('int_display', message)
+		processDisplayMessages (topic, message)
+		console.debug(`int_display [${topic}] ${message}`)
 	}
 	// else if ( mqttTopic.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttTopic, message); }
 }
@@ -106,7 +107,7 @@ function processCounterMessages(topic: string, message: string) {
 	} else if (elements[3] == 'config') {
 		// console.warn('Ignored counter config message')
 	}
-	if (elements[3] == 'get') {
+	if ((elements[3] == 'get') && (id in counters)) {
 		switch (elements[4]) {
 			case 'power':
 				counters[id].power = +message
@@ -146,7 +147,6 @@ function processGlobalCounterMessages(topic: string, message: string) {
 			for (const element of hierarchy) {
 				if (element.type == 'counter') {
 					globalData.evuId = element.id
-					// console.info('EVU counter is ' + globalData.evuId)
 				}
 			}
 			processHierarchy(hierarchy[0])
@@ -233,7 +233,6 @@ function processEvuMessages(topic: string, message: string) {
 		default:
 	}
 }
-
 function processSystemMessages(topic: string, message: string) {
 	if (
 		topic.match(/^openWB\/system\/device\/[0-9]+\/component\/[0-9]+\/config$/i)
@@ -242,9 +241,18 @@ function processSystemMessages(topic: string, message: string) {
 		if (config.type == 'counter') {
 			counters[config.id].name = config.name
 		}
+	} else if (topic.match(/^openWB\/system\/ip_address$/i)) {
+		globalData.ipAddress = JSON.parse(message)
+	} else if (topic.match(/^openWB\/system\/time$/i)) {
+		globalData.systemTime = JSON.parse(message)
+	} else if (topic.match(/^openWB\/system\/version$/i)) {
+		globalData.version = JSON.parse(message)
+	} else if (topic.match(/^openWB\/system\/current_commit$/i)) {
+		globalData.versionDetails = JSON.parse(message)
+	} else if (topic.match(/^openWB\/system\/current_branch$/i)) {
+		globalData.devBranch = JSON.parse(message)
 	}
 }
-
 function processCommandMessages(topic: string, message: string) {
 	const tokens = topic.split('/')
 	if (topic.match(/^openWB\/command\/[a-z]+\/error$/i)) {
@@ -255,4 +263,17 @@ function processCommandMessages(topic: string, message: string) {
 			)
 		}
 	}
+}
+function processDisplayMessages(topic: string, message: string) {
+		if (topic.match(/^openwb\/optional\/int_display\/active$/i)) {
+			displayConfig.active = JSON.parse(message)
+		}  else if (topic.match(/^openwb\/optional\/int_display\/only_local_charge_points$/i)) {
+			displayConfig.localCpOnly = JSON.parse(message)
+		} else if (topic.match(/^openwb\/optional\/int_display\/theme$/i)) {
+			const config = JSON.parse(message)
+			console.log(config)
+			displayConfig.usePin = config.configuration.lock_changes
+			displayConfig.code = config.configuration.lock_changes_code
+			
+		}
 }

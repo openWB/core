@@ -33,7 +33,7 @@ const connectUrl = `${options.protocol}://${host}:${port}${endpoint}`
 try {
 	client = mqtt.connect(connectUrl, options)
 	client.on('connect', () => {
-		console.info('MQTT connection successful')
+		console.info('MQTT connection successful.')
 	})
 	client.on('disconnect', () => {
 		console.info('MQTT disconnected')
@@ -46,22 +46,27 @@ try {
 }
 
 //}
-export function mqttRegister(callback: mqtt.OnMessageCallback) {
+// register a callback
+export async function mqttRegister(callback: mqtt.OnMessageCallback) {
+	await checkConnection()
 	if (client) {
 		client.on('message', callback)
-	} else {
+		} else {
 		console.error('MqttRegister: MQTT client not available')
 	}
 }
-export function mqttSubscribe(toTopic: string) {
+export async function mqttSubscribe(toTopic: string) {
 	subscription.topic = toTopic
 	const { topic, qos } = subscription
+	
+	await checkConnection()
 	client.subscribe(topic, { qos }, (error) => {
 		if (error) {
 			console.error('MQTT Subscription error: ' + error)
 			return
 		}
 	})
+	console.log ('Subscribed to ' + toTopic)
 }
 export function mqttUnsubscribe(fromTopic: string) {
 	subscription.topic = fromTopic
@@ -78,7 +83,7 @@ export async function mqttPublish(topic: string, message: string) {
 	let connected = client.connected
 	let retries = 0
 	while (!connected && retries < 10) {
-		console.warn('MQTT publish: Not connected. Waiting 0.1 seconds')
+		console.warn('MQTT not connected. Waiting 0.1 seconds')
 		await delay(100)
 		connected = client.connected
 		retries += 1
@@ -107,6 +112,24 @@ export function mqttClientId() {
 	return mqttConnection.clientId
 }
 
+const MAX_RETRIES = 20
+async function checkConnection() :Promise<boolean>{
+	let connected = client.connected
+	let retries = 0
+	while (!connected && retries < MAX_RETRIES) {
+		console.warn('MQTT not connected. Waiting 0.1 seconds')
+		await delay(100)
+		connected = client.connected
+		retries += 1
+	}
+	return new Promise<boolean> ((resolve, reject) => {
+		if (retries < MAX_RETRIES) {
+			resolve(true)
+		} else {
+			reject(false)
+		}	
+	})
+}
 function delay(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms))
 }

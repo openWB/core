@@ -17,7 +17,7 @@
 				<div class="modal-body" style="background-color: var(--color-menu);">
 					<slot />
 					<button
-						class="btn btn-secondary float-end mt-3 ms-1"
+						class="btn btn-secondary closebutton float-end mt-3 ms-1"
 						data-bs-dismiss="modal"
 					>
 						Schließen
@@ -52,9 +52,6 @@ onMounted(() => {
 .modal-body {
 	background: var(--color-bg);
 }
-.btn-close {
-	color: var(--color-fg);
-}
 .modal-footer {
 	text-align: right;
 }
@@ -63,7 +60,9 @@ onMounted(() => {
 	background: var(--color-bg);
 	border: 0px;
 }
-
+.closebutton {
+	background: var(--color-bg);
+}
 /*.modal.fade .modal-dialog {
     -webkit-transform: scale(0.1);
     -moz-transform: scale(0.1);
@@ -97,4 +96,5 @@ onMounted(() => {
 	transform: none;
 	scale: 1;
 }
+
 </style>

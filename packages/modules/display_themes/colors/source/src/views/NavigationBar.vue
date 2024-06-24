@@ -11,10 +11,10 @@
 			<span class="fas fa-charging-station px-2" />
 			<span class="fas fa-arrow-right pe-2" />
 		</DisplayButton>
-		<DisplayButton color="var(--color-evu)" data-bs-toggle="modal" data-bs-target="#numberpad">
+		<DisplayButton :color= "(displayConfig.locked) ? 'var(--color-evu)' : 'var(--color-pv)'" @click="unlockDisplay">
 			<span class="fas fa-lock px-4" />
 		</DisplayButton>
-		<DisplayButton>Status</DisplayButton>
+		<DisplayButton data-bs-toggle="modal" data-bs-target="#statuspage">Status</DisplayButton>
 		<DisplayButton icon="fa-chart-pie" @click="selectPowermeter">Leistung</DisplayButton>
 		<DisplayButton icon="fa-chart-line" @click="selectPowergraph">Verlauf</DisplayButton>
 		<DisplayButton icon="fa-chart-column" @click="selectEnergymeter">Energie</DisplayButton>
@@ -24,11 +24,11 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { formatCurrentTime } from '@/assets/js/helpers'
-import { currentTime } from '@/assets/js/model'
+import { displayConfig, currentTime, unlockDisplay } from '@/assets/js/model'
 import DisplayButton from '@/components/shared/DisplayButton.vue'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { chargePoints } from '@/components/chargePointList/model'
-
+import { Modal } from 'bootstrap'
 let interval: ReturnType<typeof setInterval>
 
 function cpRight() {

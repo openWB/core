@@ -4,14 +4,16 @@
 		<div class="numberentry">
 			<PadButton v-for="val in 9" :key="val" :model-value=val @update:model-value="addDigit">{{ val }}</PadButton>
 			<PadButton :model-value="0" @update:model-value="addDigit">0</PadButton>
-			<PadButton :model-value="-1" color="var(--color-battery)" @update:model-value="addDigit"><span class="fas fa-delete-left"></span></PadButton>
-			<PadButton :model-value="-2" color="var(--color-battery)" @update:model-value="addDigit"><span class="fas fa-circle-check"></span></PadButton>
+			<PadButton :model-value="-1" color="var(--color-devices)" @update:model-value="addDigit"><span class="fas fa-delete-left"></span></PadButton>
+			<PadButton :model-value="-2" color="var(--color-devices)" @update:model-value="addDigit" data-bs-dismiss="modal"><span class="fas fa-circle-check"></span></PadButton>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { Modal } from 'bootstrap';
+import { displayConfig, checkCode } from '@/assets/js/model';
 import PadButton from './PadButton.vue';
 const props = defineProps<{
 	modelValue: number
@@ -20,18 +22,21 @@ const props = defineProps<{
 const code = ref("")
 const emit = defineEmits(['update:modelValue'])
 const hiddencode = computed(() => {
-	return (code.value.length == 0) ? 'Code ?': '*'.repeat(code.value.length)
+	return (code.value.length == 0) ? 'Bitte geben Sie den PIN ein': '*'.repeat(code.value.length)
 })
 function addDigit(digit: number) {
 	if (digit == -1) {
 		code.value = code.value.slice(0, -1)
 	} else if (digit == -2) {
 		emit('update:modelValue', code.value)
+		
 		code.value = ""
 	} else {
 		code.value = code.value + digit.toString()
 		}
 }
+
+
 </script>
 <style scoped>
 

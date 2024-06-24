@@ -18,35 +18,43 @@ v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
 		</div>
 	</div>
 	<ModalComponent modal-id="numberpad">
-		<template #title>Code Eingeben</template>
-		<NumberPad :model-value="0" @update:model-value="checkCode"></NumberPad>
+		<template #title>PIN Eingeben</template>
+		<NumberPad :model-value="0" @update:model-value="validateCode"></NumberPad>
+	</ModalComponent>
+	<ModalComponent modal-id="statuspage">
+		<template #title>Systemstatus</template>
+		<StatusPage></StatusPage>
 	</ModalComponent>
 </template>
 <script setup lang="ts">
-//import TheWelcome from '../components/TheWelcome.vue'
 import { onMounted } from 'vue'
+import { Modal } from 'bootstrap'
 import { globalConfig, initConfig } from '@/assets/js/themeConfig'
-import {
-	// globalConfig,
-	updateDimensions,
-	// screensize,
+import {	updateDimensions,
 } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
 import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
 import ModalComponent from '@/components/shared/ModalComponent.vue'
 import NumberPad from '@/components/shared/NumberPad.vue'
+import StatusPage from '@/components/statusPage/StatusPage.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import { initGraph } from '@/components/powerGraph/model'
 import CPChargePoint from '@/components/chargePointList/CPChargePoint.vue'
 import { chargePoints } from '@/components/chargePointList/model'
+import { displayConfig, checkCode } from '@/assets/js/model'
 
-//import { RouterLink, RouterView } from 'vue-router'
-//import HelloWorld from './components/HelloWorld.vue'
 // methods
 function init() {
 	initConfig()
 }
+
+function validateCode(s:string) {
+	if (checkCode(s)) {
+		displayConfig.locked = false
+	} 
+}
+
 onMounted(() => {
 	init()
 	window.addEventListener('resize', updateDimensions)
@@ -61,9 +69,7 @@ function haveFocus() {
 	}
 	//msgInit()
 }
-function checkCode (code: string) {
-	console.log(code)
-}
+
 </script>
 <style scoped>
 .content {
