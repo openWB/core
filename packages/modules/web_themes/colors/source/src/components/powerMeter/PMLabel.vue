@@ -41,17 +41,17 @@ const text = computed(() => {
 	return props.labeltext
 		? props.labeltext
 		: props.props
-		? props.props.icon + ' '
-		: props.labelicon
-		? props.labelicon + ' '
-		: ''
+			? props.props.icon + ' '
+			: props.labelicon
+				? props.labelicon + ' '
+				: ''
 })
 const color = computed(() => {
 	return props.labelcolor
 		? props.labelcolor
 		: props.props
-		? props.props.color
-		: ''
+			? props.props.color
+			: ''
 })
 const showMe = computed(() => {
 	return !props.data || props.data.power > 0
