@@ -5,12 +5,7 @@
  */
 
 // functions to interact with MQTT
-/* import {
-	MqttClient,
-	connect,
-	type OnMessageCallback,
-	type MqttProtocol,
-} from 'mqtt' */
+
 import mqtt from 'mqtt'
 import { type QoS } from 'mqtt-packet'
 
@@ -33,8 +28,6 @@ const subscription = {
 	qos: defaultQoS,
 }
 let client: mqtt.MqttClient
-
-// export function MqttConnect(callback: (t: string, m: string) => void, topiclist: string[]) {
 const { host, port, endpoint, ...options } = mqttConnection
 const connectUrl = `${options.protocol}://${host}:${port}${endpoint}`
 try {
@@ -68,7 +61,6 @@ export function mqttSubscribe(toTopic: string) {
 			console.error('MQTT Subscription error: ' + error)
 			return
 		}
-		//console.info("MQTT Subscription successful: " + toTopic);
 	})
 }
 export function mqttUnsubscribe(fromTopic: string) {
@@ -79,7 +71,6 @@ export function mqttUnsubscribe(fromTopic: string) {
 			console.error('MQTT Unsubscribe from ' + fromTopic + ' failed: ' + error)
 			return
 		}
-		//console.info ('MQTT unsubscribe successful: ' + topic)
 	})
 }
 export async function mqttPublish(topic: string, message: string) {

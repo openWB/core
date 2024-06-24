@@ -1,7 +1,8 @@
 <template>
 	<div class="content">
 		<div class="leftside">
-			<CPChargePoint v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
+			<CPChargePoint
+v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
 				:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]" :full-width="true"></CPChargePoint>
 		</div>
 		<div class="rightside">
@@ -18,7 +19,7 @@
 	</div>
 	<ModalComponent modal-id="numberpad">
 		<template #title>Code Eingeben</template>
-		<NumberPad></NumberPad>
+		<NumberPad :model-value="0" @update:model-value="checkCode"></NumberPad>
 	</ModalComponent>
 </template>
 <script setup lang="ts">
@@ -59,6 +60,9 @@ function haveFocus() {
 		initGraph()
 	}
 	//msgInit()
+}
+function checkCode (code: string) {
+	console.log(code)
 }
 </script>
 <style scoped>

@@ -14,7 +14,7 @@
 						<i class="fa-solid fa-lg fa-rectangle-xmark m-0 p-0" />
 					</button>
 				</div>
-				<div class="modal-body" style="background-color: var(--color-bg)">
+				<div class="modal-body" style="background-color: var(--color-menu);">
 					<slot />
 					<button
 						class="btn btn-secondary float-end mt-3 ms-1"

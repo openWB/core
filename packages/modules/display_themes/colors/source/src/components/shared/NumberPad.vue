@@ -1,35 +1,46 @@
 <template>
-	<div class="codedisplay">{{ hiddencode }}</div>
-	<div class="numberpad">
-		<PadButton v-for="val in 9" :key="val" :model-value=val @update:model-value="addDigit">{{ val }}</PadButton>
-		<PadButton :model-value="-1" @update:model-value="addDigit"><span class="fas fa-delete-left"></span></PadButton>
-		<PadButton :model-value="0" @update:model-value="addDigit">0</PadButton>
-		<PadButton :model-value="-2" @update:model-value="addDigit"><span class="fas fa-circle-check"></span></PadButton>
-
-
+	<div class = "numberpad">
+		<p class="codedisplay">{{ hiddencode }}</p>
+		<div class="numberentry">
+			<PadButton v-for="val in 9" :key="val" :model-value=val @update:model-value="addDigit">{{ val }}</PadButton>
+			<PadButton :model-value="0" @update:model-value="addDigit">0</PadButton>
+			<PadButton :model-value="-1" color="var(--color-battery)" @update:model-value="addDigit"><span class="fas fa-delete-left"></span></PadButton>
+			<PadButton :model-value="-2" color="var(--color-battery)" @update:model-value="addDigit"><span class="fas fa-circle-check"></span></PadButton>
+		</div>
 	</div>
 </template>
+
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import PadButton from './PadButton.vue';
-const code = ref("")
+const props = defineProps<{
+	modelValue: number
+}>()
 
+const code = ref("")
+const emit = defineEmits(['update:modelValue'])
 const hiddencode = computed(() => {
-	return '*'.repeat(code.value.length)
+	return (code.value.length == 0) ? 'Code ?': '*'.repeat(code.value.length)
 })
 function addDigit(digit: number) {
-	console.log(digit)
 	if (digit == -1) {
 		code.value = code.value.slice(0, -1)
 	} else if (digit == -2) {
-		//submit value
+		emit('update:modelValue', code.value)
+		code.value = ""
 	} else {
 		code.value = code.value + digit.toString()
-		console.log(code.value)
-	}
+		}
 }
 </script>
 <style scoped>
+
+.numberpad {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
 .codedisplay {
 	display: flex;
 	align-items: center;
@@ -38,8 +49,10 @@ function addDigit(digit: number) {
 	border: 10px;
 }
 
-.numberpad {
+.numberentry {
 	display: grid;
-	grid-template-columns: auto auto auto;
+	grid-template-columns: 70px 70px 70px;
+	grid-template-rows: 75px 75px 75px 75px;
+	grid-gap: 5px;
 }
 </style>

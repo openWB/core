@@ -1,25 +1,25 @@
 <template>
 	<WBWidget v-if="!configmode" :variable-width="true" :full-width="props.fullWidth">
 		<template #title>
-			<span :style="cpNameStyle" @click="configmode = !configmode">
+			<span :style="cpNameStyle">
 				<span class="fa-solid fa-charging-station">&nbsp;</span>
 				{{ props.chargepoint.name }}</span>
 		</template>
 
-		<!-- <template #buttons>
-			<span
+		<template #buttons>
+			<!-- 		<span
 				type="button"
 				class="ms-2 ps-5 pt-1"
 				:style="modePillStyle"
 				@click="configmode = !configmode"
 			>
 				<span class="fa-solid fa-lg ps-1 fa-ellipsis-vertical" />
-			</span>
-		</template> -->
+			</span> -->
+		</template>
 
 		<!-- Chargepoint info -->
 		<div v-if="!configmode">
-			<div class="grid12" @click="configmode = !configmode">
+			<div class="grid12">
 				<!-- Status information -->
 				<InfoItem heading="Status:" class="grid-col-4 grid-left">
 					<span :style="{ color: statusColor }">
@@ -58,14 +58,18 @@
 		<!-- Car information-->
 		<template #footer>
 			<div v-if="!configmode">
-				<div class="row" @click="configmode = !configmode">
+				<div class="row">
 					<div class="col">
-						<h3>
-							<i class="fa-solid fa-sm fa-car me-2" />
-							{{ chargepoint.vehicleName }}
-							<span v-if="chargepoint.hasPriority" class="me-1 fa-solid fa-xs fa-star ps-1" />
-							<span v-if="chargepoint.etActive" class="me-0 fa-solid fa-xs fa-coins ps-0" />
-						</h3>
+						<div class="d-flex justify-content-between align-items-center">
+							<h3>
+								<i class="fa-solid fa-sm fa-car me-2" />
+								{{ chargepoint.vehicleName }}
+								<span v-if="chargepoint.hasPriority" class="me-1 fa-solid fa-xs fa-star ps-1" />
+								<span v-if="chargepoint.etActive" class="me-0 fa-solid fa-xs fa-coins ps-0" />
+							</h3>
+							<DisplayButton v-if="!editChargemode" icon="fa-edit" :color="editChargemode ? 'var(--color-pv)' : 'var(--color-evu)'" class="p-3"
+								@click="editChargemode = !editChargemode">Gesperrt</DisplayButton>
+						</div>
 					</div>
 				</div>
 				<div class="grid12">
@@ -73,19 +77,13 @@
 					<!-- Car info -->
 					<InfoItem v-if="chargepoint.isSocConfigured" heading="Ladestand:" class="grid-col-4 grid-left">
 						<BatterySymbol :soc="soc" class="me-2" />
-						<i v-if="chargepoint.isSocConfigured && chargepoint.isSocManual" class="fa-solid fa-sm fas fa-edit"
-							:style="{ color: 'var(--color-menu)' }" @click="editSoc = !editSoc" />
-
-						<i v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual" type="button" class="fa-solid fa-sm"
-							:class="chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
-		" :style="{ color: 'var(--color-menu)' }" @click="loadSoc" />
 					</InfoItem>
 					<InfoItem v-if="chargepoint.isSocConfigured" heading="Reichweite:" class="grid-col-4">
 						{{
-		vehicles[props.chargepoint.connectedVehicle]
-			? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
-			: 0
-	}}
+							vehicles[props.chargepoint.connectedVehicle]
+								? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
+						: 0
+						}}
 						km
 					</InfoItem>
 					<InfoItem heading="Zeitplan:" class="grid-col-4 grid-right">
@@ -110,39 +108,30 @@
 					</InfoItem>
 					<InfoItem v-if="etData.active" heading="max. Preis:" class="grid-col-4">
 						<span type="button">{{
-		props.chargepoint.etActive
-			? (
-				Math.round(props.chargepoint.etMaxPrice * 10) / 10
-			).toFixed(1) + ' ct'
-			: '-'
-	}}
+							props.chargepoint.etActive
+								? (
+									Math.round(props.chargepoint.etMaxPrice * 10) / 10
+								).toFixed(1) + ' ct'
+							: '-'
+							}}
 						</span>
 					</InfoItem>
 					<InfoItem v-if="etData.active" heading="akt. Preis:" class="grid-col-4 grid-right">
 						<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
 					</InfoItem>
 
-					<div v-if="editPrice" :id="'priceChartInline' + props.chargepoint.id"
-						class="d-flex flex-column rounded priceEditor grid-col-12">
-						<PriceChart v-if="vehicles[props.chargepoint.connectedVehicle] != undefined"
-							:chargepoint="props.chargepoint" />
-						<span class="d-flex ms-2 my-4 pe-3 pt-1 d-flex align-self-end" :style="modePillStyle"
-							@click="editPrice = false">
-							<span type="button" class="d-flex fa-solid fa-lg ps-1 fa-circle-check" />
-						</span>
-					</div>
 					<!-- Chargemode buttons -->
 					<RadioBarInput :id="'chargemode-' + chargepoint.name" v-model="chargeMode" class="chargemodes mt-3 mb-3"
 						:options="Object.keys(chargemodes).map((v) => {
-		return {
-			text: chargemodes[v].name,
-			value: v,
-			color: chargemodes[v].color,
-			icon: chargemodes[v].icon,
-			active: chargemodes[v].mode == chargepoint.chargeMode,
-		}
-	})
-		" />
+							return {
+								text: chargemodes[v].name,
+								value: v,
+								color: chargemodes[v].color,
+								icon: chargemodes[v].icon,
+								active: chargemodes[v].mode == chargepoint.chargeMode,
+							}
+						})
+							" />
 				</div>
 			</div>
 		</template>
@@ -177,9 +166,9 @@ import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import { updateServer } from '@/assets/js/sendMessages'
 import RangeInput from '../shared/RangeInput.vue'
-import PriceChart from '../priceChart/PriceChart.vue'
 import { etData } from '../priceChart/model'
 import SwitchInput from '../shared/SwitchInput.vue'
+import DisplayButton from '../shared/DisplayButton.vue'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
@@ -192,7 +181,11 @@ const chargeMode = computed({
 		return props.chargepoint.chargeMode
 	},
 	set(newMode) {
+		if (editChargemode.value) {
 		chargePoints[props.chargepoint.id].chargeMode = newMode
+		} else {
+			editChargemode.value = true
+		}
 	},
 })
 const chargeAmpereString = computed(() => {
@@ -273,10 +266,6 @@ const currentPriceStyle = computed(() => {
 })
 const configmode = ref(false)
 const editSoc = ref(false)
-function loadSoc() {
-	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
-	chargePoints[props.chargepoint.id].waitingForSoc = true
-}
 function setSoc() {
 	updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
 	editSoc.value = false
@@ -293,8 +282,8 @@ const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return (Math.round(p * 10) / 10).toFixed(1)
 })
-const editPrice = ref(false)
-// methods
+
+const editChargemode = ref(false)
 </script>
 
 <style scoped>

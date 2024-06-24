@@ -38,6 +38,7 @@ const topicsToSubscribe = [
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
 	'openWB/command/' + mqttClientId() + '/#',
+	'openWB/optional/#',
 ]
 export function msgInit() {
 	mqttRegister(processMqttMessage)
@@ -52,6 +53,7 @@ export function msgStop() {
 	})
 }
 function processMqttMessage(topic: string, payload: Buffer) {
+	//console.log(topic)
 	const message = payload.toString()
 	if (topic.match(/^openwb\/counter\/[0-9]+\//i)) {
 		processCounterMessages(topic, message)
@@ -82,17 +84,18 @@ function processMqttMessage(topic: string, payload: Buffer) {
 	} else if (topic.match(/^openwb\/optional\/et\//i)) {
 		processEtProviderMessages(topic, message)
 	} // else if ( mqttTopic.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttTopic, message); }
-	else if (topic.match(/^openwb\/system\//i)) {
+		else if (topic.match(/^openwb\/system\//i)) {
 		processSystemMessages(topic, message)
 	} // else if ( mqttTopic.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttTopic, message); }
 	// else if ( mqttTopic.match( /^openwb\/hook\//i) ) { processHookMessages(mqttTopic, message); }
 	// else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesMessages(mqttTopic, message); }
-	else if (topic.match(/^openwb\/LegacySmartHome\//i)) {
+		else if (topic.match(/^openwb\/LegacySmartHome\//i)) {
 		processSmarthomeMessages(topic, message)
 	} else if (topic.match(/^openwb\/command\//i)) {
 		processCommandMessages(topic, message)
+	} else if (topic.match(/^openwb\/optional\//i)) {
+		console.log('int_display', message)
 	}
-
 	// else if ( mqttTopic.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttTopic, message); }
 }
 function processCounterMessages(topic: string, message: string) {
