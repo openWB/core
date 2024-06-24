@@ -80,6 +80,42 @@ class HandlerAlgorithm:
         except Exception:
             log.exception("Fehler im Main-Modul")
 
+    # enable time guarding after completing integration (it makes debugging much harder)
+    def handler5Sec_yc(self):
+        """ führt den YourCharge Algorithmus durch.
+        """
+        try:
+            # @exit_after(5)
+            def handler_with_control_interval():
+                if (data.data.general_data.data.control_interval / 5) == self.interval_counter:
+                    data.data.copy_data()
+                    loadvars_.get_values()
+                    wait_for_module_update_completed(loadvars_.event_module_update_completed,
+                                                     "openWB/set/system/device/module_update_completed")
+                    data.data.copy_data()
+                    with ChangedValuesContext(loadvars_.event_module_update_completed):
+                        self.heartbeat = True
+                        if data.data.system_data["system"].data["perform_update"]:
+                            data.data.system_data["system"].perform_update()
+                            return
+                        elif data.data.system_data["system"].data["update_in_progress"]:
+                            log.info("Regelung pausiert, da ein Update durchgeführt wird.")
+                        event_global_data_initialized.set()
+                        if self.control_yc is None:
+                            # we need lazy instantiation here so general_internal_chargepoint_handler is safely assigned
+                            self.control_yc = statmachine_yc.StatemachineYc(general_internal_chargepoint_handler)
+                        self.control_yc.perform_load_control()
+                    self.interval_counter = 1
+                else:
+                    self.interval_counter = self.interval_counter + 1
+            log.info("# ***Start*** ")
+            Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
+            handler_with_control_interval()
+        except KeyboardInterrupt:
+            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
+        except Exception:
+            log.exception("Fehler im Main-Modul")
+
     @exit_after(10)
     def handler5MinAlgorithm(self):
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
@@ -145,40 +181,6 @@ class HandlerAlgorithm:
     def handler_random_nightly(self):
         try:
             data.data.system_data["system"].thread_backup_and_send_to_cloud()
-        except KeyboardInterrupt:
-            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
-        except Exception:
-            log.exception("Fehler im Main-Modul")
-
-    # enable time guarding after completing integration (it makes debugging much harder)
-    def handler5Sec_yc(self):
-        """ führt den YourCharge Algorithmus durch.
-        """
-        try:
-            # @exit_after(5)
-            def handler_with_control_interval():
-                data.data.copy_data()
-                loadvars_.get_values()
-                changed_values_handler.pub_changed_values()
-                wait_for_module_update_completed(loadvars_.event_module_update_completed,
-                                                 "openWB/set/system/device/module_update_completed")
-                data.data.copy_data()
-                changed_values_handler.store_initial_values()
-                self.heartbeat = True
-                if data.data.system_data["system"].data["perform_update"]:
-                    data.data.system_data["system"].perform_update()
-                    return
-                elif data.data.system_data["system"].data["update_in_progress"]:
-                    log.info("Regelung pausiert, da ein Update durchgeführt wird.")
-                event_global_data_initialized.set()
-                if self.control_yc is None:
-                    # we need lazy instantiation here so general_internal_chargepoint_handler is safely assigned
-                    self.control_yc = statmachine_yc.StatemachineYc(general_internal_chargepoint_handler)
-                self.control_yc.perform_load_control()
-                changed_values_handler.pub_changed_values()
-            log.info("# ***Start*** ")
-            Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
-            handler_with_control_interval()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
