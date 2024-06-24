@@ -63,7 +63,7 @@ class SeriesHardwareCheckMixin:
         else:
             return False
 
-    def check_hardware(self: ClientHandlerProtocol):
+    def check_hardware(self: ClientHandlerProtocol, fault_state: FaultState):
 
         try:
             if self.evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
@@ -81,7 +81,7 @@ class SeriesHardwareCheckMixin:
         if meter_check_passed is False:
             raise Exception(meter_error_msg)
         elif meter_check_passed and meter_error_msg is not None:
-            self.fault_state.warning(meter_error_msg)
+            fault_state.warning(meter_error_msg)
         if evse_check_passed is False:
             raise Exception(EVSE_BROKEN)
 
