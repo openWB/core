@@ -148,16 +148,13 @@ export const displayConfig = reactive({
 })
 export function unlockDisplay() {
 	if (displayConfig.usePin && displayConfig.locked) {
-		let numberpad = new Modal('#numberpad')
+		const numberpad = new Modal('#numberpad')
 		numberpad.toggle()
 	} else {
 		displayConfig.locked = false
 	}
 }
 
-
-
-	
 export function checkCode(code: string) {
 	return code === displayConfig.code
 }

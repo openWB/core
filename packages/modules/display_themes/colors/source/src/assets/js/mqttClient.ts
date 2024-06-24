@@ -51,14 +51,14 @@ export async function mqttRegister(callback: mqtt.OnMessageCallback) {
 	await checkConnection()
 	if (client) {
 		client.on('message', callback)
-		} else {
+	} else {
 		console.error('MqttRegister: MQTT client not available')
 	}
 }
 export async function mqttSubscribe(toTopic: string) {
 	subscription.topic = toTopic
 	const { topic, qos } = subscription
-	
+
 	await checkConnection()
 	client.subscribe(topic, { qos }, (error) => {
 		if (error) {
@@ -66,7 +66,7 @@ export async function mqttSubscribe(toTopic: string) {
 			return
 		}
 	})
-	console.log ('Subscribed to ' + toTopic)
+	console.log('Subscribed to ' + toTopic)
 }
 export function mqttUnsubscribe(fromTopic: string) {
 	subscription.topic = fromTopic
@@ -113,7 +113,7 @@ export function mqttClientId() {
 }
 
 const MAX_RETRIES = 20
-async function checkConnection() :Promise<boolean>{
+async function checkConnection(): Promise<boolean> {
 	let connected = client.connected
 	let retries = 0
 	while (!connected && retries < MAX_RETRIES) {
@@ -122,12 +122,12 @@ async function checkConnection() :Promise<boolean>{
 		connected = client.connected
 		retries += 1
 	}
-	return new Promise<boolean> ((resolve, reject) => {
+	return new Promise<boolean>((resolve, reject) => {
 		if (retries < MAX_RETRIES) {
 			resolve(true)
 		} else {
 			reject(false)
-		}	
+		}
 	})
 }
 function delay(ms: number) {

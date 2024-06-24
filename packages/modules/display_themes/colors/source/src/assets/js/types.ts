@@ -38,11 +38,11 @@ export class GlobalData {
 	cpDailyExported = 0
 	evuId = 0
 	etProvider = ''
-	ipAddress=''
-	systemTime=''
-	version=''
+	ipAddress = ''
+	systemTime = ''
+	version = ''
 	versionDetails = ''
-	devBranch=''
+	devBranch = ''
 	get pvBatteryPriority() {
 		return this._pvBatteryPriority
 	}

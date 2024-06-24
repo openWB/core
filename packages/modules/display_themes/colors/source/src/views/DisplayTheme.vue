@@ -2,8 +2,10 @@
 	<div class="content">
 		<div class="leftside">
 			<CPChargePoint
-v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
-				:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]" :full-width="true"></CPChargePoint>
+				v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
+				:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"
+				:full-width="true"
+			></CPChargePoint>
 		</div>
 		<div class="rightside">
 			<div v-show="globalConfig.graphToShow == 'powermeter'">
@@ -19,7 +21,7 @@ v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
 	</div>
 	<ModalComponent modal-id="numberpad">
 		<template #title>PIN Eingeben</template>
-		<NumberPad :model-value="0" @update:model-value="validateCode"></NumberPad>
+		<NumberPad model-value="0" @update:model-value="validateCode"></NumberPad>
 	</ModalComponent>
 	<ModalComponent modal-id="statuspage">
 		<template #title>Systemstatus</template>
@@ -28,10 +30,8 @@ v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
 </template>
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { Modal } from 'bootstrap'
 import { globalConfig, initConfig } from '@/assets/js/themeConfig'
-import {	updateDimensions,
-} from '@/assets/js/themeConfig'
+import { updateDimensions } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
 import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
@@ -49,10 +49,10 @@ function init() {
 	initConfig()
 }
 
-function validateCode(s:string) {
+function validateCode(s: string) {
 	if (checkCode(s)) {
 		displayConfig.locked = false
-	} 
+	}
 }
 
 onMounted(() => {
@@ -69,7 +69,6 @@ function haveFocus() {
 	}
 	//msgInit()
 }
-
 </script>
 <style scoped>
 .content {

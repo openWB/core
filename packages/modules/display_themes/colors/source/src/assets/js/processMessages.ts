@@ -84,17 +84,17 @@ function processMqttMessage(topic: string, payload: Buffer) {
 	} else if (topic.match(/^openwb\/optional\/et\//i)) {
 		processEtProviderMessages(topic, message)
 	} // else if ( mqttTopic.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttTopic, message); }
-		else if (topic.match(/^openwb\/system\//i)) {
+	else if (topic.match(/^openwb\/system\//i)) {
 		processSystemMessages(topic, message)
 	} // else if ( mqttTopic.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttTopic, message); }
 	// else if ( mqttTopic.match( /^openwb\/hook\//i) ) { processHookMessages(mqttTopic, message); }
 	// else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesMessages(mqttTopic, message); }
-		else if (topic.match(/^openwb\/LegacySmartHome\//i)) {
+	else if (topic.match(/^openwb\/LegacySmartHome\//i)) {
 		processSmarthomeMessages(topic, message)
 	} else if (topic.match(/^openwb\/command\//i)) {
 		processCommandMessages(topic, message)
 	} else if (topic.match(/^openwb\/optional\//i)) {
-		processDisplayMessages (topic, message)
+		processDisplayMessages(topic, message)
 		console.debug(`int_display [${topic}] ${message}`)
 	}
 	// else if ( mqttTopic.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttTopic, message); }
@@ -107,7 +107,7 @@ function processCounterMessages(topic: string, message: string) {
 	} else if (elements[3] == 'config') {
 		// console.warn('Ignored counter config message')
 	}
-	if ((elements[3] == 'get') && (id in counters)) {
+	if (elements[3] == 'get' && id in counters) {
 		switch (elements[4]) {
 			case 'power':
 				counters[id].power = +message
@@ -265,15 +265,16 @@ function processCommandMessages(topic: string, message: string) {
 	}
 }
 function processDisplayMessages(topic: string, message: string) {
-		if (topic.match(/^openwb\/optional\/int_display\/active$/i)) {
-			displayConfig.active = JSON.parse(message)
-		}  else if (topic.match(/^openwb\/optional\/int_display\/only_local_charge_points$/i)) {
-			displayConfig.localCpOnly = JSON.parse(message)
-		} else if (topic.match(/^openwb\/optional\/int_display\/theme$/i)) {
-			const config = JSON.parse(message)
-			console.log(config)
-			displayConfig.usePin = config.configuration.lock_changes
-			displayConfig.code = config.configuration.lock_changes_code
-			
-		}
+	if (topic.match(/^openwb\/optional\/int_display\/active$/i)) {
+		displayConfig.active = JSON.parse(message)
+	} else if (
+		topic.match(/^openwb\/optional\/int_display\/only_local_charge_points$/i)
+	) {
+		displayConfig.localCpOnly = JSON.parse(message)
+	} else if (topic.match(/^openwb\/optional\/int_display\/theme$/i)) {
+		const config = JSON.parse(message)
+		console.log(config)
+		displayConfig.usePin = config.configuration.lock_changes
+		displayConfig.code = config.configuration.lock_changes_code
+	}
 }
