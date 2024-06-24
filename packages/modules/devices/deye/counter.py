@@ -25,8 +25,8 @@ class DeyeCounter:
             currents = [c / 100 for c in client.read_holding_registers(613, [ModbusDataType.INT_16]*3, unit=unit)]
             voltages = [v / 10 for v in client.read_holding_registers(644, [ModbusDataType.INT_16]*3, unit=unit)]
             powers = client.read_holding_registers(616, [ModbusDataType.INT_16]*3, unit=unit)
-            power = sum(powers)
-            frequency = client.read_holding_registers(187, ModbusDataType.INT_32, unit=unit) * 100
+            power = client.read_holding_registers(625, ModbusDataType.INT_16, unit=unit)
+            frequency = client.read_holding_registers(609, ModbusDataType.INT_32, unit=unit) / 100
 
             # Wenn der Import/export Netz in wh gerechnet wird => *100 !! kommt in kw/h *0.1
             imported = client.read_holding_registers(522, ModbusDataType.INT_16, unit=unit) * 100
