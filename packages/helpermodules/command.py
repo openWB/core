@@ -168,6 +168,7 @@ class Command:
         def setup_added_chargepoint():
             Pub().pub(f'openWB/chargepoint/{new_id}/config', chargepoint_config)
             Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
+            Pub().pub(f'openWB/chargepoint/{new_id}/set/change_ev_permitted', False)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
             self.max_id_hierarchy = self.max_id_hierarchy + 1
             Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)

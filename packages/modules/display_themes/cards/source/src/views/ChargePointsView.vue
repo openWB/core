@@ -137,7 +137,8 @@ export default {
     },
     handleVehicleClick(chargePointId) {
       if (
-        !this.changesLocked
+        !this.changesLocked &&
+        this.mqttStore.getChargePointVehicleChangePermitted(chargePointId)
       ) {
         this.modalChargePointId = chargePointId;
         this.modalVehicleSelectVisible = true;
@@ -395,6 +396,11 @@ export default {
                   size="lg"
                   class="full-width"
                   :class="!changesLocked ? 'clickable' : ''"
+                  :disabled="
+                    !mqttStore.getChargePointVehicleChangePermitted(
+                      modalChargePointId,
+                    )
+                  "
                   @click="handleVehicleClick(id)"
                 >
                   <font-awesome-icon fixed-width :icon="['fas', 'fa-car']" />

@@ -118,6 +118,7 @@ def log_factory() -> Log:
 
 @dataclass
 class Set:
+    change_ev_permitted: bool = False
     charging_ev: int = -1
     charging_ev_prev: int = -1
     current: float = 0

@@ -41,6 +41,7 @@ export default {
         "openWB/chargepoint/+/get/plug_state",
         "openWB/chargepoint/+/get/power",
         "openWB/chargepoint/+/get/rfid",
+        "openWB/chargepoint/+/set/change_ev_permitted",
         "openWB/chargepoint/+/set/current",
         "openWB/chargepoint/+/set/manual_lock",
         "openWB/chargepoint/+/set/log",
