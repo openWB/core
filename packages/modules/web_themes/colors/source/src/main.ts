@@ -9,5 +9,4 @@ import { register } from 'swiper/element/bundle'
 const app = createApp(App)
 // register Swiper custom elements
 register()
-// app.use(router)
 app.mount('#app')
