@@ -621,7 +621,7 @@ class Command:
         log.info("Update requested")
         # notify system about running update, notify about end update in script
         Pub().pub("openWB/system/update_in_progress", True)
-        if SubData.system_data["system"].data["backup_before_update"]:
+        if SubData.system_data["system"].data["backup_cloud"]["backup_before_update"]:
             try:
                 self.createCloudBackup(connection_id, {})
             except Exception:
