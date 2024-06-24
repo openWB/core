@@ -85,7 +85,7 @@ const devices = computed(() =>
 					}
 					return result
 				},
-				[] as ShDevice[][],
+				[[]] as ShDevice[][],
 			)
 		: [activeDevices.value],
 )
