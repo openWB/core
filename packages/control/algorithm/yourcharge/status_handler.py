@@ -57,7 +57,9 @@ class YcStatusHandler:
         self._accounting_info_cache = AccountingInfo(
             charge_start=f"{start_timestamp.isoformat()}Z",
             currrent_time=f"{start_timestamp.isoformat()}Z",
-            meter_at_start=meter_reading, charging=charging,
+            meter_at_start=meter_reading,
+            current_meter=meter_reading,
+            charging=charging,
             plugged_in=plugged, starting_rfid=rfid_tag)
         self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
         if self._accounting_info_cache.starting_rfid is not None and self._accounting_info_cache.starting_rfid != "":
