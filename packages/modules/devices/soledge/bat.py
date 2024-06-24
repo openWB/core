@@ -12,7 +12,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
-from modules.devices.solaredge.config import SolaredgeBatSetup
+from modules.devices.soledge.config import SolaredgeBatSetup
 
 log = logging.getLogger(__name__)
 

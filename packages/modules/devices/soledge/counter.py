@@ -9,9 +9,9 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.store import get_counter_value_store
-from modules.devices.solaredge.config import SolaredgeCounterSetup
-from modules.devices.solaredge.scale import create_scaled_reader
-from modules.devices.solaredge.meter import SolaredgeMeterRegisters
+from modules.devices.soledge.config import SolaredgeCounterSetup
+from modules.devices.soledge.scale import create_scaled_reader
+from modules.devices.soledge.meter import SolaredgeMeterRegisters
 
 log = logging.getLogger(__name__)
 

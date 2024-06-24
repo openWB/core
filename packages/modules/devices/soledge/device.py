@@ -14,17 +14,17 @@ from modules.common.component_context import MultiComponentUpdateContext, Single
 from modules.common.component_state import BatState, InverterState
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_inverter_value_store, get_bat_value_store
-from modules.devices.solaredge import bat, counter, external_inverter, inverter
-from modules.devices.solaredge.bat import SolaredgeBat
-from modules.devices.solaredge.counter import SolaredgeCounter
-from modules.devices.solaredge.external_inverter import SolaredgeExternalInverter
-from modules.devices.solaredge.inverter import SolaredgeInverter
-from modules.devices.solaredge.config import (Solaredge, SolaredgeBatConfiguration, SolaredgeBatSetup,
-                                              SolaredgeConfiguration,
-                                              SolaredgeCounterConfiguration, SolaredgeCounterSetup,
-                                              SolaredgeExternalInverterConfiguration, SolaredgeExternalInverterSetup,
-                                              SolaredgeInverterConfiguration, SolaredgeInverterSetup)
-from modules.devices.solaredge.meter import SolaredgeMeterRegisters
+from modules.devices.soledge import bat, counter, external_inverter, inverter
+from modules.devices.soledge.bat import SolaredgeBat
+from modules.devices.soledge.counter import SolaredgeCounter
+from modules.devices.soledge.external_inverter import SolaredgeExternalInverter
+from modules.devices.soledge.inverter import SolaredgeInverter
+from modules.devices.soledge.config import (Solaredge, SolaredgeBatConfiguration, SolaredgeBatSetup,
+                                            SolaredgeConfiguration,
+                                            SolaredgeCounterConfiguration, SolaredgeCounterSetup,
+                                            SolaredgeExternalInverterConfiguration, SolaredgeExternalInverterSetup,
+                                            SolaredgeInverterConfiguration, SolaredgeInverterSetup)
+from modules.devices.soledge.meter import SolaredgeMeterRegisters
 
 log = logging.getLogger(__name__)
 

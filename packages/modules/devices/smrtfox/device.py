@@ -5,8 +5,8 @@ from typing import List
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, IndependentComponentUpdater
-from modules.devices.smartfox.counter import SmartfoxCounter
-from modules.devices.smartfox.config import Smartfox, SmartfoxConfiguration, SmartfoxCounterSetup
+from modules.devices.smrtfox.counter import SmartfoxCounter
+from modules.devices.smrtfox.config import Smartfox, SmartfoxConfiguration, SmartfoxCounterSetup
 log = logging.getLogger(__name__)
 
 

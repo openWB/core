@@ -3,8 +3,8 @@ from unittest.mock import Mock
 from modules.common.component_state import InverterState
 from modules.common.modbus import ModbusTcpClient_
 
-from modules.devices.solaredge.config import SolaredgeInverterSetup
-from modules.devices.solaredge.inverter import SolaredgeInverter
+from modules.devices.soledge.config import SolaredgeInverterSetup
+from modules.devices.soledge.inverter import SolaredgeInverter
 
 
 def test_read_state():

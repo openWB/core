@@ -1,7 +1,7 @@
 from typing import NamedTuple
 import pytest
 
-from modules.devices.solaredge.meter import SolaredgeMeterRegisters
+from modules.devices.soledge.meter import SolaredgeMeterRegisters
 
 
 Params = NamedTuple("Params", [("meter_id", int),

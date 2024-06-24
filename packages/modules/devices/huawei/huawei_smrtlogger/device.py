@@ -6,12 +6,12 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common import modbus
-from modules.devices.huawei.huawei_smartlogger import counter
-from modules.devices.huawei.huawei_smartlogger import inverter
-from modules.devices.huawei.huawei_smartlogger import bat
-from modules.devices.huawei.huawei_smartlogger.config import Huawei_Smartlogger, Huawei_SmartloggerBatSetup
-from modules.devices.huawei.huawei_smartlogger.config import (Huawei_SmartloggerCounterSetup,
-                                                              Huawei_SmartloggerInverterSetup)
+from modules.devices.huawei.huawei_smrtlogger import counter
+from modules.devices.huawei.huawei_smrtlogger import inverter
+from modules.devices.huawei.huawei_smrtlogger import bat
+from modules.devices.huawei.huawei_smrtlogger.config import Huawei_Smartlogger, Huawei_SmartloggerBatSetup
+from modules.devices.huawei.huawei_smrtlogger.config import (Huawei_SmartloggerCounterSetup,
+                                                             Huawei_SmartloggerInverterSetup)
 
 
 log = logging.getLogger(__name__)

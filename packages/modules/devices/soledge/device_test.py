@@ -3,11 +3,11 @@ from unittest.mock import Mock
 
 import pytest
 
-from modules.devices.solaredge import device
-from modules.devices.solaredge.bat import SolaredgeBat
-from modules.devices.solaredge.counter import SolaredgeCounter
-from modules.devices.solaredge.external_inverter import SolaredgeExternalInverter
-from modules.devices.solaredge.inverter import SolaredgeInverter
+from modules.devices.soledge import device
+from modules.devices.soledge.bat import SolaredgeBat
+from modules.devices.soledge.counter import SolaredgeCounter
+from modules.devices.soledge.external_inverter import SolaredgeExternalInverter
+from modules.devices.soledge.inverter import SolaredgeInverter
 
 
 Params = NamedTuple("Params", [("configured_meter_ids", List[int]), ("effective_meter_ids", List[int])])

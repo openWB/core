@@ -8,8 +8,8 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.store import get_inverter_value_store
-from modules.devices.solaredge.config import SolaredgeInverterSetup
-from modules.devices.solaredge.scale import create_scaled_reader
+from modules.devices.soledge.config import SolaredgeInverterSetup
+from modules.devices.soledge.scale import create_scaled_reader
 
 
 class SolaredgeInverter:

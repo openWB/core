@@ -7,9 +7,9 @@ from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
-from modules.devices.solarmax import inverter
-from modules.devices.solarmax.bat import SolarmaxBat
-from modules.devices.solarmax.config import Solarmax, SolarmaxBatSetup, SolarmaxConfiguration, SolarmaxInverterSetup
+from modules.devices.solmax import inverter
+from modules.devices.solmax.bat import SolarmaxBat
+from modules.devices.solmax.config import Solarmax, SolarmaxBatSetup, SolarmaxConfiguration, SolarmaxInverterSetup
 
 log = logging.getLogger(__name__)
 

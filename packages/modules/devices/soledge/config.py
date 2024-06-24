@@ -12,7 +12,7 @@ class SolaredgeConfiguration:
 class Solaredge:
     def __init__(self,
                  name: str = "SolarEdge",
-                 type: str = "solaredge",
+                 type: str = "soledge",
                  group: str = "other",
                  id: int = 0,
                  configuration:  SolaredgeConfiguration = None) -> None:
