@@ -245,6 +245,13 @@ def _collect_log_data_from_date_until_now(timestamp: int):
             if entry["timestamp"] > timestamp:
                 log_data = entries[index:]
                 break
+        else:
+            try:
+                # Wenn der Ladevorgang nicht über vollte 5 Minuten ging, wurde während dem Laden kein Eintrag ins
+                # daily-log geschrieben.
+                log_data = entries[-1]
+            except KeyError:
+                log.exception(f"Fehler beim Zusammenstellen der Logdaten. Bitte Logdatei daily_log/{date}.json prüfen.")
         # Das Teillog vom ersten Tag wurde bereits ermittelt.
         start_date = datetime.datetime.fromtimestamp(timestamp) + datetime.timedelta(days=1)
         end_date = datetime.datetime.now()
@@ -259,6 +266,7 @@ def _collect_log_data_from_date_until_now(timestamp: int):
                     log_data.extend(json.load(jsonFile)["entries"])
             except FILE_ERRORS:
                 pass
+        log_data.append(create_entry(LogType.DAILY, LegacySmartHomeLogData(), log_data[-1]))
     except Exception:
         log.exception(f"Fehler beim Zusammenstellen der Logdaten von {timestamp}")
     finally:
