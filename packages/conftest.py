@@ -134,3 +134,43 @@ def data_() -> None:
             imported=14000, exported=18000),
             config=Mock(spec=CounterConfig, max_currents=[32]*3),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3)))})
+
+
+def hierarchy_hc_counter() -> CounterAll:
+    # counter0
+    #        |
+    #        - counter6
+    #                  |
+    #                   - cp3
+    #        - inverter1
+    #        - bat2
+    c = CounterAll()
+    c.data.get.hierarchy = [{"id": 0, "type": "counter",
+                             "children": [
+                                 {"id": 6, "type": "counter",
+                                  "children": [
+                                      {"id": 3, "type": "cp", "children": []}]},
+                                 {"id": 1, "type": "inverter", "children": []},
+                                 {"id": 2, "type": "bat", "children": []}]}]
+    return c
+
+
+@pytest.fixture()
+def data_hc_counter_() -> None:
+    data.data_init(Mock())
+    data.data.cp_data = {
+        "cp3": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
+                                                config=Mock(spec=Config, phase_1=1),
+                                                get=Mock(spec=Get, currents=[30, 0, 0], power=6900,
+                                                         daily_imported=10000, daily_exported=0, imported=56000),
+                                                set=Mock(spec=Set, loadmanagement_available=True)))}
+    data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(
+        spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None)))})
+    data.data.counter_data.update({
+        "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
+            spec=CounterGet, currents=[40]*3, power=-2000, daily_imported=45000, daily_exported=3000))),
+        "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
+            spec=CounterGet, currents=[25, 10, 25], power=8000, daily_imported=20000, daily_exported=0,
+            imported=14000, exported=18000),
+            config=Mock(spec=CounterConfig, max_currents=[32]*3),
+            set=Mock(spec=CounterSet, raw_currents_left=[31]*3)))})

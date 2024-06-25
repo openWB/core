@@ -28,14 +28,21 @@ def get_vehicle_default() -> dict:
     return {
         "charge_template": 0,
         "ev_template": 0,
-        "name": "Standard-Fahrzeug",
+        "name": "neues Fahrzeug",
         "tag_id": [],
         "get/soc": 0
     }
 
 
-def get_charge_template_default() -> dict:
+def get_new_charge_template() -> dict:
     ct_default = asdict(ChargeTemplateData())
+    ct_default["chargemode"]["scheduled_charging"].pop("plans")
+    ct_default["time_charging"].pop("plans")
+    return ct_default
+
+
+def get_charge_template_default() -> dict:
+    ct_default = asdict(ChargeTemplateData(name="Lade-Profil"))
     ct_default["chargemode"]["scheduled_charging"].pop("plans")
     ct_default["time_charging"].pop("plans")
     return ct_default
@@ -109,7 +116,7 @@ def et_factory() -> Et:
 
 @dataclass
 class ChargeTemplateData:
-    name: str = "Standard-Lade-Profil"
+    name: str = "neues Lade-Profil"
     disable_after_unplug: bool = False
     prio: bool = False
     load_default: bool = False
@@ -120,7 +127,7 @@ class ChargeTemplateData:
 
 @dataclass
 class EvTemplateData:
-    name: str = "Standard-Fahrzeug-Profil"
+    name: str = "neues Fahrzeug-Profil"
     max_current_multi_phases: int = 16
     max_phases: int = 3
     phase_switch_pause: int = 2
@@ -182,7 +189,7 @@ class EvData:
     set: Set = field(default_factory=set_factory)
     charge_template: int = 0
     ev_template: int = 0
-    name: str = "Standard-Fahrzeug"
+    name: str = "neues Fahrzeug"
     tag_id: List[str] = field(default_factory=empty_list_factory)
     get: Get = field(default_factory=get_factory)
 
@@ -197,6 +204,7 @@ class Ev:
             self.charge_template: ChargeTemplate = ChargeTemplate(0)
             self.soc_module: ConfigurableVehicle = None
             self.chargemode_changed = False
+            self.submode_changed = False
             self.num = index
             self.data = EvData()
         except Exception:
@@ -342,6 +350,9 @@ class Ev:
         else:
             self.chargemode_changed = False
 
+    def set_submode_changed(self, control_parameter: ControlParameter, submode: str) -> None:
+        self.submode_changed = (submode != control_parameter.submode)
+
     def check_min_max_current(self,
                               control_parameter: ControlParameter,
                               required_current: float,
@@ -398,10 +409,7 @@ class Ev:
             feed_in_yield = pv_config.feed_in_yield
         else:
             feed_in_yield = 0
-        evu_counter = data.data.counter_all_data.get_evu_counter()
-        # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = (-evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
-                       evu_counter.data.set.reserved_surplus - feed_in_yield)
+        all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         condition_1_to_3 = (((max(get_currents) > max_current and
                             all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
                             - get_power) or limit == LimitingValue.UNBALANCED_LOAD.value) and
@@ -435,17 +443,15 @@ class Ev:
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
+        cm_config = data.data.general_data.data.chargemode_config
         if self.charge_template.data.chargemode.pv_charging.feed_in_limit:
             feed_in_yield = pv_config.feed_in_yield
         else:
             feed_in_yield = 0
-        evu_counter = data.data.counter_all_data.get_evu_counter()
-        # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = (-evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
-                       evu_counter.data.set.reserved_surplus - feed_in_yield)
+        all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
-            delay = pv_config.phase_switch_delay * 60
+            delay = cm_config.phase_switch_delay * 60
             required_reserved_power = (self.ev_template.data.min_current * max_phases * 230 -
                                        self.ev_template.data.max_current_single_phase * 230)
 
@@ -453,7 +459,7 @@ class Ev:
             new_current = self.ev_template.data.min_current
         else:
             direction_str = f"Umschaltung von {max_phases} auf 1"
-            delay = (16 - pv_config.phase_switch_delay) * 60
+            delay = (16 - cm_config.phase_switch_delay) * 60
             # Es kann einphasig mit entsprechend niedriger Leistung gestartet werden.
             required_reserved_power = 0
             new_phase = 1
@@ -679,7 +685,8 @@ class ChargeTemplate:
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
         """
-        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging") == 0:
+        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging",
+                                                                                   "instant_charging") == 0:
             max_current = ev_template.data.max_current_multi_phases
             plan_data = self.search_plan(max_current, soc, ev_template, max_phases, used_amount)
             if plan_data:
@@ -767,7 +774,8 @@ class ChargeTemplate:
                                       "Es wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen.")
     SCHEDULED_CHARGING_LIMITED_BY_SOC = 'einen SoC von {}%'
     SCHEDULED_CHARGING_LIMITED_BY_AMOUNT = '{}kWh geladene Energie'
-    SCHEDULED_CHARGING_IN_TIME = 'Zielladen mit {}A, um {}  um {} zu erreichen.'
+    SCHEDULED_CHARGING_IN_TIME = ('Zielladen mit mindestens {}A, um {} um {} zu erreichen. Falls vorhanden wird '
+                                  'zusätzlich EVU-Überschuss geladen.')
     SCHEDULED_CHARGING_CHEAP_HOUR = "Zielladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
     SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Zielladen ausstehend, da jetzt kein günstiger Zeitpunkt zum preisbasierten "
                                          "Laden ist. Falls vorhanden, wird mit Überschuss geladen.")
