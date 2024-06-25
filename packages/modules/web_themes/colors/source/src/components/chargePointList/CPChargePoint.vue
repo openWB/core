@@ -212,7 +212,7 @@
 								props.chargepoint.etActive
 									? (
 											Math.round(props.chargepoint.etMaxPrice * 10) / 10
-									  ).toFixed(1) + ' ct'
+										).toFixed(1) + ' ct'
 									: '-'
 							}}
 
@@ -329,16 +329,16 @@ const chargedRangeString = computed(() => {
 	const energySincePlugged = props.chargepoint.chargedSincePlugged
 	const energyToday = props.chargepoint.dailyYield
 	if (energySincePlugged > 0) {
-	return (
-		Math.round(
-			(rangeSincePlugged / energySincePlugged) * energyToday,
-		).toString() +
-		' ' +
-		props.chargepoint.rangeUnit
-	)
+		return (
+			Math.round(
+				(rangeSincePlugged / energySincePlugged) * energyToday,
+			).toString() +
+			' ' +
+			props.chargepoint.rangeUnit
+		)
 	} else {
 		return '0'
-	} 
+	}
 })
 const statusString = computed(() => {
 	if (props.chargepoint.isLocked) {

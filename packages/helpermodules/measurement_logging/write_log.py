@@ -10,6 +10,7 @@ from typing import Dict, Optional
 from control import data
 from helpermodules.broker import InternalBrokerClient
 from helpermodules import timecheck
+from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.topic_parser import decode_payload, get_index
 from modules.common.utils.component_parser import get_component_name_by_id
 
@@ -153,8 +154,7 @@ def save_log(log_type: LogType):
         entries = content["entries"]
         entries.append(new_entry)
         content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
-        with open(filepath, "w") as jsonFile:
-            json.dump(content, jsonFile)
+        write_and_check(filepath, content)
         return content["entries"]
     except Exception:
         log.exception("Fehler beim Speichern des Log-Eintrags")
@@ -209,14 +209,15 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
             log.exception("Fehler im Werte-Logging-Modul für EV "+str(ev))
 
     counter_dict = {}
-    for counter in data.data.counter_data:
+    for counter in data.data.counter_data.values():
         try:
-            if "counter" in counter:
+            home_consumption_source_id = data.data.counter_all_data.data.config.home_consumption_source_id
+            if (home_consumption_source_id is None or counter.num != home_consumption_source_id):
                 counter_dict.update(
-                    {counter: {
-                        "imported": data.data.counter_data[counter].data.get.imported,
-                        "exported": data.data.counter_data[counter].data.get.exported,
-                        "grid": True if data.data.counter_all_data.get_evu_counter_str() == counter else False}})
+                    {f"counter{counter.num}": {
+                        "imported": counter.data.get.imported,
+                        "exported": counter.data.get.exported,
+                        "grid": True if data.data.counter_all_data.get_id_evu_counter() == counter.num else False}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
 

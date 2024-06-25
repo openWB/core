@@ -41,7 +41,7 @@ from helpermodules.timecheck import create_timestamp
 
 def get_chargepoint_config_default() -> dict:
     return {
-        "name": "Standard-Ladepunkt",
+        "name": "neuer Ladepunkt",
         "type": None,
         "ev": 0,
         "template": 0,
@@ -458,11 +458,11 @@ class Chargepoint(ChargepointRfidMixin):
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
                               self.data.control_parameter.phases)
                     self.data.set.phases_to_use = self.data.control_parameter.phases
-                if self._is_phase_switch_required():
-                    # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
-                    if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
-                            self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):
-                        if self.cp_ev_support_phase_switch():
+                if self.cp_ev_support_phase_switch():
+                    if self._is_phase_switch_required():
+                        # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
+                        if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
+                                self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):
                             log.debug(
                                 f"Lp {self.num}: Ladung aktiv halten "
                                 f"{charging_ev.ev_template.data.keep_charge_active_duration}s")
@@ -490,13 +490,12 @@ class Chargepoint(ChargepointRfidMixin):
                                 self.data.set.phases_to_use = self.data.control_parameter.phases
                             self.data.control_parameter.state = ChargepointState.PERFORMING_PHASE_SWITCH
                         else:
-                            log.error(
-                                "Phasenumschaltung an Ladepunkt" + str(self.num) +
-                                " nicht möglich, da der Ladepunkt keine Phasenumschaltung unterstützt.")
-                    else:
-                        log.error("Phasenumschaltung an Ladepunkt" + str(self.num) +
-                                  " nicht möglich, da gerade eine Umschaltung im Gange ist.")
-
+                            log.error("Phasenumschaltung an Ladepunkt" + str(self.num) +
+                                      " nicht möglich, da gerade eine Umschaltung im Gange ist.")
+                else:
+                    log.error(
+                        "Phasenumschaltung an Ladepunkt" + str(self.num) +
+                        " nicht möglich, da der Ladepunkt keine Phasenumschaltung unterstützt.")
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
@@ -510,7 +509,9 @@ class Chargepoint(ChargepointRfidMixin):
             mode = charging_ev.charge_template.data.chargemode.selected
         chargemode = data.data.general_data.get_phases_chargemode(mode, self.data.control_parameter.submode)
 
-        if chargemode is None:
+        if chargemode is None or (self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state):
+            # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
+            # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use
         elif (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
                                    self.data.get.phases_in_use == 0)):

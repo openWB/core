@@ -25,7 +25,8 @@ def filter_pos(name: str, record) -> bool:
 def setup_logging() -> None:
     def mb_to_bytes(megabytes: int) -> int:
         return megabytes * 1000000
-    main_file_handler = RotatingFileHandler(RAMDISK_PATH + 'main.log', maxBytes=mb_to_bytes(4), backupCount=1)
+    # Mehrere kleine Dateien verwenden, damit nicht zu viel verworfen wird, wenn die Datei voll ist.
+    main_file_handler = RotatingFileHandler(RAMDISK_PATH + 'main.log', maxBytes=mb_to_bytes(5.5), backupCount=4)
     main_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     logging.basicConfig(level=logging.DEBUG, handlers=[main_file_handler])
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
@@ -35,14 +36,14 @@ def setup_logging() -> None:
     chargelog_log = logging.getLogger("chargelog")
     chargelog_log.propagate = False
     chargelog_file_handler = RotatingFileHandler(
-        RAMDISK_PATH + 'chargelog.log', maxBytes=mb_to_bytes(3), backupCount=1)
+        RAMDISK_PATH + 'chargelog.log', maxBytes=mb_to_bytes(2), backupCount=1)
     chargelog_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     chargelog_log.addHandler(chargelog_file_handler)
 
     data_migration_log = logging.getLogger("data_migration")
     data_migration_log.propagate = False
     data_migration_file_handler = RotatingFileHandler(
-        PERSISTENT_LOG_PATH + 'data_migration.log', maxBytes=mb_to_bytes(3), backupCount=1)
+        PERSISTENT_LOG_PATH + 'data_migration.log', maxBytes=mb_to_bytes(1), backupCount=1)
     data_migration_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     data_migration_log.addHandler(data_migration_file_handler)
 
@@ -52,7 +53,7 @@ def setup_logging() -> None:
     mqtt_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     mqtt_log.addHandler(mqtt_file_handler)
 
-    smarthome_log_handler = RotatingFileHandler(RAMDISK_PATH + 'smarthome.log', maxBytes=mb_to_bytes(2), backupCount=1)
+    smarthome_log_handler = RotatingFileHandler(RAMDISK_PATH + 'smarthome.log', maxBytes=mb_to_bytes(1), backupCount=1)
     smarthome_log_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     smarthome_log_handler.addFilter(functools.partial(filter_pos, "smarthome"))
     logging.getLogger().addHandler(smarthome_log_handler)
@@ -63,7 +64,7 @@ def setup_logging() -> None:
     logging.getLogger().addHandler(soc_log_handler)
 
     internal_chargepoint_log_handler = RotatingFileHandler(RAMDISK_PATH + 'internal_chargepoint.log',
-                                                           maxBytes=mb_to_bytes(4),
+                                                           maxBytes=mb_to_bytes(1),
                                                            backupCount=1)
     internal_chargepoint_log_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     internal_chargepoint_log_handler.addFilter(functools.partial(filter_pos, "Internal Chargepoint"))
@@ -71,7 +72,7 @@ def setup_logging() -> None:
 
     urllib3_log = logging.getLogger("urllib3.connectionpool")
     urllib3_log.propagate = True
-    urllib3_file_handler = RotatingFileHandler(RAMDISK_PATH + 'soc.log', maxBytes=mb_to_bytes(5), backupCount=1)
+    urllib3_file_handler = RotatingFileHandler(RAMDISK_PATH + 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
     urllib3_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     urllib3_file_handler.addFilter(functools.partial(filter_pos, "soc"))
     urllib3_log.addHandler(urllib3_file_handler)

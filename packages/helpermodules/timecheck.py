@@ -3,7 +3,6 @@
 import copy
 import logging
 import datetime
-import math
 from dateutil.relativedelta import relativedelta
 from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
@@ -344,6 +343,12 @@ def convert_timedelta_to_time_string(timedelta_obj: datetime.timedelta) -> str:
 
 
 def convert_timestamp_delta_to_time_string(timestamp: int, delta: int) -> str:
-    diff = delta - (create_timestamp() - timestamp)
-    minute_diff = int(diff/60)
-    return f"{f'{minute_diff} Min. ' if minute_diff > 0 else ''}{math.ceil(diff%60)} Sek."
+    diff = int(delta - (create_timestamp() - timestamp))
+    seconds_diff = diff % 60
+    minute_diff = int((diff - seconds_diff) / 60)
+    if minute_diff > 0 and seconds_diff > 0:
+        return f"{minute_diff} Min. {seconds_diff} Sek."
+    elif minute_diff > 0:
+        return f"{minute_diff} Min."
+    elif seconds_diff > 0:
+        return f"{seconds_diff} Sek."
