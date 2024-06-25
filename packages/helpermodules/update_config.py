@@ -1537,7 +1537,7 @@ class UpdateConfig:
 
     def upgrade_datastore_45(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
-            if re.search("^openWB/general/chargemode_config/phase_switch_delay$", topic) is not None:
+            if re.search("^openWB/general/chargemode_config/pv_charging/phase_switch_delay$", topic) is not None:
                 delay = decode_payload(payload)
                 return {
                     "openWB/general/chargemode_config/phase_switch_delay": delay,
