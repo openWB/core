@@ -1544,7 +1544,7 @@ class UpdateConfig:
                 }
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 46)
-    
+
     def upgrade_datastore_46(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
