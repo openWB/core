@@ -23,6 +23,7 @@ from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
+from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
 from control import ev
@@ -40,7 +41,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 45
+    DATASTORE_VERSION = 46
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -111,7 +112,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/plug_state_prev$",
         "^openWB/chargepoint/[0-9]+/set/plug_time$",
         "^openWB/chargepoint/[0-9]+/set/rfid$",
-        "^openWB/chargepoint/[0-9]+/set/change_ev_permitted$",
         "^openWB/chargepoint/[0-9]+/set/log$",
         "^openWB/chargepoint/[0-9]+/set/phases_to_use$",
         "^openWB/chargepoint/[0-9]+/set/charging_ev_prev$",
@@ -130,6 +130,7 @@ class UpdateConfig:
         "^openWB/command/todo$",
 
         "^openWB/counter/config/reserve_for_not_charging$",
+        "^openWB/counter/config/home_consumption_source_id$",
         "^openWB/counter/get/hierarchy$",
         "^openWB/counter/set/disengageable_smarthome_power$",
         "^openWB/counter/set/imported_home_consumption$",
@@ -394,7 +395,6 @@ class UpdateConfig:
         "^openWB/system/device/module_update_completed$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
-        "^openWB/system/messages/[0-9]+$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/mqtt/valid_partner_ids$",
         "^openWB/system/release_train$",
@@ -404,20 +404,22 @@ class UpdateConfig:
         "^openWB/system/version$",
     ]
     default_topic = (
+        ("openWB/bat/config/configured", False),
         ("openWB/bat/get/fault_state", 0),
         ("openWB/bat/get/fault_str", NO_ERROR),
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
         ("openWB/counter/config/reserve_for_not_charging", counter_all.Config().reserve_for_not_charging),
-        ("openWB/vehicle/0/name", ev.EvData().name),
+        ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
+        ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
         ("openWB/vehicle/0/soc_module/config", NO_MODULE),
         ("openWB/vehicle/0/soc_module/general_config", dataclass_utils.asdict(GeneralVehicleConfig())),
         ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
-        ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData(min_current=10))),
+        ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData(name="Fahrzeug-Profil", min_current=10))),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 3),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
@@ -1495,6 +1497,45 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 44)
 
     def upgrade_datastore_44(self) -> None:
+        corrupt_days = ["20240620", "20240619", "20240618"]
+        for topic, payload in self.all_received_topics.items():
+            if topic == "openWB/counter/get/hierarchy":
+                top_entry = decode_payload(payload)[0]
+                if top_entry["type"] != "counter":
+                    raise Exception("First item in hierarchy must be a counter")
+                evu_counter_str = f"counter{top_entry['id']}"
+        for corrupt_day in corrupt_days:
+            try:
+                filepath = f"{self.base_path}/data/daily_log/{corrupt_day}.json"
+                with open(filepath, "r") as jsonFile:
+                    content = json.load(jsonFile)
+                for entry in content["entries"]:
+                    for counter_entry in entry["counter"]:
+                        if evu_counter_str == counter_entry and entry["counter"][counter_entry]["grid"] is False:
+                            entry["counter"][counter_entry]["grid"] = True
+                            break
+                    else:
+                        log.debug("all grid: False-bug does not exist in this installation")
+                        return
+                write_and_check(filepath, content)
+            except Exception:
+                log.exception(f"Logdatei '{filepath}' konnte nicht konvertiert werden.")
+        try:
+            filepath = f"{self.base_path}/data/monthly_log/202406.json"
+            with open(filepath, "r") as jsonFile:
+                content = json.load(jsonFile)
+            for entry in content["entries"]:
+                if entry["date"] in corrupt_days:
+                    for counter_entry in entry["counter"]:
+                        if evu_counter_str == counter_entry:
+                            entry["counter"][counter_entry]["grid"] = True
+                            break
+            write_and_check(filepath, content)
+        except Exception:
+            log.exception(f"Logdatei '{filepath}' konnte nicht konvertiert werden.")
+        self.__update_topic("openWB/system/datastore_version", 45)
+
+    def upgrade_datastore_45(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("^openWB/general/chargemode_config/phase_switch_delay$", topic) is not None:
                 delay = decode_payload(payload)
@@ -1502,4 +1543,4 @@ class UpdateConfig:
                     "openWB/general/chargemode_config/phase_switch_delay": delay,
                 }
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 45)
+        self.__update_topic("openWB/system/datastore_version", 46)
