@@ -439,6 +439,7 @@ class Ev:
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
+        cm_config = data.data.general_data.data.chargemode_config
         if self.charge_template.data.chargemode.pv_charging.feed_in_limit:
             feed_in_yield = pv_config.feed_in_yield
         else:
@@ -446,7 +447,7 @@ class Ev:
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
-            delay = pv_config.phase_switch_delay * 60
+            delay = cm_config.phase_switch_delay * 60
             required_reserved_power = (self.ev_template.data.min_current * max_phases * 230 -
                                        self.ev_template.data.max_current_single_phase * 230)
 
@@ -454,7 +455,7 @@ class Ev:
             new_current = self.ev_template.data.min_current
         else:
             direction_str = f"Umschaltung von {max_phases} auf 1"
-            delay = (16 - pv_config.phase_switch_delay) * 60
+            delay = (16 - cm_config.phase_switch_delay) * 60
             # Es kann einphasig mit entsprechend niedriger Leistung gestartet werden.
             required_reserved_power = 0
             new_phase = 1
@@ -680,7 +681,8 @@ class ChargeTemplate:
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
         """
-        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging") == 0:
+        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging",
+                                                                                   "instant_charging") == 0:
             max_current = ev_template.data.max_current_multi_phases
             plan_data = self.search_plan(max_current, soc, ev_template, max_phases, used_amount)
             if plan_data:
