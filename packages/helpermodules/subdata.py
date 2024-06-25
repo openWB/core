@@ -30,6 +30,7 @@ from helpermodules import system
 from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
+from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, RfidData)
@@ -649,7 +650,7 @@ class SubData:
                             mod = importlib.import_module(
                                 f".electricity_tariffs.{config_dict['type']}.tariff", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                            var.et_module = mod.create_electricity_tariff(config)
+                            var.et_module = ConfigurableElectricityTariff(config, mod.create_electricity_tariff)
                             var.et_get_prices()
                     else:
                         self.set_json_payload_class(var.data.et, msg)
