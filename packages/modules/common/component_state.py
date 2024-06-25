@@ -148,6 +148,7 @@ class ChargepointState:
                  imported: float = 0,
                  exported: float = 0,
                  power: float = 0,
+                 serial_number: str = "",
                  powers: Optional[List[Optional[float]]] = None,
                  voltages: Optional[List[Optional[float]]] = None,
                  currents: Optional[List[Optional[float]]] = None,
@@ -166,6 +167,7 @@ class ChargepointState:
         self.imported = imported
         self.exported = exported
         self.power = power
+        self.serial_number = serial_number
         self.phases_in_use = phases_in_use
         self.charge_state = charge_state
         self.plug_state = plug_state

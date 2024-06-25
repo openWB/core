@@ -10,7 +10,6 @@ from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.hardware_check_context import SeriesHardwareCheckContext
 from modules.common.store import get_chargepoint_value_store
 from modules.common.component_state import ChargepointState
 from modules.common.version_by_telnet import get_version_by_telnet
@@ -26,6 +25,7 @@ class ChargepointModule(AbstractChargepoint):
     }
     CP0_DELAY = 1
     CP0_DELAY_STARTUP = 4
+    ID_PHASE_SWITCH_UNIT = 3
 
     def __init__(self, config: OpenWBseries2Satellit) -> None:
         self.config = config
@@ -74,28 +74,30 @@ class ChargepointModule(AbstractChargepoint):
             if self.version is not None:
                 with self.__client_error_context:
                     try:
-                        with SeriesHardwareCheckContext(self._client):
-                            if self.version is False:
-                                raise ValueError(
-                                    "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
-                                    "Bitte den Support kontaktieren.")
-                            self.delay_second_cp(self.CP0_DELAY)
-                            with self._client.client:
-                                currents = self._client.meter_client.get_currents()
-                                phases_in_use = sum(1 for current in currents if current > 3)
-                                plug_state, charge_state, _ = self._client.evse_client.get_plug_charge_state()
+                        self._client.check_hardware(self.fault_state)
+                        if self.version is False:
+                            raise ValueError(
+                                "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
+                                "Bitte den Support kontaktieren.")
+                        self.delay_second_cp(self.CP0_DELAY)
+                        with self._client.client:
+                            currents = self._client.meter_client.get_currents()
+                            phases_in_use = sum(1 for current in currents if current > 3)
+                            plug_state, charge_state, _ = self._client.evse_client.get_plug_charge_state()
 
-                                chargepoint_state = ChargepointState(
-                                    power=self._client.meter_client.get_power()[1],
-                                    currents=currents,
-                                    imported=self._client.meter_client.get_imported(),
-                                    exported=0,
-                                    voltages=self._client.meter_client.get_voltages(),
-                                    plug_state=plug_state,
-                                    charge_state=charge_state,
-                                    phases_in_use=phases_in_use,
-                                )
-                            self.store.set(chargepoint_state)
+                            chargepoint_state = ChargepointState(
+                                power=self._client.meter_client.get_power()[1],
+                                currents=currents,
+                                imported=self._client.meter_client.get_imported(),
+                                exported=0,
+                                voltages=self._client.meter_client.get_voltages(),
+                                plug_state=plug_state,
+                                charge_state=charge_state,
+                                phases_in_use=phases_in_use,
+                                serial_number=self._client.meter_client.get_serial_number()
+                            )
+                        self.store.set(chargepoint_state)
+                        self.__client_error_context.reset_error_counter()
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
@@ -105,16 +107,41 @@ class ChargepointModule(AbstractChargepoint):
 
     def set_current(self, current: float) -> None:
         if self.version is not None:
+            if self.__client_error_context.error_counter_exceeded():
+                current = 0
             with SingleComponentUpdateContext(self.fault_state, update_always=False):
                 with self.__client_error_context:
                     try:
-                        with SeriesHardwareCheckContext(self._client):
-                            self.delay_second_cp(self.CP0_DELAY)
-                            with self._client.client:
-                                if self.version:
-                                    self._client.evse_client.set_current(int(current))
-                                else:
-                                    self._client.evse_client.set_current(0)
+                        self._client.check_hardware(self.fault_state)
+                        self.delay_second_cp(self.CP0_DELAY)
+                        with self._client.client:
+                            if self.version:
+                                self._client.evse_client.set_current(int(current))
+                            else:
+                                self._client.evse_client.set_current(0)
+                    except AttributeError:
+                        self._create_client()
+                        self._validate_version()
+
+    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+        if self.version is not None:
+            with SingleComponentUpdateContext(self.fault_state, update_always=False):
+                with self.__client_error_context:
+                    try:
+                        self._client.check_hardware(self.fault_state)
+                        with self._client.client:
+                            if phases_to_use == 1:
+                                self._client.client.delegate.write_register(
+                                    0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)
+                                time.sleep(1)
+                                self._client.client.delegate.write_register(
+                                    0x0001, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+                            else:
+                                self._client.client.delegate.write_register(
+                                    0x0002, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+                                time.sleep(1)
+                                self._client.client.delegate.write_register(
+                                    0x0002, 256, unit=self.ID_PHASE_SWITCH_UNIT)
                     except AttributeError:
                         self._create_client()
                         self._validate_version()

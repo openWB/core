@@ -27,7 +27,7 @@ from control import data
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
 from control.chargepoint.chargepoint_template import CpTemplate
-from control.chargepoint.control_parameter import ControlParameter
+from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev import Ev
 from control import phase_switch
@@ -41,7 +41,7 @@ from helpermodules.timecheck import create_timestamp
 
 def get_chargepoint_config_default() -> dict:
     return {
-        "name": "Standard-Ladepunkt",
+        "name": "neuer Ladepunkt",
         "type": None,
         "ev": 0,
         "template": 0,
@@ -213,11 +213,12 @@ class Chargepoint(ChargepointRfidMixin):
         # werden soll (-1), Daten zurücksetzen.
         if self.data.set.charging_ev_prev != -1:
             # Daten zurücksetzen, wenn nicht geladen werden soll.
-            self.reset_control_parameter()
+            self.reset_control_parameter_at_charge_stop()
             data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                 self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
             # Abstecken
             if not self.data.get.plug_state:
+                self.data.control_parameter = control_parameter_factory()
                 # Standardprofil nach Abstecken laden
                 if data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template.data.load_default:
                     self.data.config.ev = 0
@@ -303,6 +304,14 @@ class Chargepoint(ChargepointRfidMixin):
     def reset_log_data(self) -> None:
         self.data.set.log = Log()
         Pub().pub(f"openWB/set/chargepoint/{self.num}/set/log", asdict(self.data.set.log))
+
+    def reset_control_parameter_at_charge_stop(self) -> None:
+        # Wenn die Ladung zB wegen Autolock gestoppt wird, Zählerstände beibehalten, damit nicht nochmal die Ladung
+        # gestartet wird.
+        control_parameter = control_parameter_factory()
+        control_parameter.imported_at_plan_start = self.data.control_parameter.imported_at_plan_start
+        control_parameter.imported_instant_charging = self.data.control_parameter.imported_instant_charging
+        self.data.control_parameter = control_parameter
 
     def prepare_cp(self) -> Tuple[int, Optional[str]]:
         try:
@@ -449,11 +458,11 @@ class Chargepoint(ChargepointRfidMixin):
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
                               self.data.control_parameter.phases)
                     self.data.set.phases_to_use = self.data.control_parameter.phases
-                if self._is_phase_switch_required():
-                    # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
-                    if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
-                            self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):
-                        if self.cp_ev_support_phase_switch():
+                if self.cp_ev_support_phase_switch():
+                    if self._is_phase_switch_required():
+                        # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
+                        if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
+                                self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):
                             log.debug(
                                 f"Lp {self.num}: Ladung aktiv halten "
                                 f"{charging_ev.ev_template.data.keep_charge_active_duration}s")
@@ -481,13 +490,12 @@ class Chargepoint(ChargepointRfidMixin):
                                 self.data.set.phases_to_use = self.data.control_parameter.phases
                             self.data.control_parameter.state = ChargepointState.PERFORMING_PHASE_SWITCH
                         else:
-                            log.error(
-                                "Phasenumschaltung an Ladepunkt" + str(self.num) +
-                                " nicht möglich, da der Ladepunkt keine Phasenumschaltung unterstützt.")
-                    else:
-                        log.error("Phasenumschaltung an Ladepunkt" + str(self.num) +
-                                  " nicht möglich, da gerade eine Umschaltung im Gange ist.")
-
+                            log.error("Phasenumschaltung an Ladepunkt" + str(self.num) +
+                                      " nicht möglich, da gerade eine Umschaltung im Gange ist.")
+                else:
+                    log.error(
+                        "Phasenumschaltung an Ladepunkt" + str(self.num) +
+                        " nicht möglich, da der Ladepunkt keine Phasenumschaltung unterstützt.")
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
@@ -499,9 +507,11 @@ class Chargepoint(ChargepointRfidMixin):
             mode = "time_charging"
         else:
             mode = charging_ev.charge_template.data.chargemode.selected
-        chargemode = data.data.general_data.get_phases_chargemode(mode)
+        chargemode = data.data.general_data.get_phases_chargemode(mode, self.data.control_parameter.submode)
 
-        if chargemode is None:
+        if chargemode is None or (self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state):
+            # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
+            # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use
         elif (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
                                    self.data.get.phases_in_use == 0)):
@@ -764,11 +774,14 @@ class Chargepoint(ChargepointRfidMixin):
     def cp_ev_chargemode_support_phase_switch(self) -> bool:
         control_parameter = self.data.control_parameter
         pv_auto_switch = (control_parameter.chargemode == Chargemode.PV_CHARGING and
-                          data.data.general_data.get_phases_chargemode(Chargemode.PV_CHARGING.value) == 0)
+                          data.data.general_data.get_phases_chargemode(
+                              Chargemode.PV_CHARGING.value,
+                              control_parameter.submode) == 0)
         scheduled_auto_switch = (
             control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
             control_parameter.submode == Chargemode.PV_CHARGING and
-            data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value) == 0)
+            data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value,
+                                                         control_parameter.submode) == 0)
         return (self.cp_ev_support_phase_switch() and
                 self.data.get.charge_state and
                 (pv_auto_switch or scheduled_auto_switch) and

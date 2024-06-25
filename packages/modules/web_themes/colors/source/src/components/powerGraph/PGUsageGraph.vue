@@ -2,6 +2,7 @@
 	<g
 		id="pgUsageGraph"
 		:origin="draw"
+		:origin2="autozoom"
 		:transform="'translate(' + margin.left + ',' + margin.top + ')'"
 	/>
 </template>
@@ -24,6 +25,8 @@ import {
 	animateUsageGraph,
 	usageGraphIsInitialized,
 	xScaleMonth,
+	xScale,
+	zoomedRange,
 } from './model'
 const props = defineProps<{
 	width: number
@@ -87,26 +90,16 @@ const draw = computed(() => {
 		yAxis.selectAll('.tick line').attr('stroke', 'var(--color-bg)')
 	}
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+
 	return 'pgUsageGraph.vue'
 })
 //const stackGen = computed(() => stack().keys(keys[props.stackOrder].concat(['cp3'])))
 const stackGen = computed(() => {
-	return stack().keys(keysToUse.value)
+	return stack()
+		.value((d, key) => d[key] ?? 0)
+		.keys(keysToUse.value)
 })
 const stackedSeries = computed(() => stackGen.value(graphData.data))
-
-const iScale = computed(() => {
-	return scaleLinear()
-		.domain([0, graphData.data.length - 1])
-		.range([0, props.width])
-})
-
-/* const iScaleMonth = computed(() =>
-	scaleBand<number>()
-		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
-		.range([0, props.width + props.margin.right])
-		.paddingInner(0.4),
-) */
 
 const yScale = computed(() => {
 	return scaleLinear()
@@ -138,10 +131,13 @@ const keysToUse = computed(() => {
 				[],
 			)
 		}
-		additionalKeys.map((key, i) => {
+		additionalKeys.forEach((key, i) => {
 			k.splice(idx + i, 0, key)
 			colors[key] = 'var(--color-cp' + i + ')'
 		})
+		if (globalConfig.showInverters) {
+			k.push('evuOut')
+		}
 		return k
 	}
 })
@@ -149,7 +145,7 @@ const keysToUse = computed(() => {
 const vrange = computed(() => {
 	let result = extent(
 		graphData.data,
-		(d) => d.house + d.charging + d.batIn + d.devices,
+		(d) => d.house + d.charging + d.batIn + d.devices + d.evuOut,
 	)
 	if (result[0] != undefined && result[1] != undefined) {
 		if (graphData.graphMode == 'year') {
@@ -178,10 +174,10 @@ const yAxisGenerator = computed(() => {
 })
 function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	const area0 = area()
-		.x((d, i) => iScale.value(i))
+		.x((d, i) => xScale.value(graphData.data[i].date))
 		.y(yScale.value(0))
 	const area1 = area()
-		.x((d, i) => iScale.value(i))
+		.x((d, i) => xScale.value(graphData.data[i].date))
 		.y0((d) => yScale.value(d[0]))
 		.y1((d) => yScale.value(d[1]))
 	if (globalConfig.showAnimations) {
@@ -286,6 +282,24 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.attr('width', xScaleMonth.value.bandwidth())
 	}
 }
+
+const autozoom = computed(() => {
+	const graph: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+		select('g#pgUsageGraph')
+	if (graphData.graphMode != 'month' && graphData.graphMode != 'year') {
+		xScale.value.range(zoomedRange.value)
+		const areaz = area()
+			.x((d, i) => xScale.value(graphData.data[i].date))
+			.y0((d) => yScale.value(d[0]))
+			.y1((d) => yScale.value(d[1]))
+		graph
+			.selectAll('path')
+			.attr('d', (series) =>
+				series ? areaz(series as [number, number][]) : '',
+			)
+	}
+	return 'zoomed'
+})
 </script>
 
 <style></style>

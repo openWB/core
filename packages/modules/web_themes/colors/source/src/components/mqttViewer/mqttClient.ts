@@ -35,7 +35,8 @@ const connectUrl = `${options.protocol}://${host}:${port}${endpoint}`
 try {
 	client = connect(connectUrl, options)
 	client.on('connect', () => {
-		console.info('MQTT connection successful')
+		console.info('MQTT connection (mqtt viewer) successful')
+		console.info(`client id: ${mqttConnection.clientId}`)
 		// topiclist.forEach((topic) => {
 		//  subscribe(topic);
 		// });
@@ -64,6 +65,7 @@ export function mqttSubscribe(toTopic: string) {
 			return
 		}
 		console.info('MQTT Subscription successful: ' + toTopic)
+		console.info(`mqtt client id: ${mqttConnection.clientId}`)
 	})
 }
 export function mqttUnsubscribe(fromTopic: string) {

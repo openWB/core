@@ -20,7 +20,7 @@
 		<SHListItem
 			v-for="device in group"
 			:key="device.id"
-			:device="device"
+			:device="<ShDevice>device"
 			class="subgrid pb-2"
 		/>
 	</WbWidgetFlex>
@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, type ComputedRef } from 'vue'
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import SHListItem from './SHListItem.vue'
 import { ShDevice, shDevices } from './model'
@@ -74,8 +74,8 @@ const devicesPerWidget = 3 // max number of devices to be displayed in one box
 
 const devices = computed(() =>
 	widescreen.value
-		? activeDevices.value.reduce(
-				(grouping: [[ShDevice]], device: ShDevice) => {
+		? (<ComputedRef<ShDevice[]>>activeDevices).value.reduce<ShDevice[][]>(
+				(grouping: ShDevice[][], device: ShDevice) => {
 					const result = grouping
 					let lastGroup = grouping[grouping.length - 1]
 					if (lastGroup.length >= devicesPerWidget) {
@@ -85,12 +85,12 @@ const devices = computed(() =>
 					}
 					return result
 				},
-				[[]] as unknown as [[ShDevice]],
-		  )
+				[[]] as ShDevice[][],
+			)
 		: [activeDevices.value],
 )
 const activeDevices = computed(() => {
-	return Object.values(shDevices).filter((dev) => dev.configured)
+	return [...shDevices.values()].filter((dev) => dev.configured)
 })
 
 function title(index: number) {

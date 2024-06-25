@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import logging
-import time
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
-from modules.common.modbus import ModbusDataType, ModbusTcpClient_
+from modules.common.modbus import ModbusTcpClient_
 from modules.devices.huawei.bat import HuaweiBat
 from modules.devices.huawei.config import Huawei, HuaweiBatSetup, HuaweiCounterSetup, HuaweiInverterSetup
 from modules.devices.huawei.counter import HuaweiCounter
@@ -17,38 +16,21 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Huawei):
     def create_bat_component(component_config: HuaweiBatSetup):
-        return HuaweiBat(device_config.id, component_config)
+        return HuaweiBat(device_config.id, component_config, device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: HuaweiCounterSetup):
-        return HuaweiCounter(device_config.id, component_config)
+        return HuaweiCounter(device_config.id, component_config, device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: HuaweiInverterSetup):
-        return HuaweiInverter(device_config.id, component_config)
+        return HuaweiInverter(device_config.id, component_config, device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[HuaweiBat, HuaweiCounter, HuaweiInverter]]):
         if client.is_socket_open() is False:
             client.connect()
         try:
-            modbus_id = device_config.configuration.modbus_id
-            regs = client.read_holding_registers(32064, [ModbusDataType.INT_32]*5701, unit=modbus_id)
-            counter_currents_reg = regs[5043:5045]  # INT 32, 37107-9
-            counter_power_reg = regs[5049]  # INT32, 37113
-            bat_power_reg = regs[-1]  # INT32, 37765
-            inverter_power_reg = regs[0]  # INT32 32064
-            # Huawei darf nur mit Regelintervall sehr langsam betrieben werden, daher kann hier eine längere Pause
-            # eingelegt werden. Ob auch eine kürzere ausreichend ist, ist nicht getestet.
-            time.sleep(5)
-            bat_soc_reg = client.read_holding_registers(
-                37760, ModbusDataType.INT_16, unit=modbus_id)  # Int 16 37760
-
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    if isinstance(component, HuaweiBat):
-                        component.update(bat_power_reg, bat_soc_reg)
-                    elif isinstance(component, HuaweiCounter):
-                        component.update(counter_currents_reg, counter_power_reg)
-                    elif isinstance(component, HuaweiInverter):
-                        component.update(inverter_power_reg)
+                    component.update(client)
         except Exception as e:
             client.close()
             raise e

@@ -11,7 +11,7 @@
 					{{ props.chargepoint.name }}</span
 				>
 				<span
-					v-if="cp.faultState != 0"
+					v-if="cp.faultState == 2"
 					class="badge rounded-pill errorbadge ms-3"
 					>Fehler</span
 				>
@@ -44,10 +44,11 @@
 				<InfoItem heading="Geladen:" class="grid-col-4">
 					<FormatWattH :watt-h="chargepoint.dailyYield" />
 				</InfoItem>
+				<!-- geladene Reichweite-->
 				<InfoItem heading="gel. Reichw.:" class="grid-col-4 grid-right">
 					{{ chargedRangeString }}
 				</InfoItem>
-
+				<!-- Leistung -->
 				<InfoItem
 					v-if="props.chargepoint.power > 0"
 					heading="Leistung:"
@@ -211,7 +212,7 @@
 								props.chargepoint.etActive
 									? (
 											Math.round(props.chargepoint.etMaxPrice * 10) / 10
-									  ).toFixed(1) + ' ct'
+										).toFixed(1) + ' ct'
 									: '-'
 							}}
 
@@ -324,11 +325,20 @@ const realChargeAmpereString = computed(() => {
 	)
 })
 const chargedRangeString = computed(() => {
-	return (
-		Math.round(props.chargepoint.rangeCharged).toString() +
-		' ' +
-		props.chargepoint.rangeUnit
-	)
+	const rangeSincePlugged = props.chargepoint.rangeCharged
+	const energySincePlugged = props.chargepoint.chargedSincePlugged
+	const energyToday = props.chargepoint.dailyYield
+	if (energySincePlugged > 0) {
+		return (
+			Math.round(
+				(rangeSincePlugged / energySincePlugged) * energyToday,
+			).toString() +
+			' ' +
+			props.chargepoint.rangeUnit
+		)
+	} else {
+		return '0'
+	}
 })
 const statusString = computed(() => {
 	if (props.chargepoint.isLocked) {

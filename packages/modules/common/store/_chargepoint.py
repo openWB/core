@@ -41,6 +41,7 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/plug_state", self.state.plug_state, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/rfid", self.state.rfid)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/rfid_timestamp", self.state.rfid_timestamp)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/serial_number", self.state.serial_number)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/soc", self.state.soc)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/soc_timestamp", self.state.soc_timestamp)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/evse_current", self.state.evse_current)

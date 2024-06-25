@@ -60,8 +60,8 @@ const switchIcon = computed(() => {
 	return props.device.status == 'on'
 		? 'fa-toggle-on'
 		: props.device.status == 'waiting'
-		? 'fa-spinner fa-spin'
-		: 'fa-toggle-off'
+			? 'fa-spinner fa-spin'
+			: 'fa-toggle-off'
 })
 const switchStyle = computed(() => {
 	let swColor = 'var(--color-switchRed)'
@@ -92,7 +92,7 @@ function statusButtonClicked() {
 		} else {
 			updateServer('shSwitchOn', 1, props.device.id)
 		}
-		shDevices[props.device.id].status = 'waiting'
+		shDevices.get(props.device.id)!.status = 'waiting'
 	}
 }
 function modeButtonClicked() {

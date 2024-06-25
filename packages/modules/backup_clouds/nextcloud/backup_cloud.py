@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 def upload_backup(config: NextcloudBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
     if config.user is None:
-        url_match = re.fullmatch(r'(http[s]?):\/\/([^/]+)\/(?:index.php\/)?s\/(.+)', config.ip_address)
+        url_match = re.fullmatch(r'(http[s]?):\/\/([\S^/]+)\/(?:index.php\/)?s\/(.+)', config.ip_address)
         if not url_match:
             raise ValueError(f"URL '{config.ip_address}' hat nicht die erwartete Form "
                              "'https://server/index.php/s/user_token' oder 'https://server/s/user_token'")
@@ -27,6 +27,7 @@ def upload_backup(config: NextcloudBackupCloudConfiguration, backup_filename: st
         headers={'X-Requested-With': 'XMLHttpRequest', },
         data=backup_file,
         auth=(user, '' if config.password is None else config.password),
+        timeout=30
     )
 
 

@@ -41,7 +41,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 46
+    DATASTORE_VERSION = 47
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -189,7 +189,7 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/pv_charging/switch_on_delay$",
         "^openWB/general/chargemode_config/pv_charging/switch_off_threshold$",
         "^openWB/general/chargemode_config/pv_charging/switch_off_delay$",
-        "^openWB/general/chargemode_config/pv_charging/phase_switch_delay$",
+        "^openWB/general/chargemode_config/phase_switch_delay$",
         "^openWB/general/chargemode_config/pv_charging/control_range$",
         "^openWB/general/chargemode_config/pv_charging/phases_to_use$",
         "^openWB/general/chargemode_config/pv_charging/min_bat_soc$",
@@ -199,6 +199,7 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/pv_charging/bat_power_reserve_active$",
         "^openWB/general/chargemode_config/retry_failed_phase_switches$",
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
+        "^openWB/general/chargemode_config/scheduled_charging/phases_to_use_pv$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
         "^openWB/general/chargemode_config/time_charging/phases_to_use$",
         # obsolet, Daten hieraus müssen nach prices/ überführt werden
@@ -433,11 +434,12 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
         ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 0),
-        ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
+        ("openWB/general/chargemode_config/phase_switch_delay", 7),
         ("openWB/general/chargemode_config/pv_charging/phases_to_use", 0),
         ("openWB/general/chargemode_config/retry_failed_phase_switches",
          ChargemodeConfig().retry_failed_phase_switches),
         ("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 0),
+        ("openWB/general/chargemode_config/scheduled_charging/phases_to_use_pv", 0),
         ("openWB/general/chargemode_config/time_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/unbalanced_load", False),
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
@@ -1513,7 +1515,7 @@ class UpdateConfig:
                             entry["counter"][counter_entry]["grid"] = True
                             break
                     else:
-                        log.debug("all grid: False-bug does not exist in this installtion")
+                        log.debug("all grid: False-bug does not exist in this installation")
                         return
                 write_and_check(filepath, content)
             except Exception:
@@ -1535,6 +1537,16 @@ class UpdateConfig:
 
     def upgrade_datastore_45(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/general/chargemode_config/pv_charging/phase_switch_delay$", topic) is not None:
+                delay = decode_payload(payload)
+                return {
+                    "openWB/general/chargemode_config/phase_switch_delay": delay,
+                }
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 46)
+    
+    def upgrade_datastore_46(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 if "disable_after_unplug" in payload:
@@ -1554,4 +1566,4 @@ class UpdateConfig:
                     updated_payload.update({"disable_after_unplug": disable_after_unplug})
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 46)
+        self.__update_topic("openWB/system/datastore_version", 47)

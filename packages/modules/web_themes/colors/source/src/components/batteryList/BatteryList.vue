@@ -2,7 +2,7 @@
 Hagen */
 
 <template>
-	<WbWidget
+	<WbWidgetFlex
 		v-if="globalData.isBatteryConfigured"
 		:variable-width="true"
 		:full-width="false"
@@ -13,27 +13,17 @@ Hagen */
 			>
 			<span class="sh-title py-4">Speicher</span>
 		</template>
-		<div class="m-1 mt-0 p-0 grid12">
-			<!-- Soc information -->
-			<InfoItem heading="Ladestand:" class="grid-left grid-col-4">
-				<BatterySymbol :soc="globalData.batterySoc" class="me-2" />
-			</InfoItem>
-			<!-- Status information -->
-			<InfoItem heading="Status:" class="grid-col-4">
-				<span>
-					{{ batteryState }}
-				</span>
-			</InfoItem>
-
-			<!-- Status information -->
-			<InfoItem heading="Leistung:" class="grid-right grid-col-4">
-				<span>
-					{{ powerstring }}
-				</span>
-			</InfoItem>
-
-			<InfoItem heading="" class="grid-left grid-col-4">
-				<span class="todaystring mt-4 float-right"> Heute:</span>
+		<template #buttons>
+			<span class="badge rounded-pill battery-mode me-2" :style="statusstyle">{{
+				batteryState
+			}}</span>
+			<span class="badge socpill rounded-pill">
+				<BatterySymbol :soc="globalData.batterySoc"></BatterySymbol>
+			</span>
+		</template>
+		<div class="px-3 subgrid grid-12">
+			<InfoItem heading="Leistung:" class="grid-left grid-col-4">
+				<span> {{ powerstring }} </span>
 			</InfoItem>
 			<InfoItem heading="Geladen:" class="grid-col-4">
 				<span>
@@ -46,28 +36,41 @@ Hagen */
 				</span>
 			</InfoItem>
 		</div>
-	</WbWidget>
+		<BLBattery v-for="[key, battery] in batteries" :key="key" :bat="battery" />
+	</WbWidgetFlex>
 </template>
 
 <script setup lang="ts">
-import WbWidget from '../shared/WBWidget.vue'
+import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import InfoItem from '../shared/InfoItem.vue'
 import BatterySymbol from '../shared/BatterySymbol.vue'
 import { globalData, sourceSummary, usageSummary } from '@/assets/js/model'
 import { computed } from 'vue'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
+import { batteries } from './model'
+import BLBattery from './BLBattery.vue'
 
 const batteryState = computed(() => {
 	if (sourceSummary.batOut.power > 0) {
-		return 'Liefert'
+		return `Liefert (${formatWatt(sourceSummary.batOut.power)})`
 	} else if (usageSummary.batIn.power > 0) {
-		return 'Lädt'
+		return `Lädt (${formatWatt(usageSummary.batIn.power)})`
 	} else {
-		return 'Bereit'
+		return `Bereit:`
 	}
 })
 const powerstring = computed(() => {
 	return formatWatt(sourceSummary.batOut.power + usageSummary.batIn.power)
+})
+
+const statusstyle = computed(() => {
+	const bgcolor =
+		sourceSummary.batOut.power > 0
+			? 'var(--color-pv)'
+			: usageSummary.batIn.power > 0
+				? 'var(--color-battery)'
+				: 'var(--color-menu)'
+	return { 'background-color': bgcolor }
 })
 </script>
 
@@ -86,5 +89,10 @@ const powerstring = computed(() => {
 
 .todaystring {
 	color: var(--color-menu);
+}
+
+.socpill {
+	background-color: var(--color-battery);
+	color: 'var(--color-fg)';
 }
 </style>

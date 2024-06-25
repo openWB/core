@@ -19,17 +19,19 @@ class PowerdogInverter:
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, PowerdogInverterSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
+                 tcp_client: modbus.ModbusTcpClient_,
+                 modbus_id: int) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(PowerdogInverterSetup, component_config)
         self.__tcp_client = tcp_client
+        self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> float:
         with self.__tcp_client:
-            power = self.__tcp_client.read_input_registers(40002, ModbusDataType.INT_32, unit=1) * -1
+            power = self.__tcp_client.read_input_registers(40002, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
 
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
