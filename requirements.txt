@@ -23,3 +23,10 @@ pytz==2023.3.post1
 grpcio==1.60.1
 protobuf==4.25.3
 bimmer_connected==0.15.1
+# ocpp
+jsonschema==4.22.0
+jsonschema-specifications==2023.12.1
+ocpp==1.0.0
+referencing==0.35.1
+rpds-py==0.18.1
+websockets==12.0
