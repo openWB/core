@@ -639,6 +639,7 @@ class Chargepoint(ChargepointRfidMixin):
                     required_current = self.check_min_max_current(
                         required_current, self.data.control_parameter.phases)
                     charging_ev.set_chargemode_changed(self.data.control_parameter, submode)
+                    charging_ev.set_submode_changed(self.data.control_parameter, submode)
                     self.set_control_parameter(submode, required_current)
                     self.set_required_currents(required_current)
 
