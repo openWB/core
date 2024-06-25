@@ -116,7 +116,7 @@ def et_factory() -> Et:
 
 @dataclass
 class ChargeTemplateData:
-    name: str = "Standard-Lade-Profil"
+    name: str = "neues Lade-Profil"
     prio: bool = False
     load_default: bool = False
     et: Et = field(default_factory=et_factory)
