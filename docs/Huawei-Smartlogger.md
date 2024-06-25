@@ -8,7 +8,7 @@ Im Smartlogger3000a müssen folgende Einstellungen festgelegt werden:
      Schnelle Planung: Aktivieren
     ![Huawei Smartlogger ModBusTCP](HuaweiSmartloggerModBusTCP.PNG)
 2.  Unter Wartung->Geräte-Mgmt.-> Geräte Liste
-    kann man jetzt die logische Adresse. der einzelnen Geräte ablesen. Diese wird dann in der openWB in der Einstellung ModbusID eingetragen.
+    kann man jetzt die logische Adresse der einzelnen Geräte ablesen. Diese wird dann in der openWB in der Einstellung ModbusID eingetragen.
     ![HuaweiSmartloggerLogischeAdressen](HuaweiSmartloggerLogischeAdressen.PNG)
 4. in den Einstellungen der openWB das Modul Huawei Smartlogger auswählen.
 5. Jetzt muss man die IP des Smartloggers und den Port 502 eintragen, außer dieser wurde geändert.
