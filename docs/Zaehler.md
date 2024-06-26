@@ -21,37 +21,37 @@ openWB hat einen MQTT-Broker integriert, welcher unter Port 1883 (ohne Verschlü
 
 Folgende Werte können dem MQTT-Zähler übergeben werden. Die ID ist individuell und wird beim Anlegen der MQTT-Komponente angezeigt.
 Die folgenden Topics sind für einen reibungslosen Betrieb unbedingt erforderlich:
-- **openWB/set/counter/<id>/get/power**
+- **openWB/set/counter/id/get/power**
   - **Beschreibung**: Bezugsleistung in Watt, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen, positiv für Bezug, negativ für Einspeisung.
   - **Beispiel**: `-123.45`
 
-- **openWB/set/counter/<id>/get/imported**
+- **openWB/set/counter/id/get/imported**
   - **Beschreibung**: Bezogene Energie in Wh, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen, nur positiv.
   - **Beispiel**: `123.45`
 
-- **openWB/set/counter/<id>/get/exported**
+- **openWB/set/counter/id/get/exported**
   - **Beschreibung**: Eingespeiste Energie in Wh, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen, nur positiv.
   - **Beispiel**: `123.45`
 
 Ströme je Phase sind für phasenbasiertes Lastmanagement unbedingt erforderlich, sonst erfolgt das Lastmanagement ausschließlich auf Basis der Gesamtleistung am EVU-Punkt:
-- **openWB/set/counter/<id>/get/currents**
+- **openWB/set/counter/id/get/currents**
   - **Beschreibung**: Array mit den Strömen je Phase in Ampere, mit Nachkommastellen (Float), positiv für Bezug, negativ für Einspeisung.
   - **Beispiel**: `[1.2,2.3,-2.1]`
 
 Die Netzfrequenz, Spannungen, Leistungen und Leistungsfaktoren jeder Phase werden ausschließlich zu Anzeigezwecken verwendet:
-- **openWB/set/counter/<id>/get/frequency**
+- **openWB/set/counter/id/get/frequency**
   - **Beschreibung**: Netzfrequenz in Hz, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen.
   - **Beispiel**: `50.12`
 
-- **openWB/set/counter/<id>/get/voltages**
+- **openWB/set/counter/id/get/voltages**
   - **Beschreibung**: Array mit den Spannungen je Phase in Volt, mit Nachkommastellen (Float).
   - **Beispiel**: `[222.2,223.3,222.3]`
 
-- **openWB/set/counter/<id>/get/powers**
+- **openWB/set/counter/id/get/powers**
   - **Beschreibung**: Array mit den Leistungen je Phase in Watt, mit Nachkommastellen (Float).
   - **Beispiel**: `[12.3,23.4,-12.3]`
 
-- **openWB/set/counter/<id>/get/power_factors**
+- **openWB/set/counter/id/get/power_factors**
   - **Beschreibung**: Array mit den Leistungsfaktoren je Phase, mit Nachkommastellen (Float), Wertebereich -1 bis 1.
   - **Beispiel**: `[0.95,0.96,-0.95]`
 
