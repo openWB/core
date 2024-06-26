@@ -37,7 +37,6 @@ class PvCharging:
     bat_power_reserve_active: bool = False
     control_range: List = field(default_factory=control_range_factory)
     feed_in_yield: int = 15000
-    phase_switch_delay: int = 7
     phases_to_use: int = 1
     bat_power_discharge: int = 1500
     bat_power_discharge_active: bool = False
@@ -56,6 +55,7 @@ def pv_charging_factory() -> PvCharging:
 @dataclass
 class ScheduledCharging:
     phases_to_use: int = 0
+    phases_to_use_pv: int = 0
 
 
 def scheduled_charging_factory() -> ScheduledCharging:
@@ -80,6 +80,7 @@ class ChargemodeConfig:
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = 18
     unbalanced_load: bool = False
+    phase_switch_delay: int = 7
 
 
 def chargemode_config_factory() -> ChargemodeConfig:
@@ -153,7 +154,7 @@ class General:
     def __init__(self):
         self.data: GeneralData = GeneralData()
 
-    def get_phases_chargemode(self, chargemode: str) -> Optional[int]:
+    def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
         Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
         die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
@@ -162,6 +163,9 @@ class General:
             if chargemode == "stop" or chargemode == "standby":
                 # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
                 return None
+            elif chargemode == "scheduled_charging" and submode == "pv_charging":
+                # Phasenumschaltung bei PV-Ueberschuss nutzen
+                return getattr(self.data.chargemode_config, chargemode).phases_to_use_pv
             else:
                 return getattr(self.data.chargemode_config, chargemode).phases_to_use
         except Exception:

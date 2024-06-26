@@ -446,7 +446,6 @@ class SetData:
                 if "/name" in msg.topic:
                     self._validate_value(msg, str, pub_json=True)
                 elif ("/load_default" in msg.topic or
-                        "/disable_after_unplug" in msg.topic or
                         "/prio" in msg.topic):
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/chargemode/selected" in msg.topic:
@@ -567,6 +566,8 @@ class SetData:
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
                     self._validate_value(msg, int, [(0, 7)])
+                elif "/disable_after_unplug" in msg.topic:
+                    self._validate_value(msg, bool, pub_json=True)
                 else:
                     self.__unknown_topic(msg)
             else:
@@ -750,12 +751,13 @@ class SetData:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay" in msg.topic:
+            elif "openWB/set/general/chargemode_config/phase_switch_delay" in msg.topic:
                 self._validate_value(msg, int, [(1, 15)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
             elif (("openWB/set/general/chargemode_config/pv_charging/phases_to_use" in msg.topic or
-                    "openWB/set/general/chargemode_config/scheduled_charging/phases_to_use" in msg.topic)):
+                    "openWB/set/general/chargemode_config/scheduled_charging/phases_to_use" in msg.topic or
+                    "openWB/set/general/chargemode_config/scheduled_charging/phases_to_use_pv" in msg.topic)):
                 self._validate_value(msg, int, [(0, 0), (1, 1), (3, 3)])
             elif "openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic:
                 self._validate_value(msg, int, [(0, 100)])
