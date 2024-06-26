@@ -52,6 +52,9 @@ function init() {
 function validateCode(s: string) {
 	if (checkCode(s)) {
 		displayConfig.locked = false
+		setTimeout(() => {
+			displayConfig.locked=true
+		}, displayConfig.timeout * 1000)
 	}
 }
 
