@@ -1551,7 +1551,6 @@ class UpdateConfig:
                 payload = decode_payload(payload)
                 if "disable_after_unplug" in payload:
                     updated_payload = payload
-                    disable_after_unplug = updated_payload["disable_after_payload"]
                     payload.pop("disable_after_unplug")
                     return {topic: updated_payload}
             if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
@@ -1561,9 +1560,16 @@ class UpdateConfig:
                     updated_payload["rfid_enabling"] = {}
                     payload.pop("rfid_enabling")
                     return {topic: updated_payload}
-                if "disable_after_unplug" not in payload:
-                    updated_payload = payload
-                    updated_payload.update({"disable_after_unplug": disable_after_unplug})
-                    return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 47)
+
+    def upgrade_datastore_47(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "disable_after_unplug" not in payload:
+                    updated_payload = payload
+                    updated_payload.update({"disable_after_unplug": False})
+                    return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 48)
