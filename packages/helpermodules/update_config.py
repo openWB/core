@@ -1581,6 +1581,201 @@ class UpdateConfig:
                         updated_payload = device
                         updated_payload.update({"group": 'other'})
                         return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 46)
+
+    def upgrade_datastore_46(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                device = decode_payload(payload)
+                # 1. device Gruppe Energiezähler/Wechselrichter/Speicher
+                if (device.get("type") == "http" or device.get("type") == "json"
+                    or device.get("type") == "mqtt" or device.get("type") == "alpha_ess"
+                    or device.get("type") == "azzurro_sofar" or device.get("type") == "azzurro_zcs"
+                    or device.get("type") == "batterx" or device.get("type") == "e3dc"
+                    or device.get("type") == "enphase" or device.get("type") == "fronius"
+                    or device.get("type") == "mtec" or device.get("type") == "qcells"
+                    or device.get("type") == "rct" or device.get("type") == "shelly"
+                    or device.get("type") == "solaredge" or device.get("type") == "solar_watt"
+                    or device.get("type") == "solax" or device.get("type") == "sonnenbatterie"
+                    or device.get("type") == "sungrow" or device.get("type") == "tesla"
+                        or device.get("type") == "victron"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update({"device": 'Energiezähler/Wechselrichter/Speicher'})
+                        return {topic: updated_payload}
+                # 2. device Gruppe Energiezähler/Wechselrichter
+                if (device.get("type") == "discovergy" or device.get("type") == "powerdog"
+                    or device.get("type") == "powerfox" or device.get("type") == "smart_me"
+                    or device.get("type") == "solar_log" or device.get("type") == "solar_view"
+                        or device.get("type") == "solar_world" or device.get("type") == "vzlogger"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update({"device": 'Energiezähler/Wechselrichter'})
+                        return {topic: updated_payload}
+                # 3. device Gruppe Wechselrichter/Speicher
+                if (device.get("type") == "solarmax" or device.get("type") == "studer"
+                        or device.get("type") == "varta"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update({"device": 'Energiezähler/Speicher'})
+                        return {topic: updated_payload}
+                # 4. device Gruppe Energiezähler
+                if (device.get("type") == "carlo_gavazzi" or device.get("type") == "janitza"
+                    or device.get("type") == "smartfox" or device.get("type") == "tasmota"
+                        or device.get("type") == "virtual"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update({"device": 'Energiezähler'})
+                        return {topic: updated_payload}
+                # 5. device Gruppe Wechselrichter
+                if (device.get("type") == "benning" or device.get("type") == "opendtu"
+                        or device.get("type") == "sunways" or device.get("type") == "youless"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update({"device": 'Wechselrichter'})
+                        return {topic: updated_payload}
+                # 6. device Gruppe Speicher
+                if (device.get("type") == "byd" or device.get("type") == "saxpower"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update({"device": 'Speicher'})
+                        return {topic: updated_payload}
+                # 7. Speziell
+                if (device.get("type") == "deye"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Energiezähler/Wechselrichter/Speicher(Anbindung per Modbus)'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "fems"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'openEMS, FEMS, CENTURIO 10, Kaco Hy-Control Energiezähler/Wechselrichter/Speicher'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "good_we"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Energiezähler/Wechselrichter/Speicher ET-Serie (5-10kW)'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "huawei"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Huawei Hybrid Wechselrichter/Energiezähler/Speicher'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "huawei_smartlogger"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Huawei Smartlogger/Wechselrichter/Speicher'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "kostal_piko"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Kostal Piko Energiezähler/Wechselrichter'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "kostal_piko_old"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Kostal Piko(alte Generation) Energiezähler/Wechselrichter'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "kostal_plenticore"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Kostal Plenticore Energiezähler/Wechselrichter/Speicher'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "kostal_sem"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Kostal Smart Energy Meter/TQ EM 410 Energiezähler'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "kostal_steca"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Kostal Piko MP/Steca Grid Wechselrichter'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "lg"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Energiezähler/Wechselrichter/Speicher LG ESS V1.0'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "siemens"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Energiezähler/Wechselrichter/Speicher'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "siemens_sentron"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'Siemens Sentron Energiezähler'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "sma_shm"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'SMA Sunny Home Manager Energiezähler/Wechselrichter'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "sma_sunny_boy"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'SMA Sunny Boy/Tripower Energiezähler/Wechselrichter/Speicher'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "sma_sunny_island"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'SMA Sunny Island/Tripower X Speicher'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "sma_webbox"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'SMA Webbox Wechselrichter'})
+                        return {topic: updated_payload}
+                # 8. openWB
+                if (device.get("type") == "openwb_bat_kit"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'openWB Speicher-Kit'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "openwb_evu_kit"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'openWB EVU-Kit Energiezähler/Wechselrichter/Speicher'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "openwb_flex"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'openWb-kit flex Energiezähler/Wechselrichter/Speicher'})
+                        return {topic: updated_payload}
+                if (device.get("type") == "openwb_pv_kit"):
+                    if "device" not in device:
+                        updated_payload = device
+                        updated_payload.update(
+                            {"device": 'openWB PV-Kit Wechselrichter'})
+                        return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 47)
+
+    def upgrade_datastore_47(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                device = decode_payload(payload)
                 # Hier type updaten - wird für den korrekten Pfad gebraucht für import module
                 # 1. openWB
                 if device.get("type") == "openwb_bat_kit":
@@ -1606,7 +1801,7 @@ class UpdateConfig:
                     return {topic: updated_payload}
                 if device.get("type") == "huawei_smartlogger":
                     updated_payload = device
-                    updated_payload["huawei_smartlogger"].update({"huawei.huawei_smrtlogger"})
+                    updated_payload["huawei_smartlogger"].update({"huawei.huawei_logger"})
                     return {topic: updated_payload}
                 # 3. kostal
                 if device.get("type") == "kostal_piko":
@@ -1655,24 +1850,7 @@ class UpdateConfig:
                     updated_payload = device
                     updated_payload["sma_webbox"].update({"sma.sma_webbox"})
                     return {topic: updated_payload}
-                # 6 solar
-                if device.get("type") == "solar_log":
-                    updated_payload = device
-                    updated_payload["solar_log"].update({"solar.solar_log"})
-                    return {topic: updated_payload}
-                if device.get("type") == "solar_view":
-                    updated_payload = device
-                    updated_payload["solar_view"].update({"solar.solar_view"})
-                    return {topic: updated_payload}
-                if device.get("type") == "solar_watt":
-                    updated_payload = device
-                    updated_payload["solar_watt"].update({"solar.solar_watt"})
-                    return {topic: updated_payload}
-                if device.get("type") == "solar_world":
-                    updated_payload = device
-                    updated_payload["solar_world"].update({"solar.solar_world"})
-                    return {topic: updated_payload}
-                # 7 Pfade fuer Filterfunktion im Frontend anpassen
+                # 6 Pfade fuer Filterfunktion im Frontend anpassen
                 if device.get("type") == "smart_me":
                     updated_payload = device
                     updated_payload["smart_me"].update({"smrt_me"})
@@ -1681,13 +1859,73 @@ class UpdateConfig:
                     updated_payload = device
                     updated_payload["smartfox"].update({"smrtfox"})
                     return {topic: updated_payload}
-                if device.get("type") == "solaredge":
+                if (device.get("type") == "azzurro_sofar"):
                     updated_payload = device
-                    updated_payload["solaredge"].update({"soledge"})
-                    return {topic: updated_payload}
-                if device.get("type") == "solarmax":
-                    updated_payload = device
-                    updated_payload["solarmax"].update({"solmax"})
+                    updated_payload["azzurro_sofar"].update({"sofar"})
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 46)
+        self.__update_topic("openWB/system/datastore_version", 48)
+
+    def upgrade_datastore_48(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                device = decode_payload(payload)
+                # Namensaenderung anpassen
+                if (device.get("name") == "Alpha ESS"):
+                    updated_payload = device
+                    updated_payload["Alpha ESS"].update({"AlphaESS"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "Azzurro - Sofar 3P"):
+                    updated_payload = device
+                    updated_payload["Azzurro - Sofar 3P"].update({"SofarSolar"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "Azzurro - ZCS/Sofar HYD3-6k 1P"):
+                    updated_payload = device
+                    updated_payload["Azzurro - ZCS/Sofar HYD3-6k 1P"].update({"Azzurro ZCS"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "Deye/Jinko (Anbindung per Modbus)"):
+                    updated_payload = device
+                    updated_payload["Deye/Jinko (Anbindung per Modbus)"].update({"Deye/Jinko"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "E3DC"):
+                    updated_payload = device
+                    updated_payload["E3DC"].update({"E3/DC"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control"):
+                    updated_payload = device
+                    updated_payload["openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control"].update({"Fenecon/FEMS"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "GoodWe ET-Serie (5-10kW)"):
+                    updated_payload = device
+                    updated_payload["GoodWe ET-Serie (5-10kW)"].update({"GoodWe"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "LG ESS V1.0"):
+                    updated_payload = device
+                    updated_payload["LG ESS V1.0"].update({"LG"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "QCells ESS"):
+                    updated_payload = device
+                    updated_payload["QCells ESS"].update({"Qcells"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "RCT"):
+                    updated_payload = device
+                    updated_payload["RCT"].update({"RCT power"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "Saxpower"):
+                    updated_payload = device
+                    updated_payload["Saxpower"].update({"SAX power"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "Solarwatt/My Reserve"):
+                    updated_payload = device
+                    updated_payload["Solarwatt/My Reserve"].update({"Solarwatt"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "Sonnenbatterie"):
+                    updated_payload = device
+                    updated_payload["Sonnenbatterie"].update({"Sonnen"})
+                    return {topic: updated_payload}
+                if (device.get("name") == "Studer"):
+                    updated_payload = device
+                    updated_payload["Studer"].update({"Studer innotec"})
+                    return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 49)

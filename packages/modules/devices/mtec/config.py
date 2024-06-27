@@ -14,7 +14,7 @@ class MTecConfiguration:
 
 class MTec:
     def __init__(self,
-                 name: str = "M-TEC",
+                 name: str = "M-Tec",
                  type: str = "mtec",
                  group: str = "other",
                  device: str = "Energiezähler/Wechselrichter/Speicher",
