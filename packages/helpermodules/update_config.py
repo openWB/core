@@ -5,6 +5,7 @@ import json
 import logging
 from pathlib import Path
 import re
+import subprocess
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
@@ -23,7 +24,6 @@ from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
-from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
 from control import ev
@@ -771,12 +771,12 @@ class UpdateConfig:
     def upgrade_datastore_4(self) -> None:
         moved_file = False
         for path in Path("/etc/mosquitto/conf.d").glob('99-bridge-openwb-*.conf'):
-            run_command(["sudo", "mv", str(path), str(path).replace("conf.d", "conf_local.d")], process_exception=True)
+            subprocess.run(["sudo", "mv", str(path), str(path).replace("conf.d", "conf_local.d")])
             moved_file = True
         self.__update_topic("openWB/system/datastore_version", 5)
         if moved_file:
             time.sleep(1)
-            run_command([str(self.base_path / "runs" / "reboot.sh")], process_exception=True)
+            subprocess.run([str(self.base_path / "runs" / "reboot.sh")])
 
     def upgrade_datastore_5(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
@@ -1062,11 +1062,16 @@ class UpdateConfig:
                 bridge_configuration = decode_payload(payload)
                 if bridge_configuration["remote"]["is_openwb_cloud"]:
                     index = get_index(topic)
-                    result = run_command(["php", "-f", str(self.base_path / "runs" / "save_mqtt.php"), index, payload],
-                                         process_exception=True)
-                    log.info("successfully updated configuration of bridge "
-                             f"'{bridge_configuration['name']}' ({index})")
-                    pub_system_message(payload, result, MessageType.SUCCESS)
+                    result = subprocess.run(
+                        ["php", "-f", str(self.base_path / "runs" / "save_mqtt.php"), index, payload],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                    if result.returncode == 0:
+                        log.info("successfully updated configuration of bridge "
+                                 f"'{bridge_configuration['name']}' ({index})")
+                        pub_system_message(payload, result.stdout, MessageType.SUCCESS)
+                    else:
+                        log.error("update of configuration for bridge "
+                                  f"'{bridge_configuration['name']}' ({index}) failed! {result.stdout}")
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 24)
 

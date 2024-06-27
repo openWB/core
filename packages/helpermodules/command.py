@@ -16,7 +16,6 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 # ToDo: move to module commands if implemented
-from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
 from helpermodules.broker import InternalBrokerClient
@@ -538,8 +537,8 @@ class Command:
         pub_user_message(payload, connection_id, "Systembericht wird erstellt...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
         previous_log_level = SubData.system_data["system"].data["debug_level"]
-        run_command([str(parent_file / "runs" / "send_debug.sh"),
-                     json.dumps(payload["data"]), parse_send_debug_data()])
+        subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
+                        json.dumps(payload["data"]), parse_send_debug_data()])
         Pub().pub("openWB/set/system/debug_level", previous_log_level)
         pub_user_message(payload, connection_id, "Systembericht wurde versandt.", MessageType.SUCCESS)
 
@@ -560,17 +559,21 @@ class Command:
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
-        result = run_command(
-            ["php", "-f", str(parent_file / "runs" / "cloudRegister.php"), json.dumps(payload["data"])]
-        )
-        # exit status = 0 is success, std_out contains json: {"username", "password"}
-        result_dict = json.loads(result)
-        connect_payload = {
-            "data": result_dict
-        }
-        connect_payload["data"]["partner"] = payload["data"]["partner"]
-        self.connectCloud(connection_id, connect_payload)
-        pub_user_message(payload, connection_id, "Verbindung zur Cloud wurde eingerichtet.", MessageType.SUCCESS)
+        try:
+            result = subprocess.check_output(
+                ["php", "-f", str(parent_file / "runs" / "cloudRegister.php"), json.dumps(payload["data"])]
+            )
+            # exit status = 0 is success, std_out contains json: {"username", "password"}
+            result_dict = json.loads(result)
+            connect_payload = {
+                "data": result_dict
+            }
+            connect_payload["data"]["partner"] = payload["data"]["partner"]
+            self.connectCloud(connection_id, connect_payload)
+            pub_user_message(payload, connection_id, "Verbindung zur Cloud wurde eingerichtet.", MessageType.SUCCESS)
+        except subprocess.CalledProcessError as error:
+            # exit status = 1 is failure, std_out contains error message
+            pub_user_message(payload, connection_id, error.output.decode("utf-8", MessageType.ERROR))
 
     def connectCloud(self, connection_id: str, payload: dict) -> None:
         cloud_config = bridge.get_cloud_config()
@@ -607,12 +610,12 @@ class Command:
     def systemReboot(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Neustart wird ausgeführt.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        run_command([str(parent_file / "runs" / "reboot.sh")])
+        subprocess.run([str(parent_file / "runs" / "reboot.sh")])
 
     def systemShutdown(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "openWB wird heruntergefahren.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        run_command([str(parent_file / "runs" / "shutdown.sh")])
+        subprocess.run([str(parent_file / "runs" / "shutdown.sh")])
 
     def systemUpdate(self, connection_id: str, payload: dict) -> None:
         log.info("Update requested")
@@ -636,13 +639,13 @@ class Command:
                 payload, connection_id,
                 f'Wechsel auf Zweig \'{payload["data"]["branch"]}\' Tag \'{payload["data"]["tag"]}\' gestartet.',
                 MessageType.SUCCESS)
-            run_command([
+            subprocess.run([
                 str(parent_file / "runs" / "update_self.sh"),
                 str(payload["data"]["branch"]),
                 str(payload["data"]["tag"])])
         else:
             pub_user_message(payload, connection_id, "Update gestartet.", MessageType.INFO)
-            run_command([
+            subprocess.run([
                 str(parent_file / "runs" / "update_self.sh"),
                 SubData.system_data["system"].data["current_branch"]])
 
@@ -650,20 +653,31 @@ class Command:
         log.info("Fetch versions requested")
         pub_user_message(payload, connection_id, "Versionsliste wird aktualisiert...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        run_command([str(parent_file / "runs" / "update_available_versions.sh")])
-        pub_user_message(payload, connection_id, "Versionsliste erfolgreich aktualisiert.", MessageType.SUCCESS)
+        result = subprocess.run([str(parent_file / "runs" / "update_available_versions.sh")])
+        if result.returncode == 0:
+            pub_user_message(payload, connection_id, "Versionsliste erfolgreich aktualisiert.", MessageType.SUCCESS)
+        else:
+            pub_user_message(
+                payload, connection_id,
+                f'Version-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8", MessageType.ERROR)}')
 
     def createBackup(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Backup wird erstellt...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        result = run_command(
+        result = subprocess.run(
             [str(parent_file / "runs" / "backup.sh"),
-             "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"])
-        file_name = result.rstrip('\n')
-        file_link = "/openWB/data/backup/" + file_name
-        pub_user_message(payload, connection_id,
-                         "Backup erfolgreich erstellt.<br />"
-                         f'Jetzt <a href="{file_link}" target="_blank">herunterladen</a>.', MessageType.SUCCESS)
+             "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"],
+            stdout=subprocess.PIPE)
+        if result.returncode == 0:
+            file_name = result.stdout.decode("utf-8").rstrip('\n')
+            file_link = "/openWB/data/backup/" + file_name
+            pub_user_message(payload, connection_id,
+                             "Backup erfolgreich erstellt.<br />"
+                             f'Jetzt <a href="{file_link}" target="_blank">herunterladen</a>.', MessageType.SUCCESS)
+        else:
+            pub_user_message(payload, connection_id,
+                             f'Backup-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
+                             MessageType.ERROR)
 
     def createCloudBackup(self, connection_id: str, payload: dict) -> None:
         if SubData.system_data["system"].backup_cloud is not None:
@@ -678,11 +692,18 @@ class Command:
 
     def restoreBackup(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
-        run_command([str(parent_file / "runs" / "prepare_restore.sh")])
-        pub_user_message(payload, connection_id,
-                         "Wiederherstellung wurde vorbereitet. openWB wird jetzt zum Abschluss neu gestartet.",
-                         MessageType.INFO)
-        self.systemReboot(connection_id, payload)
+        result = subprocess.run(
+            [str(parent_file / "runs" / "prepare_restore.sh")],
+            stdout=subprocess.PIPE)
+        if result.returncode == 0:
+            pub_user_message(payload, connection_id,
+                             "Wiederherstellung wurde vorbereitet. openWB wird jetzt zum Abschluss neu gestartet.",
+                             MessageType.INFO)
+            self.systemReboot(connection_id, payload)
+        else:
+            pub_user_message(payload, connection_id,
+                             f'Restore-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
+                             MessageType.ERROR)
 
     # ToDo: move to module commands if implemented
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
@@ -739,12 +760,6 @@ class ErrorHandlingContext:
             pub_user_message(self.payload, self.connection_id,
                              f'Es ist ein interner Fehler aufgetreten: {exception}', MessageType.ERROR)
             log.error({traceback.format_exc()})
-            return True
-        elif isinstance(exception, subprocess.CalledProcessError):
-            log.debug(exception.stdout)
-            pub_user_message(self.payload, self.connection_id,
-                             f'Fehler-Status: {exception.returncode}<br />Meldung: {exception.stderr}',
-                             MessageType.ERROR)
             return True
         else:
             return False
