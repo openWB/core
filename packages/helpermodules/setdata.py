@@ -425,6 +425,8 @@ class SetData:
                 self._validate_value(msg, float)
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
+            elif "/get/service_soc" in msg.topic:
+                self._validate_value(msg, float, [(0, 100)])
             elif "/get/range" in msg.topic:
                 self._validate_value(msg, float, [(0, 1000)])
             elif "/get/force_soc_update" in msg.topic:

@@ -27,6 +27,8 @@ class CarValueStoreBroker(ValueStore[CarState]):
             pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/soc", self.state.soc, 2)
             if self.state.range:
                 pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/range", self.state.range, 2)
+            if self.state.service_soc:
+                pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/service_soc", self.state.service_soc, 2)
         except Exception as e:
             raise FaultState.from_exception(e)
 

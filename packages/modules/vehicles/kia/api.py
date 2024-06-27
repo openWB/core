@@ -808,6 +808,8 @@ def getStatusFull(vehicle_id: str, control_token: str,
         response = getHTTP(url=url, headers=headers)
         response_dict = json.loads(response)
 
+        service_soc = int(response_dict['resMsg']['state']['Vehicle']['Electronics']['Battery']['Level'])
+
         soc = int(response_dict['resMsg']['state']['Vehicle']['Green']
                                ['BatteryManagement']['BatteryRemain']['Ratio'])
         range = float(response_dict['resMsg']['state']['Vehicle']['Drivetrain']
@@ -818,7 +820,7 @@ def getStatusFull(vehicle_id: str, control_token: str,
                       response)
         raise
 
-    return CarState(soc, range)
+    return CarState(soc, range, service_soc=service_soc)
 
 # ---------- main function ----------
 
