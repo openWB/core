@@ -1,41 +1,38 @@
 #!/usr/bin/env python3
 """Starten der benötigten Prozesse
 """
-from smarthome.smarthome import readmq, smarthome_handler
-from modules.utils import wait_for_module_update_completed
-from modules.internal_chargepoint_handler.rfid import RfidReader
-from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
-from modules import update_soc
-from helpermodules.utils import exit_after
-from control.algorithm import algorithm
-from control import process
-from control import data
-from control import prepare
-from helpermodules.pub import Pub
-from helpermodules.modbusserver import start_modbus_server
-from helpermodules import command
-from helpermodules import setdata
-from helpermodules import subdata
-from helpermodules import timecheck, update_config
-from modules import configuration
-from modules import loadvars
-from helpermodules.measurement_logging.write_log import LogType, save_log
-from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
-from helpermodules.changed_values_handler import ChangedValuesContext
-from control.chargelog.chargelog import calculate_charge_cost
-from threading import Thread
-import traceback
-import threading
-import time
-import schedule
-from random import randrange
-from pathlib import Path
 import logging
-from helpermodules import logger
-# als erstes logging initalisieren, damit auch ImportError geloggt werden
-logger.setup_logging()  # ignore E402
-log = logging.getLogger()  # ignore E402
+from pathlib import Path
+from random import randrange
+import schedule
+import time
+import threading
+import traceback
+from threading import Thread
+from control.chargelog.chargelog import calculate_charge_cost
 
+from helpermodules.changed_values_handler import ChangedValuesContext
+from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
+from helpermodules.measurement_logging.write_log import LogType, save_log
+from modules import loadvars
+from modules import configuration
+from helpermodules import timecheck, update_config
+from helpermodules import subdata
+from helpermodules import setdata
+from helpermodules import logger
+from helpermodules import command
+from helpermodules.modbusserver import start_modbus_server
+from helpermodules.pub import Pub
+from control import prepare
+from control import data
+from control import process
+from control.algorithm import algorithm
+from helpermodules.utils import exit_after
+from modules import update_soc
+from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
+from modules.internal_chargepoint_handler.rfid import RfidReader
+from modules.utils import wait_for_module_update_completed
+from smarthome.smarthome import readmq, smarthome_handler
 
 logger.setup_logging()
 log = logging.getLogger()
