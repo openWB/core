@@ -11,7 +11,7 @@
 * Oberfläche
   * [Anzeige - Steuerung](https://github.com/openWB/core/wiki/Anzeige-Steuerung)
 * Szenarien
-  * [Typische Anwendungsfälle] (https://github.com/openWB/core/wiki/Typische-Anwendungsfaelle)
+  * [Typische Anwendungsfälle](https://github.com/openWB/core/wiki/Typische-Anwendungsfaelle)
   * [ID-Tag/Ladung nur nach Freischaltung](https://github.com/openWB/core/wiki/Ladung-nur-nach-Freischaltung)
   * [Hybrid-System aus Wechselrichter und Speicher](https://github.com/openWB/core/wiki/Hybrid-System-aus-Wechselrichter-und-Speicher)
 * Integration in Heimautomation
