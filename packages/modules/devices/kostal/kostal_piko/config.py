@@ -19,6 +19,7 @@ class KostalPiko:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or KostalPikoConfiguration()
 
