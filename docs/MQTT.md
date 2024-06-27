@@ -4,7 +4,7 @@
 MQTT bedeutet: Message Queuing Telemetry Transport. Es handelt sich hierbei um ein M2M (Machine to Machine) Protokoll.
 Für eine Kommunikation wird ein Broker (=Verwalter) benötigt, welcher die Nachrichten von den Sendern empfängt und an die Empfänger, welche sich für den Inhalt angemeldet haben, weiterleitet. Man spricht bei MQTT von publish und subscribe. Die Nachrichten werden in topics verschickt. 
 
-OpenWB hat einen eigenen MQTT-Broker integriert, über den die Kommunikation läuft. Möchte man die Wallbox steuern oder Status-Nachrichten empfangen, sollte man sich als Client an diesem Broker anmelden. Der Broker läuft auf der IP der OpenWB unter Port 1883 ohne Nutzerauthentifizierung. 
+openWB hat einen eigenen MQTT-Broker integriert, über den die Kommunikation läuft. Möchte man die Wallbox steuern oder Status-Nachrichten empfangen, sollte man sich als Client an diesem Broker anmelden. Der Broker läuft auf der IP der openWB unter Port 1883 ohne Nutzerauthentifizierung. 
 
 ## Zähler
 

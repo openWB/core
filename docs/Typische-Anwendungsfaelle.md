@@ -1,6 +1,6 @@
 #Typische Anwendungsfälle
 ## Privater Haushalt, ein E-Auto und PV-Anlage
-In diesem Szenario sind die Ziele meistens das Auto morgens für den Weg zur Arbeit fahrbereit zu haben, aber bis dahin möglichst viel Energie aus der PV-Anlage zum Laden zu nutzen.
+In diesem Szenario sind die Ziele meistens, das Auto morgens für den Weg zur Arbeit fahrbereit zu haben, aber bis dahin möglichst viel Energie aus der PV-Anlage zum Laden zu nutzen.
 Hierfür ist die Funktion *Zielladen* zu nutzen. Auch, wenn es vom Namen her scheint, dass nur zu einem festen Zeitpunkt eine definierte Energiemenge in das EV geladen sein soll, wird dennoch bis zum Beginn dieses erzwingenen Ladevorgangs PV-Energie, sofern vorhanden, genutzt. 
 
 ![Zielladen](pictures/Anwendungsfaelle_zielladen.jpg)

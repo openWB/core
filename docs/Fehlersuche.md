@@ -31,7 +31,7 @@ Formuliert Eure Frage freundlich, beschreibt was ihr tun wolltet und was anstell
 Da es schon Wechselwirkungen mit anderen Smarthome-Systemen gegeben hat, erwähnt ggf. weitere im Heimnetzwerk laufende SmartHome-Systeme.
 
 ### Log-Erstellung
-In der Standard-Einstellung des Logs werden nur Warnungen & Fehler erfasst.  Außerdem wird bei einem Neustart der OpenWB der Fehlerlog gelöscht. 
+In der Standard-Einstellung des Logs werden nur Warnungen & Fehler erfasst.  Außerdem wird bei einem Neustart der openWB der Fehlerlog gelöscht. 
 
 Um aussagekräftige Logs zu erzeugen, müssen Log-Dateien im Debug-Modus erstellt werden. Hierzu ist folgende Schaltfläche zu aktivieren:
 
