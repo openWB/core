@@ -1537,6 +1537,7 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
                 device = decode_payload(payload)
+                # Gruppe hinzufügen
                 if (device.get("type") == "openwb_bat_kit" or device.get("type") == "openwb_evu_kit"
                         or device.get("type") == "openwb_flex" or device.get("type") == "openwb_pv_kit"):
                     if "group" not in device:
