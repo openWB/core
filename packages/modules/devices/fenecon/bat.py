@@ -1,12 +1,12 @@
 import logging
 from requests import Session
 from helpermodules.scale_metric import scale_metric
-from modules.devices.fems.config import FemsBatSetup
+from modules.devices.fenecon.config import FemsBatSetup
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_bat_value_store
-from modules.devices.fems.version import FemsVersion, get_version
+from modules.devices.fenecon.version import FemsVersion, get_version
 log = logging.getLogger(__name__)
 
 

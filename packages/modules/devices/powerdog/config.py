@@ -12,14 +12,16 @@ class PowerdogConfiguration:
 
 class Powerdog:
     def __init__(self,
-                 name: str = "Powerdog",
+                 name: str = "PowerDog",
                  type: str = "powerdog",
                  group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter",
                  id: int = 0,
                  configuration: PowerdogConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or PowerdogConfiguration()
 

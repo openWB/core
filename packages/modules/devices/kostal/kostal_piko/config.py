@@ -13,6 +13,7 @@ class KostalPiko:
                  name: str = "Kostal Piko",
                  type: str = "kostal.kostal_piko",
                  group: str = "other",
+                 device: str = "Kostal Piko Energiezähler/Wechselrichter",
                  id: int = 0,
                  configuration: KostalPikoConfiguration = None) -> None:
         self.name = name

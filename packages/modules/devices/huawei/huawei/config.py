@@ -15,11 +15,13 @@ class Huawei:
                  name: str = "Huawei Hybrid Wechselrichter",
                  type: str = "huawei.huawei",
                  group: str = "other",
+                 device: str = "Huawei Hybrid Wechselrichter/Energiezähler/Speicher",
                  id: int = 0,
                  configuration: HuaweiConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or HuaweiConfiguration()
 

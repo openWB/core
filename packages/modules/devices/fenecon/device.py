@@ -6,8 +6,8 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
-from modules.devices.fems import bat, counter, inverter
-from modules.devices.fems.config import Fems, FemsBatSetup, FemsConfiguration, FemsCounterSetup, FemsInverterSetup
+from modules.devices.fenecon import bat, counter, inverter
+from modules.devices.fenecon.config import Fems, FemsBatSetup, FemsConfiguration, FemsCounterSetup, FemsInverterSetup
 
 log = logging.getLogger(__name__)
 

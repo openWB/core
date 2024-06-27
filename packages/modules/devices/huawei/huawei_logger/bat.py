@@ -9,7 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
-from modules.devices.huawei.huawei_smrtlogger.config import Huawei_SmartloggerBatSetup
+from modules.devices.huawei.huawei_logger.config import Huawei_SmartloggerBatSetup
 
 
 class Huawei_SmartloggerBat:

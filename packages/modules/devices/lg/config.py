@@ -14,11 +14,13 @@ class LG:
                  name: str = "LG ESS V1.0",
                  type: str = "lg",
                  group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,
                  configuration: LgConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or LgConfiguration()
 

@@ -28,11 +28,13 @@ class Enphase:
                  name: str = "Enphase",
                  type: str = "enphase",
                  group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,
                  configuration: EnphaseConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or EnphaseConfiguration()
 

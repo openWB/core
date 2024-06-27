@@ -17,11 +17,13 @@ class Flex:
                  name: str = "openWB-Kit flex",
                  type: str = "openWB.openwb_flex",
                  group: str = "openWB",
+                 device: str = "openWB-Kit flex Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,
                  configuration: FlexConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or FlexConfiguration()
 

@@ -13,14 +13,16 @@ class E3dcConfiguration:
 @auto_str
 class E3dc:
     def __init__(self,
-                 name: str = "E3DC",
+                 name: str = "E3/DC",
                  type: str = "e3dc",
                  group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,
                  configuration: E3dcConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or E3dcConfiguration()
 

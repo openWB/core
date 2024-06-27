@@ -15,11 +15,13 @@ class Janitza:
                  name: str = "Janitza",
                  type: str = "janitza",
                  group: str = "other",
+                 device: str = "Energiezähler",
                  id: int = 0,
                  configuration: JanitzaConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or JanitzaConfiguration()
 

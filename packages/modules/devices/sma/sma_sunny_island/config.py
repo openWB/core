@@ -14,11 +14,13 @@ class SmaSunnyIsland:
                  name: str = "SMA Sunny Island, Sunny Tripower X",
                  type: str = "sma.sma_sunny_island",
                  group: str = "other",
+                 device: str = "SMA Sunny Island/Tripower X Speicher",
                  id: int = 0,
                  configuration: SmaSunnyIslandConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or SmaSunnyIslandConfiguration()
 

@@ -11,11 +11,13 @@ class BatKit:
                  name: str = "openWB Speicher-Kit",
                  type: str = "openWB.openwb_bat_kit",
                  group: str = "openWB",
+                 device: str = "openWB Speicher-Kit",
                  id: int = 0,
                  configuration: BatKitConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or BatKitConfiguration()
 

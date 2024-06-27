@@ -12,14 +12,16 @@ class ZCSConfiguration:
 
 class ZCS:
     def __init__(self,
-                 name: str = "Azzurro - ZCS/Sofar HYD3-6k 1P",
+                 name: str = "Azzurro ZCS",
                  type: str = "azzurro_zcs",
                  group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,
                  configuration: ZCSConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or ZCSConfiguration()
 

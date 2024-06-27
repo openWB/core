@@ -15,11 +15,13 @@ class Sofar:
                  name: str = "SofarSolar",
                  type: str = "sofar",
                  group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,
                  configuration: SofarConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or SofarConfiguration()
 

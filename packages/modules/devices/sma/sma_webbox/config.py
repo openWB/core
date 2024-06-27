@@ -13,11 +13,13 @@ class SmaWebbox:
                  name: str = "SMA Webbox",
                  type: str = "sma.sma_webbox",
                  group: str = "other",
+                 device: str = "SMA Webbox Wechselrichter",
                  id: int = 0,
                  configuration: SmaWWebboxConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or SmaWWebboxConfiguration()
 

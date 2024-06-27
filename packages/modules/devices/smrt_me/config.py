@@ -14,11 +14,13 @@ class SmartMe:
                  name: str = "smart-me",
                  type: str = "smrt_me",
                  group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter",
                  id: int = 0,
                  configuration: SmartMeConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or SmartMeConfiguration()
 

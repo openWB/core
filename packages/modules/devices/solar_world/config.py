@@ -15,11 +15,13 @@ class SolarWorld:
                  name: str = "SolarWorld",
                  type: str = "solar_world",
                  group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter",
                  id: int = 0,
                  configuration: SolarWorldConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or SolarWorldConfiguration()
 
