@@ -11,10 +11,10 @@ class LgConfiguration:
 
 class LG:
     def __init__(self,
-                 name: str = "LG ESS V1.0",
+                 name: str = "LG",
                  type: str = "lg",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Energiezähler/Wechselrichter/Speicher LG ESS V1.0",
                  id: int = 0,
                  configuration: LgConfiguration = None) -> None:
         self.name = name
