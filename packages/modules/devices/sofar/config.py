@@ -12,8 +12,8 @@ class SofarConfiguration:
 
 class Sofar:
     def __init__(self,
-                 name: str = "Azzurro - Sofar 3P",
-                 type: str = "azzurro_sofar",
+                 name: str = "SofarSolar",
+                 type: str = "sofar",
                  group: str = "other",
                  id: int = 0,
                  configuration: SofarConfiguration = None) -> None:
