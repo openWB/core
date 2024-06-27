@@ -217,6 +217,7 @@ def _pub_configurable_devices_components() -> None:
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
                     "group": dev_defaults.group,
+                    "device": dev_defaults.device,
                     "component": component
                 })
             except Exception:
