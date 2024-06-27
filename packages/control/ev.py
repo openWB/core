@@ -136,7 +136,7 @@ class EvTemplateData:
     control_pilot_interruption_duration: int = 4
     average_consump: float = 17000
     min_current: int = 6
-    max_current_single_phase: int = 32
+    max_current_single_phase: int = 16
     battery_capacity: float = 82000
     efficiency: float = 90
     nominal_difference: float = 1
