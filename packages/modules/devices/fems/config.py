@@ -11,10 +11,10 @@ class FemsConfiguration:
 
 class Fems:
     def __init__(self,
-                 name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control",
+                 name: str = "Fenecon/FEMS",
                  type: str = "fems",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = ("openEMS, FEMS, CENTURIO 10, Kaco Hy-Control Energiezähler/Wechselrichter/Speicher"),
                  id: int = 0,
                  configuration: FemsConfiguration = None) -> None:
         self.name = name
