@@ -4,8 +4,8 @@ import requests_mock
 
 
 from modules.common.component_state import BatState
-from modules.devices.fenecon import bat, device
-from modules.devices.fenecon.config import Fems, FemsConfiguration, FemsBatSetup
+from modules.devices.fems import bat, device
+from modules.devices.fems.config import Fems, FemsConfiguration, FemsBatSetup
 
 
 def test_fems_bat(monkeypatch, requests_mock: requests_mock.mock):

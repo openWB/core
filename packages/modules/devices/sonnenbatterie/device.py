@@ -8,9 +8,9 @@ from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.sonnen import bat, counter, inverter
-from modules.devices.sonnen.config import (SonnenBatterie, SonnenbatterieBatSetup, SonnenbatterieCounterSetup,
-                                           SonnenbatterieInverterSetup)
+from modules.devices.sonnenbatterie import bat, counter, inverter
+from modules.devices.sonnenbatterie.config import (SonnenBatterie, SonnenbatterieBatSetup, SonnenbatterieCounterSetup,
+                                                   SonnenbatterieInverterSetup)
 log = logging.getLogger(__name__)
 
 

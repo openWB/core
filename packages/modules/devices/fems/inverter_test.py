@@ -4,8 +4,8 @@ import requests_mock
 
 
 from modules.common.component_state import InverterState
-from modules.devices.fenecon import inverter, device
-from modules.devices.fenecon.config import Fems, FemsConfiguration, FemsInverterSetup
+from modules.devices.fems import inverter, device
+from modules.devices.fems.config import Fems, FemsConfiguration, FemsInverterSetup
 
 
 def test_fems_inverter(monkeypatch, requests_mock: requests_mock.mock):

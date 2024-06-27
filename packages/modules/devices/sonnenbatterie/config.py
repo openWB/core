@@ -12,7 +12,7 @@ class SonnenBatterieConfiguration:
 class SonnenBatterie:
     def __init__(self,
                  name: str = "Sonnen",
-                 type: str = "sonnen",
+                 type: str = "sonnenbatterie",
                  group: str = "other",
                  device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,

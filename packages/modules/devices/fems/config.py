@@ -11,8 +11,8 @@ class FemsConfiguration:
 
 class Fems:
     def __init__(self,
-                 name: str = "Fenecon",
-                 type: str = "fenecon",
+                 name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control",
+                 type: str = "fems",
                  group: str = "other",
                  device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,

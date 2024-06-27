@@ -4,8 +4,8 @@ import requests_mock
 
 
 from modules.common.component_state import CounterState
-from modules.devices.fenecon import counter, device
-from modules.devices.fenecon.config import Fems, FemsConfiguration, FemsCounterSetup
+from modules.devices.fems import counter, device
+from modules.devices.fems.config import Fems, FemsConfiguration, FemsCounterSetup
 
 
 def test_fems_counter(monkeypatch, requests_mock: requests_mock.mock):
