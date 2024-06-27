@@ -6,10 +6,10 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.azzurro_sofar.bat import SofarBat
-from modules.devices.azzurro_sofar.config import Sofar, SofarBatSetup, SofarCounterSetup, SofarInverterSetup
-from modules.devices.azzurro_sofar.counter import SofarCounter
-from modules.devices.azzurro_sofar.inverter import SofarInverter
+from modules.devices.sofar.bat import SofarBat
+from modules.devices.sofar.config import Sofar, SofarBatSetup, SofarCounterSetup, SofarInverterSetup
+from modules.devices.sofar.counter import SofarCounter
+from modules.devices.sofar.inverter import SofarInverter
 
 log = logging.getLogger(__name__)
 

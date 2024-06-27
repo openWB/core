@@ -8,7 +8,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_inverter_value_store
-from modules.devices.azzurro_sofar.config import SofarInverterSetup
+from modules.devices.sofar.config import SofarInverterSetup
 
 
 class SofarInverter:
