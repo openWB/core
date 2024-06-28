@@ -5,7 +5,7 @@
 * [Ladepunkte](https://github.com/openWB/core/wiki/Ladepunkte)
 * [Fahrzeuge](https://github.com/openWB/core/wiki/Fahrzeuge)
 * Zähler
-  * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Zähler)
+  * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Zaehler)
   * [Lastmanagement und kaskadierte Zähler](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler)
   * [Hierarchie mit Hausverbrauchs-Zähler](https://github.com/openWB/core/wiki/Hausverbrauchs-Zähler)
 * Oberfläche
