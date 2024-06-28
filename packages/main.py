@@ -39,9 +39,6 @@ from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
 
-logger.setup_logging()
-log = logging.getLogger()
-
 
 class HandlerAlgorithm:
     def __init__(self):
