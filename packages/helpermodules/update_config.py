@@ -41,7 +41,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 46
+    DATASTORE_VERSION = 49
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1874,59 +1874,59 @@ class UpdateConfig:
                 # Namensaenderung anpassen
                 if (device.get("name") == "Alpha ESS"):
                     updated_payload = device
-                    updated_payload["Alpha ESS"].update({"AlphaESS"})
+                    updated_payload["name"] = "AlphaESS"
                     return {topic: updated_payload}
                 if (device.get("name") == "Azzurro - Sofar 3P"):
                     updated_payload = device
-                    updated_payload["Azzurro - Sofar 3P"].update({"SofarSolar"})
+                    updated_payload["name"] = "SofarSolar"
                     return {topic: updated_payload}
                 if (device.get("name") == "Azzurro - ZCS/Sofar HYD3-6k 1P"):
                     updated_payload = device
-                    updated_payload["Azzurro - ZCS/Sofar HYD3-6k 1P"].update({"Azzurro ZCS"})
+                    updated_payload["name"] = "Azzurro ZCS"
                     return {topic: updated_payload}
                 if (device.get("name") == "Deye/Jinko (Anbindung per Modbus)"):
                     updated_payload = device
-                    updated_payload["Deye/Jinko (Anbindung per Modbus)"].update({"Deye/Jinko"})
+                    updated_payload["name"] = "Deye/Jinko"
                     return {topic: updated_payload}
                 if (device.get("name") == "E3DC"):
                     updated_payload = device
-                    updated_payload["E3DC"].update({"E3/DC"})
+                    updated_payload["name"] = "E3/DC"
                     return {topic: updated_payload}
                 if (device.get("name") == "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control"):
                     updated_payload = device
-                    updated_payload["openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control"].update({"Fenecon/FEMS"})
+                    updated_payload["name"] = "Fenecon/FEMS"
                     return {topic: updated_payload}
                 if (device.get("name") == "GoodWe ET-Serie (5-10kW)"):
                     updated_payload = device
-                    updated_payload["GoodWe ET-Serie (5-10kW)"].update({"GoodWe"})
+                    updated_payload["name"] = "GoodWe"
                     return {topic: updated_payload}
                 if (device.get("name") == "LG ESS V1.0"):
                     updated_payload = device
-                    updated_payload["LG ESS V1.0"].update({"LG"})
+                    updated_payload["name"] = "LG"
                     return {topic: updated_payload}
                 if (device.get("name") == "QCells ESS"):
                     updated_payload = device
-                    updated_payload["QCells ESS"].update({"Qcells"})
+                    updated_payload["name"] = "Qcells"
                     return {topic: updated_payload}
                 if (device.get("name") == "RCT"):
                     updated_payload = device
-                    updated_payload["RCT"].update({"RCT power"})
+                    updated_payload["name"] = "RCT power"
                     return {topic: updated_payload}
                 if (device.get("name") == "Saxpower"):
                     updated_payload = device
-                    updated_payload["Saxpower"].update({"SAX power"})
+                    updated_payload["name"] = "SAX power"
                     return {topic: updated_payload}
                 if (device.get("name") == "Solarwatt/My Reserve"):
                     updated_payload = device
-                    updated_payload["Solarwatt/My Reserve"].update({"Solarwatt"})
+                    updated_payload["name"] = "Solarwatt"
                     return {topic: updated_payload}
-                if (device.get("name") == "Sonnenbatterie"):
+                if (device.get("name") == "SonnenBatterie"):
                     updated_payload = device
-                    updated_payload["Sonnenbatterie"].update({"Sonnen"})
+                    updated_payload["name"] = "Sonnen"
                     return {topic: updated_payload}
                 if (device.get("name") == "Studer"):
                     updated_payload = device
-                    updated_payload["Studer"].update({"Studer innotec"})
+                    updated_payload["name"] = "Studer innotec"
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 49)
