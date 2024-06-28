@@ -78,5 +78,8 @@ class AllChargepoints:
                         exported = exported + chargepoint.data.get.exported
                 except Exception:
                     log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
+            self.data.get.power = power
+            self.data.get.imported = imported
+            self.data.get.exported = exported
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
