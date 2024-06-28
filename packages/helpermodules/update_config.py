@@ -1692,7 +1692,8 @@ class UpdateConfig:
                     if "device" not in device:
                         updated_payload = device
                         updated_payload.update(
-                            {"device": 'openEMS, FEMS, CENTURIO 10, Kaco Hy-Control Energiezähler/Wechselrichter/Speicher'})
+                            {"device": 'openEMS, FEMS, CENTURIO 10, Kaco Hy-Control Energiezähler/Wechselrichter\
+                             /Speicher'})
                         return {topic: updated_payload}
                 if (device.get("type") == "good_we"):
                     if "device" not in device:
