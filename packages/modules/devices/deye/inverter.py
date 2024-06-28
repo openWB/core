@@ -25,7 +25,7 @@ class DeyeInverter:
 
         if device_type == DeviceType.THREE_PHASE:
             # Wechselrichter hat 2 mppt Tracker
-            power = sum(client.read_holding_registers(672, [ModbusDataType.INT_16]*2, unit=unit)) * -1
+            power = sum(client.read_holding_registers(672, [ModbusDataType.INT_16]*2, unit=unit)) * -10
             # 534: Gesamt Produktion Wechselrichter unsigned integer in kWh * 0,1
             exported = client.read_holding_registers(534, ModbusDataType.UINT_16, unit=unit) * 100
         elif device_type == DeviceType.SINGLE_PHASE_STRING or device_type == DeviceType.SINGLE_PHASE_HYBRID:

@@ -117,7 +117,6 @@ def et_factory() -> Et:
 @dataclass
 class ChargeTemplateData:
     name: str = "neues Lade-Profil"
-    disable_after_unplug: bool = False
     prio: bool = False
     load_default: bool = False
     et: Et = field(default_factory=et_factory)
@@ -137,7 +136,7 @@ class EvTemplateData:
     control_pilot_interruption_duration: int = 4
     average_consump: float = 17000
     min_current: int = 6
-    max_current_single_phase: int = 32
+    max_current_single_phase: int = 16
     battery_capacity: float = 82000
     efficiency: float = 90
     nominal_difference: float = 1
@@ -204,6 +203,7 @@ class Ev:
             self.charge_template: ChargeTemplate = ChargeTemplate(0)
             self.soc_module: ConfigurableVehicle = None
             self.chargemode_changed = False
+            self.submode_changed = False
             self.num = index
             self.data = EvData()
         except Exception:
@@ -349,6 +349,9 @@ class Ev:
         else:
             self.chargemode_changed = False
 
+    def set_submode_changed(self, control_parameter: ControlParameter, submode: str) -> None:
+        self.submode_changed = (submode != control_parameter.submode)
+
     def check_min_max_current(self,
                               control_parameter: ControlParameter,
                               required_current: float,
@@ -439,6 +442,7 @@ class Ev:
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
+        cm_config = data.data.general_data.data.chargemode_config
         if self.charge_template.data.chargemode.pv_charging.feed_in_limit:
             feed_in_yield = pv_config.feed_in_yield
         else:
@@ -446,7 +450,7 @@ class Ev:
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
-            delay = pv_config.phase_switch_delay * 60
+            delay = cm_config.phase_switch_delay * 60
             required_reserved_power = (self.ev_template.data.min_current * max_phases * 230 -
                                        self.ev_template.data.max_current_single_phase * 230)
 
@@ -454,7 +458,7 @@ class Ev:
             new_current = self.ev_template.data.min_current
         else:
             direction_str = f"Umschaltung von {max_phases} auf 1"
-            delay = (16 - pv_config.phase_switch_delay) * 60
+            delay = (16 - cm_config.phase_switch_delay) * 60
             # Es kann einphasig mit entsprechend niedriger Leistung gestartet werden.
             required_reserved_power = 0
             new_phase = 1
@@ -680,7 +684,8 @@ class ChargeTemplate:
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
         """
-        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging") == 0:
+        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging",
+                                                                                   "instant_charging") == 0:
             max_current = ev_template.data.max_current_multi_phases
             plan_data = self.search_plan(max_current, soc, ev_template, max_phases, used_amount)
             if plan_data:
@@ -756,7 +761,11 @@ class ChargeTemplate:
         duration = missing_amount/(plan.current * phases*230) * 3600
         return duration, missing_amount
 
-    SCHEDULED_CHARGING_REACHED_LIMIT_SOC = "Kein Zielladen, da der Ziel-Soc und das SoC-Limit bereits erreicht wurden."
+    SCHEDULED_REACHED_LIMIT_SOC = ("Kein Zielladen, da noch Zeit bis zum Zieltermin ist. "
+                                   "Kein Zielladen mit Überschuss, da das SoC-Limit für Überschuss-Laden " +
+                                   "erreicht wurde.")
+    SCHEDULED_CHARGING_REACHED_LIMIT_SOC = ("Kein Zielladen, da das Limit für Fahrzeug Laden mit Überschuss (SoC-Limit)"
+                                            " sowie der Fahrzeug-SoC (Ziel-SoC) bereits erreicht wurde.")
     SCHEDULED_CHARGING_REACHED_AMOUNT = "Kein Zielladen, da die Energiemenge bereits erreicht wurde."
     SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC = ("Falls vorhanden wird mit EVU-Überschuss geladen, da der Ziel-Soc "
                                                 "für Zielladen bereits erreicht wurde.")
@@ -782,22 +791,22 @@ class ChargeTemplate:
                                         min_current: int,
                                         soc_request_intervall_offset: int) -> Tuple[float, str, str, int]:
         current = 0
-        mode = "stop"
+        submode = "stop"
         if plan_data is None:
             if len(self.data.chargemode.scheduled_charging.plans) == 0:
-                return current, mode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, control_parameter_phases
+                return current, submode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, control_parameter_phases
             else:
-                return current, mode, self.SCHEDULED_CHARGING_NO_DATE_PENDING, control_parameter_phases
+                return current, submode, self.SCHEDULED_CHARGING_NO_DATE_PENDING, control_parameter_phases
         current_plan = self.data.chargemode.scheduled_charging.plans[plan_data.num]
         limit = current_plan.limit
         phases = plan_data.phases
         log.debug("Verwendeter Plan: "+str(current_plan.name))
-        if limit.selected == "soc" and soc >= limit.soc_limit:
+        if limit.selected == "soc" and soc >= limit.soc_limit and soc >= limit.soc_scheduled:
             message = self.SCHEDULED_CHARGING_REACHED_LIMIT_SOC
         elif limit.selected == "soc" and limit.soc_scheduled <= soc < limit.soc_limit:
             message = self.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC
             current = min_current
-            mode = "pv_charging"
+            submode = "pv_charging"
             # bei Überschuss-Laden mit der Phasenzahl aus den control_parameter laden,
             # um die Umschaltung zu berücksichtigen.
             phases = control_parameter_phases
@@ -812,7 +821,7 @@ class ChargeTemplate:
             message = self.SCHEDULED_CHARGING_IN_TIME.format(
                 plan_data.available_current, limit_string, current_plan.time)
             current = plan_data.available_current
-            mode = "instant_charging"
+            submode = "instant_charging"
         # weniger als die berechnete Zeit verfügbar
         # Ladestart wurde um maximal 20 Min verpasst.
         elif plan_data.remaining_time <= 0 - soc_request_intervall_offset:
@@ -822,7 +831,7 @@ class ChargeTemplate:
                 current = min(plan_data.missing_amount/((plan_data.duration + plan_data.remaining_time) /
                               3600)/(phases*230), plan_data.max_current)
             message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(round(current, 2))
-            mode = "instant_charging"
+            submode = "instant_charging"
         else:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
@@ -832,18 +841,24 @@ class ChargeTemplate:
                 if timecheck.is_list_valid(hourlist):
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR
                     current = plan_data.available_current
-                    mode = "instant_charging"
-                else:
+                    submode = "instant_charging"
+                elif soc <= limit.soc_limit:
                     message = self.SCHEDULED_CHARGING_EXPENSIVE_HOUR
                     current = min_current
-                    mode = "pv_charging"
+                    submode = "pv_charging"
                     phases = control_parameter_phases
+                else:
+                    message = self.SCHEDULED_REACHED_LIMIT_SOC
             else:
-                message = self.SCHEDULED_CHARGING_USE_PV
-                current = min_current
-                mode = "pv_charging"
-                phases = control_parameter_phases
-        return current, mode, message, phases
+                # Wenn SoC-Limit erreicht wurde, soll nicht mehr mit Überschuss geladen werden
+                if soc >= limit.soc_limit:
+                    message = self.SCHEDULED_REACHED_LIMIT_SOC
+                else:
+                    message = self.SCHEDULED_CHARGING_USE_PV
+                    current = min_current
+                    submode = "pv_charging"
+                    phases = control_parameter_phases
+        return current, submode, message, phases
 
     def standby(self) -> Tuple[int, str, str]:
         return 0, "standby", "Keine Ladung, da der Lademodus Standby aktiv ist."
