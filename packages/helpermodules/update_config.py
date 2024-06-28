@@ -1572,3 +1572,18 @@ class UpdateConfig:
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 48)
+
+
+def upgrade_datastore_48(self) -> None:
+    def upgrade(topic: str, payload) -> None:
+        if re.search("openWB/system/device/[0-9]+", topic) is not None:
+            payload = decode_payload(payload)
+
+            # update version and firmware of GoodWe
+            if payload.get("type") == "good_we" and "version" not in payload["configuration"]:
+                payload["configuration"].update({"version": GoodWeVersion.V_1_7})
+                payload["configuration"].update({"firmware": 8})
+
+            Pub().pub(topic, payload)
+    self._loop_all_received_topics(upgrade)
+    Pub().pub("openWB/system/datastore_version", 49)
