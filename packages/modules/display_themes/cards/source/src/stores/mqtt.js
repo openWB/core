@@ -450,23 +450,6 @@ export const useMqttStore = defineStore("mqtt", {
         return 0;
       };
     },
-    getChargePointVehicleChangePermitted(state) {
-      return (chargePointId) => {
-        if (
-          Array.isArray(
-            state.topics[
-              `openWB/chargepoint/${chargePointId}/set/change_ev_permitted`
-            ],
-          )
-        ) {
-          // topic payload is an array [bool, String]!
-          return state.topics[
-            `openWB/chargepoint/${chargePointId}/set/change_ev_permitted`
-          ][0];
-        }
-        return true;
-      };
-    },
     getChargePointConnectedVehicleConfig(state) {
       return (chargePointId) => {
         return state.topics[

@@ -149,8 +149,7 @@ class Chargepoint(ChargepointRfidMixin):
             state = True
         else:
             # Darf Autolock durch Tag überschrieben werden?
-            if (data.data.optional_data.data.rfid.active and
-                    self.template.data.rfid_enabling):
+            if data.data.optional_data.data.rfid.active:
                 if self.data.get.rfid is None and self.data.set.rfid is None:
                     state = False
                     message = ("Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per ID-Tag "
@@ -164,13 +163,15 @@ class Chargepoint(ChargepointRfidMixin):
         return state, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
-        if (self.data.set.manual_lock is False or
-                (self.template.data.rfid_enabling and
-                    (self.data.get.rfid is not None or self.data.set.rfid is not None))):
-            if self.data.set.manual_lock:
+        if self.data.set.manual_lock and self.template.data.disable_after_unplug or self.data.set.manual_lock is False:
+            if ((self.data.get.rfid or self.data.set.rfid) in self.template.data.valid_tags
+                    or self.data.set.manual_lock is False):
                 Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
-            charging_possible = True
-            message = None
+                charging_possible = True
+                message = None
+            else:
+                charging_possible = False
+                message = "Ladepunkt gesperrt, da kein zum Ladepunkt passender ID-Tag gefunden wurde."
         else:
             charging_possible = False
             message = "Keine Ladung, da der Ladepunkt gesperrt wurde."
@@ -223,8 +224,7 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.config.ev = 0
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/config/ev", 0)
                 # Ladepunkt nach Abstecken sperren
-                if data.data.ev_data[
-                        "ev"+str(self.data.set.charging_ev_prev)].charge_template.data.disable_after_unplug:
+                if self.template.data.disable_after_unplug:
                     self.data.set.manual_lock = True
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
                 # Ev wurde noch nicht aktualisiert.
@@ -492,6 +492,10 @@ class Chargepoint(ChargepointRfidMixin):
                         else:
                             log.error("Phasenumschaltung an Ladepunkt" + str(self.num) +
                                       " nicht möglich, da gerade eine Umschaltung im Gange ist.")
+                    elif self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY_EXPIRED:
+                        # Wenn keine Phasenumschaltung durchgeführt wird, Status auf CHARGING_ALLOWED setzen, sonst
+                        # bleibt PHASE_SWITCH_DELAY_EXPIRED stehen.
+                        self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
                 else:
                     log.error(
                         "Phasenumschaltung an Ladepunkt" + str(self.num) +
@@ -507,9 +511,11 @@ class Chargepoint(ChargepointRfidMixin):
             mode = "time_charging"
         else:
             mode = charging_ev.charge_template.data.chargemode.selected
-        chargemode = data.data.general_data.get_phases_chargemode(mode)
+        chargemode = data.data.general_data.get_phases_chargemode(mode, self.data.control_parameter.submode)
 
-        if chargemode is None or (self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state):
+        if (chargemode is None or
+                (self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state) or
+                self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use
@@ -639,6 +645,7 @@ class Chargepoint(ChargepointRfidMixin):
                     required_current = self.check_min_max_current(
                         required_current, self.data.control_parameter.phases)
                     charging_ev.set_chargemode_changed(self.data.control_parameter, submode)
+                    charging_ev.set_submode_changed(self.data.control_parameter, submode)
                     self.set_control_parameter(submode, required_current)
                     self.set_required_currents(required_current)
 
@@ -774,11 +781,14 @@ class Chargepoint(ChargepointRfidMixin):
     def cp_ev_chargemode_support_phase_switch(self) -> bool:
         control_parameter = self.data.control_parameter
         pv_auto_switch = (control_parameter.chargemode == Chargemode.PV_CHARGING and
-                          data.data.general_data.get_phases_chargemode(Chargemode.PV_CHARGING.value) == 0)
+                          data.data.general_data.get_phases_chargemode(
+                              Chargemode.PV_CHARGING.value,
+                              control_parameter.submode) == 0)
         scheduled_auto_switch = (
             control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
             control_parameter.submode == Chargemode.PV_CHARGING and
-            data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value) == 0)
+            data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value,
+                                                         control_parameter.submode) == 0)
         return (self.cp_ev_support_phase_switch() and
                 self.data.get.charge_state and
                 (pv_auto_switch or scheduled_auto_switch) and

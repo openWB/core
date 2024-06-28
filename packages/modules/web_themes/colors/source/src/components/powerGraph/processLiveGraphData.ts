@@ -125,7 +125,7 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 	// charge points - we only show a maximum of 10 chargepoints in the graph
 	for (let i = 0; i < 10; i++) {
 		const idx = 'cp' + i
-		values[idx] = +data[idx + '-power'] ?? 0
+		values[idx] = +(data[idx + '-power'] ?? 0)
 	}
 	values.selfUsage = values.pv - values.evuOut
 	if (values.selfUsage < 0) {

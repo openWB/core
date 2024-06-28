@@ -30,8 +30,8 @@ const widgetWidth = computed(() => {
 	return props.fullWidth
 		? 'col-12'
 		: props.variableWidth && globalConfig.preferWideBoxes
-		? 'col-lg-6'
-		: 'col-lg-4'
+			? 'col-lg-6'
+			: 'col-lg-4'
 })
 </script>
 

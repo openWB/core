@@ -25,7 +25,7 @@ class DeyeBat:
         unit = self.component_config.configuration.modbus_id
 
         if device_type == DeviceType.THREE_PHASE:
-            power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit) * -1
+            power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit) * -10
             soc = client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
             # 516: Geladen in kWh * 0,1
             imported = client.read_holding_registers(516, ModbusDataType.UINT_16, unit=unit) * 100

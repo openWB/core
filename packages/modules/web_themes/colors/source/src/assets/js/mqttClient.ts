@@ -5,12 +5,8 @@
  */
 
 // functions to interact with MQTT
-import {
-	MqttClient,
-	connect,
-	type OnMessageCallback,
-	type MqttProtocol,
-} from 'mqtt'
+
+import mqtt from 'mqtt'
 import { type QoS } from 'mqtt-packet'
 
 const defaultQoS: QoS = 0
@@ -18,7 +14,7 @@ const mqttConnection = {
 	host: location.hostname,
 	port: location.protocol == 'https:' ? 443 : 80,
 	endpoint: '/ws',
-	protocol: (location.protocol == 'https:' ? 'wss' : 'ws') as MqttProtocol,
+	protocol: (location.protocol == 'https:' ? 'wss' : 'ws') as mqtt.MqttProtocol,
 	connectTimeout: 4000,
 	reconnectPeriod: 4000,
 	clean: false,
@@ -31,16 +27,15 @@ const subscription = {
 	topic: '',
 	qos: defaultQoS,
 }
-let client: MqttClient
+let client: mqtt.MqttClient
 
-// export function MqttConnect(callback: (t: string, m: string) => void, topiclist: string[]) {
 const { host, port, endpoint, ...options } = mqttConnection
 const connectUrl = `${options.protocol}://${host}:${port}${endpoint}`
 try {
-	client = connect(connectUrl, options)
+	console.debug('connectURL', connectUrl)
+	client = mqtt.connect(connectUrl, options)
 	client.on('connect', () => {
 		console.info('MQTT connection successful')
-		//console.info (`mqtt client: ${mqttConnection.clientId}`)
 	})
 	client.on('disconnect', () => {
 		console.info('MQTT disconnected')
@@ -53,7 +48,7 @@ try {
 }
 
 //}
-export function mqttRegister(callback: OnMessageCallback) {
+export function mqttRegister(callback: mqtt.OnMessageCallback) {
 	if (client) {
 		client.on('message', callback)
 	} else {
@@ -68,7 +63,6 @@ export function mqttSubscribe(toTopic: string) {
 			console.error('MQTT Subscription error: ' + error)
 			return
 		}
-		//console.info("MQTT Subscription successful: " + toTopic);
 	})
 }
 export function mqttUnsubscribe(fromTopic: string) {
@@ -79,7 +73,6 @@ export function mqttUnsubscribe(fromTopic: string) {
 			console.error('MQTT Unsubscribe from ' + fromTopic + ' failed: ' + error)
 			return
 		}
-		//console.info ('MQTT unsubscribe successful: ' + topic)
 	})
 }
 export async function mqttPublish(topic: string, message: string) {
@@ -92,7 +85,6 @@ export async function mqttPublish(topic: string, message: string) {
 		connected = client.connected
 		retries += 1
 	}
-	// console.warn ('MQTT publish: Now connected')
 	if (retries < 20) {
 		try {
 			client.publish(topic, message, { qos }, (error) => {

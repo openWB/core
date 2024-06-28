@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 import json
 from pathlib import Path
-import subprocess
 import time
 import datetime
 import logging
 
 from control import data
 from helpermodules.pub import Pub
+from helpermodules.utils.run_command import run_command
 from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class Graph:
             Pub().pub("openWB/set/system/lastlivevaluesJson", data_line)
             with open(str(Path(__file__).resolve().parents[2] / "ramdisk"/"graph_live.json"), "a") as f:
                 f.write(f"{json.dumps(data_line, separators=(',', ':'))}\n")
-            subprocess.run([str(Path(__file__).resolve().parents[2] / "runs"/"graphing.sh"),
-                            str(self.data.config.duration*6)])
+            run_command([str(Path(__file__).resolve().parents[2] / "runs"/"graphing.sh"),
+                         str(self.data.config.duration*6)])
         except Exception:
             log.exception("Fehler im Graph-Modul")

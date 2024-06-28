@@ -212,7 +212,7 @@
 								props.chargepoint.etActive
 									? (
 											Math.round(props.chargepoint.etMaxPrice * 10) / 10
-									  ).toFixed(1) + ' ct'
+										).toFixed(1) + ' ct'
 									: '-'
 							}}
 

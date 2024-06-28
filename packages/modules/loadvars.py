@@ -31,8 +31,6 @@ class Loadvars:
             thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
             thread_handler(self._set_general(), data.data.general_data.data.control_interval/3)
             wait_for_module_update_completed(self.event_module_update_completed, topic)
-            data.data.pv_all_data.calc_power_for_all_components()
-            data.data.bat_all_data.calc_power_for_all_components()
         except Exception:
             log.exception("Fehler im loadvars-Modul")
 

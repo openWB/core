@@ -217,7 +217,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                     {f"counter{counter.num}": {
                         "imported": counter.data.get.imported,
                         "exported": counter.data.get.exported,
-                        "grid": True if data.data.counter_all_data.get_evu_counter() == counter.num else False}})
+                        "grid": True if data.data.counter_all_data.get_id_evu_counter() == counter.num else False}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
 

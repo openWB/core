@@ -109,9 +109,10 @@ class CounterAll:
                 hc_counter_data = data.data.counter_data[hc_counter_source].data
                 if hc_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
                     hc_counter_data.get.fault_state = FaultStateLevel.WARNING.value
-                    hc_counter_data.get.fault_str = ("Der Wert für den Hausverbrauch ist nicht plausibel (negativ). "
-                                                     "Bitte die Leistungen der Komponenten und die Anordnung in der "
-                                                     "Hierarchie prüfen.")
+                    hc_counter_data.get.fault_str = ("Hinweis: Es gibt mehr Stromerzeuger im Haus als in der openWB "
+                                                     "eingetragen sind. Der Hausverbrauch kann nicht korrekt berechnet "
+                                                     "werden. Dies hat auf die PV-Überschussladung keine negativen "
+                                                     "Auswirkungen.")
                     evu_counter = self.get_id_evu_counter()
                     Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
                               hc_counter_data.get.fault_state)

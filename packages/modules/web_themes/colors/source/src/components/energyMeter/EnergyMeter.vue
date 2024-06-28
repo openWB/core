@@ -180,7 +180,7 @@ const usageDetails = computed(
 					shcount > 1
 						? [...shDevices.values()].filter(
 								(row) => row.configured && row.showInGraph,
-						  )
+							)
 						: [],
 				)
 				.concat([usageSummary.batIn, usageSummary.house]),
