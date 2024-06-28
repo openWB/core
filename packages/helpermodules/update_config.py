@@ -1781,88 +1781,88 @@ class UpdateConfig:
                 # 1. openWB
                 if device.get("type") == "openwb_bat_kit":
                     updated_payload = device
-                    updated_payload["openwb_bat_kit"].update({"openWB.openwb_bat_kit"})
+                    updated_payload["type"] = "openWB.openwb_bat_kit"
                     return {topic: updated_payload}
                 if device.get("type") == "openwb_evu_kit":
                     updated_payload = device
-                    updated_payload["openwb_evu_kit"].update({"openWB.openwb_evu_kit"})
+                    updated_payload["type"] = "openWB.openwb_evu_kit"
                     return {topic: updated_payload}
                 if device.get("type") == "openwb_flex":
                     updated_payload = device
-                    updated_payload["openwb_flex"].update({"openWB.openwb_flex"})
+                    updated_payload["type"] = "openWB.openwb_flex"
                     return {topic: updated_payload}
                 if device.get("type") == "openwb_pv_kit":
                     updated_payload = device
-                    updated_payload["openwb_pv_kit"].update({"openWB.openwb_pv_kit"})
+                    updated_payload["type"] = "openWB.openwb_pv_kit"
                     return {topic: updated_payload}
                 # 2. huawei
                 if device.get("type") == "huawei":
                     updated_payload = device
-                    updated_payload["huawei"].update({"huawei.huawei"})
+                    updated_payload["type"] = "huawei.huawei"
                     return {topic: updated_payload}
                 if device.get("type") == "huawei_smartlogger":
                     updated_payload = device
-                    updated_payload["huawei_smartlogger"].update({"huawei.huawei_logger"})
+                    updated_payload["type"] = "huawei.huawei_logger"
                     return {topic: updated_payload}
                 # 3. kostal
                 if device.get("type") == "kostal_piko":
                     updated_payload = device
-                    updated_payload["kostal_piko"].update({"kostal.kostal_piko"})
+                    updated_payload["type"] = "kostal.kostal_piko"
                     return {topic: updated_payload}
                 if device.get("type") == "kostal_piko_old":
                     updated_payload = device
-                    updated_payload["kostal.kostal_piko_old"].update({"kostal.kostal_piko_old"})
+                    updated_payload["type"] = "kostal.kostal_piko_old"
                     return {topic: updated_payload}
                 if device.get("type") == "kostal_plenticore":
                     updated_payload = device
-                    updated_payload["kostal_plenticore"].update({"kostal.kostal_plenticore"})
+                    updated_payload["type"] = "kostal.kostal_plenticore"
                     return {topic: updated_payload}
                 if device.get("type") == "kostal_sem":
                     updated_payload = device
-                    updated_payload["kostal_sem"].update({"kostal.kostal_sem"})
+                    updated_payload["type"] = "kostal.kostal_sem"
                     return {topic: updated_payload}
                 if device.get("type") == "kostal_steca":
                     updated_payload = device
-                    updated_payload["kostal_steca"].update({"kostal.kostal_steca"})
+                    updated_payload["type"] = "kostal.kostal_steca"
                     return {topic: updated_payload}
                 # 4. Siemens
                 if device.get("type") == "siemens":
                     updated_payload = device
-                    updated_payload["siemens"].update({"siemens.siemens"})
+                    updated_payload["type"] = "siemens.siemens"
                     return {topic: updated_payload}
                 if device.get("type") == "siemens_sentron":
                     updated_payload = device
-                    updated_payload["siemens_sentron"].update({"siemens.siemens_sentron"})
+                    updated_payload["type"] = "siemens.siemens_sentron"
                     return {topic: updated_payload}
                 # 5 sma
                 if device.get("type") == "sma_shm":
                     updated_payload = device
-                    updated_payload["sma_shm"].update({"sma.sma_shm"})
+                    updated_payload["type"] = "sma.sma_shm"
                     return {topic: updated_payload}
                 if device.get("type") == "sma_sunny_boy":
                     updated_payload = device
-                    updated_payload["sma_sunny_boy"].update({"sma.sma_sunny_boy"})
+                    updated_payload["type"] = "sma.sma_sunny_boy"
                     return {topic: updated_payload}
                 if device.get("type") == "sma_sunny_island":
                     updated_payload = device
-                    updated_payload["sma_sunny_island"].update({"sma.sma_sunny_island"})
+                    updated_payload["type"] = "sma.sma_sunny_island"
                     return {topic: updated_payload}
                 if device.get("type") == "sma_webbox":
                     updated_payload = device
-                    updated_payload["sma_webbox"].update({"sma.sma_webbox"})
+                    updated_payload["type"] = "sma.sma_webbox"
                     return {topic: updated_payload}
                 # 6 Pfade fuer Filterfunktion im Frontend anpassen
                 if device.get("type") == "smart_me":
                     updated_payload = device
-                    updated_payload["smart_me"].update({"smrt_me"})
+                    updated_payload["type"] = "smrt_me"
                     return {topic: updated_payload}
                 if device.get("type") == "smartfox":
                     updated_payload = device
-                    updated_payload["smartfox"].update({"smrtfox"})
+                    updated_payload["type"] = "smrtfox"
                     return {topic: updated_payload}
                 if (device.get("type") == "azzurro_sofar"):
                     updated_payload = device
-                    updated_payload["azzurro_sofar"].update({"sofar"})
+                    updated_payload["type"] = "sofar"
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 48)
