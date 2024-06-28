@@ -9,6 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.store import get_counter_value_store
 from modules.devices.good_we.config import GoodWeCounterSetup
+from modules.devices.good_we.version import GoodWeVersion
 
 
 class GoodWeCounter:

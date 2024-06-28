@@ -12,6 +12,7 @@ from modules.devices.good_we import counter
 from modules.devices.good_we import inverter
 from modules.devices.good_we.config import (GoodWe, GoodWeBatSetup, GoodWeConfiguration, GoodWeCounterSetup,
                                             GoodWeInverterSetup)
+from modules.devices.good_we.version import GoodWeVersion
 
 log = logging.getLogger(__name__)
 

@@ -9,6 +9,7 @@ from modules.common.modbus import ModbusDataType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_bat_value_store
 from modules.devices.good_we.config import GoodWeBatSetup
+from modules.devices.good_we.version import GoodWeVersion
 
 
 class GoodWeBat:
