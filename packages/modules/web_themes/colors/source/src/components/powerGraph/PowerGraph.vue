@@ -197,7 +197,7 @@ onMounted(() => {
 	color: var(--color-menu);
 }
 
-.datebadge {
+.dateWbBadge {
 	background-color: var(--color-menu);
 	color: var(--color-bg);
 	font-size: var(--font-medium);

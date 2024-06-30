@@ -7,9 +7,7 @@ Hagen */
 			<span class="battery-title">{{ bat.name }}</span>
 		</template>
 		<template #buttons>
-			<span class="badge rounded-pill battery-mode me-2" :style="statusstyle">{{
-				batteryState
-			}}</span>
+			<WbBadge :bgcolor="statusbg" color="black">{{ batteryState }}</WbBadge>
 		</template>
 		<div class="subgrid pt-1">
 			<InfoItem heading="Geliefert:" :small="true" class="grid-left grid-col-4">
@@ -35,6 +33,7 @@ import type { Battery } from './model'
 import BatterySymbol from '../shared/BatterySymbol.vue'
 import InfoItem from '../shared/InfoItem.vue'
 import FormatWattH from '../shared/FormatWattH.vue'
+import WbBadge from '../shared/WbBadge.vue'
 import { computed } from 'vue'
 import { formatWatt } from '@/assets/js/helpers'
 // props
@@ -50,14 +49,12 @@ const batteryState = computed(() => {
 		return `Bereit`
 	}
 })
-const statusstyle = computed(() => {
-	const bgcolor =
-		props.bat.power < 0
-			? 'var(--color-pv)'
-			: props.bat.power > 0
-				? 'var(--color-battery)'
-				: 'var(--color-menu)'
-	return { 'background-color': bgcolor }
+const statusbg = computed(() => {
+	return props.bat.power < 0
+		? 'var(--color-pv)'
+		: props.bat.power > 0
+			? 'var(--color-battery)'
+			: 'var(--color-menu)'
 })
 </script>
 

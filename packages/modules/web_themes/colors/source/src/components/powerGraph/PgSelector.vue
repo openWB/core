@@ -42,11 +42,11 @@
 			>
 				<span class="fa-solid fa-xl fa-chevron-circle-left arrowButton" />
 			</span>
-			<!-- Badge -->
+			<!-- WbBadge -->
 			<span
 				v-if="editmode < 2"
 				type="button"
-				class="btn-outline-secondary p-2 px-3 badge rounded-pill datebadge"
+				class="btn-outline-secondary p-2 px-3 WbBadge rounded-pill dateWbBadge"
 				@click="toggleEdit"
 			>
 				{{ displayDate }}
@@ -252,7 +252,7 @@ const row2layout = computed(() => {
 .arrowButton {
 	border: 0;
 }
-.datebadge {
+.dateWbBadge {
 	background-color: var(--color-bg);
 	color: var(--color-menu);
 	border: 1px solid var(--color-menu);

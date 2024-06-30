@@ -56,7 +56,7 @@
 					<span>{{ chargePowerString }}</span>
 
 					<span class="d-flex align-items-center me-1">
-						<span class="badge phasesInUse rounded-pill">
+						<span class="WbBadge phasesInUse rounded-pill">
 							{{ chargePhasesString }}</span
 						>
 						<span>
