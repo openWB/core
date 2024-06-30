@@ -5,7 +5,6 @@ import json
 import logging
 from pathlib import Path
 import re
-import subprocess
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
@@ -24,6 +23,7 @@ from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
+from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
 from control import ev
@@ -41,7 +41,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 47
+    DATASTORE_VERSION = 48
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -771,12 +771,12 @@ class UpdateConfig:
     def upgrade_datastore_4(self) -> None:
         moved_file = False
         for path in Path("/etc/mosquitto/conf.d").glob('99-bridge-openwb-*.conf'):
-            subprocess.run(["sudo", "mv", str(path), str(path).replace("conf.d", "conf_local.d")])
+            run_command(["sudo", "mv", str(path), str(path).replace("conf.d", "conf_local.d")], process_exception=True)
             moved_file = True
         self.__update_topic("openWB/system/datastore_version", 5)
         if moved_file:
             time.sleep(1)
-            subprocess.run([str(self.base_path / "runs" / "reboot.sh")])
+            run_command([str(self.base_path / "runs" / "reboot.sh")], process_exception=True)
 
     def upgrade_datastore_5(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
@@ -1062,16 +1062,11 @@ class UpdateConfig:
                 bridge_configuration = decode_payload(payload)
                 if bridge_configuration["remote"]["is_openwb_cloud"]:
                     index = get_index(topic)
-                    result = subprocess.run(
-                        ["php", "-f", str(self.base_path / "runs" / "save_mqtt.php"), index, payload],
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-                    if result.returncode == 0:
-                        log.info("successfully updated configuration of bridge "
-                                 f"'{bridge_configuration['name']}' ({index})")
-                        pub_system_message(payload, result.stdout, MessageType.SUCCESS)
-                    else:
-                        log.error("update of configuration for bridge "
-                                  f"'{bridge_configuration['name']}' ({index}) failed! {result.stdout}")
+                    result = run_command(["php", "-f", str(self.base_path / "runs" / "save_mqtt.php"), index, payload],
+                                         process_exception=True)
+                    log.info("successfully updated configuration of bridge "
+                             f"'{bridge_configuration['name']}' ({index})")
+                    pub_system_message(payload, result, MessageType.SUCCESS)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 24)
 
@@ -1497,42 +1492,45 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 44)
 
     def upgrade_datastore_44(self) -> None:
-        corrupt_days = ["20240620", "20240619", "20240618"]
-        for topic, payload in self.all_received_topics.items():
-            if topic == "openWB/counter/get/hierarchy":
-                top_entry = decode_payload(payload)[0]
-                if top_entry["type"] != "counter":
-                    raise Exception("First item in hierarchy must be a counter")
-                evu_counter_str = f"counter{top_entry['id']}"
-        for corrupt_day in corrupt_days:
+        try:
+            corrupt_days = ["20240620", "20240619", "20240618"]
+            for topic, payload in self.all_received_topics.items():
+                if topic == "openWB/counter/get/hierarchy":
+                    top_entry = decode_payload(payload)[0]
+                    if top_entry["type"] != "counter":
+                        raise Exception("First item in hierarchy must be a counter")
+                    evu_counter_str = f"counter{top_entry['id']}"
+            for corrupt_day in corrupt_days:
+                try:
+                    filepath = f"{self.base_path}/data/daily_log/{corrupt_day}.json"
+                    with open(filepath, "r") as jsonFile:
+                        content = json.load(jsonFile)
+                    for entry in content["entries"]:
+                        for counter_entry in entry["counter"]:
+                            if evu_counter_str == counter_entry and entry["counter"][counter_entry]["grid"] is False:
+                                entry["counter"][counter_entry]["grid"] = True
+                                break
+                        else:
+                            log.debug("all grid: False-bug does not exist in this installation")
+                            return
+                    write_and_check(filepath, content)
+                except Exception:
+                    log.exception(f"Logdatei '{filepath}' konnte nicht konvertiert werden.")
             try:
-                filepath = f"{self.base_path}/data/daily_log/{corrupt_day}.json"
+                filepath = f"{self.base_path}/data/monthly_log/202406.json"
                 with open(filepath, "r") as jsonFile:
                     content = json.load(jsonFile)
                 for entry in content["entries"]:
-                    for counter_entry in entry["counter"]:
-                        if evu_counter_str == counter_entry and entry["counter"][counter_entry]["grid"] is False:
-                            entry["counter"][counter_entry]["grid"] = True
-                            break
-                    else:
-                        log.debug("all grid: False-bug does not exist in this installation")
-                        return
+                    if entry["date"] in corrupt_days:
+                        for counter_entry in entry["counter"]:
+                            if evu_counter_str == counter_entry:
+                                entry["counter"][counter_entry]["grid"] = True
+                                break
                 write_and_check(filepath, content)
             except Exception:
                 log.exception(f"Logdatei '{filepath}' konnte nicht konvertiert werden.")
-        try:
-            filepath = f"{self.base_path}/data/monthly_log/202406.json"
-            with open(filepath, "r") as jsonFile:
-                content = json.load(jsonFile)
-            for entry in content["entries"]:
-                if entry["date"] in corrupt_days:
-                    for counter_entry in entry["counter"]:
-                        if evu_counter_str == counter_entry:
-                            entry["counter"][counter_entry]["grid"] = True
-                            break
-            write_and_check(filepath, content)
         except Exception:
-            log.exception(f"Logdatei '{filepath}' konnte nicht konvertiert werden.")
+            log.exception("Fehler beim Konvertieren der Logdateien")
         self.__update_topic("openWB/system/datastore_version", 45)
 
     def upgrade_datastore_45(self) -> None:
@@ -1551,7 +1549,6 @@ class UpdateConfig:
                 payload = decode_payload(payload)
                 if "disable_after_unplug" in payload:
                     updated_payload = payload
-                    disable_after_unplug = updated_payload["disable_after_payload"]
                     payload.pop("disable_after_unplug")
                     return {topic: updated_payload}
             if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
@@ -1561,9 +1558,16 @@ class UpdateConfig:
                     updated_payload["rfid_enabling"] = {}
                     payload.pop("rfid_enabling")
                     return {topic: updated_payload}
-                if "disable_after_unplug" not in payload:
-                    updated_payload = payload
-                    updated_payload.update({"disable_after_unplug": disable_after_unplug})
-                    return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 47)
+
+    def upgrade_datastore_47(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "disable_after_unplug" not in payload:
+                    updated_payload = payload
+                    updated_payload.update({"disable_after_unplug": False})
+                    return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 48)
