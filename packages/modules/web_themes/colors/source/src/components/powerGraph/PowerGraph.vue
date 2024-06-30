@@ -74,7 +74,8 @@
 					<PgSoc
 						v-if="
 							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today') &&
+								graphData.graphMode == 'today' ||
+								graphData.graphMode == 'live') &&
 							globalData.isBatteryConfigured
 						"
 						:width="width - margin.left - 2 * margin.right"

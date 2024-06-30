@@ -13,7 +13,7 @@ Hagen */
 			>
 				<div class="m-0 p-0 d-flex justify-content-between align-items-center">
 					<!-- Status indicator -->
-					<span class="mx-1 WbBadge rounded-pill smallTextSize plugIndicator">
+					<span class="mx-1 badge rounded-pill smallTextSize plugIndicator">
 						<i :class="plugPillClass" />
 						<span v-if="chargepoint.isCharging" class="ms-2">
 							{{ formatWatt(chargepoint.power) }}
@@ -25,7 +25,7 @@ Hagen */
 					</span>
 					<!-- Mode indicator -->
 					<span
-						class="mx-2 m-0 WbBadge rounded-pill smallTextSize modeIndicator"
+						class="mx-2 m-0 badge rounded-pill smallTextSize modeIndicator"
 						:style="modePillStyle"
 					>
 						<i class="fa me-1" :class="modeIcon" />

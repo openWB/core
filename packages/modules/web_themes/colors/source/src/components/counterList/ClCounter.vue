@@ -4,10 +4,10 @@
 			<span class="countername">{{ counter.name }} </span>
 		</template>
 		<template #buttons>
-			<WbBadge v-if="props.counter.power != 0" :bgcolor="modebg">
+			<WbBadge v-if="props.counter.power != 0" :bgcolor="modebg" color="white">
 				{{ modestring }}
 			</WbBadge>
-			<WbBadge color="white"> ID: {{ props.counter.id }} </WbBadge>
+			<WbBadge color="var(--color-bg)"> ID: {{ props.counter.id }} </WbBadge>
 		</template>
 		<div class="subgrid pt-1">
 			<InfoItem heading="Leistung:" :small="true" class="grid-left grid-col-4">
