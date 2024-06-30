@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """Starten der benötigten Prozesse
 """
+# flake8: noqa: F402
 import logging
+from helpermodules import logger
+# als erstes logging initalisieren, damit auch ImportError geloggt werden
+logger.setup_logging()
+log = logging.getLogger()
+
 from pathlib import Path
 from random import randrange
 import schedule
@@ -19,7 +25,6 @@ from modules import configuration
 from helpermodules import timecheck, update_config
 from helpermodules import subdata
 from helpermodules import setdata
-from helpermodules import logger
 from helpermodules import command
 from helpermodules.modbusserver import start_modbus_server
 from helpermodules.pub import Pub
@@ -34,9 +39,6 @@ from modules.internal_chargepoint_handler.internal_chargepoint_handler import Ge
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
-
-logger.setup_logging()
-log = logging.getLogger()
 
 
 class HandlerAlgorithm:

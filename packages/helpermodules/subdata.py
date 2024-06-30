@@ -25,6 +25,7 @@ from helpermodules import graph
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import optional
 from helpermodules.pub import Pub
@@ -611,9 +612,9 @@ class SubData:
                         # 5 Min Handler bis auf Heartbeat, Cleanup, ... beenden
                         self.event_jobs_running.clear()
                     self.set_json_payload_class(var.data, msg)
-                    subprocess.run([
+                    run_command([
                         str(Path(__file__).resolve().parents[2] / "runs" / "setup_network.sh")
-                    ])
+                    ], process_exception=True)
                 elif "openWB/general/modbus_control" == msg.topic:
                     if decode_payload(msg.payload) and self.general_data.data.extern:
                         self.event_modbus_server.set()
@@ -678,9 +679,9 @@ class SubData:
                     self.set_json_payload_class(var.data.int_display, msg)
                     if re.search("/(standby|active|rotation)$", msg.topic) is not None:
                         # some topics require an update of the display manager or boot settings
-                        subprocess.run([
+                        run_command([
                             str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")
-                        ])
+                        ], process_exception=True)
                 elif re.search("/optional/et/", msg.topic) is not None:
                     if re.search("/optional/et/get/prices", msg.topic) is not None:
                         var.data.et.get.prices = decode_payload(msg.payload)
@@ -804,12 +805,14 @@ class SubData:
                 if self.event_subdata_initialized.is_set():
                     index = get_index(msg.topic)
                     parent_file = Path(__file__).resolve().parents[2]
-                    result = subprocess.run(
-                        ["php", "-f", str(parent_file / "runs" / "save_mqtt.php"), index, msg.payload],
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-                    if len(result.stdout) > 0:
-                        pub_system_message(msg.payload, result.stdout,
-                                           MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
+                    try:
+                        result = run_command(
+                            ["php", "-f", str(parent_file / "runs" / "save_mqtt.php"), index, msg.payload])
+                        pub_system_message(msg.payload, result, MessageType.SUCCESS)
+                    except subprocess.CalledProcessError as e:
+                        log.debug(e.stdout)
+                        pub_system_message(msg.payload, f'Fehler-Status: {e.returncode}<br />Meldung: {e.stderr}',
+                                           MessageType.ERROR)
                 else:
                     log.debug("skipping mqtt bridge message on startup")
             elif "mqtt" and "valid_partner_ids" in msg.topic:
@@ -824,8 +827,8 @@ class SubData:
                 token = splitted[0]
                 port = splitted[1] if len(splitted) > 1 else "2223"
                 user = splitted[2] if len(splitted) > 2 else "getsupport"
-                subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
-                                token, port, user])
+                run_command([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
+                             token, port, user], process_exception=True)
             elif "openWB/system/backup_cloud/config" in msg.topic:
                 config_dict = decode_payload(msg.payload)
                 if config_dict["type"] is None:
