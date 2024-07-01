@@ -10,6 +10,51 @@ $file_name = sprintf('%04d%02d', $_GET["year"], $_GET["month"]);
 $charge_log_file = $charge_log_path . $file_name . ".json";
 $charge_log_data = json_decode(file_get_contents($charge_log_file), true);
 
+function translateHeading($value) {
+	$translationList = [
+		"chargepoint id" => "Ladepunkt-ID",
+		"chargepoint name" => "Ladepunkt",
+		"chargepoint serial_number" => "Ladepunkt Seriennummer",
+		"chargepoint imported_at_start" => "Zählerstand Ladestart",
+		"chargepoint imported_at_end" => "Zählerstand Ladeende",
+		"vehicle id" => "Fahrzeug-ID",
+		"vehicle name" => "Fahrzeug",
+		"vehicle chargemode" => "Lademodus",
+		"vehicle prio" => "Priorität",
+		"vehicle rfid" => "ID-Tag",
+		"vehicle soc_at_start" => "SoC bei Start",
+		"vehicle soc_at_end" => "SoC bei Ende",
+		"vehicle range_at_start" => "Reichweite bei Start",
+		"vehicle range_at_end" => "Reichweite bei Ende",
+		"time begin" => "Beginn",
+		"time end" => "Ende",
+		"time time_charged" => "Dauer",
+		"data range_charged" => "Reichweite",
+		"data imported_since_mode_switch" => "Energie",
+		"data imported_since_plugged" => "Energie seit Anstecken",
+		"data power" => "Leistung",
+		"data costs" => "Kosten",
+		"data power_source"	=> "Energie-Anteile",
+	];
+
+	return $translationList[$value] ?? $value;
+}
+
+function translateChargeMode($value) {
+	$chargeModeTranslations = [
+		"instant_charging" => "Sofortladen",
+		"pv_charging" => "PV",
+		"scheduled_charging" => "Zielladen",
+		"time_charging" => "Zeitladen",
+		"standby" => "Standby",
+		"stop" => "Stop",
+		"false" => "Nein",
+		"true" => "Ja",
+	];
+
+	return $chargeModeTranslations[$value] ?? $value;
+}
+
 if (is_array($charge_log_data)) {
 	header("Content-Type: text/csv");
 	header("Content-Disposition: attachment; filename=ChargeLog-" . $file_name . ".csv");
@@ -22,7 +67,8 @@ if (is_array($charge_log_data)) {
 				if (is_bool($value)) {
 					$value = $value ? "true" : "false";
 				}
-				$csv_row[$section_key . " " . $key] = $value;
+				$translated_key = translateHeading($section_key . " " . $key);
+				$csv_row[$translated_key] = translateChargeMode($value);
 			}
 		}
 		if (!$header_done) {
