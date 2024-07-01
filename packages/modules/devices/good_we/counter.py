@@ -55,6 +55,8 @@ class GoodWeCounter:
                 imported = self.__tcp_client.read_holding_registers(
                     36017, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
             else:
+                # v1.0 und v1.1 liefern keine Werte zurueck obwohl Register laut Doku gleich
+                # Alternative Register für die BTC Serie liefern statische Werte
                 imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
