@@ -12,29 +12,32 @@ $charge_log_data = json_decode(file_get_contents($charge_log_file), true);
 
 function translateHeading($value) {
 	$translationList = [
-		"chargepoint id" => "Ladepunkt-ID",
-		"chargepoint name" => "Ladepunkt",
-		"chargepoint serial_number" => "Ladepunkt Seriennummer",
-		"chargepoint imported_at_start" => "Zählerstand Ladestart",
-		"chargepoint imported_at_end" => "Zählerstand Ladeende",
-		"vehicle id" => "Fahrzeug-ID",
-		"vehicle name" => "Fahrzeug",
-		"vehicle chargemode" => "Lademodus",
-		"vehicle prio" => "Priorität",
-		"vehicle rfid" => "ID-Tag",
-		"vehicle soc_at_start" => "SoC bei Start",
-		"vehicle soc_at_end" => "SoC bei Ende",
-		"vehicle range_at_start" => "Reichweite bei Start",
-		"vehicle range_at_end" => "Reichweite bei Ende",
-		"time begin" => "Beginn",
-		"time end" => "Ende",
-		"time time_charged" => "Dauer",
-		"data range_charged" => "Reichweite",
-		"data imported_since_mode_switch" => "Energie",
-		"data imported_since_plugged" => "Energie seit Anstecken",
-		"data power" => "Leistung",
-		"data costs" => "Kosten",
-		"data power_source"	=> "Energie-Anteile",
+		"chargepoint chargepoint id" => "Ladepunkt-ID",
+		"chargepoint chargepoint name" => "Ladepunkt",
+		"chargepoint chargepoint serial_number" => "Ladepunkt Seriennummer",
+		"chargepoint chargepoint imported_at_start" => "Zählerstand Ladestart",
+		"chargepoint chargepoint imported_at_end" => "Zählerstand Ladeende",
+		"vehicle vehicle id" => "Fahrzeug-ID",
+		"vehicle vehicle name" => "Fahrzeug",
+		"vehicle vehicle chargemode" => "Lademodus",
+		"vehicle vehicle prio" => "Priorität",
+		"vehicle vehicle rfid" => "ID-Tag",
+		"vehicle vehicle soc_at_start" => "SoC bei Start",
+		"vehicle vehicle soc_at_end" => "SoC bei Ende",
+		"vehicle vehicle range_at_start" => "Reichweite bei Start",
+		"vehicle vehicle range_at_end" => "Reichweite bei Ende",
+		"time time begin" => "Beginn",
+		"time time end" => "Ende",
+		"time time time_charged" => "Dauer",
+		"data data range_charged" => "Reichweite",
+		"data data imported_since_mode_switch" => "Energie",
+		"data data imported_since_plugged" => "Energie seit Anstecken",
+		"data data power" => "Leistung",
+		"data data costs" => "Kosten",
+		"data data power_source grid"=> "Netz-Anteil",
+		"data data power_source pv"	=> "PV-Anteil",
+		"data data power_source bat"=> "Speicher-Anteil",
+		"data data power_source cp"	=> "Ladepunkt-Anteil",
 	];
 
 	return $translationList[$value] ?? $value;
@@ -96,7 +99,7 @@ if (is_array($charge_log_data)) {
 				$value = $value ? "true" : "false";
 			}
 			$translated_key = translateHeading($section_key . " " . $key);
-				$csv_row[$translated_key] = translateChargeMode($value);
+			$csv_row[$translated_key] = translateChargeMode($value);
 		}
 		if (!$header_done) {
 			print(implode(";", array_keys($csv_row)) . "\n");
