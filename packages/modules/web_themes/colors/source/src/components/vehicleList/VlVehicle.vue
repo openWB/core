@@ -65,7 +65,7 @@ const statusColor = computed(() => {
 })
 </script>
 <style scoped>
-.idbadge {
+.idWbBadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
 }

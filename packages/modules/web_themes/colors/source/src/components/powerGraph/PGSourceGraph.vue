@@ -172,6 +172,7 @@ function drawGraph(
 	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
 	xScale: ScaleTime<number, number, never>,
 ) {
+	//console.log(stackedSeries.value)
 	const area0 = area()
 		.x((d, i) => xScale(graphData.data[i]['date']))
 		.y(yScale.value(0))

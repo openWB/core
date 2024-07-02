@@ -4,30 +4,26 @@
 			{{ device.name }}
 		</template>
 		<template #buttons>
-			<div class="d-flex float-right justify-content-end align-items-center">
-				<span
-					v-for="(temp, idx) in device.temp"
-					:key="idx"
-					class="p-0 m-0 align-items-center d-flex"
-				>
-					<span v-if="temp < 300" class="my-0 badge rounded-pill tempbadge mx-1"
-						>{{ formatTemp(temp) }}
-					</span>
-				</span>
-				<span
-					v-if="props.device.canSwitch"
-					:class="switchIcon"
-					:style="switchStyle"
-					class="fa statusbutton mr-2 ms-4"
-					@click="statusButtonClicked"
-				/>
-				<span
-					v-if="props.device.canSwitch"
-					class="badge rounded-pill modebutton mx-2"
-					@click="modeButtonClicked"
-					>{{ deviceMode }}</span
-				>
-			</div>
+			<WbBadge
+				v-for="(temp, idx) in device.temp"
+				:key="idx"
+				bgcolor="var(--color-battery)"
+			>
+				<span v-if="temp < 300">{{ formatTemp(temp) }} </span>
+			</WbBadge>
+			<span
+				v-if="props.device.canSwitch"
+				:class="switchIcon"
+				:style="switchStyle"
+				class="fa statusbutton mr-2 ms-4"
+				@click="statusButtonClicked"
+			/>
+			<span
+				v-if="props.device.canSwitch"
+				class="WbBadge rounded-pill modebutton mx-2"
+				@click="modeButtonClicked"
+				>{{ deviceMode }}</span
+			>
 		</template>
 		<div class="subgrid">
 			<InfoItem heading="Leistung:" class="grid-col-4 grid-left">
@@ -51,6 +47,7 @@ import WbSubwidget from '../shared/WbSubwidget.vue'
 import InfoItem from '../shared/InfoItem.vue'
 import FormatWatt from '../shared/FormatWatt.vue'
 import FormatWattH from '../shared/FormatWattH.vue'
+import WbBadge from '../shared/WbBadge.vue'
 import { updateServer } from '@/assets/js/sendMessages'
 const props = defineProps<{
 	device: ShDevice
@@ -122,7 +119,7 @@ const deviceMode = computed(() => {
 	font-weight: normal;
 }
 
-.tempbadge {
+.tempWbBadge {
 	background-color: var(--color-battery);
 	color: var(--color-bg);
 	font-size: var(--font-verysmall);

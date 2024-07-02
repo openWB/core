@@ -1,5 +1,4 @@
 <template>
-	<!-- <div v-if="true && !globalConfig.simpleCpList" class="p-0 m-0 d-flex align-items-stretch" :class="totalWidth"> -->
 	<swiper-container
 		v-if="!props.shortlist"
 		:space-between="0"
@@ -20,8 +19,6 @@
 			</div>
 		</swiper-slide>
 	</swiper-container>
-	<!-- </div> -->
-	<!-- <CPSimpleList v-if="props.shortlist" /> -->
 	<CpSimpleList2 v-if="props.shortlist" />
 </template>
 
