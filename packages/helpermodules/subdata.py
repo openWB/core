@@ -31,6 +31,7 @@ from helpermodules import system
 from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
+from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, RfidData)
@@ -576,7 +577,8 @@ class SubData:
                         mod = importlib.import_module(".ripple_control_receivers." +
                                                       config_dict["type"]+".ripple_control_receiver", "modules")
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                        var.data.ripple_control_receiver.module = mod.create_ripple_control_receiver(config)
+                        var.data.ripple_control_receiver.module = ConfigurableRcr(
+                            config=config, component_initialiser=mod.create_ripple_control_receiver)
                 elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
                 elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
