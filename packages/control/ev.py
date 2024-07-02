@@ -18,6 +18,7 @@ from control.limiting_value import LimitingValue
 from dataclass_utils.factories import empty_dict_factory, empty_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules import timecheck
+from helpermodules.constants import NO_ERROR
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.configurable_vehicle import ConfigurableVehicle
 
@@ -52,13 +53,15 @@ def get_charge_template_default() -> dict:
 
 @dataclass
 class ScheduledCharging:
-    plans: Dict[int, ScheduledChargingPlan] = field(default_factory=empty_dict_factory)
+    plans: Dict[int, ScheduledChargingPlan] = field(default_factory=empty_dict_factory, metadata={
+                                                    "topic": ""})
 
 
 @dataclass
 class TimeCharging:
     active: bool = False
-    plans: Dict[int, TimeChargingPlan] = field(default_factory=empty_dict_factory)
+    plans: Dict[int, TimeChargingPlan] = field(default_factory=empty_dict_factory, metadata={
+                                               "topic": ""})
 
 
 @dataclass
@@ -124,6 +127,10 @@ class ChargeTemplateData:
     chargemode: Chargemode = field(default_factory=chargemode_factory)
 
 
+def charge_template_data_factory() -> ChargeTemplateData:
+    return ChargeTemplateData()
+
+
 @dataclass
 class EvTemplateData:
     name: str = "neues Fahrzeug-Profil"
@@ -152,7 +159,8 @@ class EvTemplate:
     """ Klasse mit den EV-Daten
     """
 
-    data: EvTemplateData = field(default_factory=ev_template_data_factory)
+    data: EvTemplateData = field(default_factory=ev_template_data_factory, metadata={
+                                 "topic": "config"})
     et_num: int = 0
 
 
@@ -162,7 +170,8 @@ def ev_template_factory() -> EvTemplate:
 
 @dataclass
 class Set:
-    soc_error_counter: int = 0
+    soc_error_counter: int = field(
+        default=0, metadata={"topic": "set/soc_error_counter"})
 
 
 def set_factory() -> Set:
@@ -171,12 +180,14 @@ def set_factory() -> Set:
 
 @dataclass
 class Get:
-    soc: Optional[int] = None
-    soc_timestamp: Optional[float] = None
-    force_soc_update: bool = False
-    range: Optional[float] = None
-    fault_state: int = 0
-    fault_str: str = ""
+    soc: Optional[int] = field(default=None, metadata={"topic": "get/soc"})
+    soc_timestamp: Optional[float] = field(
+        default=None, metadata={"topic": "get/soc_timestamp"})
+    force_soc_update: bool = field(default=False, metadata={
+                                   "topic": "get/force_soc_update"})
+    range: Optional[float] = field(default=None, metadata={"topic": "get/range"})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
 
 
 def get_factory() -> Get:
@@ -186,10 +197,11 @@ def get_factory() -> Get:
 @dataclass
 class EvData:
     set: Set = field(default_factory=set_factory)
-    charge_template: int = 0
-    ev_template: int = 0
-    name: str = "neues Fahrzeug"
-    tag_id: List[str] = field(default_factory=empty_list_factory)
+    charge_template: int = field(default=0, metadata={"topic": "charge_template"})
+    ev_template: int = field(default=0, metadata={"topic": "ev_template"})
+    name: str = field(default="neues Fahrzeug", metadata={"topic": "name"})
+    tag_id: List[str] = field(default_factory=empty_list_factory, metadata={
+                              "topic": "tag_id"})
     get: Get = field(default_factory=get_factory)
 
 
@@ -559,15 +571,16 @@ class SelectedPlan:
     num: int = 0
 
 
+@dataclass
 class ChargeTemplate:
     """ Klasse der Lade-Profile
     """
+    ct_num: int
+    data: ChargeTemplateData = field(default_factory=charge_template_data_factory, metadata={
+        "topic": ""})
+
     BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
     CHARGING_PRICE_EXCEEDED = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
-
-    def __init__(self, index):
-        self.data: ChargeTemplateData = ChargeTemplateData()
-        self.ct_num = index
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."
     TIME_CHARGING_NO_PLAN_ACTIVE = "Keine Ladung, da kein Zeitfenster für Zeitladen aktiv ist."
