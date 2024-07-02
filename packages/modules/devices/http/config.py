@@ -13,10 +13,14 @@ class HTTP:
     def __init__(self,
                  name: str = "HTTP",
                  type: str = "http",
+                 group: str = "generic",
+                 device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,
                  configuration: HTTPConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or HTTPConfiguration()
 

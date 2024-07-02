@@ -16,12 +16,16 @@ class DeyeConfiguration:
 
 class Deye:
     def __init__(self,
-                 name: str = "Deye/Jinko (Anbindung per Modbus)",
+                 name: str = "Deye/Jinko",
                  type: str = "deye",
+                 group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter/Speicher (Anbindung per Modbus)",
                  id: int = 0,
                  configuration: DeyeConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or DeyeConfiguration()
 

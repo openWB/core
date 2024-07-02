@@ -14,10 +14,14 @@ class CarloGavazzi:
     def __init__(self,
                  name: str = "Carlo Gavazzi",
                  type: str = "carlo_gavazzi",
+                 group: str = "other",
+                 device: str = "Energiezähler",
                  id: int = 0,
                  configuration: CarloGavazziConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or CarloGavazziConfiguration()
 

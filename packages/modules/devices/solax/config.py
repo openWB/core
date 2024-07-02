@@ -14,10 +14,14 @@ class Solax:
     def __init__(self,
                  name: str = "Solax",
                  type: str = "solax",
+                 group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,
                  configuration: SolaxConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or SolaxConfiguration()
 

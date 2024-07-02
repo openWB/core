@@ -15,10 +15,14 @@ class Shelly:
     def __init__(self,
                  name: str = "Shelly",
                  type: str = "shelly",
+                 group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter/Speicher",
                  id: int = 0,
                  configuration: ShellyConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or ShellyConfiguration()
 

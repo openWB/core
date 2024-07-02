@@ -14,10 +14,14 @@ class Youless:
     def __init__(self,
                  name: str = "Youless",
                  type: str = "youless",
+                 group: str = "other",
+                 device: str = "Wechselrichter",
                  id: int = 0,
                  configuration: YoulessConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or YoulessConfiguration()
 

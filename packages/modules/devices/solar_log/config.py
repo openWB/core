@@ -12,10 +12,14 @@ class SolarLog:
     def __init__(self,
                  name: str = "Solar-Log",
                  type: str = "solar_log",
+                 group: str = "other",
+                 device: str = "Energiezähler/Wechselrichter",
                  id: int = 0,
                  configuration: SolarLogConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or SolarLogConfiguration()
 

@@ -15,9 +15,11 @@ class Benning(Json):
     def __init__(self,
                  name: str = "Benning",
                  type: str = "benning",
+                 group: str = "other",
+                 device: str = "Wechselrichter",
                  id: int = 0,
                  configuration: BenningConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration)
+        super().__init__(name, type, group, device, id, configuration)
 
 
 @auto_str

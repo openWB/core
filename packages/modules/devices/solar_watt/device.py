@@ -8,8 +8,10 @@ from modules.common.configurable_device import ComponentFactoryByType, Configura
 from modules.common import req
 from modules.devices.solar_watt.bat import SolarWattBat
 from modules.devices.solar_watt.counter import SolarWattCounter
-from modules.devices.solar_watt.config import (SolarWatt, SolarWattBatSetup, SolarWattConfiguration,
-                                               SolarWattCounterSetup, SolarWattInverterSetup)
+from modules.devices.solar_watt.config import (SolarWatt, SolarWattBatSetup,
+                                               SolarWattConfiguration,
+                                               SolarWattCounterSetup,
+                                               SolarWattInverterSetup)
 from modules.devices.solar_watt.inverter import SolarWattInverter
 
 log = logging.getLogger(__name__)

@@ -8,7 +8,8 @@ from modules.common.configurable_device import ComponentFactoryByType, Configura
 from modules.devices.solar_view.counter import SolarViewCounter
 from modules.devices.solar_view.config import (SolarView, SolarViewConfiguration,
                                                SolarViewCounterSetup,
-                                               SolarViewInverterConfiguration, SolarViewInverterSetup)
+                                               SolarViewInverterConfiguration,
+                                               SolarViewInverterSetup)
 from modules.devices.solar_view.inverter import SolarViewInverter
 log = logging.getLogger(__name__)
 

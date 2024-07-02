@@ -16,10 +16,14 @@ class Varta:
     def __init__(self,
                  name: str = "Varta",
                  type: str = "varta",
+                 group: str = "other",
+                 device: str = "Energiezähler/Speicher",
                  id: int = 0,
                  configuration: VartaConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = group
+        self.device = device
         self.id = id
         self.configuration = configuration or VartaConfiguration()
 
