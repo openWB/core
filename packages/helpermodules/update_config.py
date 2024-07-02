@@ -34,6 +34,7 @@ from modules.devices.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
+from modules.devices.good_we.version import GoodWeVersion
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 48
+    DATASTORE_VERSION = 49
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1571,3 +1572,15 @@ class UpdateConfig:
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 48)
+
+    def upgrade_datastore_48(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # update version and firmware of GoodWe
+                if payload.get("type") == "good_we" and "version" not in payload["configuration"]:
+                    payload["configuration"].update({"firmware": 8})
+                    payload["configuration"].update({"version": GoodWeVersion.V_1_7})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 49)
