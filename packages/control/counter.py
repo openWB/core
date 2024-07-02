@@ -202,7 +202,6 @@ class Counter:
         evu_counter = data.data.counter_all_data.get_evu_counter()
         bat_surplus = data.data.bat_all_data.power_for_bat_charging()
         surplus = evu_counter.data.get.power - bat_surplus
-        log.info(f"Überschuss zur PV-geführten Ladung: {surplus}W")
         return surplus
 
     def calc_raw_surplus(self):
@@ -215,7 +214,6 @@ class Counter:
         max_power = evu_counter.data.config.max_total_power
         surplus = raw_power_left - max_power + bat_surplus + disengageable_smarthome_power
         ranged_surplus = surplus + self._control_range_offset()
-        log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
         return ranged_surplus
 
     def get_control_range_state(self, feed_in_yield: int) -> ControlRangeState:

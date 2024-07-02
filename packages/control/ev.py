@@ -388,8 +388,8 @@ class Ev:
 
     CURRENT_OUT_OF_NOMINAL_DIFFERENCE = (", da das Fahrzeug nicht mit der vorgegebenen Stromstärke +/- der erlaubten "
                                          + "Stromabweichung aus dem Fahrzeug-Profil lädt.")
-    ENOUGH_POWER = ", da ausreichend Leistung für mehrphasiges Laden zur Verfügung steht."
-    NOT_ENOUGH_POWER = ", da nicht ausreichend Leistung für mehrphasiges Laden zur Verfügung steht."
+    ENOUGH_POWER = ", da ausreichend Überschuss für mehrphasiges Laden zur Verfügung steht."
+    NOT_ENOUGH_POWER = ", da nicht ausreichend Überschuss für mehrphasiges Laden zur Verfügung steht."
 
     def _check_phase_switch_conditions(self,
                                        control_parameter: ControlParameter,
@@ -409,22 +409,20 @@ class Ev:
         else:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
+        required_surplus = self.ev_template.data.min_current * max_phases_ev * 230 - get_power
         condition_1_to_3 = (((max(get_currents) > max_current and
-                            all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
-                            - get_power) or limit == LimitingValue.UNBALANCED_LOAD.value) and
+                            all_surplus > required_surplus) or limit == LimitingValue.UNBALANCED_LOAD.value) and
                             phases_in_use == 1)
         condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
         if condition_1_to_3 or condition_3_to_1:
             return True, None
         else:
-            if ((phases_in_use > 1 and max(get_currents) > min_current) or
-                    (phases_in_use == 1 and max(get_currents) < max_current)):
-                return False, self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE
+            if phases_in_use > 1 and all_surplus > 0:
+                return False, self.ENOUGH_POWER
+            elif phases_in_use == 1 and all_surplus < required_surplus:
+                return False, self.NOT_ENOUGH_POWER
             else:
-                if phases_in_use > 1:
-                    return False, self.ENOUGH_POWER
-                else:
-                    return False, self.NOT_ENOUGH_POWER
+                return False, self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE
 
     PHASE_SWITCH_DELAY_TEXT = '{} Phasen in {}.'
 
@@ -486,6 +484,8 @@ class Ev:
                         direction_str,
                         timecheck.convert_timestamp_delta_to_time_string(timestamp_auto_phase_switch, delay))
                     control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
+                elif condition_msg:
+                    log.debug(f"Keine Phasenumschaltung{condition_msg}")
             else:
                 if condition:
                     # Timer laufen lassen
