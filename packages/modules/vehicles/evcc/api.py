@@ -17,6 +17,7 @@ evcc_endpoint = 'sponsor.evcc.io:8080'
 gRPCRetryTime = 5
 gRPCRetryCount = 5
 gRPCRetryResponse = 'must retry'
+gRPCVehicleNoLongerValid = 'vehicle not available'
 
 
 def write_vehicle_id_mqtt(topic: str, vehicle_id: int, config: EVCCVehicleSocConfiguration):
@@ -44,6 +45,19 @@ def create_vehicle(config: EVCCVehicleSocConfiguration, stub: vehicle_pb2_grpc.V
     return response.vehicle_id
 
 
+def create_and_save_vehicle_id(
+        stub: vehicle_pb2_grpc.VehicleStub,
+        config: EVCCVehicleSocConfiguration,
+        vehicle: int) -> int:
+    vehicle_to_fetch = create_vehicle(config, stub)
+    log.debug("Vehicle client received: " + str(vehicle_to_fetch))
+
+    # saving vehicle id in config
+    topic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
+    write_vehicle_id_mqtt(topic, vehicle_to_fetch, config)
+    return vehicle_to_fetch
+
+
 def fetch_soc(
     evcc_config: EVCCVehicleSocConfiguration,
     vehicle_update_data: VehicleUpdateData,
@@ -54,12 +68,13 @@ def fetch_soc(
         stub = vehicle_pb2_grpc.VehicleStub(channel)
 
         if not evcc_config.vehicle_id:  # create and fetch vehicle id if not included in config
-            vehicle_to_fetch = create_vehicle(evcc_config, stub)
-            log.debug("Vehicle client received: " + str(vehicle_to_fetch))
+            create_and_save_vehicle_id(stub, evcc_config, vehicle)
+#            vehicle_to_fetch = create_vehicle(evcc_config, stub)
+#            log.debug("Vehicle client received: " + str(vehicle_to_fetch))
 
             # saving vehicle id in config
-            topic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
-            write_vehicle_id_mqtt(topic, vehicle_to_fetch, evcc_config)
+#            topic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
+#            write_vehicle_id_mqtt(topic, vehicle_to_fetch, evcc_config)
         else:
             log.debug("Vehicle id found in config: " + str(evcc_config.vehicle_id))
             vehicle_to_fetch = evcc_config.vehicle_id
@@ -81,6 +96,10 @@ def fetch_soc(
                     log.debug(f"No SoC retrieved, waiting {gRPCRetryTime}s in attempt no {RetryCounter} to retry")
                     time.sleep(gRPCRetryTime)
                     log.debug("retrying now...")
+                    RetryCounter += 1
+                elif rpc_error.details() == gRPCVehicleNoLongerValid:  # vehicle no longer valid
+                    log.debug(f'cached vehicle {vehicle_to_fetch} no longer valid, creating new vehicle')
+                    vehicle_to_fetch = create_and_save_vehicle_id(stub, evcc_config, vehicle)
                     RetryCounter += 1
                 else:  # some other error, raise exception and exit
                     raise grpc.RpcError(rpc_error)
