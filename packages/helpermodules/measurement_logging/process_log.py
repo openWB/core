@@ -4,7 +4,7 @@ from enum import Enum
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
@@ -233,6 +233,12 @@ def get_log_from_date_until_now(timestamp: int):
 
 
 def _collect_log_data_from_date_until_now(timestamp: int):
+    def add_to_list(log_data: List, data: Union[Dict, List]):
+        if isinstance(data, list):
+            log_data.extend(data)
+        else:
+            log_data.append(data)
+        return log_data
     log_data = []
     try:
         date = datetime.datetime.fromtimestamp(timestamp).strftime("%Y%m%d")
@@ -243,13 +249,13 @@ def _collect_log_data_from_date_until_now(timestamp: int):
             pass
         for index, entry in enumerate(entries):
             if entry["timestamp"] > timestamp:
-                log_data.append(entries[index:])
+                log_data = add_to_list(log_data, entries[index:])
                 break
         else:
             try:
-                # Wenn der Ladevorgang nicht über vollte 5 Minuten ging, wurde während dem Laden kein Eintrag ins
+                # Wenn der Ladevorgang nicht über volle 5 Minuten ging, wurde während dem Laden kein Eintrag ins
                 # daily-log geschrieben.
-                log_data.append(entries[-1])
+                log_data = add_to_list(log_data, entries[-1])
             except KeyError:
                 log.exception(f"Fehler beim Zusammenstellen der Logdaten. Bitte Logdatei daily_log/{date}.json prüfen.")
         # Das Teillog vom ersten Tag wurde bereits ermittelt.
@@ -263,10 +269,10 @@ def _collect_log_data_from_date_until_now(timestamp: int):
         for date_str in date_list:
             try:
                 with open(f"{_get_data_folder_path()}/daily_log/{date_str}.json", "r") as jsonFile:
-                    log_data.extend(json.load(jsonFile)["entries"])
+                    log_data = add_to_list(log_data, json.load(jsonFile)["entries"])
             except FILE_ERRORS:
                 pass
-        log_data.append(create_entry(LogType.DAILY, LegacySmartHomeLogData(), log_data[-1]))
+        log_data = add_to_list(log_data, create_entry(LogType.DAILY, LegacySmartHomeLogData(), log_data[-1]))
     except Exception:
         log.exception(f"Fehler beim Zusammenstellen der Logdaten von {timestamp}")
     finally:
