@@ -37,7 +37,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 41
+    DATASTORE_VERSION = 42
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1405,3 +1405,10 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 41)
+
+    def upgrade_datastore_41(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/installAssistantDone", topic) is not None:
+                Pub().pub("openWB/system/installAssistantDone", True)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 42)
