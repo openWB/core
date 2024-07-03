@@ -21,54 +21,47 @@ touch "$debugFile"
 	echo "${1}" | jq -r .serialNumber
 	echo "${1}" | jq -r .installedComponents
 	echo "${1}" | jq -r .vehicles
-	echo "############################ version ##############"
-	cat "${OPENWBBASEDIR}/web/version"
-	cat "${OPENWBBASEDIR}/web/lastcommit"
-	echo "############################ configuration and state ##############"
+	echo "# section: configuration and state #"
 	echo "${2}"
-	echo "############################ system ###############"
+	echo "# section: system #"
 	uptime
 	free
-	echo "############################ uuids ##############"
+	echo "# section: uuids #"
 	cat "${OPENWBBASEDIR}/data/log/uuid"
-	echo "############################ retained log ##############"
+	echo "# section: network #"
+	ifconfig
+	echo "# section: storage #"
+	df -h
+	echo "# section: broker essentials #"
+	#todo
+	echo "# section: retained log #"
 	merge_log_files "main" 500
-	echo "############################ info log ##############"
+	echo "# section: info log #"
 	mosquitto_pub -p 1886 -t "openWB/set/system/debug_level" -m "20"
 	sleep 60
 	merge_log_files "main" 1000
-	echo "############################ debug log ##############"
+	echo "# section: debug log #"
 	mosquitto_pub -p 1886 -t "openWB/set/system/debug_level" -m "10"
 	sleep 60
 	merge_log_files "main" 2500
-	echo "############################ internal chargepoint log ##############"
+	echo "# section: internal chargepoint log #"
 	merge_log_files "internal_chargepoint" 1000
-	echo "############################ mqtt log ##############"
+	echo "# section: mqtt log #"
 	merge_log_files "mqtt" 1000
-	echo "############################ soc log ##############"
+	echo "# section: soc log #"
 	merge_log_files "soc" 1000
-	echo "############################ charge log ##############"
+	echo "# section: charge log #"
 	merge_log_files "chargelog" 1000
-
-	for currentConfig in /etc/mosquitto/conf.d/99-bridge-*; do
-		if [ -f "$currentConfig" ]; then
-			echo "############################ mqtt bridge '$currentConfig' ######"
-			sudo grep -F -v -e password "$currentConfig" | sed '/^#/ d'
-		fi
-	done
-
-	echo "############################ broker ##############"
+	echo "# section: broker #"
 	timeout 1 mosquitto_sub -v -t 'openWB/#'
-	echo "############################ storage ###############"
-	df -h
-	echo "############################ network ##############"
-	ifconfig
+	
+	
 	# echo "############################ smarthome.log ##############"
 	# merge_log_files "smarthome" 200
 } >>"$debugFile"
 
 echo "***** uploading debug log..." >>"$RAMDISKDIR/main.log"
-curl --upload "$debugFile" "https://openwb.de/tools/debug2.php?debugemail=$debugEmail"
+#curl --upload "$debugFile" "https://openwb.de/tools/debug2.php?debugemail=$debugEmail"
 
 echo "***** cleanup..." >>"$RAMDISKDIR/main.log"
 rm "$debugFile"
