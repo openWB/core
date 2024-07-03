@@ -35,18 +35,16 @@ const props = defineProps<{
 }>()
 
 const statusString = computed(() => {
+	let result = 'Unterwegs'
 	let cp = props.vehicle.chargepoint
 	if (cp != undefined) {
-		let result = ''
 		if (cp.isCharging) {
 			result = 'Lädt (' + cp.name + ')'
-		} else {
+		} else if (cp.isPluggedIn) {
 			result = 'Bereit (' + cp.name + ')'
 		}
-		return result
-	} else {
-		return 'Unterwegs'
 	}
+	return result
 })
 
 const statusColor = computed(() => {

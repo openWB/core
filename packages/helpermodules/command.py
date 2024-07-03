@@ -14,12 +14,14 @@ import paho.mqtt.client as mqtt
 from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
+
+# ToDo: move to module commands if implemented
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
-from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
+from helpermodules.messaging import MessageType, pub_user_message
 from helpermodules.parse_send_debug import parse_send_debug_data
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
@@ -630,6 +632,20 @@ class Command:
 
     def systemUpdate(self, connection_id: str, payload: dict) -> None:
         log.info("Update requested")
+        # notify system about running update, notify about end update in script
+        Pub().pub("openWB/system/update_in_progress", True)
+        if SubData.system_data["system"].data["backup_before_update"]:
+            try:
+                self.createCloudBackup(connection_id, {})
+            except Exception:
+                pub_user_message(payload, connection_id,
+                                 ("Fehler beim Erstellen der Cloud-Sicherung."
+                                  f" {traceback.format_exc()}<br />Update abgebrochen!"
+                                  "Bitte Fehlerstatus überprüfen!. " +
+                                  "Option Sicherung vor System Update kann unter Datenverwaltung deaktiviert werden."),
+                                 MessageType.WARNING)
+                Pub().pub("openWB/system/update_in_progress", False)
+                return
         parent_file = Path(__file__).resolve().parents[2]
         if "branch" in payload["data"] and "tag" in payload["data"]:
             pub_user_message(
@@ -678,7 +694,9 @@ class Command:
 
     def createCloudBackup(self, connection_id: str, payload: dict) -> None:
         if SubData.system_data["system"].backup_cloud is not None:
-            pub_user_message(payload, connection_id, "Backup wird erstellt...", MessageType.INFO)
+            pub_user_message(payload, connection_id, ("Backup wird erstellt. Dieser Vorgang kann je nach Umfang der "
+                             "Logdaten und Upload-Geschwindigkeit des Cloud-Dienstes einige Zeit in Anspruch nehmen."),
+                             MessageType.INFO)
             SubData.system_data["system"].create_backup_and_send_to_cloud()
             pub_user_message(payload, connection_id, "Backup erfolgreich erstellt.<br />", MessageType.SUCCESS)
         else:
@@ -700,6 +718,7 @@ class Command:
                              f'Restore-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
 
+    # ToDo: move to module commands if implemented
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
         ''' fordert einen Authentifizierungscode für MSAL (Microsoft Authentication Library)
         an um Onedrive Backup zu ermöglichen'''
@@ -712,6 +731,7 @@ class Command:
         result = generateMSALAuthCode(cloudbackupconfig.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
 
+    # ToDo: move to module commands if implemented
     def retrieveMSALTokens(self, connection_id: str, payload: dict) -> None:
         """ holt die Tokens für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
         """
@@ -750,8 +770,8 @@ class ErrorHandlingContext:
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
         if isinstance(exception, Exception):
-            pub_error_global(self.payload, self.connection_id,
-                             f'Es ist ein interner Fehler aufgetreten: {traceback.format_exc()}')
+            pub_user_message(self.payload, self.connection_id,
+                             f'Es ist ein interner Fehler aufgetreten: {traceback.format_exc()}', MessageType.ERROR)
             return True
         else:
             return False

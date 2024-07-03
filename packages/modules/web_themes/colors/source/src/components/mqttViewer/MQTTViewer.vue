@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { msgInit } from './processMessages'
+// import { msgInit } from './processMessages'
 import { topicForest } from './model'
-import Node from './MqttNode.vue'
+import MqttNode from './MqttNode.vue'
 
 onMounted(() => {
-	msgInit()
+	//msgInit()
 })
 
 const expandAll = ref(false)
@@ -37,8 +37,8 @@ const isActive = computed(() => {
 				<hr />
 			</div>
 		</div>
-		<div v-if="topicForest[0]">
-			<Node
+		<div v-if="topicForest[0]" class="topiclist">
+			<MqttNode
 				v-for="(node, i) in topicForest[0].children.sort((n1, n2) =>
 					n1.name < n2.name ? -1 : 1,
 				)"
@@ -57,7 +57,14 @@ const isActive = computed(() => {
 	background-color: white;
 	color: black;
 }
-
+.topiclist {
+	display: grid;
+	grid-template-columns: repeat(40, 1fr);
+}
+.topnode {
+	grid-column-start: 1;
+	grid-column-end: -1;
+}
 .mqtitle {
 	color: black;
 }

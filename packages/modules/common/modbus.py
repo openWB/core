@@ -41,7 +41,7 @@ _MODBUS_HOLDING_REGISTER_SIZE = 16
 Number = Union[int, float]
 
 NO_CONNECTION = ("Modbus-Client konnte keine Verbindung zu {}:{} aufbauen. Bitte "
-                 "Einstellungen wie IP-Adresse, Ladepunkt-Typ, .. und Hardware-Anschluss prüfen.")
+                 "Einstellungen, IP-Adresse und Port sowie Netzwerk-Anschluss prüfen.")
 NO_VALUES = ("TCP-Client {}:{} konnte keinen Wert abfragen. Falls vorhanden, parallele Verbindungen, zB. node red,"
              "beenden und bei anhaltender Fehlermeldung Zähler neu starten.")
 

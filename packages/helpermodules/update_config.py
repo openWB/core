@@ -9,6 +9,7 @@ import subprocess
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
+from control.bat_all import BatConsiderationMode
 from control.general import ChargemodeConfig
 import dataclass_utils
 
@@ -27,6 +28,8 @@ from control import counter_all
 from control import ev
 from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
+from modules.common.component_type import ComponentType
+from modules.devices.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
@@ -42,7 +45,6 @@ class UpdateConfig:
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
         "^openWB/bat/set/regulate_up$",
-        "^openWB/bat/set/switch_on_soc_reached$",
         "^openWB/bat/get/fault_state$",
         "^openWB/bat/get/fault_str$",
         "^openWB/bat/get/soc$",
@@ -180,6 +182,7 @@ class UpdateConfig:
         "^openWB/general/ripple_control_receiver/override_reference$",
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
+        "^openWB/general/chargemode_config/pv_charging/bat_mode$",
         "^openWB/general/chargemode_config/pv_charging/feed_in_yield$",
         "^openWB/general/chargemode_config/pv_charging/switch_on_threshold$",
         "^openWB/general/chargemode_config/pv_charging/switch_on_delay$",
@@ -188,12 +191,11 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/pv_charging/phase_switch_delay$",
         "^openWB/general/chargemode_config/pv_charging/control_range$",
         "^openWB/general/chargemode_config/pv_charging/phases_to_use$",
-        "^openWB/general/chargemode_config/pv_charging/bat_prio$",
-        "^openWB/general/chargemode_config/pv_charging/switch_on_soc$",
-        "^openWB/general/chargemode_config/pv_charging/switch_off_soc$",
-        "^openWB/general/chargemode_config/pv_charging/rundown_soc$",
-        "^openWB/general/chargemode_config/pv_charging/rundown_power$",
-        "^openWB/general/chargemode_config/pv_charging/charging_power_reserve$",
+        "^openWB/general/chargemode_config/pv_charging/min_bat_soc$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_discharge$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_discharge_active$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_reserve$",
+        "^openWB/general/chargemode_config/pv_charging/bat_power_reserve_active$",
         "^openWB/general/chargemode_config/retry_failed_phase_switches$",
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
@@ -365,6 +367,7 @@ class UpdateConfig:
         "^openWB/system/backup_cloud/config$",
         "^openWB/system/boot_done$",
         "^openWB/system/configurable/backup_clouds$",
+        "^openWB/system/backup_cloud/backup_before_update$",
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
@@ -417,12 +420,12 @@ class UpdateConfig:
         ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData(min_current=10))),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 3),
-        ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),
-        ("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60),
-        ("openWB/general/chargemode_config/pv_charging/switch_off_soc", 40),
-        ("openWB/general/chargemode_config/pv_charging/rundown_power", 1000),
-        ("openWB/general/chargemode_config/pv_charging/rundown_soc", 50),
-        ("openWB/general/chargemode_config/pv_charging/charging_power_reserve", 200),
+        ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_discharge_active", True),
+        ("openWB/general/chargemode_config/pv_charging/min_bat_soc", 50),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
+        ("openWB/general/chargemode_config/pv_charging/bat_power_reserve_active", True),
         ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
         ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 50),
         ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
@@ -503,11 +506,12 @@ class UpdateConfig:
         log.debug("Broker-Konfiguration aktualisieren")
         InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
         try:
+            # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
+            self.__solve_breaking_changes()
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
             self.__update_version()
-            self.__solve_breaking_changes()
         except Exception:
             log.exception("Fehler bei der Aktualisierung des Brokers.")
             pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Brokers.", MessageType.ERROR)

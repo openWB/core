@@ -1,6 +1,6 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-LOGFILE="${OPENWBBASEDIR}/data/log/update.log"
+LOGFILE="${OPENWBBASEDIR}/ramdisk/versions.log"
 GITREMOTE="origin"
 YOURCHARGEPREFIX="yc/"
 

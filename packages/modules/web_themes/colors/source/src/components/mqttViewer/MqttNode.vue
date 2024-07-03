@@ -1,27 +1,28 @@
 <template>
-	<div class="row p-0 mb-0 mx-0">
-		<div class="col-md m-0 px-2 node" :style="leafStyle" @click="toggle">
-			<p class="py-2 m-0">{{ displaytext }}{{ counter }}</p>
-			<hr v-if="showContent" />
-			<p v-if="showContent" style="background-color: white" class="p-2">
-				<code>{{ props.node.lastValue }}</code>
-			</p>
-		</div>
-		<div
-			v-if="(expanded || props.expandAll) && childCount > 0"
-			class="col-md-9 m-0 p-0 ps-2"
-		>
-			<div class="container-fluid m-0 p-0">
-				<MqttNode
-					v-for="(child, i) in items"
-					:key="i"
-					:level="props.level + 1"
-					:node="child"
-					:hide="true"
-					:expand-all="props.expandAll"
-				/>
-			</div>
-		</div>
+	<div class="name py-2 px-2 m-0" :style="leafStyle" @click="toggle">
+		<span
+			v-if="((expanded || props.expandAll) && childCount > 0) || showContent"
+			class="fas fa-caret-down"
+		></span>
+		<span v-else class="fas fa-caret-right"></span>
+		{{ displaytext }}{{ counter }}
+	</div>
+	<div v-if="showContent" class="content p-2 m-2">
+		<code>{{ props.node.lastValue }}</code>
+	</div>
+
+	<div
+		v-if="(expanded || props.expandAll) && childCount > 0"
+		class="sublist col-md-9 m-0 p-0 ps-2"
+	>
+		<MqttNode
+			v-for="(child, i) in items"
+			:key="i"
+			:level="props.level + 1"
+			:node="child"
+			:hide="true"
+			:expand-all="props.expandAll"
+		/>
 	</div>
 </template>
 
@@ -54,9 +55,16 @@ const childCount = computed(() => {
 })
 const leafStyle = computed(() => {
 	if (props.node.lastValue != '') {
-		return { 'background-color': 'lightgoldenrodyellow' }
+		return {
+			'font-style': 'italic',
+			'grid-column-start': props.level,
+			'grid-column-end': -1,
+		}
 	} else {
-		return { 'background-color': 'lightsteelblue' }
+		return {
+			'grid-column-start': props.level,
+			'grid-column-end': -1,
+		}
 	}
 })
 function toggle() {
@@ -70,9 +78,21 @@ function toggle() {
 </script>
 
 <style scoped>
-.node {
+.name {
 	font-size: 1rem;
 	color: black;
 	border: 1px solid white;
+}
+
+.content {
+	grid-column: 1 / -1;
+	border: solid 1px black;
+	border-radius: 10px;
+}
+
+.sublist {
+	grid-column: 1 / -1;
+	display: grid;
+	grid-template-columns: subgrid;
 }
 </style>

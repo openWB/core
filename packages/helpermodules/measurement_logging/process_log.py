@@ -18,6 +18,9 @@ class CalculationType(Enum):
     ENERGY = 2
 
 
+FILE_ERRORS = (FileNotFoundError, json.decoder.JSONDecodeError)
+
+
 def string_to_float(value: str, default: float = 0) -> float:
     try:
         return float(value)
@@ -161,9 +164,9 @@ def _collect_daily_log_data(date: str):
                               "r") as next_json_file:
                         next_log_data = json.load(next_json_file)
                         log_data["entries"].append(next_log_data["entries"][0])
-                except FileNotFoundError:
+                except FILE_ERRORS:
                     pass
-    except FileNotFoundError:
+    except FILE_ERRORS:
         log_data = {"entries": [], "totals": {}, "names": {}}
     return log_data
 
@@ -190,7 +193,7 @@ def _collect_monthly_log_data(date: str):
                     today_log_data = json.load(todayJsonFile)
                     if len(today_log_data["entries"]) > 0:
                         log_data["entries"].append(today_log_data["entries"][-1])
-            except FileNotFoundError:
+            except FILE_ERRORS:
                 pass
         else:
             # add first entry of next month
@@ -200,9 +203,9 @@ def _collect_monthly_log_data(date: str):
                           "r") as nextJsonFile:
                     next_log_data = json.load(nextJsonFile)
                     log_data["entries"].append(next_log_data["entries"][0])
-            except FileNotFoundError:
+            except FILE_ERRORS:
                 pass
-    except FileNotFoundError:
+    except FILE_ERRORS:
         log_data = {"entries": [], "totals": {}, "names": {}}
     return log_data
 
@@ -230,7 +233,7 @@ def _collect_yearly_log_data(year: str):
                     log.debug(f"Keine Logdatei für Monat {next_month} gefunden, "
                               f"füge letzten Datensatz von {month} ein: {entries[-1]['date']}")
             names.update(content["names"])
-        except FileNotFoundError:
+        except FILE_ERRORS:
             log.debug(f"Kein Log für Monat {month} gefunden.")
 
     def add_daily_log(day: str) -> None:
@@ -240,7 +243,7 @@ def _collect_yearly_log_data(year: str):
                 day_log_data = json.load(dayJsonFile)
                 if len(day_log_data["entries"]) > 0:
                     entries.append(day_log_data["entries"][-1])
-        except FileNotFoundError:
+        except FILE_ERRORS:
             pass
 
     entries = []
@@ -366,12 +369,30 @@ def analyse_percentage_totals(entries, totals):
 
 
 def _process_entries(entries: List, calculation: CalculationType):
-    if entries and len(entries) > 0:
-        for i in range(0, len(entries)-1):
-            entry = entries[i]
-            next_entry = entries[i+1]
-            entries[i] = process_entry(entry, next_entry, calculation)
-        entries.pop()
+    if entries:
+        if len(entries) == 1:
+            # Wenn es nur einen Eintrag gibt, kann keine Differenz berechnet werden und die Werte sind 0.
+            entry = entries[0]
+            for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
+                if type in entry:
+                    for module in entry[type].keys():
+                        if calculation in [CalculationType.POWER, CalculationType.ALL]:
+                            entry[type][module].update({
+                                "power_average": 0,
+                                "power_imported": 0,
+                                "power_exported": 0
+                            })
+                        if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
+                            entry[type][module].update({
+                                "energy_imported": 0,
+                                "energy_exported": 0
+                            })
+        elif len(entries) > 1:
+            for i in range(0, len(entries)-1):
+                entry = entries[i]
+                next_entry = entries[i+1]
+                entries[i] = process_entry(entry, next_entry, calculation)
+            entries.pop()
     return entries
 
 

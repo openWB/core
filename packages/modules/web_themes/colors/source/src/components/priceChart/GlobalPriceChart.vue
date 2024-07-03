@@ -105,11 +105,14 @@ const xAxisGenerator = computed(() => {
 		.tickFormat((d) => (d.getHours() % 6 == 0 ? timeFormat('%H:%M')(d) : ''))
 })
 const yAxisGenerator = computed(() => {
-	return axisLeft<number>(yScale.value)
-		.ticks(yDomain.value[1] - yDomain.value[0])
-		.tickSize(0)
-		.tickSizeInner(-(width - margin.right - margin.left))
-		.tickFormat((d) => d.toString())
+	return (
+		axisLeft<number>(yScale.value)
+			//.ticks(yDomain.value[1] - yDomain.value[0])
+			.ticks(15)
+			.tickSize(0)
+			.tickSizeInner(-(width - margin.right - margin.left))
+			.tickFormat((d) => d.toString())
+	)
 })
 // Draw the diagram
 const draw = computed(() => {
@@ -160,13 +163,6 @@ const draw = computed(() => {
 
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 
-	// zero line
-	/* if (yDomain.value[0] < 0) {
-		svg
-			.append('path')
-			.attr('d', zeroPath.value)
-			.attr('stroke', 'var(--color-fg)')
-	} */
 	// Tooltips
 	const ttips = svg
 		.selectAll('ttip')

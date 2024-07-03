@@ -177,6 +177,27 @@ class Slmqtt(Slbase):
             self.newwatt = int(answer['power'])
             self.newwattk = int(answer['powerc'])
             self.relais = int(answer['on'])
+            if (self.device_temperatur_configured > 0):
+                self.temp0 = str(answer['temp0'])
+                with open(self._basePath+'/ramdisk/device' +
+                          str(self.device_nummer) + '_temp0', 'w') as f:
+                    f.write(str(self.temp0))
+            else:
+                self.temp0 = '300'
+            if (self.device_temperatur_configured > 1):
+                self.temp1 = str(answer['temp1'])
+                with open(self._basePath+'/ramdisk/device' +
+                          str(self.device_nummer) + '_temp1', 'w') as f:
+                    f.write(str(self.temp1))
+            else:
+                self.temp1 = '300'
+            if (self.device_temperatur_configured > 2):
+                self.temp2 = str(answer['temp2'])
+                with open(self._basePath+'/ramdisk/device' +
+                          str(self.device_nummer) + '_temp2', 'w') as f:
+                    f.write(str(self.temp2))
+            else:
+                self.temp2 = '300'
         except Exception as e1:
             log.warning("Leistungsmessung %s %d %s Fehlermeldung: %s "
                         % ('mqtt', self.device_nummer, ip, str(e1)))

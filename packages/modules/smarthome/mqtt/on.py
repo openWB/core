@@ -1,19 +1,15 @@
 #!/usr/bin/python3
 import sys
-import os
 import time
 import paho.mqtt.client as mqtt
-import logging
-
-log = logging.getLogger(__name__)
 numberOfSupportedDevices = 9  # limit number of smart home devices
 
 
-def on_connect(client, userdata, flags, rc):
-    client.subscribe("openWB/LegacySmartHome/set/Devices/#", 2)
+def on_connect(client, userdata, flags, rc) -> None:
+    client.subscribe("openWB/set/LegacySmartHome/Devices/#", 2)
 
 
-def on_message(client, userdata, msg):
+def on_message(client, userdata, msg) -> None:
     global numberOfSupportedDevices
 
 
@@ -31,22 +27,13 @@ while True:
     elapsedTime = time.time() - startTime
     if elapsedTime > waitTime:
         break
-client.publish("openWB/LegacySmartHome/set/Devices/"+str(devicenumber)+"/ReqRelay", "1", qos=0, retain=True)
+client.publish("openWB/set/LegacySmartHome/Devices/"+str(devicenumber)+"/ReqRelay", "1", qos=0, retain=True)
 client.loop(timeout=2.0)
-client.publish("openWB/LegacySmartHome/set/Devices/"+str(devicenumber) +
+client.publish("openWB/set/LegacySmartHome/Devices/"+str(devicenumber) +
                "/Ueberschuss", payload=str(uberschuss), qos=0, retain=True)
 client.loop(timeout=2.0)
 client.disconnect()
-named_tuple = time.localtime()  # getstruct_time
-time_string = time.strftime("%m/%d/%Y, %H:%M:%S mqtt on.py", named_tuple)
-file_string = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_mqtt.log'
 file_stringpv = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_pv'
-if os.path.isfile(file_string):
-    f = open(file_string, 'a')
-else:
-    f = open(file_string, 'w')
-log.debug('%s devicenr %s ueberschuss %6d /ReqRelay = 1' % (time_string, devicenumber, uberschuss), file=f)
-f.close()
 f = open(file_stringpv, 'w')
 f.write(str(1))
 f.close()
