@@ -1588,8 +1588,5 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 49)
 
     def upgrade_datastore_49(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/system/installAssistantDone", topic) is not None:
-                Pub().pub("openWB/system/installAssistantDone", True)
-        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/installAssistantDone", True)
         Pub().pub("openWB/system/datastore_version", 50)
