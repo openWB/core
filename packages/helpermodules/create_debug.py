@@ -6,7 +6,9 @@ from pathlib import Path
 import pprint
 from typing import Any, Optional
 from control import data
+from control.chargepoint.chargepoint import Chargepoint
 import dataclass_utils
+from helpermodules import subdata
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.run_command import run_command
@@ -19,6 +21,11 @@ log = logging.getLogger(__name__)
 
 def config_and_state():
     parsed_data = ""
+    try:
+        secondary = subdata.SubData.general_data.data.extern
+    except Exception:
+        secondary = False
+
     with ErrorHandlingContext():
         parent_file = Path(__file__).resolve().parents[2]
         with open(f"{parent_file}/web/version", "r") as f:
@@ -28,85 +35,100 @@ def config_and_state():
         parsed_data += f"# Version\n{version}\n{lastcommit}\n\n"
     with ErrorHandlingContext():
         parsed_data += f"# Cloud/Brücken\n{BrokerContent().get_bridges()}\n\n"
-    with ErrorHandlingContext():
-        pretty_hierarchy = pprint.pformat(data.data.counter_all_data.data.get.hierarchy,
-                                          indent=4, compact=True, sort_dicts=False, width=100)
-        parsed_data += f"# Hierarchie\n{pretty_hierarchy}\n"
+    if secondary is False:
+        with ErrorHandlingContext():
+            pretty_hierarchy = pprint.pformat(data.data.counter_all_data.data.get.hierarchy,
+                                              indent=4, compact=True, sort_dicts=False, width=100)
+            parsed_data += f"# Hierarchie\n{pretty_hierarchy}\n"
 
     with ErrorHandlingContext():
-        parsed_data += "\n# Geräte und Komponenten\n"
-        for key, value in data.data.system_data.items():
+        if secondary:
             with ErrorHandlingContext():
-                if isinstance(value, AbstractDevice):
-                    parsed_data += f"{key}: {dataclass_utils.asdict(value.device_config)}\n"
-                    for comp_key, comp_value in value.components.items():
-                        parsed_data += f"{comp_key}: {dataclass_utils.asdict(comp_value.component_config)}\n"
-                        if "bat" in comp_value.component_config.type:
-                            component_data = data.data.bat_data[f"bat{comp_value.component_config.id}"]
-                        elif "counter" in comp_value.component_config.type:
-                            component_data = data.data.counter_data[f"counter{comp_value.component_config.id}"]
-                        elif "inverter" in comp_value.component_config.type:
-                            component_data = data.data.pv_data[f"pv{comp_value.component_config.id}"]
-                        if "bat" in comp_value.component_config.type:
-                            parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, "
-                                            f"SoC: {component_data.data.get.soc}%, "
-                                            f"Fehlerstatus: {component_data.data.get.fault_str}\n")
-                        elif "inverter" in comp_value.component_config.type:
-                            parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, "
-                                            f"Fehlerstatus: {component_data.data.get.fault_str}\n")
-                        else:
-                            if data.data.counter_all_data.get_evu_counter_str() == f"counter{component_data.num}":
-                                parsed_data += (f"{comp_key}: EVU-Zähler -> max. Leistung "
-                                                f"{component_data.data.config.max_total_power}, "
-                                                f"max. Ströme {component_data.data.config.max_currents}; ")
-                            elif data.data.counter_all_data.data.config.home_consumption_source_id == component_data.num:
-                                parsed_data += (f"{comp_key}: Hausverbrauchszähler -> max. Leistung "
-                                                f"{component_data.data.config.max_total_power}, "
-                                                f"max. Ströme {component_data.data.config.max_currents}; ")
+                parsed_data += "\n# Ladepunkte\n"
+                for cp in subdata.SubData.cp_data.values():
+                    parsed_data += get_parsed_cp_data(cp.chargepoint)
+        else:
+            parsed_data += "\n# Geräte und Komponenten\n"
+            for key, value in data.data.system_data.items():
+                with ErrorHandlingContext():
+                    if isinstance(value, AbstractDevice):
+                        parsed_data += f"{key}: {dataclass_utils.asdict(value.device_config)}\n"
+                        for comp_key, comp_value in value.components.items():
+                            parsed_data += f"{comp_key}: {dataclass_utils.asdict(comp_value.component_config)}\n"
+                            if "bat" in comp_value.component_config.type:
+                                component_data = data.data.bat_data[f"bat{comp_value.component_config.id}"]
+                            elif "counter" in comp_value.component_config.type:
+                                component_data = data.data.counter_data[f"counter{comp_value.component_config.id}"]
+                            elif "inverter" in comp_value.component_config.type:
+                                component_data = data.data.pv_data[f"pv{comp_value.component_config.id}"]
+                            if "bat" in comp_value.component_config.type:
+                                parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, "
+                                                f"SoC: {component_data.data.get.soc}%, "
+                                                f"Fehlerstatus: {component_data.data.get.fault_str}\n")
+                            elif "inverter" in comp_value.component_config.type:
+                                parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, "
+                                                f"Fehlerstatus: {component_data.data.get.fault_str}\n")
                             else:
-                                parsed_data += f"{key}: max. Ströme {component_data.data.config.max_currents}"
-                            parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, Ströme: "
-                                            f"{component_data.data.get.currents}A, Fehlerstatus: "
-                                            f"{component_data.data.get.fault_str}\n")
-
-    with ErrorHandlingContext():
-        parsed_data += "\n# Ladepunkte\n"
-        parsed_data += f"Ladeleistung aller Ladepunkte {data.data.cp_all_data.data.get.power / 1000}kW\n"
-        for cp in data.data.cp_data.values():
+                                counter_all_data = data.data.counter_all_data
+                                if counter_all_data.get_evu_counter_str() == f"counter{component_data.num}":
+                                    parsed_data += (f"{comp_key}: EVU-Zähler -> max. Leistung "
+                                                    f"{component_data.data.config.max_total_power}, "
+                                                    f"max. Ströme {component_data.data.config.max_currents}; ")
+                                elif counter_all_data.data.config.home_consumption_source_id == component_data.num:
+                                    parsed_data += (f"{comp_key}: Hausverbrauchszähler -> max. Leistung "
+                                                    f"{component_data.data.config.max_total_power}, "
+                                                    f"max. Ströme {component_data.data.config.max_currents}; ")
+                                else:
+                                    parsed_data += f"{key}: max. Ströme {component_data.data.config.max_currents}"
+                                parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, Ströme: "
+                                                f"{component_data.data.get.currents}A, Fehlerstatus: "
+                                                f"{component_data.data.get.fault_str}\n")
             with ErrorHandlingContext():
-                if hasattr(cp.chargepoint_module.config.configuration, "ip_address"):
-                    ip = cp.chargepoint_module.config.configuration.ip_address
-                else:
-                    ip = None
-                meter0, meter1 = "", ""
-                if cp.chargepoint_module.config.type == "internal_openwb":
-                    general_internal_chargepoint_handler = importlib.import_module(
-                        'main', "general_internal_chargepoint_handler")
-                    internal_chargepoint_handler = general_internal_chargepoint_handler.internal_chargepoint_handler
-                    meter0 = f"Zähler LP 0: {type(internal_chargepoint_handler.cp0_client_handler.meter_client)}, "
-                    if cp.chargepoint_module.config.configuration.mode == "duo":
-                        meter1 = f"Zähler LP 1: {type(internal_chargepoint_handler.cp1_client_handler.meter_client)}, "
-                parsed_data += (f"LP{cp.num}: Typ: {cp.chargepoint_module.config.type}; {meter0}{meter1}IP: "
-                                f"{ip}; Stecker-Status: {cp.data.get.plug_state}, Leistung: "
-                                f"{cp.data.get.power/1000}kW, {cp.data.get.currents}A, {cp.data.get.voltages}V, Lademodus: "
-                                f"{cp.data.control_parameter.chargemode}, Submode: "
-                                f"{cp.data.control_parameter.submode}, Sollstrom: "
-                                f"{cp.data.set.current}A, Status: {cp.data.get.state_str}, "
-                                f"Fehlerstatus: {cp.data.get.fault_str}\n")
-                if cp.chargepoint_module.config.type == "openwb_pro":
-                    parsed_data += f"{req.get_http_session().get(f'http://{ip}/connect.php').text}\n"
+                parsed_data += "\n# Ladepunkte\n"
+                parsed_data += f"Ladeleistung aller Ladepunkte {data.data.cp_all_data.data.get.power / 1000}kW\n"
+                for cp in data.data.cp_data.values():
+                    parsed_data += get_parsed_cp_data(cp)
 
     with ErrorHandlingContext():
         chargemode_config = data.data.general_data.data.chargemode_config
-        parsed_data += (f"\n# Allgemein\nHausverbrauch: {data.data.counter_all_data.data.set.home_consumption}W\n"
-                        f"Phasenvorgabe: Sofortladen {chargemode_config.instant_charging.phases_to_use}, Zielladen "
-                        f"{chargemode_config.scheduled_charging.phases_to_use}, Zeitladen: "
-                        f"{chargemode_config.time_charging.phases_to_use}, PV-Laden: "
-                        f"{chargemode_config.pv_charging.phases_to_use}, Einschaltschwelle: "
-                        f"{chargemode_config.pv_charging.switch_on_threshold}W, Ausschaltschwelle: "
-                        f"{chargemode_config.pv_charging.switch_off_threshold}W\n"
-                        f"Regelintervall: {data.data.general_data.data.control_interval}s, "
-                        f"Display aktiviert: {data.data.optional_data.data.int_display.active}")
+        parsed_data += "\n# Allgemein\n"
+        if secondary is False:
+            parsed_data += (f"Hausverbrauch: {data.data.counter_all_data.data.set.home_consumption}W\n"
+                            f"Phasenvorgabe: Sofortladen {chargemode_config.instant_charging.phases_to_use}, Zielladen "
+                            f"{chargemode_config.scheduled_charging.phases_to_use}, Zeitladen: "
+                            f"{chargemode_config.time_charging.phases_to_use}, PV-Laden: "
+                            f"{chargemode_config.pv_charging.phases_to_use}, Einschaltschwelle: "
+                            f"{chargemode_config.pv_charging.switch_on_threshold}W, Ausschaltschwelle: "
+                            f"{chargemode_config.pv_charging.switch_off_threshold}W\n"
+                            f"Regelintervall: {data.data.general_data.data.control_interval}s, ")
+        parsed_data += f"Display aktiviert: {data.data.optional_data.data.int_display.active}"
+    return parsed_data
+
+
+def get_parsed_cp_data(cp: Chargepoint) -> str:
+    parsed_data = ""
+    with ErrorHandlingContext():
+        if hasattr(cp.chargepoint_module.config.configuration, "ip_address"):
+            ip = cp.chargepoint_module.config.configuration.ip_address
+        else:
+            ip = None
+        meter0, meter1 = "", ""
+        if cp.chargepoint_module.config.type == "internal_openwb":
+            general_internal_chargepoint_handler = importlib.import_module(
+                'main', "general_internal_chargepoint_handler")
+            internal_chargepoint_handler = general_internal_chargepoint_handler.internal_chargepoint_handler
+            meter0 = f"Zähler LP 0: {type(internal_chargepoint_handler.cp0_client_handler.meter_client)}, "
+            if cp.chargepoint_module.config.configuration.mode == "duo":
+                meter1 = f"Zähler LP 1: {type(internal_chargepoint_handler.cp1_client_handler.meter_client)}, "
+        parsed_data += (f"LP{cp.num}: Typ: {cp.chargepoint_module.config.type}; {meter0}{meter1}IP: "
+                        f"{ip}; Stecker-Status: {cp.data.get.plug_state}, Leistung: "
+                        f"{cp.data.get.power/1000}kW, {cp.data.get.currents}A, {cp.data.get.voltages}V, Lademodus: "
+                        f"{cp.data.control_parameter.chargemode}, Submode: "
+                        f"{cp.data.control_parameter.submode}, Sollstrom: "
+                        f"{cp.data.set.current}A, Status: {cp.data.get.state_str}, "
+                        f"Fehlerstatus: {cp.data.get.fault_str}\n")
+        if cp.chargepoint_module.config.type == "openwb_pro":
+            parsed_data += f"{req.get_http_session().get(f'http://{ip}/connect.php').text}\n"
     return parsed_data
 
 
