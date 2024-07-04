@@ -3,7 +3,10 @@
 		<template #title>
 			<div class="d-flex align-items-center">
 				<span class="cpname">{{ chargepoint.name }} </span>
-				<span class="badge rounded-pill statusbadge mx-2" :style="statusColor">
+				<span
+					class="WbBadge rounded-pill statusWbBadge mx-2"
+					:style="statusColor"
+				>
 					<i :class="statusIcon" class="me-1" />
 					{{ statusString }}</span
 				>
@@ -12,7 +15,7 @@
 		<template #buttons>
 			<div class="d-flex float-right justify-content-end align-items-center">
 				<span
-					class="badge rounded-pill modebadge mx-2"
+					class="WbBadge rounded-pill modeWbBadge mx-2"
 					type="button"
 					:style="modeStyle"
 					data-bs-toggle="modal"
@@ -65,7 +68,7 @@
 						<span>{{ chargePowerString }}</span>
 
 						<span class="d-flex align-items-center">
-							<span class="badge phasesInUse rounded-pill">
+							<span class="WbBadge phasesInUse rounded-pill">
 								{{ chargePhasesString }}</span
 							>
 							<span>
@@ -301,7 +304,7 @@ const statusString = computed(() => {
 	color: var(--color-fg);
 }
 
-.statusbadge {
+.statusWbBadge {
 	background-color: var(--color-bg);
 	font-weight: bold;
 	font-size: var(--font-verysmall);

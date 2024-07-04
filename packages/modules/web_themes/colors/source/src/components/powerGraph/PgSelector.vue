@@ -42,7 +42,7 @@
 			>
 				<span class="fa-solid fa-xl fa-chevron-circle-left arrowButton" />
 			</span>
-			<!-- Badge -->
+			<!-- badge -->
 			<span
 				v-if="editmode < 2"
 				type="button"

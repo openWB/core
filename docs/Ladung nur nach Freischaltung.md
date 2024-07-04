@@ -42,6 +42,8 @@ Wurden mehrere Fahrzeuge mit demselben ID-Tag angelegt, dann startet das Fahrzeu
 Solange der Ladepunkt gesperrt ist, wird kein gültiger ausschliesslich einem Fahrzeug zugeordneter ID-Tag akzeptiert.
 Nach Starten eines Ladevorgangs wird kein neuer ID-Tag akzeptiert.
 
+Anmerkung: Im Fall, dass zwei oder mehrere Fahrzeuge mit unterschiedlichen ID-Tags an demselben (gesperrten) Ladepunkt laden dürfen, müssen beide ID-Tags der Fahrzeuge auch im Ladepunkt-Profil hinterlegt werden. Dadurch wird erstens der Ladepunkt entsperrt und zweitens das dem Fahrzeug zugeordnete Lade-Profil ausgewählt, wodurch dann das damit verknüpfte Fahrzeug mit den dort hinterlegten Ladeeinstellungen den Ladevorgang startet.
+
 Zu **B. Standard nach Abstecken** ist folgendes zu konfigurieren:  
 Die Option **Standard nach Abstecken** ist im **Lade-Profil** bei Fahrzeuge auswählbar. Diese Option macht nur Sinn, wenn neben dem Standard-Lade-Profil mindestens ein weiteres Lade-Profil und mindestens ein weiteres Fahrzeug angelegt wurde. Dabei ist dem Standard-Fahrzeug das Standard-Lade-Profil und dem weiteren Fahrzeug das weitere Lade-Profil zuzuweisen.
 Um diese Option sinnvoll zu nutzen, muss im Standard-Lade-Profil unter Allgemeine Optionen der aktive Lademodus auf **Stop** gestellt werden.
@@ -62,5 +64,4 @@ Standard nach Abstecken kann an einem Ladepunkt verwendet werden, welcher das La
 
 Standard nach Abstecken kann auch dazu verwendet werden, um beispielsweise zwischen zwei Fahrzeugen (und damit Fahrzeug-Profilen und Lade-Profilen) ohne ID-Tag zu wechseln, vor allem wenn nur eines der Fahrzeuge über die ID-Kennung zuverlässig erkannt wird.
 
-Stand 06. Juni 2024
-
+Stand 02. Juli 2024
