@@ -1,4 +1,3 @@
-import importlib
 import os
 import time
 import logging
@@ -112,15 +111,7 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
             ip = cp.chargepoint_module.config.configuration.ip_address
         else:
             ip = None
-        meter0, meter1 = "", ""
-        if cp.chargepoint_module.config.type == "internal_openwb":
-            general_internal_chargepoint_handler = importlib.import_module(
-                'main', "general_internal_chargepoint_handler")
-            internal_chargepoint_handler = general_internal_chargepoint_handler.internal_chargepoint_handler
-            meter0 = f"Zähler LP 0: {type(internal_chargepoint_handler.cp0_client_handler.meter_client)}, "
-            if cp.chargepoint_module.config.configuration.mode == "duo":
-                meter1 = f"Zähler LP 1: {type(internal_chargepoint_handler.cp1_client_handler.meter_client)}, "
-        parsed_data += (f"LP{cp.num}: Typ: {cp.chargepoint_module.config.type}; {meter0}{meter1}IP: "
+        parsed_data += (f"LP{cp.num}: Typ: {cp.chargepoint_module.config.type}; IP: "
                         f"{ip}; Stecker-Status: {cp.data.get.plug_state}, Leistung: "
                         f"{cp.data.get.power/1000}kW, {cp.data.get.currents}A, {cp.data.get.voltages}V, Lademodus: "
                         f"{cp.data.control_parameter.chargemode}, Submode: "
