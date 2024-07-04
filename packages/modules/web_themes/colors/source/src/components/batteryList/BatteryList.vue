@@ -14,12 +14,12 @@ Hagen */
 			<span>Speicher</span>
 		</template>
 		<template #buttons>
-			<WbBadge :bgcolor="statusbg" color="black">
+			<WbBadge :bgcolor="statusbg">
 				{{ batteryState }}
 			</WbBadge>
-			<WbBadge bgcolor="var(--color-battery)" color="black">
+			<WbBadge bgcolor="var(--color-battery)">
 				<BatterySymbol
-					color="black"
+					color="var(--color-bg)"
 					:soc="globalData.batterySoc"
 				></BatterySymbol>
 			</WbBadge>
