@@ -161,11 +161,11 @@ def create_debug_log(input_data):
                 df, lambda: f"## section: retained log ##\n{merge_log_files('main', 500)}")
             write_to_file(df, lambda: "## section: info log ##\n")
             Pub().pub('openWB/set/system/debug_level', 20)
-            # time.sleep(60)
+            time.sleep(60)
             write_to_file(df, lambda: merge_log_files("main", 1000))
             write_to_file(df, lambda: "## section: debug log ##\n")
             Pub().pub('openWB/set/system/debug_level', 10)
-            # time.sleep(60)
+            time.sleep(60)
             write_to_file(df, lambda: merge_log_files("main", 2500))
             write_to_file(
                 df,
@@ -183,7 +183,7 @@ def create_debug_log(input_data):
                                    params={'debugemail': debug_email})
 
         log.info("***** cleanup...")
-        # os.remove(debug_file)
+        os.remove(debug_file)
         log.info("***** debug log end")
     except Exception as e:
         log.exception(f"Error creating debug log: {e}")
