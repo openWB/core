@@ -13,7 +13,7 @@ class BatterX:
                  name: str = "BatterX",
                  type: str = "batterx",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: BatterXConfiguration = None) -> None:
         self.name = name

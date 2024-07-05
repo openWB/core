@@ -14,7 +14,7 @@ class Solarmax:
                  name: str = "Solarmax",
                  type: str = "solarmax",
                  group: str = "other",
-                 device: str = "Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: SolarmaxConfiguration = None) -> None:
         self.name = name

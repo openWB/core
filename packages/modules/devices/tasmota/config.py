@@ -13,7 +13,7 @@ class Tasmota:
                  name: str = "Tasmota",
                  type: str = "tasmota",
                  group: str = "other",
-                 device: str = "Energiezähler",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: TasmotaConfiguration = None) -> None:
         self.name = name

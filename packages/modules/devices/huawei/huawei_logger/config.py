@@ -16,7 +16,7 @@ class Huawei_Smartlogger:
                  name: str = "Huawei Smartlogger",
                  type: str = "huawei.huawei_logger",
                  group: str = "other",
-                 device: str = "Huawei Smartlogger/Wechselrichter/Speicher",
+                 device: str = "Huawei Smartlogger",
                  id: int = 0,
                  configuration: Huawei_SmartloggerConfiguration = None) -> None:
         self.name = name

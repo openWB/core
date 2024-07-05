@@ -14,7 +14,7 @@ class SmaSunnyIsland:
                  name: str = "SMA Sunny Island, Sunny Tripower X",
                  type: str = "sma.sma_sunny_island",
                  group: str = "other",
-                 device: str = "SMA Sunny Island/Tripower X Speicher",
+                 device: str = "SMA Sunny Island, Sunny Tripower X",
                  id: int = 0,
                  configuration: SmaSunnyIslandConfiguration = None) -> None:
         self.name = name

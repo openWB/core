@@ -14,7 +14,7 @@ class Fems:
                  name: str = "Fenecon/FEMS",
                  type: str = "fems",
                  group: str = "other",
-                 device: str = ("openEMS, FEMS, CENTURIO 10, Kaco Hy-Control Energiezähler/Wechselrichter/Speicher"),
+                 device: str = "openEMS, FEMS, CENTURIO 10, Kaco Hy-Control",
                  id: int = 0,
                  configuration: FemsConfiguration = None) -> None:
         self.name = name

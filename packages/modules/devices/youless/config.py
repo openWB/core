@@ -15,7 +15,7 @@ class Youless:
                  name: str = "Youless",
                  type: str = "youless",
                  group: str = "other",
-                 device: str = "Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: YoulessConfiguration = None) -> None:
         self.name = name

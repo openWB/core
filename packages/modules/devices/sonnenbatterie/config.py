@@ -14,7 +14,7 @@ class SonnenBatterie:
                  name: str = "Sonnen",
                  type: str = "sonnenbatterie",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: SonnenBatterieConfiguration = None) -> None:
         self.name = name

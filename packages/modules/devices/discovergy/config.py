@@ -14,7 +14,7 @@ class Discovergy:
                  name: str = "Discovergy",
                  type: str = "discovergy",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: DiscovergyConfiguration = None) -> None:
         self.name = name

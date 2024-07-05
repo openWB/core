@@ -12,7 +12,7 @@ class Json:
                  name: str = "Json",
                  type: str = "json",
                  group: str = "generic",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: JsonConfiguration = None) -> None:
         self.name = name

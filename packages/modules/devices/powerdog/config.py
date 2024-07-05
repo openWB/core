@@ -15,7 +15,7 @@ class Powerdog:
                  name: str = "PowerDog",
                  type: str = "powerdog",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: PowerdogConfiguration = None) -> None:
         self.name = name

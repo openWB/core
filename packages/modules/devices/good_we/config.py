@@ -15,7 +15,7 @@ class GoodWe:
                  name: str = "GoodWe",
                  type: str = "good_we",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher ET-Serie (5-10kW)",
+                 device: str = "GoodWe ET-Serie (5-10kW)",
                  id: int = 0,
                  configuration: GoodWeConfiguration = None) -> None:
         self.name = name

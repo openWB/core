@@ -15,7 +15,7 @@ class SolarWorld:
                  name: str = "SolarWorld",
                  type: str = "solar_world",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: SolarWorldConfiguration = None) -> None:
         self.name = name

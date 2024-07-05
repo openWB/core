@@ -16,7 +16,7 @@ class OpenDTU(Json):
                  name: str = "OpenDTU",
                  type: str = "opendtu",
                  group: str = "other",
-                 device: str = "Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: OpenDTUConfiguration = None) -> None:
         super().__init__(name, type, group, device, id, configuration)

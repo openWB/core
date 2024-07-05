@@ -13,7 +13,7 @@ class Smartfox:
                  name: str = "Smartfox",
                  type: str = "smrtfox",
                  group: str = "other",
-                 device: str = "Energiezähler",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: SmartfoxConfiguration = None) -> None:
         self.name = name

@@ -17,7 +17,7 @@ class Varta:
                  name: str = "Varta",
                  type: str = "varta",
                  group: str = "other",
-                 device: str = "Energiezähler/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: VartaConfiguration = None) -> None:
         self.name = name

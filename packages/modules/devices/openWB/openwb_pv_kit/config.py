@@ -11,7 +11,7 @@ class PvKit:
                  name: str = "openWB PV-Kit",
                  type: str = "openWB.openwb_pv_kit",
                  group: str = "openWB",
-                 device: str = "openWB PV-Kit Wechselrichter",
+                 device: str = "openWB PV-Kit",
                  id: int = 0,
                  configuration: PvKitConfiguration = None) -> None:
         self.name = name

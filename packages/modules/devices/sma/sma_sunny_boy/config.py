@@ -15,7 +15,7 @@ class SmaSunnyBoy:
                  name: str = "SMA Sunny Boy/Tripower",
                  type: str = "sma.sma_sunny_boy",
                  group: str = "other",
-                 device: str = "SMA Sunny Boy/Tripower Energiezähler/Wechselrichter/Speicher",
+                 device: str = "SMA Sunny Boy/Tripower",
                  id: int = 0,
                  configuration: SmaSunnyBoyConfiguration = None) -> None:
         self.name = name

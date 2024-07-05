@@ -19,7 +19,7 @@ class Deye:
                  name: str = "Deye/Jinko",
                  type: str = "deye",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher (Anbindung per Modbus)",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: DeyeConfiguration = None) -> None:
         self.name = name

@@ -15,7 +15,7 @@ class VZLogger:
                  name: str = "VZLogger",
                  type: str = "vzlogger",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: VZLoggerConfiguration = None) -> None:
         self.name = name

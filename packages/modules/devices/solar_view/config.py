@@ -18,7 +18,7 @@ class SolarView:
                  name: str = "SolarView",
                  type: str = "solar_view",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: SolarViewConfiguration = None) -> None:
         self.name = name

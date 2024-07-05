@@ -11,7 +11,7 @@ class Virtual:
                  name: str = "Virtuelles Gerät",
                  type: str = "virtual",
                  group: str = "generic",
-                 device: str = "Energiezähler",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: VirtualConfiguration = None) -> None:
         self.name = name

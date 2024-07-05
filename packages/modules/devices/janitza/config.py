@@ -15,7 +15,7 @@ class Janitza:
                  name: str = "Janitza",
                  type: str = "janitza",
                  group: str = "other",
-                 device: str = "Energiezähler",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: JanitzaConfiguration = None) -> None:
         self.name = name

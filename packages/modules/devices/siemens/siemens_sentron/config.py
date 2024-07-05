@@ -15,7 +15,7 @@ class SiemensSentron:
                  name: str = "Siemens Sentron",
                  type: str = "siemens.siemens_sentron",
                  group: str = "other",
-                 device: str = "Siemens Sentron Energiezähler",
+                 device: str = "Siemens Sentron",
                  id: int = 0,
                  configuration: SiemensSentronConfiguration = None) -> None:
         self.name = name

@@ -15,7 +15,7 @@ class KostalSteca:
                  name: str = "Kostal Piko MP oder Steca Grid Coolcept",
                  type: str = "kostal.kostal_steca",
                  group: str = "other",
-                 device: str = "Kostal Piko MP/Steca Grid Wechselrichter",
+                 device: str = "Kostal Piko MP oder Steca Grid Coolcept",
                  id: int = 0,
                  configuration: KostalStecaConfiguration = None) -> None:
         self.name = name

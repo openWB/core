@@ -13,7 +13,7 @@ class SolarLog:
                  name: str = "Solar-Log",
                  type: str = "solar_log",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: SolarLogConfiguration = None) -> None:
         self.name = name

@@ -17,7 +17,7 @@ class KostalPikoOld:
                  name: str = "Kostal Piko (alte Generation)",
                  type: str = "kostal.kostal_piko_old",
                  group: str = "other",
-                 device: str = "Kostal Piko (alte Generation) Energiezähler/Wechselrichter",
+                 device: str = "Kostal Piko (alte Generation)",
                  id: int = 0,
                  configuration: KostalPikoOldConfiguration = None) -> None:
         self.name = name

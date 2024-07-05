@@ -16,7 +16,7 @@ class Shelly:
                  name: str = "Shelly",
                  type: str = "shelly",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: ShellyConfiguration = None) -> None:
         self.name = name

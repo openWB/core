@@ -16,7 +16,7 @@ class Benning(Json):
                  name: str = "Benning",
                  type: str = "benning",
                  group: str = "other",
-                 device: str = "Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: BenningConfiguration = None) -> None:
         super().__init__(name, type, group, device, id, configuration)

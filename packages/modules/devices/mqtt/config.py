@@ -8,7 +8,7 @@ class Mqtt:
                  name: str = "MQTT",
                  type: str = "mqtt",
                  group: str = "generic",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: MqttConfiguration = None) -> None:
         self.name = name

@@ -14,7 +14,7 @@ class Victron:
                  name: str = "Victron",
                  type: str = "victron",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: VictronConfiguration = None) -> None:
         self.name = name

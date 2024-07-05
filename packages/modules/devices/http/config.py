@@ -14,7 +14,7 @@ class HTTP:
                  name: str = "HTTP",
                  type: str = "http",
                  group: str = "generic",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: HTTPConfiguration = None) -> None:
         self.name = name

@@ -16,7 +16,7 @@ class E3dc:
                  name: str = "E3/DC",
                  type: str = "e3dc",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: E3dcConfiguration = None) -> None:
         self.name = name

@@ -15,7 +15,7 @@ class Siemens:
                  name: str = "Siemens",
                  type: str = "siemens.siemens",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Siemens",
                  id: int = 0,
                  configuration: SiemensConfiguration = None) -> None:
         self.name = name

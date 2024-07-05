@@ -18,7 +18,7 @@ class BYD:
                  name: str = "BYD",
                  type: str = "byd",
                  group: str = "other",
-                 device: str = "Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: BYDConfiguration = None) -> None:
         self.name = name

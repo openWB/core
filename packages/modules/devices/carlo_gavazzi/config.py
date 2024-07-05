@@ -15,7 +15,7 @@ class CarloGavazzi:
                  name: str = "Carlo Gavazzi",
                  type: str = "carlo_gavazzi",
                  group: str = "other",
-                 device: str = "Energiezähler",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: CarloGavazziConfiguration = None) -> None:
         self.name = name

@@ -15,7 +15,7 @@ class Saxpower:
                  name: str = "SAX Power",
                  type: str = "saxpower",
                  group: str = "other",
-                 device: str = "Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: SaxpowerConfiguration = None) -> None:
         self.name = name

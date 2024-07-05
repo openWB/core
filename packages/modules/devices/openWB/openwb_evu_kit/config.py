@@ -11,7 +11,7 @@ class EvuKit:
                  name: str = "openWB EVU-Kit",
                  type: str = "openWB.openwb_evu_kit",
                  group: str = "openWB",
-                 device: str = "openWB EVU-Kit Energiezähler/Wechselrichter/Speicher",
+                 device: str = "openWB EVU-Kit",
                  id: int = 0,
                  configuration: EvuKitConfiguration = None) -> None:
         self.name = name

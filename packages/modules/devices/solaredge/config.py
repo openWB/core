@@ -14,7 +14,7 @@ class Solaredge:
                  name: str = "SolarEdge",
                  type: str = "solaredge",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration:  SolaredgeConfiguration = None) -> None:
         self.name = name

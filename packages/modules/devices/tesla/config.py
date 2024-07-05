@@ -15,7 +15,7 @@ class Tesla:
                  name: str = "Tesla",
                  type: str = "tesla",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: TeslaConfiguration = None) -> None:
         self.name = name

@@ -15,7 +15,7 @@ class KostalPlenticore:
                  name: str = "Kostal Plenticore",
                  type: str = "kostal.kostal_plenticore",
                  group: str = "other",
-                 device: str = "Kostal Plenticore Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Kostal Plenticore",
                  id: int = 0,
                  configuration: KostalPlenticoreConfiguration = None) -> None:
         self.name = name

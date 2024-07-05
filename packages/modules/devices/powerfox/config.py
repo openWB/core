@@ -14,7 +14,7 @@ class Powerfox:
                  name: str = "Powerfox",
                  type: str = "powerfox",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: PowerfoxConfiguration = None) -> None:
         self.name = name

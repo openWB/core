@@ -17,7 +17,7 @@ class MTec:
                  name: str = "M-Tec",
                  type: str = "mtec",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: MTecConfiguration = None) -> None:
         self.name = name

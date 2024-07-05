@@ -14,7 +14,7 @@ class Sunways:
                  name: str = "Sunways",
                  type: str = "sunways",
                  group: str = "other",
-                 device: str = "Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: SunwaysConfiguration = None) -> None:
         self.name = name

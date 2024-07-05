@@ -14,7 +14,7 @@ class Studer:
                  name: str = "Studer innotec",
                  type: str = "studer",
                  group: str = "other",
-                 device: str = "Wechselrichter/Speicher",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: StuderConfiguration = None) -> None:
         self.name = name

@@ -14,7 +14,7 @@ class SmartMe:
                  name: str = "smart-me",
                  type: str = "smrt_me",
                  group: str = "other",
-                 device: str = "Energiezähler/Wechselrichter",
+                 device: str = "Alle Geräte",
                  id: int = 0,
                  configuration: SmartMeConfiguration = None) -> None:
         self.name = name
