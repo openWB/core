@@ -11,7 +11,7 @@ class Speedwire:
                  name: str = "SMA Sunny Home Manager 2.0, Energy Meter",
                  type: str = "sma.sma_shm",
                  group: str = "other",
-                 device: str = "SMA Sunny Home Manager 2.0, Energy Meter'",
+                 device: str = "SMA Sunny Home Manager 2.0, Energy Meter",
                  id: int = 0,
                  configuration: SpeedwireComponentConfiguration = None) -> None:
         self.name = name

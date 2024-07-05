@@ -15,7 +15,7 @@ class KostalSem:
                  name: str = "Kostal Smart Energy Meter oder TQ EM 410",
                  type: str = "kostal.kostal_sem",
                  group: str = "other",
-                 device: str = "Kostal Smart Energy Meter/TQ EM 410",
+                 device: str = "Kostal Smart Energy Meter oder TQ EM 410",
                  id: int = 0,
                  configuration: KostalSemConfiguration = None) -> None:
         self.name = name

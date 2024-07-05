@@ -19,7 +19,7 @@ class Deye:
                  name: str = "Deye/Jinko",
                  type: str = "deye",
                  group: str = "other",
-                 device: str = "Alle Geräte",
+                 device: str = "Alle Geräte (Anbindung per Modbus)",
                  id: int = 0,
                  configuration: DeyeConfiguration = None) -> None:
         self.name = name
