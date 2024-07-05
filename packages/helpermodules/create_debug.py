@@ -33,7 +33,7 @@ def config_and_state():
             lastcommit = f.read().strip()
         parsed_data += f"# Version\n{version}\n{lastcommit}\n\n"
     with ErrorHandlingContext():
-        parsed_data += f"# Cloud/Brücken\n{BrokerContent().get_bridges()}\n"
+        parsed_data += f"# Cloud/Brücken\n{BrokerContent().get_bridges()}"
     with ErrorHandlingContext():
         chargemode_config = data.data.general_data.data.chargemode_config
         parsed_data += "\n# Allgemein\n"
@@ -54,7 +54,7 @@ def config_and_state():
         with ErrorHandlingContext():
             pretty_hierarchy = pprint.pformat(data.data.counter_all_data.data.get.hierarchy,
                                               indent=4, compact=True, sort_dicts=False, width=100)
-            parsed_data += f"# Hierarchie\n{pretty_hierarchy}\n"
+            parsed_data += f"\n# Hierarchie\n{pretty_hierarchy}\n"
 
     with ErrorHandlingContext():
         if secondary:
