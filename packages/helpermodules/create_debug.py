@@ -33,7 +33,23 @@ def config_and_state():
             lastcommit = f.read().strip()
         parsed_data += f"# Version\n{version}\n{lastcommit}\n\n"
     with ErrorHandlingContext():
-        parsed_data += f"# Cloud/Brücken\n{BrokerContent().get_bridges()}\n\n"
+        parsed_data += f"# Cloud/Brücken\n{BrokerContent().get_bridges()}\n"
+    with ErrorHandlingContext():
+        chargemode_config = data.data.general_data.data.chargemode_config
+        parsed_data += "\n# Allgemein\n"
+        if secondary is False:
+            parsed_data += (f"Modus: Primary\nHausverbrauch: {data.data.counter_all_data.data.set.home_consumption}W\n"
+                            f"Phasenvorgabe: Sofortladen {chargemode_config.instant_charging.phases_to_use}, Zielladen "
+                            f"{chargemode_config.scheduled_charging.phases_to_use}, Zeitladen: "
+                            f"{chargemode_config.time_charging.phases_to_use}, PV-Laden: "
+                            f"{chargemode_config.pv_charging.phases_to_use}, Einschaltschwelle: "
+                            f"{chargemode_config.pv_charging.switch_on_threshold}W, Ausschaltschwelle: "
+                            f"{chargemode_config.pv_charging.switch_off_threshold}W\n"
+                            f"Regelintervall: {data.data.general_data.data.control_interval}s, ")
+        else:
+            parsed_data += "Modus: Secondary\n"
+        parsed_data += f"Display aktiviert: {data.data.optional_data.data.int_display.active}\n"
+
     if secondary is False:
         with ErrorHandlingContext():
             pretty_hierarchy = pprint.pformat(data.data.counter_all_data.data.get.hierarchy,
@@ -87,20 +103,6 @@ def config_and_state():
                 parsed_data += f"Ladeleistung aller Ladepunkte {data.data.cp_all_data.data.get.power / 1000}kW\n"
                 for cp in data.data.cp_data.values():
                     parsed_data += get_parsed_cp_data(cp)
-
-    with ErrorHandlingContext():
-        chargemode_config = data.data.general_data.data.chargemode_config
-        parsed_data += "\n# Allgemein\n"
-        if secondary is False:
-            parsed_data += (f"Hausverbrauch: {data.data.counter_all_data.data.set.home_consumption}W\n"
-                            f"Phasenvorgabe: Sofortladen {chargemode_config.instant_charging.phases_to_use}, Zielladen "
-                            f"{chargemode_config.scheduled_charging.phases_to_use}, Zeitladen: "
-                            f"{chargemode_config.time_charging.phases_to_use}, PV-Laden: "
-                            f"{chargemode_config.pv_charging.phases_to_use}, Einschaltschwelle: "
-                            f"{chargemode_config.pv_charging.switch_on_threshold}W, Ausschaltschwelle: "
-                            f"{chargemode_config.pv_charging.switch_off_threshold}W\n"
-                            f"Regelintervall: {data.data.general_data.data.control_interval}s, ")
-        parsed_data += f"Display aktiviert: {data.data.optional_data.data.int_display.active}"
     return parsed_data
 
 
