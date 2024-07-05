@@ -5,7 +5,6 @@ import pytz
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.electricity_tariffs.energycharts.config import EnergyChartsTariffConfiguration
 from modules.electricity_tariffs.energycharts.config import EnergyChartsTariff
 
@@ -35,7 +34,7 @@ def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
 def create_electricity_tariff(config: EnergyChartsTariff):
     def updater():
         return TariffState(prices=fetch_prices(config.configuration))
-    return ConfigurableElectricityTariff(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=EnergyChartsTariff)
