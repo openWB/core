@@ -23,6 +23,7 @@ from helpermodules import graph
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import optional
 from helpermodules.pub import Pub
@@ -30,6 +31,9 @@ from helpermodules import system
 from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
+from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
+from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
+from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, RfidData)
@@ -135,11 +139,13 @@ class SubData:
             # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
             # "openWB/system/subdata_initialized" empfangen werden!
             ("openWB/system/mqtt/bridge/+", 2),
+            ("openWB/system/mqtt/+", 2),
             # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
             ("openWB/system/+", 2),
             ("openWB/system/backup_cloud/#", 2),
             ("openWB/system/device/module_update_completed", 2),
             ("openWB/system/device/+/config", 2),
+            ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
         ])
         Pub().pub("openWB/system/subdata_initialized", True)
 
@@ -176,6 +182,8 @@ class SubData:
             self.process_counter_topic(self.counter_data, msg)
         elif "openWB/system/" in msg.topic:
             self.process_system_topic(client, self.system_data, msg)
+        elif "openWB/LegacySmartHome/" in msg.topic:
+            self.process_legacy_smarthome_topic(client, self.counter_all_data, msg)
         elif "openWB/command/command_completed" == msg.topic:
             self.event_command_completed.set()
         else:
@@ -571,7 +579,8 @@ class SubData:
                         mod = importlib.import_module(".ripple_control_receivers." +
                                                       config_dict["type"]+".ripple_control_receiver", "modules")
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                        var.data.ripple_control_receiver.module = mod.create_ripple_control_receiver(config)
+                        var.data.ripple_control_receiver.module = ConfigurableRcr(
+                            config=config, component_initialiser=mod.create_ripple_control_receiver)
                 elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
                 elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
@@ -598,9 +607,9 @@ class SubData:
                         # 5 Min Handler bis auf Heartbeat, Cleanup, ... beenden
                         self.event_jobs_running.clear()
                     self.set_json_payload_class(var.data, msg)
-                    subprocess.run([
+                    run_command([
                         str(Path(__file__).resolve().parents[2] / "runs" / "setup_network.sh")
-                    ])
+                    ], process_exception=True)
                 elif "openWB/general/modbus_control" == msg.topic:
                     if decode_payload(msg.payload) and self.general_data.data.extern:
                         self.event_modbus_server.set()
@@ -629,9 +638,9 @@ class SubData:
                     self.set_json_payload_class(var.data.int_display, msg)
                     if re.search("/(standby|active|rotation)$", msg.topic) is not None:
                         # some topics require an update of the display manager or boot settings
-                        subprocess.run([
+                        run_command([
                             str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")
-                        ])
+                        ], process_exception=True)
                 elif re.search("/optional/et/", msg.topic) is not None:
                     if re.search("/optional/et/get/prices", msg.topic) is not None:
                         var.data.et.get.prices = decode_payload(msg.payload)
@@ -645,7 +654,7 @@ class SubData:
                             mod = importlib.import_module(
                                 f".electricity_tariffs.{config_dict['type']}.tariff", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                            var.et_module = mod.create_electricity_tariff(config)
+                            var.et_module = ConfigurableElectricityTariff(config, mod.create_electricity_tariff)
                             var.et_get_prices()
                     else:
                         self.set_json_payload_class(var.data.et, msg)
@@ -755,14 +764,20 @@ class SubData:
                 if self.event_subdata_initialized.is_set():
                     index = get_index(msg.topic)
                     parent_file = Path(__file__).resolve().parents[2]
-                    result = subprocess.run(
-                        ["php", "-f", str(parent_file / "runs" / "save_mqtt.php"), index, msg.payload],
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-                    if len(result.stdout) > 0:
-                        pub_system_message(msg.payload, result.stdout,
-                                           MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
+                    try:
+                        result = run_command(
+                            ["php", "-f", str(parent_file / "runs" / "save_mqtt.php"), index, msg.payload])
+                        pub_system_message(msg.payload, result, MessageType.SUCCESS)
+                    except subprocess.CalledProcessError as e:
+                        log.debug(e.stdout)
+                        pub_system_message(msg.payload, f'Fehler-Status: {e.returncode}<br />Meldung: {e.stderr}',
+                                           MessageType.ERROR)
                 else:
                     log.debug("skipping mqtt bridge message on startup")
+            elif "mqtt" and "valid_partner_ids" in msg.topic:
+                # duplicate topic for remote support service
+                log.error(f"received valid partner ids: {decode_payload(msg.payload)}")
+                Pub().pub("openWB-remote/valid_partner_ids", decode_payload(msg.payload))
             # will be moved to separate handler!
             elif "GetRemoteSupport" in msg.topic:
                 log.warning("deprecated topic for remote support received!")
@@ -771,8 +786,8 @@ class SubData:
                 token = splitted[0]
                 port = splitted[1] if len(splitted) > 1 else "2223"
                 user = splitted[2] if len(splitted) > 2 else "getsupport"
-                subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
-                                token, port, user])
+                run_command([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
+                             token, port, user], process_exception=True)
             elif "openWB/system/backup_cloud/config" in msg.topic:
                 config_dict = decode_payload(msg.payload)
                 if config_dict["type"] is None:
@@ -780,7 +795,9 @@ class SubData:
                 else:
                     mod = importlib.import_module(".backup_clouds."+config_dict["type"]+".backup_cloud", "modules")
                     config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                    var["system"].backup_cloud = mod.create_backup_cloud(config)
+                    var["system"].backup_cloud = ConfigurableBackupCloud(config, mod.create_backup_cloud)
+            elif "openWB/system/backup_cloud/backup_before_update" in msg.topic:
+                self.set_json_payload(var["system"].data["backup_cloud"], msg)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
@@ -818,7 +835,7 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_internal_chargepoint_topic(self, client, var, msg):
+    def process_internal_chargepoint_topic(self, client: mqtt.Client, var: dict, msg: mqtt.MQTTMessage):
         try:
             if re.search("/internal_chargepoint/[0-1]/data/parent_cp", msg.topic) is not None:
                 index = get_index(msg.topic)
@@ -852,3 +869,20 @@ class SubData:
         else:
             internal_configured = False
         self.internal_chargepoint_data["global_data"].configured = internal_configured
+
+    def process_legacy_smarthome_topic(self, client: mqtt.Client, var: counter_all.CounterAll, msg: mqtt.MQTTMessage):
+        """ Handler für die SmartHome-Topics des alten
+
+        Parameter
+        ----------
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
+            enthält Topic und Payload
+        """
+        try:
+            if "openWB/LegacySmartHome/Status/wattnichtHaus" == msg.topic:
+                # keine automatische Zuordnung, da das Topic anders heißt als der Wert in der Datenstruktur
+                var.data.set.smarthome_power_excluded_from_home_consumption = decode_payload(msg.payload)
+        except Exception:
+            log.exception("Fehler im subdata-Modul")

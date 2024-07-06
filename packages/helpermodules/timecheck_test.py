@@ -149,3 +149,23 @@ def test_check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan], now: str, 
 
     # evaluation
     assert state == expected_state
+
+
+@pytest.mark.parametrize("timestamp, expected",
+                         [
+                             pytest.param(1652683202, "40 Sek."),
+                             pytest.param(1652683222, "1 Min."),
+                             pytest.param(1652683221.8, "59 Sek."),
+                             pytest.param(1652683222.2, "1 Min."),
+                             pytest.param(1652683232, "1 Min. 10 Sek.")
+                         ]
+                         )
+def test_convert_timestamp_delta_to_time_string(timestamp, expected):
+    # setup
+    delta = 90
+
+    # execution
+    time_string = timecheck.convert_timestamp_delta_to_time_string(timestamp, delta)
+
+    # evaluation
+    assert time_string == expected

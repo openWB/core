@@ -63,7 +63,7 @@ class ChargepointModule(AbstractChargepoint):
             self.store_internal.set(chargepoint_state)
             self.store_internal.update()
         try:
-            self._client.check_hardware()
+            self._client.check_hardware(self.fault_state)
             powers, power = self._client.meter_client.get_power()
             if power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
@@ -72,6 +72,7 @@ class ChargepointModule(AbstractChargepoint):
             imported = self._client.meter_client.get_imported()
             power_factors = self._client.meter_client.get_power_factors()
             frequency = self._client.meter_client.get_frequency()
+            serial_number = self._client.meter_client.get_serial_number()
             phases_in_use = sum(1 for current in currents if current > 3)
             if phases_in_use == 0:
                 phases_in_use = self.old_phases_in_use
@@ -105,20 +106,19 @@ class ChargepointModule(AbstractChargepoint):
                 phases_in_use=phases_in_use,
                 power_factors=power_factors,
                 rfid=last_tag,
-                evse_current=self.set_current_evse
+                evse_current=self.set_current_evse,
+                serial_number=serial_number
             )
         except Exception as e:
             self._client.read_error += 1
             if self._client.read_error > 5:
                 msg = ("Anhaltender Fehler beim Auslesen von EVSE und/oder Zähler. " +
                        "Lade- und Stecker-Status werden zurückgesetzt.")
-                plug_state = False
-                charge_state = False
-                chargepoint_state = ChargepointState(
-                    plug_state=plug_state,
-                    charge_state=charge_state,
-                    phases_in_use=0
-                )
+                chargepoint_state = ChargepointState()
+                chargepoint_state.plug_state = False
+                chargepoint_state.charge_state = False
+                chargepoint_state.imported = self.old_chargepoint_state.imported
+                chargepoint_state.exported = self.old_chargepoint_state.exported
                 store_state(chargepoint_state)
                 e.args += (msg,)
                 raise e

@@ -4,6 +4,7 @@
 			id="PGXAxis"
 			class="axis"
 			:origin="drawAxis1"
+			:origin2="autozoom"
 			:transform="'translate(0,' + (height / 2 - 6) + ')'"
 		/>
 		<g
@@ -38,10 +39,10 @@
 </template>
 
 <script setup lang="ts">
-import type { AxisContainerElement, ScaleTime } from 'd3'
-import { axisBottom, axisTop, extent, scaleTime, select, timeFormat } from 'd3'
+import type { AxisContainerElement, ScaleTime, Selection } from 'd3'
+import { axisBottom, axisTop, select, timeFormat } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
-import { graphData, xScaleMonth } from './model'
+import { graphData, xScaleMonth, xScale, zoomedRange } from './model'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -55,13 +56,13 @@ const fontsize = 12
 // computed
 const xAxisGenerator = computed(() => {
 	return axisBottom<Date>(xScale.value as ScaleTime<number, number, never>)
-		.ticks(4)
+		.ticks(6)
 		.tickSizeInner(ticksize.value)
 		.tickFormat(timeFormat('%H:%M'))
 })
 const xAxisGenerator2 = computed(() => {
 	return axisTop<Date>(xScale.value as ScaleTime<number, number, never>)
-		.ticks(4)
+		.ticks(6)
 		.tickSizeInner(ticksize.value + 3)
 		.tickFormat(timeFormat(''))
 })
@@ -72,21 +73,18 @@ const xAxisGeneratorMonth = computed(() =>
 		.tickSizeInner(ticksize.value)
 		.tickFormat((d) => d.toString()),
 )
+const xAxisGeneratorMonth2 = computed(() =>
+	axisBottom<number>(xScaleMonth.value)
+		.ticks(4)
+		.tickSizeInner(ticksize.value)
+		.tickFormat(() => ''),
+)
 
 const ticksize = computed(() => {
 	if (graphData.graphMode !== 'month' && graphData.graphMode !== 'year') {
 		return globalConfig.showGrid ? -(props.height / 2 - 7) : -10
 	} else {
 		return 0
-	}
-})
-
-const xScale = computed(() => {
-	let e = extent(graphData.data, (d) => d.date)
-	if (e[0] && e[1]) {
-		return scaleTime<number>().domain(e).range([0, props.width])
-	} else {
-		return scaleTime().range([0, 0])
 	}
 })
 
@@ -103,7 +101,7 @@ const drawAxis1 = computed(() => {
 		.selectAll('.tick > text')
 		//.attr('color', 'var(--color-axis)')
 		.attr('fill', (d, i) =>
-			i > 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
+			i >= 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
 				? 'var(--color-axis)'
 				: 'var(--color-bg)',
 		)
@@ -133,7 +131,7 @@ const drawAxis2 = computed(() => {
 	axis.selectAll('*').remove()
 
 	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
-		axis.call(xAxisGeneratorMonth.value)
+		axis.call(xAxisGeneratorMonth2.value)
 	} else {
 		axis.call(xAxisGenerator2.value)
 	}
@@ -142,7 +140,7 @@ const drawAxis2 = computed(() => {
 		.selectAll('.tick > text')
 		//.attr('color', 'var(--color-axis)')
 		.attr('fill', (d, i) =>
-			i > 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
+			i >= 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
 				? 'var(--color-axis)'
 				: 'var(--color-bg)',
 		)
@@ -159,15 +157,29 @@ const drawAxis2 = computed(() => {
 	}
 
 	axis.select('.domain').attr('stroke', 'var(--color-bg)')
-	axis
-		.append('text')
-		.attr('x', -props.margin.left)
-		.attr('y', 12)
-		.attr('fill', 'var(--color-axis)')
-		.attr('font-size', fontsize)
-		.text(graphData.graphMode == 'year' ? 'MW' : 'kW')
-		.attr('text-anchor', 'start')
+
 	return 'PGXAxis2.vue'
+})
+
+const autozoom = computed(() => {
+	if (graphData.graphMode != 'month' && graphData.graphMode != 'year') {
+		const axis: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+			select('g#PGXAxis')
+		const axis2: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+			select('g#PGXAxis2')
+
+		if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
+			xScaleMonth.value.range(zoomedRange.value)
+			axis.call(xAxisGeneratorMonth.value)
+			axis2.call(xAxisGeneratorMonth2.value)
+		} else {
+			xScale.value.range(zoomedRange.value)
+			axis.call(xAxisGenerator.value)
+			axis2.call(xAxisGenerator2.value)
+		}
+	}
+
+	return 'zoomed'
 })
 </script>
 

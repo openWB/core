@@ -1,0 +1,5 @@
+# openwb - begin
+# openwb-version:1
+# Do not edit this section! We need begin/end and version for proper updates!
+tmpfs /var/www/html/openWB/ramdisk tmpfs nodev,nosuid,size=48M 0 0
+# openwb - end

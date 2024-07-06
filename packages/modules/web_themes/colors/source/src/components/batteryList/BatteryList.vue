@@ -2,7 +2,7 @@
 Hagen */
 
 <template>
-	<WbWidget
+	<WbWidgetFlex
 		v-if="globalData.isBatteryConfigured"
 		:variable-width="true"
 		:full-width="false"
@@ -11,68 +11,68 @@ Hagen */
 			<span class="fas fa-car-battery me-2" style="color: var(--color-battery)"
 				>&nbsp;</span
 			>
-			<span class="sh-title py-4">Speicher</span>
+			<span>Speicher</span>
 		</template>
-		<div class="row m-1 mt-0 p-0">
-			<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
-				<!-- Soc information -->
-				<InfoItem heading="Ladestand:">
-					<BatterySymbol :soc="globalData.batterySoc" class="me-2" />
-				</InfoItem>
-				<!-- Status information -->
-				<InfoItem heading="Status:">
-					<span>
-						{{ batteryState }}
-					</span>
-				</InfoItem>
-
-				<!-- Status information -->
-				<InfoItem heading="Leistung:">
-					<span>
-						{{ powerstring }}
-					</span>
-				</InfoItem>
-			</div>
+		<template #buttons>
+			<WbBadge :bgcolor="statusbg">
+				{{ batteryState }}
+			</WbBadge>
+			<WbBadge bgcolor="var(--color-battery)">
+				<BatterySymbol
+					color="var(--color-bg)"
+					:soc="globalData.batterySoc"
+				></BatterySymbol>
+			</WbBadge>
+		</template>
+		<div class="px-3 subgrid grid-12">
+			<InfoItem heading="Leistung:" class="grid-left grid-col-4">
+				<span> {{ powerstring }} </span>
+			</InfoItem>
+			<InfoItem heading="Geladen:" class="grid-col-4">
+				<span>
+					{{ formatWattH(usageSummary.batIn.energy) }}
+				</span>
+			</InfoItem>
+			<InfoItem heading="Geliefert" class="grid-right grid-col-4">
+				<span>
+					{{ formatWattH(sourceSummary.batOut.energy) }}
+				</span>
+			</InfoItem>
 		</div>
-		<div class="row m-1 mt-0 p-0">
-			<div class="col m-0 mt-0 mb-1 p-0 d-flex justify-content-between">
-				<InfoItem heading="">
-					<span class="todaystring mt-4 float-right"> Heute:</span>
-				</InfoItem>
-				<InfoItem heading="Geladen:">
-					<span>
-						{{ formatWattH(usageSummary.batIn.energy) }}
-					</span>
-				</InfoItem>
-				<InfoItem heading="Geliefert">
-					<span>
-						{{ formatWattH(sourceSummary.batOut.energy) }}
-					</span>
-				</InfoItem>
-			</div>
-		</div>
-	</WbWidget>
+		<BLBattery v-for="[key, battery] in batteries" :key="key" :bat="battery" />
+	</WbWidgetFlex>
 </template>
 
 <script setup lang="ts">
-import WbWidget from '../shared/WBWidget.vue'
+import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import InfoItem from '../shared/InfoItem.vue'
 import BatterySymbol from '../shared/BatterySymbol.vue'
 import { globalData, sourceSummary, usageSummary } from '@/assets/js/model'
 import { computed } from 'vue'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
+import { batteries } from './model'
+import BLBattery from './BLBattery.vue'
+import WbBadge from '../shared/WbBadge.vue'
 
 const batteryState = computed(() => {
 	if (sourceSummary.batOut.power > 0) {
-		return 'Liefert'
+		return `Liefert (${formatWatt(sourceSummary.batOut.power)})`
 	} else if (usageSummary.batIn.power > 0) {
-		return 'Lädt'
+		return `Lädt (${formatWatt(usageSummary.batIn.power)})`
 	} else {
-		return 'Bereit'
+		return `Bereit:`
 	}
 })
 const powerstring = computed(() => {
 	return formatWatt(sourceSummary.batOut.power + usageSummary.batIn.power)
+})
+
+const statusbg = computed(() => {
+	return sourceSummary.batOut.power > 0
+		? 'var(--color-pv)'
+		: usageSummary.batIn.power > 0
+			? 'var(--color-battery)'
+			: 'var(--color-menu)'
 })
 </script>
 

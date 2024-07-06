@@ -7,6 +7,7 @@ import random
 from typing import List, Optional
 
 from control import data
+from control.bat_all import BatConsiderationMode
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -32,19 +33,18 @@ def control_range_factory() -> List:
 
 @dataclass
 class PvCharging:
-    bat_prio: bool = True
-    charging_power_reserve: int = 200
+    bat_power_reserve: int = 2000
+    bat_power_reserve_active: bool = False
     control_range: List = field(default_factory=control_range_factory)
     feed_in_yield: int = 15000
-    phase_switch_delay: int = 7
     phases_to_use: int = 1
-    rundown_power: int = 1000
-    rundown_soc: int = 50
+    bat_power_discharge: int = 1500
+    bat_power_discharge_active: bool = False
+    min_bat_soc: int = 50
+    bat_mode: BatConsiderationMode = BatConsiderationMode.EV_MODE.value
     switch_off_delay: int = 60
-    switch_off_soc: int = 40
     switch_off_threshold: int = 5
     switch_on_delay: int = 30
-    switch_on_soc: int = 60
     switch_on_threshold: int = 1500
 
 
@@ -55,6 +55,7 @@ def pv_charging_factory() -> PvCharging:
 @dataclass
 class ScheduledCharging:
     phases_to_use: int = 0
+    phases_to_use_pv: int = 0
 
 
 def scheduled_charging_factory() -> ScheduledCharging:
@@ -74,11 +75,12 @@ def time_charging_factory() -> TimeCharging:
 class ChargemodeConfig:
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
-    retry_failed_phase_switches = False
+    retry_failed_phase_switches: bool = False
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = 18
     unbalanced_load: bool = False
+    phase_switch_delay: int = 7
 
 
 def chargemode_config_factory() -> ChargemodeConfig:
@@ -152,7 +154,7 @@ class General:
     def __init__(self):
         self.data: GeneralData = GeneralData()
 
-    def get_phases_chargemode(self, chargemode: str) -> Optional[int]:
+    def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
         Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
         die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
@@ -161,6 +163,9 @@ class General:
             if chargemode == "stop" or chargemode == "standby":
                 # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
                 return None
+            elif chargemode == "scheduled_charging" and submode == "pv_charging":
+                # Phasenumschaltung bei PV-Ueberschuss nutzen
+                return getattr(self.data.chargemode_config, chargemode).phases_to_use_pv
             else:
                 return getattr(self.data.chargemode_config, chargemode).phases_to_use
         except Exception:

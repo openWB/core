@@ -1,6 +1,6 @@
 <template>
 	<span>
-		<i class="fa batIcon" :class="batterySymbol" />
+		<i class="fa" :class="batterySymbol" :style="batStyle" />
 		{{ Math.round(soc) + '%' }}
 	</span>
 </template>
@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 const props = defineProps<{
 	soc: number
+	color?: string
 }>()
 
 const batterySymbol = computed(() => {
@@ -22,6 +23,11 @@ const batterySymbol = computed(() => {
 	} else {
 		return 'fa-battery-full'
 	}
+})
+
+const batStyle = computed(() => {
+	const col = props.color ?? 'var(--color-menu)'
+	return { color: col }
 })
 </script>
 <style scoped>

@@ -1,11 +1,15 @@
 from dataclasses import dataclass, field
 import logging
+from typing import List
+
+from dataclass_utils.factories import currents_list_factory
 
 log = logging.getLogger(__name__)
 
 
 @dataclass
 class Get:
+    currents: List[float] = field(default_factory=currents_list_factory)
     soc: float = 0
     daily_exported: float = 0
     daily_imported: float = 0

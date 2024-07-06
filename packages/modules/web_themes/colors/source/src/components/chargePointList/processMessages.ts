@@ -16,6 +16,7 @@ import type {
 	EvTemplate,
 	ChargeSchedule,
 } from './model'
+import { globalConfig } from '@/assets/js/themeConfig'
 
 export function processChargepointMessages(topic: string, message: string) {
 	const index = getIndex(topic)
@@ -141,8 +142,11 @@ export function processVehicleMessages(topic: string, message: string) {
 	if (index != undefined) {
 		if (!(index in vehicles)) {
 			const v = new Vehicle(index)
+			if (index == 0 && !globalConfig.showStandardVehicle) {
+				v.visible = false
+			}
 			vehicles[index] = v
-			// console.info('New vehicle created: ' + index)
+			console.info('New vehicle created: ' + index)
 		}
 		if (topic.match(/^openwb\/vehicle\/[0-9]+\/name$/i)) {
 			// set car Name for charge point
@@ -156,7 +160,11 @@ export function processVehicleMessages(topic: string, message: string) {
 			// set soc for cp
 			vehicles[index].soc = JSON.parse(message)
 		} else if (topic.match(/^openwb\/vehicle\/[0-9]+\/get\/range$/i)) {
-			vehicles[index].range = +message
+			if (isNaN(+message)) {
+				vehicles[index].range = 0
+			} else {
+				vehicles[index].range = +message
+			}
 		} else if (topic.match(/^openwb\/vehicle\/[0-9]+\/charge_template$/i)) {
 			vehicles[index].updateChargeTemplateId(+message)
 		} else if (topic.match(/^openwb\/vehicle\/[0-9]+\/ev_template$/i)) {

@@ -30,9 +30,8 @@ class Device(AbstractDevice):
         self.components = {}  # type: Dict[str, sungrow_component_classes]
         try:
             self.device_config = dataclass_from_dict(Sungrow, device_config)
-            ip_address = self.device_config.configuration.ip_address
-            port = self.device_config.configuration.port
-            self.client = modbus.ModbusTcpClient_(ip_address, port)
+            self.client = modbus.ModbusTcpClient_(
+                self.device_config.configuration.ip_address, self.device_config.configuration.port)
         except Exception:
             log.exception("Fehler im Modul " + self.device_config.name)
 
@@ -47,7 +46,7 @@ class Device(AbstractDevice):
             COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory, component_config)
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component" + str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config.id, self.device_config.configuration.modbus_id, component_config, self.client))
+                self.device_config, component_config, self.client))
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -85,23 +84,25 @@ COMPONENT_TYPE_TO_MODULE = {
 def read_legacy(ip_address: str,
                 port: int,
                 modbus_id: int,
+                version: int,
                 component_config: dict):
     device_config = Sungrow()
     device_config.configuration.ip_address = ip_address
     device_config.configuration.port = port
     device_config.configuration.modbus_id = modbus_id
+    device_config.configuration.version = Version(version)
     dev = Device(device_config)
     dev.add_component(component_config)
     dev.update()
 
 
-def read_legacy_bat(ip_address: str, port: int, modbus_id: int):
-    read_legacy(ip_address, port, modbus_id, bat.component_descriptor.configuration_factory(id=None))
+def read_legacy_bat(ip_address: str, port: int, modbus_id: int, version: int):
+    read_legacy(ip_address, port, modbus_id, version, bat.component_descriptor.configuration_factory(id=None))
 
 
 def read_legacy_counter(ip_address: str, port: int, modbus_id: int, version: int):
-    read_legacy(ip_address, port, modbus_id, counter.component_descriptor.configuration_factory(
-        id=None, configuration=SungrowCounterConfiguration(version=Version(version))))
+    read_legacy(ip_address, port, modbus_id, version, counter.component_descriptor.configuration_factory(
+        id=None, configuration=SungrowCounterConfiguration()))
 
 
 def read_legacy_inverter(ip_address: str,
@@ -114,11 +115,12 @@ def read_legacy_inverter(ip_address: str,
     device_config.configuration.ip_address = ip_address
     device_config.configuration.port = port
     device_config.configuration.modbus_id = modbus_id
+    device_config.configuration.version = Version(version)
     dev = Device(device_config)
     dev.add_component(inverter.component_descriptor.configuration_factory(id=num))
     if read_counter == 1:
         dev.add_component(counter.component_descriptor.configuration_factory(
-            id=None, configuration=SungrowCounterConfiguration(version=Version(version))))
+            id=None, configuration=SungrowCounterConfiguration()))
     dev.update()
 
 

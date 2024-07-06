@@ -17,20 +17,22 @@ class AlphaEssCounter:
                  device_id: int,
                  component_config: Union[Dict, AlphaEssCounterSetup],
                  tcp_client: modbus.ModbusTcpClient_,
-                 device_config: AlphaEssConfiguration) -> None:
+                 device_config: AlphaEssConfiguration,
+                 modbus_id: int) -> None:
         self.component_config = dataclass_from_dict(AlphaEssCounterSetup, component_config)
         self.__tcp_client = tcp_client
+        self.__device_config = device_config
+        self.__modbus_id = modbus_id
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.__device_config = device_config
 
-    def update(self, unit_id: int):
+    def update(self):
         time.sleep(0.1)
         factory_method = self.__get_values_factory()
-        counter_state = factory_method(unit_id)
+        counter_state = factory_method(self.__modbus_id)
         self.store.set(counter_state)
 
-    def __get_values_factory(self,) -> Callable[[int], CounterState]:
+    def __get_values_factory(self) -> Callable[[int], CounterState]:
         if self.__device_config.source == 0 and self.__device_config.version == 0:
             return self.__get_values_before_v123
         else:

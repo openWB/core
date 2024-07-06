@@ -5,7 +5,6 @@ from pathlib import Path
 
 from modules.backup_clouds.nfs.config import NfsBackupCloud, NfsBackupCloudConfiguration
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
 log = logging.getLogger(__name__)
 nfs_mount = '/mnt/nfs_mount'
@@ -67,7 +66,7 @@ def upload_backup(config: NfsBackupCloudConfiguration, backup_filename: str, bac
 def create_backup_cloud(config: NfsBackupCloud):
     def updater(backup_filename: str, backup_file: bytes):
         upload_backup(config.configuration, backup_filename, backup_file)
-    return ConfigurableBackupCloud(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=NfsBackupCloud)

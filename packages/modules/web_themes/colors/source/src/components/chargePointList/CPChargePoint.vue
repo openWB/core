@@ -5,10 +5,17 @@
 		:full-width="props.fullWidth"
 	>
 		<template #title>
-			<span :style="cpNameStyle" @click="configmode = !configmode">
-				<span class="fa-solid fa-charging-station">&nbsp;</span>
-				{{ props.chargepoint.name }}</span
-			>
+			<span class="d-flex justify-content-center align-items-center">
+				<span :style="cpNameStyle" @click="configmode = !configmode">
+					<span class="fa-solid fa-charging-station">&nbsp;</span>
+					{{ props.chargepoint.name }}</span
+				>
+				<span
+					v-if="cp.faultState == 2"
+					class="WbBadge rounded-pill errorWbBadge ms-3"
+					>Fehler</span
+				>
+			</span>
 		</template>
 
 		<template #buttons>
@@ -24,64 +31,52 @@
 
 		<!-- Chargepoint info -->
 		<div v-if="!configmode">
-			<div class="row m-1 mt-0 p-0" @click="configmode = !configmode">
-				<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
-					<!-- Status information -->
-					<InfoItem heading="Status:">
-						<span :style="{ color: statusColor }">
-							<i :class="statusIcon" />
-							{{ statusString }}
-						</span>
-					</InfoItem>
+			<div class="grid12" @click="configmode = !configmode">
+				<!-- Status information -->
+				<InfoItem heading="Status:" class="grid-col-4 grid-left">
+					<span :style="{ color: statusColor }">
+						<i :class="statusIcon" />
+						{{ statusString }}
+					</span>
+				</InfoItem>
 
-					<!-- Ladung -->
-					<InfoItem heading="Geladen:">
-						<FormatWattH :watt-h="chargepoint.dailyYield" />
-					</InfoItem>
-					<InfoItem heading="gel. Reichw.:">
-						{{ chargedRangeString }}
-					</InfoItem>
-				</div>
-			</div>
-			<div
-				v-if="props.chargepoint.power > 0"
-				class="row m-1 p-0"
-				@click="configmode = !configmode"
-			>
-				<div class="col m-0 p-0 d-flex justify-content-between">
-					<InfoItem heading="Leistung:">
-						<FormatWatt :watt="props.chargepoint.power" />
-					</InfoItem>
-					<InfoItem heading="Strom:">
-						{{ realChargeAmpereString }}
-					</InfoItem>
-					<InfoItem heading="Phasen:">
-						{{ props.chargepoint.phasesInUse }}
-					</InfoItem>
-					<InfoItem heading="Sollstrom:">
-						<span class="targetCurrent">{{ chargeAmpereString }}</span>
-					</InfoItem>
-				</div>
-			</div>
-			<!-- Chargemode buttons -->
-			<div class="row m-0 p-0 mt-3 mb-0">
-				<div class="col d-flex justify-content-center p-0 m-0">
-					<RadioBarInput
-						:id="'chargemode-' + chargepoint.name"
-						v-model="chargeMode"
-						:options="
-							Object.keys(chargemodes).map((v) => {
-								return {
-									text: chargemodes[v].name,
-									value: v,
-									color: chargemodes[v].color,
-									icon: chargemodes[v].icon,
-									active: chargemodes[v].mode == chargepoint.chargeMode,
-								}
-							})
-						"
-					/>
-				</div>
+				<!-- Ladung -->
+				<InfoItem heading="Geladen:" class="grid-col-4">
+					<FormatWattH :watt-h="chargepoint.dailyYield" />
+				</InfoItem>
+				<!-- geladene Reichweite-->
+				<InfoItem heading="gel. Reichw.:" class="grid-col-4 grid-right">
+					{{ chargedRangeString }}
+				</InfoItem>
+				<!-- Leistung -->
+				<InfoItem
+					v-if="props.chargepoint.power > 0"
+					heading="Leistung:"
+					class="grid-col-3 grid-left"
+				>
+					<FormatWatt :watt="props.chargepoint.power" />
+				</InfoItem>
+				<InfoItem
+					v-if="props.chargepoint.power > 0"
+					heading="Strom:"
+					class="grid-col-3"
+				>
+					{{ realChargeAmpereString }}
+				</InfoItem>
+				<InfoItem
+					v-if="props.chargepoint.power > 0"
+					heading="Phasen:"
+					class="grid-col-3"
+				>
+					{{ props.chargepoint.phasesInUse }}
+				</InfoItem>
+				<InfoItem
+					v-if="props.chargepoint.power > 0"
+					heading="Sollstrom:"
+					class="grid-col-3 grid-right"
+				>
+					<span class="targetCurrent">{{ chargeAmpereString }}</span>
+				</InfoItem>
 			</div>
 		</div>
 		<div v-if="configmode" class="row m-0 mt-0 p-0">
@@ -104,55 +99,79 @@
 								v-if="chargepoint.hasPriority"
 								class="me-1 fa-solid fa-xs fa-star ps-1"
 							/>
+							<span
+								v-if="chargepoint.etActive"
+								class="me-0 fa-solid fa-xs fa-coins ps-0"
+							/>
 						</h3>
 					</div>
 				</div>
-				<div class="row m-0 p-1 pt-2 mb-3">
+				<div class="grid12">
+					<!-- Chargemode buttons -->
+					<RadioBarInput
+						:id="'chargemode-' + chargepoint.name"
+						v-model="chargeMode"
+						class="chargemodes mt-3 mb-3"
+						:options="
+							Object.keys(chargemodes).map((v) => {
+								return {
+									text: chargemodes[v].name,
+									value: v,
+									color: chargemodes[v].color,
+									icon: chargemodes[v].icon,
+									active: chargemodes[v].mode == chargepoint.chargeMode,
+								}
+							})
+						"
+					/>
 					<!-- Car info -->
+					<InfoItem
+						v-if="chargepoint.isSocConfigured"
+						heading="Ladestand:"
+						class="grid-col-4 grid-left"
+					>
+						<BatterySymbol :soc="soc" class="me-2" />
+						<i
+							v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
+							class="fa-solid fa-sm fas fa-edit"
+							:style="{ color: 'var(--color-menu)' }"
+							@click="editSoc = !editSoc"
+						/>
 
-					<div class="m-0 p-0 d-flex justify-content-between">
-						<InfoItem v-if="chargepoint.isSocConfigured" heading="Ladestand:">
-							<BatterySymbol :soc="soc" class="me-2" />
-							<i
-								v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
-								class="fa-solid fa-sm fas fa-edit"
-								:style="{ color: 'var(--color-menu)' }"
-								@click="editSoc = !editSoc"
-							/>
-
-							<i
-								v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual"
-								type="button"
-								class="fa-solid fa-sm"
-								:class="
-									chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
-								"
-								:style="{ color: 'var(--color-menu)' }"
-								@click="loadSoc"
-							/>
-						</InfoItem>
-						<InfoItem v-if="chargepoint.isSocConfigured" heading="Reichweite:">
-							{{
-								vehicles[props.chargepoint.connectedVehicle]
-									? Math.round(
-											vehicles[props.chargepoint.connectedVehicle].range,
-									  )
-									: 0
-							}}
-							km
-						</InfoItem>
-						<InfoItem heading="Zeitplan:">
-							<span
-								v-if="chargepoint.timedCharging"
-								class="me-1 fa-solid fa-xs fa-clock ps-1"
-							/>
-							{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
-						</InfoItem>
-					</div>
+						<i
+							v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual"
+							type="button"
+							class="fa-solid fa-sm"
+							:class="
+								chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
+							"
+							:style="{ color: 'var(--color-menu)' }"
+							@click="loadSoc"
+						/>
+					</InfoItem>
+					<InfoItem
+						v-if="chargepoint.isSocConfigured"
+						heading="Reichweite:"
+						class="grid-col-4"
+					>
+						{{
+							vehicles[props.chargepoint.connectedVehicle]
+								? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
+								: 0
+						}}
+						km
+					</InfoItem>
+					<InfoItem heading="Zeitplan:" class="grid-col-4 grid-right">
+						<span
+							v-if="chargepoint.timedCharging"
+							class="me-1 fa-solid fa-xs fa-clock ps-1"
+						/>
+						{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
+					</InfoItem>
 
 					<div
 						v-if="editSoc"
-						class="socEditor rounded mt-2 d-flex flex-column align-items-center"
+						class="socEditor rounded mt-2 d-flex flex-column align-items-center grid-col-12 grid-left"
 					>
 						<span class="d-flex m-1 p-0 socEditTitle"
 							>Ladestand einstellen:</span
@@ -176,46 +195,60 @@
 						/>
 					</div>
 					<!-- ET Information -->
-					<div
-						v-if="etData.active && props.chargepoint.etActive"
-						class="row m-1 p-0"
+					<InfoItem
+						v-if="etData.active"
+						heading="Preisladen:"
+						class="grid-col-4 grid-left"
 					>
-						<div class="col m-0 mb-1 p-0 d-flex justify-content-between">
-							<InfoItem heading="max. Preis:">
-								<span type="button" @click="editPrice = !editPrice"
-									>{{
-										(
+						<SwitchInput v-model="cp.etActive" />
+					</InfoItem>
+					<InfoItem
+						v-if="etData.active"
+						heading="max. Preis:"
+						class="grid-col-4"
+					>
+						<span type="button" @click="editPrice = !editPrice"
+							>{{
+								props.chargepoint.etActive
+									? (
 											Math.round(props.chargepoint.etMaxPrice * 10) / 10
-										).toFixed(1)
-									}}
-									ct
-									<i class="fa-solid fa-sm fas fa-edit ms-2" />
-								</span>
-							</InfoItem>
-							<InfoItem heading="akt. Preis:">
-								<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
-							</InfoItem>
-						</div>
-						<div
-							v-if="editPrice"
-							:id="'priceChartInline' + props.chargepoint.id"
-							class="d-flex flex-column rounded priceEditor"
-						>
-							<PriceChart
-								v-if="vehicles[props.chargepoint.connectedVehicle] != undefined"
-								:chargepoint="props.chargepoint"
+										).toFixed(1) + ' ct'
+									: '-'
+							}}
+
+							<i
+								v-if="props.chargepoint.etActive"
+								class="fa-solid fa-sm fas fa-edit ms-2"
 							/>
+						</span>
+					</InfoItem>
+					<InfoItem
+						v-if="etData.active"
+						heading="akt. Preis:"
+						class="grid-col-4 grid-right"
+					>
+						<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
+					</InfoItem>
+
+					<div
+						v-if="editPrice"
+						:id="'priceChartInline' + props.chargepoint.id"
+						class="d-flex flex-column rounded priceEditor grid-col-12"
+					>
+						<PriceChart
+							v-if="vehicles[props.chargepoint.connectedVehicle] != undefined"
+							:chargepoint="props.chargepoint"
+						/>
+						<span
+							class="d-flex ms-2 my-4 pe-3 pt-1 d-flex align-self-end"
+							:style="modePillStyle"
+							@click="editPrice = false"
+						>
 							<span
-								class="d-flex ms-2 my-4 pe-3 pt-1 d-flex align-self-end"
-								:style="modePillStyle"
-								@click="editPrice = false"
-							>
-								<span
-									type="button"
-									class="d-flex fa-solid fa-lg ps-1 fa-circle-check"
-								/>
-							</span>
-						</div>
+								type="button"
+								class="d-flex fa-solid fa-lg ps-1 fa-circle-check"
+							/>
+						</span>
 					</div>
 				</div>
 			</div>
@@ -261,11 +294,13 @@ import { updateServer } from '@/assets/js/sendMessages'
 import RangeInput from '../shared/RangeInput.vue'
 import PriceChart from '../priceChart/PriceChart.vue'
 import { etData } from '../priceChart/model'
+import SwitchInput from '../shared/SwitchInput.vue'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
 	fullWidth?: boolean
 }>()
+const cp = ref(props.chargepoint)
 // computed
 const chargeMode = computed({
 	get() {
@@ -290,11 +325,20 @@ const realChargeAmpereString = computed(() => {
 	)
 })
 const chargedRangeString = computed(() => {
-	return (
-		Math.round(props.chargepoint.rangeCharged).toString() +
-		' ' +
-		props.chargepoint.rangeUnit
-	)
+	const rangeSincePlugged = props.chargepoint.rangeCharged
+	const energySincePlugged = props.chargepoint.chargedSincePlugged
+	const energyToday = props.chargepoint.dailyYield
+	if (energySincePlugged > 0) {
+		return (
+			Math.round(
+				(rangeSincePlugged / energySincePlugged) * energyToday,
+			).toString() +
+			' ' +
+			props.chargepoint.rangeUnit
+		)
+	} else {
+		return '0'
+	}
 })
 const statusString = computed(() => {
 	if (props.chargepoint.isLocked) {
@@ -398,18 +442,41 @@ const editPrice = ref(false)
 	color: var(--color-menu);
 }
 
+.fa-coins {
+	color: var(--color-battery);
+}
+
 .fa-edit {
 	color: var(--color-menu);
 }
 
 .socEditor {
 	border: 1px solid var(--color-menu);
+	justify-self: stretch;
 }
 
 .targetCurrent {
 	color: var(--color-menu);
 }
+
 .priceEditor {
 	border: 1px solid var(--color-menu);
+	justify-self: stretch;
+}
+
+.chargemodes {
+	grid-column: 1 / 13;
+	justify-self: center;
+}
+
+.chargeinfo {
+	display: grid;
+	grid-template-columns: repeat(12, auto);
+	justify-content: space-between;
+}
+.errorWbBadge {
+	color: var(--color-bg);
+	background-color: var(--color-evu);
+	font-size: var(--font-small);
 }
 </style>

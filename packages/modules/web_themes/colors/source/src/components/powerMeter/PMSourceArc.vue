@@ -27,6 +27,7 @@ const draw = computed(() => {
 		pvPercentage: 0,
 		color: 'var(--color-bg)',
 		icon: '',
+		showInGraph: true,
 	}
 	let plotdata = sourceSummary
 	plotdata['zz-empty'] = emptyPowerItem

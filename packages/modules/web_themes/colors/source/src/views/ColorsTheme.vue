@@ -16,9 +16,9 @@ Hagen */
 			<PowerGraph />
 			<EnergyMeter />
 			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+			<GlobalPriceChart id="Hidden" />
 			<VehicleList />
 			<CounterList />
-			<GlobalPriceChart id="Hidden" />
 		</div>
 		<div v-if="true" class="row py-0 px-0 m-0">
 			<CarouselFix>
@@ -40,14 +40,15 @@ Hagen */
 			class="row py-0 m-0 d-flex justify-content-center"
 		>
 			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
-			<VehicleList v-if="globalConfig.showVehicles"></VehicleList>
-			<BatteryList />
-			<SmartHomeList v-if="showSH"></SmartHomeList>
-			<CounterList v-if="globalConfig.showCounters"></CounterList>
 			<GlobalPriceChart
 				v-if="globalConfig.showPrices"
 				id="NoTabs"
 			></GlobalPriceChart>
+			<VehicleList v-if="globalConfig.showVehicles"></VehicleList>
+			<BatteryList />
+			<SmartHomeList v-if="showSH"></SmartHomeList>
+			<CounterList v-if="globalConfig.showCounters"></CounterList>
+			<InverterList v-if="globalConfig.showInverters"></InverterList>
 		</div>
 		<!-- Tabbed area -->
 		<nav
@@ -66,6 +67,15 @@ Hagen */
 			>
 				<i class="fa-solid fa-lg fa-charging-station" />
 				<span class="d-none d-md-inline ms-2">Ladepunkte</span>
+			</a>
+			<a
+				v-if="globalConfig.showPrices"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#pricecharttabbed"
+			>
+				<i class="fa-solid fa-lg fa-coins" />
+				<span class="d-none d-md-inline ms-2">Strompreis</span>
 			</a>
 			<a
 				v-if="globalConfig.showVehicles"
@@ -103,15 +113,14 @@ Hagen */
 				<i class="fa-solid fa-lg fa-bolt" />
 				<span class="d-none d-md-inline ms-2">Zähler</span>
 			</a>
-
 			<a
-				v-if="globalConfig.showPrices"
+				v-if="globalConfig.showInverters"
 				class="nav-link"
 				data-bs-toggle="tab"
-				data-bs-target="#pricecharttabbed"
+				data-bs-target="#inverterlist"
 			>
-				<i class="fa-solid fa-lg fa-money-bill-wave" />
-				<span class="d-none d-md-inline ms-2">Strompreis</span>
+				<i class="fa-solid fa-lg fa-solar-panel" />
+				<span class="d-none d-md-inline ms-2">Wechselrichter</span>
 			</a>
 		</nav>
 		<!-- Tab panes -->
@@ -128,11 +137,12 @@ Hagen */
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
 					<ChargePointList :shortlist="globalConfig.shortCpList != 'no'" />
+					<GlobalPriceChart v-if="globalConfig.showPrices" id="Overview" />
 					<VehicleList v-if="globalConfig.showVehicles" />
 					<BatteryList />
 					<SmartHomeList v-if="showSH" />
 					<CounterList v-if="globalConfig.showCounters" />
-					<GlobalPriceChart v-if="globalConfig.showPrices" id="Overview" />
+					<InverterList v-if="globalConfig.showInverters" />
 				</div>
 			</div>
 			<div
@@ -193,6 +203,19 @@ Hagen */
 				</div>
 			</div>
 			<div
+				id="inverterlist"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="inverter-tab"
+			>
+				<div
+					v-if="globalConfig.showInverters"
+					class="row py-0 m-0 d-flex justify-content-center"
+				>
+					<InverterList />
+				</div>
+			</div>
+			<div
 				id="pricecharttabbed"
 				class="tab-pane"
 				role="tabpanel"
@@ -238,25 +261,26 @@ import ChargePointList from '@/components/chargePointList/ChargePointList.vue'
 import ButtonBar from '@/components/buttonBar/ButtonBar.vue'
 import BatteryList from '@/components/batteryList/BatteryList.vue'
 import SmartHomeList from '@/components/smartHome/SmartHomeList.vue'
+import CounterList from '@/components/counterList/CounterList.vue'
+import VehicleList from '@/components/vehicleList/VehicleList.vue'
+import GlobalPriceChart from '@/components/priceChart/GlobalPriceChart.vue'
+import InverterList from '@/components/inverterList/InverterList.vue'
 import CarouselFix from '@/components/shared/CarouselFix.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import MQTTViewer from '@/components/mqttViewer/MQTTViewer.vue'
 import ThemeSettings from '@/views/ThemeSettings.vue'
-import CounterList from '@/components/counterList/CounterList.vue'
-import VehicleList from '@/components/vehicleList/VehicleList.vue'
 import { resetArcs } from '@/assets/js/themeConfig'
 import {
 	globalConfig,
 	updateDimensions,
 	screensize,
 } from '@/assets/js/themeConfig'
-import GlobalPriceChart from '@/components/priceChart/GlobalPriceChart.vue'
 import { initGraph } from '@/components/powerGraph/model'
 
 // state
 const showMQ = ref(false)
 const showSH = computed(() => {
-	return Object.values(shDevices).filter((dev) => dev.configured).length > 0
+	return [...shDevices.values()].filter((dev) => dev.configured).length > 0
 })
 // methods
 function init() {
@@ -276,9 +300,8 @@ onMounted(() => {
 
 function haveFocus() {
 	if (document.hasFocus()) {
-		// console.log('I have focus')
-
-		initGraph()
+		//	console.log('I have focus')
+		initGraph(true) // reload only
 	}
 	//msgInit()
 }
@@ -339,7 +362,10 @@ function haveFocus() {
 	color: var(--color-charging);
 }
 
-.fa-money-bill-wave {
+.fa-coins {
+	color: var(--color-battery);
+}
+.fa-solar-panel {
 	color: var(--color-pv);
 }
 </style>

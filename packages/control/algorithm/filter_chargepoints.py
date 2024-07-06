@@ -3,7 +3,6 @@ import logging
 from typing import List, Optional, Tuple
 
 from control import data
-from control.algorithm import common
 from control.chargepoint.chargepoint import Chargepoint
 
 log = logging.getLogger(__name__)
@@ -54,19 +53,6 @@ def get_preferenced_chargepoint_charging(
     return preferenced_chargepoints_with_set_current, preferenced_chargepoints_without_set_current
 
 
-def get_chargepoints_pv_charging() -> List[Chargepoint]:
-    chargepoints: List[Chargepoint] = []
-    for mode in common.CHARGEMODES[8: 12]:
-        chargepoints.extend(get_chargepoints_by_mode(mode))
-    return chargepoints
-
-
-def get_chargepoints_surplus_controlled() -> List[Chargepoint]:
-    chargepoints: List[Chargepoint] = []
-    for mode in common.CHARGEMODES[6: 12]:
-        chargepoints.extend(get_chargepoints_by_mode(mode))
-    return chargepoints
-
 # tested
 
 
@@ -92,7 +78,7 @@ def _get_preferenced_chargepoint(valid_chargepoints: List[Chargepoint]) -> List:
                         for cp in chargepoints.keys())
                 elif condition_types[condition] == "soc":
                     chargepoints.update(
-                        (cp, cp.data.set.charging_ev_data.data.get.soc) for cp in chargepoints.keys())
+                        (cp, cp.data.set.charging_ev_data.data.get.soc or 0) for cp in chargepoints.keys())
                 elif condition_types[condition] == "plug_in":
                     chargepoints.update((cp, cp.data.set.plug_time)
                                         for cp in chargepoints.keys())

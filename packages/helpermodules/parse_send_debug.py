@@ -38,7 +38,7 @@ def parse_send_debug_data():
                                             f"{component_data.data.config.max_total_power}, "
                                             f"max. Ströme {component_data.data.config.max_currents}; ")
                         else:
-                            parsed_data += f"{key}: max. Ströme {value.data.config.max_currents}"
+                            parsed_data += f"{key}: max. Ströme {component_data.data.config.max_currents}"
                         parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, Ströme: "
                                         f"{component_data.data.get.currents}A, Fehlerstatus: "
                                         f"{component_data.data.get.fault_str}\n")

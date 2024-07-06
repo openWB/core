@@ -1,3 +1,10 @@
+from enum import Enum
+import logging
+
+
+log = logging.getLogger(__name__)
+
+
 def asdict(value):
     """Converts an object to a dict
 
@@ -7,6 +14,8 @@ def asdict(value):
     """
     if isinstance(value, (str, int, float)):
         return value
+    if isinstance(value, Enum):
+        return value.value
     if isinstance(value, (list, tuple)):
         return [None if v is None else asdict(v) for v in value]
     if not isinstance(value, dict):

@@ -72,10 +72,15 @@ class Log:
     imported_since_plugged: float = 0
     range_charged: float = 0
     time_charged: str = "00:00"
-    timestamp_start_charging: Optional[str] = None
+    timestamp_start_charging: Optional[float] = None
     ev: int = -1
     prio: bool = False
     rfid: Optional[str] = None
+    serial_number: Optional[str] = None
+    soc_at_start: Optional[int] = None
+    soc_at_end: Optional[int] = None
+    range_at_start: Optional[float] = None
+    range_at_end: Optional[float] = None
 
 
 def connected_vehicle_factory() -> ConnectedVehicle:
@@ -99,6 +104,7 @@ class Get:
     power: float = 0
     rfid_timestamp: Optional[float] = None
     rfid: Optional[int] = None
+    serial_number: Optional[str] = None
     soc: Optional[float] = None
     soc_timestamp: Optional[int] = None
     state_str: Optional[str] = None
@@ -116,7 +122,6 @@ def log_factory() -> Log:
 
 @dataclass
 class Set:
-    change_ev_permitted: bool = False
     charging_ev: int = -1
     charging_ev_prev: int = -1
     current: float = 0
@@ -137,11 +142,11 @@ class Set:
 class Config:
     configuration: Dict = field(default_factory=empty_dict_factory)
     ev: int = 0
-    name: str = "Standard-Ladepunkt"
+    name: str = "neuer Ladepunkt"
     type: Optional[str] = None
     template: int = 0
     connected_phases: int = 3
-    phase_1: int = 0
+    phase_1: int = 1
     auto_phase_switch_hw: bool = False
     control_pilot_interruption_hw: bool = False
     id: int = 0

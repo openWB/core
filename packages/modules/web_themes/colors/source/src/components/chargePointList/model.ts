@@ -236,6 +236,11 @@ export class ChargePoint {
 			return false
 		}
 	}
+	set etActive(val) {
+		if (vehicles[this.connectedVehicle]) {
+			vehicles[this.connectedVehicle].etActive = val
+		}
+	}
 	get etMaxPrice() {
 		return vehicles[this.connectedVehicle].etMaxPrice ?? 0
 	}
@@ -253,12 +258,14 @@ export class ChargePoint {
 			pvPercentage: this.pvPercentage,
 			color: this.color,
 			icon: this.icon,
+			showInGraph: true,
 		}
 	}
 }
 export class Vehicle {
 	id: number
 	name = ''
+	visible = true
 	private _chargeTemplateId = 0
 	private _evTemplateId = 0
 	tags: Array<string> = []
@@ -293,6 +300,15 @@ export class Vehicle {
 	get etActive() {
 		if (chargeTemplates[this.chargeTemplateId]) {
 			return chargeTemplates[this.chargeTemplateId].et.active
+		} else {
+			return false
+		}
+	}
+	set etActive(val) {
+		if (chargeTemplates[this.chargeTemplateId]) {
+			updateServer('priceCharging', val, this.chargeTemplateId)
+
+			// openWB/set/vehicle/template/charge_template/2/et/active -> false
 		}
 	}
 	get etMaxPrice() {

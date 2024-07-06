@@ -3,7 +3,9 @@
 		<template #title> Ladepunkte </template>
 		<template #buttons>
 			<div class="d-flex float-right justify-content-end align-items-center">
-				<span v-if="etData.active" class="badge rounded-pill pricebadge mx-2"
+				<span
+					v-if="etData.active"
+					class="WbBadge rounded-pill priceWbBadge ms-2"
 					>Strompreis: {{ etData.etCurrentPriceString }}</span
 				>
 			</div>
@@ -69,7 +71,7 @@ const chargepointsToDisplay = computed(() => {
 	border-spacing: 1rem;
 	background-color: var(--color-bg);
 }
-.pricebadge {
+.priceWbBadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
 }

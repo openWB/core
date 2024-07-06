@@ -40,11 +40,11 @@ else
 fi
 
 echo -n "check for ramdisk... "
-if grep -Fxq "tmpfs ${OPENWBBASEDIR}/ramdisk tmpfs nodev,nosuid,size=32M 0 0" /etc/fstab; then
+if grep -Fq "tmpfs ${OPENWBBASEDIR}/ramdisk" /etc/fstab; then
 	echo "ok"
 else
 	mkdir -p "${OPENWBBASEDIR}/ramdisk"
-	echo "tmpfs ${OPENWBBASEDIR}/ramdisk tmpfs nodev,nosuid,size=32M 0 0" >> /etc/fstab
+	sudo tee -a "/etc/fstab" <"${OPENWBBASEDIR}/data/config/ramdisk_config.txt" >/dev/null
 	mount -a
 	echo "created"
 fi
@@ -61,8 +61,9 @@ fi
 echo "updating mosquitto config file"
 systemctl stop mosquitto
 sleep 2
-cp -a "${OPENWBBASEDIR}/data/config/mosquitto.conf" /etc/mosquitto/mosquitto.conf
-cp "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
+cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" /etc/mosquitto/mosquitto.conf
+cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
+cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" /etc/mosquitto/mosquitto.acl
 sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
 sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
 sudo chgrp mosquitto /etc/mosquitto/certs/openwb.key
@@ -73,7 +74,7 @@ if [ ! -f /etc/init.d/mosquitto_local ]; then
 	echo "setting up mosquitto local instance"
 	install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
 	install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
-	cp "${OPENWBBASEDIR}/data/config/mosquitto_local_init" /etc/init.d/mosquitto_local
+	cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" /etc/init.d/mosquitto_local
 	chown root:root /etc/init.d/mosquitto_local
 	chmod 755 /etc/init.d/mosquitto_local
 	systemctl daemon-reload
@@ -82,13 +83,14 @@ else
 	systemctl stop mosquitto_local
 	sleep 2
 fi
-cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
-cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
+cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
+cp -a "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" /etc/mosquitto/conf_local.d/
 systemctl start mosquitto_local
 echo "mosquitto done"
 
 # apache
 echo -n "replacing apache default page..."
+cp "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/"
 cp "${OPENWBBASEDIR}/index.html" /var/www/html/index.html
 echo "done"
 echo -n "fix upload limit..."
@@ -105,7 +107,7 @@ echo -n "enabling apache ssl module..."
 a2enmod ssl
 a2enmod proxy_wstunnel
 sudo a2dissite default-ssl
-sudo cp "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" /etc/apache2/sites-available/ 
+sudo cp "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" /etc/apache2/sites-available/ 
 sudo a2ensite apache-openwb-ssl
 echo "done"
 echo -n "restarting apache..."

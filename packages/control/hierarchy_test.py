@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union
 from unittest.mock import Mock
 import pytest
-from control.conftest import hierarchy_hybrid, hierarchy_nested
+from packages.conftest import hierarchy_hybrid, hierarchy_nested
 from control.counter import Counter
 
 
@@ -367,7 +367,23 @@ def test_delete_obsolete_entries(hierarchy, data_):
                                                   {"id": 5, "type": "cp", "children": []}]},
                                              {"id": 2, "type": "bat", "children": []},
                                              {"id": 1, "type": "inverter", "children": []}
-                                         ]}], id="add inverter 1")
+                                         ]}], id="add inverter 1"),
+                          pytest.param([{"id": 3, "type": "cp", "children": []},
+                                        {"id": 6, "type": "counter",
+                                         "children": [
+                                             {"id": 4, "type": "cp", "children": []},
+                                             {"id": 5, "type": "cp", "children": []}]},
+                                        {"id": 2, "type": "bat", "children": []}],
+                                       [{"id": 0, "type": "counter",
+                                           "children": [
+                                               {"id": 3, "type": "cp", "children": []},
+                                               {"id": 6, "type": "counter",
+                                                   "children": [
+                                                       {"id": 4, "type": "cp", "children": []},
+                                                       {"id": 5, "type": "cp", "children": []}]},
+                                               {"id": 2, "type": "bat", "children": []},
+                                               {"id": 1, "type": "inverter", "children": []}
+                                           ]}], id="add evu counter 0")
                           ]
                          )
 def test_add_missing_entries(hierarchy, expected_hierarchy, data_, monkeypatch):

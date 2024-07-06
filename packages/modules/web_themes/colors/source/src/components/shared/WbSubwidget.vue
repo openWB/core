@@ -1,15 +1,16 @@
 <template>
-	<div class="wb-subwidget px-3 pt-1 my-0" :class="widgetwidth">
+	<div class="wb-subwidget px-3 pt-2 my-0" :class="widgetwidth">
 		<div class="d-flex justify-content-between align-items-center titlerow">
 			<div class="d-flex widgetname p-0 m-0" :style="titlestyle">
 				<slot name="title" />
 			</div>
-
-			<div class="buttonarea" style="text-align: right">
+			<div
+				class="buttonrea d-flex float-right justify-content-end align-items-center"
+			>
 				<slot name="buttons" />
 			</div>
 		</div>
-		<div class="contentrow">
+		<div class="contentrow grid-col-12">
 			<slot />
 		</div>
 	</div>
@@ -26,7 +27,7 @@ const titlestyle = computed(() => {
 	let result = {
 		'font-weight': 'bold',
 		color: 'var(--color-fg)',
-		'font-size': 'var(--font-extralarge)',
+		'font-size': 'var(--font-normal)',
 	}
 
 	if (props.titlecolor) {
@@ -38,28 +39,50 @@ const titlestyle = computed(() => {
 	return result
 })
 const widgetwidth = computed(() => {
-	return props.fullwidth ? 'col-lg-12' : 'col-lg-4'
+	return props.fullwidth ? 'grid-col-12' : 'grid-col-4'
 })
 </script>
 <style scoped>
-.wb-subwidget {
-	border-top: 0.5px solid var(--color-scale);
-	display: grid;
-	grid-template-rows: [titlerow] auto [contentrow] auto;
-	grid-template-columns: [maincolumn] auto;
-	grid-gap: 1px;
+@supports (grid-template-columns: subgrid) {
+	.wb-subwidget {
+		border-top: 0.5px solid var(--color-scale);
+		display: grid;
+		grid-template-columns: subgrid;
+		grid-column: 1 / 13;
+	}
 }
+
+@supports not (grid-template-columns: subgrid) {
+	.wb-subwidget {
+		border-top: 0.5px solid var(--color-scale);
+		display: grid;
+		grid-template-columns: repeat(12, auto);
+		grid-column: 1 / 13;
+	}
+}
+
 .titlerow {
-	display: grid;
-	grid-row-start: titlerow;
-	grid-column-start: maincolumn;
+	grid-column: 1 / 13;
 }
-.contentrow {
-	display: grid;
-	grid-row-start: contentrow;
-	grid-column-start: maincolumn;
+
+@supports (grid-template-columns: subgrid) {
+	.contentrow {
+		display: grid;
+		grid-template-columns: subgrid;
+		grid-column: 1 / 13;
+		align-items: top;
+	}
 }
+@supports not (grid-template-columns: subgrid) {
+	.contentrow {
+		display: grid;
+		align-items: top;
+		grid-template-columns: repeat(12, auto);
+	}
+}
+
 .widgetname {
 	font-weight: bold;
+	font-size: var(--font-extralarge);
 }
 </style>

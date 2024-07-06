@@ -3,23 +3,60 @@ from enum import Enum
 import json
 import logging
 import pathlib
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from control import data
 from dataclass_utils import asdict
-from helpermodules.measurement_logging.process_log import CalculationType, analyse_percentage, process_entry
+from helpermodules.measurement_logging.process_log import (CalculationType, analyse_percentage,
+                                                           get_log_from_date_until_now, process_entry)
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from helpermodules.utils.json_file_handler import write_and_check
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
 # Lademodus, ID-Tag
-# json-Objekt: {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
-# "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
-# "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34",
-# "data": {"range_charged": 34, "imported_since_mode_switch": 3400, "imported_since_plugged": 5000,
-#          "power": 110000, "costs": 3,42} }}
-
+# json-Objekt: new_entry = {
+#     "chargepoint":
+#     {
+#         "id": 22,
+#         "name": "LP 22",
+#         "serial_number": "0123456,"
+#         "imported_at_start": 1000,
+#         "imported_at_end": 2000,
+#     },
+#     "vehicle":
+#     {
+#         "id": 1,
+#         "name": "Auto",
+#         "chargemode": instant_charging,
+#         "prio": False,
+#         "rfid": "123"
+#         "soc_at_start": 50,
+#         "soc_at_end": 60,
+#         "range_at_start": 100,
+#         "range_at_end": 125,
+#     },
+#     "time":
+#     {
+#         "begin": "01.02.2024 15:00:00",
+#         "end": "01.02.2024 16:00:00",
+#         "time_charged": "1:00"
+#     },
+#     "data":
+#     {
+#         "range_charged": 100,
+#         "imported_since_mode_switch": 1000,
+#         "imported_since_plugged": 1000,
+#         "power": 1000,
+#         "costs": 0.95,
+#         "energy_source": {
+#                 "grid": 0.25,
+#                 "pv": 0.25,
+#                 "bat": 0.5,
+#                 "cp": 0}
+#     }
+# }
 log = logging.getLogger("chargelog")
 
 
@@ -39,7 +76,8 @@ def collect_data(chargepoint):
                 log_data.imported_at_plugtime = chargepoint.data.get.imported
                 log.debug(f"imported_at_plugtime {chargepoint.data.get.imported}")
             # Bisher geladene Energie ermitteln
-            log_data.imported_since_plugged = chargepoint.data.get.imported - log_data.imported_at_plugtime
+            log_data.imported_since_plugged = get_value_or_default(
+                lambda: chargepoint.data.get.imported - log_data.imported_at_plugtime)
             if log_data.imported_at_mode_switch == 0:
                 log_data.imported_at_mode_switch = chargepoint.data.get.imported
                 log.debug(f"imported_at_mode_switch {chargepoint.data.get.imported}")
@@ -47,6 +85,9 @@ def collect_data(chargepoint):
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
+                    if charging_ev.soc_module:
+                        log_data.range_at_start = charging_ev.data.get.range
+                        log_data.soc_at_start = charging_ev.data.get.soc
                     if chargepoint.data.control_parameter.submode == "time_charging":
                         log_data.chargemode_log_entry = "time_charging"
                     else:
@@ -54,11 +95,12 @@ def collect_data(chargepoint):
                 log_data.ev = chargepoint.data.set.charging_ev_data.num
                 log_data.prio = chargepoint.data.control_parameter.prio
                 log_data.rfid = chargepoint.data.set.rfid
-                log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
+                log_data.imported_since_mode_switch = get_value_or_default(
+                    lambda: chargepoint.data.get.imported - log_data.imported_at_mode_switch)
                 # log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
                 #           f"counter {chargepoint.data.get.imported}")
-                log_data.range_charged = log_data.imported_since_mode_switch / \
-                    charging_ev.ev_template.data.average_consump * 100
+                log_data.range_charged = get_value_or_default(lambda: log_data.imported_since_mode_switch /
+                                                              charging_ev.ev_template.data.average_consump * 100)
                 log_data.time_charged = timecheck.get_difference_to_now(log_data.timestamp_start_charging)[0]
             Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
@@ -113,6 +155,14 @@ def save_and_reset_data(chargepoint, charging_ev, immediately: bool = True):
         log.exception("Fehler im Ladelog-Modul")
 
 
+def get_value_or_default(func, default: Optional[Any] = None):
+    try:
+        return func()
+    except Exception:
+        log.exception(f"Error getting value for chargelog: {func}. Setting to default {default}.")
+        return default
+
+
 def save_data(chargepoint, charging_ev, immediately: bool = True):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
     beziehen, löschen.
@@ -129,47 +179,70 @@ def save_data(chargepoint, charging_ev, immediately: bool = True):
         imported_at_mode_switch notiert. Sonst schon, damit zwischen save_data und dem nächsten collect_data keine
         Daten verloren gehen.
     """
+    new_entry = _create_entry(chargepoint, charging_ev, immediately)
+    write_new_entry(new_entry)
+
+
+def _create_entry(chargepoint, charging_ev, immediately: bool = True):
     log_data = chargepoint.data.set.log
     # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
-    log_data.imported_since_plugged = chargepoint.data.get.imported - log_data.imported_at_plugtime
-    log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
-    log_data.range_charged = log_data.imported_since_mode_switch / charging_ev.ev_template.data.average_consump*100
+    log_data.imported_since_plugged = get_value_or_default(lambda: round(
+        chargepoint.data.get.imported - log_data.imported_at_plugtime, 2))
+    log_data.imported_since_mode_switch = get_value_or_default(lambda: round(
+        chargepoint.data.get.imported - log_data.imported_at_mode_switch, 2))
+    log_data.range_charged = get_value_or_default(lambda: round(
+        log_data.imported_since_mode_switch / charging_ev.ev_template.data.average_consump*100, 2))
     log_data.time_charged, duration = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
     power = 0
     if duration > 0:
-        power = log_data.imported_since_mode_switch / duration
+        power = get_value_or_default(lambda: round(log_data.imported_since_mode_switch / duration, 2))
     calculate_charge_cost(chargepoint, True)
-    costs = log_data.costs
+    energy_source = get_value_or_default(lambda: analyse_percentage(get_log_from_date_until_now(
+        log_data.timestamp_start_charging)["totals"])["energy_source"])
+    costs = round(log_data.costs, 2)
     new_entry = {
         "chargepoint":
         {
-            "id": chargepoint.num,
-            "name": chargepoint.data.config.name,
+            "id": get_value_or_default(lambda: chargepoint.num),
+            "name": get_value_or_default(lambda: chargepoint.data.config.name),
+            "serial_number": get_value_or_default(lambda: chargepoint.data.get.serial_number),
+            "imported_at_start": get_value_or_default(lambda: log_data.imported_at_mode_switch),
+            "imported_at_end": get_value_or_default(lambda: chargepoint.data.get.imported),
         },
         "vehicle":
         {
-            "id": log_data.ev,
-            "name": _get_ev_name(log_data.ev),
-            "chargemode": log_data.chargemode_log_entry,
-            "prio": log_data.prio,
-            "rfid": log_data.rfid
+            "id": get_value_or_default(lambda: log_data.ev),
+            "name": get_value_or_default(lambda: _get_ev_name(log_data.ev)),
+            "chargemode": get_value_or_default(lambda: log_data.chargemode_log_entry),
+            "prio": get_value_or_default(lambda: log_data.prio),
+            "rfid": get_value_or_default(lambda: log_data.rfid),
+            "soc_at_start": get_value_or_default(lambda: log_data.soc_at_start),
+            "soc_at_end": get_value_or_default(lambda: charging_ev.data.get.soc),
+            "range_at_start": get_value_or_default(lambda: log_data.range_at_start),
+            "range_at_end": get_value_or_default(lambda: charging_ev.data.get.range),
         },
         "time":
         {
-            "begin": datetime.datetime.fromtimestamp(log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S"),
-            "end": datetime.datetime.fromtimestamp(timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S"),
-            "time_charged": log_data.time_charged
+            "begin": get_value_or_default(lambda: datetime.datetime.fromtimestamp(
+                log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S")),
+            "end": get_value_or_default(lambda: datetime.datetime.fromtimestamp(
+                timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S")),
+            "time_charged": get_value_or_default(lambda: log_data.time_charged)
         },
         "data":
         {
-            "range_charged": round(log_data.range_charged, 2),
-            "imported_since_mode_switch": round(log_data.imported_since_mode_switch, 2),
-            "imported_since_plugged": round(log_data.imported_since_plugged, 2),
-            "power": round(power, 2),
-            "costs": round(costs, 2)
+            "range_charged": log_data.range_charged,
+            "imported_since_mode_switch": log_data.imported_since_mode_switch,
+            "imported_since_plugged": log_data.imported_since_plugged,
+            "power": power,
+            "costs": costs,
+            "power_source": energy_source
         }
     }
+    return new_entry
 
+
+def write_new_entry(new_entry):
     # json-Objekt in Datei einfügen
     (_get_parent_file() / "data"/"charge_log").mkdir(mode=0o755, parents=True, exist_ok=True)
     filepath = str(_get_parent_file() / "data" / "charge_log" /
@@ -184,8 +257,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True):
         #     content = json.load(jsonFile)
         content = []
     content.append(new_entry)
-    with open(filepath, "w", encoding="utf-8") as json_file:
-        json.dump(content, json_file)
+    write_and_check(filepath, content)
     log.debug(f"Neuer Ladelog-Eintrag: {new_entry}")
 
 
@@ -270,32 +342,42 @@ def get_log_data(request: Dict):
 
                 # wenn wir hier ankommen, passt der Eintrag zum Filter
                 log_data["entries"].append(entry)
-
-        if len(log_data["entries"]) > 0:
-            # Summen bilden
-            duration = "00:00"
-            range_charged = 0
-            mode = 0
-            power = 0
-            costs = 0
-            for entry in log_data["entries"]:
-                duration = timecheck.duration_sum(
-                    duration, entry["time"]["time_charged"])
-                range_charged += entry["data"]["range_charged"]
-                mode += entry["data"]["imported_since_mode_switch"]
-                power += entry["data"]["power"]
-                costs += entry["data"]["costs"]
-            power = power / len(log_data["entries"])
-            log_data["totals"] = {
-                "time_charged": duration,
-                "range_charged": range_charged,
-                "imported_since_mode_switch": mode,
-                "power": power,
-                "costs": costs,
-            }
+            log_data["totals"] = get_totals_of_filtered_log_data(log_data)
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
     return log_data
+
+
+def get_totals_of_filtered_log_data(log_data: Dict) -> Dict:
+    def get_sum(entry_name: str) -> float:
+        sum = 0
+        try:
+            for entry in log_data["entries"]:
+                sum += entry["data"][entry_name]
+            return sum
+        except Exception:
+            return None
+    if len(log_data["entries"]) > 0:
+        # Summen bilden
+        duration_sum = "00:00"
+        try:
+            for entry in log_data["entries"]:
+                duration_sum = timecheck.duration_sum(
+                    duration_sum, entry["time"]["time_charged"])
+        except Exception:
+            duration_sum = None
+        range_charged_sum = get_sum("range_charged")
+        mode_sum = get_sum("imported_since_mode_switch")
+        power_sum = get_sum("power")
+        costs_sum = get_sum("costs")
+        power_sum = power_sum / len(log_data["entries"])
+        return {
+            "time_charged": duration_sum,
+            "range_charged": range_charged_sum,
+            "imported_since_mode_switch": mode_sum,
+            "power": power_sum,
+            "costs": costs_sum,
+        }
 
 
 def calculate_charge_cost(cp, create_log_entry: bool = False):
@@ -306,7 +388,7 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
             reference_time = get_reference_time(cp, reference)
             reference_entry = _get_reference_entry(content["entries"], reference_time)
             energy_entry = process_entry(reference_entry,
-                                         create_entry(LogType.DAILY, LegacySmartHomeLogData()),
+                                         create_entry(LogType.DAILY, LegacySmartHomeLogData(), reference_entry),
                                          CalculationType.ENERGY)
             energy_source_entry = analyse_percentage(energy_entry)
             log.debug(f"reference {reference}, reference_time {reference_time}, "
@@ -367,7 +449,12 @@ def get_reference_time(cp, reference_position):
     elif reference_position == ReferenceTime.MIDDLE:
         return timecheck.create_timestamp() - 3540
     elif reference_position == ReferenceTime.END:
-        return timecheck.create_unix_timestamp_current_full_hour() + 60
+        # Wenn der Ladevorgang erst innerhalb der letzten Stunde gestartet wurde.
+        one_hour_back = timecheck.create_timestamp() - 3600
+        if (one_hour_back - cp.data.set.log.timestamp_start_charging) < 0:
+            return cp.data.set.log.timestamp_start_charging
+        else:
+            return timecheck.create_unix_timestamp_current_full_hour() + 60
     else:
         raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference_position}")
 

@@ -5,14 +5,15 @@ from modules.common.component_setup import ComponentSetup
 
 @auto_str
 class Huawei_SmartloggerConfiguration:
-    def __init__(self, ip_address: Optional[str] = None):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
         self.ip_address = ip_address
+        self.port = port
 
 
 @auto_str
 class Huawei_Smartlogger:
     def __init__(self,
-                 name: str = "Huawei_Smartlogger",
+                 name: str = "Huawei Smartlogger",
                  type: str = "huawei_smartlogger",
                  id: int = 0,
                  configuration: Huawei_SmartloggerConfiguration = None) -> None:
