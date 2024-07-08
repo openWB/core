@@ -18,7 +18,7 @@ class DeyeCounter:
         self.__device_id = device_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
 
-    def update(self, client: ModbusTcpClient_, device_type: DeviceType):
+    def update(self, client: ModbusTcpClient_, device_type: DeviceType, factor: int):
         unit = self.component_config.configuration.modbus_id
 
         if device_type == DeviceType.THREE_PHASE:

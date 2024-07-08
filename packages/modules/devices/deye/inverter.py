@@ -20,12 +20,12 @@ class DeyeInverter:
         self.__device_id = device_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
 
-    def update(self, client: ModbusTcpClient_, device_type: DeviceType) -> None:
+    def update(self, client: ModbusTcpClient_, device_type: DeviceType, factor: int) -> None:
         unit = self.component_config.configuration.modbus_id
 
         if device_type == DeviceType.THREE_PHASE:
             # Wechselrichter hat 2 mppt Tracker
-            power = sum(client.read_holding_registers(672, [ModbusDataType.INT_16]*2, unit=unit)) * -10
+            power = sum(client.read_holding_registers(672, [ModbusDataType.INT_16]*2, unit=unit)) * -1 * factor
             # 534: Gesamt Produktion Wechselrichter unsigned integer in kWh * 0,1
             exported = client.read_holding_registers(534, ModbusDataType.UINT_16, unit=unit) * 100
         elif device_type == DeviceType.SINGLE_PHASE_STRING or device_type == DeviceType.SINGLE_PHASE_HYBRID:

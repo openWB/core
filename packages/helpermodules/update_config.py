@@ -1571,3 +1571,12 @@ class UpdateConfig:
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 48)
+
+    def upgrade_datastore_48(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("type") == "deye" and "factor" not in payload["configuration"]:
+                    payload["configuration"].update({"factor": 1})
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 49)
