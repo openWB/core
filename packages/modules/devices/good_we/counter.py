@@ -25,6 +25,7 @@ class GoodWeCounter:
         self.__modbus_id = modbus_id
         self.version = version
         self.firmware = firmware
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.component_config = dataclass_from_dict(GoodWeCounterSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__tcp_client = tcp_client

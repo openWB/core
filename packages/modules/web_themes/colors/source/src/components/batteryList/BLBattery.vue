@@ -7,7 +7,7 @@ Hagen */
 			<span class="battery-title">{{ bat.name }}</span>
 		</template>
 		<template #buttons>
-			<WbBadge :bgcolor="statusbg" color="black">{{ batteryState }}</WbBadge>
+			<WbBadge :bgcolor="statusbg">{{ batteryState }}</WbBadge>
 		</template>
 		<div class="subgrid pt-1">
 			<InfoItem heading="Geliefert:" :small="true" class="grid-left grid-col-4">

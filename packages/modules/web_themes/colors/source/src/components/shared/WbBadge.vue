@@ -15,7 +15,7 @@ const props = defineProps<{
 const WbBadgestyle = computed(() => {
 	let result = {
 		'background-color': props.bgcolor ?? 'var(--color-menu)',
-		color: props.color ?? 'black',
+		color: props.color ?? 'var(--color-bg)',
 	}
 	return result
 })

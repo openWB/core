@@ -15,15 +15,16 @@
 				v-if="props.device.canSwitch"
 				:class="switchIcon"
 				:style="switchStyle"
-				class="fa statusbutton mr-2 ms-4"
+				class="fa-solid statusbutton mr-2 ms-2"
 				@click="statusButtonClicked"
 			/>
-			<span
+			<WbBadge
 				v-if="props.device.canSwitch"
-				class="WbBadge rounded-pill modebutton mx-2"
+				type="button"
 				@click="modeButtonClicked"
-				>{{ deviceMode }}</span
 			>
+				{{ deviceMode }}
+			</WbBadge>
 		</template>
 		<div class="subgrid">
 			<InfoItem heading="Leistung:" class="grid-col-4 grid-left">
@@ -55,10 +56,10 @@ const props = defineProps<{
 
 const switchIcon = computed(() => {
 	return props.device.status == 'on'
-		? 'fa-toggle-on'
+		? 'fa-toggle-on fa-xl'
 		: props.device.status == 'waiting'
 			? 'fa-spinner fa-spin'
-			: 'fa-toggle-off'
+			: 'fa-toggle-off fa-xl'
 })
 const switchStyle = computed(() => {
 	let swColor = 'var(--color-switchRed)'
@@ -110,22 +111,6 @@ const deviceMode = computed(() => {
 
 <style scoped>
 .statusbutton {
-	font-size: var(--font-large);
-}
-
-.modebutton {
-	background-color: var(--color-menu);
-	font-size: var(--font-verysmall);
-	font-weight: normal;
-}
-
-.tempWbBadge {
-	background-color: var(--color-battery);
-	color: var(--color-bg);
-	font-size: var(--font-verysmall);
-	font-weight: normal;
-}
-.infolist {
-	justify-content: center;
+	font-size: var(--font-extralarge);
 }
 </style>

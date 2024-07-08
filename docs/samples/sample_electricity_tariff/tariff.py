@@ -19,7 +19,7 @@ def fetch(config: SampleTariffConfiguration) -> None:
 def create_electricity_tariff(config: SampleTariff):
     def updater():
         return fetch(config.configuration)
-    return ConfigurableTariff(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=SampleTariff)
