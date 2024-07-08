@@ -4,7 +4,6 @@ from typing import Dict
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common import req
 from modules.electricity_tariffs.awattar.config import AwattarTariffConfiguration
 from modules.electricity_tariffs.awattar.config import AwattarTariff
@@ -46,7 +45,7 @@ def fetch_prices(config: AwattarTariffConfiguration) -> Dict[int, float]:
 def create_electricity_tariff(config: AwattarTariff):
     def updater():
         return TariffState(prices=fetch_prices(config.configuration))
-    return ConfigurableElectricityTariff(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=AwattarTariff)
