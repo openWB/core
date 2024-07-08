@@ -21,11 +21,14 @@ class DeyeBat:
         self.__device_id = device_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
 
-    def update(self, client: ModbusTcpClient_, device_type: DeviceType, factor: int) -> None:
+    def update(self, client: ModbusTcpClient_, device_type: DeviceType) -> None:
         unit = self.component_config.configuration.modbus_id
 
         if device_type == DeviceType.THREE_PHASE:
-            power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit) * -1 * factor
+            version = client.read_holding_registers(0, ModbusDataType.INT_16, unit=unit)
+            power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit) * -1
+            if version == 6:
+                power = power * 10
             soc = client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
             # 516: Geladen in kWh * 0,1
             imported = client.read_holding_registers(516, ModbusDataType.UINT_16, unit=unit) * 100

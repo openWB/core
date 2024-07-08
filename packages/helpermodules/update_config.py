@@ -42,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 51
+    DATASTORE_VERSION = 50
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1590,13 +1590,3 @@ class UpdateConfig:
     def upgrade_datastore_49(self) -> None:
         Pub().pub("openWB/system/installAssistantDone", True)
         Pub().pub("openWB/system/datastore_version", 50)
-
-    def upgrade_datastore_50(self) -> None:
-        def upgrade(topic: str, payload) -> Optional[dict]:
-            if re.search("openWB/system/device/[0-9]+/config$", topic) is not None:
-                payload = decode_payload(payload)
-                if payload.get("type") == "deye" and "factor" not in payload["configuration"]:
-                    payload["configuration"].update({"factor": 1})
-                    return {topic: payload}
-        self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 51)

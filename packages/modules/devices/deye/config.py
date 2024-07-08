@@ -8,11 +8,10 @@ class DeyeConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  port: int = 8899,
-                 device_type: str = "three_phase", factor: int = 1):
+                 device_type: str = "three_phase"):
         self.ip_address = ip_address
         self.port = port
         self.device_type = device_type
-        self.factor = factor
 
 
 class Deye:
