@@ -837,11 +837,20 @@ class ProcessBrokerBranch:
                         pub_single(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
 
     def __on_message_max_id(self, client, userdata, msg):
-        self.received_topics.append(msg.topic)
+        try:
+            self.received_topics.append(msg.topic)
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
 
     def __get_payload(self, client, userdata, msg):
-        self.payload = msg.payload
+        try:
+            self.payload = msg.payload
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
 
     def __on_message_mqtt_bridge_exists(self, client, userdata, msg):
-        if decode_payload(msg.payload)["name"] == self.name:
-            self.mqtt_bridge_exists = True
+        try:
+            if decode_payload(msg.payload)["name"] == self.name:
+                self.mqtt_bridge_exists = True
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
