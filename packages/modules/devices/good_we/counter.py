@@ -15,16 +15,19 @@ from modules.devices.good_we.version import GoodWeVersion
 
 class GoodWeCounter:
     def __init__(self,
+                 device_id: int,
                  modbus_id: int,
                  version: GoodWeVersion,
                  firmware: int,
                  component_config: Union[Dict, GoodWeCounterSetup],
                  tcp_client: modbus.ModbusTcpClient_) -> None:
+        self.__device_id = device_id
         self.__modbus_id = modbus_id
         self.version = version
         self.firmware = firmware
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.component_config = dataclass_from_dict(GoodWeCounterSetup, component_config)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__tcp_client = tcp_client
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
