@@ -808,33 +808,36 @@ class ProcessBrokerBranch:
         client.subscribe(f'openWB/set/{self.topic_str}#', 2)
 
     def __on_message_rm(self, client, userdata, msg):
-        if decode_payload(msg.payload) != '':
-            log.debug(f'Gelöschtes Topic: {msg.topic}')
-            Pub().pub(msg.topic, "")
-            if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
-                payload = decode_payload(msg.payload)
-                topic = type_to_topic_mapping(payload["type"])
-                data.data.counter_all_data.hierarchy_remove_item(payload["id"])
-                client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
-            elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
-                payload = decode_payload(msg.payload)
-                if payload["type"] == "external_openwb":
-                    pub_single(
-                        f'openWB/set/internal_chargepoint/{payload["configuration"]["duo_num"]}/data/parent_cp',
-                        None,
-                        hostname=payload["configuration"]["ip_address"])
-            elif re.search("openWB/chargepoint/template/[0-9]+$", msg.topic) is not None:
-                for cp in SubData.cp_data.values():
-                    if cp.chargepoint.data.config.template == int(msg.topic.split("/")[-1]):
-                        pub_single(f'openWB/set/chargepoint/{cp.chargepoint.num}/config/template', 0)
-            elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
-                for vehicle in SubData.ev_data.values():
-                    if vehicle.data.charge_template == int(msg.topic.split("/")[-1]):
-                        pub_single(f'openWB/set/vehicle/{vehicle.num}/charge_template', 0)
-            elif re.search("openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
-                for vehicle in SubData.ev_data.values():
-                    if vehicle.data.ev_template == int(msg.topic.split("/")[-1]):
-                        pub_single(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
+        try:
+            if decode_payload(msg.payload) != '':
+                log.debug(f'Gelöschtes Topic: {msg.topic}')
+                Pub().pub(msg.topic, "")
+                if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
+                    payload = decode_payload(msg.payload)
+                    topic = type_to_topic_mapping(payload["type"])
+                    data.data.counter_all_data.hierarchy_remove_item(payload["id"])
+                    client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
+                elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
+                    payload = decode_payload(msg.payload)
+                    if payload["type"] == "external_openwb":
+                        pub_single(
+                            f'openWB/set/internal_chargepoint/{payload["configuration"]["duo_num"]}/data/parent_cp',
+                            None,
+                            hostname=payload["configuration"]["ip_address"])
+                elif re.search("openWB/chargepoint/template/[0-9]+$", msg.topic) is not None:
+                    for cp in SubData.cp_data.values():
+                        if cp.chargepoint.data.config.template == int(msg.topic.split("/")[-1]):
+                            pub_single(f'openWB/set/chargepoint/{cp.chargepoint.num}/config/template', 0)
+                elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
+                    for vehicle in SubData.ev_data.values():
+                        if vehicle.data.charge_template == int(msg.topic.split("/")[-1]):
+                            pub_single(f'openWB/set/vehicle/{vehicle.num}/charge_template', 0)
+                elif re.search("openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
+                    for vehicle in SubData.ev_data.values():
+                        if vehicle.data.ev_template == int(msg.topic.split("/")[-1]):
+                            pub_single(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
 
     def __on_message_max_id(self, client, userdata, msg):
         try:
