@@ -31,6 +31,7 @@ def data_() -> None:
         data.data.cp_data[f"cp{i}"].data.set.plug_time = f"12/01/2022, 15:0{i}:11"
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.nominal_difference = 2
     data.data.cp_data["cp3"].data.set.charging_ev_data.ev_template.data.min_current = 10
+    data.data.cp_data["cp3"].data.control_parameter.min_current = 10
     data.data.bat_data.update({"bat2": Bat(2), "all": BatAll()})
     data.data.pv_data.update({"pv1": Pv(1)})
     data.data.counter_data.update({
