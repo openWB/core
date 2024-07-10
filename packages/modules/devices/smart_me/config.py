@@ -12,7 +12,7 @@ class SmartMeConfiguration:
 class SmartMe:
     def __init__(self,
                  name: str = "smart-me",
-                 type: str = "smrt_me",
+                 type: str = "smart_me",
                  group: str = "other",
                  device: str = "Alle Geräte",
                  id: int = 0,

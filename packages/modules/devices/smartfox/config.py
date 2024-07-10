@@ -11,7 +11,7 @@ class SmartfoxConfiguration:
 class Smartfox:
     def __init__(self,
                  name: str = "Smartfox",
-                 type: str = "smrtfox",
+                 type: str = "smartfox",
                  group: str = "other",
                  device: str = "Alle Geräte",
                  id: int = 0,

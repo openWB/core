@@ -9,7 +9,7 @@ from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
-from modules.devices.smrtfox.config import SmartfoxCounterSetup
+from modules.devices.smartfox.config import SmartfoxCounterSetup
 
 log = logging.getLogger(__name__)
 

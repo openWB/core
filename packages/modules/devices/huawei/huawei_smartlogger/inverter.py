@@ -8,7 +8,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
-from modules.devices.huawei.huawei_logger.config import Huawei_SmartloggerInverterSetup
+from modules.devices.huawei.huawei_smartlogger.config import Huawei_SmartloggerInverterSetup
 
 log = logging.getLogger(__name__)
 

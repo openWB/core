@@ -11,10 +11,10 @@ class FemsConfiguration:
 
 class Fems:
     def __init__(self,
-                 name: str = "Fenecon/FEMS",
+                 name: str = "openEMS, Fenecon FEMS, CENTURIO, Kaco",
                  type: str = "fems",
                  group: str = "other",
-                 device: str = "openEMS, FEMS, CENTURIO 10, Kaco Hy-Control",
+                 device: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control",
                  id: int = 0,
                  configuration: FemsConfiguration = None) -> None:
         self.name = name

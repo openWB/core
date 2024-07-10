@@ -1648,7 +1648,7 @@ class UpdateConfig:
             if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
                 device = decode_payload(payload)
                 # 1. device Alle Geräte
-                if (device.get("type") == "alpha_ess" or device.get("type") == "azzurro_zcs" 
+                if (device.get("type") == "alpha_ess" or device.get("type") == "azzurro_zcs"
                         or device.get("type") == "batterx" or device.get("type") == "benning"
                         or device.get("type") == "byd" or device.get("type") == "carlo_gavazzi"
                         or device.get("type") == "discovergy" or device.get("type") == "e3dc"
@@ -1684,7 +1684,7 @@ class UpdateConfig:
                     if "device" not in device:
                         updated_payload = device
                         updated_payload.update(
-                            {"device": 'openEMS, FEMS, CENTURIO 10, Kaco Hy-Control'})
+                            {"device": 'openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control'})
                         return {topic: updated_payload}
                 if (device.get("type") == "good_we"):
                     if "device" not in device:
@@ -1833,7 +1833,7 @@ class UpdateConfig:
                     return {topic: updated_payload}
                 if device.get("type") == "huawei_smartlogger":
                     updated_payload = device
-                    updated_payload["type"] = "huawei.huawei_logger"
+                    updated_payload["type"] = "huawei.huawei_smartlogger"
                     return {topic: updated_payload}
                 # 3. kostal
                 if device.get("type") == "kostal_piko":
@@ -1882,15 +1882,7 @@ class UpdateConfig:
                     updated_payload = device
                     updated_payload["type"] = "sma.sma_webbox"
                     return {topic: updated_payload}
-                # 6 Pfade fuer Filterfunktion im Frontend anpassen
-                if device.get("type") == "smart_me":
-                    updated_payload = device
-                    updated_payload["type"] = "smrt_me"
-                    return {topic: updated_payload}
-                if device.get("type") == "smartfox":
-                    updated_payload = device
-                    updated_payload["type"] = "smrtfox"
-                    return {topic: updated_payload}
+                # 6 Pfade anpassen
                 if (device.get("type") == "azzurro_sofar"):
                     updated_payload = device
                     updated_payload["type"] = "sofar"
@@ -1925,7 +1917,7 @@ class UpdateConfig:
                     return {topic: updated_payload}
                 if (device.get("name") == "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control"):
                     updated_payload = device
-                    updated_payload["name"] = "Fenecon/FEMS"
+                    updated_payload["name"] = "openEMS, Fenecon FEMS, CENTURIO, Kaco"
                     return {topic: updated_payload}
                 if (device.get("name") == "GoodWe ET-Serie (5-10kW)"):
                     updated_payload = device
