@@ -48,9 +48,8 @@ class GoodWeCounter:
                         36019, [ModbusDataType.INT_32]*3, unit=self.__modbus_id)]
 
             power_factors = [
-                val / 1000 for val in self.__tcp_client.read_holding_registers(36010,
-                                                                               [ModbusDataType.UINT_16]*3,
-                                                                               unit=self.__modbus_id)]
+                val / 1000 for val in self.__tcp_client.read_holding_registers(
+                    36010, [ModbusDataType.INT_16]*3, unit=self.__modbus_id)]
             frequency = self.__tcp_client.read_holding_registers(
                 36014, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
 
