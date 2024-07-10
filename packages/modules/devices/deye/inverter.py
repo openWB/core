@@ -9,7 +9,6 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.deye.config import DeyeInverterSetup
-from modules.devices.deye.device_type import DeviceType
 
 
 class DeyeInverter:
@@ -20,20 +19,19 @@ class DeyeInverter:
         self.__device_id = device_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
 
-    def update(self, client: ModbusTcpClient_, device_type: DeviceType) -> None:
+    def update(self, client: ModbusTcpClient_) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        if device_type == DeviceType.THREE_PHASE:
-            # Wechselrichter hat 2 mppt Tracker
-            version = client.read_holding_registers(0, ModbusDataType.INT_16, unit=unit)
+        device_type = client.read_holding_registers(0, ModbusDataType.INT_16, unit=unit)
+        if device_type == 0x0200 or device_type == 0x0300:  # SINGLE_PHASE_STRING or SINGLE_PHASE_HYBRID
+            power = sum(client.read_holding_registers(186, [ModbusDataType.INT_16]*4, unit=unit)) * -1
+            exported = self.sim_counter.sim_count(power)[1]
+        else:  # THREE_PHASE_LV (0x0500, 0x0005), THREE_PHASE_HV (0x0006)
             power = sum(client.read_holding_registers(672, [ModbusDataType.INT_16]*2, unit=unit)) * -1
-            if version == 6:
+            if device_type == 0x0006:  # THREE_PHASE_HV
                 power = power * 10
             # 534: Gesamt Produktion Wechselrichter unsigned integer in kWh * 0,1
             exported = client.read_holding_registers(534, ModbusDataType.UINT_16, unit=unit) * 100
-        elif device_type == DeviceType.SINGLE_PHASE_STRING or device_type == DeviceType.SINGLE_PHASE_HYBRID:
-            power = sum(client.read_holding_registers(186, [ModbusDataType.INT_16]*4, unit=unit)) * -1
-            exported = self.sim_counter.sim_count(power)[1]
 
         inverter_state = InverterState(
             power=power,

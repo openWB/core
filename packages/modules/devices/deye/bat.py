@@ -8,7 +8,6 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.deye.config import DeyeBatSetup
-from modules.devices.deye.device_type import DeviceType
 
 log = logging.getLogger(__name__)
 
@@ -21,30 +20,30 @@ class DeyeBat:
         self.__device_id = device_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
 
-    def update(self, client: ModbusTcpClient_, device_type: DeviceType) -> None:
+    def update(self, client: ModbusTcpClient_) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        if device_type == DeviceType.THREE_PHASE:
-            version = client.read_holding_registers(0, ModbusDataType.INT_16, unit=unit)
+        device_type = client.read_holding_registers(0, ModbusDataType.INT_16, unit=unit)
+        if device_type == 0x0200 or device_type == 0x0300:  # SINGLE_PHASE_STRING or SINGLE_PHASE_HYBRID
+            power = client.read_holding_registers(190, ModbusDataType.INT_16, unit=unit) * -1
+            soc = client.read_holding_registers(184, ModbusDataType.INT_16, unit=unit)
+
+            if device_type == 0x0300:  # SINGLE_PHASE_HYBRID
+                # 516: Geladen in kWh * 0,1
+                imported = client.read_holding_registers(72, ModbusDataType.UINT_16, unit=unit) * 100
+                # 518: Entladen in kWh * 0,1
+                exported = client.read_holding_registers(74, ModbusDataType.UINT_16, unit=unit) * 100
+            elif device_type == 0x0200:  # SINGLE_PHASE_STRING
+                imported, exported = self.sim_counter.sim_count(power)
+        else:  # THREE_PHASE_LV (0x0500, 0x0005), THREE_PHASE_HV (0x0006)
             power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit) * -1
-            if version == 6:
+            if device_type == 0x0006:  # THREE_PHASE_HV
                 power = power * 10
             soc = client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
             # 516: Geladen in kWh * 0,1
             imported = client.read_holding_registers(516, ModbusDataType.UINT_16, unit=unit) * 100
             # 518: Entladen in kWh * 0,1
             exported = client.read_holding_registers(518, ModbusDataType.UINT_16, unit=unit) * 100
-        elif device_type == DeviceType.SINGLE_PHASE_STRING or device_type == DeviceType.SINGLE_PHASE_HYBRID:
-            power = client.read_holding_registers(190, ModbusDataType.INT_16, unit=unit) * -1
-            soc = client.read_holding_registers(184, ModbusDataType.INT_16, unit=unit)
-
-            if device_type == DeviceType.SINGLE_PHASE_HYBRID:
-                # 516: Geladen in kWh * 0,1
-                imported = client.read_holding_registers(72, ModbusDataType.UINT_16, unit=unit) * 100
-                # 518: Entladen in kWh * 0,1
-                exported = client.read_holding_registers(74, ModbusDataType.UINT_16, unit=unit) * 100
-            elif device_type == DeviceType.SINGLE_PHASE_STRING:
-                imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(
             power=power,

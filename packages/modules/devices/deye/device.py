@@ -9,7 +9,6 @@ from modules.common.configurable_device import ConfigurableDevice, ComponentFact
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.deye.bat import DeyeBat
 from modules.devices.deye.counter import DeyeCounter
-from modules.devices.deye.device_type import DeviceType
 from modules.devices.deye.inverter import DeyeInverter
 from modules.devices.deye import bat, counter, inverter
 from modules.devices.deye.config import Deye, DeyeBatSetup, DeyeConfiguration, DeyeCounterSetup, DeyeInverterSetup
@@ -31,7 +30,7 @@ def create_device(device_config: Deye):
         with client as c:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(c, DeviceType(device_config.configuration.device_type))
+                    component.update(c)
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
