@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import logging
 import random
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from control import data
 from control.bat_all import BatConsiderationMode
@@ -110,7 +110,7 @@ class OverrideReference(Enum):
 @dataclass
 class RippleControlReceiver:
     get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
-    module: ConfigurableRcr = field(default_factory=gpio_rcr_factory)
+    module: Optional[Dict] = None
     overrice_reference: OverrideReference = OverrideReference.CHARGEPOINT
 
 
@@ -153,6 +153,7 @@ class General:
 
     def __init__(self):
         self.data: GeneralData = GeneralData()
+        self.ripple_control_receiver: ConfigurableRcr = None
 
     def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
