@@ -229,7 +229,8 @@ class Optional:
                     except Exception as e:
                         print(e)
                     log.debug("Send Meter Values to OCPP")
-            if (chargepoint_ocpp.data.get.charge_state is False and chargepoint_ocpp.num in charging_chargepoints and chargepoint_ocpp.num in started_charging_chargepoints):
+            if (chargepoint_ocpp.data.get.charge_state is False and chargepoint_ocpp.num in charging_chargepoints
+                    and chargepoint_ocpp.num in started_charging_chargepoints):
                 charging_chargepoints.remove(chargepoint_ocpp.num)
                 started_charging_chargepoints.remove(chargepoint_ocpp.num)
                 transaction_list = OCPPClient.get_ocpp_transaction_list()

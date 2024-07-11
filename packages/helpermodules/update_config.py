@@ -244,6 +244,7 @@ class UpdateConfig:
         "^openWB/optional/int_display/only_local_charge_points",
         "^openWB/optional/led/active$",
         "^openWB/optional/rfid/active$",
+        "^openWB/optional/ocpp/url$",
 
         "^openWB/pv/config/configured$",
         "^openWB/pv/get/exported$",
