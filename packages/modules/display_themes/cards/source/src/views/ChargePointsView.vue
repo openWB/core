@@ -656,8 +656,8 @@ export default {
   <!-- charge point settings -->
   <i-modal v-model="modalChargePointSettingsVisible" size="lg">
     <template #header>
-      Einstellungen für Ladepunkt "{{
-        mqttStore.getChargePointName(modalChargePointId)
+      Einstellungen für Fahrzeug "{{
+        mqttStore.getChargePointConnectedVehicleName(modalChargePointId)
       }}"
     </template>
     <i-tabs v-model="modalActiveTab" stretch>
