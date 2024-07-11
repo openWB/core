@@ -1,19 +1,51 @@
 """Optionale Module
 """
+from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.common.configurable_tariff import ConfigurableElectricityTariff
+from helpermodules.timecheck import create_unix_timestamp_current_full_hour
+from helpermodules.pub import Pub
+from helpermodules.constants import NO_ERROR
+from dataclass_utils.factories import empty_dict_factory
+from datetime import datetime
+from ocpp.v16 import ChargePoint as cp
+from ocpp.v16 import call
+import websockets
+import asyncio
 from dataclasses import dataclass, field
 import logging
 from math import ceil  # Aufrunden
 import threading
 from typing import Dict, List
+from control import data
+import re
 
-from dataclass_utils.factories import empty_dict_factory
-from helpermodules.constants import NO_ERROR
-from helpermodules.pub import Pub
-from helpermodules.timecheck import create_unix_timestamp_current_full_hour
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
-from modules.display_themes.cards.config import CardsDisplayTheme
 
 log = logging.getLogger(__name__)
+
+# timestamp hat spezielles Format!
+now = datetime.now()
+current_time = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+@dataclass
+class OcppGet:
+    url = ""
+    charging_chargepoints = []
+    started_charging_chargepoints = []
+    loop_ocpp = asyncio.new_event_loop()
+    ocpp_client_start = False
+    ocpp_connection_initialised = False
+    connector_list = []
+    transaction_list = []
+
+
+def ocpp_factory() -> OcppGet:
+    return OcppGet
+
+
+@dataclass
+class Ocpp:
+    get: OcppGet = field(default_factory=ocpp_factory)
 
 
 @dataclass
@@ -74,6 +106,7 @@ class OptionalData:
     int_display: InternalDisplay = field(default_factory=int_display_factory)
     led: Led = field(default_factory=led_factory)
     rfid: Rfid = field(default_factory=rfid_factory)
+    ocpp: Ocpp = field(default_factory=ocpp_factory)
 
 
 class Optional:
@@ -153,3 +186,267 @@ class Optional:
                     Pub().pub("openWB/set/optional/et/get/fault_str", NO_ERROR)
         except Exception:
             log.exception("Fehler im Optional-Modul")
+
+    def ocpp_get_state(self):
+        for thread in threading.enumerate():
+            if thread.name == "OCPPClient":
+                log.debug("Don't start multiple instances of OCPPClient thread.")
+                self.ocpp_transfer_data()
+                return
+        threading.Thread(target=OCPPClient.run, args=(), name="OCPPClient").start()
+
+    def ocpp_transfer_data(self):
+        # print(OCPPClient.get_ocpp_response())
+        charging_chargepoints = OCPPClient.get_charging_chargepoints()
+        started_charging_chargepoints = OCPPClient.get_started_charging_chargepoints()
+        if OCPPClient.state_ocpp_connection() is False:
+            try:
+                asyncio.run_coroutine_threadsafe(
+                    OCPPClient._open_connection(), OcppGet.loop_ocpp)
+            except Exception as e:
+                print(e)
+        for chargepoint_ocpp in data.data.cp_data.values():
+            meter_value_charged = int(chargepoint_ocpp.data.get.imported)
+            connector_id = chargepoint_ocpp.num
+            if chargepoint_ocpp.data.get.charge_state and OcppGet.ocpp_client_start:
+                charging_chargepoints.append(
+                    chargepoint_ocpp.num) if chargepoint_ocpp.num not in charging_chargepoints else None
+                if chargepoint_ocpp.num not in started_charging_chargepoints:
+                    started_charging_chargepoints.append(
+                        chargepoint_ocpp.num) if chargepoint_ocpp.num not in started_charging_chargepoints else None
+                    try:
+                        asyncio.run_coroutine_threadsafe(
+                            OCPPClient._start_transaction(
+                                connector_id, meter_value_charged), OcppGet.loop_ocpp)
+                    except Exception as e:
+                        print(e)
+                    log.debug("Send Start Transaction to OCPP")
+                if len(OCPPClient.get_url()) > 0 and chargepoint_ocpp.num in started_charging_chargepoints:
+                    try:
+                        asyncio.run_coroutine_threadsafe(
+                            OCPPClient._transfer_values(
+                                connector_id, meter_value_charged), OcppGet.loop_ocpp)
+                    except Exception as e:
+                        print(e)
+                    log.debug("Send Meter Values to OCPP")
+            if (chargepoint_ocpp.data.get.charge_state is False and chargepoint_ocpp.num in charging_chargepoints and chargepoint_ocpp.num in started_charging_chargepoints):
+                charging_chargepoints.remove(chargepoint_ocpp.num)
+                started_charging_chargepoints.remove(chargepoint_ocpp.num)
+                transaction_list = OCPPClient.get_ocpp_transaction_list()
+                index = transaction_list.index(chargepoint_ocpp.num)
+                transaction_id = transaction_list[index+1]
+                try:
+                    asyncio.run_coroutine_threadsafe(
+                        OCPPClient._stop_transaction(
+                            meter_value_charged, transaction_id), OcppGet.loop_ocpp)
+                except Exception as e:
+                    print(e)
+                log.debug("Send Stop Transaction to OCPP")
+            else:
+                log.debug("Neither plugging nor charging")
+
+
+class ChargePoint(cp):
+
+    async def send_boot_notification(self):
+        await self.call(call.BootNotification(
+            charge_point_model="openWB",
+            charge_point_vendor="openwb"
+        ))
+
+    async def send_heart_beat(self):
+        try:
+            await self.call(call.Heartbeat(
+
+            ))
+        except Exception as e:
+            print(e)
+
+    async def start_transaction(self, ws, connector_id, meter_value_charged):
+        try:
+            await self.call(call.StartTransaction(
+                connector_id=connector_id,
+                id_tag="user1",
+                meter_start=meter_value_charged,
+                timestamp=current_time
+            ))
+        except Exception as e:
+            log.debug(e)
+
+    async def stop_transaction(self, meter_value_charged, transaction_id):
+        try:
+            await self.call(call.StopTransaction(meter_stop=meter_value_charged,
+                                                 timestamp=current_time,
+                                                 transaction_id=transaction_id,
+                                                 reason="Local",
+                                                 id_tag="user1"
+                                                 ))
+        except Exception as e:
+            log.debug(e)
+
+    async def get_meter(self, connector_id, meter_value_charged):
+        try:
+            await self.call(call.MeterValues(
+                connector_id=connector_id,
+                meter_value=[{"timestamp": current_time,
+                              "sampledValue": [
+                                  {
+                                      "value": f'{meter_value_charged}',
+                                      "context": "Sample.Periodic",
+                                      "format": "Raw",
+                                      "measurand": "Energy.Active.Import.Register",
+                                      "location": "Outlet",
+                                      "unit": "Wh"
+                                  },
+                              ]}],
+            ))
+        except Exception as e:
+            log.debug(e)
+
+
+class OCPPClient(ChargePoint):
+
+    def __init__() -> None:
+        try:
+            pass
+        except Exception:
+            log.exception("Fehler im OCPP-Modul")
+
+    def get_ocpp_config():
+        return {
+            "data": {
+                "url": "",
+            },
+        }
+
+    def get_config(occp_config):
+        OcppGet.url = occp_config["data"]["url"]
+
+    def get_url():
+        return OcppGet.url
+
+    def get_charging_chargepoints():
+        return OcppGet.charging_chargepoints
+
+    def get_started_charging_chargepoints():
+        return OcppGet.started_charging_chargepoints
+
+    def get_state_ocpp_client():
+        return OcppGet.ocpp_client_start
+
+    def start_ocpp():
+        OcppGet.ocpp_client_start = True
+
+    def stop_ocpp():
+        OcppGet.ocpp_client_start = False
+        try:
+            asyncio.run_coroutine_threadsafe(
+                OCPPClient._close_connection(), OcppGet.loop_ocpp)
+        except Exception as e:
+            print(e)
+
+    def initialise_ocpp_connection():
+        OcppGet.ocpp_connection_initialised = True
+
+    def state_ocpp_connection():
+        return OcppGet.ocpp_connection_initialised
+
+    def get_ocpp_transaction_list():
+        return OcppGet.transaction_list
+
+    def get_ocpp_connector_list():
+        return OcppGet.connector_list
+
+    async def _open_connection():
+        try:
+            url = OCPPClient.get_url()
+            if len(url) > 0:
+                async with websockets.connect(
+                    # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+                    url,
+                    subprotocols=['ocpp1.6']
+                ) as ws:
+                    cp = ChargePoint('openWB', ws)
+                    OCPPClient.initialise_ocpp_connection()
+                    # Start und Bootnotification
+                    await asyncio.gather(cp.start(), cp.send_boot_notification())
+        except Exception:
+            log.exception("Fehler im OCPP-Modul")
+
+    async def _start_transaction(connector_id, meter_value_charged):
+        try:
+            url = OCPPClient.get_url()
+            if len(url) > 0:
+                async with websockets.connect(
+                    # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+                    url,
+                    subprotocols=['ocpp1.6']
+                ) as ws:
+                    cp = ChargePoint('openWB', ws)
+                # Start Transaction
+                    connector_list = OCPPClient.get_ocpp_connector_list()
+                    connector_list.append(connector_id)
+                    transaction_list = OCPPClient.get_ocpp_transaction_list()
+                    await asyncio.gather(cp.start_transaction(ws, connector_id, meter_value_charged))
+                    # TransactionId extrahieren
+                    transaction_str = str(ws.messages[0])[slice(str(ws.messages[0]).index(("idTag")))]
+                    index1 = str(transaction_str).index(("transactionId"))
+                    index2 = len(transaction_str)-1
+                    transaction_str_sliced = transaction_str[index1:index2]
+                    transaction_id = list(map(int, re.findall(r'\d+', transaction_str_sliced)))
+                    transaction_list.append(connector_list[0])
+                    transaction_list.append(transaction_id[0])
+                    connector_list.pop(0)
+
+        except Exception:
+            log.exception("Fehler im OCPP-Modul")
+
+    async def _transfer_values(connector_id, meter_value_charged):
+        try:
+            url = OCPPClient.get_url()
+            if len(url) > 0:
+                async with websockets.connect(
+                    # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+                    url,
+                    subprotocols=['ocpp1.6']
+                ) as ws:
+                    cp = ChargePoint('openWB', ws)
+                # transfer meter values
+                    await asyncio.gather(
+                        cp.get_meter(connector_id, meter_value_charged))
+        except Exception:
+            log.exception("Fehler im OCPP-Modul")
+
+    async def _stop_transaction(meter_value_charged, transaction_id):
+        try:
+            url = OCPPClient.get_url()
+            if len(url) > 0:
+                async with websockets.connect(
+                    # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+                    url,
+                    subprotocols=['ocpp1.6']
+                ) as ws:
+                    cp = ChargePoint('openWB', ws)
+                # Stop transaction
+                    await asyncio.gather(cp.stop_transaction(meter_value_charged, transaction_id))
+        except Exception:
+            log.exception("Fehler im OCPP-Modul")
+
+    async def _close_connection():
+        try:
+            url = OCPPClient.get_url()
+            if len(url) > 0:
+                async with websockets.connect(
+                    # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+                    url,
+                    subprotocols=['ocpp1.6']
+                ) as ws:
+                    # Close connection
+                    await ws.close()
+        except Exception:
+            log.exception("Fehler im OCPP-Modul")
+
+    def run():
+        asyncio.set_event_loop(OcppGet.loop_ocpp)
+        asyncio.ensure_future(OCPPClient._open_connection())
+        OcppGet.loop_ocpp.run_forever()

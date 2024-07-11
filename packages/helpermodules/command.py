@@ -28,7 +28,7 @@ from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
-from control import bat, bridge, data, ev, counter, counter_all, pv
+from control import bat, bridge, data, ev, counter, counter_all, pv, optional
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
@@ -559,6 +559,15 @@ class Command:
     def getYearlyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/yearly/{payload["data"]["year"]}',
                   get_yearly_log(payload["data"]["year"]))
+
+    def connectOcpp(self, connection_id: str, payload: dict) -> None:
+        ocpp_config = optional.OCPPClient.get_ocpp_config()
+        ocpp_config["data"]["url"] = payload["data"]["url"]
+        optional.OCPPClient.get_config(ocpp_config)
+        optional.OCPPClient.start_ocpp()
+
+    def disconnectOcpp(self, connection_id: str, payload: dict) -> None:
+        optional.OCPPClient.stop_ocpp()
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
