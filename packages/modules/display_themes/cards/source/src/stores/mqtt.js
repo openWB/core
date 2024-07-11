@@ -383,10 +383,7 @@ export const useMqttStore = defineStore("mqtt", {
 
     getChargePointSumPower(state) {
       return (returnType = "textValue") => {
-        var power = state.getValueString(
-          "openWB/chargepoint/get/power",
-          "W",
-        );
+        var power = state.getValueString("openWB/chargepoint/get/power", "W");
         if (Object.hasOwnProperty.call(power, returnType)) {
           return power[returnType];
         }
@@ -470,7 +467,10 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointSetCurrent(state) {
       return (chargePointId, returnType = "textValue") => {
-        let power = state.getValueString(`openWB/chargepoint/${chargePointId}/set/current`, "A");
+        let power = state.getValueString(
+          `openWB/chargepoint/${chargePointId}/set/current`,
+          "A",
+        );
         if (Object.hasOwnProperty.call(power, returnType)) {
           return power[returnType];
         }

@@ -136,9 +136,7 @@ export default {
       }
     },
     handleVehicleClick(chargePointId) {
-      if (
-        !this.changesLocked
-      ) {
+      if (!this.changesLocked) {
         this.modalChargePointId = chargePointId;
         this.modalVehicleSelectVisible = true;
       }
