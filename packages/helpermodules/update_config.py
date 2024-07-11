@@ -42,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 50
+    DATASTORE_VERSION = 51
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -76,6 +76,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/chargemode$",
         "^openWB/chargepoint/[0-9]+/control_parameter/current_plan$",
         "^openWB/chargepoint/[0-9]+/control_parameter/imported_at_plan_start$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/imported_instant_charging$",
         "^openWB/chargepoint/[0-9]+/control_parameter/limit$",
         "^openWB/chargepoint/[0-9]+/control_parameter/prio$",
         "^openWB/chargepoint/[0-9]+/control_parameter/required_current$",
@@ -87,6 +88,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/state$",
         "^openWB/chargepoint/[0-9]+/get/charge_state$",
         "^openWB/chargepoint/[0-9]+/get/currents$",
+        "^openWB/chargepoint/[0-9]+/get/evse_current$",
         "^openWB/chargepoint/[0-9]+/get/fault_state$",
         "^openWB/chargepoint/[0-9]+/get/fault_str$",
         "^openWB/chargepoint/[0-9]+/get/frequency$",
@@ -99,7 +101,11 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/power$",
         "^openWB/chargepoint/[0-9]+/get/powers$",
         "^openWB/chargepoint/[0-9]+/get/power_factors$",
+        "^openWB/chargepoint/[0-9]+/get/vehicle_id$",
         "^openWB/chargepoint/[0-9]+/get/voltages$",
+        "^openWB/chargepoint/[0-9]+/get/serial_number$",
+        "^openWB/chargepoint/[0-9]+/get/soc$",
+        "^openWB/chargepoint/[0-9]+/get/soc_timestamp$",
         "^openWB/chargepoint/[0-9]+/get/state_str$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/soc$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/info$",
@@ -241,6 +247,8 @@ class UpdateConfig:
 
         "^openWB/pv/config/configured$",
         "^openWB/pv/get/exported$",
+        "^openWB/pv/get/fault_state$",
+        "^openWB/pv/get/fault_str$",
         "^openWB/pv/get/power$",
         "^openWB/pv/get/daily_exported$",
         "^openWB/pv/get/monthly_exported$",
@@ -355,6 +363,8 @@ class UpdateConfig:
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_updatesec$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_username$",
         "^openWB/LegacySmartHome/config/set/Devices/[0-9]+/mode$",
+        "^openWB/LegacySmartHome/Devices/[0-9]+/device_manual_control$",
+        "^openWB/LegacySmartHome/Devices/[0-9]+/mode$",
         "^openWB/LegacySmartHome/Devices/[0-9]+/WHImported_temp$",
         "^openWB/LegacySmartHome/Devices/[0-9]+/RunningTimeToday$",
         "^openWB/LegacySmartHome/Devices/[0-9]+/oncountnor$",
@@ -1590,3 +1600,17 @@ class UpdateConfig:
     def upgrade_datastore_49(self) -> None:
         Pub().pub("openWB/system/installAssistantDone", True)
         Pub().pub("openWB/system/datastore_version", 50)
+
+    def upgrade_datastore_50(self) -> None:
+        # es gibt noch Topics von gelöschten Komponenten unter openWB/(counter|pv|bat)/[0-9], aber keine Konfiguration
+        # zu den Komponenten.
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/(counter|pv|bat)/[0-9]+", topic) is not None:
+                for component_topic in self.all_received_topics.keys():
+                    if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config$", component_topic) is not None:
+                        if get_second_index(component_topic) == get_index(topic):
+                            return
+                else:
+                    return {topic: ""}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 51)

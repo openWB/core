@@ -387,6 +387,8 @@ export const infotext: { [key: string]: string } = {
 		'Durchgehend mit mindestens dem eingestellten Strom laden. Wenn notwendig mit Netzstrom.',
 	pricebased:
 		'Laden bei dynamischem Stromtarif, wenn eingestellter Maximalpreis unterboten wird.',
+	pvpriority:
+		'Ladepriorität bei PV-Produktion. Bevorzung von Fahzeugen, Speicher, oder Fahrzeugen bis zum eingestellten Mindest-Ladestand. Die Einstellung ist für alle Ladepunkte gleich.',
 }
 interface Preferences {
 	hideSH?: number[]

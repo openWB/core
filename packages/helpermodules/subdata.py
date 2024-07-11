@@ -575,11 +575,13 @@ class SubData:
                     config_dict = decode_payload(msg.payload)
                     if config_dict["type"] is None:
                         var.data.ripple_control_receiver.module = None
+                        var.ripple_control_receiver = None
                     else:
                         mod = importlib.import_module(".ripple_control_receivers." +
                                                       config_dict["type"]+".ripple_control_receiver", "modules")
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                        var.data.ripple_control_receiver.module = ConfigurableRcr(
+                        var.data.ripple_control_receiver.module = config_dict
+                        var.ripple_control_receiver = ConfigurableRcr(
                             config=config, component_initialiser=mod.create_ripple_control_receiver)
                 elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
