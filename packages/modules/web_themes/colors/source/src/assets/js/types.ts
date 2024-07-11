@@ -106,3 +106,9 @@ export class PvSystem {
 		this.id = index
 	}
 }
+
+export const evPriorityModes: [string, string][] = [
+	['EV', 'ev_mode'],
+	['Speicher', 'bat_mode'],
+	['MinSoc', 'min_soc_bat_mode'],
+]
