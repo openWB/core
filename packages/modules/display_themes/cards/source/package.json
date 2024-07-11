@@ -8,7 +8,7 @@
     "build": "vite build --out-dir=../web/ --emptyOutDir",
     "preview": "vite preview --host",
     "test:unit": "vitest run --environment jsdom --root src/",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
+    "lint": "eslint . --fix",
     "build-dev": "vite build --mode=development --out-dir=../web/ --emptyOutDir"
   },
   "dependencies": {
@@ -30,7 +30,7 @@
     "@vitejs/plugin-vue": "^5.0.5",
     "@vue/eslint-config-prettier": "^9.0.0",
     "@vue/test-utils": "^2.4.6",
-    "eslint": "^8.57.0",
+    "eslint": "^9.6.0",
     "eslint-plugin-vue": "^9.27.0",
     "jsdom": "^24.1.0",
     "postcss": "^8.4.39",
