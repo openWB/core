@@ -46,7 +46,7 @@ export default {
 </script>
 
 <template>
-  <i-button color="danger" @click="toggleModal()">
+  <i-button color="danger" @click="toggleModal()" size="lg">
     openWB ausschalten
     <FontAwesomeIcon fixed-width :icon="['fas', 'fa-power-off']" />
     <Teleport to="body">

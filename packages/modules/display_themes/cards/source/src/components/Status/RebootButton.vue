@@ -46,7 +46,7 @@ export default {
 </script>
 
 <template>
-  <i-button color="warning" @click="toggleModal()">
+  <i-button color="warning" @click="toggleModal()" size="lg">
     openWB neu starten
     <FontAwesomeIcon fixed-width :icon="['fas', 'fa-undo']" />
     <Teleport to="body">

@@ -27,7 +27,7 @@ export default {
 </script>
 
 <template>
-  <i-button color="success" @click="reloadDisplay()">
+  <i-button color="success" @click="reloadDisplay()" size="lg">
     Display neu laden
     <FontAwesomeIcon fixed-width :icon="['fas', 'fa-undo']" />
   </i-button>
