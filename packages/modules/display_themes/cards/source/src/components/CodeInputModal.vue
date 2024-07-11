@@ -3,6 +3,9 @@ import NumberPad from "./NumberPad.vue";
 
 export default {
   name: "CodeInputModal",
+  components: {
+    NumberPad,
+  },
   props: {
     modelValue: { type: Boolean, required: true },
     backgroundColor: { type: String, default: "warning" },
@@ -17,16 +20,13 @@ export default {
     minLength: { type: Number, default: 4 },
     maxLength: { type: Number, default: 4 },
   },
+  emits: ["update:modelValue", "update:inputValue"],
   data() {
     return {
       number: "",
       modalBackground: this.backgroundColor,
     };
   },
-  components: {
-    NumberPad,
-  },
-  emits: ["update:modelValue", "update:inputValue"],
   computed: {
     placeholder() {
       return this.placeholderCharacter.repeat(this.minLength);
@@ -84,15 +84,20 @@ export default {
 <template>
   <Teleport to="body">
     <i-modal
-      :modelValue="modelValue"
-      @update:modelValue="$emit('update:modelValue', $event)"
+      :model-value="modelValue"
       :color="modalBackground"
+      @update:model-value="$emit('update:modelValue', $event)"
     >
       <template #header>
-        <slot name="header"> **HEADER** </slot>
+        <slot name="header">
+          **HEADER**
+        </slot>
       </template>
       <i-container>
-        <i-row center class="_padding-bottom:1">
+        <i-row
+          center
+          class="_padding-bottom:1"
+        >
           <i-column>
             <i-input
               v-model="number"
@@ -114,13 +119,24 @@ export default {
         <i-container>
           <i-row>
             <i-column>
-              <i-button color="danger" @click="abort">
-                <slot name="abort"> Zurück </slot>
+              <i-button
+                color="danger"
+                @click="abort"
+              >
+                <slot name="abort">
+                  Zurück
+                </slot>
               </i-button>
             </i-column>
             <i-column class="_text-align:right">
-              <i-button v-if="enableSubmit" color="success" @click="submit">
-                <slot name="submit"> OK </slot>
+              <i-button
+                v-if="enableSubmit"
+                color="success"
+                @click="submit"
+              >
+                <slot name="submit">
+                  OK
+                </slot>
               </i-button>
             </i-column>
           </i-row>

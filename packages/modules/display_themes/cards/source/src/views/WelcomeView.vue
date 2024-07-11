@@ -27,6 +27,9 @@ export default {
       return undefined;
     },
   },
+  mounted() {
+    setTimeout(this.selectFirstRoute, 3000);
+  },
   methods: {
     selectFirstRoute() {
       if (this.firstView) {
@@ -36,19 +39,24 @@ export default {
       }
     },
   },
-  mounted() {
-    setTimeout(this.selectFirstRoute, 3000);
-  },
 };
 </script>
 
 <template>
   <i-container>
-    <i-row center middle>
+    <i-row
+      center
+      middle
+    >
       <i-column>
         <i-card color="primary">
-          <template #header> Cards Theme </template>
-          <img class="logo" src="/openWB_logo_dark.png" />
+          <template #header>
+            Cards Theme
+          </template>
+          <img
+            class="logo"
+            src="/openWB_logo_dark.png"
+          >
         </i-card>
       </i-column>
     </i-row>

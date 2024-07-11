@@ -10,15 +10,15 @@ import { useMqttStore } from "@/stores/mqtt.js";
 
 export default {
   name: "ShutdownButton",
+  components: {
+    FontAwesomeIcon,
+  },
   props: {},
   data() {
     return {
       mqttStore: useMqttStore(),
       showModal: false,
     };
-  },
-  components: {
-    FontAwesomeIcon,
   },
   methods: {
     /**
@@ -46,14 +46,26 @@ export default {
 </script>
 
 <template>
-  <i-button color="danger" @click="toggleModal()" size="lg">
+  <i-button
+    color="danger"
+    size="lg"
+    @click="toggleModal()"
+  >
     openWB ausschalten
-    <FontAwesomeIcon fixed-width :icon="['fas', 'fa-power-off']" />
+    <FontAwesomeIcon
+      fixed-width
+      :icon="['fas', 'fa-power-off']"
+    />
     <Teleport to="body">
-      <i-modal v-model="showModal" size="sm">
-        <template #header> openWB ausschalten... </template>
+      <i-modal
+        v-model="showModal"
+        size="sm"
+      >
+        <template #header>
+          openWB ausschalten...
+        </template>
         <i-container>
-          Möchten Sie diese openWB wirklich ausschalten?<br />
+          Möchten Sie diese openWB wirklich ausschalten?<br>
           Nach dem Ausschalten muss die Ladestation komplett spannungsfrei
           geschaltet werden. Erst beim erneuten Zuschalten der Spannung fährt
           das System wieder hoch.
@@ -62,12 +74,20 @@ export default {
           <i-container>
             <i-row>
               <i-column class="_text-align:right">
-                <i-button color="success" @click="cancel()"> Zurück </i-button>
+                <i-button
+                  color="success"
+                  @click="cancel()"
+                >
+                  Zurück
+                </i-button>
               </i-column>
               <i-column>
-                <i-button color="danger" @click="confirm()"
-                  >Ausschalten</i-button
+                <i-button
+                  color="danger"
+                  @click="confirm()"
                 >
+                  Ausschalten
+                </i-button>
               </i-column>
             </i-row>
           </i-container>

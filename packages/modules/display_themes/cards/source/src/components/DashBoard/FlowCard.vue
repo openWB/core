@@ -395,7 +395,9 @@ export default {
 
 <template>
   <dash-board-card color="primary">
-    <template #headerLeft> Übersicht - Energiefluss </template>
+    <template #headerLeft>
+      Übersicht - Energiefluss
+    </template>
     <i-container>
       <div class="svg-container">
         <svg
@@ -404,7 +406,10 @@ export default {
           xmlns="http://www.w3.org/2000/svg"
           xmlns:svg="http://www.w3.org/2000/svg"
         >
-          <g id="layer1" style="display: inline">
+          <g
+            id="layer1"
+            style="display: inline"
+          >
             <path
               v-for="component in svgComponents"
               :key="component.id"
@@ -422,7 +427,10 @@ export default {
             />
           </g>
 
-          <g id="layer2" style="display: inline">
+          <g
+            id="layer2"
+            style="display: inline"
+          >
             <!-- center dot -->
             <circle
               id="center"
@@ -458,13 +466,13 @@ export default {
                       :x="-svgSize.circleRadius - svgSize.strokeWidth"
                       :y="
                         (svgSize.circleRadius + svgSize.strokeWidth) *
-                        (1 - 2 * component.soc)
+                          (1 - 2 * component.soc)
                       "
                       :width="(svgSize.circleRadius + svgSize.strokeWidth) * 2"
                       :height="
                         (svgSize.circleRadius + svgSize.strokeWidth) *
-                        2 *
-                        component.soc
+                          2 *
+                          component.soc
                       "
                     />
                   </clipPath>
@@ -494,8 +502,8 @@ export default {
                 <tspan
                   :x="
                     -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
+                      2 * svgSize.circleRadius +
+                      svgSize.strokeWidth
                   "
                   :y="-svgSize.textSize / 2"
                 >
@@ -505,8 +513,8 @@ export default {
                   :class="component.class.valueLabel"
                   :x="
                     -svgRectWidth / 2 +
-                    2 * svgSize.circleRadius +
-                    svgSize.strokeWidth
+                      2 * svgSize.circleRadius +
+                      svgSize.strokeWidth
                   "
                   :y="svgSize.textSize"
                 >

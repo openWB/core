@@ -2,7 +2,7 @@
 export default {
   name: "DateTime",
   props: {
-    separator: { String, default: "<br />" },
+    separator: { type: String, default: "<br />" },
   },
   data() {
     return {
@@ -10,6 +10,13 @@ export default {
       date: "",
       time: "",
     };
+  },
+  mounted() {
+    this.update();
+    this.dateTimeInterval = setInterval(this.update, 1000);
+  },
+  beforeUnmount() {
+    clearInterval(this.dateTimeInterval);
   },
   methods: {
     update() {
@@ -28,13 +35,6 @@ export default {
       this.date = now.toLocaleDateString(undefined, dateOptions);
       this.time = now.toLocaleTimeString(undefined, timeOptions);
     },
-  },
-  mounted() {
-    this.update();
-    this.dateTimeInterval = setInterval(this.update, 1000);
-  },
-  beforeUnmount() {
-    clearInterval(this.dateTimeInterval);
   },
 };
 </script>

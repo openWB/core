@@ -10,15 +10,15 @@ import { useMqttStore } from "@/stores/mqtt.js";
 
 export default {
   name: "RebootButton",
+  components: {
+    FontAwesomeIcon,
+  },
   props: {},
   data() {
     return {
       mqttStore: useMqttStore(),
       showModal: false,
     };
-  },
-  components: {
-    FontAwesomeIcon,
   },
   methods: {
     /**
@@ -46,12 +46,24 @@ export default {
 </script>
 
 <template>
-  <i-button color="warning" @click="toggleModal()" size="lg">
+  <i-button
+    color="warning"
+    size="lg"
+    @click="toggleModal()"
+  >
     openWB neu starten
-    <FontAwesomeIcon fixed-width :icon="['fas', 'fa-undo']" />
+    <FontAwesomeIcon
+      fixed-width
+      :icon="['fas', 'fa-undo']"
+    />
     <Teleport to="body">
-      <i-modal v-model="showModal" size="sm">
-        <template #header> openWB neu starten... </template>
+      <i-modal
+        v-model="showModal"
+        size="sm"
+      >
+        <template #header>
+          openWB neu starten...
+        </template>
         <i-container>
           Möchten Sie diese openWB wirklich neu starten?
         </i-container>
@@ -59,10 +71,20 @@ export default {
           <i-container>
             <i-row>
               <i-column class="_text-align:right">
-                <i-button color="success" @click="cancel()"> Zurück </i-button>
+                <i-button
+                  color="success"
+                  @click="cancel()"
+                >
+                  Zurück
+                </i-button>
               </i-column>
               <i-column>
-                <i-button color="danger" @click="confirm()">Neustart</i-button>
+                <i-button
+                  color="danger"
+                  @click="confirm()"
+                >
+                  Neustart
+                </i-button>
               </i-column>
             </i-row>
           </i-container>
