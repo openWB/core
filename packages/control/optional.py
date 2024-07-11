@@ -261,9 +261,9 @@ class ChargePoint(cp):
 
             ))
         except Exception as e:
-            print(e)
+            log.debug(e)
 
-    async def start_transaction(self, ws, connector_id, meter_value_charged):
+    async def start_transaction(self, connector_id, meter_value_charged):
         try:
             await self.call(call.StartTransaction(
                 connector_id=connector_id,
@@ -388,7 +388,7 @@ class OCPPClient(ChargePoint):
                     connector_list = OCPPClient.get_ocpp_connector_list()
                     connector_list.append(connector_id)
                     transaction_list = OCPPClient.get_ocpp_transaction_list()
-                    await asyncio.gather(cp.start_transaction(ws, connector_id, meter_value_charged))
+                    await asyncio.gather(cp.start_transaction(connector_id, meter_value_charged))
                     # TransactionId extrahieren
                     transaction_str = str(ws.messages[0])[slice(str(ws.messages[0]).index(("idTag")))]
                     index1 = str(transaction_str).index(("transactionId"))
