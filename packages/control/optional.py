@@ -37,6 +37,7 @@ class OcppGet:
     ocpp_connection_initialised = False
     connector_list = []
     transaction_list = []
+    stopped_chargepoints = []
 
 
 def ocpp_factory() -> OcppGet:
@@ -187,16 +188,15 @@ class Optional:
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
-    def ocpp_get_state(self):
+    def ocpp_set_state(self):
         for thread in threading.enumerate():
             if thread.name == "OCPPClient":
                 log.debug("Don't start multiple instances of OCPPClient thread.")
-                self.ocpp_transfer_data()
+                self.ocpp_start_stop_cp()
                 return
         threading.Thread(target=OCPPClient.run, args=(), name="OCPPClient").start()
 
-    def ocpp_transfer_data(self):
-        # print(OCPPClient.get_ocpp_response())
+    def ocpp_start_stop_cp(self):
         charging_chargepoints = OCPPClient.get_charging_chargepoints()
         started_charging_chargepoints = OCPPClient.get_started_charging_chargepoints()
         if OCPPClient.state_ocpp_connection() is False:
@@ -221,14 +221,6 @@ class Optional:
                     except Exception as e:
                         print(e)
                     log.debug("Send Start Transaction to OCPP")
-                if len(OCPPClient.get_url()) > 0 and chargepoint_ocpp.num in started_charging_chargepoints:
-                    try:
-                        asyncio.run_coroutine_threadsafe(
-                            OCPPClient._transfer_values(
-                                connector_id, meter_value_charged), OcppGet.loop_ocpp)
-                    except Exception as e:
-                        print(e)
-                    log.debug("Send Meter Values to OCPP")
             if (chargepoint_ocpp.data.get.charge_state is False and chargepoint_ocpp.num in charging_chargepoints
                     and chargepoint_ocpp.num in started_charging_chargepoints):
                 charging_chargepoints.remove(chargepoint_ocpp.num)
@@ -238,11 +230,28 @@ class Optional:
                 transaction_id = transaction_list[index+1]
                 try:
                     asyncio.run_coroutine_threadsafe(
-                        OCPPClient._stop_transaction(
-                            meter_value_charged, transaction_id), OcppGet.loop_ocpp)
+                        OCPPClient._stop_transaction(connector_id,
+                                                     meter_value_charged, transaction_id), OcppGet.loop_ocpp)
                 except Exception as e:
                     print(e)
                 log.debug("Send Stop Transaction to OCPP")
+            else:
+                log.debug("Neither plugging nor charging")
+
+    def ocpp_transfer_meter_values(self):
+        started_charging_chargepoints = OCPPClient.get_started_charging_chargepoints()
+        for chargepoint_ocpp in data.data.cp_data.values():
+            meter_value_charged = int(chargepoint_ocpp.data.get.imported)
+            connector_id = chargepoint_ocpp.num
+            if chargepoint_ocpp.data.get.charge_state and OcppGet.ocpp_client_start:
+                if len(OCPPClient.get_url()) > 0 and chargepoint_ocpp.num in started_charging_chargepoints:
+                    try:
+                        asyncio.run_coroutine_threadsafe(
+                            OCPPClient._transfer_values(
+                                connector_id, meter_value_charged), OcppGet.loop_ocpp)
+                    except Exception as e:
+                        print(e)
+                    log.debug("Send Meter Values to OCPP")
             else:
                 log.debug("Neither plugging nor charging")
 
@@ -358,6 +367,9 @@ class OCPPClient(ChargePoint):
     def get_ocpp_connector_list():
         return OcppGet.connector_list
 
+    def get_ocpp_stopped_chargepoints():
+        return OcppGet.stopped_chargepoints
+
     async def _open_connection():
         try:
             url = OCPPClient.get_url()
@@ -418,7 +430,7 @@ class OCPPClient(ChargePoint):
         except Exception:
             log.exception("Fehler im OCPP-Modul")
 
-    async def _stop_transaction(meter_value_charged, transaction_id):
+    async def _stop_transaction(connector_id, meter_value_charged, transaction_id):
         try:
             url = OCPPClient.get_url()
             if len(url) > 0:
@@ -428,8 +440,16 @@ class OCPPClient(ChargePoint):
                     subprotocols=['ocpp1.6']
                 ) as ws:
                     cp = ChargePoint('openWB', ws)
+                    transaction_list = OCPPClient.get_ocpp_transaction_list()
+                    stopped_chargepoints = OCPPClient.get_ocpp_stopped_chargepoints()
+                    stopped_chargepoints.append(connector_id)
                 # Stop transaction
                     await asyncio.gather(cp.stop_transaction(meter_value_charged, transaction_id))
+                    index = transaction_list.index(stopped_chargepoints[0])
+                    transaction_list.pop(index)
+                    transaction_list.pop(index)
+                    stopped_chargepoints.pop(0)
+
         except Exception:
             log.exception("Fehler im OCPP-Modul")
 
