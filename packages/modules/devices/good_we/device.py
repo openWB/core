@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, List, Iterable, Union
+from typing import Iterable, Union
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
@@ -18,7 +18,7 @@ good_we_component_classes = Union[bat.GoodWeBat, counter.GoodWeCounter, inverter
 
 def create_device(device_config: GoodWe):
     def create_bat_component(component_config: GoodWeBatSetup):
-        return bat.GoodWeBat(device_config.id, device_config.configuration.modbus_id,
+        return bat.GoodWeBat(device_config.configuration.modbus_id,
                              device_config.configuration.version, device_config.configuration.firmware,
                              component_config, client)
 
@@ -28,7 +28,7 @@ def create_device(device_config: GoodWe):
                                      component_config, client)
 
     def create_inverter_component(component_config: GoodWeInverterSetup):
-        return inverter.GoodWeInverter(device_config.id, device_config.configuration.modbus_id,
+        return inverter.GoodWeInverter(device_config.configuration.modbus_id,
                                        device_config.configuration.version, device_config.configuration.firmware,
                                        component_config, client)
 

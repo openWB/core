@@ -14,7 +14,6 @@ from modules.devices.good_we.version import GoodWeVersion
 
 class GoodWeBat:
     def __init__(self,
-                 device_id: int,
                  modbus_id: int,
                  version: GoodWeVersion,
                  firmware: int,
