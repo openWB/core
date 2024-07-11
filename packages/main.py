@@ -49,7 +49,7 @@ class HandlerAlgorithm:
         """ führt den Algorithmus durch.
         """
         try:
-           # @exit_after(data.data.general_data.data.control_interval)
+            @exit_after(data.data.general_data.data.control_interval)
             def handler_with_control_interval():
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
@@ -68,8 +68,8 @@ class HandlerAlgorithm:
                         prep.setup_algorithm()
                         control.calc_current()
                         proc.process_algorithm_results()
-                        # for testing purpose 10s handler ocpp
-                        data.data.optional_data.ocpp_get_state()
+                        # ocpp start/stop transaction
+                        data.data.optional_data.ocpp_set_state()
                         data.data.graph_data.pub_graph_data()
                     self.interval_counter = 1
                 else:
@@ -94,7 +94,8 @@ class HandlerAlgorithm:
                 update_pv_monthly_yearly_yields()
                 data.data.general_data.grid_protection()
                 data.data.optional_data.et_get_prices()
-                #data.data.optional_data.ocpp_get_state()
+                #ocpp send meter_values
+                data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
