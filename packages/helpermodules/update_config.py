@@ -42,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 51
+    DATASTORE_VERSION = 52
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1614,3 +1614,15 @@ class UpdateConfig:
                     return {topic: ""}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 51)
+
+
+def upgrade_datastore_51(self) -> None:
+    def upgrade(topic: str, payload) -> None:
+        if re.search("openWB/system/device/[0-9]+", topic) is not None:
+            payload = decode_payload(payload)
+            # update version and firmware of GoodWe
+            if payload.get("type") == "deye" and "device_type" in payload["configuration"]:
+                payload["configuration"].pop("device_type")
+            Pub().pub(topic, payload)
+    self._loop_all_received_topics(upgrade)
+    self.__update_topic("openWB/system/datastore_version", 52)
