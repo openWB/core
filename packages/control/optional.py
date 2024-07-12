@@ -260,46 +260,57 @@ class ChargePoint(cp):
 
     async def send_boot_notification(self):
         try:
-            await self.call(call.BootNotification(
+            request = call.BootNotification(
                 charge_point_model="openWB",
                 charge_point_vendor="openwb"
-            ))
+            )
+            response = await self.call(request)
+            log.info("OCCP Connection established: ", response)
         except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError StartUp")
 
     async def send_heart_beat(self):
         try:
-            await self.call(call.Heartbeat(
+            request = call.Heartbeat(
 
-            ))
+            )
+            response = self.call(request)
+            log.info("OCPP Heartbeat: ", response)
         except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError HeartBeat")
 
     async def start_transaction(self, connector_id, meter_value_charged):
+        transaction_list = OCPPClient.get_ocpp_transaction_list()
         try:
-            await self.call(call.StartTransaction(
+            request = call.StartTransaction(
                 connector_id=connector_id,
                 id_tag="user1",
                 meter_start=meter_value_charged,
                 timestamp=current_time
-            ))
+            )
+            response = await self.call(request)
+            transaction_list.append(connector_id)
+            transaction_list.append(response.transaction_id)
+            log.info("OCPP Start Transaction: ", response)
         except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError Start Transaction")
 
     async def stop_transaction(self, meter_value_charged, transaction_id):
         try:
-            await self.call(call.StopTransaction(meter_stop=meter_value_charged,
-                                                 timestamp=current_time,
-                                                 transaction_id=transaction_id,
-                                                 reason="Local",
-                                                 id_tag="user1"
-                                                 ))
+            request = call.StopTransaction(meter_stop=meter_value_charged,
+                                           timestamp=current_time,
+                                           transaction_id=transaction_id,
+                                           reason="Local",
+                                           id_tag="user1"
+                                           )
+            response = await self.call(request)
+            log.info("OCPP Stop Transaction: ", response)
         except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError Stop Transaction")
 
     async def get_meter(self, connector_id, meter_value_charged):
         try:
-            await self.call(call.MeterValues(
+            request = call.MeterValues(
                 connector_id=connector_id,
                 meter_value=[{"timestamp": current_time,
                               "sampledValue": [
@@ -312,7 +323,9 @@ class ChargePoint(cp):
                                       "unit": "Wh"
                                   },
                               ]}],
-            ))
+            )
+            response = await self.call(request)
+            log.info("OCPP Get meter values: ", response)
         except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError Meter Values")
 
@@ -400,20 +413,7 @@ class OCPPClient(ChargePoint):
                 ) as ws:
                     cp = ChargePoint('openWB', ws)
                 # Start Transaction
-                    connector_list = OCPPClient.get_ocpp_connector_list()
-                    connector_list.append(connector_id)
-                    transaction_list = OCPPClient.get_ocpp_transaction_list()
-                    await asyncio.gather(cp.start_transaction(connector_id, meter_value_charged))
-                    # TransactionId extrahieren
-                    transaction_str = str(ws.messages[0])[slice(str(ws.messages[0]).index(("idTag")))]
-                    index1 = str(transaction_str).index(("transactionId"))
-                    index2 = len(transaction_str)-1
-                    transaction_str_sliced = transaction_str[index1:index2]
-                    transaction_id = list(map(int, re.findall(r'\d+', transaction_str_sliced)))
-                    transaction_list.append(connector_list[0])
-                    transaction_list.append(transaction_id[0])
-                    connector_list.pop(0)
-
+                    await asyncio.gather(cp.start(), cp.start_transaction(connector_id, meter_value_charged))
         except Exception:
             log.exception("Fehler OCCP: _start_transaction")
 
@@ -428,8 +428,8 @@ class OCPPClient(ChargePoint):
                 ) as ws:
                     cp = ChargePoint('openWB', ws)
                 # transfer meter values
-                    await asyncio.gather(
-                        cp.get_meter(connector_id, meter_value_charged))
+                    await asyncio.gather(cp.start(),
+                                         cp.get_meter(connector_id, meter_value_charged))
         except Exception:
             log.exception("Fehler OCCP: _transfer_values")
 
@@ -447,7 +447,7 @@ class OCPPClient(ChargePoint):
                     stopped_chargepoints = OCPPClient.get_ocpp_stopped_chargepoints()
                     stopped_chargepoints.append(connector_id)
                 # Stop transaction
-                    await asyncio.gather(cp.stop_transaction(meter_value_charged, transaction_id))
+                    await asyncio.gather(cp.start(), cp.stop_transaction(meter_value_charged, transaction_id))
                     index = transaction_list.index(stopped_chargepoints[0])
                     transaction_list.pop(index)
                     transaction_list.pop(index)
