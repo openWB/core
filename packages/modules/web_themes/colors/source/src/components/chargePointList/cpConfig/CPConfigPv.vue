@@ -9,6 +9,7 @@
 			:fullwidth="true"
 		>
 			<RangeInput
+				v-if="cp.pvMaxSoc <= 100"
 				id="maxSoc"
 				v-model="cp.pvMaxSoc"
 				:min="0"

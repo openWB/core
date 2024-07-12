@@ -14,6 +14,7 @@ from modules.devices.good_we.version import GoodWeVersion
 
 class GoodWeInverter:
     def __init__(self,
+                 device_id: int,
                  modbus_id: int,
                  version: GoodWeVersion,
                  firmware: int,
@@ -29,8 +30,13 @@ class GoodWeInverter:
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = sum([self.__tcp_client.read_holding_registers(reg, ModbusDataType.UINT_32,
-                        unit=self.__modbus_id) for reg in [35105, 35109, 35113, 35117]]) * -1
+            if self.version == GoodWeVersion.V_1_7:
+                power = sum([self.__tcp_client.read_holding_registers(
+                    reg, ModbusDataType.UINT_32, unit=self.__modbus_id)
+                    for reg in [35105, 35109, 35113, 35117]]) * -1
+            else:
+                power = self.__tcp_client.read_holding_registers(
+                    35137, ModbusDataType.UINT_32, unit=self.__modbus_id) * -1
             exported = self.__tcp_client.read_holding_registers(
                 35191, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
 
