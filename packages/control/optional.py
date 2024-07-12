@@ -264,7 +264,7 @@ class ChargePoint(cp):
                 charge_point_model="openWB",
                 charge_point_vendor="openwb"
             ))
-        except TimeoutError:
+        except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError StartUp")
 
     async def send_heart_beat(self):
@@ -272,7 +272,7 @@ class ChargePoint(cp):
             await self.call(call.Heartbeat(
 
             ))
-        except TimeoutError:
+        except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError HeartBeat")
 
     async def start_transaction(self, connector_id, meter_value_charged):
@@ -283,7 +283,7 @@ class ChargePoint(cp):
                 meter_start=meter_value_charged,
                 timestamp=current_time
             ))
-        except TimeoutError:
+        except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError Start Transaction")
 
     async def stop_transaction(self, meter_value_charged, transaction_id):
@@ -294,7 +294,7 @@ class ChargePoint(cp):
                                                  reason="Local",
                                                  id_tag="user1"
                                                  ))
-        except TimeoutError:
+        except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError Stop Transaction")
 
     async def get_meter(self, connector_id, meter_value_charged):
@@ -313,7 +313,7 @@ class ChargePoint(cp):
                                   },
                               ]}],
             ))
-        except TimeoutError:
+        except asyncio.exceptions.TimeoutError:
             log.exception("TimeOutError Meter Values")
 
 
