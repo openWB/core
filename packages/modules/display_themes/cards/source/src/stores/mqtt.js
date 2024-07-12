@@ -249,6 +249,12 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return true;
     },
+    getSimpleChargePointView(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.simple_charge_point_view;
+      }
+      return false;
+    },
 
     /* devices and components getters */
 

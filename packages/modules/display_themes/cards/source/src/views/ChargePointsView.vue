@@ -1,10 +1,7 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
-import DashBoardCard from "@/components/DashBoardCard.vue";
-import SparkLine from "@/components/SparkLine.vue";
-import ChargePointPlugBadge from "@/components/ChargePointPlugBadge.vue";
-import ChargePointLockButton from "@/components/ChargePointLockButton.vue";
-import ChargePointCodeButton from "@/components/ChargePointCodeButton.vue";
+import ChargePointCard from "@/components/ChargePoints/ChargePointCard.vue";
+import SimpleChargePointCard from "@/components/ChargePoints/SimpleChargePointCard.vue";
 import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
 import ManualSocInput from "@/components/ChargePoints/ManualSocInput.vue";
 
@@ -12,47 +9,13 @@ import ManualSocInput from "@/components/ChargePoints/ManualSocInput.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
-  faPlugCircleXmark as fasPlugCircleXmark,
-  faPlugCircleCheck as fasPlugCircleCheck,
-  faPlugCircleBolt as fasPlugCircleBolt,
-  faWrench as fasWrench,
-  faLock as fasLock,
-  faLockOpen as fasLockOpen,
-  faCar as fasCar,
-  faCarBattery as fasCarBattery,
-  faEdit as fasEdit,
-  faTimesCircle as fasTimesCircle,
-  faExclamationTriangle as fasExclamationTriangle,
-  faInfoCircle as fasInfoCircle,
-  faStar as fasStar,
-  faClock as fasClock,
   faBolt as fasBolt,
   faCalendarDay as fasCalendarDay,
   faCalendarWeek as fasCalendarWeek,
   faCalendarAlt as fasCalendarAlt,
 } from "@fortawesome/free-solid-svg-icons";
-import {
-  faStar as farStar,
-  faClock as farClock,
-} from "@fortawesome/free-regular-svg-icons";
 /* add icons to the library */
 library.add(
-  fasPlugCircleXmark,
-  fasPlugCircleCheck,
-  fasPlugCircleBolt,
-  fasWrench,
-  fasLock,
-  fasLockOpen,
-  fasCar,
-  fasCarBattery,
-  fasEdit,
-  fasTimesCircle,
-  fasExclamationTriangle,
-  fasInfoCircle,
-  fasStar,
-  farStar,
-  fasClock,
-  farClock,
   fasBolt,
   fasCalendarDay,
   fasCalendarWeek,
@@ -62,11 +25,8 @@ library.add(
 export default {
   name: "ChargePointsView",
   components: {
-    DashBoardCard,
-    SparkLine,
-    ChargePointPlugBadge,
-    ChargePointLockButton,
-    ChargePointCodeButton,
+    ChargePointCard,
+    SimpleChargePointCard,
     ExtendedNumberInput,
     ManualSocInput,
     FontAwesomeIcon,
@@ -84,6 +44,11 @@ export default {
       modalVehicleId: 0,
       modalActiveTab: "tab-general",
       modalManualSocInputVisible: false,
+      simpleChargeModes: [
+        "instant_charging",
+        "pv_charging",
+        "stop",
+      ]
     };
   },
   computed: {
@@ -98,6 +63,14 @@ export default {
         vehicleList.push({ id: id, name: topicList[topic] });
       });
       return vehicleList;
+    },
+    filteredChargeModes() {
+      if (this.mqttStore.getSimpleChargePointView) {
+        return this.mqttStore.chargeModeList().filter((mode) => {
+          return this.simpleChargeModes.includes(mode.id);
+        });
+      }
+      return this.mqttStore.chargeModeList()
     },
   },
   watch: {
@@ -343,217 +316,18 @@ export default {
 
 <template>
   <div class="charge-points-card-wrapper">
-    <dash-board-card
+    <component
+      :is="mqttStore.getSimpleChargePointView ? 'SimpleChargePointCard' : 'ChargePointCard'"
       v-for="id in mqttStore.getChargePointIds"
       :key="id"
-      color="primary"
-    >
-      <template #headerLeft>
-        {{ mqttStore.getChargePointName(id) }}
-      </template>
-      <template #headerRight>
-        <charge-point-plug-badge :charge-point-id="[id]" />
-      </template>
-      <i-container>
-        <i-row>
-          <!-- charge point data on left side -->
-          <i-column>
-            <i-row>
-              <i-column class="_padding-left:0 _padding-right:0">
-                <charge-point-code-button
-                  v-if="mqttStore.getRfidEnabled"
-                  :charge-point-id="id"
-                />
-                <charge-point-lock-button
-                  :charge-point-id="id"
-                  :changes-locked="changesLocked"
-                />
-              </i-column>
-              <i-column class="_text-align:right _padding-left:0">
-                {{ mqttStore.getChargePointPower(id) }}
-                {{ mqttStore.getChargePointPhasesInUse(id) }}
-                {{ mqttStore.getChargePointSetCurrent(id) }}
-              </i-column>
-            </i-row>
-            <i-row class="_padding-top:1">
-              <i-column class="_padding-left:0">
-                <spark-line
-                  color="var(--color--primary)"
-                  :data="mqttStore.getChargePointPowerChartData(id)"
-                />
-              </i-column>
-            </i-row>
-          </i-column>
-          <!-- vehicle data on right side -->
-          <i-column md="6">
-            <!-- vehicle and soc -->
-            <i-row class="_display:flex">
-              <i-column class="_padding-left:0 _padding-right:0 _flex-grow:1">
-                <i-badge
-                  size="lg"
-                  class="full-width"
-                  :class="!changesLocked ? 'clickable' : ''"
-                  @click="handleVehicleClick(id)"
-                >
-                  <font-awesome-icon
-                    fixed-width
-                    :icon="['fas', 'fa-car']"
-                  />
-                  {{ mqttStore.getChargePointConnectedVehicleName(id) }}
-                </i-badge>
-              </i-column>
-              <i-column
-                v-if="
-                  mqttStore.getVehicleSocConfigured(
-                    mqttStore.getChargePointConnectedVehicleId(id),
-                  ) ||
-                    mqttStore.getVehicleFaultState(
-                      mqttStore.getChargePointConnectedVehicleId(id),
-                    ) != 0
-                "
-                class="_flex-grow:0 _padding-right:0 _padding-left:1"
-              >
-                <i-button
-                  size="sm"
-                  :disabled="changesLocked"
-                  :class="!changesLocked ? 'clickable' : ''"
-                  @click="handleSocClick(id)"
-                >
-                  <span
-                    v-if="
-                      mqttStore.getVehicleSocConfigured(
-                        mqttStore.getChargePointConnectedVehicleId(id),
-                      )
-                    "
-                  >
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="
-                        mqttStore.getVehicleSocIsManual(
-                          mqttStore.getChargePointConnectedVehicleId(id),
-                        )
-                          ? ['fas', 'fa-edit']
-                          : ['fas', 'fa-car-battery']
-                      "
-                    />
-                    {{ mqttStore.getChargePointConnectedVehicleSoc(id).soc }}%
-                  </span>
-                  <font-awesome-icon
-                    v-if="
-                      mqttStore.getVehicleFaultState(
-                        mqttStore.getChargePointConnectedVehicleId(id),
-                      ) != 0
-                    "
-                    fixed-width
-                    :icon="
-                      mqttStore.getVehicleFaultState(
-                        mqttStore.getChargePointConnectedVehicleId(id),
-                      ) > 0
-                        ? mqttStore.getVehicleFaultState(
-                          mqttStore.getChargePointConnectedVehicleId(id),
-                        ) > 1
-                          ? ['fas', 'times-circle']
-                          : ['fas', 'exclamation-triangle']
-                        : []
-                    "
-                    :class="
-                      mqttStore.getVehicleFaultState(
-                        mqttStore.getChargePointConnectedVehicleId(id),
-                      ) > 0
-                        ? mqttStore.getVehicleFaultState(
-                          mqttStore.getChargePointConnectedVehicleId(id),
-                        ) > 1
-                          ? '_color:danger'
-                          : '_color:warning'
-                        : ''
-                    "
-                  />
-                </i-button>
-              </i-column>
-            </i-row>
-            <!-- charge mode info -->
-            <i-row class="_padding-top:1 _display:flex">
-              <i-column class="_padding-left:0 _padding-right:0 _flex-grow:1">
-                <i-badge
-                  size="lg"
-                  class="full-width"
-                  :class="!changesLocked ? 'clickable' : ''"
-                  :color="
-                    mqttStore.getChargePointConnectedVehicleChargeMode(id).class
-                  "
-                  @click="handleChargeModeClick(id)"
-                >
-                  {{
-                    mqttStore.getChargePointConnectedVehicleChargeMode(id).label
-                  }}
-                  <font-awesome-icon
-                    fixed-width
-                    :icon="
-                      mqttStore.getChargePointConnectedVehiclePriority(id)
-                        ? ['fas', 'fa-star']
-                        : ['far', 'fa-star']
-                    "
-                    :class="
-                      mqttStore.getChargePointConnectedVehiclePriority(id)
-                        ? '_color:warning'
-                        : ''
-                    "
-                  />
-                </i-badge>
-              </i-column>
-              <i-column
-                v-if="
-                  mqttStore.getChargePointConnectedVehicleTimeChargingActive(id)
-                "
-                class="_flex-grow:0 _padding-right:0 _padding-left:1"
-              >
-                <i-badge size="lg">
-                  <font-awesome-icon
-                    v-if="
-                      mqttStore.getChargePointConnectedVehicleTimeChargingActive(
-                        id,
-                      )
-                    "
-                    fixed-width
-                    :icon="
-                      mqttStore.getChargePointConnectedVehicleTimeChargingRunning(
-                        id,
-                      )
-                        ? ['fas', 'fa-clock']
-                        : ['far', 'fa-clock']
-                    "
-                    :class="
-                      mqttStore.getChargePointConnectedVehicleTimeChargingRunning(
-                        id,
-                      )
-                        ? '_color:success'
-                        : ''
-                    "
-                  />
-                </i-badge>
-              </i-column>
-            </i-row>
-            <!-- settings button -->
-            <i-row
-              v-if="!changesLocked"
-              class="_padding-top:1"
-            >
-              <i-column class="_padding-left:0 _padding-right:0">
-                <i-button
-                  block
-                  @click="toggleChargePointSettings(id)"
-                >
-                  <font-awesome-icon
-                    fixed-width
-                    :icon="['fas', 'fa-wrench']"
-                  />
-                </i-button>
-              </i-column>
-            </i-row>
-          </i-column>
-        </i-row>
-      </i-container>
-    </dash-board-card>
+      :charge-point-id="id"
+      :changes-locked="changesLocked"
+      @vehicle-click="handleVehicleClick"
+      @soc-click="handleSocClick"
+      @charge-mode-click="handleChargeModeClick"
+      @toggle-charge-point-settings="toggleChargePointSettings"
+      @set-charge-point-connected-vehicle-charge-mode="setChargePointConnectedVehicleChargeMode"
+    />
   </div>
   <!-- modals -->
   <!-- charge mode only -->
@@ -571,7 +345,7 @@ export default {
         <i-form-label>Lademodus</i-form-label>
         <i-button-group block>
           <i-button
-            v-for="mode in mqttStore.chargeModeList()"
+            v-for="mode in filteredChargeModes"
             :key="mode.id"
             outline
             :color="mode.class != 'dark' ? mode.class : 'light'"
@@ -690,10 +464,16 @@ export default {
         <i-tab-title for="tab-pv-charging">
           PV
         </i-tab-title>
-        <i-tab-title for="tab-scheduled-charging">
+        <i-tab-title
+          v-if="!mqttStore.getSimpleChargePointView"
+          for="tab-scheduled-charging"
+        >
           Zielladen
         </i-tab-title>
-        <i-tab-title for="tab-time-charging">
+        <i-tab-title
+          v-if="!mqttStore.getSimpleChargePointView"
+          for="tab-time-charging"
+        >
           Zeitladen
         </i-tab-title>
       </template>
@@ -1015,7 +795,10 @@ export default {
           </i-form-group>
         </i-form>
       </i-tab>
-      <i-tab name="tab-scheduled-charging">
+      <i-tab
+        v-if="!mqttStore.getSimpleChargePointView"
+        name="tab-scheduled-charging"
+      >
         <i-alert
           v-if="
             Object.keys(
@@ -1106,7 +889,10 @@ export default {
           </i-form-group>
         </i-form>
       </i-tab>
-      <i-tab name="tab-time-charging">
+      <i-tab
+        v-if="!mqttStore.getSimpleChargePointView"
+        name="tab-time-charging"
+      >
         <i-form>
           <i-form-group>
             <i-form-label>Zeitladen aktivieren</i-form-label>
@@ -1268,21 +1054,8 @@ export default {
   grid-gap: var(--spacing);
 }
 
-.card {
-  ----background: inherit !important;
-  ----body--color: var(----color) !important;
-}
-
 :deep(.toggle .toggle-label::before) {
   border-color: var(--color--dark-45);
-}
-
-.badge.full-width {
-  width: 100%;
-}
-
-.clickable {
-  cursor: pointer;
 }
 
 :deep(.tab) {

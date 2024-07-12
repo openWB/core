@@ -18,6 +18,7 @@ class CardsDisplayThemeConfiguration:
                  enable_dashboard_card_vehicles: bool = True,
                  enable_energy_flow_view: bool = True,
                  enable_charge_points_view: bool = True,
+                 simple_charge_point_view: bool = False,
                  enable_status_view: bool = True) -> None:
         # display lock settings
         self.lock_changes = lock_changes
@@ -34,6 +35,7 @@ class CardsDisplayThemeConfiguration:
         self.enable_energy_flow_view = enable_energy_flow_view
         # charge point settings
         self.enable_charge_points_view = enable_charge_points_view
+        self.simple_charge_point_view = simple_charge_point_view
         # state settings
         self.enable_status_view = enable_status_view
 
