@@ -273,6 +273,29 @@ chmod 666 "$LOGFILE"
 		restartService=1
 		echo "...updated"
 	fi
+	echo "apache http api site..."
+	restartService=0
+	if versionMatch "${OPENWBBASEDIR}/data/config/apache/http-api.conf" "/etc/apache2/sites-available/http-api.conf"; then
+		echo "...ok"
+	else
+		sudo cp "${OPENWBBASEDIR}/data/config/apache/http-api.conf" "/etc/apache2/sites-available/"
+		restartService=1
+		echo "...updated"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/http-api-ssl.conf"; then
+		echo "...ok"
+	else
+		sudo cp "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/"
+		restartService=1
+		echo "...updated"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/apache/ports.conf" "/etc/apache2/ports.conf"; then
+		echo "...ok"
+	else
+		sudo cp "${OPENWBBASEDIR}/data/config/apache/ports.conf" "/etc/apache2/"
+		restartService=1
+		echo "...updated"
+	fi
 	echo "checking required apache modules..."
 	if sudo a2query -m headers; then
 		echo "headers already enabled"
