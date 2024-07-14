@@ -1,8 +1,5 @@
 <template>
-	<WBWidget
-		v-if="!configmode"
-		:variable-width="true"
-	>
+	<WBWidget v-if="!configmode" :variable-width="true">
 		<template #title>
 			<span :style="cpNameStyle">
 				<span class="fa-solid fa-charging-station">&nbsp;</span>
