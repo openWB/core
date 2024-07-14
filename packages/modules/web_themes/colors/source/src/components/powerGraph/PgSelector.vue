@@ -116,7 +116,7 @@ defineEmits(['shiftLeft', 'shiftRight', 'shiftUp', 'shiftDown'])
 const editmode = ref(0)
 const displayDate = computed(() => {
 	if (graphData.waitForData) {
-		return 'Lädt...'
+		return 'Lädt'
 	} else {
 		switch (graphData.graphMode) {
 			case 'live':

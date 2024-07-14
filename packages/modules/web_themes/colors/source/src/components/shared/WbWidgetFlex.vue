@@ -47,6 +47,6 @@ const widgetWidth = computed(() => {
 .widgetname {
 	font-weight: bold;
 	color: var(--color-fg);
-	font-size: var(--font-normal);
+	font-size: var(--font-large);
 }
 </style>
