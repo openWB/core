@@ -111,7 +111,7 @@ class HistoricSummary {
 		if (!this.keys().includes(cat)) {
 			this.addItem(cat)
 		}
-		this._items[cat].pvPercentage = val
+		this._items[cat].pvPercentage = val <= 100 ? val : 100
 	}
 	calculateHouseEnergy() {
 		this._items.house.energy =
