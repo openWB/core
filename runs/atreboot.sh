@@ -283,14 +283,6 @@ chmod 666 "$LOGFILE"
 		sudo a2ensite http-api
 		echo "...updated"
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/http-api-ssl.conf"; then
-		echo "...ok"
-	else
-		sudo cp "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/"
-		restartService=1
-		sudo a2ensite http-api-ssl
-		echo "...updated"
-	fi
 	if versionMatch "${OPENWBBASEDIR}/data/config/apache/ports.conf" "/etc/apache2/ports.conf"; then
 		echo "...ok"
 	else
@@ -326,6 +318,14 @@ chmod 666 "$LOGFILE"
 		sudo cp "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/"
 		sudo a2ensite apache-openwb-ssl
 		restartService=1
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/http-api-ssl.conf"; then
+		echo "...ok"
+	else
+		sudo cp "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/"
+		restartService=1
+		sudo a2ensite http-api-ssl
+		echo "...updated"
 	fi
 	if ((restartService == 1)); then
 		echo -n "restarting apache..."
