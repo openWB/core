@@ -86,8 +86,10 @@ class HistoricSummary {
 	values() {
 		return Object.values(this._items)
 	}
-	addItem(key: string) {
-		this._items[key] = createPowerItem(key)
+	addItem(key: string, useColor?: string) {
+		this._items[key] = useColor
+			? createPowerItem(key, useColor)
+			: createPowerItem(key)
 	}
 	setEnergy(cat: string, val: number) {
 		if (!this.keys().includes(cat)) {
@@ -143,7 +145,7 @@ export const usageSummary: { [key: string]: PowerItem } = reactive({
 export const globalData = reactive(new GlobalData())
 export const etPriceList = ref('')
 export const energyMeterNeedsRedraw = ref(false)
-function createPowerItem(key: string): PowerItem {
+function createPowerItem(key: string, useColor?: string): PowerItem {
 	const p: PowerItem = {
 		name: masterData[key] ? masterData[key].name : 'item',
 		power: 0,
@@ -151,7 +153,11 @@ function createPowerItem(key: string): PowerItem {
 		energyPv: 0,
 		energyBat: 0,
 		pvPercentage: 0,
-		color: masterData[key] ? masterData[key].color : 'var(--color-charging)',
+		color: useColor
+			? useColor
+			: masterData[key]
+				? masterData[key].color
+				: 'var(--color-charging)',
 		icon: masterData[key] ? masterData[key].icon : '',
 		showInGraph: true,
 	}
