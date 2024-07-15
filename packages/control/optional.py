@@ -17,6 +17,7 @@ from math import ceil  # Aufrunden
 import threading
 from typing import Dict, List
 from control import data
+import re
 
 
 log = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ class OcppGet:
     connector_list = []
     transaction_list = []
     stopped_chargepoints = []
+    rfid_started_chargepoints = []
 
 
 def ocpp_factory() -> OcppGet:
@@ -198,6 +200,7 @@ class Optional:
     def ocpp_start_stop_cp(self):
         charging_chargepoints = OCPPClient.get_charging_chargepoints()
         started_charging_chargepoints = OCPPClient.get_started_charging_chargepoints()
+        rfid_started_chargepoints = OCPPClient.get_ocpp_rfid_started_chargepoints()
         if OCPPClient.state_ocpp_connection() is False:
             try:
                 asyncio.run_coroutine_threadsafe(
@@ -213,10 +216,19 @@ class Optional:
                 if chargepoint_ocpp.num not in started_charging_chargepoints:
                     started_charging_chargepoints.append(
                         chargepoint_ocpp.num) if chargepoint_ocpp.num not in started_charging_chargepoints else None
+                    if chargepoint_ocpp.data.set.rfid is not None:
+                        id_tag = chargepoint_ocpp.data.set.rfid
+                        rfid_started_chargepoints.append(chargepoint_ocpp.num)
+                        rfid_started_chargepoints.append(id_tag)
+                    elif (chargepoint_ocpp.data.set.rfid is None and
+                            chargepoint_ocpp.template.data.valid_tags[0] is not None):
+                        id_tag = chargepoint_ocpp.template.data.valid_tags[0]
+                    else:
+                        id_tag = 0
                     try:
                         asyncio.run_coroutine_threadsafe(
                             OCPPClient._start_transaction(
-                                connector_id, meter_value_charged), OcppGet.loop_ocpp)
+                                connector_id, id_tag, meter_value_charged), OcppGet.loop_ocpp)
                     except Exception as e:
                         log.exception("Fehler Trigger Start Transaction", e)
                     log.debug("Send Start Transaction to OCPP")
@@ -227,10 +239,20 @@ class Optional:
                 transaction_list = OCPPClient.get_ocpp_transaction_list()
                 index = transaction_list.index(chargepoint_ocpp.num)
                 transaction_id = transaction_list[index+1]
+                if chargepoint_ocpp.num in rfid_started_chargepoints:
+                    index_rfid = rfid_started_chargepoints.index(chargepoint_ocpp.num)
+                    id_tag = rfid_started_chargepoints[index_rfid+1]
+                    rfid_started_chargepoints.pop(index_rfid)
+                    rfid_started_chargepoints.pop(index_rfid)
+                elif (chargepoint_ocpp.data.set.rfid is None and
+                      chargepoint_ocpp.template.data.valid_tags[0] is not None):
+                    id_tag = chargepoint_ocpp.template.data.valid_tags[0]
+                else:
+                    id_tag = 0
                 try:
                     asyncio.run_coroutine_threadsafe(
                         OCPPClient._stop_transaction(connector_id,
-                                                     meter_value_charged, transaction_id), OcppGet.loop_ocpp)
+                                                     meter_value_charged, transaction_id, id_tag), OcppGet.loop_ocpp)
                 except Exception as e:
                     log.exception("Fehler Trigger Stop Transaction", e)
                 log.debug("Send Stop Transaction to OCPP")
@@ -259,57 +281,46 @@ class ChargePoint(cp):
 
     async def send_boot_notification(self):
         try:
-            request = call.BootNotification(
+            await self.call(call.BootNotification(
                 charge_point_model="openWB",
                 charge_point_vendor="openwb"
-            )
-            response = await self.call(request)
-            log.info("OCCP Connection established: ", response)
+            ))
         except asyncio.exceptions.TimeoutError:
-            log.exception("TimeOutError StartUp")
+            log.exception("Erwarteter TimeOutError StartUp")
 
     async def send_heart_beat(self):
         try:
-            request = call.Heartbeat(
+            await self.call(call.Heartbeat(
 
-            )
-            response = self.call(request)
-            log.info("OCPP Heartbeat: ", response)
+            ))
         except asyncio.exceptions.TimeoutError:
-            log.exception("TimeOutError HeartBeat")
+            log.exception("Erwarteter TimeOutError HeartBeat")
 
-    async def start_transaction(self, connector_id, meter_value_charged):
-        transaction_list = OCPPClient.get_ocpp_transaction_list()
+    async def start_transaction(self, connector_id, id_tag, meter_value_charged):
         try:
-            request = call.StartTransaction(
+            await self.call(call.StartTransaction(
                 connector_id=connector_id,
-                id_tag="user1",
+                id_tag=id_tag,
                 meter_start=meter_value_charged,
                 timestamp=current_time
-            )
-            response = await self.call(request)
-            transaction_list.append(connector_id)
-            transaction_list.append(response.transaction_id)
-            log.info("OCPP Start Transaction: ", response)
+            ))
         except asyncio.exceptions.TimeoutError:
-            log.exception("TimeOutError Start Transaction")
+            log.exception("Erwarteter TimeOutError Start Transaction")
 
-    async def stop_transaction(self, meter_value_charged, transaction_id):
+    async def stop_transaction(self, meter_value_charged, transaction_id, id_tag):
         try:
-            request = call.StopTransaction(meter_stop=meter_value_charged,
-                                           timestamp=current_time,
-                                           transaction_id=transaction_id,
-                                           reason="Local",
-                                           id_tag="user1"
-                                           )
-            response = await self.call(request)
-            log.info("OCPP Stop Transaction: ", response)
+            await self.call(call.StopTransaction(meter_stop=meter_value_charged,
+                                                 timestamp=current_time,
+                                                 transaction_id=transaction_id,
+                                                 reason="Local",
+                                                 id_tag=id_tag
+                                                 ))
         except asyncio.exceptions.TimeoutError:
-            log.exception("TimeOutError Stop Transaction")
+            log.exception("Erwarteter TimeOutError Stop Transaction")
 
     async def get_meter(self, connector_id, meter_value_charged):
         try:
-            request = call.MeterValues(
+            await self.call(call.MeterValues(
                 connector_id=connector_id,
                 meter_value=[{"timestamp": current_time,
                               "sampledValue": [
@@ -322,11 +333,9 @@ class ChargePoint(cp):
                                       "unit": "Wh"
                                   },
                               ]}],
-            )
-            response = await self.call(request)
-            log.info("OCPP Get meter values: ", response)
+            ))
         except asyncio.exceptions.TimeoutError:
-            log.exception("TimeOutError Meter Values")
+            log.exception("Erwarteter TimeOutError Meter Values")
 
 
 class OCPPClient(ChargePoint):
@@ -344,8 +353,8 @@ class OCPPClient(ChargePoint):
             },
         }
 
-    def get_config(occp_config):
-        OcppGet.url = occp_config["data"]["url"]
+    def get_config(ocpp_config):
+        OcppGet.url = ocpp_config["data"]["url"]
 
     def get_url():
         return OcppGet.url
@@ -385,6 +394,9 @@ class OCPPClient(ChargePoint):
     def get_ocpp_stopped_chargepoints():
         return OcppGet.stopped_chargepoints
 
+    def get_ocpp_rfid_started_chargepoints():
+        return OcppGet.rfid_started_chargepoints
+
     async def _open_connection():
         try:
             url = OCPPClient.get_url()
@@ -397,11 +409,11 @@ class OCPPClient(ChargePoint):
                     cp = ChargePoint('openWB', ws)
                     OCPPClient.initialise_ocpp_connection()
                     # Start und Bootnotification
-                    await asyncio.gather(cp.start(), cp.send_boot_notification())
+                    await asyncio.gather(cp.send_boot_notification())
         except Exception:
-            log.exception("Fehler OCCP: _open_connection")
+            log.exception("Fehler OCPP: _open_connection")
 
-    async def _start_transaction(connector_id, meter_value_charged):
+    async def _start_transaction(connector_id, id_tag, meter_value_charged):
         try:
             url = OCPPClient.get_url()
             if len(url) > 0:
@@ -412,9 +424,22 @@ class OCPPClient(ChargePoint):
                 ) as ws:
                     cp = ChargePoint('openWB', ws)
                 # Start Transaction
-                    await asyncio.gather(cp.start(), cp.start_transaction(connector_id, meter_value_charged))
+                    connector_list = OCPPClient.get_ocpp_connector_list()
+                    connector_list.append(connector_id)
+                    transaction_list = OCPPClient.get_ocpp_transaction_list()
+                    await asyncio.gather(cp.start_transaction(connector_id, id_tag, meter_value_charged))
+                    # TransactionId extrahieren
+                    transaction_str = str(ws.messages[0])[slice(str(ws.messages[0]).index(("idTag")))]
+                    index1 = str(transaction_str).index(("transactionId"))
+                    index2 = len(transaction_str)-1
+                    transaction_str_sliced = transaction_str[index1:index2]
+                    transaction_id = list(map(int, re.findall(r'\d+', transaction_str_sliced)))
+                    transaction_list.append(connector_list[0])
+                    transaction_list.append(transaction_id[0])
+                    connector_list.pop(0)
+
         except Exception:
-            log.exception("Fehler OCCP: _start_transaction")
+            log.exception("Fehler OCPP: _start_transaction")
 
     async def _transfer_values(connector_id, meter_value_charged):
         try:
@@ -427,12 +452,12 @@ class OCPPClient(ChargePoint):
                 ) as ws:
                     cp = ChargePoint('openWB', ws)
                 # transfer meter values
-                    await asyncio.gather(cp.start(),
-                                         cp.get_meter(connector_id, meter_value_charged))
+                    await asyncio.gather(
+                        cp.get_meter(connector_id, meter_value_charged))
         except Exception:
-            log.exception("Fehler OCCP: _transfer_values")
+            log.exception("Fehler OCPP: _transfer_values")
 
-    async def _stop_transaction(connector_id, meter_value_charged, transaction_id):
+    async def _stop_transaction(connector_id, meter_value_charged, transaction_id, id_tag):
         try:
             url = OCPPClient.get_url()
             if len(url) > 0:
@@ -446,14 +471,14 @@ class OCPPClient(ChargePoint):
                     stopped_chargepoints = OCPPClient.get_ocpp_stopped_chargepoints()
                     stopped_chargepoints.append(connector_id)
                 # Stop transaction
-                    await asyncio.gather(cp.start(), cp.stop_transaction(meter_value_charged, transaction_id))
+                    await asyncio.gather(cp.stop_transaction(meter_value_charged, transaction_id, id_tag))
                     index = transaction_list.index(stopped_chargepoints[0])
                     transaction_list.pop(index)
                     transaction_list.pop(index)
                     stopped_chargepoints.pop(0)
 
         except Exception:
-            log.exception("Fehler OCCP: _stop_transaction")
+            log.exception("Fehler OCPP: _stop_transaction")
 
     async def _close_connection():
         try:
@@ -467,7 +492,7 @@ class OCPPClient(ChargePoint):
                     # Close connection
                     await ws.close()
         except Exception:
-            log.exception("Fehler OCCP: _close_connection")
+            log.exception("Fehler OCPP: _close_connection")
 
     def run():
         asyncio.set_event_loop(OcppGet.loop_ocpp)
