@@ -152,12 +152,11 @@ export function unlockDisplay() {
 		numberpad.toggle()
 	} else {
 		displayConfig.locked = false
-		
 	}
 }
 
 export function checkCode(code: string) {
-	return code === displayConfig.code
+	return code == displayConfig.code
 }
 
 export function correctHouseConsumption() {

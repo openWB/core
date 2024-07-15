@@ -21,7 +21,7 @@
 	</div>
 	<ModalComponent modal-id="numberpad">
 		<template #title>PIN Eingeben</template>
-		<NumberPad model-value="0" @update:model-value="validateCode"></NumberPad>
+		<NumberPad model-value="" @update:model-value="validateCode"></NumberPad>
 	</ModalComponent>
 	<ModalComponent modal-id="statuspage">
 		<template #title>Systemstatus</template>
@@ -53,7 +53,7 @@ function validateCode(s: string) {
 	if (checkCode(s)) {
 		displayConfig.locked = false
 		setTimeout(() => {
-			displayConfig.locked=true
+			displayConfig.locked = true
 		}, displayConfig.timeout * 1000)
 	}
 }

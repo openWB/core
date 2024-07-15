@@ -42,16 +42,13 @@ import { chargePoints } from '@/components/chargePointList/model'
 let interval: ReturnType<typeof setInterval>
 
 function cpRight() {
-	console.log('Charge Point clicked')
 	let cpcount = Object.values(chargePoints).length
 	globalConfig.cpToShow = (globalConfig.cpToShow + 1) % cpcount
 }
 function cpLeft() {
-	console.log('Charge Point clicked')
 	let cpcount = Object.values(chargePoints).length
 	globalConfig.cpToShow =
 		(((globalConfig.cpToShow - 1) % cpcount) + cpcount) % cpcount
-	console.log(globalConfig.cpToShow)
 }
 function selectPowermeter() {
 	globalConfig.graphToShow = 'powermeter'
