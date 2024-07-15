@@ -17,7 +17,6 @@ from math import ceil  # Aufrunden
 import threading
 from typing import Dict, List
 from control import data
-import re
 
 
 log = logging.getLogger(__name__)
