@@ -153,7 +153,7 @@ chargelog_two_hour_change = [{'chargepoint': {'id': 4, 'name': 'LP 1'},
     pytest.param([chargelog_two_hour_change], 0, 0, id="zwei Stundenwechsel"),
 ]
 )
-def test_upgrade_datastore_51(load, expected_call_count, expected_costs, monkeypatch):
+def test_upgrade_datastore_52(load, expected_call_count, expected_costs, monkeypatch):
     for _ in range(7):
         load.append(FileNotFoundError())
     mock_json_load = Mock(side_effect=load)
@@ -170,14 +170,14 @@ def test_upgrade_datastore_51(load, expected_call_count, expected_costs, monkeyp
                              "openWB/general/prices/pv": b'0.0001',
                              "openWB/optional/et/provider": b'{"type": null, "configuration": {}}'}
 
-    u.upgrade_datastore_51()
+    u.upgrade_datastore_52()
 
     assert mock_json_dump.call_count == expected_call_count
     if expected_call_count > 0:
         assert mock_json_dump.call_args[0][0][0]['data']['costs'] == expected_costs
 
 
-def test_upgrade_datastore_51_with_tariff(monkeypatch):
+def test_upgrade_datastore_52_with_tariff(monkeypatch):
     load = [chargelog_one_hour_change_day_change_bug, create_daily_log_with_charging(
         "01/03/2024, 23:55", 1)] + [create_daily_log_with_charging(
             "01/04/2024, 00:00", 4, 1)] * 3
@@ -201,7 +201,7 @@ def test_upgrade_datastore_51_with_tariff(monkeypatch):
                              "openWB/optional/et/provider":
                              b'{"name": "aWATTar Hourly", "type": "awattar", "configuration": {"country": "de"}}'}
 
-    u.upgrade_datastore_51()
+    u.upgrade_datastore_52()
 
     assert mock_json_dump.call_count == 1
     assert mock_json_dump.call_args[0][0][0]['data']['costs'] == 0.8364
