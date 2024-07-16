@@ -39,7 +39,13 @@ export default {
      */
     confirm() {
       console.log("reboot requested");
-      this.$root.sendSystemCommand("systemReboot");
+      if (this.mqttStore.state.settings.parentChargePoint1 !== undefined) {
+        this.$root.sendSystemCommand("chargePointReboot", {
+          chargePoint: this.mqttStore.state.settings.parentChargePoint1,
+        });
+      } else {
+        this.$root.sendSystemCommand("systemReboot");
+      }
     },
   },
 };
