@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import datetime
 import logging
-from typing import Dict
+from typing import Dict, Optional
 import pytz
 from requests.exceptions import HTTPError
 
@@ -39,7 +39,7 @@ def _refresh_token(config: VoltegoTariff):
     Pub().pub("openWB/set/optional/et/provider", asdict(config))
 
 
-def fetch(config: VoltegoTariff) -> None:
+def fetch_prices(config: VoltegoTariff, date: Optional[int]) -> Dict[int, float]:
     def get_raw_prices():
         return req.get_http_session().get(
             "https://api.voltego.de/market_data/day_ahead/DE_LU/60",
@@ -49,11 +49,14 @@ def fetch(config: VoltegoTariff) -> None:
         ).json()["elements"]
 
     validate_token(config)
+    if date is None:
+        date = int(timecheck.create_unix_timestamp_current_full_hour())
+    else:
+        date -= 3600
     # start_date von voller Stunde sonst liefert die API die nächste Stunde
-    start_date = datetime.datetime.fromtimestamp(
-        timecheck.create_unix_timestamp_current_full_hour()).astimezone(
-            pytz.timezone("Europe/Berlin")).isoformat(sep="T", timespec="seconds")
-    if datetime.datetime.today().astimezone(pytz.timezone("Europe/Berlin")).dst().total_seconds()/3600:
+    start_date = datetime.datetime.fromtimestamp(date).astimezone(
+        pytz.timezone("Europe/Berlin")).isoformat(sep="T", timespec="seconds")
+    if datetime.datetime.fromtimestamp(date).astimezone(pytz.timezone("Europe/Berlin")).dst().total_seconds()/3600:
         # Sommerzeit
         timezone = "UTC+2:00"
     else:
@@ -79,8 +82,8 @@ def fetch(config: VoltegoTariff) -> None:
 def create_electricity_tariff(config: VoltegoTariff):
     validate_token(config)
 
-    def updater():
-        return TariffState(prices=fetch(config))
+    def updater(date: Optional[int] = None):
+        return TariffState(prices=fetch_prices(config, date))
     return updater
 
 
