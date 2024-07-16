@@ -10,28 +10,28 @@ from modules.devices.deye.config import DeyeCounterSetup
 
 
 class DeyeCounter:
-    def __init__(self, device_id: int, component_config: DeyeCounterSetup) -> None:
+    def __init__(self, device_id: int, component_config: DeyeCounterSetup, device_type: int) -> None:
         self.component_config = dataclass_from_dict(DeyeCounterSetup, component_config)
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.__device_id = device_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.device_type = device_type
 
     def update(self, client: ModbusTcpClient_):
         unit = self.component_config.configuration.modbus_id
 
-        device_type = client.read_holding_registers(0, ModbusDataType.INT_16, unit=unit)
-        if device_type == 0x0200 or device_type == 0x0300:  # SINGLE_PHASE_STRING or SINGLE_PHASE_HYBRID
+        if self.device_type == 0x0200 or self.device_type == 0x0300:  # SINGLE_PHASE_STRING or SINGLE_PHASE_HYBRID
             frequency = client.read_holding_registers(79, ModbusDataType.INT_16, unit=unit) * 100
 
-            if device_type == 0x0300:  # SINGLE_PHASE_HYBRID
+            if self.device_type == 0x0300:  # SINGLE_PHASE_HYBRID
                 powers = [0]*3
                 currents = [0]*3
                 voltages = [0]*3
                 power = [0]
                 # High und low word vom import sind nicht in aufeinanderfolgenden Registern
                 imported, exported = self.sim_counter.sim_count(power)
-            elif device_type == 0x0200:  # SINGLE_PHASE_STRING
+            elif self.device_type == 0x0200:  # SINGLE_PHASE_STRING
                 currents = [c / 100 for c in client.read_holding_registers(76, [ModbusDataType.INT_16]*3, unit=unit)]
                 voltages = [v / 10 for v in client.read_holding_registers(70, [ModbusDataType.INT_16]*3, unit=unit)]
                 powers = [currents[i] * voltages[i] for i in range(0, 3)]
