@@ -36,7 +36,7 @@ export default {
     },
     svgRectWidth() {
       return (
-        (this.svgSize.xMax - this.svgSize.xMin - this.svgSize.strokeWidth) /
+        (this.svgSize.xMax - this.svgSize.xMin - this.svgSize.strokeWidth - this.svgSize.numColumns) /
         this.svgSize.numColumns
       );
     },
@@ -69,6 +69,9 @@ export default {
     connectedChargePoints() {
       return this.mqttStore.getChargePointIds;
     },
+    chargePointSumPower() {
+      return this.mqttStore.getChargePointSumPower("object");
+    },
     chargePoint1Power() {
       if (this.connectedChargePoints.length > 0) {
         return (
@@ -91,11 +94,25 @@ export default {
       }
       return { textValue: "N/A" };
     },
+    chargePoint3Power() {
+      if (this.connectedChargePoints.length > 2) {
+        return (
+          this.mqttStore.getChargePointPower(
+            this.connectedChargePoints[2],
+            "object",
+          ) || { textValue: "Loading..." }
+        );
+      }
+      return { textValue: "N/A" };
+    },
     chargePoint1Name() {
       return this.mqttStore.getChargePointName(this.connectedChargePoints[0]);
     },
     chargePoint2Name() {
       return this.mqttStore.getChargePointName(this.connectedChargePoints[1]);
+    },
+    chargePoint3Name() {
+      return this.mqttStore.getChargePointName(this.connectedChargePoints[2]);
     },
     chargePoint1VehicleConnected() {
       return this.mqttStore.getChargePointPlugState(
@@ -105,6 +122,11 @@ export default {
     chargePoint2VehicleConnected() {
       return this.mqttStore.getChargePointPlugState(
         this.connectedChargePoints[1],
+      );
+    },
+    chargePoint3VehicleConnected() {
+      return this.mqttStore.getChargePointPlugState(
+        this.connectedChargePoints[2],
       );
     },
     chargePoint1ConnectedVehicleName() {
@@ -117,6 +139,11 @@ export default {
         this.connectedChargePoints[1],
       );
     },
+    chargePoint3ConnectedVehicleName() {
+      return this.mqttStore.getChargePointConnectedVehicleName(
+        this.connectedChargePoints[2],
+      );
+    },
     chargePoint1ConnectedVehicleChargeMode() {
       return this.mqttStore.getChargePointConnectedVehicleChargeMode(
         this.connectedChargePoints[0],
@@ -125,6 +152,11 @@ export default {
     chargePoint2ConnectedVehicleChargeMode() {
       return this.mqttStore.getChargePointConnectedVehicleChargeMode(
         this.connectedChargePoints[1],
+      );
+    },
+    chargePoint3ConnectedVehicleChargeMode() {
+      return this.mqttStore.getChargePointConnectedVehicleChargeMode(
+        this.connectedChargePoints[2],
       );
     },
     chargePoint1ConnectedVehicleSoc() {
@@ -141,64 +173,69 @@ export default {
         ).soc / 100
       );
     },
-    isAnimatedGrid() {
+    chargePoint3ConnectedVehicleSoc() {
+      return (
+        this.mqttStore.getChargePointConnectedVehicleSoc(
+          this.connectedChargePoints[2],
+        ).soc / 100
+      );
+    },
+    gridConsumption() {
       return this.gridPower.value > 0;
     },
-    isAnimatedGridReverse() {
+    gridFeedIn() {
       return this.gridPower.value < 0;
     },
-    isAnimatedPV() {
-      return this.pvPower.value > 100;
-    },
-    isAnimatedHome() {
+    homeConsumption() {
       return this.homePower.value > 0;
     },
-    isAnimatedBattery() {
+    homeProduction() {
+      return this.homePower.value < 0;
+    },
+    pvProduction() {
+      return this.pvPower.value > 0;
+    },
+    batteryDischarging() {
       return this.batteryPower.value < 0;
     },
-    isAnimatedBatteryReverse() {
+    batteryCharging() {
       return this.batteryPower.value > 0;
     },
-    isAnimatedChargePoint1() {
+    chargePointSumCharging() {
+      return this.chargePointSumPower.value > 0;
+    },
+    chargePointSumDischarging() {
+      return this.chargePointSumPower.value < 0;
+    },
+    chargePoint1Charging() {
+      return this.chargePoint1Power.value > 0;
+    },
+    chargePoint1Discharging() {
       return this.chargePoint1Power.value < 0;
     },
-    isAnimatedChargePoint1Reverse() {
-      return this.chargePoint1Power.value > 0;
+    chargePoint2Charging() {
+      return this.chargePoint2Power.value > 0;
     },
-    isAnimatedChargePoint2() {
+    chargePoint2Discharging() {
       return this.chargePoint2Power.value < 0;
     },
-    isAnimatedChargePoint2Reverse() {
-      return this.chargePoint2Power.value > 0;
+    chargePoint3Charging() {
+      return this.chargePoint3Power.value > 0;
     },
-    gridPositive() {
-      return this.gridPower.value > 0;
-    },
-    pvPositive() {
-      return this.pvPower.value > 100;
-    },
-    homePositive() {
-      return this.homePower.value > 0;
-    },
-    batteryPositive() {
-      return this.batteryPower.value > 0;
-    },
-    chargePoint1Positive() {
-      return this.chargePoint1Power.value > 0;
-    },
-    chargePoint2Positive() {
-      return this.chargePoint2Power.value > 0;
+    chargePoint3Discharging() {
+      return this.chargePoint3Power.value < 0;
     },
     svgComponents() {
       var components = [];
+      // add grid component
       if (this.mqttStore.getThemeConfiguration.enable_dashboard_card_grid) {
         components.push({
           id: "grid",
           class: {
             base: "grid",
-            valueLabel: this.gridPositive ? "fill-danger" : "fill-success",
-            animated: this.isAnimatedGrid,
-            animatedReverse: !this.gridPositive,
+            valueLabel: this.gridFeedIn ? "fill-success" : (this.gridConsumption ? "fill-danger" : ""),
+            animated: this.gridConsumption,
+            animatedReverse: this.gridFeedIn,
           },
           position: {
             row: 0,
@@ -208,6 +245,7 @@ export default {
           icon: "icons/owbGrid.svg",
         });
       }
+      // add home component
       if (
         this.mqttStore.getThemeConfiguration
           .enable_dashboard_card_home_consumption
@@ -217,8 +255,8 @@ export default {
           class: {
             base: "home",
             valueLabel: "",
-            animated: this.isAnimatedHome,
-            animatedReverse: this.homePositive,
+            animated: this.homeProduction,
+            animatedReverse: this.homeConsumption,
           },
           position: {
             row: 0,
@@ -228,6 +266,7 @@ export default {
           icon: "icons/owbHouse.svg",
         });
       }
+      // add pv sum component
       if (
         this.mqttStore.getPvConfigured &&
         this.mqttStore.getThemeConfiguration.enable_dashboard_card_inverter_sum
@@ -236,9 +275,9 @@ export default {
           id: "pv",
           class: {
             base: "pv",
-            valueLabel: this.pvPositive ? "fill-success" : "",
-            animated: this.isAnimatedPV,
-            animatedReverse: !this.pvPositive,
+            valueLabel: this.pvProduction ? "fill-success" : "",
+            animated: this.pvProduction,
+            animatedReverse: false,
           },
           position: {
             row: 1,
@@ -248,6 +287,7 @@ export default {
           icon: "icons/owbPV.svg",
         });
       }
+      // add battery sum component
       if (
         this.mqttStore.getBatteryConfigured &&
         this.mqttStore.getThemeConfiguration.enable_dashboard_card_battery_sum
@@ -257,8 +297,8 @@ export default {
           class: {
             base: "battery",
             valueLabel: "",
-            animated: this.isAnimatedBattery,
-            animatedReverse: this.isAnimatedBatteryReverse,
+            animated: this.batteryDischarging,
+            animatedReverse: this.batteryCharging,
           },
           position: {
             row: 1,
@@ -269,98 +309,171 @@ export default {
           icon: "icons/owbBattery.svg",
         });
       }
+      // charge point and vehicle components
       if (
         this.connectedChargePoints.length > 0 &&
         this.mqttStore.getThemeConfiguration
           .enable_dashboard_card_charge_point_sum
       ) {
-        components.push({
-          id: "charge-point-1",
-          class: {
-            base: "charge-point",
-            valueLabel: "",
-            animated: this.isAnimatedChargePoint1,
-            animatedReverse: this.isAnimatedChargePoint1Reverse,
-          },
-          position: {
-            row: 2,
-            column: 0,
-          },
-          label: [this.chargePoint1Name, this.chargePoint1Power.textValue],
-          icon: "icons/owbChargePoint.svg",
-        });
+        if (this.connectedChargePoints.length <= 3) {
+          // add charge point 1 component
+          components.push({
+            id: "charge-point-1",
+            class: {
+              base: "charge-point",
+              valueLabel: "",
+              animated: this.chargePoint1Discharging,
+              animatedReverse: this.chargePoint1Charging,
+            },
+            position: {
+              row: 2,
+              column: this.connectedChargePoints.length > 1 ? 0 : 1,
+            },
+            label: [this.chargePoint1Name, this.chargePoint1Power.textValue],
+            icon: "icons/owbChargePoint.svg",
+          });
+          if (
+            this.chargePoint1VehicleConnected &&
+            this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles
+          ) {
+            // add vehicle 1 component
+            components.push({
+              id: "vehicle-1",
+              class: {
+                base: "vehicle",
+                valueLabel:
+                  "fill-" + this.chargePoint1ConnectedVehicleChargeMode.class,
+              },
+              position: {
+                row: 3,
+                column: this.connectedChargePoints.length > 1 ? 0 : 1,
+              },
+              label: [
+                this.chargePoint1ConnectedVehicleName || "---",
+                this.chargePoint1ConnectedVehicleChargeMode.label || "---",
+              ],
+              soc: this.chargePoint1ConnectedVehicleSoc,
+              icon: "icons/owbVehicle.svg",
+            });
+          }
+          if (this.connectedChargePoints.length > 1) {
+            // add charge point 2 component
+            components.push({
+              id: "charge-point-2",
+              class: {
+                base: "charge-point",
+                valueLabel: "",
+                animated: this.chargePoint2Discharging,
+                animatedReverse: this.chargePoint2Charging,
+              },
+              position: {
+                row: 2,
+                column: this.connectedChargePoints.length > 2 ? 1 : 2,
+              },
+              label: [this.chargePoint2Name, this.chargePoint2Power.textValue],
+              icon: "icons/owbChargePoint.svg",
+            });
+            if (
+              this.chargePoint2VehicleConnected &&
+              this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles
+            ) {
+              // add vehicle 2 component
+              components.push({
+                id: "vehicle-2",
+                class: {
+                  base: "vehicle",
+                  valueLabel:
+                    "fill-" + this.chargePoint2ConnectedVehicleChargeMode.class,
+                },
+                position: {
+                  row: 3,
+                  column: this.connectedChargePoints.length > 2 ? 1 : 2,
+                },
+                label: [
+                  this.chargePoint2ConnectedVehicleName || "---",
+                  this.chargePoint2ConnectedVehicleChargeMode.label || "---",
+                ],
+                soc: this.chargePoint2ConnectedVehicleSoc,
+                icon: "icons/owbVehicle.svg",
+              });
+            }
+            if (this.connectedChargePoints.length > 2) {
+              // add charge point 3 component
+              components.push({
+                id: "charge-point-3",
+                class: {
+                  base: "charge-point",
+                  valueLabel: "",
+                  animated: this.chargePoint3Discharging,
+                  animatedReverse: this.chargePoint3Charging,
+                },
+                position: {
+                  row: 2,
+                  column: 2,
+                },
+                label: [this.chargePoint3Name, this.chargePoint3Power.textValue],
+                icon: "icons/owbChargePoint.svg",
+              });
+              if (
+                this.chargePoint3VehicleConnected &&
+                this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles
+              ) {
+                // add vehicle 3 component
+                components.push({
+                  id: "vehicle-3",
+                  class: {
+                    base: "vehicle",
+                    valueLabel:
+                      "fill-" + this.chargePoint3ConnectedVehicleChargeMode.class,
+                  },
+                  position: {
+                    row: 3,
+                    column: 2,
+                  },
+                  label: [
+                    this.chargePoint3ConnectedVehicleName || "---",
+                    this.chargePoint3ConnectedVehicleChargeMode.label || "---",
+                  ],
+                  soc: this.chargePoint3ConnectedVehicleSoc,
+                  icon: "icons/owbVehicle.svg",
+                });
+              }
+            }
+          }
+        } else {
+          // add charge point sum component
+          components.push({
+            id: "charge-point-sum",
+            class: {
+              base: "charge-point",
+              valueLabel: "",
+              animated: this.chargePointSumDischarging,
+              animatedReverse: this.chargePointSumCharging,
+            },
+            position: {
+              row: 2,
+              column: 1,
+            },
+            label: ["Ladepunkte", this.chargePointSumPower.textValue],
+            icon: "icons/owbChargePoint.svg",
+          })
+        }
       }
+      // set number of rows if no vehicles displayed
       if (
-        this.connectedChargePoints.length > 1 &&
-        this.mqttStore.getThemeConfiguration
-          .enable_dashboard_card_charge_point_sum
+        !this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles ||
+        this.connectedChargePoints.length === 0 ||
+        this.connectedChargePoints.length > 3
       ) {
-        components.push({
-          id: "charge-point-2",
-          class: {
-            base: "charge-point",
-            valueLabel: "",
-            animated: this.isAnimatedChargePoint2,
-            animatedReverse: this.isAnimatedChargePoint2Reverse,
-          },
-          position: {
-            row: 2,
-            column: 2,
-          },
-          label: [this.chargePoint2Name, this.chargePoint2Power.textValue],
-          icon: "icons/owbChargePoint.svg",
-        });
-      }
-      if (
-        this.chargePoint1VehicleConnected &&
-        this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles
-      ) {
-        components.push({
-          id: "vehicle-1",
-          class: {
-            base: "vehicle",
-            valueLabel:
-              "fill-" + this.chargePoint2ConnectedVehicleChargeMode.class,
-          },
-          position: {
-            row: 3,
-            column: 0,
-          },
-          label: [
-            this.chargePoint1ConnectedVehicleName || "---",
-            this.chargePoint1ConnectedVehicleChargeMode.label || "---",
-          ],
-          soc: this.chargePoint1ConnectedVehicleSoc,
-          icon: "icons/owbVehicle.svg",
-        });
-      }
-      if (
-        this.chargePoint2VehicleConnected &&
-        this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles
-      ) {
-        components.push({
-          id: "vehicle-2",
-          class: {
-            base: "vehicle",
-            valueLabel:
-              "fill-" + this.chargePoint2ConnectedVehicleChargeMode.class,
-          },
-          position: {
-            row: 3,
-            column: 2,
-          },
-          label: [
-            this.chargePoint2ConnectedVehicleName || "---",
-            this.chargePoint2ConnectedVehicleChargeMode.label || "---",
-          ],
-          soc: this.chargePoint2ConnectedVehicleSoc,
-          icon: "icons/owbVehicle.svg",
-        });
+        this.setSvgNumRows(3);
       }
       return components;
     },
   },
   methods: {
+    setSvgNumRows(numRows) {
+      this.svgSize.numRows = numRows;
+    },
     calcRowY(row) {
       let yMin =
         this.svgSize.yMin +
@@ -383,10 +496,12 @@ export default {
     },
     calcFlowLineAnchorX(column) {
       let columnX = this.calcColumnX(column);
-      if (column < this.svgSize.numColumns / 2)
+      if (column < (this.svgSize.numColumns - 1) / 2) {
         return columnX + this.svgRectWidth / 2 - this.svgSize.circleRadius;
-      else if (column > this.svgSize.numColumns / 2)
+      }
+      else if (column > (this.svgSize.numColumns - 1) / 2) {
         return columnX - this.svgRectWidth / 2 + this.svgSize.circleRadius;
+      }
       return columnX;
     },
   },
@@ -476,6 +591,18 @@ export default {
                       "
                     />
                   </clipPath>
+                  <clipPath :id="`clip-label-${component.id}`">
+                    <rect
+                      :x="
+                        -svgRectWidth / 2 +
+                          2 * svgSize.circleRadius +
+                          svgSize.strokeWidth
+                      "
+                      :y="-svgSize.textSize * 2"
+                      :width="svgRectWidth - 2 * svgSize.circleRadius - 2 * svgSize.strokeWidth"
+                      :height="svgSize.textSize * 4"
+                    />
+                  </clipPath>
                 </defs>
                 <circle
                   cx="0"
@@ -498,7 +625,10 @@ export default {
                   :width="svgIconWidth"
                 />
               </g>
-              <text text-anchor="start">
+              <text
+                text-anchor="start"
+                :clip-path="`url(#clip-label-${component.id})`"
+              >
                 <tspan
                   :x="
                     -svgRectWidth / 2 +
