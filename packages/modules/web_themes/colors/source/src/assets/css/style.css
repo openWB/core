@@ -129,7 +129,7 @@ html {
 	font-size: var(--font-large);
 }
 h3 {
-	font-size: var(--font-extralarge);
+	font-size: var(--font-large);
 	color: var(--color-title);
 	font-weight: bold;
 }

@@ -95,7 +95,6 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processCommandMessages(topic, message)
 	} else if (topic.match(/^openwb\/optional\//i)) {
 		processDisplayMessages(topic, message)
-		console.debug(`int_display [${topic}] ${message}`)
 	}
 	// else if ( mqttTopic.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttTopic, message); }
 }
@@ -273,7 +272,6 @@ function processDisplayMessages(topic: string, message: string) {
 		displayConfig.localCpOnly = JSON.parse(message)
 	} else if (topic.match(/^openwb\/optional\/int_display\/theme$/i)) {
 		const config = JSON.parse(message)
-		console.log(config)
 		displayConfig.usePin = config.configuration.lock_changes
 		displayConfig.code = config.configuration.lock_changes_code
 	}

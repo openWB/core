@@ -66,7 +66,6 @@ export async function mqttSubscribe(toTopic: string) {
 			return
 		}
 	})
-	console.log('Subscribed to ' + toTopic)
 }
 export function mqttUnsubscribe(fromTopic: string) {
 	subscription.topic = fromTopic
