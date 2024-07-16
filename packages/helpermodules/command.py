@@ -23,7 +23,7 @@ from helpermodules.broker import InternalBrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
-from helpermodules.parse_send_debug import parse_send_debug_data
+from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
@@ -536,10 +536,8 @@ class Command:
 
     def sendDebug(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Systembericht wird erstellt...", MessageType.INFO)
-        parent_file = Path(__file__).resolve().parents[2]
         previous_log_level = SubData.system_data["system"].data["debug_level"]
-        run_command([str(parent_file / "runs" / "send_debug.sh"),
-                     json.dumps(payload["data"]), parse_send_debug_data()])
+        create_debug_log(payload["data"])
         Pub().pub("openWB/set/system/debug_level", previous_log_level)
         pub_user_message(payload, connection_id, "Systembericht wurde versandt.", MessageType.SUCCESS)
 
