@@ -177,7 +177,7 @@ def test_upgrade_datastore_52(load, expected_call_count, expected_costs, monkeyp
         assert mock_json_dump.call_args[0][0][0]['data']['costs'] == expected_costs
 
 
-def test_upgrade_datastore_52_with_tariff(monkeypatch):
+def test_upgrade_datastore_52_with_tariff(mock_strptime_timestamp, monkeypatch):
     load = [chargelog_one_hour_change_day_change_bug, create_daily_log_with_charging(
         "01/03/2024, 23:55", 1)] + [create_daily_log_with_charging(
             "01/04/2024, 00:00", 4, 1)] * 3
