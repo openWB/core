@@ -33,9 +33,12 @@ def mock_strptime_timestamp(monkeypatch):
     # Timezone-Objekt muss vor dem Mock von open initialisiert werden, da dies auch open verwendet und mit dem Mock nicht mehr funktioniert
     # timezone = pytz.timezone('US/Eastern')
     timezone = pytz.timezone('Europe/Berlin')
+    # timezone = pytz.timezone('UTC')
     original_strptime = datetime.datetime.strptime
     monkeypatch.setattr(datetime.datetime, "strptime", lambda s, fmt: original_strptime(
-        s, fmt).replace(timezone))
+        s, fmt).astimezone(timezone))
+    monkeypatch.setattr(datetime.datetime, "strftime", lambda s, fmt: original_strptime(
+        s, fmt).astimezone(timezone))
 
 
 @pytest.fixture(autouse=True)
