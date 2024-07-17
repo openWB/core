@@ -31,10 +31,11 @@ def mock_today(monkeypatch) -> None:
 @pytest.fixture(autouse=False)
 def mock_strptime_timestamp(monkeypatch):
     # Timezone-Objekt muss vor dem Mock von open initialisiert werden, da dies auch open verwendet und mit dem Mock nicht mehr funktioniert
+    # timezone = pytz.timezone('US/Eastern')
     timezone = pytz.timezone('Europe/Berlin')
     original_strptime = datetime.datetime.strptime
     monkeypatch.setattr(datetime.datetime, "strptime", lambda s, fmt: original_strptime(
-        s, fmt).astimezone(timezone))
+        s, fmt).replace(timezone))
 
 
 @pytest.fixture(autouse=True)
