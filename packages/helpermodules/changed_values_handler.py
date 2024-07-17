@@ -86,6 +86,19 @@ class ChangedValuesHandler:
                                        self.prev_data.cp_data[key].data, value.data)
                 except Exception as e:
                     log.exception(e)
+            for key, value in data.data.bat_data.items():
+                try:
+                    self._update_value(f"openWB/set/bat/{value.num}/",
+                                       self.prev_data.bat_data[key].data, value.data)
+                except Exception as e:
+                    log.exception(e)
+            for key, value in data.data.counter_data.items():
+                try:
+                    self._update_value(f"openWB/set/counter/{value.num}/",
+                                       self.prev_data.counter_data[key].data, value.data)
+                except Exception as e:
+                    log.exception(e)
+            # chargepoint, ev template, autolock, time and scheduled charging plans mutable_by_algorithm immer false
         except Exception as e:
             log.exception(e)
 

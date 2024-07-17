@@ -199,10 +199,16 @@ class EvData:
     set: Set = field(default_factory=set_factory)
     charge_template: int = field(default=0, metadata={"topic": "charge_template"})
     ev_template: int = field(default=0, metadata={"topic": "ev_template"})
-    name: str = field(default="neues Fahrzeug", metadata={"topic": "name"})
-    tag_id: List[str] = field(default_factory=empty_list_factory, metadata={
-                              "topic": "tag_id"})
-    get: Get = field(default_factory=get_factory)
+
+
+<< << << < HEAD
+name: str = field(default="neues Fahrzeug", metadata={"topic": "name"})
+== == == =
+name: str = field(default="Standard-Fahrzeug", metadata={"topic": "name"})
+>>>>>> > b04dac184(metadata all)
+tag_id: List[str] = field(default_factory=empty_list_factory, metadata={
+    "topic": "tag_id"})
+get: Get = field(default_factory=get_factory)
 
 
 class Ev:
@@ -581,6 +587,11 @@ class ChargeTemplate:
 
     BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
     CHARGING_PRICE_EXCEEDED = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
+
+    def __init__(self, index):
+        self.data: ChargeTemplateData = field(default_factory=charge_template_data_factory, metadata={
+                                              "topic": ""})
+        self.ct_num = index
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."
     TIME_CHARGING_NO_PLAN_ACTIVE = "Keine Ladung, da kein Zeitfenster für Zeitladen aktiv ist."

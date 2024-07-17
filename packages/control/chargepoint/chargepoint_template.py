@@ -36,7 +36,7 @@ def autolock_factory():
 
 @dataclass
 class CpTemplateData:
-    autolock: Autolock = field(default_factory=autolock_factory)
+    autolock: Autolock = field(default_factory=autolock_factory, metadata={"topic": ""})
     id: int = 0
     max_current_multi_phases: int = 32
     max_current_single_phase: int = 32
@@ -45,12 +45,18 @@ class CpTemplateData:
     valid_tags: List = field(default_factory=empty_list_factory)
 
 
+def cp_template_data_factory() -> CpTemplateData:
+    return CpTemplateData()
+
+
+@dataclass
 class CpTemplate:
     """ Profil für einen Ladepunkt.
     """
 
     def __init__(self):
-        self.data: CpTemplateData = CpTemplateData()
+        self.data: CpTemplateData = field(default_factory=cp_template_data_factory, metadata={
+                                          "topic": ""})
 
     def is_locked_by_autolock(self, charge_state: bool) -> bool:
         if self.data.autolock.active:
