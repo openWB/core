@@ -192,7 +192,7 @@ def test_upgrade_datastore_52_with_tariff(monkeypatch):
     mock_copyfile = Mock()
     monkeypatch.setattr(update_config, "copyfile", mock_copyfile)
     # Mock auskommentieren, um echte Daten zu erhalten
-    mock_awattar = Mock(return_value={1704319200: 5.812e-05, 1704322800: 5.73e-05, 1704326400: 5.046e-05})
+    mock_awattar = Mock(return_value={1704319200: 5.812e-05, 1704322800: 5.73e-05})
     monkeypatch.setattr(tariff, "fetch_prices", mock_awattar)
     u = UpdateConfig()
     u.all_received_topics = {"openWB/general/prices/bat": b'0.0002',
