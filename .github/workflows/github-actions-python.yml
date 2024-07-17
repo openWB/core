@@ -16,5 +16,5 @@ jobs:
           pip3 install -r "/home/runner/work/core/core/requirements.txt"
       - name: Test with pytest
         run: |
-          PYTHONPATH=packages python -m pytest packages/helpermodules/update_config_test.py --log-cli-level=DEBUG
+          PYTHONPATH=packages python -m pytest packages --log-cli-level=DEBUG
           PYTHONPATH=runs python -m pytest packages --log-cli-level=DEBUG

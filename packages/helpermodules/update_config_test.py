@@ -177,7 +177,7 @@ def test_upgrade_datastore_52(load, expected_call_count, expected_costs, monkeyp
         assert mock_json_dump.call_args[0][0][0]['data']['costs'] == expected_costs
 
 
-def test_upgrade_datastore_52_with_tariff(mock_strptime_timestamp, monkeypatch):
+def test_upgrade_datastore_52_with_tariff(monkeypatch):
     load = [chargelog_one_hour_change_day_change_bug, create_daily_log_with_charging(
         "01/03/2024, 23:55", 1)] + [create_daily_log_with_charging(
             "01/04/2024, 00:00", 4, 1)] * 3
@@ -192,7 +192,7 @@ def test_upgrade_datastore_52_with_tariff(mock_strptime_timestamp, monkeypatch):
     mock_copyfile = Mock()
     monkeypatch.setattr(update_config, "copyfile", mock_copyfile)
     # Mock auskommentieren, um echte Daten zu erhalten
-    mock_awattar = Mock(return_value={1704319200: 5.812e-05, 1704322800: 5.73e-05})
+    mock_awattar = Mock(return_value={1704319200: 5.812e-05, 1704322800: 5.73e-05, 1704326400: 5.046e-05})
     monkeypatch.setattr(tariff, "fetch_prices", mock_awattar)
     u = UpdateConfig()
     u.all_received_topics = {"openWB/general/prices/bat": b'0.0002',
