@@ -1,3 +1,4 @@
+import re
 from typing import List, Optional, Tuple, Union
 from unittest.mock import MagicMock, Mock, patch
 
@@ -5,8 +6,8 @@ import pytest
 from modules.common import sdm
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_NO_SERIAL_NUMBER, METER_PROBLEM, USB_ADAPTER_BROKEN,
-    SeriesHardwareCheckMixin, check_meter_values)
+    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_NO_SERIAL_NUMBER, METER_PROBLEM, OPEN_TICKET,
+    USB_ADAPTER_BROKEN, SeriesHardwareCheckMixin, check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusClient, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
@@ -17,6 +18,9 @@ from modules.internal_chargepoint_handler.clients import ClientHandler
      "handle_exception_return_value, client_spec, expected_error_msg"),
     [pytest.param(Exception("Modbus"), None, None, [230]*3, None, False, ModbusSerialClient_, EVSE_BROKEN,
                   id="EVSE defekt"),
+     pytest.param(Exception("Modbus"), None, None, [230, 0, 230], None, False, ModbusSerialClient_,
+                  EVSE_BROKEN + " " + METER_BROKEN.format([230, 0, 230]) + OPEN_TICKET,
+                  id="EVSE defekt und Zähler eine Phase defekt"),
      pytest.param(None, 18, Exception("Modbus"), None, None, None,
                   ModbusSerialClient_, METER_PROBLEM, id="Zähler verkonfiguriert"),
      pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, None, False, ModbusSerialClient_,
@@ -55,7 +59,7 @@ def test_hardware_check_fails(evse_side_effect,
     mock_modbus_client.__enter__.return_value = mock_modbus_client
 
     # execution and evaluation
-    with pytest.raises(Exception, match=expected_error_msg):
+    with pytest.raises(Exception, match=re.escape(expected_error_msg)):
         ClientHandler(0, mock_modbus_client, [1], Mock())
 
 
@@ -93,7 +97,7 @@ def test_check_meter_values(voltages, expected_msg, monkeypatch):
     msg = check_meter_values(voltages)
 
     # assert
-    assert msg == expected_msg
+    assert msg == expected_msg if expected_msg is None else expected_msg.format(voltages)
 
 
 @patch('modules.common.hardware_check.ClientHandlerProtocol')
