@@ -110,15 +110,15 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 		values.batIn = 0
 	}
 	if (data['bat-all-soc']) {
-		values.batterySoc = +data['bat-all-soc']
+		values.batSoc = +data['bat-all-soc']
 	} else {
-		values.batterySoc = 0
+		values.batSoc = 0
 	}
 	if (data[car1id]) {
-		values.soc0 = +data['ev0-soc']
+		values.soc1 = +data['ev0-soc']
 	}
 	if (data[car2id]) {
-		values.soc1 = +data['ev1-soc']
+		values.soc2 = +data['ev1-soc']
 	}
 
 	values.charging = +data['charging-all']

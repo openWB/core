@@ -33,6 +33,9 @@ from helpermodules import system
 from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
+from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
+from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
+from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, RfidData)
@@ -581,11 +584,14 @@ class SubData:
                     config_dict = decode_payload(msg.payload)
                     if config_dict["type"] is None:
                         var.data.ripple_control_receiver.module = None
+                        var.ripple_control_receiver = None
                     else:
                         mod = importlib.import_module(".ripple_control_receivers." +
                                                       config_dict["type"]+".ripple_control_receiver", "modules")
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                        var.data.ripple_control_receiver.module = mod.create_ripple_control_receiver(config)
+                        var.data.ripple_control_receiver.module = config_dict
+                        var.ripple_control_receiver = ConfigurableRcr(
+                            config=config, component_initialiser=mod.create_ripple_control_receiver)
                 elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
                 elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
@@ -695,7 +701,7 @@ class SubData:
                             mod = importlib.import_module(
                                 f".electricity_tariffs.{config_dict['type']}.tariff", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                            var.et_module = mod.create_electricity_tariff(config)
+                            var.et_module = ConfigurableElectricityTariff(config, mod.create_electricity_tariff)
                             var.et_get_prices()
                     else:
                         self.set_json_payload_class(var.data.et, msg)
@@ -836,7 +842,7 @@ class SubData:
                 else:
                     mod = importlib.import_module(".backup_clouds."+config_dict["type"]+".backup_cloud", "modules")
                     config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                    var["system"].backup_cloud = mod.create_backup_cloud(config)
+                    var["system"].backup_cloud = ConfigurableBackupCloud(config, mod.create_backup_cloud)
             elif "openWB/system/backup_cloud/backup_before_update" in msg.topic:
                 self.set_json_payload(var["system"].data["backup_cloud"], msg)
             else:

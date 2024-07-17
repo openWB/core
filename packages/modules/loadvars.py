@@ -91,7 +91,7 @@ class Loadvars:
             # da die Daten erstmalig ins data-Modul kopiert werden müssen.
             if data.data.general_data.data.ripple_control_receiver.module:
                 threads.append(
-                    threading.Thread(target=data.data.general_data.data.ripple_control_receiver.module.update,
+                    threading.Thread(target=data.data.general_data.ripple_control_receiver.update,
                                      args=(), name="get ripple control receiver"))
         except Exception:
             log.exception("Fehler im loadvars-Modul")
@@ -103,7 +103,7 @@ class Loadvars:
         try:
             if data.data.general_data.data.ripple_control_receiver.module:
                 threads.append(threading.Thread(target=update_values,
-                               args=(data.data.general_data.data.ripple_control_receiver.module,),
+                               args=(data.data.general_data.ripple_control_receiver,),
                                name="set ripple control receiver"))
         except Exception:
             log.exception("Fehler im loadvars-Modul")

@@ -1,18 +1,21 @@
-from typing import Dict
+from typing import Dict, Optional
 from datetime import datetime, timedelta
 from modules.common import req
 import pytz
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.electricity_tariffs.energycharts.config import EnergyChartsTariffConfiguration
 from modules.electricity_tariffs.energycharts.config import EnergyChartsTariff
 
 
-def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
-    current_dateTime = datetime.now()
-    tomorrow = datetime.now() + timedelta(1)
+def fetch_prices(config: EnergyChartsTariffConfiguration, date: Optional[int]) -> Dict[int, float]:
+    if date:
+        date = datetime.fromtimestamp(date)
+    else:
+        date = datetime.now()
+    current_dateTime = date
+    tomorrow = date + timedelta(1)
     if datetime.today().astimezone(pytz.timezone("Europe/Berlin")).dst().total_seconds()/3600:
         # UTC Zeit +02:00 = '%2B02%3A00'
         start_time = current_dateTime.strftime("%Y-%m-%d") + 'T' + current_dateTime.strftime("%H") + \
@@ -33,9 +36,9 @@ def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
 
 
 def create_electricity_tariff(config: EnergyChartsTariff):
-    def updater():
-        return TariffState(prices=fetch_prices(config.configuration))
-    return ConfigurableElectricityTariff(config=config, component_updater=updater)
+    def updater(date: Optional[int] = None):
+        return TariffState(prices=fetch_prices(config.configuration, date))
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=EnergyChartsTariff)

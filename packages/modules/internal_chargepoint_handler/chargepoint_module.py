@@ -119,7 +119,7 @@ class ChargepointModule(AbstractChargepoint):
             )
         except Exception as e:
             self._client.read_error += 1
-            if self._client.read_error > 5:
+            if self._client.read_error > 10:
                 msg = ("Anhaltender Fehler beim Auslesen von EVSE und/oder Zähler. " +
                        "Lade- und Stecker-Status werden zurückgesetzt.")
                 chargepoint_state = ChargepointState()

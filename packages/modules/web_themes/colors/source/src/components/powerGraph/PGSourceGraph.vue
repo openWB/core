@@ -99,11 +99,9 @@ const yScale = computed(() => {
 		)
 })
 const keysToUse = computed(() => {
-	if (
-		graphData.graphMode != 'today' &&
-		graphData.graphMode != 'day' &&
-		graphData.graphMode != 'live'
-	) {
+	if (graphData.graphMode == 'live') {
+		return ['selfUsage', 'evuOut', 'batOut', 'evuIn']
+	} else if (graphData.graphMode != 'today' && graphData.graphMode != 'day') {
 		return ['evuIn', 'batOut', 'selfUsage', 'evuOut']
 	} else if (globalConfig.showInverters) {
 		const k = ['batOut', 'evuIn']

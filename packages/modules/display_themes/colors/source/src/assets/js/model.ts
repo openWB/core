@@ -8,6 +8,7 @@
 // Components have their local model
 
 import { reactive, ref } from 'vue'
+import { Modal } from 'bootstrap'
 import { GlobalData } from './types'
 import type { PowerItem, ItemProps } from './types'
 
@@ -137,6 +138,27 @@ function createPowerItem(key: string): PowerItem {
 	}
 	return p
 }
+export const displayConfig = reactive({
+	active: false,
+	locked: true,
+	usePin: false,
+	code: '',
+	timeout: 60,
+	localCpOnly: false,
+})
+export function unlockDisplay() {
+	if (displayConfig.usePin && displayConfig.locked) {
+		const numberpad = new Modal('#numberpad')
+		numberpad.toggle()
+	} else {
+		displayConfig.locked = false
+	}
+}
+
+export function checkCode(code: string) {
+	return code == displayConfig.code
+}
+
 export function correctHouseConsumption() {
 	usageSummary.house.power =
 		usageSummary.house.power - usageSummary.devices.power

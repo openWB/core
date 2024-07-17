@@ -74,13 +74,13 @@ class ChargepointModule(AbstractChargepoint):
             if self.version is not None:
                 with self.__client_error_context:
                     try:
-                        self._client.check_hardware(self.fault_state)
-                        if self.version is False:
-                            raise ValueError(
-                                "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
-                                "Bitte den Support kontaktieren.")
                         self.delay_second_cp(self.CP0_DELAY)
                         with self._client.client:
+                            self._client.check_hardware(self.fault_state)
+                            if self.version is False:
+                                raise ValueError(
+                                    "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
+                                    "Bitte den Support kontaktieren.")
                             currents = self._client.meter_client.get_currents()
                             phases_in_use = sum(1 for current in currents if current > 3)
                             plug_state, charge_state, _ = self._client.evse_client.get_plug_charge_state()
@@ -112,9 +112,9 @@ class ChargepointModule(AbstractChargepoint):
             with SingleComponentUpdateContext(self.fault_state, update_always=False):
                 with self.__client_error_context:
                     try:
-                        self._client.check_hardware(self.fault_state)
                         self.delay_second_cp(self.CP0_DELAY)
                         with self._client.client:
+                            self._client.check_hardware(self.fault_state)
                             if self.version:
                                 self._client.evse_client.set_current(int(current))
                             else:
@@ -128,8 +128,8 @@ class ChargepointModule(AbstractChargepoint):
             with SingleComponentUpdateContext(self.fault_state, update_always=False):
                 with self.__client_error_context:
                     try:
-                        self._client.check_hardware(self.fault_state)
                         with self._client.client:
+                            self._client.check_hardware(self.fault_state)
                             if phases_to_use == 1:
                                 self._client.client.delegate.write_register(
                                     0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)

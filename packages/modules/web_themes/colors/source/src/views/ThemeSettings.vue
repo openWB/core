@@ -245,7 +245,7 @@ const shortListOptions: [string, string][] = [
 </script>
 <style scoped>
 .fa-circle-check {
-	font-size: var(--font-extralarge);
+	font-size: var(--font-large);
 	background-color: var(--color-bg);
 	color: var(--color-menu);
 }

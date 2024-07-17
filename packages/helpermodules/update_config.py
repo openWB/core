@@ -1,24 +1,28 @@
 from dataclasses import asdict
 import datetime
 import glob
+import importlib
 import json
 import logging
 from pathlib import Path
 import re
+from shutil import copyfile
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from control.bat_all import BatConsiderationMode
+from control.chargelog.chargelog import ReferenceTime
 from control.general import ChargemodeConfig
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
+from dataclass_utils._dataclass_from_dict import dataclass_from_dict
 from helpermodules import timecheck
 from helpermodules import hardware_configuration
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.constants import NO_ERROR
 from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
-from helpermodules.measurement_logging.process_log import get_totals
+from helpermodules.measurement_logging.process_log import CalculationType, analyse_percentage, get_totals, process_entry
 from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
@@ -34,6 +38,7 @@ from modules.devices.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
+from modules.devices.good_we.version import GoodWeVersion
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +46,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 48
+    DATASTORE_VERSION = 53
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -75,6 +80,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/chargemode$",
         "^openWB/chargepoint/[0-9]+/control_parameter/current_plan$",
         "^openWB/chargepoint/[0-9]+/control_parameter/imported_at_plan_start$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/imported_instant_charging$",
         "^openWB/chargepoint/[0-9]+/control_parameter/limit$",
         "^openWB/chargepoint/[0-9]+/control_parameter/prio$",
         "^openWB/chargepoint/[0-9]+/control_parameter/required_current$",
@@ -86,6 +92,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/state$",
         "^openWB/chargepoint/[0-9]+/get/charge_state$",
         "^openWB/chargepoint/[0-9]+/get/currents$",
+        "^openWB/chargepoint/[0-9]+/get/evse_current$",
         "^openWB/chargepoint/[0-9]+/get/fault_state$",
         "^openWB/chargepoint/[0-9]+/get/fault_str$",
         "^openWB/chargepoint/[0-9]+/get/frequency$",
@@ -98,7 +105,11 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/power$",
         "^openWB/chargepoint/[0-9]+/get/powers$",
         "^openWB/chargepoint/[0-9]+/get/power_factors$",
+        "^openWB/chargepoint/[0-9]+/get/vehicle_id$",
         "^openWB/chargepoint/[0-9]+/get/voltages$",
+        "^openWB/chargepoint/[0-9]+/get/serial_number$",
+        "^openWB/chargepoint/[0-9]+/get/soc$",
+        "^openWB/chargepoint/[0-9]+/get/soc_timestamp$",
         "^openWB/chargepoint/[0-9]+/get/state_str$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/soc$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/info$",
@@ -240,6 +251,8 @@ class UpdateConfig:
 
         "^openWB/pv/config/configured$",
         "^openWB/pv/get/exported$",
+        "^openWB/pv/get/fault_state$",
+        "^openWB/pv/get/fault_str$",
         "^openWB/pv/get/power$",
         "^openWB/pv/get/daily_exported$",
         "^openWB/pv/get/monthly_exported$",
@@ -354,6 +367,8 @@ class UpdateConfig:
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_updatesec$",
         "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_username$",
         "^openWB/LegacySmartHome/config/set/Devices/[0-9]+/mode$",
+        "^openWB/LegacySmartHome/Devices/[0-9]+/device_manual_control$",
+        "^openWB/LegacySmartHome/Devices/[0-9]+/mode$",
         "^openWB/LegacySmartHome/Devices/[0-9]+/WHImported_temp$",
         "^openWB/LegacySmartHome/Devices/[0-9]+/RunningTimeToday$",
         "^openWB/LegacySmartHome/Devices/[0-9]+/oncountnor$",
@@ -383,6 +398,7 @@ class UpdateConfig:
         "^openWB/system/current_commit",
         "^openWB/system/current_missing_commits",
         "^openWB/system/dataprotection_acknowledged$",
+        "^openWB/system/installAssistantDone$",
         "^openWB/system/datastore_version",
         "^openWB/system/debug_level$",
         "^openWB/system/device/[0-9]+/component/[0-9]+/config$",
@@ -477,6 +493,7 @@ class UpdateConfig:
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/backup_cloud/backup_before_update", True),
+        ("openWB/system/installAssistantDone", False),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/datastore_version", DATASTORE_VERSION),
         ("openWB/system/usage_terms_acknowledged", False),
@@ -1571,3 +1588,140 @@ class UpdateConfig:
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 48)
+
+    def upgrade_datastore_48(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # update version and firmware of GoodWe
+                if payload.get("type") == "good_we" and "version" not in payload["configuration"]:
+                    payload["configuration"].update({"firmware": 8})
+                    payload["configuration"].update({"version": GoodWeVersion.V_1_7})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 49)
+
+    def upgrade_datastore_49(self) -> None:
+        Pub().pub("openWB/system/installAssistantDone", True)
+        Pub().pub("openWB/system/datastore_version", 50)
+
+    def upgrade_datastore_50(self) -> None:
+        # es gibt noch Topics von gelöschten Komponenten unter openWB/(counter|pv|bat)/[0-9], aber keine Konfiguration
+        # zu den Komponenten.
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/(counter|pv|bat)/[0-9]+", topic) is not None:
+                for component_topic in self.all_received_topics.keys():
+                    if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config$", component_topic) is not None:
+                        if get_second_index(component_topic) == get_index(topic):
+                            return
+                else:
+                    return {topic: ""}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 51)
+
+    def upgrade_datastore_51(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # update version and firmware of GoodWe
+                if payload.get("type") == "deye" and "device_type" in payload["configuration"]:
+                    payload["configuration"].pop("device_type")
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 52)
+
+    def upgrade_datastore_52(self) -> None:
+        # alle Einträge des ladelogs seit januar 2024 durchgehen
+        path_list = [f"{self.base_path}/data/charge_log/2024{i:02d}.json" for i in range(1, 8)]
+        for topic, payload in self.all_received_topics.items():
+            if "openWB/general/prices/bat" in topic:
+                bat_price = decode_payload(payload)
+            elif "openWB/general/prices/grid" in topic:
+                grid_price = decode_payload(payload)
+            elif "openWB/general/prices/pv" in topic:
+                pv_price = decode_payload(payload)
+            elif "openWB/optional/et/provider" in topic:
+                et_active = True if decode_payload(payload)["type"] is not None else False
+        for chargelog in path_list:
+            fixed = False
+            try:
+                with open(chargelog, "r") as jsonFile:
+                    content = json.load(jsonFile)
+                for chargelog_entry in content:
+                    # prüfen, ob der Ladevorgang nur einen Stundenwechsel enthält
+                    begin = datetime.datetime.strptime(chargelog_entry["time"]["begin"], "%m/%d/%Y, %H:%M:%S")
+                    end = datetime.datetime.strptime(chargelog_entry["time"]["end"], "%m/%d/%Y, %H:%M:%S")
+                    hour_change = datetime.datetime.strptime(end.strftime("%m/%d/%Y, %H"), "%m/%d/%Y, %H")
+                    if ((end.hour - begin.hour) == 1 or
+                            ((end.day - begin.day) == 1 and begin.hour == 23 and end.hour == 0)):
+                        def calc(first: datetime.datetime, second: datetime.datetime, reference: ReferenceTime):
+                            with open(f"{self.base_path}/data/daily_log/2024{first.month:02d}{first.day:02d}.json",
+                                      "r") as jsonFile:
+                                daily_log = json.load(jsonFile)
+                            first_entry, second_entry = None, None
+                            if ReferenceTime.MIDDLE == reference:
+                                for daily_entry in reversed(daily_log["entries"]):
+                                    # -1, damit auch Einträge um XX:00:00 berücksichtigt werden
+                                    if daily_entry["timestamp"] <= first.timestamp() - 1:
+                                        first_entry = daily_entry
+                                        break
+                            else:
+                                for daily_entry in daily_log["entries"]:
+                                    if daily_entry["timestamp"] >= first.timestamp() - 1:
+                                        first_entry = daily_entry
+                                        break
+                            if begin.day != end.day:
+                                with open(f"{self.base_path}/data/daily_log/2024{end.month:02d}{end.day:02d}.json",
+                                          "r") as jsonFile:
+                                    daily_log = json.load(jsonFile)
+                            for daily_entry in daily_log["entries"]:
+                                if daily_entry["timestamp"] >= second.timestamp() - 1:
+                                    second_entry = daily_entry
+                                    break
+                            energy_entry = process_entry(first_entry, second_entry, CalculationType.ENERGY)
+                            energy_source = analyse_percentage(energy_entry)["energy_source"]
+                            cp_num = chargelog_entry['chargepoint']['id']
+                            charged_energy = (second_entry["cp"][f"cp{cp_num}"]["imported"]
+                                              - first_entry["cp"][f"cp{cp_num}"]["imported"])
+
+                            bat_costs = bat_price * charged_energy * energy_source["bat"]
+                            if et_active:
+                                if reference == ReferenceTime.MIDDLE:
+                                    price = et_prices[0]
+                                else:
+                                    price = et_prices[1]
+                                grid_costs = price * charged_energy * \
+                                    energy_source["grid"]
+                            else:
+                                grid_costs = grid_price * charged_energy * energy_source["grid"]
+                            pv_costs = pv_price * charged_energy * energy_source["pv"]
+
+                            log.debug(
+                                f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({energy_source["bat"]}%), '
+                                f'{grid_costs}€ Netz ({energy_source["grid"]}%), {pv_costs}€ Pv ({energy_source["pv"]}%'
+                                ')')
+                            return round(bat_costs + grid_costs + pv_costs, 4)
+
+                        if et_active:
+                            config_dict = decode_payload(payload)
+                            mod = importlib.import_module(
+                                f".electricity_tariffs.{config_dict['type']}.tariff", "modules")
+                            config = dataclass_from_dict(
+                                mod.device_descriptor.configuration_factory, config_dict)
+                            tariff_state = mod.create_electricity_tariff(config)(begin.timestamp())
+                            et_prices = [tariff_state.prices[hour_change.timestamp()-3600],
+                                         tariff_state.prices[hour_change.timestamp()]]
+                            log.debug(f'ET-Preise {chargelog_entry["time"]["begin"]} {begin.timestamp()}: '
+                                      f'{et_prices}')
+                        new_costs = calc(begin, hour_change, ReferenceTime.MIDDLE)
+                        new_costs += calc(hour_change, end, ReferenceTime.END)
+                        if chargelog_entry["data"]["costs"] != new_costs:
+                            fixed = True
+                            chargelog_entry["data"]["costs"] = new_costs
+                if fixed:
+                    copyfile(chargelog, chargelog+".1")
+                    with open(chargelog, "w") as jsonFile:
+                        json.dump(content, jsonFile)
+            except FileNotFoundError:
+                log.debug(f"Keine Logdatei {chargelog} gefunden")
+        self.__update_topic("openWB/system/datastore_version", 53)

@@ -5,6 +5,7 @@ from typing import Dict, List
 
 from control import data
 from control.bat_all import BatAll
+from control.chargepoint.chargepoint_all import AllChargepoints
 from helpermodules import timecheck
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.pub import Pub
@@ -41,7 +42,7 @@ def update_module_yields(module: str, totals: Dict) -> None:
             if isinstance(module_data, (Ev, Chargepoint, Pv, Bat, Counter)):
                 Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_imported", daily_imported)
                 Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_exported", daily_exported)
-            elif not isinstance(module_data, BatAll):
+            elif not isinstance(module_data, (BatAll, AllChargepoints)):
                 # wird im changed_values_handler an den Broker gesendet
                 Pub().pub(f"openWB/set/{topic}/get/daily_imported", daily_imported)
                 Pub().pub(f"openWB/set/{topic}/get/daily_exported", daily_exported)
@@ -78,23 +79,23 @@ def update_pv_monthly_yearly_yields():
 
 def _update_pv_monthly_yields():
     """ veröffentlicht die monatlichen Erträge für PV
+    für pv_all nicht die Differenz aus den Logs nehmen, sondern die Summe der Module. Wenn im laufenden Monat ein Modul
+    gelöscht wurde und keins oder eines mit niedrigerem Zählerstand hinzugefügt wird, wird sonst ein negativer Wert
+    ermittelt.
     """
     try:
+        pv_all_monthly_yield = 0
         with open(f"data/monthly_log/{timecheck.create_timestamp_YYYYMM()}.json", "r") as f:
             monthly_log = json.load(f)
-        for entry in monthly_log["entries"]:
-            # erster Eintrag des Moduls im Monat, falls ein Modul im laufenden Monat hinzugefügt wurde
-            if entry["pv"].get("all"):
-                monthly_yield = data.data.pv_all_data.data.get.exported - entry["pv"]["all"]["exported"]
-                break
-        Pub().pub("openWB/set/pv/get/monthly_exported", monthly_yield)
         for pv_module in data.data.pv_data.values():
             for entry in monthly_log["entries"]:
                 if entry["pv"].get(f"pv{pv_module.num}"):
                     monthly_yield = data.data.pv_data[f"pv{pv_module.num}"].data.get.exported - \
                         entry["pv"][f"pv{pv_module.num}"]["exported"]
+                    pv_all_monthly_yield += monthly_yield
                     Pub().pub(f"openWB/set/pv/{pv_module.num}/get/monthly_exported", monthly_yield)
                     break
+        Pub().pub("openWB/set/pv/get/monthly_exported", pv_all_monthly_yield)
     except FileNotFoundError:
         # am Tag der Ersteinrichtung gibt es noch kein Monatslog-File, das wird erst um Mitternacht erstellt.
         log.debug("No monthly logfile found for calculation of monthly yield")
@@ -117,31 +118,34 @@ def pub_yearly_module_yield(sorted_path_list: List[str], pv_module: Pv):
 
 def _update_pv_yearly_yields():
     """ veröffentlicht die jährlichen Erträge für PV
+    für pv_all nicht die Differenz aus den Logs nehmen, sondern die Summe der Module. Wenn unterjährig ein Modul
+    gelöscht wurde und keins oder eines mit niedrigerem Zählerstand hinzugefügt wird, wird sonst ein negativer Wert
+    ermittelt.
     """
     try:
+        pv_all_yearly_yield = 0
         path_list = list(Path(_get_parent_path()/"data"/"monthly_log").glob(f"{timecheck.create_timestamp_YYYY()}*"))
         sorted_path_list = sorted([str(p) for p in path_list])
-        found_pv = False
-        for path in sorted_path_list:
-            with open(path, "r") as f:
-                monthly_log = json.load(f)
-            for entry in monthly_log["entries"]:
-                if entry["pv"].get("all"):
-                    yearly_yield = data.data.pv_all_data.data.get.exported - entry["pv"]["all"]["exported"]
-                    Pub().pub("openWB/set/pv/get/yearly_exported", yearly_yield)
-                    found_pv = True
+        for pv_module in data.data.pv_data.values():
+            found_pv = False
+            for path in sorted_path_list:
+                with open(path, "r") as f:
+                    monthly_log = json.load(f)
+                for entry in monthly_log["entries"]:
+                    # erster Eintrag mit PV im Jahr, falls WR erst im laufenden Jahr hinzugefügt wurden
+                    if entry["pv"].get(f"pv{pv_module.num}"):
+                        yearly_yield = data.data.pv_data[f"pv{pv_module.num}"].data.get.exported - \
+                            entry["pv"][f"pv{pv_module.num}"]["exported"]
+                        pv_all_yearly_yield += yearly_yield
+                        Pub().pub(f"openWB/set/pv/{pv_module.num}/get/yearly_exported", yearly_yield)
+                        found_pv = True
+                        break
+                if found_pv:
                     break
-            if found_pv:
-                break
-        else:
-            # am Tag der Ersteinrichtung gibt es noch kein Monatslog-File, das wird erst um Mitternacht erstellt.
-            log.debug("No monthly logfile found for calculation of yearly yield")
-            return
-        if found_pv:
-            for pv_module in data.data.pv_data.values():
-                pub_yearly_module_yield(sorted_path_list, pv_module)
-        else:
-            log.debug("PV not found in any entry or file for calculation of yearly yield")
+            else:
+                # am Tag der Ersteinrichtung gibt es noch kein Monatslog-File, das wird erst um Mitternacht erstellt.
+                log.debug("No monthly logfile found for calculation of yearly yield")
+        Pub().pub("openWB/set/pv/get/yearly_exported", pv_all_yearly_yield)
     except Exception:
         log.exception("Fehler beim Veröffentlichen der jährlichen Erträge für PV")
 

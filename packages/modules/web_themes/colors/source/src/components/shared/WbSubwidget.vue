@@ -4,8 +4,9 @@
 			<div class="d-flex widgetname p-0 m-0" :style="titlestyle">
 				<slot name="title" />
 			</div>
-
-			<div class="buttonarea grid-col-12" style="text-align: right">
+			<div
+				class="buttonrea d-flex float-right justify-content-end align-items-center"
+			>
 				<slot name="buttons" />
 			</div>
 		</div>
@@ -82,5 +83,6 @@ const widgetwidth = computed(() => {
 
 .widgetname {
 	font-weight: bold;
+	font-size: var(--font-large);
 }
 </style>

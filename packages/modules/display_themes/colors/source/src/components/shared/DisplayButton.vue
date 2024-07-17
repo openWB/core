@@ -1,7 +1,7 @@
 <template>
 	<div
 		:style="{
-			'background-color': props.color ? props.color : 'var(--color-menu)',
+			'background-color': props.color ? props.color : 'var(--color-fg)',
 		}"
 		class="mybutton"
 		@click="buttonClicked"
@@ -27,7 +27,7 @@ function buttonClicked() {
 	border: 10px;
 	padding: 2px;
 	align-self: top;
-	background-color: var(--color-menu);
+	color: var(--color-bg);
 	border-radius: 4px;
 	font-weight: bold;
 	font-size: var(--font-small);
