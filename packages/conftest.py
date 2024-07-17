@@ -35,10 +35,8 @@ def mock_strptime_timestamp(monkeypatch):
     timezone = pytz.timezone('Europe/Berlin')
     # timezone = pytz.timezone('UTC')
     original_strptime = datetime.datetime.strptime
-    monkeypatch.setattr(datetime.datetime, "strptime", lambda s, fmt: original_strptime(
-        s, fmt).astimezone(timezone))
-    monkeypatch.setattr(datetime.datetime, "strftime", lambda s, fmt: original_strptime(
-        s, fmt).astimezone(timezone))
+    monkeypatch.setattr(datetime.datetime, "strptime", lambda s, fmt: timezone.localize(original_strptime(
+        s, fmt)))
 
 
 @pytest.fixture(autouse=True)
