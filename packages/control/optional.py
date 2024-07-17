@@ -270,7 +270,7 @@ class OCPPClient(ChargePoint):
                     url,
                     subprotocols=['ocpp1.6']
                 ) as ws:
-                    cp = ChargePoint('openWB', ws, 0)
+                    cp = ChargePoint('openWB', ws, 1)
                 # Start Transaction
                     await cp.start_transaction(connector_id, id_tag, meter_value_charged)
                     # TransactionId extrahieren
@@ -292,7 +292,7 @@ class OCPPClient(ChargePoint):
                     url,
                     subprotocols=['ocpp1.6']
                 ) as ws:
-                    cp = ChargePoint('openWB', ws, 0)
+                    cp = ChargePoint('openWB', ws, 1)
                 # transfer meter values
                     await cp.get_meter(connector_id, meter_value_charged)
         except Exception:
@@ -307,7 +307,7 @@ class OCPPClient(ChargePoint):
                     url,
                     subprotocols=['ocpp1.6']
                 ) as ws:
-                    cp = ChargePoint('openWB', ws, 0)
+                    cp = ChargePoint('openWB', ws, 1)
                 # Stop transaction
                     await cp.stop_transaction(meter_value_charged, transaction_id, id_tag)
         except Exception:
