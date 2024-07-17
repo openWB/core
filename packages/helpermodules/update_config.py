@@ -1709,8 +1709,6 @@ class UpdateConfig:
                             config = dataclass_from_dict(
                                 mod.device_descriptor.configuration_factory, config_dict)
                             tariff_state = mod.create_electricity_tariff(config)(begin.timestamp())
-                            log.debug(
-                                f"end {end} hour_change {hour_change}, hour_change.timestamp() {hour_change.timestamp()}")
                             et_prices = [tariff_state.prices[hour_change.timestamp()-3600],
                                          tariff_state.prices[hour_change.timestamp()]]
                             log.debug(f'ET-Preise {chargelog_entry["time"]["begin"]} {begin.timestamp()}: '
