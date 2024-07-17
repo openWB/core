@@ -1,6 +1,7 @@
 import datetime
 from unittest.mock import MagicMock, Mock
 import pytest
+import pytz
 
 from control import data
 from control.bat import Bat, BatData
@@ -25,6 +26,16 @@ def mock_today(monkeypatch) -> None:
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
     mock_today_timestamp = Mock(return_value=1652683252)
     monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
+
+
+@pytest.fixture(autouse=False)
+def mock_strptime_timestamp(monkeypatch):
+    # Timezone-Objekt muss vor dem Mock von open initialisiert werden, da dies auch open verwendet und mit dem Mock
+    # nicht mehr funktioniert
+    timezone = pytz.timezone('Europe/Berlin')
+    original_strptime = datetime.datetime.strptime
+    monkeypatch.setattr(datetime.datetime, "strptime",
+                        lambda s, fmt: timezone.localize(original_strptime(s, fmt)))
 
 
 @pytest.fixture(autouse=True)

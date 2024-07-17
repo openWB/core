@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
@@ -30,10 +30,15 @@ at = CountryData(url='https://api.awattar.at/v1/marketdata')
 de = CountryData(url='https://api.awattar.de/v1/marketdata')
 
 
-def fetch_prices(config: AwattarTariffConfiguration) -> Dict[int, float]:
+def fetch_prices(config: AwattarTariffConfiguration, date: Optional[int] = None) -> Dict[int, float]:
     country_data: CountryData = globals()[config.country]
+    headers = {'Content-Type': 'application/json'}
+    if date:
+        url_suffix = f"?start={int((date - 3600) * 1000)}"
+    else:
+        url_suffix = ""
     raw_prices = req.get_http_session().get(
-        country_data.url, headers={'Content-Type': 'application/json'}, timeout=(2, 6)).json()['data']
+        country_data.url+url_suffix, headers=headers, timeout=(2, 6)).json()['data']
     prices: Dict[int, float] = {}
     for data in raw_prices:
         formatted_price = data["marketprice"]/1000000  # €/MWh -> €/Wh
@@ -43,8 +48,8 @@ def fetch_prices(config: AwattarTariffConfiguration) -> Dict[int, float]:
 
 
 def create_electricity_tariff(config: AwattarTariff):
-    def updater():
-        return TariffState(prices=fetch_prices(config.configuration))
+    def updater(date: Optional[int] = None):
+        return TariffState(prices=fetch_prices(config.configuration, date))
     return updater
 
 
