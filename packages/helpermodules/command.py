@@ -564,10 +564,6 @@ class Command:
         ocpp_config = optional.OCPPClient.get_ocpp_config()
         ocpp_config["data"]["url"] = payload["data"]["url"]
         optional.OCPPClient.get_config(ocpp_config)
-        optional.OCPPClient.start_ocpp()
-
-    def disconnectOcpp(self, connection_id: str, payload: dict) -> None:
-        optional.OCPPClient.stop_ocpp()
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]

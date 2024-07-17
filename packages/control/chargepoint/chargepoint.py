@@ -24,6 +24,7 @@ from typing import Dict, Optional, Tuple
 from control.chargelog import chargelog
 from control import cp_interruption
 from control import data
+from control import optional
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
 from control.chargepoint.chargepoint_template import CpTemplate
@@ -37,6 +38,7 @@ from helpermodules.pub import Pub
 from helpermodules import timecheck
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from helpermodules.timecheck import create_timestamp
+import asyncio
 
 
 def get_chargepoint_config_default() -> dict:
@@ -219,6 +221,25 @@ class Chargepoint(ChargepointRfidMixin):
             # Abstecken
             if not self.data.get.plug_state:
                 self.data.control_parameter = control_parameter_factory()
+                # OCPP Stop Transaction aufrufen
+                if self.data.set.rfid is None:
+                    try:
+                        asyncio.run(
+                            optional.OCPPClient._stop_transaction(
+                                int(self.data.get.imported), self.data.set.ocpp_transaction_id,
+                                "0"))
+                    except Exception:
+                        log.exception("Fehler im OCPP-Modul _stop_transaction()")
+                    Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_id", None)
+                if self.data.set.rfid is not None:
+                    try:
+                        asyncio.run(
+                            optional.OCPPClient._stop_transaction(
+                                int(self.data.get.imported), self.data.set.ocpp_transaction_id,
+                                self.data.set.rfid))
+                    except Exception:
+                        log.exception("Fehler im OCPP-Modul _stop_transaction()")
+                    Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_id", None)
                 # Standardprofil nach Abstecken laden
                 if data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template.data.load_default:
                     self.data.config.ev = 0
@@ -692,6 +713,27 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.control_parameter.submode = "stop"
             else:
                 self._pub_configured_ev(ev_list)
+            # OCPP Start Transaction nach Anstecken
+            if (self.data.set.rfid is None and self.data.get.plug_state and
+                    self.data.set.plug_state_prev is False):
+                try:
+                    self.data.set.ocpp_transaction_id = asyncio.run(
+                        optional.OCPPClient._start_transaction(
+                            self.num, "0", int(self.data.get.imported)))
+                    Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                              "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
+                except Exception:
+                    log.exception("Fehler im OCPP-Modul _start_transaction()")
+            if (self.data.set.rfid is not None and self.data.get.plug_state and
+                    self.data.set.plug_state_prev is False):
+                try:
+                    self.data.set.ocpp_transaction_id = asyncio.run(
+                        optional.OCPPClient._start_transaction(
+                            self.num, self.data.set.rfid, int(self.data.get.imported)))
+                    Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                              "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
+                except Exception:
+                    log.exception("Fehler im OCPP-Modul _start_transaction()")
             # SoC nach Anstecken aktualisieren
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.get.plug_state is False and self.data.set.plug_state_prev)):

@@ -32,6 +32,7 @@ from control import prepare
 from control import data
 from control import process
 from control.algorithm import algorithm
+from control import optional
 from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
@@ -68,8 +69,6 @@ class HandlerAlgorithm:
                         prep.setup_algorithm()
                         control.calc_current()
                         proc.process_algorithm_results()
-                        # ocpp start/stop transaction
-                        data.data.optional_data.ocpp_set_state()
                         data.data.graph_data.pub_graph_data()
                     self.interval_counter = 1
                 else:
@@ -94,8 +93,7 @@ class HandlerAlgorithm:
                 update_pv_monthly_yearly_yields()
                 data.data.general_data.grid_protection()
                 data.data.optional_data.et_get_prices()
-                #ocpp send meter_values
-                data.data.optional_data.ocpp_transfer_meter_values()
+                optional.Optional.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())

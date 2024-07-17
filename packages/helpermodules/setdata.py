@@ -537,6 +537,8 @@ class SetData:
                 elif ("/set/rfid" in msg.topic or
                         "/set/plug_time" in msg.topic):
                     self._validate_value(msg, float)
+                elif "/set/ocpp_transaction_id" in msg.topic:
+                    self._validate_value(msg, int)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/config/ev" in msg.topic:
