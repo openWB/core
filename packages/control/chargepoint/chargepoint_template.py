@@ -54,9 +54,8 @@ class CpTemplate:
     """ Profil für einen Ladepunkt.
     """
 
-    def __init__(self):
-        self.data: CpTemplateData = field(default_factory=cp_template_data_factory, metadata={
-                                          "topic": ""})
+    data: CpTemplateData = field(default_factory=cp_template_data_factory, metadata={
+        "topic": ""})
 
     def is_locked_by_autolock(self, charge_state: bool) -> bool:
         if self.data.autolock.active:

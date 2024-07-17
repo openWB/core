@@ -92,7 +92,7 @@ def time_charging_factory() -> TimeCharging:
 @dataclass
 class ChargemodeConfig:
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
-    phase_switch_delay: int = field(default=False, metadata={
+    phase_switch_delay: int = field(default=7, metadata={
         "topic": "chargemode_config/phase_switch_delay"})
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     retry_failed_phase_switches: bool = field(
@@ -136,9 +136,10 @@ class OverrideReference(Enum):
 @dataclass
 class RippleControlReceiver:
     get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
-    module: Optional[Dict] = field(default_factory=None, metadata={
+    module: Optional[Dict] = field(default=None, metadata={
         "topic": "ripple_control_receiver/module"})
-    overrice_reference: OverrideReference = OverrideReference.CHARGEPOINT
+    overrice_reference: OverrideReference = field(default=OverrideReference.CHARGEPOINT, metadata={
+        "topic": "ripple_control_receiver/override_reference"})
 
 
 def ripple_control_receiver_factory() -> RippleControlReceiver:

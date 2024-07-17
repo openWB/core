@@ -10,6 +10,7 @@ from control import data
 from control.counter import Counter
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.pub import Pub
 from modules.common.component_type import ComponentType, component_type_to_readable_text
 from modules.common.fault_state import FaultStateLevel
 from modules.common.simcount import SimCounter
@@ -105,9 +106,6 @@ class CounterAll:
             if home_consumption < 0:
                 log.error(
                     f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
-
-
-<< << << < HEAD
                 if self.data.config.home_consumption_source_id is None:
                     hc_counter_source = self.get_evu_counter_str()
                 else:
@@ -119,19 +117,6 @@ class CounterAll:
                                                      "eingetragen sind. Der Hausverbrauch kann nicht korrekt berechnet "
                                                      "werden. Dies hat auf die PV-Überschussladung keine negativen "
                                                      "Auswirkungen.")
-                    evu_counter = self.get_id_evu_counter()
-                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
-                              hc_counter_data.get.fault_state)
-                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
-                              hc_counter_data.get.fault_str)
-== == == =
-                evu_counter_data = data.data.counter_data[self.get_evu_counter_str()].data
-                if evu_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
-                    evu_counter_data.get.fault_state = FaultStateLevel.WARNING.value
-                    evu_counter_data.get.fault_str = ("Der Wert für den Hausverbrauch ist nicht plausibel (negativ). "
-                                                      "Bitte die Leistungen der Komponenten und die Anordnung in der "
-                                                      "Hierarchie prüfen.")
->>>>>> > b04dac184(metadata all)
                 if self.data.set.invalid_home_consumption < 3:
                     self.data.set.invalid_home_consumption += 1
                     return
