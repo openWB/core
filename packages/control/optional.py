@@ -256,12 +256,6 @@ class OCPPClient(ChargePoint):
 
     # Test URL: ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1
 
-    def __init__() -> None:
-        try:
-            pass
-        except Exception:
-            log.exception("Fehler Initialisierung im OCPP-Modul")
-
     def get_ocpp_config():
         return {
             "data": {
