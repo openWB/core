@@ -53,6 +53,9 @@ class StatemachineYc():
         self._previous_justification = None
         self._last_data_update_timestamp = datetime.datetime.min
         self._data_update_interval = timedelta(seconds=30)
+        self._justification = ""
+        self._current = 0.0
+        self.status = yourcharge.LmStatus.DownByError
         log.error(f"YC algorithm active: Internal CP found as '{self._internal_cp_key}'")
 
     def perform_load_control(self) -> None:
@@ -107,6 +110,7 @@ class StatemachineYc():
             log.info(f"---> Entering with load control state {self._current_control_state.name}, last RFID data "
                      + f"{self._last_rfid_data}, valid standard socket tag {self._valid_standard_socket_tag_found}")
 
+            # globally handle superseded (we have to obey at first - transitions may overwrite it)
             if data.data.yc_data.data.yc_control.fixed_charge_current is not None \
                     and data.data.yc_data.data.yc_control.fixed_charge_current >= 0:
                 self._set_current("Fixed current requested by yc_data.data.yc_control.fixed_charge_current",
@@ -141,6 +145,7 @@ class StatemachineYc():
             # log.info(f"Leaving with load control state {self._current_control_state.name}")
 
         finally:
+            self._execute_set_current()
             self._valid_standard_socket_tag_found = False
             self._previous_plug_state = self._internal_cp.data.get.plug_state
 
@@ -312,7 +317,13 @@ class StatemachineYc():
 
     # ### other, non-statemachine, methods
     def _set_current(self, justification: str, current: float, status: yourcharge.LmStatus):
+        self._justification = justification
+        self._current = current
+        self.status = status
         self._control_algorithm.set_current(justification, current, status)
+
+    def _execute_set_current(self):
+        self._control_algorithm.set_current(self._justification, self._current, self._status)
 
     def _send_status(self):
         self._status_handler.publish_changes()
