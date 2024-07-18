@@ -55,7 +55,7 @@ class StatemachineYc():
         self._data_update_interval = timedelta(seconds=30)
         self._justification = ""
         self._current = 0.0
-        self.status = yourcharge.LmStatus.DownByError
+        self._status = yourcharge.LmStatus.DownByError
         log.error(f"YC algorithm active: Internal CP found as '{self._internal_cp_key}'")
 
     def perform_load_control(self) -> None:
@@ -319,7 +319,7 @@ class StatemachineYc():
     def _set_current(self, justification: str, current: float, status: yourcharge.LmStatus):
         self._justification = justification
         self._current = current
-        self.status = status
+        self._status = status
         self._control_algorithm.set_current(justification, current, status)
 
     def _execute_set_current(self):
