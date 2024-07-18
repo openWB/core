@@ -504,6 +504,25 @@ export default {
       }
       return columnX;
     },
+    calcSvgElementBoundingBox(elementId) {
+      let element = document.getElementById(elementId);
+      if (element == undefined){
+        return { x: 0, y: 0, width: 0, height: 0 };
+      }
+      let boundingBox = element.getBBox();
+      return {
+        x: boundingBox.x,
+        y: boundingBox.y,
+        width: boundingBox.width,
+        height: boundingBox.height,
+      };
+    },
+    beginAnimation(elementId) {
+      if (this.$refs[elementId] == undefined){
+        return;
+      }
+      this.$refs[elementId][0]?.beginElement();
+    },
   },
 };
 </script>
@@ -557,10 +576,41 @@ export default {
             <!-- components -->
             <g
               v-for="component in svgComponents"
+              @click="beginAnimation(`animate-label-${component.id}`)"
               :key="component.id"
               :class="component.class.base"
               :transform="`translate(${calcColumnX(component.position.column)}, ${calcRowY(component.position.row)})`"
             >
+              <defs>
+                <clipPath
+                  v-if="component.soc"
+                  :id="`clip-soc-${component.id}`"
+                >
+                  <rect
+                    :x="-svgSize.circleRadius - svgSize.strokeWidth"
+                    :y="
+                      (svgSize.circleRadius + svgSize.strokeWidth) *
+                        (1 - 2 * component.soc)
+                    "
+                    :width="(svgSize.circleRadius + svgSize.strokeWidth) * 2"
+                    :height="
+                      (svgSize.circleRadius + svgSize.strokeWidth) *
+                        2 *
+                        component.soc
+                    "
+                  />
+                </clipPath>
+                <clipPath :id="`clip-label-${component.id}`">
+                  <rect
+                    :x="-svgRectWidth / 2"
+                    :y="-svgSize.circleRadius"
+                    :width="svgRectWidth"
+                    :height="svgSize.circleRadius * 2"
+                    :rx="svgSize.circleRadius"
+                    :ry="svgSize.circleRadius"
+                  />
+                </clipPath>
+              </defs>
               <rect
                 :x="-svgRectWidth / 2"
                 :y="-svgSize.circleRadius"
@@ -569,41 +619,52 @@ export default {
                 :rx="svgSize.circleRadius"
                 :ry="svgSize.circleRadius"
               />
+              <text
+                :clip-path="`url(#clip-label-${component.id})`"
+              >
+                <tspan
+                  :id="`label-${component.id}`"
+                  text-anchor="start"
+                  :x="
+                    -svgRectWidth / 2 +
+                      2 * svgSize.circleRadius +
+                      svgSize.strokeWidth
+                  "
+                  :y="-svgSize.textSize / 2"
+                >
+                  <animate
+                    v-if="calcSvgElementBoundingBox(`label-${component.id}`).width > svgRectWidth - 2 * svgSize.circleRadius - 2 * svgSize.strokeWidth"
+                    :ref="`animate-label-${component.id}`"
+                    xmlns="http://www.w3.org/2000/svg"
+                    attributeName="x"
+                    dur="5s"
+                    :values="
+                      '0; ' +
+                      (- calcSvgElementBoundingBox(`label-${component.id}`).width
+                      + svgRectWidth - 2.5 * svgSize.circleRadius - 2 * svgSize.strokeWidth) + '; 0;'
+                    "
+                    repeatCount="0"
+                    begin="2s"
+                    additive="sum"
+                  />
+                  {{ component.label[0] }}
+                </tspan>
+                <tspan
+                  :id="`value-${component.id}`"
+                  :class="component.class.valueLabel"
+                  text-anchor="end"
+                  :x="
+                      2 * svgSize.circleRadius +
+                      svgSize.strokeWidth
+                  "
+                  :y="svgSize.textSize"
+                >
+                  {{ component.label[1] }}
+                </tspan>
+              </text>
               <g
                 :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
               >
-                <defs>
-                  <clipPath
-                    v-if="component.soc"
-                    :id="`clip-soc-${component.id}`"
-                  >
-                    <rect
-                      :x="-svgSize.circleRadius - svgSize.strokeWidth"
-                      :y="
-                        (svgSize.circleRadius + svgSize.strokeWidth) *
-                          (1 - 2 * component.soc)
-                      "
-                      :width="(svgSize.circleRadius + svgSize.strokeWidth) * 2"
-                      :height="
-                        (svgSize.circleRadius + svgSize.strokeWidth) *
-                          2 *
-                          component.soc
-                      "
-                    />
-                  </clipPath>
-                  <clipPath :id="`clip-label-${component.id}`">
-                    <rect
-                      :x="
-                        -svgRectWidth / 2 +
-                          2 * svgSize.circleRadius +
-                          svgSize.strokeWidth
-                      "
-                      :y="-svgSize.textSize * 2"
-                      :width="svgRectWidth - 2 * svgSize.circleRadius - 2 * svgSize.strokeWidth"
-                      :height="svgSize.textSize * 4"
-                    />
-                  </clipPath>
-                </defs>
                 <circle
                   cx="0"
                   cy="0"
@@ -625,32 +686,6 @@ export default {
                   :width="svgIconWidth"
                 />
               </g>
-              <text
-                text-anchor="start"
-                :clip-path="`url(#clip-label-${component.id})`"
-              >
-                <tspan
-                  :x="
-                    -svgRectWidth / 2 +
-                      2 * svgSize.circleRadius +
-                      svgSize.strokeWidth
-                  "
-                  :y="-svgSize.textSize / 2"
-                >
-                  {{ component.label[0] }}
-                </tspan>
-                <tspan
-                  :class="component.class.valueLabel"
-                  :x="
-                    -svgRectWidth / 2 +
-                      2 * svgSize.circleRadius +
-                      svgSize.strokeWidth
-                  "
-                  :y="svgSize.textSize"
-                >
-                  {{ component.label[1] }}
-                </tspan>
-              </text>
             </g>
           </g>
         </svg>
