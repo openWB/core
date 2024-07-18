@@ -6,7 +6,7 @@ import asyncio
 from json import loads, dumps
 from modules.vehicles.ovms.config import OVMS
 from helpermodules.pub import Pub
-from modules.common import req
+import requests
 
 OVMS_SERVER = "https://ovms.dexters-web.de:6869"
 TOKEN_CMD = "/api/token"
@@ -26,7 +26,7 @@ def write_config(topic: str, config: dict):
 class api:
 
     def __init__(self):
-        self.session = req.get_http_session()
+        pass
 
     def create_token(self) -> str:
         token_url = f"{OVMS_SERVER}{TOKEN_CMD}"
@@ -38,14 +38,15 @@ class api:
             "application": "owb-ovms",
             "purpose": "get soc"
         }
-        resp = self.session.post(token_url, params=data, files=form_data)
+        resp = requests.post(token_url, params=data, files=form_data)
         log.debug("create_token status_code=" + str(resp.status_code))
         tokenDict = loads(resp.text)
         log.debug("create_token response=" + dumps(tokenDict, indent=4))
         self.token = tokenDict['token']
         confDict = self.config.__dict__
+        confDict["configuration"] = self.config.configuration.__dict__
         log.debug("create_token confDict=" + dumps(confDict, indent=4))
-        confDict["token"] = resp.text.rstrip()
+        confDict["configuration"]["token"] = resp.text.rstrip()
         cfg_setTopic = "openWB/set/vehicle/" + str(self.vehicle) + "/soc_module/config"
         write_config(
             cfg_setTopic,
@@ -57,10 +58,10 @@ class api:
         status_url = f"{OVMS_SERVER}{STATUS_CMD}/{self.vehicleId}?username={self.user_id}&password={self.token}"
 
         log.debug("status-url=" + status_url)
-        resp = self.session.get(status_url)
+        resp = requests.get(status_url)
         status_code = resp.status_code
         if status_code > 299:
-            log.error("get_status status_code=" + str(status_code))
+            log.error("get_status status_code=" + str(status_code) + ", create new token")
             respDict = {}
         else:
             response = resp.text
@@ -76,8 +77,9 @@ class api:
         self.password = conf.configuration.password
         self.vehicleId = conf.configuration.vehicleId
         self.vehicle = vehicle
-        self.config = conf.configuration
-        tokenstr = self.config.token
+        # self.config = conf.configuration
+        self.config = conf
+        tokenstr = self.config.configuration.token
         if tokenstr is None or tokenstr == "":
             self.token = self.create_token()
         else:
