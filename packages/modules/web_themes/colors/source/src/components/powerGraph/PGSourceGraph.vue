@@ -18,6 +18,7 @@ import {
 	axisLeft,
 	area,
 	easeLinear,
+	curveBumpX,
 } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
@@ -173,10 +174,12 @@ function drawGraph(
 	const area0 = area()
 		.x((d, i) => xScale(graphData.data[i]['date']))
 		.y(yScale.value(0))
+		.curve(curveBumpX)
 	const area1 = area()
 		.x((d, i) => xScale(graphData.data[i]['date']))
 		.y0((d) => yScale.value(graphData.graphMode == 'year' ? d[0] / 1000 : d[0]))
 		.y1((d) => yScale.value(graphData.graphMode == 'year' ? d[1] / 1000 : d[1]))
+		.curve(curveBumpX)
 	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
 		paths = graph
@@ -284,6 +287,7 @@ const autozoom = computed(() => {
 			.x((d, i) => xScale.value(graphData.data[i].date))
 			.y0((d) => yScale.value(d[0]))
 			.y1((d) => yScale.value(d[1]))
+			.curve(curveBumpX)
 		graph
 			.selectAll('path')
 			.attr('d', (series) =>
