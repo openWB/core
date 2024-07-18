@@ -254,6 +254,8 @@ class ChargePoint(cp):
 
 class OCPPClient(ChargePoint):
 
+    # Test URL: ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1
+
     def __init__() -> None:
         try:
             pass
@@ -278,7 +280,6 @@ class OCPPClient(ChargePoint):
             url = OCPPClient.get_url()
             if len(url) > 0:
                 async with websockets.connect(
-                    # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
                     url,
                     subprotocols=['ocpp1.6']
                 ) as ws:
@@ -300,7 +301,6 @@ class OCPPClient(ChargePoint):
             url = OCPPClient.get_url()
             if len(url) > 0:
                 async with websockets.connect(
-                    # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
                     url,
                     subprotocols=['ocpp1.6']
                 ) as ws:
@@ -315,7 +315,6 @@ class OCPPClient(ChargePoint):
             url = OCPPClient.get_url()
             if len(url) > 0:
                 async with websockets.connect(
-                    # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
                     url,
                     subprotocols=['ocpp1.6']
                 ) as ws:

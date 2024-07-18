@@ -716,7 +716,7 @@ class Chargepoint(ChargepointRfidMixin):
                 self._pub_configured_ev(ev_list)
             # OCPP Start Transaction nach Anstecken
             if (self.data.set.rfid is None and self.data.get.plug_state and
-                    self.data.set.plug_state_prev is False):
+                    self.data.set.plug_state_prev is False and self.data.set.manual_lock is False):
                 try:
                     self.data.set.ocpp_transaction_id = asyncio.run(
                         optional.OCPPClient._start_transaction(
