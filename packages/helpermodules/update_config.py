@@ -534,7 +534,7 @@ class UpdateConfig:
             self.__update_version()
         except Exception:
             log.exception("Fehler bei der Aktualisierung des Brokers.")
-            pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Brokers.", MessageType.ERROR)
+            pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Broker.", MessageType.ERROR)
         finally:
             self.__update_topic("openWB/system/update_config_completed", True)
 
