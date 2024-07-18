@@ -1,5 +1,4 @@
 from typing import Optional
-from json import dumps
 
 
 class OVMSConfiguration:
@@ -14,10 +13,6 @@ class OVMSConfiguration:
         self.vehicleId = vehicleId
         self.token = token
 
-    def toJSON(self):
-        return dumps(self, default=lambda o: o.__dict__,
-                     sort_keys=True, indent=4)
-
 
 class OVMS:
     def __init__(self,
@@ -27,7 +22,3 @@ class OVMS:
         self.name = name
         self.type = type
         self.configuration = configuration or OVMSConfiguration()
-
-    def toJSON(self):
-        return dumps(self, default=lambda o: o.__dict__,
-                     sort_keys=True, indent=4)
