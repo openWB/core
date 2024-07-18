@@ -450,7 +450,8 @@ def get_reference_time(cp, reference_position):
         return timecheck.create_timestamp() - 3540
     elif reference_position == ReferenceTime.END:
         # Wenn der Ladevorgang erst innerhalb der letzten Stunde gestartet wurde.
-        if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
+        one_hour_back = timecheck.create_timestamp() - 3600
+        if (one_hour_back - cp.data.set.log.timestamp_start_charging) < 0:
             return cp.data.set.log.timestamp_start_charging
         else:
             return timecheck.create_unix_timestamp_current_full_hour() + 60
