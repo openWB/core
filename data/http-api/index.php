@@ -1,17 +1,42 @@
 <?php
+$sendmessage = 0;
 if (isset($_GET["topic"])) {
-	$topic = $_GET["topic"];
+	$topic = escapeshellarg($_GET["topic"]);
 }
 if (isset($_POST["topic"])) {
-	$topic = $_POST["topic"];
+	$topic = escapeshellarg($_POST["topic"]);
 }
 if ( strlen($topic) < 3 ) {
-	echo 'Topic is needed! Please obtain - topic - via GET or POST Request, f.e. http://IP:8080/?topic"openWB/system/time" or https://IP:8443/?topic"openWB/system/time"';
+	echo 'No topic given.';
 	exit();
 }
-$response = exec("timeout 1 mosquitto_sub -t $topic -C 1");
-if (strlen($response) < 1) {
-	$response = "Topic - $topic - nicht gefunden";
+if (isset($_GET["msg"])) {
+	$msg = escapeshellarg($_GET["msg"]);
+	$sendmessage = 1;
 }
-echo "$response";
+if (isset($_POST["msg"])) {
+	$msg = escapeshellarg($_POST["msg"]);
+	$sendmessage = 1;
+}
+if ( $sendmessage === 1 ) {
+	if ( strncmp($topic, "'openWB/set/", 12) === 0) {
+		exec("mosquitto_pub -r -t $topic -m $msg", $output, $exitcode);
+		if ( $exitcode > 0) {
+			echo "failure: $output, code: $exitcode";
+		} else {
+			echo "msg sent";
+		}
+	}else {
+		echo "Topic not valid. Only openWB/set/ topics are writable.";
+	}
+
+} else {
+	$response = exec("timeout 1 mosquitto_sub -t $topic -C 1");
+	if (strlen($response) < 1) {
+		$topic=htmlentities($topic);
+		$response = "Topic - $topic - not found.";
+	}
+	echo "$response";
+
+}
 ?>
