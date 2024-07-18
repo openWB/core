@@ -16,8 +16,8 @@ import logging
 from math import ceil  # Aufrunden
 import threading
 from typing import Dict, List
-from control import data
 import re
+import copy
 
 
 log = logging.getLogger(__name__)
@@ -180,11 +180,23 @@ class Optional:
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
+    def ocpp_get_meter_values():
+        try:
+            for thread in threading.enumerate():
+                if thread.name == "OCPP Client":
+                    log.debug("Don't start multiple instances of ocpp client thread.")
+                    return
+            threading.Thread(target=Optional.ocpp_transfer_meter_values, args=(), name="OCPP Client").start()
+        except Exception:
+            log.exception("Fehler im OCPP-Optional-Modul")
+
     def ocpp_transfer_meter_values():
-        for cpnt in data.data.cp_data.values():
-            if cpnt.data.set.ocpp_transaction_id is not None:
-                meter_value_charged = int(cpnt.data.get.imported)
-                connector_id = cpnt.num
+        from helpermodules.subdata import SubData
+        for chpnt in SubData.cp_data:
+            if SubData.cp_data[chpnt].chargepoint.data.set.ocpp_transaction_id is not None:
+                meter_value_charged_copy = copy.deepcopy(SubData.cp_data[chpnt].chargepoint.data.get.imported)
+                meter_value_charged = int(meter_value_charged_copy)
+                connector_id = SubData.cp_data[chpnt].chargepoint.num
                 try:
                     asyncio.run(
                         OCPPClient._transfer_values(

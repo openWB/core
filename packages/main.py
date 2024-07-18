@@ -93,7 +93,7 @@ class HandlerAlgorithm:
                 update_pv_monthly_yearly_yields()
                 data.data.general_data.grid_protection()
                 data.data.optional_data.et_get_prices()
-                optional.Optional.ocpp_transfer_meter_values()
+                optional.Optional.ocpp_get_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
