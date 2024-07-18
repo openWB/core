@@ -107,6 +107,12 @@ class StatemachineYc():
             log.info(f"---> Entering with load control state {self._current_control_state.name}, last RFID data "
                      + f"{self._last_rfid_data}, valid standard socket tag {self._valid_standard_socket_tag_found}")
 
+            if data.data.yc_data.data.yc_control.fixed_charge_current is not None \
+                    and data.data.yc_data.data.yc_control.fixed_charge_current >= 0:
+                self._set_current("Fixed current requested by yc_data.data.yc_control.fixed_charge_current",
+                                  data.data.yc_data.data.yc_control.fixed_charge_current,
+                                  yourcharge.LmStatus.Superseded)
+
             if not self._status_handler.get_heartbeat_ok():
                 # unconditional early exit in case of heartbeat timeout: charge current --> 0 and socket --> off
                 self._transition_to_heartbeat_timeout()
@@ -275,12 +281,14 @@ class StatemachineYc():
         self._status_handler.update_rfid_scan(None)
         self._standard_socket_handler.restore_previous()
         self._state_change("Startup", self._derive_state())
+        self._set_current("Startup", 0.0, yourcharge.LmStatus.InLoop)
 
     def _check_heartbeat_timeout_transitions(self) -> None:
         # handle re-appearing heartbeat
         if self._status_handler.has_changed_heartbeat():
             self._standard_socket_handler.restore_previous()
             self._state_change("Controller heartbeat returned: Trying to restore previous state", self._derive_state())
+            self._set_current("Re-appearing from Heartbeat timeout", 0.0, yourcharge.LmStatus.InLoop)
 
     # ### transition actions ###
     def _transition_to_standard_socket(self):

@@ -95,12 +95,12 @@ class YcStatusHandler:
                 self._accounting_info_cache = data.data.yc_data.data.yc_control.accounting
                 if self._accounting_info_cache.currrent_time is None:
                     self._accounting_info_cache.currrent_time = f"{datetime.datetime.utcnow().isoformat()}Z"
-                self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
+                # self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
             else:
                 self._accounting_info_cache = AccountingInfo()
                 self._accounting_info_cache.currrent_time = f"{datetime.datetime.utcnow().isoformat()}Z"
-                self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
-                self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
+                # self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
+                # self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
         return self._accounting_info_cache
 
     def has_changed_rfid_scan(self) -> bool:
