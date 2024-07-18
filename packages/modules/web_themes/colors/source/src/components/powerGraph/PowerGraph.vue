@@ -85,7 +85,9 @@
 					/>
 					<PgSocAxis
 						v-if="
-							graphData.graphMode == 'day' || graphData.graphMode == 'today'
+							graphData.graphMode == 'day' ||
+							graphData.graphMode == 'today' ||
+							graphData.graphMode == 'live'
 						"
 						:width="width - margin.left - margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
