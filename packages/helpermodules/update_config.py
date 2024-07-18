@@ -534,7 +534,7 @@ class UpdateConfig:
             self.__update_version()
         except Exception:
             log.exception("Fehler bei der Aktualisierung des Brokers.")
-            pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Broker.", MessageType.ERROR)
+            pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Brokers.", MessageType.ERROR)
         finally:
             self.__update_topic("openWB/system/update_config_completed", True)
 
@@ -1642,7 +1642,6 @@ class UpdateConfig:
                 pv_price = decode_payload(payload)
             elif "openWB/optional/et/provider" in topic:
                 et_active = True if decode_payload(payload)["type"] is not None else False
-                et_config = decode_payload(payload)
         for chargelog in path_list:
             fixed = False
             try:
@@ -1704,10 +1703,11 @@ class UpdateConfig:
                             return round(bat_costs + grid_costs + pv_costs, 4)
 
                         if et_active:
+                            config_dict = decode_payload(payload)
                             mod = importlib.import_module(
-                                f".electricity_tariffs.{et_config['type']}.tariff", "modules")
+                                f".electricity_tariffs.{config_dict['type']}.tariff", "modules")
                             config = dataclass_from_dict(
-                                mod.device_descriptor.configuration_factory, et_config)
+                                mod.device_descriptor.configuration_factory, config_dict)
                             tariff_state = mod.create_electricity_tariff(config)(begin.timestamp())
                             et_prices = [tariff_state.prices[hour_change.timestamp()-3600],
                                          tariff_state.prices[hour_change.timestamp()]]
