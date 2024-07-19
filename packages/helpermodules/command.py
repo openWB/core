@@ -602,6 +602,18 @@ class Command:
                              f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
                              f'ID \'{self.max_id_mqtt_bridge}\'.', MessageType.ERROR)
 
+    def chargepointReboot(self, connection_id: str, payload: dict) -> None:
+        ''' sendet ein Reboot-Kommando an den Ladepunkt
+            payload: {"data": {"chargepoint": <ID>}}
+        '''
+        pass
+
+    def chargepointShutdown(self, connection_id: str, payload: dict) -> None:
+        ''' sendet ein Shutdown-Kommando an den Ladepunkt
+            payload: {"data": {"chargepoint": <ID>}}
+        '''
+        pass
+
     def systemReboot(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Neustart wird ausgeführt.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
