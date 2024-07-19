@@ -1638,4 +1638,4 @@ def upgrade_datastore_52(self) -> None:
                 })
                 return {topic: configuration_payload}
     self._loop_all_received_topics(upgrade)
-    self.__update_topic("openWB/system/datastore_version", 51)
+    self.__update_topic("openWB/system/datastore_version", 53)
