@@ -7,6 +7,7 @@ import operator
 from typing import List, Tuple
 
 from control import data
+from control.chargemode import Chargemode
 from control.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
@@ -201,7 +202,6 @@ class Counter:
         evu_counter = data.data.counter_all_data.get_evu_counter()
         bat_surplus = data.data.bat_all_data.power_for_bat_charging()
         surplus = evu_counter.data.get.power - bat_surplus
-        log.info(f"Überschuss zur PV-geführten Ladung: {surplus}W")
         return surplus
 
     def calc_raw_surplus(self):
@@ -214,7 +214,6 @@ class Counter:
         max_power = evu_counter.data.config.max_total_power
         surplus = raw_power_left - max_power + bat_surplus + disengageable_smarthome_power
         ranged_surplus = surplus + self._control_range_offset()
-        log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
         return ranged_surplus
 
     def get_control_range_state(self, feed_in_yield: int) -> ControlRangeState:
@@ -233,8 +232,8 @@ class Counter:
             # 100(50 reichen auch?) W Überschuss übrig lassen, damit der Speicher bis zur max Ladeleistung hochregeln
             # kann. Regelmodus ignorieren, denn mit Regelmodus Bezug kann keine Einspeisung für den Speicher erzeugt
             # werden.
-            log.debug("Damit der Speicher hochregeln kann, muss unabhängig vom eingestellten Regelmodus Bezug erzeugt"
-                      " werden.")
+            log.debug("Damit der Speicher hochregeln kann, muss unabhängig vom eingestellten Regelmodus Einspeisung"
+                      " erzeugt werden.")
             return - 100
         control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
         control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
@@ -249,11 +248,17 @@ class Counter:
         log.debug(f"Anpassen des Regelbereichs {range_offset}W")
         return range_offset
 
+    def get_usable_surplus(self, feed_in_yield: float) -> float:
+        # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
+        return (-self.calc_surplus() - self.data.set.released_surplus +
+                self.data.set.reserved_surplus - feed_in_yield)
+
     SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Einschaltverzögerung unterschritten."
     SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald in {} die Einschaltverzögerung abgelaufen ist."
     SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle nicht erreicht "
                               "wird.")
     SWITCH_ON_EXPIRED = "Einschaltschwelle für die Dauer der Einschaltverzögerung überschritten."
+    SWITCH_ON_MAX_PHASES = "Der Überschuss ist ausreichend, um direkt mit {} Phasen zu laden."
 
     def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
@@ -329,6 +334,19 @@ class Counter:
                 self.data.set.reserved_surplus -= pv_config.switch_on_threshold*control_parameter.phases
                 msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
                 control_parameter.state = ChargepointState.CHARGING_ALLOWED
+
+                if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+                    feed_in_yield = pv_config.feed_in_yield
+                else:
+                    feed_in_yield = 0
+                ev_template = chargepoint.data.set.charging_ev_data.ev_template
+                max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
+                if (data.data.general_data.get_phases_chargemode(Chargemode.PV_CHARGING.value,
+                                                                 control_parameter.submode) == 0 and
+                        chargepoint.cp_ev_support_phase_switch() and
+                        self.get_usable_surplus(feed_in_yield) > max_phases_power):
+                    control_parameter.phases = ev_template.data.max_phases
+                    msg += self.SWITCH_ON_MAX_PHASES.format(ev_template.data.max_phases)
             chargepoint.set_state_and_log(msg)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
@@ -414,7 +432,14 @@ class Counter:
             # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
             min_current = (charging_ev_data.ev_template.data.min_current
                            + charging_ev_data.ev_template.data.nominal_difference)
-            if power_in_use > threshold and max(chargepoint.data.get.currents) <= min_current:
+            switch_off_condition = (power_in_use > threshold or
+                                    # Wenn der Speicher hochregeln soll, muss auch abgeschaltet werden.
+                                    (self.calc_raw_surplus() <= 0 and
+                                     data.data.bat_all_data.data.set.regulate_up and
+                                     # Einen nach dem anderen abschalten, bis Ladeleistung des Speichers erreicht ist
+                                     # und wieder eingespeist wird.
+                                     self.data.set.reserved_surplus == 0))
+            if switch_off_condition and max(chargepoint.data.get.currents) <= min_current:
                 if not charging_ev_data.ev_template.data.prevent_charge_stop:
                     # EV, die ohnehin nicht laden, wird direkt die Ladefreigabe entzogen.
                     # Würde man required_power vom released_evu_surplus subtrahieren, würden keine anderen EVs

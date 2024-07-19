@@ -36,11 +36,11 @@ class ClientHandler(SeriesHardwareCheckMixin):
                  fault_state: FaultState) -> None:
         self.client = client
         self.local_charge_point_num = local_charge_point_num
-        self.fault_state = fault_state
         self.evse_client = self._evse_factory(client, evse_ids)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
                                                    client)
-        self.check_hardware()
+        with client:
+            self.check_hardware(fault_state)
         self.read_error = 0
 
     def _evse_factory(self, client: Union[ModbusSerialClient_, ModbusTcpClient_], evse_ids: List[int]) -> evse.Evse:

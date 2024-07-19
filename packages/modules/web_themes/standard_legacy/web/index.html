@@ -164,14 +164,14 @@
 								<div class="col-md-8 btn-group btn-group-toggle bat-consideration-mode"
 									data-toggle="buttons" data-name="bat_consideration_mode"
 									data-topic="openWB/set/general/chargemode_config/pv_charging/bat_mode">
-									<label class="btn btn-outline-warning btn-toggle">
-										<input type="radio" name="bat_mode_name" data-option="bat_mode">Speicher
+									<label class="btn btn-outline-primary btn-toggle" title="Fahrzeuge">
+										<input type="radio" name="bat_mode_name" data-option="ev_mode"><i class="fas fa-car-side"></i>
 									</label>
-									<label class="btn btn-outline-primary btn-toggle">
-										<input type="radio" name="bat_mode_name" data-option="ev_mode">Fahrzeuge
+									<label class="btn btn-outline-warning btn-toggle" title="Speicher">
+										<input type="radio" name="bat_mode_name" data-option="bat_mode"><i class="fas fa-car-battery"></i>
 									</label>
-									<label class="btn btn-outline-success btn-toggle">
-										<input type="radio" name="bat_mode_name" data-option="min_soc_bat_mode">Mindest-SoC
+									<label class="btn btn-outline-success btn-toggle" title="Mindest-SoC des Speichers">
+										<input type="radio" name="bat_mode_name" data-option="min_soc_bat_mode"><i class="fas fa-battery-half"></i>
 									</label>
 								</div>
 							</div>
@@ -1176,13 +1176,13 @@
 				// some helper functions
 				'helperFunctions.js?ver=20240314',
 				// functions for processing messages
-				'processAllMqttMsg.js?ver=20240425',
+				'processAllMqttMsg.js?ver=20240415',
 				// respective Chart.js definition live
 				'livechart.js?ver=20240425',
 				// respective Chart.js definition price based charging
 				'electricityPriceChart.js?ver=20240108',
 				// functions performing mqtt and start mqtt-service
-				'setupMqttServices.js?ver=20240425',
+				'setupMqttServices.js?ver=20240415',
 			];
 			scriptsToLoad.forEach(function (src) {
 				var script = document.createElement('script');

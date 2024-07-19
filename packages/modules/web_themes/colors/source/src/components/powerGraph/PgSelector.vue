@@ -42,7 +42,7 @@
 			>
 				<span class="fa-solid fa-xl fa-chevron-circle-left arrowButton" />
 			</span>
-			<!-- Badge -->
+			<!-- badge -->
 			<span
 				v-if="editmode < 2"
 				type="button"
@@ -115,9 +115,12 @@ const props = defineProps<{
 defineEmits(['shiftLeft', 'shiftRight', 'shiftUp', 'shiftDown'])
 const editmode = ref(0)
 const displayDate = computed(() => {
-	switch (graphData.graphMode) {
-		case 'live':
-			/* 	if (graphData.data.length) {
+	if (graphData.waitForData) {
+		return 'Lädt'
+	} else {
+		switch (graphData.graphMode) {
+			case 'live':
+				/* 	if (graphData.data.length) {
 				const startTime = graphData.data[0].date
 				const endTime = graphData.data[graphData.data.length - 1].date
 				const liveGraphMinutes = Math.round((endTime - startTime) / 60000)
@@ -126,19 +129,20 @@ const displayDate = computed(() => {
 				console.warn('Graph Data empty.')
 				return '???'
 			} */
-			return props.ignoreLive ? 'heute' : `${liveGraph.duration} min`
-		case 'today':
-			return 'heute'
-		case 'day':
-			return (
-				dayGraph.date.getDate() + '.' + (dayGraph.date.getMonth() + 1) + '.'
-			)
-		case 'month':
-			return formatMonth(monthGraph.month - 1, monthGraph.year)
-		case 'year':
-			return yearGraph.year.toString()
-		default:
-			return '???'
+				return props.ignoreLive ? 'heute' : `${liveGraph.duration} min`
+			case 'today':
+				return 'heute'
+			case 'day':
+				return (
+					dayGraph.date.getDate() + '.' + (dayGraph.date.getMonth() + 1) + '.'
+				)
+			case 'month':
+				return formatMonth(monthGraph.month - 1, monthGraph.year)
+			case 'year':
+				return yearGraph.year.toString()
+			default:
+				return '???'
+		}
 	}
 })
 const graphmodes = ['live', 'today', 'day', 'month', 'year']

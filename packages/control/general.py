@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import logging
 import random
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from control import data
 from control.bat_all import BatConsiderationMode
@@ -33,12 +33,13 @@ def control_range_factory() -> List:
 
 @dataclass
 class PvCharging:
-    bat_power_reserve: int = 0
+    bat_power_reserve: int = 2000
+    bat_power_reserve_active: bool = False
     control_range: List = field(default_factory=control_range_factory)
     feed_in_yield: int = 15000
-    phase_switch_delay: int = 7
     phases_to_use: int = 1
-    bat_power_discharge: int = 0
+    bat_power_discharge: int = 1500
+    bat_power_discharge_active: bool = False
     min_bat_soc: int = 50
     bat_mode: BatConsiderationMode = BatConsiderationMode.EV_MODE.value
     switch_off_delay: int = 60
@@ -54,6 +55,7 @@ def pv_charging_factory() -> PvCharging:
 @dataclass
 class ScheduledCharging:
     phases_to_use: int = 0
+    phases_to_use_pv: int = 0
 
 
 def scheduled_charging_factory() -> ScheduledCharging:
@@ -78,6 +80,7 @@ class ChargemodeConfig:
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = 18
     unbalanced_load: bool = False
+    phase_switch_delay: int = 7
 
 
 def chargemode_config_factory() -> ChargemodeConfig:
@@ -107,7 +110,7 @@ class OverrideReference(Enum):
 @dataclass
 class RippleControlReceiver:
     get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
-    module: ConfigurableRcr = field(default_factory=gpio_rcr_factory)
+    module: Optional[Dict] = None
     overrice_reference: OverrideReference = OverrideReference.CHARGEPOINT
 
 
@@ -150,8 +153,9 @@ class General:
 
     def __init__(self):
         self.data: GeneralData = GeneralData()
+        self.ripple_control_receiver: ConfigurableRcr = None
 
-    def get_phases_chargemode(self, chargemode: str) -> Optional[int]:
+    def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
         Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
         die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
@@ -160,6 +164,9 @@ class General:
             if chargemode == "stop" or chargemode == "standby":
                 # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
                 return None
+            elif chargemode == "scheduled_charging" and submode == "pv_charging":
+                # Phasenumschaltung bei PV-Ueberschuss nutzen
+                return getattr(self.data.chargemode_config, chargemode).phases_to_use_pv
             else:
                 return getattr(self.data.chargemode_config, chargemode).phases_to_use
         except Exception:

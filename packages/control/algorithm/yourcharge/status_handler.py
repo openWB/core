@@ -56,19 +56,14 @@ class YcStatusHandler:
                        plugged: bool, rfid_tag: str) -> None:
         self._accounting_info_cache = AccountingInfo(
             charge_start=f"{start_timestamp.isoformat()}Z",
-            meter_at_start=meter_reading, charging=charging,
+            currrent_time=f"{start_timestamp.isoformat()}Z",
+            meter_at_start=meter_reading,
+            current_meter=meter_reading,
+            charging=charging,
             plugged_in=plugged, starting_rfid=rfid_tag)
         self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
         if self._accounting_info_cache.starting_rfid is not None and self._accounting_info_cache.starting_rfid != "":
             self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
-
-    def update_accounting_rfid(self, rfid_tag: str) -> None:
-        self.get_accounting()  # initializes the cache field
-        if (self._accounting_info_cache.starting_rfid is None or self._accounting_info_cache.starting_rfid == "") \
-                and rfid_tag is not None and rfid_tag != "":
-            self._accounting_info_cache.starting_rfid = rfid_tag
-            self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
-            self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
 
     def update_accounting(self, update_timestamp: datetime.datetime, current_meter: float, charging: bool,
                           plugged: bool) -> None:
@@ -98,11 +93,14 @@ class YcStatusHandler:
             if data.data.yc_data.data.yc_control.accounting is not None \
                     and data.data.yc_data.data.yc_control.accounting.meter_at_start is not None:
                 self._accounting_info_cache = data.data.yc_data.data.yc_control.accounting
-                self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
+                if self._accounting_info_cache.currrent_time is None:
+                    self._accounting_info_cache.currrent_time = f"{datetime.datetime.utcnow().isoformat()}Z"
+                # self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
             else:
                 self._accounting_info_cache = AccountingInfo()
-                self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
-                self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
+                self._accounting_info_cache.currrent_time = f"{datetime.datetime.utcnow().isoformat()}Z"
+                # self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
+                # self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
         return self._accounting_info_cache
 
     def has_changed_rfid_scan(self) -> bool:

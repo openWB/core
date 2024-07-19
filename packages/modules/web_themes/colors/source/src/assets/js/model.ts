@@ -10,6 +10,7 @@
 import { reactive, ref } from 'vue'
 import { GlobalData } from './types'
 import type { PowerItem, ItemProps } from './types'
+import { PvSystem } from './types'
 
 export const masterData: { [key: string]: ItemProps } = reactive({
 	evuIn: { name: 'Netz', color: 'var(--color-evu)', icon: '\uf275' },
@@ -45,6 +46,24 @@ export const masterData: { [key: string]: ItemProps } = reactive({
 	sh7: { name: 'Gerät', color: 'var(--color-sh7)', icon: 'Gerät' },
 	sh8: { name: 'Gerät', color: 'var(--color-sh8)', icon: 'Gerät' },
 	sh9: { name: 'Gerät', color: 'var(--color-sh9)', icon: 'Gerät' },
+	pv1: { name: 'PV', color: 'var(--color-pv1)', icon: 'Wechselrichter' },
+	pv2: { name: 'PV', color: 'var(--color-pv2)', icon: 'Wechselrichter' },
+	pv3: { name: 'PV', color: 'var(--color-pv3)', icon: 'Wechselrichter' },
+	pv4: { name: 'PV', color: 'var(--color-pv4)', icon: 'Wechselrichter' },
+	pv5: { name: 'PV', color: 'var(--color-pv5)', icon: 'Wechselrichter' },
+	pv6: { name: 'PV', color: 'var(--color-pv6)', icon: 'Wechselrichter' },
+	pv7: { name: 'PV', color: 'var(--color-pv7)', icon: 'Wechselrichter' },
+	pv8: { name: 'PV', color: 'var(--color-pv8)', icon: 'Wechselrichter' },
+	pv9: { name: 'PV', color: 'var(--color-pv9)', icon: 'Wechselrichter' },
+	bat1: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat2: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat3: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat4: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat5: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat6: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat7: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat8: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
+	bat9: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
 })
 class HistoricSummary {
 	private _items: { [key: string]: PowerItem } = {}
@@ -67,8 +86,10 @@ class HistoricSummary {
 	values() {
 		return Object.values(this._items)
 	}
-	addItem(key: string) {
-		this._items[key] = createPowerItem(key)
+	addItem(key: string, useColor?: string) {
+		this._items[key] = useColor
+			? createPowerItem(key, useColor)
+			: createPowerItem(key)
 	}
 	setEnergy(cat: string, val: number) {
 		if (!this.keys().includes(cat)) {
@@ -92,7 +113,7 @@ class HistoricSummary {
 		if (!this.keys().includes(cat)) {
 			this.addItem(cat)
 		}
-		this._items[cat].pvPercentage = val
+		this._items[cat].pvPercentage = val <= 100 ? val : 100
 	}
 	calculateHouseEnergy() {
 		this._items.house.energy =
@@ -105,7 +126,7 @@ class HistoricSummary {
 			this._items.devices.energy
 	}
 }
-export let historicSummary = new HistoricSummary()
+export let historicSummary = reactive(new HistoricSummary())
 export function resetHistoricSummary() {
 	historicSummary = new HistoricSummary()
 }
@@ -124,7 +145,7 @@ export const usageSummary: { [key: string]: PowerItem } = reactive({
 export const globalData = reactive(new GlobalData())
 export const etPriceList = ref('')
 export const energyMeterNeedsRedraw = ref(false)
-function createPowerItem(key: string): PowerItem {
+function createPowerItem(key: string, useColor?: string): PowerItem {
 	const p: PowerItem = {
 		name: masterData[key] ? masterData[key].name : 'item',
 		power: 0,
@@ -132,7 +153,11 @@ function createPowerItem(key: string): PowerItem {
 		energyPv: 0,
 		energyBat: 0,
 		pvPercentage: 0,
-		color: masterData[key] ? masterData[key].color : 'var(--color-charging)',
+		color: useColor
+			? useColor
+			: masterData[key]
+				? masterData[key].color
+				: 'var(--color-charging)',
 		icon: masterData[key] ? masterData[key].icon : '',
 		showInGraph: true,
 	}
@@ -144,3 +169,9 @@ export function correctHouseConsumption() {
 }
 
 export const currentTime = ref(new Date())
+export const pvSystems = ref(new Map<number, PvSystem>())
+export const addPvSystem = (index: number) => {
+	pvSystems.value.set(index, new PvSystem(index))
+	pvSystems.value.get(index)!.color =
+		masterData['pv' + pvSystems.value.size].color
+}

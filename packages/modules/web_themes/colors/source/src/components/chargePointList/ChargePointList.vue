@@ -1,5 +1,4 @@
 <template>
-	<!-- <div v-if="true && !globalConfig.simpleCpList" class="p-0 m-0 d-flex align-items-stretch" :class="totalWidth"> -->
 	<swiper-container
 		v-if="!props.shortlist"
 		:space-between="0"
@@ -20,8 +19,6 @@
 			</div>
 		</swiper-slide>
 	</swiper-container>
-	<!-- </div> -->
-	<!-- <CPSimpleList v-if="props.shortlist" /> -->
 	<CpSimpleList2 v-if="props.shortlist" />
 </template>
 
@@ -30,7 +27,6 @@ import { computed, onMounted } from 'vue'
 import { chargePoints } from './model'
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import CPChargePoint from './CPChargePoint.vue'
-// import CPSimpleList from './cpSimpleList/CPSimpleList.vue'
 import Swiper from 'swiper'
 import 'swiper/css'
 import 'swiper/css/pagination'

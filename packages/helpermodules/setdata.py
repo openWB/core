@@ -446,7 +446,6 @@ class SetData:
                 if "/name" in msg.topic:
                     self._validate_value(msg, str, pub_json=True)
                 elif ("/load_default" in msg.topic or
-                        "/disable_after_unplug" in msg.topic or
                         "/prio" in msg.topic):
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/chargemode/selected" in msg.topic:
@@ -511,6 +510,8 @@ class SetData:
                     "openWB/set/chargepoint/get/daily_imported" in msg.topic or
                     "openWB/set/chargepoint/get/daily_exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
+            elif re.search("chargepoint/[0-9]+/config/template$", msg.topic) is not None:
+                self._validate_value(msg, int, pub_json=True)
             elif "template" in msg.topic:
                 self._validate_value(msg, "json")
             elif re.search("chargepoint/[0-9]+/config$", msg.topic) is not None:
@@ -537,8 +538,6 @@ class SetData:
                         "/set/plug_time" in msg.topic):
                     self._validate_value(msg, float)
                 elif "/set/log" in msg.topic:
-                    self._validate_value(msg, "json")
-                elif "/set/change_ev_permitted" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/config/ev" in msg.topic:
                     self._validate_value(
@@ -567,6 +566,8 @@ class SetData:
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
                     self._validate_value(msg, int, [(0, 7)])
+                elif "/disable_after_unplug" in msg.topic:
+                    self._validate_value(msg, bool, pub_json=True)
                 else:
                     self.__unknown_topic(msg)
             else:
@@ -607,7 +608,7 @@ class SetData:
                 "/get/heartbeat" in msg.topic or
                 "/get/rfid" in msg.topic or
                 "/get/vehicle_id" in msg.topic or
-                "/get/serial_number"):
+                "/get/serial_number" in msg.topic):
             self._validate_value(msg, str)
         elif "/get/rfid_timestamp" in msg.topic:
             self._validate_value(msg, float)
@@ -739,7 +740,9 @@ class SetData:
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
             elif ("openWB/set/general/chargemode_config/unbalanced_load" in msg.topic or
-                  "openWB/set/general/chargemode_config/retry_failed_phase_switches" in msg.topic):
+                  "openWB/set/general/chargemode_config/retry_failed_phase_switches" in msg.topic or
+                  "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge_active" in msg.topic or
+                    "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or
@@ -748,12 +751,13 @@ class SetData:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay" in msg.topic:
+            elif "openWB/set/general/chargemode_config/phase_switch_delay" in msg.topic:
                 self._validate_value(msg, int, [(1, 15)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
             elif (("openWB/set/general/chargemode_config/pv_charging/phases_to_use" in msg.topic or
-                    "openWB/set/general/chargemode_config/scheduled_charging/phases_to_use" in msg.topic)):
+                    "openWB/set/general/chargemode_config/scheduled_charging/phases_to_use" in msg.topic or
+                    "openWB/set/general/chargemode_config/scheduled_charging/phases_to_use_pv" in msg.topic)):
                 self._validate_value(msg, int, [(0, 0), (1, 1), (3, 3)])
             elif "openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic:
                 self._validate_value(msg, int, [(0, 100)])
@@ -871,12 +875,12 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/counter/get/hierarchy" in msg.topic:
                 self._validate_value(msg, None)
+            elif "openWB/set/counter/config/home_consumption_source_id" in msg.topic:
+                self._validate_value(msg, int)
             elif "openWB/set/counter/set/simulation" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/set/consumption_left" in msg.topic:
                 self._validate_value(msg, float)
-            elif "/config/selected" in msg.topic:
-                self._validate_value(msg, str)
             elif "/module" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/config/max_currents" in msg.topic:
@@ -982,6 +986,7 @@ class SetData:
                     "openWB/set/system/wizard_done" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic or
                     "openWB/set/system/backup_cloud/backup_before_update" in msg.topic or
+                    "openWB/set/system/installAssistantDone" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or
                     "openWB/set/system/usage_terms_acknowledged" in msg.topic or
                     "openWB/set/system/update_config_completed" in msg.topic):
@@ -1051,8 +1056,6 @@ class SetData:
                 self._validate_value(msg, int, [(-1, float("inf"))])
             elif "todo" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "error" in msg.topic:
-                self._validate_value(msg, "json")
             elif "messages" in msg.topic:
                 self._validate_value(msg, "json")
             elif "command_completed" in msg.topic:
@@ -1101,19 +1104,29 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/LegacySmartHome/config" in msg.topic:
+            if ("openWB/set/LegacySmartHome/config" in msg.topic or "openWB/set/LegacySmartHome/Devices" in msg.topic):
                 index = get_index(msg.topic)
-                pub_single(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
-                           retain=True, no_json=True, port=1886)
-                pub_single(msg.topic, "", no_json=True, port=1886)
-                with open(self._get_ramdisk_path()/"rereadsmarthomedevices", 'w') as f:
-                    f.write(str(1))
-                if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/mode" in msg.topic:
-                    with open(self._get_ramdisk_path()/f"smarthome_device_manual_{index}", 'w') as f:
-                        f.write(str(decode_payload(msg.payload)))
-                if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/device_manual_control" in msg.topic:
-                    with open(self._get_ramdisk_path()/f"smarthome_device_manual_control_{index}", 'w') as f:
-                        f.write(str(decode_payload(msg.payload)))
+                if "openWB/set/LegacySmartHome/config" in msg.topic:
+                    pub_single(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
+                               retain=True, no_json=True, port=1886)
+                    pub_single(msg.topic, "", no_json=True, port=1886)
+                    with open(self._get_ramdisk_path()/"rereadsmarthomedevices", 'w') as f:
+                        f.write(str(1))
+                    if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/mode" in msg.topic:
+                        with open(self._get_ramdisk_path()/f"smarthome_device_manual_{index}", 'w') as f:
+                            f.write(str(decode_payload(msg.payload)))
+                    if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/device_manual_control" in msg.topic:
+                        with open(self._get_ramdisk_path()/f"smarthome_device_manual_control_{index}", 'w') as f:
+                            f.write(str(decode_payload(msg.payload)))
+                elif (f"openWB/set/LegacySmartHome/Devices/{index}/Ueberschuss" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/ReqRelay" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Aktpower" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Powerc" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Tempa" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Tempb" in msg.topic or
+                        f"openWB/set/LegacySmartHome/Devices/{index}/Tempc" in msg.topic):
+                    self._validate_value(msg, None)
+                    # diese topics werden im Smarthomemodul mqtt bearbeitet
             else:
                 self.__unknown_topic(msg)
         except Exception:

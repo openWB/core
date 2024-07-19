@@ -204,15 +204,15 @@ class Device(AbstractDevice):
             return True
 
     def update(self) -> None:
-        if self.device_config.configuration.version == EnphaseVersion.V2.value:
-            # v2 requires token authentication
-            if self.check_token() is False:
-                log.error("no valid token to connect to envoy")
-                return
-        log.debug("Start device reading " + str(self.components))
-        with req.get_http_session() as session:
-            if self.components:
-                with MultiComponentUpdateContext(self.components):
+        if self.components:
+            with MultiComponentUpdateContext(self.components):
+                if self.device_config.configuration.version == EnphaseVersion.V2.value:
+                    # v2 requires token authentication
+                    if self.check_token() is False:
+                        log.error("no valid token to connect to envoy")
+                        return
+                log.debug("Start device reading " + str(self.components))
+                with req.get_http_session() as session:
                     json_live_data = None
                     if self.device_config.configuration.version == EnphaseVersion.V1.value:
                         json_response = session.get(
@@ -243,11 +243,11 @@ class Device(AbstractDevice):
                         return
                     for component in self.components:
                         self.components[component].update(json_response, json_live_data)
-            else:
-                log.warning(
-                    self.device_config.name +
-                    ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
-                )
+        else:
+            log.warning(
+                self.device_config.name +
+                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
+            )
 
 
 COMPONENT_TYPE_TO_MODULE = {

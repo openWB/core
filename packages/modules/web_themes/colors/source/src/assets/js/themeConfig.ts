@@ -32,6 +32,7 @@ export class Config {
 	private _showVehicles = false
 	private _showStandardVehicle = true
 	private _showPrices = false
+	private _showInverters = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -255,6 +256,16 @@ export class Config {
 	setShowPrices(show: boolean) {
 		this._showPrices = show
 	}
+	get showInverters() {
+		return this._showInverters
+	}
+	set showInverters(show: boolean) {
+		this._showInverters = show
+		savePrefs()
+	}
+	setShowInverters(show: boolean) {
+		this._showInverters = show
+	}
 }
 export const globalConfig = reactive(new Config())
 export function initConfig() {
@@ -376,6 +387,8 @@ export const infotext: { [key: string]: string } = {
 		'Durchgehend mit mindestens dem eingestellten Strom laden. Wenn notwendig mit Netzstrom.',
 	pricebased:
 		'Laden bei dynamischem Stromtarif, wenn eingestellter Maximalpreis unterboten wird.',
+	pvpriority:
+		'Ladepriorität bei PV-Produktion. Bevorzung von Fahzeugen, Speicher, oder Fahrzeugen bis zum eingestellten Mindest-Ladestand. Die Einstellung ist für alle Ladepunkte gleich.',
 }
 interface Preferences {
 	hideSH?: number[]
@@ -399,6 +412,7 @@ interface Preferences {
 	showVehicles?: boolean
 	showStandardV?: boolean
 	showPrices?: boolean
+	showInv?: boolean
 	debug?: boolean
 }
 
@@ -427,6 +441,7 @@ function writeCookie() {
 	prefs.showVehicles = globalConfig.showVehicles
 	prefs.showStandardV = globalConfig.showStandardVehicle
 	prefs.showPrices = globalConfig.showPrices
+	prefs.showInv = globalConfig.showInverters
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
@@ -509,6 +524,9 @@ function readCookie() {
 		}
 		if (prefs.showPrices !== undefined) {
 			globalConfig.setShowPrices(prefs.showPrices)
+		}
+		if (prefs.showInv !== undefined) {
+			globalConfig.setShowInverters(prefs.showInv)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)

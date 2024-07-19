@@ -31,14 +31,14 @@ class Algorithm:
             self.min_current.set_min_current()
             log.info("**Sollstrom setzen**")
             common.reset_current_to_target_current()
-            self.additional_current.set_additional_current([0, 8])
+            self.additional_current.set_additional_current()
             counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
             self.surplus_controlled.check_switch_on()
             if self.evu_counter.data.set.surplus_power_left > 0:
                 log.info("**PV-geführten Strom setzen**")
                 common.reset_current_to_target_current()
                 self.surplus_controlled.set_required_current_to_max()
-                self.surplus_controlled.set_surplus_current([6, 12])
+                self.surplus_controlled.set_surplus_current()
             else:
                 log.info("**Keine Leistung für PV-geführtes Laden übrig.**")
             self.no_current.set_no_current()

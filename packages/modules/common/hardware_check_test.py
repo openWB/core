@@ -1,5 +1,5 @@
 from typing import List, Optional, Tuple, Union
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from modules.common import sdm
@@ -7,7 +7,7 @@ from modules.common.evse import Evse
 from modules.common.hardware_check import (
     EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_NO_SERIAL_NUMBER, METER_PROBLEM, USB_ADAPTER_BROKEN,
     SeriesHardwareCheckMixin, check_meter_values)
-from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
+from modules.common.modbus import NO_CONNECTION, ModbusClient, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
 
@@ -51,9 +51,12 @@ def test_hardware_check_fails(evse_side_effect,
     handle_exception_mock = Mock(side_effect=handle_exception_side_effect, return_value=handle_exception_return_value)
     monkeypatch.setattr(SeriesHardwareCheckMixin, "handle_exception", handle_exception_mock)
 
+    mock_modbus_client = MagicMock(spec=client_spec, address=SAMPLE_IP, port=SAMPLE_PORT)
+    mock_modbus_client.__enter__.return_value = mock_modbus_client
+
     # execution and evaluation
     with pytest.raises(Exception, match=expected_error_msg):
-        ClientHandler(0, Mock(spec=client_spec, address=SAMPLE_IP, port=SAMPLE_PORT), [1], Mock())
+        ClientHandler(0, mock_modbus_client, [1], Mock())
 
 
 def test_hardware_check_succeeds(monkeypatch):
@@ -66,9 +69,12 @@ def test_hardware_check_succeeds(monkeypatch):
     mock_find_meter_client = Mock(spec=sdm.Sdm630, return_value=mock_meter_client)
     monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
 
+    mock_modbus_client = MagicMock(spec=ModbusClient)
+    mock_modbus_client.__enter__.return_value = mock_modbus_client
+
     # execution and evaluation
     # keine Exception
-    ClientHandler(0, Mock(), [1], Mock())
+    ClientHandler(0, mock_modbus_client, [1], Mock())
 
 
 @pytest.mark.parametrize(
