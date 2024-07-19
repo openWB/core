@@ -273,6 +273,7 @@ class StatemachineYc():
             self._state_change("Chargepoint got disabled from outside while in regular control loop",
                                LoadControlState.Idle)
 
+        self._set_current("Regular control loop", -1, yourcharge.LmStatus.InLoop)
         self._control_algorithm.do_load_control()
 
     def _check_disabled_transitions(self) -> None:
@@ -320,10 +321,11 @@ class StatemachineYc():
         self._justification = justification
         self._current = current
         self._status = status
-        self._control_algorithm.set_current(justification, current, status)
 
     def _execute_set_current(self):
-        self._control_algorithm.set_current(self._justification, self._current, self._status)
+        # self._current < 0 is indicator for "current set elsewhere"
+        if self._current >= 0:
+            self._control_algorithm.set_current(self._justification, self._current, self._status)
 
     def _send_status(self):
         self._status_handler.publish_changes()
