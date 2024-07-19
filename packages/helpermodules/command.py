@@ -723,6 +723,13 @@ class Command:
         migrate_data.migrate()
         pub_user_message(payload, connection_id, "Datenübernahme abgeschlossen.", MessageType.SUCCESS)
 
+    def httpApi(self, connection_id: str, payload: dict) -> None:
+        command = "a2ensite" if payload["data"]["active"] else "a2dissite"
+        run_command([f"sudo {command} http-api"])
+        run_command([f"sudo {command} http-api-ssl.conf"])
+        pub_user_message(payload, connection_id,
+                         f"HTTP-API {'' if payload['data']['active'] else 'de'}aktiviert.", MessageType.SUCCESS)
+
 
 class ErrorHandlingContext:
     def __init__(self, payload: dict, connection_id: str):

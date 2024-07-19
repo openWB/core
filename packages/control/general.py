@@ -175,6 +175,7 @@ class GeneralData:
         default=0, metadata={"topic": "grid_protection_random_stop"})
     grid_protection_timestamp: Optional[float] = field(
         default=None, metadata={"topic": "grid_protection_timestamp"})
+    http_api: bool = False
     mqtt_bridge: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
