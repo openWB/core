@@ -39,13 +39,7 @@ export default {
      */
     confirm() {
       console.log("shutdown requested");
-      if (this.mqttStore.state.settings.parentChargePoint1 !== undefined) {
-        this.$root.sendSystemCommand("chargePointShutdown", {
-          chargePoint: this.mqttStore.state.settings.parentChargePoint1,
-        });
-      } else {
-        this.$root.sendSystemCommand("systemShutdown");
-      }
+      this.$root.sendSystemCommand("systemShutdown");
     },
   },
 };
