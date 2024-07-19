@@ -253,12 +253,12 @@ class BrokerContent:
             payload = decode_payload(msg.payload)
             self.content += (f"Name: {payload['name']}, aktiv: {payload['active']}, "
                              f"openWB-Cloud: {payload['remote']['is_openwb_cloud']}")
-            if payload.get("is_openwb_cloud"):
+            if payload['remote'].get("is_openwb_cloud"):
                 self.content += (f", BN: {payload['remote']['username']}, PW: {payload['remote']['password']}, "
                                  f"Partnerzugang: {payload['access']['partner']}")
             self.content += "\n"
         elif "openWB/system/mqtt/valid_partner_ids":
-            self.content += f"Partner-IDs: {decode_payload(msg.payload)}"
+            self.content += f"Partner-IDs: {decode_payload(msg.payload)}\n"
 
 
 class ErrorHandlingContext:
