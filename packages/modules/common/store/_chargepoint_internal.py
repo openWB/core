@@ -30,6 +30,8 @@ class InternalChargepointValueStore(ValueStore[ChargepointState]):
         pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) +
                       "/get/serial_number", self.state.serial_number)
         pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) +
+                      "/get/meter_model", self.state.meter_model)
+        pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) +
                       "/get/evse_current", self.state.evse_current, 2)
 
 

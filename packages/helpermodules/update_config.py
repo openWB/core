@@ -104,6 +104,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/vehicle_id$",
         "^openWB/chargepoint/[0-9]+/get/voltages$",
         "^openWB/chargepoint/[0-9]+/get/serial_number$",
+        "^openWB/chargepoint/[0-9]+/get/meter_model$",
         "^openWB/chargepoint/[0-9]+/get/soc$",
         "^openWB/chargepoint/[0-9]+/get/soc_timestamp$",
         "^openWB/chargepoint/[0-9]+/get/state_str$",

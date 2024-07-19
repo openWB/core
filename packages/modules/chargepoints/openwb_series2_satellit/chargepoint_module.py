@@ -94,7 +94,8 @@ class ChargepointModule(AbstractChargepoint):
                                 plug_state=plug_state,
                                 charge_state=charge_state,
                                 phases_in_use=phases_in_use,
-                                serial_number=self._client.meter_client.get_serial_number()
+                                serial_number=self._client.meter_client.get_serial_number(),
+                                meter_model=self._client.meter_client.get_model()
                             )
                         self.store.set(chargepoint_state)
                         self.__client_error_context.reset_error_counter()

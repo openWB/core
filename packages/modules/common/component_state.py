@@ -161,13 +161,15 @@ class ChargepointState:
                  soc: Optional[float] = None,
                  soc_timestamp: Optional[int] = None,
                  evse_current: Optional[float] = None,
-                 vehicle_id: Optional[str] = None):
+                 vehicle_id: Optional[str] = None,
+                 meter_model: str = ""):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
         self.exported = exported
         self.power = power
         self.serial_number = serial_number
+        self.meter_model = meter_model
         self.phases_in_use = phases_in_use
         self.charge_state = charge_state
         self.plug_state = plug_state
