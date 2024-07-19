@@ -24,17 +24,17 @@ if ( $sendmessage === 1 ) {
 		if ( $exitcode > 0) {
 			echo "failure: $output, code: $exitcode";
 		} else {
-			echo "msg sent";
+			echo "{ topic: $topic , message: $msg, status: \"sent\" }";
 		}
 	}else {
-		echo "Topic not valid. Only openWB/set/ topics are writable.";
+		echo "{ topic: $topic , error: \"Topic not valid. Only openWB/set/ topics are writable.\" }"; 
 	}
 
 } else {
 	$response = exec("timeout 1 mosquitto_sub -t $topic -C 1");
 	if (strlen($response) < 1) {
 		$topic=htmlentities($topic);
-		$response = "Topic - $topic - not found.";
+		$response = "{ topic: $topic , error: \"Topic not found.\" }";
 	}
 	echo "$response";
 
