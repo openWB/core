@@ -161,7 +161,6 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/set/error_counter$",
         "^openWB/counter/[0-9]+/set/released_surplus$",
         "^openWB/counter/[0-9]+/set/reserved_surplus$",
-        "^openWB/counter/[0-9]+/set/state_str$",
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
 

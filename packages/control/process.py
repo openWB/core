@@ -69,8 +69,6 @@ class Process:
                         log.error(
                             thread.name +
                             " konnte nicht innerhalb des Timeouts die Werte senden.")
-
-            data.data.counter_all_data.get_evu_counter().put_stats()
         except Exception:
             log.exception("Fehler im Process-Modul")
 

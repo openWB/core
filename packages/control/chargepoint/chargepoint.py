@@ -101,8 +101,8 @@ class Chargepoint(ChargepointRfidMixin):
                             general_data.grid_protection_random_stop):
                         state = False
                         message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
-                        Pub().pub("openWB/set/general/grid_protection_timestamp", None)
-                        Pub().pub("openWB/set/general/grid_protection_random_stop", 0)
+                        general_data.grid_protection_timestamp = None
+                        general_data.grid_protection_random_stop = 0
                 else:
                     state = False
                     message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
