@@ -17,10 +17,10 @@ def create_device(device_config: SiemensSentron):
         return SiemensSentronCounter(component_config, client, device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[SiemensSentronCounter]):
-        with client as c:
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(c)
+                    component.update()
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)

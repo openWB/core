@@ -7,7 +7,7 @@ class EvuKitConfiguration:
         pass
 
 
-class EvuKit:
+class EvuKitSetup:
     def __init__(self,
                  name: str = "openWB EVU-Kit",
                  type: str = "openwb_evu_kit",

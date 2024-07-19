@@ -7,7 +7,7 @@ class BatKitConfiguration:
         pass
 
 
-class BatKit:
+class BatKitSetup:
     def __init__(self,
                  name: str = "openWB Speicher-Kit",
                  type: str = "openwb_bat_kit",
