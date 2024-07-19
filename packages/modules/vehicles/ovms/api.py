@@ -6,7 +6,7 @@ import asyncio
 from json import loads, dumps
 from modules.vehicles.ovms.config import OVMS
 from helpermodules.pub import Pub
-import requests
+from modules.common import req
 
 OVMS_SERVER = "https://ovms.dexters-web.de:6869"
 TOKEN_CMD = "/api/token"
@@ -26,6 +26,7 @@ def write_config(topic: str, config: dict):
 class api:
 
     def __init__(self):
+        self.session = req.get_http_session()
         pass
 
     def create_token(self) -> str:
@@ -38,7 +39,11 @@ class api:
             "application": "owb-ovms",
             "purpose": "get soc"
         }
-        resp = requests.post(token_url, params=data, files=form_data)
+        try:
+            resp = self.session.post(token_url, params=data, files=form_data)
+        except Exception as e:
+            resp = e.response
+
         log.debug("create_token status_code=" + str(resp.status_code))
         tokenDict = loads(resp.text)
         log.debug("create_token response=" + dumps(tokenDict, indent=4))
@@ -58,7 +63,11 @@ class api:
         status_url = f"{OVMS_SERVER}{STATUS_CMD}/{self.vehicleId}?username={self.user_id}&password={self.token}"
 
         log.debug("status-url=" + status_url)
-        resp = requests.get(status_url)
+        try:
+            resp = self.session.get(status_url)
+        except Exception as e:
+            resp = e.response
+
         status_code = resp.status_code
         if status_code > 299:
             log.error("get_status status_code=" + str(status_code) + ", create new token")
