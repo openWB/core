@@ -900,7 +900,6 @@ class SetData:
                     self._validate_value(
                         msg, float, [(-1, 1)], collection=list)
                 elif ("/get/power_average" in msg.topic
-                        or "/get/unbalanced_load" in msg.topic
                         or "/get/frequency" in msg.topic
                         or "/get/daily_exported" in msg.topic
                         or "/get/daily_imported" in msg.topic
@@ -912,8 +911,7 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/set/error_counter" in msg.topic:
                     self._validate_value(msg, int, [(0, float("inf"))])
-                elif ("/get/fault_str" in msg.topic or
-                      "/set/state_str" in msg.topic):
+                elif "/get/fault_str" in msg.topic:
                     self._validate_value(msg, str)
                 elif "/get/power" in msg.topic:
                     self._validate_value(

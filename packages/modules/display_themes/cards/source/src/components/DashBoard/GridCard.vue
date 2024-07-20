@@ -12,28 +12,31 @@ library.add(fasGaugeHigh);
 
 export default {
   name: "GridCard",
+  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
   props: {},
   data() {
     return {
       mqttStore: useMqttStore(),
     };
   },
-  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
 };
 </script>
 
 <template>
   <dash-board-card color="danger">
     <template #headerLeft>
-      <font-awesome-icon fixed-width :icon="['fas', 'fa-gauge-high']" />
+      <font-awesome-icon
+        fixed-width
+        :icon="['fas', 'fa-gauge-high']"
+      />
       EVU
     </template>
     <template #headerRight>
-      {{ mqttStore.getGridPower }}
+      {{ mqttStore.getGridPower() }}
     </template>
     <spark-line
       color="var(--color--danger)"
-      colorNegative="var(--color--success)"
+      color-negative="var(--color--success)"
       :data="mqttStore.getGridPowerChartData"
     />
   </dash-board-card>

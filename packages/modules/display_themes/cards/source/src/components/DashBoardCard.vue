@@ -2,7 +2,7 @@
 export default {
   name: "DashBoardCard",
   props: {
-    color: String,
+    color: { type: String, required: true },
   },
 };
 </script>
@@ -13,18 +13,18 @@ export default {
       <i-container>
         <i-row>
           <i-column>
-            <slot name="headerLeft"></slot>
+            <slot name="headerLeft" />
           </i-column>
           <i-column
             v-if="$slots.headerRight"
             class="_flex-grow:0 _text-align:right _white-space:nowrap"
           >
-            <slot name="headerRight"></slot>
+            <slot name="headerRight" />
           </i-column>
         </i-row>
       </i-container>
     </template>
-    <slot></slot>
+    <slot />
   </i-card>
 </template>
 

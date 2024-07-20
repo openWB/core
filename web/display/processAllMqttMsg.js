@@ -36,6 +36,7 @@ function setIframeSource() {
 		var query = new URLSearchParams();
 		var destination = "";
 		if (data["openWB/general/extern"]) {
+			// load secondary display (from secondary openWB)
 			switch (data["openWB/general/extern_display_mode"]) {
 				case "local":
 					// host = location.host;
@@ -54,16 +55,13 @@ function setIframeSource() {
 			}
 			// load display from primary or local
 			destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
-			if (destination != iframe.src) {
-				addLog(`all done, loading theme from primary`);
-				// iframe.src = destination;
-			}
+			addLog(`all done, loading theme from primary`);
+			// no iframe here as this would result in another nesting with the wrapper on primary
 			setTimeout(() => {
-				// startup.classList.add("hide");
-				// iframe.classList.remove("hide");
 				location.href = destination;
 			}, 2000);
 		} else {
+			// load primary display (from primary or secondary openWB)
 			host = location.host;
 			const theme = data["openWB/optional/int_display/theme"].type;
 

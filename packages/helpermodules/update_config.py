@@ -42,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 52
+    DATASTORE_VERSION = 53
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -162,7 +162,6 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/set/error_counter$",
         "^openWB/counter/[0-9]+/set/released_surplus$",
         "^openWB/counter/[0-9]+/set/reserved_surplus$",
-        "^openWB/counter/[0-9]+/set/state_str$",
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
 
@@ -1627,3 +1626,17 @@ def upgrade_datastore_51(self) -> None:
             Pub().pub(topic, payload)
     self._loop_all_received_topics(upgrade)
     self.__update_topic("openWB/system/datastore_version", 52)
+
+
+def upgrade_datastore_52(self) -> None:
+    def upgrade(topic: str, payload) -> Optional[dict]:
+        if "openWB/optional/int_display/theme" == topic:
+            configuration_payload = decode_payload(payload)
+            if configuration_payload.get("type") == "cards":
+                configuration_payload["configuration"].update({
+                    "enable_energy_flow_view": True,
+                    "enable_dashboard_card_vehicles": True,
+                })
+                return {topic: configuration_payload}
+    self._loop_all_received_topics(upgrade)
+    self.__update_topic("openWB/system/datastore_version", 53)

@@ -13,17 +13,17 @@ library.add(fasChargingStation);
 
 export default {
   name: "ChargePointsCard",
-  props: {},
-  data() {
-    return {
-      mqttStore: useMqttStore(),
-    };
-  },
   components: {
     DashBoardCard,
     SparkLine,
     FontAwesomeIcon,
     ChargePointPlugBadge,
+  },
+  props: {},
+  data() {
+    return {
+      mqttStore: useMqttStore(),
+    };
   },
 };
 </script>
@@ -34,7 +34,10 @@ export default {
     color="primary"
   >
     <template #headerLeft>
-      <font-awesome-icon fixed-width :icon="['fas', 'fa-charging-station']" />
+      <font-awesome-icon
+        fixed-width
+        :icon="['fas', 'fa-charging-station']"
+      />
       {{
         mqttStore.getChargePointIds.length == 1
           ? mqttStore.getChargePointName(mqttStore.getChargePointIds[0])
@@ -45,11 +48,11 @@ export default {
       {{
         mqttStore.getChargePointIds.length == 1
           ? mqttStore.getChargePointPower(mqttStore.getChargePointIds[0])
-          : mqttStore.getChargePointSumPower
+          : mqttStore.getChargePointSumPower()
       }}
       <charge-point-plug-badge
-        :chargePointId="mqttStore.getChargePointIds"
-        :showEnergyCharged="false"
+        :charge-point-id="mqttStore.getChargePointIds"
+        :show-energy-charged="false"
       />
     </template>
     <spark-line
@@ -57,8 +60,8 @@ export default {
       :data="
         mqttStore.getChargePointIds.length == 1
           ? mqttStore.getChargePointPowerChartData(
-              mqttStore.getChargePointIds[0],
-            )
+            mqttStore.getChargePointIds[0],
+          )
           : mqttStore.getChargePointSumPowerChartData
       "
     />
