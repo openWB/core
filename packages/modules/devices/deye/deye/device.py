@@ -11,7 +11,7 @@ from modules.devices.deye.deye.bat import DeyeBat
 from modules.devices.deye.deye.counter import DeyeCounter
 from modules.devices.deye.deye.device_type import DeviceType
 from modules.devices.deye.deye.inverter import DeyeInverter
-from modules.devices.deye import bat, counter, inverter
+from modules.devices.deye.deye import bat, counter, inverter
 from modules.devices.deye.deye.config import Deye, DeyeBatSetup, DeyeConfiguration, DeyeCounterSetup, DeyeInverterSetup
 
 log = logging.getLogger(__name__)

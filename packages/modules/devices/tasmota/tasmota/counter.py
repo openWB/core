@@ -3,7 +3,7 @@ from typing import Dict, Union
 import logging
 
 from dataclass_utils import dataclass_from_dict
-from modules.devices.tasmota.config import TasmotaCounterSetup
+from modules.devices.tasmota.tasmota.config import TasmotaCounterSetup
 from modules.common.tasmota import Tasmota
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState

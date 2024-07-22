@@ -13,7 +13,7 @@ class HuaweiConfiguration:
 class Huawei:
     def __init__(self,
                  name: str = "Huawei Hybrid Wechselrichter",
-                 type: List[str] = ["huawei", "huawei", "huawei"],
+                 type: List[str] = ["huawei", "huawei", "other"],
                  id: int = 0,
                  configuration: HuaweiConfiguration = None) -> None:
         self.name = name

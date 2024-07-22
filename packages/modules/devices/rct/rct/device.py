@@ -6,7 +6,7 @@ from typing import Callable, Optional, List
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
-from modules.devices.rct import bat, counter, inverter, rct_lib
+from modules.devices.rct.rct import bat, counter, inverter, rct_lib
 from modules.devices.rct.rct.bat import RctBat
 from modules.devices.rct.rct.config import Rct, RctConfiguration, RctBatSetup, RctCounterSetup, RctInverterSetup
 from modules.devices.rct.rct.counter import RctCounter

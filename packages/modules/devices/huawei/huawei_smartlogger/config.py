@@ -14,7 +14,7 @@ class Huawei_SmartloggerConfiguration:
 class Huawei_Smartlogger:
     def __init__(self,
                  name: str = "Huawei Smartlogger",
-                 type: List[str] = ["huawei", "huawei_smartlogger", "huawei"],
+                 type: List[str] = ["huawei", "huawei_smartlogger", "other"],
                  id: int = 0,
                  configuration: Huawei_SmartloggerConfiguration = None) -> None:
         self.name = name

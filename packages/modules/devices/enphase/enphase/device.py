@@ -10,7 +10,7 @@ from helpermodules.pub import Pub
 from modules.common import req
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import MultiComponentUpdateContext
-from modules.devices.enphase import counter, inverter, bat
+from modules.devices.enphase.enphase import counter, inverter, bat
 from modules.devices.enphase.enphase.config import (EnphaseVersion,
                                                     Enphase,
                                                     EnphaseConfiguration,

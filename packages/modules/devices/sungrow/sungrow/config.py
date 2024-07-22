@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from modules.common.component_setup import ComponentSetup
-from modules.devices.sungrow.version import Version
+from modules.devices.sungrow.sungrow.version import Version
 
 
 class SungrowConfiguration:

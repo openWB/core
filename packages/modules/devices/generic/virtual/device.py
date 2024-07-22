@@ -2,7 +2,7 @@ import logging
 from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
-from modules.devices.virtual.config import Virtual, VirtualCounterSetup
+from modules.devices.generic.virtual.config import Virtual, VirtualCounterSetup
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.devices.generic.virtual import counter
