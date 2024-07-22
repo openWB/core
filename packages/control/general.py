@@ -10,6 +10,7 @@ from control import data
 from control.bat_all import BatConsiderationMode
 from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
+from helpermodules.utils.run_command import run_command
 from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.ripple_control_receivers.gpio.ripple_control_receiver import create_ripple_control_receiver
@@ -242,3 +243,8 @@ class General:
                         self.data.grid_protection_random_stop = 0
         except Exception:
             log.exception("Fehler im General-Modul")
+
+    def set_http_api_state(self, active: bool):
+        command = "a2ensite" if active else "a2dissite"
+        run_command([f"sudo {command} http-api"])
+        run_command([f"sudo {command} http-api-ssl.conf"])
