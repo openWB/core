@@ -2,33 +2,38 @@
 	<!-- Fixed navbar -->
 
 	<div class="navigation">
-		<span class="timedisplay">{{ formatCurrentTime(currentTime) }}</span>
-		<DisplayButton @click="cpLeft">
-			<span class="fas fa-arrow-left px-2" />
-			<span class="fas fa-charging-station pe-2" />
-		</DisplayButton>
-		<DisplayButton @click="cpRight">
-			<span class="fas fa-charging-station px-2" />
-			<span class="fas fa-arrow-right pe-2" />
-		</DisplayButton>
-		<DisplayButton
-			:color="displayConfig.locked ? 'var(--color-evu)' : 'var(--color-pv)'"
-			@click="unlockDisplay"
-		>
-			<span class="fas fa-lock px-4" />
-		</DisplayButton>
+		<span class="graphbuttons">
+			<span class="timedisplay">{{ formatCurrentTime(currentTime) }}</span>
+			<DisplayButton icon="fa-chart-pie" @click="selectPowermeter"
+				>Leistung</DisplayButton
+			>
+			<DisplayButton icon="fa-chart-line" @click="selectPowergraph"
+				>Verlauf</DisplayButton
+			>
+			<DisplayButton icon="fa-chart-column" @click="selectEnergymeter"
+				>Energie</DisplayButton
+			>
+		</span>
+
 		<DisplayButton data-bs-toggle="modal" data-bs-target="#statuspage"
 			>Status</DisplayButton
 		>
-		<DisplayButton icon="fa-chart-pie" @click="selectPowermeter"
-			>Leistung</DisplayButton
-		>
-		<DisplayButton icon="fa-chart-line" @click="selectPowergraph"
-			>Verlauf</DisplayButton
-		>
-		<DisplayButton icon="fa-chart-column" @click="selectEnergymeter"
-			>Energie</DisplayButton
-		>
+		<span class="cpbuttons">
+			<DisplayButton color="var(--color-charging)" @click="cpLeft">
+				<span class="fas fa-arrow-left px-2" />
+				<span class="fas fa-charging-station pe-2" />
+			</DisplayButton>
+			<DisplayButton
+				:bgcolor="displayConfig.locked ? 'var(--color-evu)' : 'var(--color-pv)'"
+				@click="unlockDisplay"
+			>
+				<span class="fas fa-lock px-4" />
+			</DisplayButton>
+			<DisplayButton color="var(--color-charging)" @click="cpRight">
+				<span class="fas fa-charging-station px-2" />
+				<span class="fas fa-arrow-right pe-2" />
+			</DisplayButton>
+		</span>
 	</div>
 </template>
 
@@ -95,12 +100,26 @@ onBeforeUnmount(() => {
 	font-size: var(--font-medium);
 	font-weight: bold;
 	color: var(--color-input);
+	margin-right: 12px;
 }
 
 .navbar {
 	background-color: var(--color-bg);
 	color: var(--color-fg);
 	font-size: var(--font-normal);
+}
+
+.graphbuttons {
+	display: flex;
+	justify-content: left;
+	align-items: center;
+	gap: 5px;
+}
+
+.cpbuttons {
+	display: flex;
+	justify-content: left;
+	gap: 5px;
 }
 
 .dropdown-menu {

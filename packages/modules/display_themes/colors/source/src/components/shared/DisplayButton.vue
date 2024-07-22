@@ -1,7 +1,8 @@
 <template>
 	<div
 		:style="{
-			'background-color': props.color ? props.color : 'var(--color-fg)',
+			'background-color': props.bgcolor ? props.bgcolor : 'var(--color-fg)',
+			color: props.color ? props.color : 'var(--color-bg)',
 		}"
 		class="mybutton"
 		@click="buttonClicked"
@@ -14,6 +15,7 @@
 <script setup lang="ts">
 const props = defineProps<{
 	icon?: string
+	bgcolor?: string
 	color?: string
 }>()
 const emit = defineEmits(['click'])

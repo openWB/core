@@ -8,14 +8,13 @@
 		</template>
 
 		<template #buttons>
-			<!-- 		<span
-				type="button"
-				class="ms-2 ps-5 pt-1"
-				:style="modePillStyle"
-				@click="configmode = !configmode"
+			<DisplayButton
+				color="var(--color-charging)"
+				icon="fa-edit"
+				@click="openSettings"
 			>
-				<span class="fa-solid fa-lg ps-1 fa-ellipsis-vertical" />
-			</span> -->
+				Einstellungen</DisplayButton
+			>
 		</template>
 
 		<!-- Chargepoint info -->
@@ -182,6 +181,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { Modal } from 'bootstrap'
 import { displayConfig, unlockDisplay } from '@/assets/js/model'
 import { type ChargePoint, vehicles, chargePoints } from './model'
 import { chargemodes } from '@/assets/js/themeConfig'
@@ -192,6 +192,7 @@ import BatterySymbol from '@/components/shared/BatterySymbol.vue'
 import FormatWatt from '@/components/shared/FormatWatt.vue'
 import FormatWattH from '../shared/FormatWattH.vue'
 import RadioBarInput from '@/components/shared/RadioBarInput.vue'
+import DisplayButton from '@/components/shared/DisplayButton.vue'
 import { etData } from '../priceChart/model'
 
 const props = defineProps<{
@@ -283,6 +284,14 @@ const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return (Math.round(p * 10) / 10).toFixed(1)
 })
+function openSettings() {
+	if (displayConfig.locked) {
+		unlockDisplay()
+	} else {
+		const settingspage = new Modal('#settingspage')
+		settingspage.toggle()
+	}
+}
 </script>
 
 <style scoped>

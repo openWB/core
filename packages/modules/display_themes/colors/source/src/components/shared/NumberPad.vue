@@ -66,12 +66,13 @@ function addDigit(digit: number) {
 	justify-content: center;
 	font-size: 24px;
 	border: 10px;
+	color: var(--color-bg);
 }
 
 .numberentry {
 	display: grid;
-	grid-template-columns: 70px 70px 70px;
-	grid-template-rows: 75px 75px 75px 75px;
+	grid-template-columns: 60px 60px 60px;
+	grid-template-rows: 65px 65px 65px 65px;
 	grid-gap: 5px;
 }
 </style>

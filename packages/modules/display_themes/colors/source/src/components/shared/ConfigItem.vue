@@ -1,47 +1,24 @@
 <template>
-	<WbSubwidget :fullwidth="fullwidth ? true : false">
-		<div class="grid-col-12 mt-2 mb-0 px-0 py-0 configitem">
-			<div class="titlecolumn m-0 p-0 d-flex align-items-center">
-				<span class="d-flex align-items-baseline m-0 p-0" @click="toggleInfo">
-					<i
-						v-if="props.icon"
-						class="fa-solid fa-sm m-0 p-0 me-2 item-icon"
-						:class="props.icon"
-					/>
-					{{ title }}</span
-				>
-				<span>
-					<i
-						v-if="props.infotext"
-						class="fa-solid fa-sm fa-circle-question ms-4 me-2"
-						:style="iconstyle"
-						@click="toggleInfo"
-					/>
-				</span>
-			</div>
-
-			<p
-				v-if="showInfo"
-				class="infotext shadow m-0 ps-2 mb-1 p-1"
-				@click="toggleInfo"
-			>
-				<i class="me-1 fa-solid fa-sm fa-circle-info" />
-				{{ infotext }}
-			</p>
-			<div
-				class="ms-1 mb-2 p-0 pt-2 d-flex justify-content-stretch align-items-center"
-			>
-				<span class="justify-content-stretch d-flex">
-					<slot />
-				</span>
-			</div>
+	<div class="configitem subgrid">
+		<span class="d-flex align-items-baseline m-0 p-0 grid-col-6">
+			<i
+				v-if="props.icon"
+				class="fa-solid fa-sm m-0 p-0 me-2 item-icon"
+				:class="props.icon"
+			/>
+			{{ title }}</span
+		>
+		<div
+			class="ms-1 mb-2 p-0 pt-2 d-flex justify-content-stretch align-items-center grid-col-6"
+		>
+			<span class="justify-content-stretch d-flex">
+				<slot />
+			</span>
 		</div>
-	</WbSubwidget>
+	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import WbSubwidget from './WbSubwidget.vue'
 
 const props = defineProps<{
 	title: string
@@ -49,17 +26,6 @@ const props = defineProps<{
 	icon?: string
 	fullwidth?: boolean
 }>()
-const showInfo = ref(false)
-function toggleInfo() {
-	showInfo.value = !showInfo.value
-}
-const iconstyle = computed(() => {
-	let style = { color: 'var(--color-charging)' }
-	if (showInfo.value) {
-		style.color = 'var(--color-battery)'
-	}
-	return style
-})
 </script>
 
 <style scoped>
@@ -69,12 +35,12 @@ const iconstyle = computed(() => {
 }
 
 .item-icon {
-	color: var(--color-menu);
+	color: var(--color-bg);
 	font-size: var(--font-settings);
 }
 
 .titlecolumn {
-	color: var(--color-fg);
+	color: var(--color-bg);
 	font-size: var(--font-settings);
 }
 
@@ -84,5 +50,8 @@ const iconstyle = computed(() => {
 
 .configitem {
 	font-size: var(--font-settings);
+
+	align-items: center;
+	justify-content: space-between;
 }
 </style>
