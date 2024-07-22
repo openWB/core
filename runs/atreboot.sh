@@ -263,72 +263,8 @@ chmod 666 "$LOGFILE"
 		"${OPENWBBASEDIR}/runs/update_local_display.sh"
 	fi
 
-	# check for apache configuration
-	echo "apache default site..."
-	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/000-default.conf"; then
-		echo "...ok"
-	else
-		sudo cp "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/"
-		restartService=1
-		echo "...updated"
-	fi
-	echo "apache http api site..."
-	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/apache/http-api.conf" "/etc/apache2/sites-available/http-api.conf"; then
-		echo "...ok"
-	else
-		sudo cp "${OPENWBBASEDIR}/data/config/apache/http-api.conf" "/etc/apache2/sites-available/"
-		restartService=1
-		sudo a2ensite http-api
-		echo "...updated"
-	fi
-	echo "checking required apache modules..."
-	if sudo a2query -m headers; then
-		echo "headers already enabled"
-	else
-		echo "headers currently disabled; enabling module"
-		sudo a2enmod headers
-		restartService=1
-	fi
-	if sudo a2query -m ssl; then
-		echo "ssl already enabled"
-	else
-		echo "ssl currently disabled; enabling module"
-		sudo a2enmod ssl
-		restartService=1
-	fi
-	if sudo a2query -m proxy_wstunnel; then
-		echo "proxy_wstunnel already enabled"
-	else
-		echo "proxy_wstunnel currently disabled; enabling module"
-		sudo a2enmod proxy_wstunnel
-		restartService=1
-	fi
-	echo "apache default ssl site..."
-	if versionMatch "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/apache-openwb-ssl.conf"; then
-		echo "...ok"
-	else
-		sudo a2dissite default-ssl
-		sudo cp "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/"
-		sudo a2ensite apache-openwb-ssl
-		restartService=1
-		echo "...updated"
-	fi
-	echo "apache http api ssl site..."
-	if versionMatch "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/http-api-ssl.conf"; then
-		echo "...ok"
-	else
-		sudo cp "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/"
-		restartService=1
-		sudo a2ensite http-api-ssl
-		echo "...updated"
-	fi
-	if ((restartService == 1)); then
-		echo -n "restarting apache..."
-		sudo systemctl restart apache2
-		echo "done"
-	fi
+	# check apache configuration
+	"${OPENWBBASEDIR}/runs/setup_apache2.sh"
 
 	# check for mosquitto configuration
 	echo "check mosquitto installation..."
