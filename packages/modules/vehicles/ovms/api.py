@@ -7,6 +7,7 @@ from json import loads, dumps
 from modules.vehicles.ovms.config import OVMS
 from helpermodules.pub import Pub
 from modules.common import req
+from copy import deepcopy
 
 OVMS_SERVER = "https://ovms.dexters-web.de:6869"
 TOKEN_CMD = "/api/token"
@@ -132,7 +133,7 @@ class api:
         self.password = conf.configuration.password
         self.vehicleId = conf.configuration.vehicleId
         self.vehicle = vehicle
-        self.config = conf
+        self.config = deepcopy(conf)
 
         tokenstr = self.config.configuration.token
 
