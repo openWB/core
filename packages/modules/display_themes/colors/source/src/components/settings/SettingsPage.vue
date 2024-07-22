@@ -15,13 +15,24 @@
 		</ConfigItem>
 		<hr class="grid-col-12" />
 		<ConfigItem
+		title="Fahrzeug wechseln"
+		icon="fa-car"
+		:fullwidth="true"
+	>
+		<RadioInput
+			v-model.number="chargepoint.connectedVehicle"
+			:options="Object.values(vehicles).map((v) => [v.name, v.id])"
+		/>
+	</ConfigItem>
+	<hr class="grid-col-12" />
+		<ConfigItem
 			title="Strompreisbasiert laden"
 			icon="fa-coins"
 			infotext="Settings"
 		>
 			<SwitchInput v-model="etActive"></SwitchInput>
 		</ConfigItem>
-		<ConfigItem title="Zeitplan aktivieren" icon="fa-coins" infotext="Settings">
+		<ConfigItem title="Zeitplan aktivieren" icon="fa-clock" infotext="Settings">
 			<SwitchInput v-model="timedCharging"></SwitchInput>
 		</ConfigItem>
 	</div>
@@ -30,7 +41,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { globalData } from '@/assets/js/model'
-import { chargePoints, type ChargePoint } from '@/components/chargePointList/model'
+import { chargePoints, type ChargePoint, vehicles } from '@/components/chargePointList/model'
 import ConfigItem from '@/components/shared/ConfigItem.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
