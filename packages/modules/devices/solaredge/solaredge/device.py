@@ -12,6 +12,7 @@ from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
 from modules.common.component_state import BatState, InverterState
+from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_inverter_value_store, get_bat_value_store
 from modules.devices.solaredge.solaredge import bat, counter, external_inverter, inverter
@@ -34,6 +35,80 @@ solaredge_component_classes = Union[SolaredgeBat, SolaredgeCounter,
 default_unit_id = 85
 synergy_unit_identifier = 160
 reconnect_delay = 1.2
+
+
+def set_component_registers(components: Iterable[solaredge_component_classes], synergy_units: int) -> None:
+    meters = [None]*3  # type: List[Union[SolaredgeExternalInverter, SolaredgeCounter, None]]
+    for component in components:
+        if isinstance(component, (SolaredgeExternalInverter, SolaredgeCounter)):
+            meters[component.component_config.configuration.meter_id-1] = component
+
+    # https://www.solaredge.com/sites/default/files/sunspec-implementation-technical-note.pdf:
+    # Only enabled meters are readable, i.e. if meter 1 and 3 are enabled, they are readable as 1st meter and 2nd
+    # meter (and the 3rd meter isn't readable).
+    for meter_id, meter in enumerate(filter(None, meters), start=1):
+        log.debug(
+            "%s: internal meter id: %d, synergy units: %s", meter.component_config.name, meter_id, synergy_units
+        )
+        meter.registers = SolaredgeMeterRegisters(meter_id, synergy_units)
+
+
+def create_device(device_config: Solaredge):
+    def create_bat_component(component_config: SolaredgeBatSetup):
+        get_synergy_units(component_config.configuration.modbus_id)
+        return SolaredgeBat(device_config.id, component_config, client)
+
+    def create_counter_component(component_config: SolaredgeCounterSetup):
+        set_component_registers(components.values(), synergy_units)
+        get_synergy_units(component_config.configuration.modbus_id)
+        return SolaredgeCounter(device_config.id, component_config, client)
+
+    def create_inverter_component(component_config: SolaredgeInverterSetup):
+        nonlocal inverter_counter
+        inverter_counter += 1
+        set_component_registers(components.values(), synergy_units)
+        get_synergy_units(component_config.configuration.modbus_id)
+        return SolaredgeInverter(device_config.id, component_config, client)
+
+    def create_external_inverter_component(component_config: SolaredgeExternalInverterSetup):
+        nonlocal inverter_counter
+        inverter_counter += 1
+        set_component_registers(components.values(), synergy_units)
+        get_synergy_units(component_config.configuration.modbus_id)
+        return SolaredgeExternalInverter(device_config.id, component_config, client)
+
+    def update_components(components: Iterable[Union[SolaredgeBat, SolaredgeCounter, SolaredgeInverter]]):
+        with client:
+            for component in components:
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update()
+
+    def get_synergy_units(modbus_id: int) -> None:
+        nonlocal synergy_units
+        if client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
+                                         unit=modbus_id
+                                         ) == synergy_unit_identifier:
+            log.debug("Synergy Units supported")
+            synergy_units = int(client.read_holding_registers(
+                40129, modbus.ModbusDataType.UINT_16, unit=modbus_id)) or 1
+            log.debug("Synergy Units detected: %s", synergy_units)
+    try:
+        inverter_counter = 0
+        synergy_units = 1
+        client = modbus.ModbusTcpClient_(device_config.configuration.ip_address,
+                                         device_config.configuration.port, reconnect_delay=reconnect_delay)
+    except Exception:
+        log.exception("Fehler in create_device")
+    return ConfigurableDevice(
+        device_config=device_config,
+        component_factory=ComponentFactoryByType(
+            bat=create_bat_component,
+            counter=create_counter_component,
+            external_inverter=create_external_inverter_component,
+            inverter=create_inverter_component,
+        ),
+        component_updater=MultiComponentUpdater(update_components)
+    )
 
 
 class Device(AbstractDevice):
