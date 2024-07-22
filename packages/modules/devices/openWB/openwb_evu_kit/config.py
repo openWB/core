@@ -1,4 +1,5 @@
 from modules.common.component_setup import ComponentSetup
+from typing import List
 
 
 class EvuKitConfiguration:
@@ -9,15 +10,11 @@ class EvuKitConfiguration:
 class EvuKit:
     def __init__(self,
                  name: str = "openWB EVU-Kit",
-                 type: str = "openWB.openwb_evu_kit",
-                 group: str = "openWB",
-                 device: str = "openWB EVU-Kit",
+                 type: List[str] = ["openWB", "openwb_evu_kit", "openWB"],
                  id: int = 0,
                  configuration: EvuKitConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or EvuKitConfiguration()
 

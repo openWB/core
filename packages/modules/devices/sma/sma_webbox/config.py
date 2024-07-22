@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from modules.common.component_setup import ComponentSetup
 
@@ -11,15 +11,11 @@ class SmaWWebboxConfiguration:
 class SmaWebbox:
     def __init__(self,
                  name: str = "SMA Webbox",
-                 type: str = "sma.sma_webbox",
-                 group: str = "other",
-                 device: str = "SMA Webbox",
+                 type: List[str] = ["sma", "sma_webbox", "other"],
                  id: int = 0,
                  configuration: SmaWWebboxConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or SmaWWebboxConfiguration()
 

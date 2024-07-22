@@ -1,4 +1,4 @@
-from typing import Optional, Union, overload
+from typing import Optional, Union, overload, List
 
 from modules.common.component_setup import ComponentSetup
 from modules.devices.openWB.openwb_bat_kit.config import BatKitBatSetup
@@ -15,15 +15,11 @@ class FlexConfiguration:
 class Flex:
     def __init__(self,
                  name: str = "openWB-Kit flex",
-                 type: str = "openWB.openwb_flex",
-                 group: str = "openWB",
-                 device: str = "openWB-Kit flex",
+                 type: List[str] = ["openWB", "openwb_flex", "openWB"],
                  id: int = 0,
                  configuration: FlexConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or FlexConfiguration()
 

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from helpermodules.auto_str import auto_str
 from modules.common.component_setup import ComponentSetup
 
@@ -14,15 +14,11 @@ class Huawei_SmartloggerConfiguration:
 class Huawei_Smartlogger:
     def __init__(self,
                  name: str = "Huawei Smartlogger",
-                 type: str = "huawei.huawei_smartlogger",
-                 group: str = "other",
-                 device: str = "Huawei Smartlogger",
+                 type: List[str] = ["huawei", "huawei_smartlogger", "huawei"],
                  id: int = 0,
                  configuration: Huawei_SmartloggerConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or Huawei_SmartloggerConfiguration()
 

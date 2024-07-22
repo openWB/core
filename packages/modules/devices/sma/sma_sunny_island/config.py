@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from modules.common.component_setup import ComponentSetup
 
@@ -12,15 +12,11 @@ class SmaSunnyIslandConfiguration:
 class SmaSunnyIsland:
     def __init__(self,
                  name: str = "SMA Sunny Island, Sunny Tripower X",
-                 type: str = "sma.sma_sunny_island",
-                 group: str = "other",
-                 device: str = "SMA Sunny Island, Sunny Tripower X",
+                 type: List[str] = ["sma", "sma_sunny_island", "other"],
                  id: int = 0,
                  configuration: SmaSunnyIslandConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or SmaSunnyIslandConfiguration()
 

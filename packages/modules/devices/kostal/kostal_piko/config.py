@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from modules.common.component_setup import ComponentSetup
 
@@ -11,15 +11,11 @@ class KostalPikoConfiguration:
 class KostalPiko:
     def __init__(self,
                  name: str = "Kostal Piko",
-                 type: str = "kostal.kostal_piko",
-                 group: str = "other",
-                 device: str = "Kostal Piko",
+                 type: List[str] = ["kostal", "kostal_piko", "other"],
                  id: int = 0,
                  configuration: KostalPikoConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or KostalPikoConfiguration()
 

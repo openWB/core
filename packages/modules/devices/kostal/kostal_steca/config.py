@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from helpermodules.auto_str import auto_str
 from modules.common.component_setup import ComponentSetup
 
@@ -13,15 +13,11 @@ class KostalStecaConfiguration:
 class KostalSteca:
     def __init__(self,
                  name: str = "Kostal Piko MP oder Steca Grid Coolcept",
-                 type: str = "kostal.kostal_steca",
-                 group: str = "other",
-                 device: str = "Kostal Piko MP oder Steca Grid Coolcept",
+                 type: List[str] = ["kostal", "kostal_steca", "other"],
                  id: int = 0,
                  configuration: KostalStecaConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or KostalStecaConfiguration()
 

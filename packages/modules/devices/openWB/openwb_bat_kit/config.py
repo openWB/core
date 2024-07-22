@@ -1,4 +1,5 @@
 from modules.common.component_setup import ComponentSetup
+from typing import List
 
 
 class BatKitConfiguration:
@@ -9,15 +10,11 @@ class BatKitConfiguration:
 class BatKit:
     def __init__(self,
                  name: str = "openWB Speicher-Kit",
-                 type: str = "openWB.openwb_bat_kit",
-                 group: str = "openWB",
-                 device: str = "openWB Speicher-Kit",
+                 type: List[str] = ["openWB", "openwb_bat_kit", "openWB"],
                  id: int = 0,
                  configuration: BatKitConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or BatKitConfiguration()
 

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from modules.common.component_setup import ComponentSetup
 
@@ -13,15 +13,11 @@ class SiemensSentronConfiguration:
 class SiemensSentron:
     def __init__(self,
                  name: str = "Siemens Sentron",
-                 type: str = "siemens.siemens_sentron",
-                 group: str = "other",
-                 device: str = "Siemens Sentron",
+                 type: List[str] = ["siemens", "siemens_sentron", "other"],
                  id: int = 0,
                  configuration: SiemensSentronConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or SiemensSentronConfiguration()
 

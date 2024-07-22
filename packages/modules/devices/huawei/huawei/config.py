@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from modules.common.component_setup import ComponentSetup
 
@@ -13,15 +13,11 @@ class HuaweiConfiguration:
 class Huawei:
     def __init__(self,
                  name: str = "Huawei Hybrid Wechselrichter",
-                 type: str = "huawei.huawei",
-                 group: str = "other",
-                 device: str = "Huawei Hybrid Wechselrichter",
+                 type: List[str] = ["huawei", "huawei", "huawei"],
                  id: int = 0,
                  configuration: HuaweiConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or HuaweiConfiguration()
 

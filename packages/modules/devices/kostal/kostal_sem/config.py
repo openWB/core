@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from modules.common.component_setup import ComponentSetup
 
@@ -13,15 +13,11 @@ class KostalSemConfiguration:
 class KostalSem:
     def __init__(self,
                  name: str = "Kostal Smart Energy Meter oder TQ EM 410",
-                 type: str = "kostal.kostal_sem",
-                 group: str = "other",
-                 device: str = "Kostal Smart Energy Meter oder TQ EM 410",
+                 type: List[str] = ["kostal", "kostal_sem", "other"],
                  id: int = 0,
                  configuration: KostalSemConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or KostalSemConfiguration()
 

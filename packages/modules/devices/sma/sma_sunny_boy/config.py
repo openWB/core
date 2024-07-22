@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from modules.common.component_setup import ComponentSetup
 from modules.devices.sma.sma_sunny_boy.inv_version import SmaInverterVersion
@@ -13,15 +13,11 @@ class SmaSunnyBoyConfiguration:
 class SmaSunnyBoy:
     def __init__(self,
                  name: str = "SMA Sunny Boy/Tripower",
-                 type: str = "sma.sma_sunny_boy",
-                 group: str = "other",
-                 device: str = "SMA Sunny Boy/Tripower",
+                 type: List[str] = ["sma", "sma_sunny_boy", "other"],
                  id: int = 0,
                  configuration: SmaSunnyBoyConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or SmaSunnyBoyConfiguration()
 

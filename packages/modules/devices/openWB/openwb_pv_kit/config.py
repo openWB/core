@@ -1,4 +1,5 @@
 from modules.common.component_setup import ComponentSetup
+from typing import List
 
 
 class PvKitConfiguration:
@@ -9,15 +10,11 @@ class PvKitConfiguration:
 class PvKit:
     def __init__(self,
                  name: str = "openWB PV-Kit",
-                 type: str = "openWB.openwb_pv_kit",
-                 group: str = "openWB",
-                 device: str = "openWB PV-Kit",
+                 type: List[str] = ["openWB", "openwb_pv_kit", "openWB"],
                  id: int = 0,
                  configuration: PvKitConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
-        self.device = device
         self.id = id
         self.configuration = configuration or PvKitConfiguration()
 
