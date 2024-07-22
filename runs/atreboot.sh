@@ -283,13 +283,6 @@ chmod 666 "$LOGFILE"
 		sudo a2ensite http-api
 		echo "...updated"
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/apache/ports.conf" "/etc/apache2/ports.conf"; then
-		echo "...ok"
-	else
-		sudo cp "${OPENWBBASEDIR}/data/config/apache/ports.conf" "/etc/apache2/"
-		restartService=1
-		echo "...updated"
-	fi
 	echo "checking required apache modules..."
 	if sudo a2query -m headers; then
 		echo "headers already enabled"
@@ -312,13 +305,17 @@ chmod 666 "$LOGFILE"
 		sudo a2enmod proxy_wstunnel
 		restartService=1
 	fi
-	if ! versionMatch "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/apache-openwb-ssl.conf"; then
-		echo "installing ssl site configuration"
+	echo "apache default ssl site..."
+	if versionMatch "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/apache-openwb-ssl.conf"; then
+		echo "...ok"
+	else
 		sudo a2dissite default-ssl
 		sudo cp "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/"
 		sudo a2ensite apache-openwb-ssl
 		restartService=1
+		echo "...updated"
 	fi
+	echo "apache http api ssl site..."
 	if versionMatch "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/http-api-ssl.conf"; then
 		echo "...ok"
 	else
