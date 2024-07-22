@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Dict, List
 
 from control import data
-from control.bat_all import BatAll
-from control.chargepoint.chargepoint_all import AllChargepoints
+from control.chargepoint.chargepoint import Chargepoint
+from control.pv_all import PvAll
 from helpermodules import timecheck
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.pub import Pub
@@ -35,10 +35,10 @@ def update_module_yields(module: str, totals: Dict) -> None:
                 topic = "chargepoint"
             else:
                 topic = module
-            if isinstance(module_data, (Ev, Pv)):
+            if isinstance(module_data, (Ev, Pv, Chargepoint)):
                 Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_imported", daily_imported)
                 Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_exported", daily_exported)
-            elif not isinstance(module_data, (BatAll, AllChargepoints)):
+            elif isinstance(module_data, PvAll):
                 # wird im changed_values_handler an den Broker gesendet
                 Pub().pub(f"openWB/set/{topic}/get/daily_imported", daily_imported)
                 Pub().pub(f"openWB/set/{topic}/get/daily_exported", daily_exported)
