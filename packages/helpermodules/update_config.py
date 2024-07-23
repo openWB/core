@@ -1660,5 +1660,14 @@ class UpdateConfig:
                         return
                 else:
                     return {topic: ""}
+            elif re.search("openWB/(counter|pv|bat)/[0-9]+", topic) is not None:
+                for component_topic in self.all_received_topics.keys():
+                    if re.search(f"openWB/system/device/[0-9]+/component/{get_index(topic)}",
+                                 component_topic) is not None:
+                        device_index = get_index(component_topic)
+                        if f"openWB/system/device/{device_index}/config" in self.all_received_topics.keys():
+                            return
+                else:
+                    return {topic: ""}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 55)
