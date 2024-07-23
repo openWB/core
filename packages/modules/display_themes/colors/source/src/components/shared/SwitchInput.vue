@@ -28,9 +28,9 @@ const flag = computed({
 })
 const switchStyle = computed(() => {
 	if (flag.value) {
-		return { 'background-color': 'green' }
+		return { 'background-color': 'green', 'font-size': '20px' }
 	} else {
-		return { 'background-color': 'white' }
+		return { 'background-color': 'white', 'font-size': '20px' }
 	}
 })
 </script>

@@ -19,7 +19,6 @@
 </template>
 
 <script setup lang="ts">
-
 const props = defineProps<{
 	title: string
 	infotext?: string
@@ -35,7 +34,7 @@ const props = defineProps<{
 }
 
 .item-icon {
-	color: var(--color-bg);
+	color: var(--color-charging);
 	font-size: var(--font-settings);
 }
 

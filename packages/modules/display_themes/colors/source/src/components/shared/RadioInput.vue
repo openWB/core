@@ -37,7 +37,7 @@ function getColor(index: number) {
 	if (props.options[index][2]) {
 		return { color: props.options[index][2] }
 	} else {
-		return { color: 'var(--color-bg)' }
+		return { color: 'var(--color-charging)' }
 	}
 }
 function setValue(event: Event) {

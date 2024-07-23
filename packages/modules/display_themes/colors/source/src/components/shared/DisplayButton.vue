@@ -4,7 +4,8 @@
 			'background-color': props.bgcolor ? props.bgcolor : 'var(--color-fg)',
 			color: props.color ? props.color : 'var(--color-bg)',
 		}"
-		class="mybutton"
+		class="mybutton rounded-pill"
+		type="button"
 		@click="buttonClicked"
 	>
 		<span v-if="props.icon" class="fas me-2" :class="props.icon"></span>
@@ -30,7 +31,7 @@ function buttonClicked() {
 	padding: 2px;
 	align-self: top;
 	color: var(--color-bg);
-	border-radius: 4px;
+	box-shadow: 0px 3px var(--color-axis);
 	font-weight: bold;
 	font-size: var(--font-small);
 }

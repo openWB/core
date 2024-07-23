@@ -14,17 +14,13 @@
 			</RadioInput>
 		</ConfigItem>
 		<hr class="grid-col-12" />
-		<ConfigItem
-		title="Fahrzeug wechseln"
-		icon="fa-car"
-		:fullwidth="true"
-	>
-		<RadioInput
-			v-model.number="chargepoint.connectedVehicle"
-			:options="Object.values(vehicles).map((v) => [v.name, v.id])"
-		/>
-	</ConfigItem>
-	<hr class="grid-col-12" />
+		<ConfigItem title="Fahrzeug wechseln" icon="fa-car" :fullwidth="true">
+			<RadioInput
+				v-model.number="connectedVehicle"
+				:options="Object.values(vehicles).map((v) => [v.name, v.id])"
+			/>
+		</ConfigItem>
+		<hr class="grid-col-12" />
 		<ConfigItem
 			title="Strompreisbasiert laden"
 			icon="fa-coins"
@@ -41,7 +37,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { globalData } from '@/assets/js/model'
-import { chargePoints, type ChargePoint, vehicles } from '@/components/chargePointList/model'
+import {
+	chargePoints,
+	type ChargePoint,
+	vehicles,
+} from '@/components/chargePointList/model'
 import ConfigItem from '@/components/shared/ConfigItem.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
@@ -59,6 +59,12 @@ const timedCharging = computed({
 	get: () => props.chargepoint.timedCharging,
 	set: (value: boolean) => {
 		chargePoints[props.chargepoint.id].timedCharging = value
+	},
+})
+const connectedVehicle = computed({
+	get: () => props.chargepoint.connectedVehicle,
+	set: (value: number) => {
+		chargePoints[props.chargepoint.id].connectedVehicle = value
 	},
 })
 </script>

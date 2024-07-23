@@ -10,7 +10,7 @@
 		<template #buttons>
 			<DisplayButton
 				color="var(--color-charging)"
-				class="p-2"
+				class="p-2 rounded"
 				icon="fa-edit"
 				@click="openSettings"
 			>
@@ -347,5 +347,8 @@ function openSettings() {
 	display: grid;
 	grid-template-columns: repeat(12, auto);
 	justify-content: space-between;
+}
+.settingsbutton {
+	border-radius: 30%;
 }
 </style>

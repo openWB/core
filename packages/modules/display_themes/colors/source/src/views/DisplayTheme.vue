@@ -25,7 +25,7 @@
 		<NumberPad model-value="" @update:model-value="validateCode"></NumberPad>
 	</ModalComponent>
 	<ModalComponent modal-id="statuspage">
-		<template #title>Systemstatus</template>
+		<template #title><span class="statustitle">Systemstatus</span></template>
 		<StatusPage></StatusPage>
 	</ModalComponent>
 	<ModalComponent
@@ -33,12 +33,12 @@
 		modal-id="settingspage"
 	>
 		<template #title
-			>Einstellungen für
-			{{ Object.values(chargePoints)[globalConfig.cpToShow].name }} /
-			{{
-				Object.values(chargePoints)[globalConfig.cpToShow].vehicleName
-			}}</template
-		>
+			><span class="settingstitle"
+				>Einstellungen für
+				{{ Object.values(chargePoints)[globalConfig.cpToShow].name }}
+				({{ Object.values(chargePoints)[globalConfig.cpToShow].vehicleName }})
+			</span>
+		</template>
 		<SettingsPage
 			:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"
 		></SettingsPage>
@@ -53,8 +53,8 @@ import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
 import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
 import ModalComponent from '@/components/shared/ModalComponent.vue'
 import NumberPad from '@/components/shared/NumberPad.vue'
-import StatusPage from '@/components/statusPage/StatusPage.vue'
-import SettingsPage from '@/components/settings/SettingsPage.vue'
+import StatusPage from '@/views/StatusPage.vue'
+import SettingsPage from '@/views/SettingsPage.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import { initGraph } from '@/components/powerGraph/model'
 import CPChargePoint from '@/components/chargePointList/CPChargePoint.vue'
@@ -107,5 +107,11 @@ function haveFocus() {
 .rightside {
 	min-width: 0px;
 	overflow: hidden;
+}
+.settingstitle {
+	color: var(--color-charging);
+}
+.statustitle {
+	color: var(--color-charging);
 }
 </style>
