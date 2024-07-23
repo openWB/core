@@ -12,7 +12,7 @@ class SonnenBatterieConfiguration:
 class SonnenBatterie:
     def __init__(self,
                  name: str = "Sonnenbatterie",
-                 type: List[str] = ["sonnen", "sonnen", "other"],
+                 type: List[str] = ["sonnenbatterie", "sonnenbatterie", "other"],
                  id: int = 0,
                  configuration: SonnenBatterieConfiguration = None) -> None:
         self.name = name
