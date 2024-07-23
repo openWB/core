@@ -560,11 +560,6 @@ class Command:
         Pub().pub(f'openWB/set/log/yearly/{payload["data"]["year"]}',
                   get_yearly_log(payload["data"]["year"]))
 
-    def connectOcpp(self, connection_id: str, payload: dict) -> None:
-        ocpp_config = optional.OCPPClient.get_ocpp_config()
-        ocpp_config["data"]["url"] = payload["data"]["url"]
-        optional.OCPPClient.get_config(ocpp_config)
-
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
         result = run_command(

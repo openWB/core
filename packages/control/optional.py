@@ -29,16 +29,11 @@ current_time = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 @dataclass
 class OcppGet:
-    url = ""
+    url: str = ""
 
 
 def ocpp_factory() -> OcppGet:
-    return OcppGet
-
-
-@dataclass
-class Ocpp:
-    get: OcppGet = field(default_factory=ocpp_factory)
+    return OcppGet()
 
 
 @dataclass
@@ -99,7 +94,7 @@ class OptionalData:
     int_display: InternalDisplay = field(default_factory=int_display_factory)
     led: Led = field(default_factory=led_factory)
     rfid: Rfid = field(default_factory=rfid_factory)
-    ocpp: Ocpp = field(default_factory=ocpp_factory)
+    ocpp: OcppGet = field(default_factory=ocpp_factory)
 
 
 class Optional:
@@ -256,22 +251,9 @@ class OCPPClient(ChargePoint):
 
     # Test URL: ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1
 
-    def get_ocpp_config():
-        return {
-            "data": {
-                "url": "",
-            },
-        }
-
-    def get_config(ocpp_config):
-        OcppGet.url = ocpp_config["data"]["url"]
-
-    def get_url():
-        return OcppGet.url
-
     async def _start_transaction(connector_id, id_tag, meter_value_charged):
         try:
-            url = OCPPClient.get_url()
+            url = OptionalData.ocpp.url
             if len(url) > 0:
                 async with websockets.connect(
                     url,
@@ -292,7 +274,7 @@ class OCPPClient(ChargePoint):
 
     async def _transfer_values(connector_id, meter_value_charged):
         try:
-            url = OCPPClient.get_url()
+            url = OptionalData.ocpp.url
             if len(url) > 0:
                 async with websockets.connect(
                     url,
@@ -306,7 +288,7 @@ class OCPPClient(ChargePoint):
 
     async def _stop_transaction(meter_value_charged, transaction_id, id_tag):
         try:
-            url = OCPPClient.get_url()
+            url = OptionalData.ocpp.url
             if len(url) > 0:
                 async with websockets.connect(
                     url,
