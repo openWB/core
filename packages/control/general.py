@@ -10,7 +10,6 @@ from control import data
 from control.bat_all import BatConsiderationMode
 from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
-from helpermodules.utils.run_command import run_command
 from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.ripple_control_receivers.gpio.ripple_control_receiver import create_ripple_control_receiver
@@ -139,7 +138,7 @@ class RippleControlReceiver:
     get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
     module: Optional[Dict] = field(default=None, metadata={
         "topic": "ripple_control_receiver/module"})
-    overrice_reference: OverrideReference = field(default=OverrideReference.CHARGEPOINT, metadata={
+    override_reference: OverrideReference = field(default=OverrideReference.CHARGEPOINT, metadata={
         "topic": "ripple_control_receiver/override_reference"})
 
 
@@ -176,7 +175,8 @@ class GeneralData:
         default=0, metadata={"topic": "grid_protection_random_stop"})
     grid_protection_timestamp: Optional[float] = field(
         default=None, metadata={"topic": "grid_protection_timestamp"})
-    http_api: bool = False
+    http_api: bool = field(
+        default=False, metadata={"topic": "http_api"})
     mqtt_bridge: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
@@ -243,8 +243,3 @@ class General:
                         self.data.grid_protection_random_stop = 0
         except Exception:
             log.exception("Fehler im General-Modul")
-
-    def set_http_api_state(self, active: bool):
-        command = "a2ensite" if active else "a2dissite"
-        run_command([f"sudo {command} http-api"])
-        run_command([f"sudo {command} http-api-ssl.conf"])

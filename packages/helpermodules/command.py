@@ -723,12 +723,6 @@ class Command:
         migrate_data.migrate()
         pub_user_message(payload, connection_id, "Datenübernahme abgeschlossen.", MessageType.SUCCESS)
 
-    def httpApi(self, connection_id: str, payload: dict) -> None:
-        SubData.general_data.set_http_api_state(payload["data"]["active"])
-        Pub().pub("openWB/set/general/http_api", payload["data"]["active"])
-        pub_user_message(payload, connection_id,
-                         f"HTTP-API {'' if payload['data']['active'] else 'de'}aktiviert.", MessageType.SUCCESS)
-
 
 class ErrorHandlingContext:
     def __init__(self, payload: dict, connection_id: str):
