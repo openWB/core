@@ -1659,6 +1659,7 @@ class UpdateConfig:
                     if f"openWB/system/device/{device_index}/config" == device_topic:
                         return
                 else:
+                    log.debug(f"Entferne Topic von gelöschter Komponente {topic}")
                     return {topic: ""}
             elif re.search("openWB/(counter|pv|bat)/[0-9]+", topic) is not None:
                 for component_topic in self.all_received_topics.keys():
@@ -1668,6 +1669,7 @@ class UpdateConfig:
                         if f"openWB/system/device/{device_index}/config" in self.all_received_topics.keys():
                             return
                 else:
+                    log.debug(f"Entferne Topic von gelöschter Komponente {topic}")
                     return {topic: ""}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 55)
