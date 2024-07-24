@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-import json
 import logging
 import requests
-from json import JSONDecodeError
 from requests import HTTPError
 from typing import Callable, Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.req import get_http_session
-from modules.common.store import RAMDISK_PATH
 from modules.devices.tesla.tesla.bat import TeslaBat
 from modules.devices.tesla.tesla.config import Tesla, TeslaBatSetup, TeslaCounterSetup, TeslaInverterSetup
 from modules.devices.tesla.tesla.counter import TeslaCounter
@@ -20,7 +17,6 @@ log = logging.getLogger(__name__)
 
 
 UpdateFunction = Callable[[PowerwallHttpClient], None]
-COOKIE_FILE = RAMDISK_PATH / "powerwall_cookie.txt"
 
 
 def __update_components(client: PowerwallHttpClient, components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
@@ -43,17 +39,6 @@ def __authenticate(session: requests.Session, url: str, email: str, password: st
     return {"AuthCookie": response.cookies["AuthCookie"], "UserRecord": response.cookies["UserRecord"]}
 
 
-def __authenticate_and_update(session: requests.Session,
-                              address: str,
-                              email: str,
-                              password: str,
-                              update_function: UpdateFunction,
-                              components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
-    cookie = __authenticate(session, address, email, password)
-    COOKIE_FILE.write_text(json.dumps(cookie))
-    update_function(PowerwallHttpClient(address, session, cookie), components)
-
-
 def create_device(device_config: Tesla):
     def create_bat_component(component_config: TeslaBatSetup):
         return TeslaBat(component_config)
@@ -66,32 +51,28 @@ def create_device(device_config: Tesla):
 
     def update_components(components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
         log.debug("Beginning update")
-        cookies = None
+        nonlocal http_client
         address = device_config.configuration.ip_address
         email = device_config.configuration.email
         password = device_config.configuration.password
-        try:
-            cookies = json.loads(COOKIE_FILE.read_text())
-        except FileNotFoundError:
-            log.debug("Cookie-File <%s> does not exist. It will be created.", COOKIE_FILE)
-        except JSONDecodeError:
-            log.warning("Could not parse Cookie-File "+str(COOKIE_FILE)+". It will be re-created.", exc_info=True)
 
-        session = get_http_session()
-        if cookies is None:
-            __authenticate_and_update(session, address, email, password, __update_components, components)
+        if http_client.cookies is None:
+            http_client.cookies = __authenticate(session, address, email, password)
+            __update_components(http_client, components)
             return
         try:
-            __update_components(PowerwallHttpClient(address, session, cookies), components)
+            __update_components(http_client, components)
             return
         except HTTPError as e:
             if e.response.status_code != 401 and e.response.status_code != 403:
                 raise e
-            log.warning(
-                "Login to powerwall with existing cookie failed. Will retry with new cookie...")
-        __authenticate_and_update(session, address, email, password, __update_components, components)
+            log.warning("Login to powerwall with existing cookie failed. Will retry with new cookie...")
+        http_client.cookies = __authenticate(session, address, email, password)
+        __update_components(http_client, components)
         log.debug("Update completed successfully")
 
+    session = get_http_session()
+    http_client = PowerwallHttpClient(device_config.configuration.ip_address, session, None)
     return ConfigurableDevice(
         device_config=device_config,
         component_factory=ComponentFactoryByType(
