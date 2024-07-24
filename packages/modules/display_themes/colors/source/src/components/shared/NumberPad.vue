@@ -38,7 +38,7 @@ const code = ref(props.modelValue)
 const emit = defineEmits(['update:modelValue'])
 const hiddencode = computed(() => {
 	return code.value.length == 0
-		? 'Bitte geben Sie den PIN ein'
+		? 'Bitte geben Sie die PIN ein'
 		: '*'.repeat(code.value.length)
 })
 function addDigit(digit: number) {

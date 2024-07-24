@@ -13,35 +13,25 @@
 		</div>
 
 		<div class="rightside">
-			<CPChargePoint
-				v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
-				:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"
-				:full-width="true"
-			></CPChargePoint>
+			<CPChargePoint v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
+				:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]" :full-width="true"></CPChargePoint>
 		</div>
 	</div>
 	<ModalComponent modal-id="numberpad">
-		<template #title>PIN Eingeben</template>
+		<template #title>Code</template>
 		<NumberPad model-value="" @update:model-value="validateCode"></NumberPad>
 	</ModalComponent>
 	<ModalComponent modal-id="statuspage">
 		<template #title><span class="statustitle">Systemstatus</span></template>
 		<StatusPage></StatusPage>
 	</ModalComponent>
-	<ModalComponent
-		v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
-		modal-id="settingspage"
-	>
-		<template #title
-			><span class="settingstitle"
-				>Einstellungen für
+	<ModalComponent v-if="Object.values(chargePoints).length > globalConfig.cpToShow" modal-id="settingspage">
+		<template #title><span class="settingstitle">Einstellungen für
 				{{ Object.values(chargePoints)[globalConfig.cpToShow].name }}
 				({{ Object.values(chargePoints)[globalConfig.cpToShow].vehicleName }})
 			</span>
 		</template>
-		<SettingsPage
-			:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"
-		></SettingsPage>
+		<SettingsPage :chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"></SettingsPage>
 	</ModalComponent>
 </template>
 <script setup lang="ts">
@@ -108,9 +98,11 @@ function haveFocus() {
 	min-width: 0px;
 	overflow: hidden;
 }
+
 .settingstitle {
 	color: var(--color-charging);
 }
+
 .statustitle {
 	color: var(--color-charging);
 }

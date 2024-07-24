@@ -25,8 +25,8 @@ function buttonClicked() {
 }
 const buttoncolor = computed(() => {
 	return active.value
-		? { 'background-color': 'white', color: 'var(--color-grid)' }
-		: { 'background-color': props.color ?? 'black' }
+		? { 'background-color': 'white', color: 'black' }
+		: { 'background-color': props.color ?? 'var(--color-axis)' }
 })
 const emit = defineEmits(['update:modelValue'])
 </script>
@@ -37,7 +37,8 @@ const emit = defineEmits(['update:modelValue'])
 	align-items: center;
 	justify-content: center;
 	border-radius: 50%;
-	box-shadow: 0px 3px var(--color-axis);
+	border: 0.1px dotted black;
+	box-shadow: 1px 3px var(--color-axis);
 }
 .digit {
 	font-size: 24px;
