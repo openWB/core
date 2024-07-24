@@ -13,11 +13,12 @@ class OpenDTUConfiguration(JsonConfiguration):
 @auto_str
 class OpenDTU(Json):
     def __init__(self,
-                 name: str = "OpenDTU",
-                 type: List[str] = ["opendtu", "opendtu", "other"],
+                 name: str = "Hoymiles über openDTU",
+                 type: List[str] = ["opendtu", "opendtu"],
+                 group="other",
                  id: int = 0,
                  configuration: OpenDTUConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration)
+        super().__init__(name, type, id, group, configuration)
 
 
 @auto_str

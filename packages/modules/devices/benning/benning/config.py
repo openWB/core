@@ -14,10 +14,11 @@ class BenningConfiguration(JsonConfiguration):
 class Benning(Json):
     def __init__(self,
                  name: str = "Benning",
-                 type: List[str] = ["benning", "benning", "other"],
+                 type: List[str] = ["benning", "benning"],
+                 group="other",
                  id: int = 0,
                  configuration: BenningConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration)
+        super().__init__(name, type, group, id, configuration)
 
 
 @auto_str

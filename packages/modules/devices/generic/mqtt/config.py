@@ -9,11 +9,12 @@ class MqttConfiguration:
 class Mqtt:
     def __init__(self,
                  name: str = "MQTT",
-                 type: List[str] = ["generic", "mqtt", "generic"],
+                 type: List[str] = ["generic", "mqtt"],
                  id: int = 0,
                  configuration: MqttConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "generic"
         self.id = id
         self.configuration = configuration or MqttConfiguration()
 

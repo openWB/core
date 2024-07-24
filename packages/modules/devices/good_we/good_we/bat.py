@@ -9,14 +9,19 @@ from modules.common.modbus import ModbusDataType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_bat_value_store
 from modules.devices.good_we.good_we.config import GoodWeBatSetup
+from modules.devices.good_we.good_we.version import GoodWeVersion
 
 
 class GoodWeBat:
     def __init__(self,
                  modbus_id: int,
+                 version: GoodWeVersion,
+                 firmware: int,
                  component_config: Union[Dict, GoodWeBatSetup],
                  tcp_client: modbus.ModbusTcpClient_) -> None:
         self.__modbus_id = modbus_id
+        self.version = version
+        self.firmware = firmware
         self.component_config = dataclass_from_dict(GoodWeBatSetup, component_config)
         self.__tcp_client = tcp_client
         self.store = get_bat_value_store(self.component_config.id)
@@ -24,7 +29,10 @@ class GoodWeBat:
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(35183, ModbusDataType.INT_16, unit=self.__modbus_id)*-1
+            if self.version == GoodWeVersion.V_1_7:
+                power = self.__tcp_client.read_holding_registers(35183, ModbusDataType.INT_16, unit=self.__modbus_id)*-1
+            else:
+                power = self.__tcp_client.read_holding_registers(35182, ModbusDataType.INT_32, unit=self.__modbus_id)*-1
             soc = self.__tcp_client.read_holding_registers(37007, ModbusDataType.UINT_16, unit=self.__modbus_id)
             imported = self.__tcp_client.read_holding_registers(
                 35206, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100

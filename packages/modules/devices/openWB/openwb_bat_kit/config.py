@@ -10,11 +10,12 @@ class BatKitConfiguration:
 class BatKit:
     def __init__(self,
                  name: str = "openWB Speicher-Kit",
-                 type: List[str] = ["openWB", "openwb_bat_kit", "openWB"],
+                 type: List[str] = ["openWB", "openwb_bat_kit"],
                  id: int = 0,
                  configuration: BatKitConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "openWB"
         self.id = id
         self.configuration = configuration or BatKitConfiguration()
 

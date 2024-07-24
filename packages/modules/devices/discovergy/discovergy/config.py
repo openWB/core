@@ -12,11 +12,12 @@ class DiscovergyConfiguration:
 class Discovergy:
     def __init__(self,
                  name: str = "Discovergy",
-                 type: List[str] = ["discovergy", "discovergy", "other"],
+                 type: List[str] = ["discovergy", "discovergy"],
                  id: int = 0,
                  configuration: DiscovergyConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or DiscovergyConfiguration()
 

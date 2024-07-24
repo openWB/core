@@ -13,11 +13,12 @@ class JanitzaConfiguration:
 class Janitza:
     def __init__(self,
                  name: str = "Janitza",
-                 type: List[str] = ["janitza", "janitza", "other"],
+                 type: List[str] = ["janitza", "janitza"],
                  id: int = 0,
                  configuration: JanitzaConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or JanitzaConfiguration()
 

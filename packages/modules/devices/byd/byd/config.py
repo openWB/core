@@ -16,11 +16,12 @@ class BYDConfiguration:
 class BYD:
     def __init__(self,
                  name: str = "BYD",
-                 type: List[str] = ["byd", "byd", "other"],
+                 type: List[str] = ["byd", "byd"],
                  id: int = 0,
                  configuration: BYDConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or BYDConfiguration()
 

@@ -12,12 +12,13 @@ class ZCSConfiguration:
 
 class ZCS:
     def __init__(self,
-                 name: str = "Azzurro ZCS",
-                 type: List[str] = ["azzurro_zcs", "azzurro_zcs", "other"],
+                 name: str = "Azzurro - ZCS/Sofar HYD3-6k 1P",
+                 type: List[str] = ["azzurro_zcs", "azzurro_zcs"],
                  id: int = 0,
                  configuration: ZCSConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or ZCSConfiguration()
 

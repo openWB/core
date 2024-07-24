@@ -14,11 +14,12 @@ class Huawei_SmartloggerConfiguration:
 class Huawei_Smartlogger:
     def __init__(self,
                  name: str = "Huawei Smartlogger",
-                 type: List[str] = ["huawei", "huawei_smartlogger", "other"],
+                 type: List[str] = ["huawei", "huawei_smartlogger"],
                  id: int = 0,
                  configuration: Huawei_SmartloggerConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or Huawei_SmartloggerConfiguration()
 

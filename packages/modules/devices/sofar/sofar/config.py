@@ -13,11 +13,12 @@ class SofarConfiguration:
 class Sofar:
     def __init__(self,
                  name: str = "SofarSolar",
-                 type: List[str] = ["sofar", "sofar", "other"],
+                 type: List[str] = ["sofar", "sofar"],
                  id: int = 0,
                  configuration: SofarConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or SofarConfiguration()
 

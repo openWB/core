@@ -12,11 +12,12 @@ class LgConfiguration:
 class LG:
     def __init__(self,
                  name: str = "LG ESS V1.0",
-                 type: List[str] = ["lg", "lg", "other"],
+                 type: List[str] = ["lg", "lg"],
                  id: int = 0,
                  configuration: LgConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or LgConfiguration()
 

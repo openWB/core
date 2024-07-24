@@ -2,8 +2,8 @@ from modules.common.abstract_device import DeviceDescriptor
 
 
 class Vendor:
-    def __init__(self, vendor: str = "Benning"):
-        self.vendor = vendor
+    def __init__(self):
+        self.vendor = "Benning"
 
 
 vendor_descriptor = DeviceDescriptor(configuration_factory=Vendor)

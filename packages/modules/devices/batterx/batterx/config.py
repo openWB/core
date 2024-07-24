@@ -11,11 +11,12 @@ class BatterXConfiguration:
 class BatterX:
     def __init__(self,
                  name: str = "BatterX",
-                 type: List[str] = ["batterx", "batterx", "other"],
+                 type: List[str] = ["batterx", "batterx"],
                  id: int = 0,
                  configuration: BatterXConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or BatterXConfiguration()
 

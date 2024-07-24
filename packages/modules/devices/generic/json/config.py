@@ -10,11 +10,12 @@ class JsonConfiguration:
 class Json:
     def __init__(self,
                  name: str = "Json",
-                 type: List[str] = ["generic", "json", "generic"],
+                 type: List[str] = ["generic", "json"],
                  id: int = 0,
                  configuration: JsonConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "generic"
         self.id = id
         self.configuration = configuration or JsonConfiguration()
 

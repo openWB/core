@@ -16,12 +16,13 @@ class DeyeConfiguration:
 
 class Deye:
     def __init__(self,
-                 name: str = "Deye/Jinko",
-                 type: List[str] = ["deye", "deye", "other"],
+                 name: str = "Deye/Jinko (Anbindung per Modbus)",
+                 type: List[str] = ["deye", "deye"],
                  id: int = 0,
                  configuration: DeyeConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or DeyeConfiguration()
 

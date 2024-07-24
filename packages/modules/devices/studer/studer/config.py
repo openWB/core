@@ -11,12 +11,13 @@ class StuderConfiguration:
 
 class Studer:
     def __init__(self,
-                 name: str = "Studer innotec",
-                 type: List[str] = ["studer", "studer", "other"],
+                 name: str = "Studer",
+                 type: List[str] = ["studer", "studer"],
                  id: int = 0,
                  configuration: StuderConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or StuderConfiguration()
 

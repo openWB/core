@@ -17,12 +17,13 @@ class AlphaEssConfiguration:
 
 class AlphaEss:
     def __init__(self,
-                 name: str = "AlphaESS",
-                 type: List[str] = ["alpha_ess", "alpha_ess", "other"],
+                 name: str = "Alpha ESS",
+                 type: List[str] = ["alpha_ess", "alpha_ess"],
                  id: int = 0,
                  configuration: AlphaEssConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or AlphaEssConfiguration()
 

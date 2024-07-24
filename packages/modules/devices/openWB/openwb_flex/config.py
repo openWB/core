@@ -15,11 +15,12 @@ class FlexConfiguration:
 class Flex:
     def __init__(self,
                  name: str = "openWB-Kit flex",
-                 type: List[str] = ["openWB", "openwb_flex", "openWB"],
+                 type: List[str] = ["openWB", "openwb_flex"],
                  id: int = 0,
                  configuration: FlexConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "openWB"
         self.id = id
         self.configuration = configuration or FlexConfiguration()
 

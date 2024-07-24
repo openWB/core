@@ -26,11 +26,12 @@ class EnphaseConfiguration:
 class Enphase:
     def __init__(self,
                  name: str = "Enphase",
-                 type: List[str] = ["enphase", "enphase", "other"],
+                 type: List[str] = ["enphase", "enphase"],
                  id: int = 0,
                  configuration: EnphaseConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or EnphaseConfiguration()
 

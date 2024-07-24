@@ -12,11 +12,12 @@ class PowerfoxConfiguration:
 class Powerfox:
     def __init__(self,
                  name: str = "Powerfox",
-                 type: List[str] = ["powerfox", "powerfox", "other"],
+                 type: List[str] = ["powerfox", "powerfox"],
                  id: int = 0,
                  configuration: PowerfoxConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or PowerfoxConfiguration()
 

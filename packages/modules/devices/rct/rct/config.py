@@ -12,12 +12,13 @@ class RctConfiguration:
 @auto_str
 class Rct:
     def __init__(self,
-                 name: str = "RCT power",
-                 type: List[str] = ["rct", "rct", "other"],
+                 name: str = "RCT",
+                 type: List[str] = ["rct", "rct"],
                  id: int = 0,
                  configuration: RctConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or RctConfiguration()
 

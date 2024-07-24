@@ -12,12 +12,13 @@ class QCellsConfiguration:
 
 class QCells:
     def __init__(self,
-                 name: str = "Qcells",
-                 type: List[str] = ["qcells", "qcells", "other"],
+                 name: str = "QCells ESS",
+                 type: List[str] = ["qcells", "qcells"],
                  id: int = 0,
                  configuration: QCellsConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or QCellsConfiguration()
 

@@ -16,11 +16,12 @@ class SolarViewConfiguration:
 class SolarView:
     def __init__(self,
                  name: str = "SolarView",
-                 type: List[str] = ["solar_view", "solar_view", "other"],
+                 type: List[str] = ["solar_view", "solar_view"],
                  id: int = 0,
                  configuration: SolarViewConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or SolarViewConfiguration()
 

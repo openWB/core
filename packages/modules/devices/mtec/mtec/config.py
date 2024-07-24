@@ -15,11 +15,12 @@ class MTecConfiguration:
 class MTec:
     def __init__(self,
                  name: str = "M-Tec",
-                 type: List[str] = ["mtec", "mtec", "other"],
+                 type: List[str] = ["mtec", "mtec"],
                  id: int = 0,
                  configuration: MTecConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or MTecConfiguration()
 

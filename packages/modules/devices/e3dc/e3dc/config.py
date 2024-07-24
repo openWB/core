@@ -14,12 +14,13 @@ class E3dcConfiguration:
 @auto_str
 class E3dc:
     def __init__(self,
-                 name: str = "E3/DC",
-                 type: List[str] = ["e3dc", "e3dc", "other"],
+                 name: str = "E3DC",
+                 type: List[str] = ["e3dc", "e3dc"],
                  id: int = 0,
                  configuration: E3dcConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or E3dcConfiguration()
 

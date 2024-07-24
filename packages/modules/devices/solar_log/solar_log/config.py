@@ -11,11 +11,12 @@ class SolarLogConfiguration:
 class SolarLog:
     def __init__(self,
                  name: str = "Solar-Log",
-                 type: List[str] = ["solar_log", "solar_log", "other"],
+                 type: List[str] = ["solar_log", "solar_log"],
                  id: int = 0,
                  configuration: SolarLogConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or SolarLogConfiguration()
 
