@@ -15,11 +15,11 @@
 			>
 		</span>
 
-		<DisplayButton data-bs-toggle="modal" data-bs-target="#statuspage"
+		<DisplayButton icon="fa-rectangle-list" data-bs-toggle="modal" data-bs-target="#statuspage"
 			>Status</DisplayButton
 		>
 		<span class="cpbuttons">
-			<DisplayButton color="var(--color-charging)" @click="cpLeft">
+			<DisplayButton color="var(--color-cp0)" @click="cpLeft">
 				<span class="fas fa-arrow-left px-2" />
 				<span class="fas fa-charging-station pe-2" />
 			</DisplayButton>
@@ -29,7 +29,7 @@
 			>
 				<span class="fas fa-lock px-4" />
 			</DisplayButton>
-			<DisplayButton color="var(--color-charging)" @click="cpRight">
+			<DisplayButton color="var(--color-cp0)" @click="cpRight">
 				<span class="fas fa-charging-station px-2" />
 				<span class="fas fa-arrow-right pe-2" />
 			</DisplayButton>
@@ -84,8 +84,8 @@ onBeforeUnmount(() => {
 	padding-top: 2px;
 	padding-bottom: 2px;
 	align-items: center;
-	border-top: 0.1px solid var(--color-menu);
-	border-bottom: 1px solid var(--color-menu);
+	border-top: 0px solid var(--color-menu);
+	border-bottom: 0px solid var(--color-menu);
 }
 
 .mybutton {

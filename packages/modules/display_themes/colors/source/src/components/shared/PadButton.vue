@@ -25,7 +25,7 @@ function buttonClicked() {
 }
 const buttoncolor = computed(() => {
 	return active.value
-		? { 'background-color': 'white', color: 'black' }
+		? { 'background-color': 'white', color: 'var(--color-grid)' }
 		: { 'background-color': props.color ?? 'black' }
 })
 const emit = defineEmits(['update:modelValue'])

@@ -9,8 +9,8 @@
 
 		<template #buttons>
 			<DisplayButton
-				color="var(--color-charging)"
-				class="p-2 rounded"
+				color="var(--color-cp0)"
+				
 				icon="fa-edit"
 				@click="openSettings"
 			>
