@@ -5,8 +5,9 @@ import pytest
 import requests
 import requests_mock
 
+from modules.common.configurable_device import ConfigurableDevice
 from modules.devices.tesla.tesla import bat
-from modules.devices.tesla.tesla.device import Device, Tesla
+from modules.devices.tesla.tesla.device import Tesla, create_device
 from modules.common.component_state import BatState
 from modules.devices.tesla.tesla.config import TeslaConfiguration
 from test_utils.mock_ramdisk import MockRamdisk
@@ -116,12 +117,12 @@ sample_aggregates_json = """
 }"""
 
 
-def setup_battery_component() -> Device:
+def setup_battery_component() -> ConfigurableDevice:
     device_config = Tesla(configuration=TeslaConfiguration(
         ip_address="sample-address",
         email="sample@mail.com",
         password="some password"))
-    dev = Device(device_config)
+    dev = create_device(device_config)
     dev.add_component(bat.component_descriptor.configuration_factory())
     return dev
 
