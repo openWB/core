@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 import pprint
 from typing import Any, Optional
+import requests
+
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
 import dataclass_utils
@@ -121,7 +123,10 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
                         f"{cp.data.set.current}A, Status: {cp.data.get.state_str}, "
                         f"Fehlerstatus: {cp.data.get.fault_str}\n")
         if cp.chargepoint_module.config.type == "openwb_pro":
-            parsed_data += f"{req.get_http_session().get(f'http://{ip}/connect.php').text}\n"
+            try:
+                parsed_data += f"{req.get_http_session().get(f'http://{ip}/connect.php', timeout=5).text}\n"
+            except requests.Timeout:
+                parsed_data += "Timeout beim Abrufen der Daten\n"
     return parsed_data
 
 
