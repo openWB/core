@@ -13,11 +13,12 @@ class GoodWeConfiguration:
 class GoodWe:
     def __init__(self,
                  name: str = "GoodWe ET-Serie (5-10kW)",
-                 type: List[str] = ["good_we", "good_we", "other"],
+                 type: List[str] = ["good_we", "good_we"],
                  id: int = 0,
                  configuration: GoodWeConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.group = "other"
         self.id = id
         self.configuration = configuration or GoodWeConfiguration()
 

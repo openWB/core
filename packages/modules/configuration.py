@@ -177,6 +177,18 @@ def _pub_configurable_soc_modules() -> None:
 
 
 def _pub_configurable_devices_components() -> None:
+    def add_vendor(vendor_path: str, pattern: str) -> None:
+        path_list = Path(_get_packages_path()/"modules"/"devices"/vendor_path).glob(f'**/{pattern}.py')
+        for path in path_list:
+            if path.name.endswith("_test.py"):
+                # Tests überspringen
+                continue
+            vendor_defaults = importlib.import_module(
+                f'modules.devices.{path.parts[-2]}.vendor').vendor_descriptor.configuration_factory()
+            vendor.append({
+                "vendor": vendor_defaults.vendor
+            })
+
     def add_components(device: str, pattern: str) -> None:
         path_list = Path(_get_packages_path()/"modules"/"devices"/device).glob(f'**/{pattern}.py')
         for path in path_list:
@@ -188,7 +200,7 @@ def _pub_configurable_devices_components() -> None:
                 "modules").component_descriptor.configuration_factory()
             component.append({
                 "value": comp_defaults.type,
-                "text": comp_defaults.name
+                "text": comp_defaults.name,
             })
 
     try:
@@ -196,18 +208,23 @@ def _pub_configurable_devices_components() -> None:
         path_list = Path(_get_packages_path()/"modules"/"devices").glob('**/device.py')
         for path in path_list:
             try:
+                vendor_path = path.parts[-3]
                 device = path.parts[-3]+"/"+path.parts[-2]
                 device_module_import = path.parts[-3]+"."+path.parts[-2]
                 component: List = []
+                vendor: List = []
                 add_components(device, "*bat*")
                 add_components(device, "*counter*")
                 add_components(device, "*inverter*")
+                add_vendor(vendor_path, "*vendor*")
                 dev_defaults = importlib.import_module(
                     f".devices.{device_module_import}.device", "modules").device_descriptor.configuration_factory()
                 devices_components.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
-                    "component": component
+                    "group": dev_defaults.group,
+                    "component": component,
+                    "vendor": vendor
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
