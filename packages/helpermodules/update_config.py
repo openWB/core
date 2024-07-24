@@ -1729,12 +1729,14 @@ class UpdateConfig:
                                 ')')
                             return round(bat_costs + grid_costs + pv_costs, 4)
 
+                        log.debug(f"Ladelog-Eintrag {chargelog_entry}")
                         if et_active:
                             mod = importlib.import_module(
                                 f".electricity_tariffs.{et_config['type']}.tariff", "modules")
                             config = dataclass_from_dict(
                                 mod.device_descriptor.configuration_factory, et_config)
                             tariff_state = mod.create_electricity_tariff(config)(begin.timestamp())
+                            log.debug(f"Abgefrage Preise {tariff_state.prices}")
                             et_prices = [tariff_state.prices[hour_change.timestamp()-3600],
                                          tariff_state.prices[hour_change.timestamp()]]
                             log.debug(f'ET-Preise {chargelog_entry["time"]["begin"]} {begin.timestamp()}: '
