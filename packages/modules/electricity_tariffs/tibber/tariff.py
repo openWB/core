@@ -53,7 +53,8 @@ def fetch_prices(config: TibberTariffConfiguration, date: Optional[int] = None) 
             time_str = ''.join(price_data['startsAt'].rsplit(':', 1))
             startzeit_localized = datetime.datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S.%f%z')
             starttime_utc = int(startzeit_localized.astimezone(timezone.utc).timestamp())
-            if timecheck.create_unix_timestamp_current_full_hour() <= starttime_utc:
+            if ((date is None and timecheck.create_unix_timestamp_current_full_hour() <= starttime_utc) or
+                    date is not None):
                 if i < 24:
                     prices.update({starttime_utc: price_data['total'] / 1000})
                     i += 1
