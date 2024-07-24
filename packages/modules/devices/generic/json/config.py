@@ -12,10 +12,11 @@ class Json:
                  name: str = "Json",
                  type: List[str] = ["generic", "json"],
                  id: int = 0,
+                 group: str = "generic",
                  configuration: JsonConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "generic"
+        self.group = group
         self.id = id
         self.configuration = configuration or JsonConfiguration()
 

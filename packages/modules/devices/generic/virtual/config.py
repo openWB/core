@@ -11,11 +11,12 @@ class Virtual:
     def __init__(self,
                  name: str = "Virtuelles Gerät",
                  type: List[str] = ["generic", "virtual"],
+                 group: str = "generic",
                  id: int = 0,
                  configuration: VirtualConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "generic"
+        self.group = group
         self.id = id
         self.configuration = configuration or VirtualConfiguration()
 

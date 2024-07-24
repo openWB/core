@@ -15,7 +15,7 @@ class Benning(Json):
     def __init__(self,
                  name: str = "Benning",
                  type: List[str] = ["benning", "benning"],
-                 group="other",
+                 group: str = "other",
                  id: int = 0,
                  configuration: BenningConfiguration = None) -> None:
         super().__init__(name, type, group, id, configuration)

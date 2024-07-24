@@ -15,10 +15,10 @@ class OpenDTU(Json):
     def __init__(self,
                  name: str = "Hoymiles über openDTU",
                  type: List[str] = ["opendtu", "opendtu"],
-                 group="other",
+                 group: str = "other",
                  id: int = 0,
                  configuration: OpenDTUConfiguration = None) -> None:
-        super().__init__(name, type, id, group, configuration)
+        super().__init__(name, type, group, id, configuration)
 
 
 @auto_str
