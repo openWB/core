@@ -186,7 +186,7 @@ def _pub_configurable_devices_components() -> None:
             vendor_defaults = importlib.import_module(
                 f'modules.devices.{path.parts[-2]}.vendor').vendor_descriptor.configuration_factory()
             vendor.append({
-                "vendor": vendor_defaults.vendor
+                vendor_defaults.vendor
             })
 
     def add_components(device: str, pattern: str) -> None:
