@@ -1712,7 +1712,7 @@ class UpdateConfig:
                                               - first_entry["cp"][f"cp{cp_num}"]["imported"])
 
                             bat_costs = bat_price * charged_energy * energy_source["bat"]
-                            if et_active:
+                            if et_prices is not None:
                                 if reference == ReferenceTime.MIDDLE:
                                     price = et_prices[0]
                                 else:
@@ -1731,20 +1731,28 @@ class UpdateConfig:
 
                         log.debug(f"Ladelog-Eintrag {chargelog_entry}")
                         if et_active:
-                            mod = importlib.import_module(
-                                f".electricity_tariffs.{et_config['type']}.tariff", "modules")
-                            config = dataclass_from_dict(
-                                mod.device_descriptor.configuration_factory, et_config)
-                            tariff_state = mod.create_electricity_tariff(config)(begin.timestamp())
-                            log.debug(f"Abgefrage Preise {tariff_state.prices}")
-                            et_prices = [tariff_state.prices[hour_change.timestamp()-3600],
-                                         tariff_state.prices[hour_change.timestamp()]]
-                            log.debug(f'ET-Preise {chargelog_entry["time"]["begin"]} {begin.timestamp()}: '
-                                      f'{et_prices}')
+                            try:
+                                mod = importlib.import_module(
+                                    f".electricity_tariffs.{et_config['type']}.tariff", "modules")
+                                config = dataclass_from_dict(
+                                    mod.device_descriptor.configuration_factory, et_config)
+                                tariff_state = mod.create_electricity_tariff(config)(begin.timestamp())
+                                log.debug(f"Abgefrage Preise {tariff_state.prices}")
+                                et_prices = [tariff_state.prices[hour_change.timestamp()-3600],
+                                             tariff_state.prices[hour_change.timestamp()]]
+                                log.debug(f'ET-Preise {chargelog_entry["time"]["begin"]} {begin.timestamp()}: '
+                                          f'{et_prices}')
+                            except Exception:
+                                log.exception(f"Konnte ET-Preise für {chargelog_entry['time']['begin']} nicht abfragen")
+                                et_prices = None
+                        else:
+                            et_prices = None
                         new_costs = calc(begin, hour_change, ReferenceTime.MIDDLE)
                         new_costs += calc(hour_change, end, ReferenceTime.END)
                         if chargelog_entry["data"]["costs"] != new_costs:
                             fixed = True
+                            log.debug(f"Preise fpr Ladevorgang {chargelog_entry['time']['begin']} aktualisiert. Alter "
+                                      f"Preis: {chargelog_entry['data']['costs']}, korrekter Preis: {new_costs}")
                             chargelog_entry["data"]["costs"] = new_costs
                 if fixed:
                     copyfile(chargelog, chargelog+".1")
