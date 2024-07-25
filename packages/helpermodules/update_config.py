@@ -42,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 57
+    DATASTORE_VERSION = 59
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1808,10 +1808,6 @@ class UpdateConfig:
                     updated_payload = device
                     updated_payload["type"] = ["byd", "byd"]
                     return {topic: updated_payload}
-                if (device.get("type") == "byd"):
-                    updated_payload = device
-                    updated_payload["type"] = ["byd", "byd"]
-                    return {topic: updated_payload}
                 if (device.get("type") == "carlo_gavazzi"):
                     updated_payload = device
                     updated_payload["type"] = ["carlo_gavazzi", "carlo_gavazzi"]
@@ -1995,3 +1991,346 @@ class UpdateConfig:
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 57)
+
+    def upgrade_datastore_58(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/system/configurable/devices_components", topic) is not None:
+                devices_components = decode_payload(payload)
+                # 1. openWB
+                try:
+                    updated_payload = devices_components
+                    for idx, item in enumerate(updated_payload):
+                        # 1. openWB
+                        if item.get("value") == "openwb_bat_kit":
+                            updated_payload[idx]["value"] = ["openWB", "openwb_bat_kit"]
+                            item.update({'vendor': 'OpenWB'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "openwb_evu_kit":
+                            updated_payload[idx]["value"] = ["openWB", "openwb_evu_kit"]
+                            item.update({'vendor': 'OpenWB'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "openwb_flex":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["openWB", "openwb_flex"]
+                            item.update({'vendor': 'OpenWB'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "openwb_pv_kit":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["openWB", "openwb_pv_kit"]
+                            item.update({'vendor': 'OpenWB'})
+                            return {topic: updated_payload}
+                        # 2. huawei
+                        if item.get("value") == "huawei":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["huawei", "huawei"]
+                            item.update({'vendor': 'Huawei'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "huawei_smartlogger":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["huawei", "huawei_smartlogger"]
+                            item.update({'vendor': 'Huawei'})
+                            return {topic: updated_payload}
+                        # 3. kostal
+                        if item.get("value") == "kostal_piko":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["kostal", "kostal_piko"]
+                            item.update({'vendor': 'Kostal'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "kostal_piko_old":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["kostal", "kostal_piko_old"]
+                            item.update({'vendor': 'Kostal'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "kostal_plenticore":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["kostal", "kostal_plenticore"]
+                            item.update({'vendor': 'Kostal'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "kostal_sem":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["kostal", "kostal_sem"]
+                            item.update({'vendor': 'Kostal'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "kostal_steca":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["kostal", "kostal_steca"]
+                            item.update({'vendor': 'Kostal'})
+                            return {topic: updated_payload}
+                        # 4. Siemens
+                        if item.get("value") == "siemens":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["siemens", "siemens"]
+                            item.update({'vendor': 'Siemens'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "siemens_sentron":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["siemens", "siemens_sentron"]
+                            item.update({'vendor': 'Siemens'})
+                            return {topic: updated_payload}
+                        # 5 sma
+                        if item.get("value") == "sma_shm":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["sma", "sma_shm"]
+                            item.update({'vendor': 'SMA'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "sma_sunny_boy":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["sma", "sma_sunny_boy"]
+                            item.update({'vendor': 'SMA'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "sma_sunny_island":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["sma", "sma_sunny_island"]
+                            item.update({'vendor': 'SMA'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "sma_webbox":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["sma", "sma_webbox"]
+                            item.update({'vendor': 'SMA'})
+                            return {topic: updated_payload}
+                        # 6 Pfade anpassen
+                        if item.get("value") == "alpha_ess":
+                            updated_payload[idx]["value"] = ["alpha_ess", "alpha_ess"]
+                            item.update({'vendor': 'Alpha ESS'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "sofar":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["sofar", "sofar"]
+                            item.update({'vendor': 'SofarSolar'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "azurro_sofar":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["sofar", "sofar"]
+                            item.update({'vendor': 'SofarSolar'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "azzurro_zcs":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["azzurro_zcs", "azzurro_zcs"]
+                            item.update({'vendor': 'Azzurro ZCS'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "batterx":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["batterx", "batterx"]
+                            item.update({'vendor': 'Batterx'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "benning":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["benning", "benning"]
+                            item.update({'vendor': 'Benning'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "byd":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["byd", "byd"]
+                            item.update({'vendor': 'Byd'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "carlo_gavazzi":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["carlo_gavazzi", "carlo_gavazzi"]
+                            item.update({'vendor': 'Carlo Gavazzi'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "deye":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["deye", "deye"]
+                            item.update({'vendor': 'Deye'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "discovergy":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["discovergy", "discovergy"]
+                            item.update({'vendor': 'Discovergy'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "e3dc":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["e3dc", "e3dc"]
+                            item.update({'vendor': 'E3/DC'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "enphase":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["enphase", "enphase"]
+                            item.update({'vendor': 'Enphase'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "fems":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["fems", "fems"]
+                            item.update({'vendor': 'openEMS, Fenecon FEMS, CENTURIO, Kaco'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "fox_ess":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["fox_ess", "fox_ess"]
+                            item.update({'vendor': 'Fox ESS'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "fronius":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["fronius", "fronius"]
+                            item.update({'vendor': 'Fronius'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "good_we":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["good_we", "good_we"]
+                            item.update({'vendor': 'GoodWe'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "janitza":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["janitza", "janitza"]
+                            item.update({'vendor': 'Janitza'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "lg":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["lg", "lg"]
+                            item.update({'vendor': 'LG'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "mtec":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["mtec", "mtec"]
+                            item.update({'vendor': 'M-Tec'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "opendtu":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["opendtu", "opendtu"]
+                            item.update({'vendor': 'OpenDTU'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "powerdog":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["powerdog", "powerdog"]
+                            item.update({'vendor': 'PowerDog'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "powerfox":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["powerfox", "powerfox"]
+                            item.update({'vendor': 'Powerfox'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "qcells":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["qcells", "qcells"]
+                            item.update({'vendor': 'QCells'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "rct":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["rct", "rct"]
+                            item.update({'vendor': 'RCT Power'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "saxpower":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["saxpower", "saxpower"]
+                            item.update({'vendor': 'SAX Power'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "shelly":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["shelly", "shelly"]
+                            item.update({'vendor': 'Shelly'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "smart_me":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["smart_me", "smart_me"]
+                            item.update({'vendor': 'Smart-me'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "smartfox":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["smartfox", "smartfox"]
+                            item.update({'vendor': 'Smartfox'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "solar_log":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["solar_log", "solar_log"]
+                            item.update({'vendor': 'Solar-Log'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "solar_view":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["solar_view", "solar_view"]
+                            item.update({'vendor': 'SolarView'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "solar_watt":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["solar_watt", "solar_watt"]
+                            item.update({'vendor': 'Solarwatt'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "solar_world":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["solar_world", "solar_world"]
+                            item.update({'vendor': 'SolarWorld'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "solaredge":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["solaredge", "solaredge"]
+                            item.update({'vendor': 'SolarEdge'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "solarmax":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["solarmax", "solarmax"]
+                            item.update({'vendor': 'Solarmax'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "solax":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["solax", "solax"]
+                            item.update({'vendor': 'Solax'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "sonnenbatterie":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["sonnenbatterie", "sonnenbatterie"]
+                            item.update({'vendor': 'Sonnenbatterie'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "studer":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["studer", "studer"]
+                            item.update({'vendor': 'Studer innotec'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "sungrow":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["sungrow", "sungrow"]
+                            item.update({'vendor': 'Sungrow'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "sunways":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["sunways", "sunways"]
+                            item.update({'vendor': 'Sunways'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "tasmota":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["tasmota", "tasmota"]
+                            item.update({'vendor': 'Tasmota'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "tesla":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["tesla", "tesla"]
+                            item.update({'vendor': 'Tesla'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "varta":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["varta", "varta"]
+                            item.update({'vendor': 'Varta'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "victron":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["victron", "victron"]
+                            item.update({'vendor': 'Victron'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "vzlogger":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["vzlogger", "vzlogger"]
+                            item.update({'vendor': 'VZLogger'})
+                            return {topic: updated_payload}
+                        if item.get("value") == "youless":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["youless", "youless"]
+                            item.update({'vendor': 'Youless'})
+                            return {topic: updated_payload}
+                        # 7 generisch
+                        if item.get("value") == "http":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["generic", "http"]
+                            return {topic: updated_payload}
+                        if item.get("value") == "mqtt":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["generic", "mqtt"]
+                            return {topic: updated_payload}
+                        if item.get("value") == "json":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["generic", "json"]
+                            return {topic: updated_payload}
+                        if item.get("value") == "virtual":
+                            updated_payload = devices_components
+                            updated_payload["value"] = ["generic", "virtual"]
+                            return {topic: updated_payload}
+                except Exception:
+                    log.exception("Fehler im Update der configurable device_components")
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 59)
