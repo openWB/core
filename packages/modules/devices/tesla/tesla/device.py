@@ -2,7 +2,7 @@
 import logging
 import requests
 from requests import HTTPError
-from typing import Callable, Iterable, Union
+from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
@@ -16,10 +16,8 @@ from modules.devices.tesla.tesla.inverter import TeslaInverter
 log = logging.getLogger(__name__)
 
 
-UpdateFunction = Callable[[PowerwallHttpClient], None]
-
-
-def __update_components(client: PowerwallHttpClient, components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
+def __update_components(client: PowerwallHttpClient,
+                        components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
     aggregate = client.get_json("/api/meters/aggregates")
     for component in components:
         component.update(client, aggregate)
