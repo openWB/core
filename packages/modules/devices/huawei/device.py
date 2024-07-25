@@ -25,15 +25,10 @@ def create_device(device_config: Huawei):
         return HuaweiInverter(device_config.id, component_config, device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[HuaweiBat, HuaweiCounter, HuaweiInverter]]):
-        if client.is_socket_open() is False:
-            client.connect()
-        try:
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update(client)
-        except Exception as e:
-            client.close()
-            raise e
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address,
