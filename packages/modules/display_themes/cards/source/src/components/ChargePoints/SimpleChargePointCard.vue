@@ -234,9 +234,9 @@ export default {
                 <!-- charge settings -->
                 <i-button
                   class="large-button _flex-grow:0"
-                  @click="toggleChargePointSettings(chargePointId)"
                   :class="!changesLocked ? 'clickable' : ''"
                   :disabled="changesLocked"
+                  @click="toggleChargePointSettings(chargePointId)"
                 >
                   <font-awesome-icon
                     fixed-width
@@ -247,7 +247,7 @@ export default {
 
               <i-button-group
                 class="button-group _margin-top:1"
-                 :disabled="changesLocked"
+                :disabled="changesLocked"
               >
                 <!-- charge mode -->
                 <i-button
