@@ -85,4 +85,4 @@ class VartaInverterSetup(ComponentSetup[VartaInverterConfiguration]):
                  type: str = "inverter",
                  id: int = 0,
                  configuration: VartaInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VartaCounterConfiguration())
+        super().__init__(name, type, id, configuration or VartaInverterConfiguration())
