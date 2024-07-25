@@ -2317,18 +2317,22 @@ class UpdateConfig:
                         if item.get("value") == "http":
                             updated_payload = devices_components
                             updated_payload["value"] = ["generic", "http"]
+                            item.update({'vendor': 'generisch'})
                             return {topic: updated_payload}
                         if item.get("value") == "mqtt":
                             updated_payload = devices_components
                             updated_payload["value"] = ["generic", "mqtt"]
+                            item.update({'vendor': 'generisch'})
                             return {topic: updated_payload}
                         if item.get("value") == "json":
                             updated_payload = devices_components
                             updated_payload["value"] = ["generic", "json"]
+                            item.update({'vendor': 'generisch'})
                             return {topic: updated_payload}
                         if item.get("value") == "virtual":
                             updated_payload = devices_components
                             updated_payload["value"] = ["generic", "virtual"]
+                            item.update({'vendor': 'generisch'})
                             return {topic: updated_payload}
                 except Exception:
                     log.exception("Fehler im Update der configurable device_components")
