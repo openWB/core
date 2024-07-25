@@ -42,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 51
+    DATASTORE_VERSION = 54
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -161,7 +161,6 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/set/error_counter$",
         "^openWB/counter/[0-9]+/set/released_surplus$",
         "^openWB/counter/[0-9]+/set/reserved_surplus$",
-        "^openWB/counter/[0-9]+/set/state_str$",
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
 
@@ -171,6 +170,7 @@ class UpdateConfig:
         "^openWB/general/external_buttons_hw$",
         "^openWB/general/grid_protection_configured$",
         "^openWB/general/grid_protection_active$",
+        "^openWB/general/http_api$",
         "^openWB/general/modbus_control$",
         "^openWB/general/mqtt_bridge$",
         "^openWB/general/grid_protection_timestamp$",
@@ -460,6 +460,7 @@ class UpdateConfig:
         ("openWB/general/extern_display_mode", "primary"),
         ("openWB/general/external_buttons_hw", False),
         ("openWB/general/grid_protection_configured", True),
+        ("openWB/general/http_api", False),
         ("openWB/general/modbus_control", False),
         ("openWB/general/notifications/selected", "none"),
         ("openWB/general/notifications/plug", False),
@@ -1614,3 +1615,39 @@ class UpdateConfig:
                     return {topic: ""}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 51)
+
+    def upgrade_datastore_51(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # update version and firmware of GoodWe
+                if payload.get("type") == "deye" and "device_type" in payload["configuration"]:
+                    payload["configuration"].pop("device_type")
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 52)
+
+    def upgrade_datastore_52(self) -> None:
+        # PR reverted
+        self.__update_topic("openWB/system/datastore_version", 53)
+
+    def upgrade_datastore_53(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/optional/int_display/theme" == topic:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "cards":
+                    if configuration_payload["configuration"].get("enable_energy_flow_view") is None:
+                        configuration_payload["configuration"].update({
+                            "enable_energy_flow_view": True,
+                        })
+                    if configuration_payload["configuration"].get("enable_dashboard_card_vehicles") is None:
+                        configuration_payload["configuration"].update({
+                            "enable_dashboard_card_vehicles": True,
+                        })
+                    if configuration_payload["configuration"].get("simple_charge_point_view") is None:
+                        configuration_payload["configuration"].update({
+                            "simple_charge_point_view": True,
+                        })
+                    return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 54)

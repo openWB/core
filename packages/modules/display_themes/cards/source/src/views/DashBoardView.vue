@@ -8,6 +8,13 @@ import ChargePointsCard from "@/components/DashBoard/ChargePointsCard.vue";
 
 export default {
   name: "DashboardView",
+  components: {
+    GridCard,
+    HomeCard,
+    BatteryCard,
+    InverterCard,
+    ChargePointsCard,
+  },
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
   },
@@ -15,13 +22,6 @@ export default {
     return {
       mqttStore: useMqttStore(),
     };
-  },
-  components: {
-    GridCard,
-    HomeCard,
-    BatteryCard,
-    InverterCard,
-    ChargePointsCard,
   },
 };
 </script>

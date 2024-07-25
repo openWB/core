@@ -4,19 +4,21 @@ export default {
     data: {
       required: false,
       type: Array,
+      default: undefined,
     },
     socData: {
       required: false,
       type: Array,
+      default: undefined,
     },
-    width: { Number, default: 250 },
-    height: { Number, default: 70 },
-    gap: { Number, default: 3 },
-    stroke: { Number, default: 3 },
-    min: { Number, default: 0 },
-    max: { Number, default: 1 },
-    color: { String, default: "var(--color--primary)" },
-    colorNegative: { String, default: undefined },
+    width: { type: Number, default: 250 },
+    height: { type: Number, default: 70 },
+    gap: { type: Number, default: 3 },
+    stroke: { type: Number, default: 3 },
+    min: { type: Number, default: 0 },
+    max: { type: Number, default: 1 },
+    color: { type: String, default: "var(--color--primary)" },
+    colorNegative: { type: String, default: undefined },
   },
   computed: {
     highestPoint() {
@@ -124,7 +126,11 @@ export default {
     width="100%"
     preserveAspectRatio="xMinYMin"
   >
-    <path class="soc-path" v-if="socData" :d="socPath" />
+    <path
+      v-if="socData"
+      class="soc-path"
+      :d="socPath"
+    />
     <rect
       v-for="bar in bars"
       :key="bar.x"
