@@ -69,4 +69,20 @@ class VartaCounterSetup(ComponentSetup[VartaCounterConfiguration]):
                  type: str = "counter",
                  id: int = 0,
                  configuration: VartaCounterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or VartaCounterConfiguration())@auto_str
+
+
+@auto_str
+class VartaInverterConfiguration:
+    def __init__(self):
+        pass
+
+
+@auto_str
+class VartaInverterSetup(ComponentSetup[VartaInverterConfiguration]):
+    def __init__(self,
+                 name: str = "Varta Wechselrichter",
+                 type: str = "inverter",
+                 id: int = 0,
+                 configuration: VartaInverterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or VartaCounterConfiguration())
