@@ -38,7 +38,7 @@ def test_set_component_registers_assigns_effective_meter_ids(monkeypatch, params
     ]
 
     # execution
-    device.Device.set_component_registers(components_list, synergy_units=1)
+    device.set_component_registers(components_list, synergy_units=1)
 
     # evaluation
     assert [component.registers for component in components_list] == params.effective_meter_ids
@@ -58,7 +58,7 @@ def test_set_component_registers_ignores_wrong_types(monkeypatch, type: Type, sh
     components = [Mock(spec=type, component_config=Mock(configuration=Mock(meter_id=1)))
                   ]
     # execution
-    device.Device.set_component_registers(components, synergy_units=1)
+    device.set_component_registers(components, synergy_units=1)
 
     # evaluation
     assert hasattr(components[0], "registers") == should_use

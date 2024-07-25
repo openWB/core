@@ -1,31 +1,17 @@
 #!/usr/bin/env python3
 import logging
-from operator import add
-from statistics import mean
-import time
-from typing import Dict, Iterable, Tuple, Union, Optional, List
-from urllib3.util import parse_url
+from typing import Iterable, Union, List
 
-from dataclass_utils import dataclass_from_dict
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
-from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
-from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
-from modules.common.component_state import BatState, InverterState
+from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
-from modules.common.fault_state import ComponentInfo
-from modules.common.store import get_inverter_value_store, get_bat_value_store
-from modules.devices.solaredge.solaredge import bat, counter, external_inverter, inverter
 from modules.devices.solaredge.solaredge.bat import SolaredgeBat
 from modules.devices.solaredge.solaredge.counter import SolaredgeCounter
 from modules.devices.solaredge.solaredge.external_inverter import SolaredgeExternalInverter
 from modules.devices.solaredge.solaredge.inverter import SolaredgeInverter
-from modules.devices.solaredge.solaredge.config import (Solaredge, SolaredgeBatConfiguration, SolaredgeBatSetup,
-                                                        SolaredgeConfiguration,
-                                                        SolaredgeCounterConfiguration, SolaredgeCounterSetup,
-                                                        SolaredgeExternalInverterConfiguration,
-                                                        SolaredgeExternalInverterSetup,
-                                                        SolaredgeInverterConfiguration, SolaredgeInverterSetup)
+from modules.devices.solaredge.solaredge.config import (Solaredge, SolaredgeBatSetup, SolaredgeCounterSetup,
+                                                        SolaredgeExternalInverterSetup, SolaredgeInverterSetup)
 from modules.devices.solaredge.solaredge.meter import SolaredgeMeterRegisters
 
 log = logging.getLogger(__name__)
@@ -38,7 +24,7 @@ reconnect_delay = 1.2
 
 
 def set_component_registers(components: Iterable[solaredge_component_classes], synergy_units: int) -> None:
-    meters = [None]*3  # type: List[Union[SolaredgeExternalInverter, SolaredgeCounter, None]]
+    meters: List[Union[SolaredgeExternalInverter, SolaredgeCounter, None]] = [None]*3
     for component in components:
         if isinstance(component, (SolaredgeExternalInverter, SolaredgeCounter)):
             meters[component.component_config.configuration.meter_id-1] = component
@@ -59,21 +45,24 @@ def create_device(device_config: Solaredge):
         return SolaredgeBat(device_config.id, component_config, client)
 
     def create_counter_component(component_config: SolaredgeCounterSetup):
-        set_component_registers(components.values(), synergy_units)
+        nonlocal device
+        set_component_registers(device.components.values(), synergy_units)
         get_synergy_units(component_config.configuration.modbus_id)
         return SolaredgeCounter(device_config.id, component_config, client)
 
     def create_inverter_component(component_config: SolaredgeInverterSetup):
+        nonlocal device
         nonlocal inverter_counter
         inverter_counter += 1
-        set_component_registers(components.values(), synergy_units)
+        set_component_registers(device.components.values(), synergy_units)
         get_synergy_units(component_config.configuration.modbus_id)
         return SolaredgeInverter(device_config.id, component_config, client)
 
     def create_external_inverter_component(component_config: SolaredgeExternalInverterSetup):
+        nonlocal device
         nonlocal inverter_counter
         inverter_counter += 1
-        set_component_registers(components.values(), synergy_units)
+        set_component_registers(device.components.values(), synergy_units)
         get_synergy_units(component_config.configuration.modbus_id)
         return SolaredgeExternalInverter(device_config.id, component_config, client)
 
@@ -97,18 +86,31 @@ def create_device(device_config: Solaredge):
         synergy_units = 1
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address,
                                          device_config.configuration.port, reconnect_delay=reconnect_delay)
+        device = ConfigurableDevice(
+            device_config=device_config,
+            component_factory=ComponentFactoryByType(
+                bat=create_bat_component,
+                counter=create_counter_component,
+                external_inverter=create_external_inverter_component,
+                inverter=create_inverter_component,
+            ),
+            component_updater=MultiComponentUpdater(update_components)
+        )
     except Exception:
         log.exception("Fehler in create_device")
-    return ConfigurableDevice(
-        device_config=device_config,
-        component_factory=ComponentFactoryByType(
-            bat=create_bat_component,
-            counter=create_counter_component,
-            external_inverter=create_external_inverter_component,
-            inverter=create_inverter_component,
-        ),
-        component_updater=MultiComponentUpdater(update_components)
-    )
+
+
+<< << << < HEAD: packages/modules/devices/solaredge/solaredge/device.py
+return ConfigurableDevice(
+    device_config=device_config,
+    component_factory=ComponentFactoryByType(
+        bat=create_bat_component,
+        counter=create_counter_component,
+        external_inverter=create_external_inverter_component,
+        inverter=create_inverter_component,
+    ),
+    component_updater=MultiComponentUpdater(update_components)
+)
 
 
 class Device(AbstractDevice):
@@ -362,6 +364,11 @@ def read_legacy(component_type: str,
 
 def main(argv: List[str]):
     run_using_positional_cli_args(read_legacy, argv)
+
+
+== == == =
+return device
+>>>>>> > bed9f57f5(draft SE): packages/modules/devices/solaredge/device.py
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Solaredge)
