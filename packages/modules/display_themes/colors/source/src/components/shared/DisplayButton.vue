@@ -27,7 +27,7 @@ function buttonClicked() {
 
 <style scoped>
 .displaybutton {
-	border: 0.1px dotted var(--color-frame);
+	border: 0.1px solid var(--color-frame);
 	padding: 8px;
 	align-self: top;
 	box-shadow: 1px 3px black;

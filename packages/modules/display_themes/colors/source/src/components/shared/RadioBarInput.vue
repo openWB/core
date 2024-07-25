@@ -77,7 +77,7 @@ export type InfoItemValues = {
 	opacity: 0.8;
 }
 .btn-group {
-	border: 0.1px dotted var(--color-menu);
+	border: 0.1px solid var(--color-menu);
 	box-shadow: 1px 3px black;
 }
 </style>
