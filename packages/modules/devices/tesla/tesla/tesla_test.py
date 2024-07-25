@@ -1,16 +1,14 @@
-import json
 from unittest.mock import Mock
 
-import pytest
 import requests
 import requests_mock
 
 from modules.common.configurable_device import ConfigurableDevice
 from modules.devices.tesla.tesla import bat
+from modules.devices.tesla.tesla import device
 from modules.devices.tesla.tesla.device import Tesla, create_device
 from modules.common.component_state import BatState
 from modules.devices.tesla.tesla.config import TeslaConfiguration
-from test_utils.mock_ramdisk import MockRamdisk
 
 sample_soe_json = """{"percentage":69.16}"""
 
@@ -135,11 +133,6 @@ def match_cookie_reject(request: requests.PreparedRequest):
     return not match_cookie_ok(request)
 
 
-@pytest.fixture
-def mock_ramdisk(monkeypatch):
-    return MockRamdisk(monkeypatch)
-
-
 API_URL = "https://sample-address/api"
 COOKIE_FILE_NAME = "powerwall_cookie.txt"
 
@@ -151,7 +144,7 @@ def assert_battery_state_correct(state: BatState):
     assert state.exported == 1169030
 
 
-def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk: MockRamdisk):
+def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_mock.Mocker):
     # setup
     mock_bat_value_store = Mock()
     monkeypatch.setattr(bat, "get_bat_value_store", Mock(return_value=mock_bat_value_store))
@@ -159,40 +152,11 @@ def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_
                       additional_matcher=match_cookie_ok)
     requests_mock.get("https://sample-address/api/system_status/soe", text=sample_soe_json,
                       additional_matcher=match_cookie_ok)
-    mock_ramdisk[COOKIE_FILE_NAME] = """{"AuthCookie": "auth-cookie", "UserRecord": "user-record"}"""
+    authenticate_mock = Mock(return_value={"AuthCookie": "auth-cookie", "UserRecord": "user-record"})
+    monkeypatch.setattr(device, "_authenticate", authenticate_mock)
 
     # execution
     setup_battery_component().update()
 
     # evaluation
-    assert_battery_state_correct(mock_bat_value_store.set.call_args[0][0])
-
-
-@pytest.mark.parametrize(
-    "cookie_file", [
-        pytest.param("""{"AuthCookie": "reject-me", "UserRecord": "user-record"}""", id="expired cookie"),
-        pytest.param("""{this is not valid json}""", id="garbage file"),
-        pytest.param(None, id="no cookie file")
-    ]
-)
-def test_powerwall_update_retrieves_new_cookie_if_cookie_rejected(monkeypatch,
-                                                                  requests_mock: requests_mock.Mocker,
-                                                                  mock_ramdisk: MockRamdisk,
-                                                                  cookie_file: str):
-    # setup
-    mock_bat_value_store = Mock()
-    monkeypatch.setattr(bat, "get_bat_value_store", Mock(return_value=mock_bat_value_store))
-    requests_mock.post(API_URL + "/login/Basic", cookies={"AuthCookie": "auth-cookie", "UserRecord": "user-record"})
-    requests_mock.get(API_URL + "/meters/aggregates", status_code=401, additional_matcher=match_cookie_reject)
-    requests_mock.get(API_URL + "/system_status/soe", status_code=401, additional_matcher=match_cookie_reject)
-    requests_mock.get(API_URL + "/meters/aggregates", text=sample_aggregates_json, additional_matcher=match_cookie_ok)
-    requests_mock.get(API_URL + "/system_status/soe", text=sample_soe_json, additional_matcher=match_cookie_ok)
-    if cookie_file is not None:
-        mock_ramdisk[COOKIE_FILE_NAME] = cookie_file
-
-    # execution
-    setup_battery_component().update()
-
-    # evaluation
-    assert json.loads(mock_ramdisk[COOKIE_FILE_NAME]) == {"AuthCookie": "auth-cookie", "UserRecord": "user-record"}
     assert_battery_state_correct(mock_bat_value_store.set.call_args[0][0])

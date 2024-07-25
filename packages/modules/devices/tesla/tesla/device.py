@@ -25,7 +25,7 @@ def __update_components(client: PowerwallHttpClient, components: Iterable[Union[
         component.update(client, aggregate)
 
 
-def __authenticate(session: requests.Session, url: str, email: str, password: str):
+def _authenticate(session: requests.Session, url: str, email: str, password: str):
     """
     email is not yet required for login (2022/01), but we simulate the whole login page
     """
@@ -57,7 +57,7 @@ def create_device(device_config: Tesla):
         password = device_config.configuration.password
 
         if http_client.cookies is None:
-            http_client.cookies = __authenticate(session, address, email, password)
+            http_client.cookies = _authenticate(session, address, email, password)
             __update_components(http_client, components)
             return
         try:
@@ -67,7 +67,7 @@ def create_device(device_config: Tesla):
             if e.response.status_code != 401 and e.response.status_code != 403:
                 raise e
             log.warning("Login to powerwall with existing cookie failed. Will retry with new cookie...")
-        http_client.cookies = __authenticate(session, address, email, password)
+        http_client.cookies = _authenticate(session, address, email, password)
         __update_components(http_client, components)
         log.debug("Update completed successfully")
 
