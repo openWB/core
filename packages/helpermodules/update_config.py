@@ -42,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 56
+    DATASTORE_VERSION = 57
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1964,5 +1964,34 @@ class UpdateConfig:
                     updated_payload = device
                     updated_payload["type"] = ["youless", "youless"]
                     return {topic: updated_payload}
+                # 7 generisch
+                if (device.get("type") == "http"):
+                    updated_payload = device
+                    updated_payload["type"] = ["generic", "http"]
+                    return {topic: updated_payload}
+                if (device.get("type") == "mqtt"):
+                    updated_payload = device
+                    updated_payload["type"] = ["generic", "mqtt"]
+                    return {topic: updated_payload}
+                if (device.get("type") == "json"):
+                    updated_payload = device
+                    updated_payload["type"] = ["generic", "json"]
+                    return {topic: updated_payload}
+                if (device.get("type") == "virtual"):
+                    updated_payload = device
+                    updated_payload["type"] = ["generic", "virtual"]
+                    return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 56)
+
+    def upgrade_datastore_56(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                device = decode_payload(payload)
+                # Namensaenderung anpassen
+                if (device.get("name") == "Azzurro - Sofar 3P"):
+                    updated_payload = device
+                    updated_payload["name"] = "SofarSolar"
+                    return {topic: updated_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 57)
