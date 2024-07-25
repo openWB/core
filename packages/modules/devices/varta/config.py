@@ -69,7 +69,7 @@ class VartaCounterSetup(ComponentSetup[VartaCounterConfiguration]):
                  type: str = "counter",
                  id: int = 0,
                  configuration: VartaCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VartaCounterConfiguration())@auto_str
+        super().__init__(name, type, id, configuration or VartaCounterConfiguration())
 
 
 @auto_str
