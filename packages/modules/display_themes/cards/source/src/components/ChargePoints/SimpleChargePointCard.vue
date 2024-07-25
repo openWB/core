@@ -144,6 +144,7 @@ export default {
                   size="lg"
                   class="_flex-grow:1"
                   :class="!changesLocked ? 'clickable' : ''"
+                  :disabled="changesLocked"
                   @click="handleVehicleClick(chargePointId)"
                 >
                   <font-awesome-icon
@@ -236,6 +237,8 @@ export default {
                 <i-button
                   class="_flex-grow:1"
                   @click="toggleChargePointSettings(chargePointId)"
+                  :class="!changesLocked ? 'clickable' : ''"
+                  :disabled="changesLocked"
                 >
                   <font-awesome-icon
                     fixed-width
@@ -252,6 +255,7 @@ export default {
                   width: 100%;
                   margin-top: 1rem;
                 "
+                 :disabled="changesLocked"
               >
                 <!-- charge mode -->
                 <i-button
@@ -259,6 +263,7 @@ export default {
                   :key="mode.id"
                   outline
                   class="large-button _flex-grow:1"
+                  :class="!changesLocked ? 'clickable' : ''"
                   :color="mode.class != 'dark' ? mode.class : 'light'"
                   :active="
                     mqttStore.getChargePointConnectedVehicleChargeMode(chargePointId) !=
@@ -309,5 +314,11 @@ export default {
   display: flex;
   flex-wrap: wrap;
   width: 100%;
+}
+
+.button.-outline:disabled.-disabled.-active {
+    ----border-color: var(----border-color--hover);
+    background: var(----background);
+    color: var(----color);
 }
 </style>
