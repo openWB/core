@@ -1749,6 +1749,7 @@ class UpdateConfig:
                             et_prices = None
                         new_costs = calc(begin, hour_change, ReferenceTime.MIDDLE)
                         new_costs += calc(hour_change, end, ReferenceTime.END)
+                        new_costs = round(new_costs, 2)
                         if chargelog_entry["data"]["costs"] != new_costs:
                             fixed = True
                             log.debug(f"Preise fpr Ladevorgang {chargelog_entry['time']['begin']} aktualisiert. Alter "
