@@ -4,7 +4,7 @@
 			'background-color': props.bgcolor ? props.bgcolor : 'var(--color-bg)',
 			color: props.color ? props.color : 'var(--color-title)',
 		}"
-		class="mybutton rounded-pill"
+		class="displaybutton rounded-pill"
 		type="button"
 		@click="buttonClicked"
 	>
@@ -26,7 +26,7 @@ function buttonClicked() {
 </script>
 
 <style scoped>
-.mybutton {
+.displaybutton {
 	border: 0.1px dotted var(--color-frame);
 	padding: 8px;
 	align-self: top;

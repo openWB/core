@@ -15,7 +15,10 @@
 			>
 		</span>
 
-		<DisplayButton icon="fa-rectangle-list" data-bs-toggle="modal" data-bs-target="#statuspage"
+		<DisplayButton
+			icon="fa-rectangle-list"
+			data-bs-toggle="modal"
+			data-bs-target="#statuspage"
 			>Status</DisplayButton
 		>
 		<span class="cpbuttons">
@@ -79,21 +82,13 @@ onBeforeUnmount(() => {
 .navigation {
 	display: flex;
 	justify-content: space-between;
-	padding-left: 10px;
-	padding-right: 10px;
+	padding-left: 20px;
+	padding-right: 20px;
 	padding-top: 2px;
 	padding-bottom: 2px;
 	align-items: center;
 	border-top: 0px solid var(--color-menu);
 	border-bottom: 0px solid var(--color-menu);
-}
-
-.mybutton {
-	border: 10px;
-	padding: 8px;
-	align-self: top;
-	background-color: var(--color-menu);
-	border-radius: 8px;
 }
 
 .timedisplay {
