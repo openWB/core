@@ -2003,270 +2003,336 @@ class UpdateConfig:
                         # 1. openWB
                         if item.get("value") == "openwb_bat_kit":
                             updated_payload[idx]["value"] = ["openWB", "openwb_bat_kit"]
+                            item.update({'group': 'OpenWB'})
                             item.update({'vendor': 'OpenWB'})
                         if item.get("value") == "openwb_evu_kit":
                             updated_payload[idx]["value"] = ["openWB", "openwb_evu_kit"]
+                            item.update({'group': 'OpenWB'})
                             item.update({'vendor': 'OpenWB'})
                         if item.get("value") == "openwb_flex":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["openWB", "openwb_flex"]
+                            item.update({'group': 'OpenWB'})
                             item.update({'vendor': 'OpenWB'})
                         if item.get("value") == "openwb_pv_kit":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["openWB", "openwb_pv_kit"]
+                            item.update({'group': 'OpenWB'})
                             item.update({'vendor': 'OpenWB'})
                         # 2. huawei
                         if item.get("value") == "huawei":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["huawei", "huawei"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Huawei'})
                         if item.get("value") == "huawei_smartlogger":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["huawei", "huawei_smartlogger"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Huawei'})
                         # 3. kostal
                         if item.get("value") == "kostal_piko":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["kostal", "kostal_piko"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Kostal'})
                         if item.get("value") == "kostal_piko_old":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["kostal", "kostal_piko_old"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Kostal'})
                         if item.get("value") == "kostal_plenticore":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["kostal", "kostal_plenticore"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Kostal'})
                         if item.get("value") == "kostal_sem":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["kostal", "kostal_sem"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Kostal'})
                         if item.get("value") == "kostal_steca":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["kostal", "kostal_steca"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Kostal'})
                         # 4. Siemens
                         if item.get("value") == "siemens":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["siemens", "siemens"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Siemens'})
                         if item.get("value") == "siemens_sentron":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["siemens", "siemens_sentron"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Siemens'})
                         # 5 sma
                         if item.get("value") == "sma_shm":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["sma", "sma_shm"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SMA'})
                         if item.get("value") == "sma_sunny_boy":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["sma", "sma_sunny_boy"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SMA'})
                         if item.get("value") == "sma_sunny_island":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["sma", "sma_sunny_island"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SMA'})
                         if item.get("value") == "sma_webbox":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["sma", "sma_webbox"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SMA'})
                         # 6 Pfade anpassen
                         if item.get("value") == "alpha_ess":
                             updated_payload[idx]["value"] = ["alpha_ess", "alpha_ess"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Alpha ESS'})
                         if item.get("value") == "sofar":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["sofar", "sofar"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SofarSolar'})
                         if item.get("value") == "azzurro_sofar":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["sofar", "sofar"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SofarSolar'})
                         if item.get("value") == "azzurro_zcs":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["azzurro_zcs", "azzurro_zcs"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Azzurro ZCS'})
                         if item.get("value") == "batterx":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["batterx", "batterx"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Batterx'})
                         if item.get("value") == "benning":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["benning", "benning"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Benning'})
                         if item.get("value") == "byd":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["byd", "byd"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Byd'})
                         if item.get("value") == "carlo_gavazzi":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["carlo_gavazzi", "carlo_gavazzi"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Carlo Gavazzi'})
                         if item.get("value") == "deye":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["deye", "deye"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Deye'})
                         if item.get("value") == "discovergy":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["discovergy", "discovergy"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Discovergy'})
                         if item.get("value") == "e3dc":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["e3dc", "e3dc"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'E3/DC'})
                         if item.get("value") == "enphase":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["enphase", "enphase"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Enphase'})
                         if item.get("value") == "fems":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["fems", "fems"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'openEMS, Fenecon FEMS, CENTURIO, Kaco'})
                         if item.get("value") == "fox_ess":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["fox_ess", "fox_ess"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Fox ESS'})
                         if item.get("value") == "fronius":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["fronius", "fronius"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Fronius'})
                         if item.get("value") == "good_we":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["good_we", "good_we"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'GoodWe'})
                         if item.get("value") == "janitza":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["janitza", "janitza"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Janitza'})
                         if item.get("value") == "lg":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["lg", "lg"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'LG'})
                         if item.get("value") == "mtec":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["mtec", "mtec"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'M-Tec'})
                         if item.get("value") == "opendtu":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["opendtu", "opendtu"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'OpenDTU'})
                         if item.get("value") == "powerdog":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["powerdog", "powerdog"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'PowerDog'})
                         if item.get("value") == "powerfox":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["powerfox", "powerfox"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Powerfox'})
                         if item.get("value") == "qcells":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["qcells", "qcells"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'QCells'})
                         if item.get("value") == "rct":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["rct", "rct"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'RCT Power'})
                         if item.get("value") == "saxpower":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["saxpower", "saxpower"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SAX Power'})
                         if item.get("value") == "shelly":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["shelly", "shelly"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Shelly'})
                         if item.get("value") == "smart_me":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["smart_me", "smart_me"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Smart-me'})
                         if item.get("value") == "smartfox":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["smartfox", "smartfox"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Smartfox'})
                         if item.get("value") == "solar_log":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["solar_log", "solar_log"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Solar-Log'})
                         if item.get("value") == "solar_view":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["solar_view", "solar_view"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SolarView'})
                         if item.get("value") == "solar_watt":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["solar_watt", "solar_watt"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Solarwatt'})
                         if item.get("value") == "solar_world":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["solar_world", "solar_world"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SolarWorld'})
                         if item.get("value") == "solaredge":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["solaredge", "solaredge"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'SolarEdge'})
                         if item.get("value") == "solarmax":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["solarmax", "solarmax"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Solarmax'})
                         if item.get("value") == "solax":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["solax", "solax"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Solax'})
                         if item.get("value") == "sonnenbatterie":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["sonnenbatterie", "sonnenbatterie"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Sonnenbatterie'})
                         if item.get("value") == "studer":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["studer", "studer"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Studer innotec'})
                         if item.get("value") == "sungrow":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["sungrow", "sungrow"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Sungrow'})
                         if item.get("value") == "sunways":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["sunways", "sunways"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Sunways'})
                         if item.get("value") == "tasmota":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["tasmota", "tasmota"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Tasmota'})
                         if item.get("value") == "tesla":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["tesla", "tesla"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Tesla'})
                         if item.get("value") == "varta":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["varta", "varta"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Varta'})
                         if item.get("value") == "victron":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["victron", "victron"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Victron'})
                         if item.get("value") == "vzlogger":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["vzlogger", "vzlogger"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'VZLogger'})
                         if item.get("value") == "youless":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["youless", "youless"]
+                            item.update({'group': 'other'})
                             item.update({'vendor': 'Youless'})
                         # 7 generisch
                         if item.get("value") == "http":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["generic", "http"]
+                            item.update({'group': 'generic'})
                             item.update({'vendor': 'generisch'})
                         if item.get("value") == "mqtt":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["generic", "mqtt"]
+                            item.update({'group': 'generic'})
                             item.update({'vendor': 'generisch'})
                         if item.get("value") == "json":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["generic", "json"]
+                            item.update({'group': 'generic'})
                             item.update({'vendor': 'generisch'})
                         if item.get("value") == "virtual":
                             updated_payload = devices_components
                             updated_payload[idx]["value"] = ["generic", "virtual"]
+                            item.update({'group': 'generic'})
                             item.update({'vendor': 'generisch'})
                         if idx == len(updated_payload)-1:
                             return {topic: updated_payload}
