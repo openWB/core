@@ -200,7 +200,7 @@ def _pub_configurable_devices_components() -> None:
                 "modules").component_descriptor.configuration_factory()
             component.append({
                 "value": comp_defaults.type,
-                "text": comp_defaults.name,
+                "text": comp_defaults.name
             })
 
     try:
