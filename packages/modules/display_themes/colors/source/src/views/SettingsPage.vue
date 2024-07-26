@@ -28,9 +28,18 @@
 		>
 			<SwitchInput v-model="etActive"></SwitchInput>
 		</ConfigItem>
-		<ConfigItem title="Zeitplan aktivieren" icon="fa-clock" infotext="Settings">
+		<ConfigItem title="Zeitplan aktivieren" icon="fa-clock">
 			<SwitchInput v-model="timedCharging"></SwitchInput>
 		</ConfigItem>
+		<ConfigItem title="Ladeprofil" icon="fa-sliders">
+		<RadioInput
+		v-if="vehicles[connectedVehicle]"
+			v-model.number="vehicles[connectedVehicle].chargeTemplateId"
+			:options="
+				Object.keys(chargeTemplates).map((v) => [chargeTemplates[+v].name, v])
+			"
+		/>
+	</ConfigItem>
 	</div>
 </template>
 
@@ -40,7 +49,7 @@ import { globalData } from '@/assets/js/model'
 import {
 	chargePoints,
 	type ChargePoint,
-	vehicles,
+	vehicles, chargeTemplates
 } from '@/components/chargePointList/model'
 import ConfigItem from '@/components/shared/ConfigItem.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'

@@ -314,3 +314,7 @@ option {
 .ttarea:hover  .ttmessage {
     visibility: visible;
 }
+
+.scaled {
+	transform: scaleX(0.9294)
+}

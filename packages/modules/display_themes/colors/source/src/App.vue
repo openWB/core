@@ -24,5 +24,6 @@ import DisplayTheme from './views/DisplayTheme.vue'
 	display: grid;
 	grid-template-rows: 440px 40px;
 	grid-template-columns: 800px;
+	
 }
 </style>
