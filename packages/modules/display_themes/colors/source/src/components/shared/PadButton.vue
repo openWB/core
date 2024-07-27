@@ -1,6 +1,6 @@
 <template>
 	<div class="padbutton" :style="buttoncolor" @click="buttonClicked">
-		<span class="digit" type="button">
+		<span class="digit scaled" type="button">
 			<slot />
 		</span>
 	</div>

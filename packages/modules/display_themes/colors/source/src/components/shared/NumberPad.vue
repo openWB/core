@@ -1,6 +1,6 @@
 <template>
 	<div class="numberpad">
-		<p class="codedisplay">{{ hiddencode }}</p>
+		<p class="codedisplay scaled">{{ hiddencode }}</p>
 		<div class="numberentry">
 			<PadButton
 				v-for="val in 9"

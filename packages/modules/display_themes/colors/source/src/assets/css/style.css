@@ -55,6 +55,7 @@ h3 {
 	font-size: var(--font-extralarge);
 	color: var(--color-title);
 	font-weight: bold;
+	transform: scaleX(0.9294)
 }
 h4 {
 	color: var(--color-axis);

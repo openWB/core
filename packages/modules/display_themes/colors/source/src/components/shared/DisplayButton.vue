@@ -8,8 +8,10 @@
 		type="button"
 		@click="buttonClicked"
 	>
-		<span v-if="props.icon" class="fas me-2" :class="props.icon"></span>
-		<slot />
+		<span v-if="props.icon" class="fas me-2 scaled" :class="props.icon"></span>
+		<span class="scaled">
+			<slot />
+		</span>
 	</div>
 </template>
 

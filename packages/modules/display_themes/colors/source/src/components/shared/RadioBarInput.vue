@@ -11,7 +11,7 @@
 				:class="element.value == v ? 'active' : ''"
 				@click="setValue"
 			>
-				<span :style="getColor(index)">
+				<span :style="getColor(index)" class="scaled">
 					<i v-if="element.icon" class="fa-solid" :class="element.icon" />
 					{{ element.text }}
 				</span>

@@ -1,6 +1,6 @@
 <template>
 	<div class="configitem subgrid">
-		<span class="d-flex align-items-baseline m-0 p-0 grid-col-6">
+		<span class="d-flex align-items-baseline m-0 p-0 grid-col-6 scaled">
 			<i
 				v-if="props.icon"
 				class="fa-solid fa-sm m-0 p-0 me-2 item-icon"

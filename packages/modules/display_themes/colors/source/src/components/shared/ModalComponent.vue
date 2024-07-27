@@ -3,7 +3,7 @@
 		<div class="modal-dialog modal-lg modal-fullscreen-sm-down">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h3 class="modal-title">
+					<h3 class="modal-title scaled">
 						<slot name="title" />
 					</h3>
 					<button

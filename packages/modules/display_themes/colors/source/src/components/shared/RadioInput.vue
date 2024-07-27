@@ -10,7 +10,7 @@
 			:class="element[1] == v ? 'active' : ''"
 			@click="setValue"
 		>
-			<span :style="getColor(index)">
+			<span :style="getColor(index)" class="scaled">
 				<i v-if="element[3]" class="fa-solid" :class="element[3]" />
 				{{ element[0] }}
 			</span>
