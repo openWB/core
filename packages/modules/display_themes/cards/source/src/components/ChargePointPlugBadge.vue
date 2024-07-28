@@ -14,6 +14,7 @@ library.add(fasPlugCircleXmark, fasPlugCircleCheck, fasPlugCircleBolt);
 
 export default {
   name: "ChargePointStateBadge",
+  components: { FontAwesomeIcon },
   props: {
     chargePointId: { required: true, type: Array },
     showEnergyCharged: { required: false, type: Boolean, default: true },
@@ -23,7 +24,6 @@ export default {
       mqttStore: useMqttStore(),
     };
   },
-  components: { FontAwesomeIcon },
   computed: {
     plugState() {
       var connected = false;
@@ -63,8 +63,15 @@ export default {
 
 <template>
   <i-badge size="lg">
-    <font-awesome-icon fixed-width :icon="stateIcon" :class="stateClass" />
-    <span v-if="plugState && showEnergyCharged" class="_padding-left:1">
+    <font-awesome-icon
+      fixed-width
+      :icon="stateIcon"
+      :class="stateClass"
+    />
+    <span
+      v-if="plugState && showEnergyCharged"
+      class="_padding-left:1"
+    >
       {{ mqttStore.getChargePointImportedSincePlugged(chargePointId).energy }} /
       {{ mqttStore.getChargePointImportedSincePlugged(chargePointId).range }}
     </span>

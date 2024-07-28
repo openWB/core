@@ -7,7 +7,7 @@ from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
 from modules.common.component_state import InverterState
 from modules.common.store import get_inverter_value_store
 from modules.devices.sma_sunny_boy import bat, bat_smart_energy, counter, inverter
@@ -71,11 +71,13 @@ class Device(AbstractDevice):
     def update(self) -> None:
         log.debug("Start device reading " + str(self.components))
         if self.components:
-            with self.client:
-                for component in self.components.values():
-                    # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                    with SingleComponentUpdateContext(component.fault_state):
-                        component.update()
+            with MultiComponentUpdateContext(self.components):
+                with self.client:
+                    for component in self.components.values():
+                        # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen
+                        # werden.
+                        with SingleComponentUpdateContext(component.fault_state):
+                            component.update()
         else:
             log.warning(
                 self.device_config.name +

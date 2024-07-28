@@ -7,13 +7,14 @@ import operator
 from typing import List, Tuple
 
 from control import data
+from control.chargemode import Chargemode
 from control.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
 from helpermodules import timecheck
+from helpermodules.constants import NO_ERROR
 from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
-from helpermodules.pub import Pub
 from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
@@ -32,8 +33,9 @@ class ControlRangeState(Enum):
 
 @dataclass
 class Config:
-    max_currents: List[float] = field(default_factory=currents_list_factory)
-    max_total_power: float = 0
+    max_currents: List[float] = field(default_factory=currents_list_factory, metadata={
+                                      "topic": "get/max_currents"})
+    max_total_power: float = field(default=0, metadata={"topic": "get/max_total_power"})
 
 
 def config_factory() -> Config:
@@ -42,19 +44,22 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    powers: List[float] = field(default_factory=currents_list_factory)
-    currents: List[float] = field(default_factory=currents_list_factory)
-    voltages: List[float] = field(default_factory=voltages_list_factory)
-    power_factors: List[float] = field(default_factory=currents_list_factory)
-    unbalanced_load: float = 0
-    frequency: float = 0
-    daily_exported: float = 0
-    daily_imported: float = 0
-    imported: float = 0
-    exported: float = 0
-    fault_state: int = 0
-    fault_str: str = ""
-    power: float = 0
+    powers: List[float] = field(default_factory=currents_list_factory, metadata={
+        "topic": "get/powers"})
+    currents: List[float] = field(default_factory=currents_list_factory, metadata={
+                                  "topic": "get/currents"})
+    voltages: List[float] = field(default_factory=voltages_list_factory, metadata={
+                                  "topic": "get/voltages"})
+    power_factors: List[float] = field(default_factory=currents_list_factory, metadata={
+        "topic": "get/power_factors"})
+    frequency: float = field(default=0, metadata={"topic": "get/frequency"})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported"})
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
+    imported: float = field(default=0, metadata={"topic": "get/imported"})
+    exported: float = field(default=0, metadata={"topic": "get/exported"})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
+    power: float = field(default=0, metadata={"topic": "get/power"})
 
 
 def get_factory() -> Get:
@@ -63,13 +68,12 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
-    error_counter: int = 0
-    reserved_surplus: float = 0
-    released_surplus: float = 0
+    error_counter: int = field(default=0, metadata={"topic": "set/error_counter"})
+    reserved_surplus: float = field(default=0, metadata={"topic": "set/reserved_surplus"})
+    released_surplus: float = field(default=0, metadata={"topic": "set/released_surplus"})
     raw_power_left: float = 0
     raw_currents_left: List[float] = field(default_factory=currents_list_factory)
     surplus_power_left: float = 0
-    state_str: str = ""
 
 
 def set_factory() -> Set:
@@ -121,7 +125,6 @@ class Counter:
             # auf True gesetzt werden.
             if loadmanagement_available is False:
                 data.data.cp_data[cp].data.set.loadmanagement_available = loadmanagement_available
-        Pub().pub(f"openWB/set/counter/{self.num}/set/error_counter", self.data.set.error_counter)
 
     # tested
 
@@ -183,25 +186,12 @@ class Counter:
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
 
-    def put_stats(self):
-        try:
-            if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
-                Pub().pub(f"openWB/set/counter/{self.num}/set/reserved_surplus",
-                          self.data.set.reserved_surplus)
-                Pub().pub(f"openWB/set/counter/{self.num}/set/released_surplus",
-                          self.data.set.released_surplus)
-                log.info(f'{self.data.set.reserved_surplus}W reservierte EVU-Leistung, '
-                         f'{self.data.set.released_surplus}W freigegebene EVU-Leistung')
-        except Exception:
-            log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
-
     def calc_surplus(self):
         # reservierte Leistung wird nicht berücksichtigt, weil diese noch verwendet werden kann, bis die EV
         # eingeschaltet werden. Es darf bloß nicht für zu viele zB die Einschaltverzögerung gestartet werden.
         evu_counter = data.data.counter_all_data.get_evu_counter()
         bat_surplus = data.data.bat_all_data.power_for_bat_charging()
         surplus = evu_counter.data.get.power - bat_surplus
-        log.info(f"Überschuss zur PV-geführten Ladung: {surplus}W")
         return surplus
 
     def calc_raw_surplus(self):
@@ -214,7 +204,6 @@ class Counter:
         max_power = evu_counter.data.config.max_total_power
         surplus = raw_power_left - max_power + bat_surplus + disengageable_smarthome_power
         ranged_surplus = surplus + self._control_range_offset()
-        log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
         return ranged_surplus
 
     def get_control_range_state(self, feed_in_yield: int) -> ControlRangeState:
@@ -249,11 +238,17 @@ class Counter:
         log.debug(f"Anpassen des Regelbereichs {range_offset}W")
         return range_offset
 
+    def get_usable_surplus(self, feed_in_yield: float) -> float:
+        # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
+        return (-self.calc_surplus() - self.data.set.released_surplus +
+                self.data.set.reserved_surplus - feed_in_yield)
+
     SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Einschaltverzögerung unterschritten."
     SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald in {} die Einschaltverzögerung abgelaufen ist."
     SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle nicht erreicht "
                               "wird.")
     SWITCH_ON_EXPIRED = "Einschaltschwelle für die Dauer der Einschaltverzögerung überschritten."
+    SWITCH_ON_MAX_PHASES = "Der Überschuss ist ausreichend, um direkt mit {} Phasen zu laden."
 
     def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
@@ -329,6 +324,19 @@ class Counter:
                 self.data.set.reserved_surplus -= pv_config.switch_on_threshold*control_parameter.phases
                 msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
                 control_parameter.state = ChargepointState.CHARGING_ALLOWED
+
+                if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+                    feed_in_yield = pv_config.feed_in_yield
+                else:
+                    feed_in_yield = 0
+                ev_template = chargepoint.data.set.charging_ev_data.ev_template
+                max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
+                if (data.data.general_data.get_phases_chargemode(Chargemode.PV_CHARGING.value,
+                                                                 control_parameter.submode) == 0 and
+                        chargepoint.cp_ev_support_phase_switch() and
+                        self.get_usable_surplus(feed_in_yield) > max_phases_power):
+                    control_parameter.phases = ev_template.data.max_phases
+                    msg += self.SWITCH_ON_MAX_PHASES.format(ev_template.data.max_phases)
             chargepoint.set_state_and_log(msg)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
@@ -480,8 +488,6 @@ class Counter:
         """ setzt die Daten zurück, die über mehrere Regelzyklen genutzt werden.
         """
         try:
-            Pub().pub(f"openWB/set/counter/{self.num}/set/reserved_surplus", 0)
-            Pub().pub(f"openWB/set/counter/{self.num}/set/released_surplus", 0)
             self.data.set.reserved_surplus = 0
             self.data.set.released_surplus = 0
         except Exception:

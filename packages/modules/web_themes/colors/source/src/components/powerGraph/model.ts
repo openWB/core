@@ -61,6 +61,7 @@ export interface RawDayGraphDataItem {
 export class GraphData {
 	data: GraphDataItem[] = []
 	private _graphMode = ''
+	waitForData = true
 
 	get graphMode() {
 		return this._graphMode
@@ -97,8 +98,10 @@ export function setInitializeUsageGraph(val: boolean) {
 }
 export function setGraphData(d: GraphDataItem[]) {
 	graphData.data = d
+	graphData.waitForData = false
 	// graphData.graphMode = graphData.graphMode
 }
+// LIVE GRAPH
 export const liveGraph = reactive({
 	refreshTopicPrefix: 'openWB/graph/' + 'alllivevaluesJson',
 	updateTopic: 'openWB/graph/lastlivevaluesJson',
@@ -109,10 +112,14 @@ export const liveGraph = reactive({
 	rawDataPacks: [] as RawGraphDataItem[][],
 	duration: 0,
 
-	activate() {
-		graphData.data = []
+	activate(erase?: boolean) {
+		// graphData.data = []
 		this.unsubscribeUpdates()
 		this.subscribeRefresh()
+		if (erase) {
+			graphData.data = []
+		}
+		graphData.waitForData = true
 		mqttSubscribe(this.configTopic)
 		this.initialized = false
 		this.initCounter = 0
@@ -143,10 +150,11 @@ export const liveGraph = reactive({
 		mqttUnsubscribe(this.updateTopic)
 	},
 })
+// DAY GRAPH
 export const dayGraph = reactive({
 	topic: 'openWB/log/daily/#',
 	date: new Date(),
-	activate() {
+	activate(erase?: boolean) {
 		if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
 			if (graphData.graphMode == 'today') {
 				this.date = new Date()
@@ -158,11 +166,14 @@ export const dayGraph = reactive({
 
 			this.topic = 'openWB/log/daily/' + dateString
 			mqttSubscribe(this.topic)
+			if (erase) {
+				graphData.data = []
+			}
+			graphData.waitForData = true
 			sendCommand({
 				command: 'getDailyLog',
 				data: { day: dateString },
 			})
-			graphData.data = []
 		}
 	},
 	deactivate() {
@@ -181,15 +192,20 @@ export const dayGraph = reactive({
 		return this.date
 	},
 })
+// MONTH GRAPH
 export const monthGraph = reactive({
 	topic: 'openWB/log/monthly/#',
 	month: new Date().getMonth() + 1,
 	year: new Date().getFullYear(),
-	activate() {
+	activate(erase?: boolean) {
 		const dateString =
 			this.year.toString() + this.month.toString().padStart(2, '0')
 		graphData.data = []
 		mqttSubscribe(this.topic)
+		if (erase) {
+			graphData.data = []
+		}
+		graphData.waitForData = true
 		sendCommand({
 			command: 'getMonthlyLog',
 			data: { month: dateString },
@@ -225,14 +241,19 @@ export const monthGraph = reactive({
 		return new Date(this.year, this.month)
 	},
 })
+// YEAR GRAPH
 export const yearGraph = reactive({
 	topic: 'openWB/log/yearly/#',
 	month: new Date().getMonth() + 1,
 	year: new Date().getFullYear(),
-	activate() {
+	activate(erase?: boolean) {
 		const dateString = this.year.toString()
-		graphData.data = []
+		// graphData.data = []
 		mqttSubscribe(this.topic)
+		if (erase) {
+			graphData.data = []
+		}
+		graphData.waitForData = true
 		sendCommand({
 			command: 'getYearlyLog',
 			data: { year: dateString },
@@ -255,7 +276,8 @@ export const yearGraph = reactive({
 		return new Date(this.year, this.month)
 	},
 })
-export function initGraph(reloadOnly = false) {
+// ----- initGraph -----
+export function initGraph(reloadOnly: boolean = false) {
 	if (graphData.graphMode == '') {
 		setGraphMode(globalConfig.graphPreference)
 	} else if (graphData.graphMode == 'live') {
@@ -272,31 +294,31 @@ export function initGraph(reloadOnly = false) {
 			dayGraph.deactivate()
 			monthGraph.deactivate()
 			yearGraph.deactivate()
-			liveGraph.activate()
+			liveGraph.activate(!reloadOnly)
 			break
 		case 'today':
 			liveGraph.deactivate()
 			monthGraph.deactivate()
 			yearGraph.deactivate()
-			dayGraph.activate()
+			dayGraph.activate(!reloadOnly)
 			break
 		case 'day':
 			liveGraph.deactivate()
 			monthGraph.deactivate()
 			yearGraph.deactivate()
-			dayGraph.activate()
+			dayGraph.activate(!reloadOnly)
 			break
 		case 'month':
 			liveGraph.deactivate()
 			dayGraph.deactivate()
 			yearGraph.deactivate()
-			monthGraph.activate()
+			monthGraph.activate(!reloadOnly)
 			break
 		case 'year':
 			liveGraph.deactivate()
 			dayGraph.deactivate()
 			monthGraph.deactivate()
-			yearGraph.activate()
+			yearGraph.activate(!reloadOnly)
 			break
 	}
 }

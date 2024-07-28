@@ -25,12 +25,7 @@
 				</span>
 			</div>
 		</template>
-		<div
-			v-if="graphData.data.length == 0"
-			class="d-flex justify-content-center waitsign rounded"
-		>
-			<span class="fa-solid fa-xl fa-spinner fa-spin"></span>
-		</div>
+
 		<figure v-show="graphData.data.length > 0" id="powergraph" class="p-0 m-0">
 			<svg id="powergraph" :viewBox="'0 0 ' + width + ' ' + height">
 				<!-- Draw the source graph -->
@@ -79,7 +74,8 @@
 					<PgSoc
 						v-if="
 							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today') &&
+								graphData.graphMode == 'today' ||
+								graphData.graphMode == 'live') &&
 							globalData.isBatteryConfigured
 						"
 						:width="width - margin.left - 2 * margin.right"
@@ -202,7 +198,7 @@ onMounted(() => {
 	color: var(--color-menu);
 }
 
-.datebadge {
+.dateWbBadge {
 	background-color: var(--color-menu);
 	color: var(--color-bg);
 	font-size: var(--font-medium);

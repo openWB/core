@@ -10,7 +10,7 @@
 				y="0"
 				:height="height"
 				class="ttrect"
-				:width="width / graphData.data.length"
+				:width="graphData.data.length > 0 ? width / graphData.data.length : 0"
 				opacity="1%"
 				fill="var(--color-charging)"
 			></rect>
@@ -66,7 +66,9 @@ const autozoom = computed(() => {
 			)
 			.attr(
 				'width',
-				(zoomedRange.value[1] - zoomedRange.value[0]) / props.data.length,
+				props.data.length > 0
+					? (zoomedRange.value[1] - zoomedRange.value[0]) / props.data.length
+					: 0,
 			)
 	}
 	return 'PgToolTips.vue:autozoom'

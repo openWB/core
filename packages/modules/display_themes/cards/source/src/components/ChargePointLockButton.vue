@@ -13,6 +13,7 @@ library.add(fasLock, fasLockOpen);
 
 export default {
   name: "ChargePointLockButton",
+  components: { FontAwesomeIcon },
   props: {
     chargePointId: { required: true, type: Number },
     changesLocked: { required: false, type: Boolean, default: false },
@@ -22,7 +23,6 @@ export default {
       mqttStore: useMqttStore(),
     };
   },
-  components: { FontAwesomeIcon },
   computed: {
     locked() {
       return this.mqttStore.getChargePointManualLock(this.chargePointId);
@@ -56,7 +56,11 @@ export default {
 </script>
 
 <template>
-  <i-button size="lg" :disabled="changesLocked" :outline="changesLocked">
+  <i-button
+    size="lg"
+    :disabled="changesLocked"
+    :outline="changesLocked"
+  >
     <font-awesome-icon
       fixed-width
       :icon="stateIcon"

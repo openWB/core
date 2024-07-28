@@ -31,7 +31,7 @@ jobs:
       - name: Commit and Push Changes
         run: |
           git config user.name "${{ github.actor }}"
-          git config.user.email "${{ github.actor }}@users.noreply.github.com"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
           git add packages/modules/display_themes/cards/web
           git commit -m "Build Display Theme: Cards"
           git push

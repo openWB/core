@@ -2,7 +2,8 @@ from typing import Optional
 
 
 class SambaBackupCloudConfiguration:
-    def __init__(self, smb_path: Optional[str] = None,
+    def __init__(self,
+                 smb_path: Optional[str] = "/",
                  smb_server: Optional[str] = None,
                  smb_share: Optional[str] = None,
                  smb_user: Optional[str] = None,

@@ -163,12 +163,6 @@ const usageDetails = computed(
 			(dev) => dev.configured,
 		).length
 		let usg = usageSummary
-		//if (graphData.graphMode != 'live' && graphData.graphMode != 'today') {
-		//	usg = historicSummary.items
-		//		console.log(usg)
-		//	return usg
-		//} else {
-
 		return [
 			...[usg.evuOut, usg.charging].concat(
 				cpcount > 1
@@ -180,7 +174,7 @@ const usageDetails = computed(
 					shcount > 1
 						? [...shDevices.values()].filter(
 								(row) => row.configured && row.showInGraph,
-						  )
+							)
 						: [],
 				)
 				.concat([usageSummary.batIn, usageSummary.house]),

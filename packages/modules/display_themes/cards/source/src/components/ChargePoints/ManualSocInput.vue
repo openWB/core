@@ -6,21 +6,21 @@ import { useMqttStore } from "@/stores/mqtt.js";
 
 export default {
   name: "ManualSocInput",
+  components: {
+    ExtendedNumberInput,
+    NumberPad,
+  },
   props: {
     modelValue: { required: true, type: Boolean, default: false },
     vehicleId: { required: true, type: Number, default: 0 },
   },
+  emits: ["update:modelValue"],
   data() {
     return {
       mqttStore: useMqttStore(),
       newSoc: 0,
     };
   },
-  components: {
-    ExtendedNumberInput,
-    NumberPad,
-  },
-  emits: ["update:modelValue"],
   methods: {
     enter(digit) {
       let tempSoc = this.newSoc * 10 + parseInt(digit);
@@ -52,15 +52,18 @@ export default {
 <template>
   <Teleport to="body">
     <i-modal
-      :modelValue="modelValue"
-      @update:modelValue="$emit('update:modelValue', $event)"
+      :model-value="modelValue"
       size="sm"
+      @update:model-value="$emit('update:modelValue', $event)"
     >
       <template #header>
         SoC für Fahrzeug "{{ mqttStore.getVehicleName(vehicleId) }}"
       </template>
       <i-container>
-        <i-row center class="_padding-bottom:1">
+        <i-row
+          center
+          class="_padding-bottom:1"
+        >
           <i-column>
             <extended-number-input
               v-model="newSoc"
@@ -84,10 +87,18 @@ export default {
           <i-row>
             <!-- charge point data on left side -->
             <i-column>
-              <i-button color="danger" @click="close()"> Zurück </i-button>
+              <i-button
+                color="danger"
+                @click="close()"
+              >
+                Zurück
+              </i-button>
             </i-column>
             <i-column class="_text-align:right">
-              <i-button color="success" @click="updateManualSoc()">
+              <i-button
+                color="success"
+                @click="updateManualSoc()"
+              >
                 OK
               </i-button>
             </i-column>

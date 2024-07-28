@@ -3,12 +3,12 @@ export default {
   name: "ExtendedNumberInput",
   inheritAttrs: false,
   props: {
-    modelValue: { type: Number },
-    unit: { type: String },
+    modelValue: { type: Number, required: true, default: NaN },
+    unit: { type: String, default: "" },
     min: { type: Number, default: 0 },
     max: { type: Number, default: 100 },
     step: { type: Number, default: 1 },
-    labels: { type: Array },
+    labels: { type: Array, default: undefined },
   },
   emits: ["update:modelValue"],
   data() {
@@ -108,13 +108,24 @@ export default {
 </script>
 
 <template>
-  <i-input plaintext class="_text-align:right" size="lg" v-model="label">
+  <i-input
+    v-model="label"
+    plaintext
+    class="_text-align:right"
+    size="lg"
+  >
     <template #prepend>
-      <i-button @click="decrement">-</i-button>
+      <i-button @click="decrement">
+        -
+      </i-button>
     </template>
-    <template #suffix>{{ unit }}</template>
+    <template #suffix>
+      {{ unit }}
+    </template>
     <template #append>
-      <i-button @click="increment">+</i-button>
+      <i-button @click="increment">
+        +
+      </i-button>
     </template>
   </i-input>
 </template>

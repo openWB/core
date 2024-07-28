@@ -171,7 +171,7 @@
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Preistabelle anzeigen (beta)"
+					title="Preistabelle anzeigen"
 					icon="fa-car"
 					infotext="Zeige die Strompreistabelle in einer separaten Box an"
 				>
@@ -245,7 +245,7 @@ const shortListOptions: [string, string][] = [
 </script>
 <style scoped>
 .fa-circle-check {
-	font-size: var(--font-extralarge);
+	font-size: var(--font-large);
 	background-color: var(--color-bg);
 	color: var(--color-menu);
 }

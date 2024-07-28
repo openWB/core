@@ -8,17 +8,40 @@ import {
 	calculateMonthlyAutarchy,
 } from './model'
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
+import { itemNames } from './model'
+import { chargePoints } from '../chargePointList/model'
 
 let columnValues: { [key: string]: number } = {}
 const consumerCategories = ['charging', 'house', 'batIn', 'devices']
-const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
+const nonPvCategories = [
+	'evuIn',
+	'pv',
+	'batOut',
+	'evuOut',
+	'devices',
+	'sh1',
+	'sh2',
+	'sh3',
+	'sh4',
+	'sh5',
+	'sh6',
+	'sh7',
+	'sh8',
+	'sh9',
+]
 let gridCounters: string[] = []
 
 // methods:
 // Process a new message with monthly graph data. A single message contains all data
 export function processMonthGraphMessages(topic: string, message: string) {
-	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
-	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	//const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
+	//const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	const {
+		entries: inputTable,
+		names: itemNames2,
+		totals: energyValues,
+	} = JSON.parse(message)
+	itemNames.value = new Map(Object.entries(itemNames2))
 	resetHistoricSummary()
 	gridCounters = []
 	consumerCategories.forEach((cat) => {
@@ -33,15 +56,23 @@ export function processMonthGraphMessages(topic: string, message: string) {
 	// reloadMonthGraph(topic, message)
 }
 export function processYearGraphMessages(topic: string, message: string) {
-	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
-	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	//const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
+	//const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
+	const {
+		entries: inputTable,
+		names: itemNames2,
+		totals: energyValues,
+	} = JSON.parse(message)
+	itemNames.value = new Map(Object.entries(itemNames2))
 	resetHistoricSummary()
 	gridCounters = []
 	consumerCategories.forEach((cat) => {
 		historicSummary.items[cat].energyPv = 0
 		historicSummary.items[cat].energyBat = 0
 	})
-	setGraphData(transformDatatable(inputTable))
+	if (inputTable.length > 0) {
+		setGraphData(transformDatatable(inputTable))
+	}
 	updateEnergyValues(energyValues, gridCounters)
 }
 // transform the incoming format into the format used by the graph
@@ -127,7 +158,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	Object.entries(inputRow.cp).forEach(([id, values]) => {
 		if (id != 'all') {
 			if (!historicSummary.keys().includes(id)) {
-				historicSummary.addItem(id)
+				historicSummary.addItem(id, chargePoints[+id.slice(2)].color)
 			}
 			outputRow[id] = values.energy_imported
 		} else {
@@ -158,13 +189,17 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		0,
 	)
 	// House
-	outputRow.house =
-		outputRow.pv +
-		outputRow.evuIn +
-		outputRow.batOut -
-		outputRow.evuOut -
-		outputRow.batIn -
-		outputRow.charging
+	if (inputRow.hc && inputRow.hc.all) {
+		outputRow.house = inputRow.hc.all.energy_imported // (seems this is now centrally computed) - currentItem.devices
+	} else {
+		outputRow.house =
+			outputRow.pv +
+			outputRow.evuIn +
+			outputRow.batOut -
+			outputRow.evuOut -
+			outputRow.batIn -
+			outputRow.charging
+	}
 	// Self usage
 	outputRow.selfUsage = outputRow.pv - outputRow.evuOut
 	// Autarchy
