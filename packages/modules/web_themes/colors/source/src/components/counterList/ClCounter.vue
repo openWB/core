@@ -4,7 +4,7 @@
 			<span class="countername">{{ counter.name }} </span>
 		</template>
 		<template #buttons>
-			<WbBadge v-if="props.counter.power != 0" :bgcolor="modebg" color="white">
+			<WbBadge v-if="props.counter.power != 0" :bgcolor="modebg">
 				{{ modestring }}
 			</WbBadge>
 			<WbBadge color="var(--color-bg)"> ID: {{ props.counter.id }} </WbBadge>

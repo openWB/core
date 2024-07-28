@@ -5,7 +5,7 @@
 			Ladepunkte
 		</template>
 		<template #buttons>
-			<WbBadge v-if="etData.active" color="white"
+			<WbBadge v-if="etData.active" bgcolor="var(--color-menu)"
 				>Strompreis: {{ etData.etCurrentPriceString }}</WbBadge
 			>
 		</template>

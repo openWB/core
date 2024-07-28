@@ -58,10 +58,11 @@ const barheight = computed(
 const pvBarheight = computed(() => {
 	let result = 0
 	if (props.item.energyPv > 0) {
-		result = props.height -
-				props.yScale(props.item.energyPv) -
-				props.margin.top -
-				props.margin.bottom
+		result =
+			props.height -
+			props.yScale(props.item.energyPv) -
+			props.margin.top -
+			props.margin.bottom
 	}
 	if (result > barheight.value) {
 		result = barheight.value
@@ -71,16 +72,17 @@ const pvBarheight = computed(() => {
 const batBarheight = computed(() => {
 	let result = 0
 	if (props.item.energyBat > 0) {
-		result = props.height -
-				props.yScale(props.item.energyBat) -
-				props.margin.top -
-				props.margin.bottom
+		result =
+			props.height -
+			props.yScale(props.item.energyBat) -
+			props.margin.top -
+			props.margin.bottom
 	}
 	if (result > barheight.value) {
 		result = barheight.value
 	}
 	return result
-	})
+})
 </script>
 
 <style scoped></style>
