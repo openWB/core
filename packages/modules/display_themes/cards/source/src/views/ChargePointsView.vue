@@ -424,6 +424,8 @@ export default {
           <i-button
             v-for="vehicle in vehicleList"
             :key="vehicle.id"
+            size="lg"
+            class="large-button"
             :active="
               mqttStore.getChargePointConnectedVehicleId(modalChargePointId) ==
                 vehicle.id
@@ -1052,6 +1054,12 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(36rem, 1fr));
   grid-gap: var(--spacing);
+}
+
+.large-button {
+  height: 3.5rem;
+  font-size: 1.5rem;
+  padding: 0.75rem 1.5rem;
 }
 
 :deep(.toggle .toggle-label::before) {
