@@ -4,8 +4,8 @@ from typing import Dict, Union, Optional, List
 
 from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
-from modules.devices.byd.config import BYD, BYDBatSetup, BYDConfiguration
-from modules.devices.byd.device import Device as BYDDevice
+from modules.devices.byd.byd.config import BYD, BYDBatSetup, BYDConfiguration
+from modules.devices.byd.byd.device import Device as BYDDevice
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import CounterState
