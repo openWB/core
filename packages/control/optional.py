@@ -18,6 +18,7 @@ import threading
 from typing import Dict, List
 import re
 import copy
+from control import data
 
 
 log = logging.getLogger(__name__)
@@ -25,15 +26,6 @@ log = logging.getLogger(__name__)
 # timestamp hat spezielles Format!
 now = datetime.now()
 current_time = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-@dataclass
-class OcppGet:
-    url: str = ""
-
-
-def ocpp_factory() -> OcppGet:
-    return OcppGet()
 
 
 @dataclass
@@ -89,12 +81,21 @@ def rfid_factory() -> Rfid:
 
 
 @dataclass
+class Ocpp:
+    url: str = ""
+
+
+def ocpp_factory() -> Ocpp:
+    return Ocpp()
+
+
+@dataclass
 class OptionalData:
     et: Et = field(default_factory=et_factory)
     int_display: InternalDisplay = field(default_factory=int_display_factory)
     led: Led = field(default_factory=led_factory)
     rfid: Rfid = field(default_factory=rfid_factory)
-    ocpp: OcppGet = field(default_factory=ocpp_factory)
+    ocpp: Ocpp = field(default_factory=ocpp_factory)
 
 
 class Optional:
@@ -253,7 +254,10 @@ class OCPPClient(ChargePoint):
 
     async def _start_transaction(connector_id, id_tag, meter_value_charged):
         try:
-            url = OptionalData.ocpp.url
+            try:
+                url = data.data.optional_data.data.ocpp.url
+            except Exception as e:
+                print(e)
             if len(url) > 0:
                 async with websockets.connect(
                     url,
@@ -274,7 +278,7 @@ class OCPPClient(ChargePoint):
 
     async def _transfer_values(connector_id, meter_value_charged):
         try:
-            url = OptionalData.ocpp.url
+            url = data.data.optional_data.data.ocpp.url
             if len(url) > 0:
                 async with websockets.connect(
                     url,
@@ -288,7 +292,7 @@ class OCPPClient(ChargePoint):
 
     async def _stop_transaction(meter_value_charged, transaction_id, id_tag):
         try:
-            url = OptionalData.ocpp.url
+            url = data.data.optional_data.data.ocpp.url
             if len(url) > 0:
                 async with websockets.connect(
                     url,
