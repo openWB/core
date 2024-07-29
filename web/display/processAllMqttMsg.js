@@ -35,7 +35,7 @@ function setIframeSource() {
 		var host = "";
 		var query = new URLSearchParams();
 		var destination = "";
-		if (data["openWB/general/extern"]) {
+		if (data["openWB/general/extern"] === true) {
 			// load secondary display (from secondary openWB)
 			switch (data["openWB/general/extern_display_mode"]) {
 				case "local":
@@ -48,9 +48,18 @@ function setIframeSource() {
 				default:
 					// retrieve display theme from primary
 					host = data["openWB/internal_chargepoint/global_data"]["parent_ip"];
-					// we need to know how to map local charge points to primary
-					query.append("parentChargePoint1", data["openWB/internal_chargepoint/0/data/parent_cp"]);
-					query.append("parentChargePoint2", data["openWB/internal_chargepoint/1/data/parent_cp"]);
+					const queryObject = {
+						// we need our own ip address for status information
+						localIp: data["openWB/system/ip_address"],
+						// we need to know the current branch, commit and version
+						localBranch: data["openWB/system/current_branch"],
+						localCommit: data["openWB/system/current_commit"],
+						localVersion: data["openWB/system/version"],
+						// we need to know how to map local charge points to primary
+						parentChargePoint1: data["openWB/internal_chargepoint/0/data/parent_cp"],
+						parentChargePoint2: data["openWB/internal_chargepoint/1/data/parent_cp"]
+					}
+					query.append("data", JSON.stringify(queryObject));
 					break;
 			}
 			// load display from primary or local
@@ -67,12 +76,8 @@ function setIframeSource() {
 
 			if (data["openWB/optional/int_display/only_local_charge_points"]) {
 				const searchParams = new URLSearchParams(location.search);
-
-				if (searchParams.has("parentChargePoint1")) {
-					query.append("parentChargePoint1", searchParams.get("parentChargePoint1"));
-				}
-				if (searchParams.has("parentChargePoint2")) {
-					query.append("parentChargePoint2", searchParams.get("parentChargePoint2"));
+				if (searchParams.has("data")) {
+					query.append("data", searchParams.get("data"));
 				}
 			}
 			destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/?${query.toString()}`;
