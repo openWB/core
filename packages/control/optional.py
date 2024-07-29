@@ -176,7 +176,7 @@ class Optional:
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
-    def ocpp_get_meter_values():
+    def ocpp_transaction():
         try:
             for thread in threading.enumerate():
                 if thread.name == "OCPP Client":
@@ -195,6 +195,8 @@ class Optional:
                 connector_id = SubData.cp_data[chpnt].chargepoint.num
                 try:
                     asyncio.run(
+                        OCPPClient._send_heart_beat())
+                    asyncio.run(
                         OCPPClient._transfer_values(
                             connector_id, meter_value_charged))
                 except Exception as e:
@@ -202,6 +204,13 @@ class Optional:
 
 
 class ChargePoint(cp):
+
+    async def send_heart_beat(self):
+        try:
+            await self.call(call.Heartbeat())
+        except asyncio.exceptions.TimeoutError:
+            # log.exception("Erwarteter TimeOut Heartbeat")
+            pass
 
     async def start_transaction(self, connector_id, id_tag, meter_value_charged):
         try:
@@ -289,6 +298,20 @@ class OCPPClient(ChargePoint):
                     await cp.get_meter(connector_id, meter_value_charged)
         except Exception:
             log.exception("Fehler OCPP: _transfer_values")
+
+    async def _send_heart_beat():
+        try:
+            url = data.data.optional_data.data.ocpp.url
+            if len(url) > 0:
+                async with websockets.connect(
+                    url,
+                    subprotocols=['ocpp1.6']
+                ) as ws:
+                    cp = ChargePoint('openWB', ws, 1)
+                # transfer meter values
+                    await cp.send_heart_beat()
+        except Exception:
+            log.exception("Fehler OCPP: _send_heart_beat")
 
     async def _stop_transaction(meter_value_charged, transaction_id, id_tag):
         try:

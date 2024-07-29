@@ -28,7 +28,7 @@ from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
-from control import bat, bridge, data, ev, counter, counter_all, pv, optional
+from control import bat, bridge, data, ev, counter, counter_all, pv
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
