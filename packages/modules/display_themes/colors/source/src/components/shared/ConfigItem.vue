@@ -5,6 +5,9 @@
 				v-if="props.icon"
 				class="fa-solid fa-sm m-0 p-0 me-2 item-icon"
 				:class="props.icon"
+				:style="{
+					color: props.iconcolor ? props.iconcolor : 'var(--color-charging)',
+				}"
 			/>
 			{{ title }}</span
 		>
@@ -23,6 +26,7 @@ const props = defineProps<{
 	title: string
 	infotext?: string
 	icon?: string
+	iconcolor?: string
 	fullwidth?: boolean
 }>()
 </script>

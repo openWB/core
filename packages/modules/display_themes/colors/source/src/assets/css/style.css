@@ -12,6 +12,8 @@ html {
 body {
 	color: var(--color-fg);
 	background: var(--color-bg);
+	font-family: "San Francisco", "Arial", "Liberation sans", sans-serif;
+	
 }
 
 body>.container {
@@ -318,4 +320,20 @@ option {
 
 .scaled {
 	transform: scaleX(0.9294)
+}
+
+.fa-car-battery {
+	color: var(--color-battery);
+}
+.fa-car {
+	color: var(--color-charging);
+}
+.fa-clock {
+	color: var(--color-battery);
+}
+.fa-coins {
+	color: var(--color-battery);
+}
+.fa-sliders {
+	color: var(--color-pv);
 }

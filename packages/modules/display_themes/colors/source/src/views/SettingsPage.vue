@@ -4,6 +4,7 @@
 			v-if="globalData.isBatteryConfigured"
 			title="PV-Priorität (global)"
 			icon="fa-car-battery"
+			iconcolor="var(--color-battery)"
 			infotext="Priority during PV production"
 			:fullwidth="true"
 		>
@@ -24,14 +25,23 @@
 		<ConfigItem
 			title="Strompreisbasiert laden"
 			icon="fa-coins"
+			iconcolor="var(--color-battery)"
 			infotext="Settings"
 		>
 			<SwitchInput v-model="etActive"></SwitchInput>
 		</ConfigItem>
-		<ConfigItem title="Zeitplan aktivieren" icon="fa-clock">
+		<ConfigItem
+			title="Zeitplan aktivieren"
+			icon="fa-clock"
+			iconcolor="var(--color-battery)"
+		>
 			<SwitchInput v-model="timedCharging"></SwitchInput>
 		</ConfigItem>
-		<ConfigItem title="Ladeprofil" icon="fa-sliders">
+		<ConfigItem
+			title="Ladeprofil"
+			icon="fa-sliders"
+			iconcolor="var(--color-pv)"
+		>
 			<RadioInput
 				v-if="vehicles[connectedVehicle]"
 				v-model.number="vehicles[connectedVehicle].chargeTemplateId"
