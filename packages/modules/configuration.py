@@ -186,7 +186,7 @@ def _pub_configurable_devices_components() -> None:
             vendor_defaults = importlib.import_module(
                 f'modules.devices.{path.parts[-2]}.vendor').vendor_descriptor.configuration_factory()
             vendor.append({
-                vendor_defaults.vendor
+                "vendor": vendor_defaults.vendor
             })
 
     def add_components(device: str, pattern: str) -> None:
@@ -212,7 +212,7 @@ def _pub_configurable_devices_components() -> None:
                 device = path.parts[-3]+"/"+path.parts[-2]
                 device_module_import = path.parts[-3]+"."+path.parts[-2]
                 component: List = []
-                vendor: List = []
+                vendor: str = []
                 add_components(device, "*bat*")
                 add_components(device, "*counter*")
                 add_components(device, "*inverter*")
@@ -230,7 +230,8 @@ def _pub_configurable_devices_components() -> None:
                 log.exception("Fehler im configuration-Modul")
         devices_components = sorted(devices_components, key=lambda d: d['text'].upper())
         Pub().pub("openWB/set/system/configurable/devices_components", devices_components)
-    except Exception:
+    except Exception as e:
+        print(e)
         log.exception("Fehler im configuration-Modul")
 
 
