@@ -12,6 +12,8 @@ html {
 body {
 	color: var(--color-fg);
 	background: var(--color-bg);
+	font-family: "San Francisco", "Arial", "Liberation sans", sans-serif;
+	
 }
 
 body>.container {
@@ -55,6 +57,7 @@ h3 {
 	font-size: var(--font-extralarge);
 	color: var(--color-title);
 	font-weight: bold;
+	transform: scaleX(0.9294)
 }
 h4 {
 	color: var(--color-axis);
@@ -212,7 +215,7 @@ body>.container-fluid {
 
 .wb-widget {
 	background-color: var(--color-bg);
-	border: 0.1px dotted var(--color-frame);
+	border: 0.1px solid var(--color-frame);
 	align-self: stretch;
 	width: 100%;
 	border-radius: 30px;
@@ -313,4 +316,24 @@ option {
 .ttarea .ttmessage {visibility: hidden}
 .ttarea:hover  .ttmessage {
     visibility: visible;
+}
+
+.scaled {
+	transform: scaleX(0.9294)
+}
+
+.fa-car-battery {
+	color: var(--color-battery);
+}
+.fa-car {
+	color: var(--color-charging);
+}
+.fa-clock {
+	color: var(--color-battery);
+}
+.fa-coins {
+	color: var(--color-battery);
+}
+.fa-sliders {
+	color: var(--color-pv);
 }

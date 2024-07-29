@@ -152,6 +152,9 @@ export function unlockDisplay() {
 		numberpad.toggle()
 	} else {
 		displayConfig.locked = false
+		setTimeout(() => {
+			displayConfig.locked = true
+		}, displayConfig.timeout * 1000)
 	}
 }
 

@@ -11,13 +11,13 @@ const props = defineProps<{
 }>()
 
 const batterySymbol = computed(() => {
-	if (props.soc <= 10) {
+	if (props.soc <= 12) {
 		return 'fa-battery-empty'
-	} else if (props.soc < 50) {
+	} else if (props.soc < 38) {
 		return 'fa-battery-quarter'
-	} else if (props.soc < 75) {
+	} else if (props.soc < 63) {
 		return 'fa-battery-half'
-	} else if (props.soc < 95) {
+	} else if (props.soc < 89) {
 		return 'fa-battery-three-quarters'
 	} else {
 		return 'fa-battery-full'

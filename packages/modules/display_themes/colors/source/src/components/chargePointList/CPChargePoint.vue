@@ -6,175 +6,153 @@
 				{{ props.chargepoint.name }}</span
 			>
 		</template>
-
 		<template #buttons>
-			<!-- 		<span
-				type="button"
-				class="ms-2 ps-5 pt-1"
-				:style="modePillStyle"
-				@click="configmode = !configmode"
+			<DisplayButton
+				color="var(--color-cp0)"
+				icon="fa-edit"
+				@click="openSettings"
 			>
-				<span class="fa-solid fa-lg ps-1 fa-ellipsis-vertical" />
-			</span> -->
+				Einstellungen</DisplayButton
+			>
 		</template>
-
 		<!-- Chargepoint info -->
-		<div v-if="!configmode">
-			<div class="grid12">
-				<!-- Status information -->
-				<InfoItem heading="Status:" class="grid-col-4 grid-left">
-					<span :style="{ color: statusColor }">
-						<i :class="statusIcon" />
-						{{ statusString }}
-					</span>
-				</InfoItem>
-
-				<!-- Ladung -->
-				<InfoItem heading="Geladen:" class="grid-col-4">
-					<FormatWattH :watt-h="chargepoint.dailyYield" />
-				</InfoItem>
-				<InfoItem heading="gel. Reichw.:" class="grid-col-4 grid-right">
-					{{ chargedRangeString }}
-				</InfoItem>
-
-				<InfoItem
-					v-if="props.chargepoint.power > 0"
-					heading="Leistung:"
-					class="grid-col-3 grid-left"
-				>
-					<FormatWatt :watt="props.chargepoint.power" />
-				</InfoItem>
-				<InfoItem
-					v-if="props.chargepoint.power > 0"
-					heading="Strom:"
-					class="grid-col-3"
-				>
-					{{ realChargeAmpereString }}
-				</InfoItem>
-				<InfoItem
-					v-if="props.chargepoint.power > 0"
-					heading="Phasen:"
-					class="grid-col-3"
-				>
-					{{ props.chargepoint.phasesInUse }}
-				</InfoItem>
-				<InfoItem
-					v-if="props.chargepoint.power > 0"
-					heading="Sollstrom:"
-					class="grid-col-3 grid-right"
-				>
-					<span class="targetCurrent">{{ chargeAmpereString }}</span>
-				</InfoItem>
-			</div>
+		<div class="grid12">
+			<!-- Status information -->
+			<InfoItem heading="Status:" class="grid-col-4 grid-left">
+				<span :style="{ color: statusColor }">
+					<i :class="statusIcon" />
+					{{ statusString }}
+				</span>
+			</InfoItem>
+			<!-- Ladung -->
+			<InfoItem heading="Geladen:" class="grid-col-4">
+				<FormatWattH :watt-h="chargepoint.dailyYield" />
+			</InfoItem>
+			<InfoItem heading="gel. Reichw.:" class="grid-col-4 grid-right">
+				{{ chargedRangeString }}
+			</InfoItem>
+			<!-- Leistung -->
+			<InfoItem
+				v-if="props.chargepoint.power > 0"
+				heading="Leistung:"
+				class="grid-col-3 grid-left"
+			>
+				<FormatWatt :watt="props.chargepoint.power" />
+			</InfoItem>
+			<!-- Strom -->
+			<InfoItem
+				v-if="props.chargepoint.power > 0"
+				heading="Strom:"
+				class="grid-col-3"
+			>
+				{{ realChargeAmpereString }}
+			</InfoItem>
+			<!-- Phasen -->
+			<InfoItem
+				v-if="props.chargepoint.power > 0"
+				heading="Phasen:"
+				class="grid-col-3"
+			>
+				{{ props.chargepoint.phasesInUse }}
+			</InfoItem>
+			<!-- Sollstrom -->
+			<InfoItem
+				v-if="props.chargepoint.power > 0"
+				heading="Sollstrom:"
+				class="grid-col-3 grid-right"
+			>
+				<span class="targetCurrent">{{ chargeAmpereString }}</span>
+			</InfoItem>
 		</div>
-		<div v-if="configmode" class="row m-0 mt-0 p-0">
-			<div class="col m-0 p-0">
-				<CPChargeConfigPanel
-					v-if="chargepoint != undefined"
-					:chargepoint="chargepoint"
-				/>
-			</div>
-		</div>
+
 		<!-- Car information-->
 		<template #footer>
-			<div v-if="!configmode">
-				<div class="row">
-					<div class="col">
-						<div class="d-flex justify-content-between align-items-center">
-							<h3>
-								<i class="fa-solid fa-sm fa-car me-2" />
-								{{ chargepoint.vehicleName }}
-								<span
-									v-if="chargepoint.hasPriority"
-									class="me-1 fa-solid fa-xs fa-star ps-1"
-								/>
-								<span
-									v-if="chargepoint.etActive"
-									class="me-0 fa-solid fa-xs fa-coins ps-0"
-								/>
-							</h3>
-						</div>
-					</div>
-				</div>
-				<div class="grid12">
-					<!-- Car info -->
-					<InfoItem
-						v-if="chargepoint.isSocConfigured"
-						heading="Ladestand:"
-						class="grid-col-4 grid-left"
-					>
-						<BatterySymbol :soc="soc" class="me-2" />
-					</InfoItem>
-					<InfoItem
-						v-if="chargepoint.isSocConfigured"
-						heading="Reichweite:"
-						class="grid-col-4"
-					>
-						{{
-							vehicles[props.chargepoint.connectedVehicle]
-								? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
-								: 0
-						}}
-						km
-					</InfoItem>
-					<InfoItem heading="Zeitplan:" class="grid-col-4 grid-right">
-						<span
-							v-if="chargepoint.timedCharging"
-							class="me-1 fa-solid fa-xs fa-clock ps-1"
-						/>
-						{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
-					</InfoItem>
-
-					<!-- ET Information -->
-					<InfoItem
-						v-if="etData.active"
-						heading="Preisladen:"
-						class="grid-col-4 grid-left"
-					>
-						<!-- <SwitchInput v-model="cp.etActive" /> -->
-						{{ cp.etActive ? 'Ja' : 'Nein' }}
-					</InfoItem>
-					<InfoItem
-						v-if="etData.active"
-						heading="max. Preis:"
-						class="grid-col-4"
-					>
-						<span type="button"
-							>{{
-								props.chargepoint.etActive
-									? (
-											Math.round(props.chargepoint.etMaxPrice * 10) / 10
-										).toFixed(1) + ' ct'
-									: '-'
-							}}
-						</span>
-					</InfoItem>
-					<InfoItem
-						v-if="etData.active"
-						heading="akt. Preis:"
-						class="grid-col-4 grid-right"
-					>
-						<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
-					</InfoItem>
-
-					<!-- Chargemode buttons -->
-					<RadioBarInput
-						:id="'chargemode-' + chargepoint.name"
-						v-model="chargeMode"
-						class="chargemodes mt-3 mb-3"
-						:options="
-							Object.keys(chargemodes).map((v) => {
-								return {
-									text: chargemodes[v].name,
-									value: v,
-									color: chargemodes[v].color,
-									icon: chargemodes[v].icon,
-									active: chargemodes[v].mode == chargepoint.chargeMode,
-								}
-							})
-						"
+			<h3 class="d-flex justify-content-left align-items-center">
+				<i class="fa-solid fa-sm fa-car me-3" />
+				{{ chargepoint.vehicleName }}
+				<span
+					v-if="chargepoint.hasPriority"
+					class="me-1 fa-solid fa-xs fa-star ps-1"
+				/>
+				<span
+					v-if="chargepoint.etActive"
+					class="me-0 fa-solid fa-xs fa-coins ps-0"
+				/>
+			</h3>
+			<div class="grid12">
+				<!-- Car info -->
+				<InfoItem
+					v-if="chargepoint.isSocConfigured"
+					heading="Ladestand:"
+					class="grid-col-4 grid-left"
+				>
+					<BatterySymbol :soc="soc" class="me-2" />
+				</InfoItem>
+				<InfoItem
+					v-if="chargepoint.isSocConfigured"
+					heading="Reichweite:"
+					class="grid-col-4"
+				>
+					{{
+						vehicles[props.chargepoint.connectedVehicle]
+							? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
+							: 0
+					}}
+					km
+				</InfoItem>
+				<InfoItem heading="Zeitplan:" class="grid-col-4 grid-right">
+					<span
+						v-if="chargepoint.timedCharging"
+						class="me-1 fa-solid fa-xs fa-clock ps-1"
 					/>
-				</div>
+					{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
+				</InfoItem>
+
+				<!-- ET Information -->
+				<InfoItem
+					v-if="etData.active"
+					heading="Preisladen:"
+					class="grid-col-4 grid-left"
+				>
+					<!-- <SwitchInput v-model="cp.etActive" /> -->
+					{{ cp.etActive ? 'Ja' : 'Nein' }}
+				</InfoItem>
+				<InfoItem v-if="etData.active" heading="max. Preis:" class="grid-col-4">
+					<span type="button"
+						>{{
+							props.chargepoint.etActive
+								? (Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(
+										1,
+									) + ' ct'
+								: '-'
+						}}
+					</span>
+				</InfoItem>
+				<InfoItem
+					v-if="etData.active"
+					heading="akt. Preis:"
+					class="grid-col-4 grid-right"
+				>
+					<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
+				</InfoItem>
+
+				<!-- Chargemode buttons -->
+				<RadioBarInput
+					:id="'chargemode-' + chargepoint.name"
+					v-model="chargeMode"
+					class="chargemodes mt-3 mb-3"
+					:options="
+						Object.keys(chargemodes).map((v) => {
+							return {
+								text: chargemodes[v].name,
+								value: v,
+								color: chargemodes[v].color,
+								icon: chargemodes[v].icon,
+								active: chargemodes[v].mode == chargepoint.chargeMode,
+							}
+						})
+					"
+				/>
 			</div>
 		</template>
 	</WBWidget>
@@ -182,16 +160,17 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { Modal } from 'bootstrap'
 import { displayConfig, unlockDisplay } from '@/assets/js/model'
 import { type ChargePoint, vehicles, chargePoints } from './model'
 import { chargemodes } from '@/assets/js/themeConfig'
 import WBWidget from '@/components/shared/WBWidget.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
-import CPChargeConfigPanel from './cpConfig/CPChargeConfigPanel.vue'
 import BatterySymbol from '@/components/shared/BatterySymbol.vue'
 import FormatWatt from '@/components/shared/FormatWatt.vue'
 import FormatWattH from '../shared/FormatWattH.vue'
 import RadioBarInput from '@/components/shared/RadioBarInput.vue'
+import DisplayButton from '@/components/shared/DisplayButton.vue'
 import { etData } from '../priceChart/model'
 
 const props = defineProps<{
@@ -283,6 +262,14 @@ const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return (Math.round(p * 10) / 10).toFixed(1)
 })
+function openSettings() {
+	if (displayConfig.locked) {
+		unlockDisplay()
+	} else {
+		const settingspage = new Modal('#settingspage')
+		settingspage.toggle()
+	}
+}
 </script>
 
 <style scoped>
@@ -337,5 +324,9 @@ const currentPrice = computed(() => {
 	display: grid;
 	grid-template-columns: repeat(12, auto);
 	justify-content: space-between;
+}
+
+.settingsbutton {
+	border-radius: 30%;
 }
 </style>

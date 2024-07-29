@@ -1,9 +1,9 @@
 <template>
 	<div :id="props.modalId" class="modal fade">
-		<div class="modal-dialog modal-lg modal-fullscreen-lg-down">
+		<div class="modal-dialog modal-lg modal-fullscreen-sm-down">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h3 class="modal-title">
+					<h3 class="modal-title scaled">
 						<slot name="title" />
 					</h3>
 					<button
@@ -11,18 +11,13 @@
 						class="btn-close buttonTextSize d-flex justify-content-center pt-3 pb-0"
 						data-bs-dismiss="modal"
 					>
-						<i class="fa-solid fa-lg fa-rectangle-xmark m-0 p-0" />
+						<i class="fa-solid fa-lg fa-circle-check m-0 p-0" />
 					</button>
 				</div>
-				<div class="modal-body" style="background-color: var(--color-menu)">
+				<div class="modal-body" style="background-color: var(--color-fg)">
 					<slot />
-					<button
-						class="btn btn-secondary closebutton float-end mt-3 ms-1"
-						data-bs-dismiss="modal"
-					>
-						Schließen
-					</button>
 				</div>
+				<div class="modal-footer"></div>
 			</div>
 		</div>
 	</div>
@@ -50,41 +45,22 @@ onMounted(() => {
 .modal-footer,
 .modal-header,
 .modal-body {
-	background: var(--color-bg);
+	background: var(--color-fg);
 }
 .modal-footer {
 	text-align: right;
 }
 .modal-header .btn-close {
-	color: var(--color-fg);
-	background: var(--color-bg);
+	color: var(--color-bg);
+	background: var(--color-fg);
 	border: 0px;
 }
-.closebutton {
-	background: var(--color-bg);
+.modal-title {
+	color: var(--color-bg);
 }
-/*.modal.fade .modal-dialog {
-    -webkit-transform: scale(0.1);
-    -moz-transform: scale(0.1);
-    -ms-transform: scale(0.1);
-    transform: scale(0.1);
-     top: 300px;
-    opacity: 0;
-    -webkit-transition: all 0.3s;
-    -moz-transition: all 0.3s;
-    transition: all 0.3s;
- }*/
-
-/*.modal.fade.in .modal-dialog {
-    -webkit-transform: scale(1);
-    -moz-transform: scale(1);
-    -ms-transform: scale(1);
-    transform: scale(1);
-     -webkit-transform: translate3d(0, -300px, 0);
-    transform: translate3d(0, -300px, 0);
-    opacity: 1;
- 
- }*/
+.closebutton {
+	background: var(--color-fg);
+}
 
 .modal.fade .modal-dialog {
 	transition: transform 1s ease-out;
@@ -95,5 +71,8 @@ onMounted(() => {
 	transition: transform 0.3s ease-in;
 	transform: none;
 	scale: 1;
+}
+.fa-circle-check {
+	color: var(--color-bg);
 }
 </style>
