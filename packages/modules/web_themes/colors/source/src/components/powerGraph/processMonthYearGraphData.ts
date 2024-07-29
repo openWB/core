@@ -17,6 +17,7 @@ const nonPvCategories = [
 	'evuIn',
 	'pv',
 	'batOut',
+	'batIn',
 	'evuOut',
 	'devices',
 	'sh1',
