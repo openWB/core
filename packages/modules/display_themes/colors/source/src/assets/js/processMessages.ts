@@ -202,8 +202,8 @@ function processPvConfigMessages(topic: string, message: string) {
 	const elements = topic.split('/')
 	if (elements.length > 0) {
 		switch (elements[4]) {
-			case 'bat_prio':
-				globalData.updatePvBatteryPriority(message == 'true')
+			case 'bat_mode':
+				globalData.updatePvBatteryPriority(JSON.parse(message))
 				break
 			default:
 			// console.warn('Ignored PV CONFIG msg: [' + topic + '] ' + message)
