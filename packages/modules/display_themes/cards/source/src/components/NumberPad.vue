@@ -117,8 +117,9 @@ export default {
 }
 
 .pin-button {
-  min-width: 3em;
-  min-height: 3.5em;
+  min-height: 2em;
   flex-grow: 1;
+  font-size: 200%;
+  font-weight: bold;
 }
 </style>

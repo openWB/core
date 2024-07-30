@@ -84,9 +84,13 @@ export default {
     if (uri != "") {
       console.debug("search", uri);
       let params = new URLSearchParams(uri);
-      params.forEach((value, key) => {
-        this.mqttStore.updateSetting(key, parseInt(value));
-      });
+      if (params.has("data")) {
+        let data = JSON.parse(params.get("data"));
+        Object.entries(data).forEach(([key, value]) => {
+          console.log("updateSetting", key, value);
+          this.mqttStore.updateSetting(key, value);
+        });
+      }
     }
     // subscribe our topics
     this.doSubscribe(this.mqttTopicsToSubscribe);
