@@ -65,9 +65,20 @@ class YcStatusHandler:
         if self._accounting_info_cache.starting_rfid is not None and self._accounting_info_cache.starting_rfid != "":
             self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
 
+    def end_accounting(self, update_timestamp: datetime.datetime, final_meter: float):
+        log.info(f"Finishing accounting at: {update_timestamp} with meter value '{final_meter}'")
+        self.update_accounting(update_timestamp, final_meter, False, False)
+        # empty accounting info cache and clear the control topic (not the status topic!) such that
+        # in case of reboot no old data is restored
+        self._accounting_info_cache = None
+        Pub().pub(yourcharge.yc_accounting_control_topic, "")
+
     def update_accounting(self, update_timestamp: datetime.datetime, current_meter: float, charging: bool,
                           plugged: bool) -> None:
-        self.get_accounting()  # initializes the cache field
+
+        # if we have no accounting info to update, just exit
+        if self._accounting_info_cache is None:
+            return
 
         # if we have a "corrupted" dataset, initialize it with current data
         if plugged and (self._accounting_info_cache.charge_start is None
@@ -95,12 +106,6 @@ class YcStatusHandler:
                 self._accounting_info_cache = data.data.yc_data.data.yc_control.accounting
                 if self._accounting_info_cache.currrent_time is None:
                     self._accounting_info_cache.currrent_time = f"{datetime.datetime.utcnow().isoformat()}Z"
-                # self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
-            else:
-                self._accounting_info_cache = AccountingInfo()
-                self._accounting_info_cache.currrent_time = f"{datetime.datetime.utcnow().isoformat()}Z"
-                # self._update(self._accounting_status_topic, dataclasses.asdict(self._accounting_info_cache))
-                # self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
         return self._accounting_info_cache
 
     def has_changed_rfid_scan(self) -> bool:

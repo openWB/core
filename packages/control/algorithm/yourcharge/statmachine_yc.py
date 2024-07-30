@@ -103,9 +103,10 @@ class StatemachineYc():
                 plugout = True
 
             # calculate charged-since-plugged and charged-today
-            if data.data.yc_data.data.yc_control.cp_meter_at_last_plugin is not None:
+            cp_meter_at_last_plugin = self._status_handler.get_cp_meter_at_last_plugin()
+            if cp_meter_at_last_plugin is not None:
                 self._status_handler.update_energy_charged_since_last_plugin(
-                    self._internal_cp.data.get.imported - data.data.yc_data.data.yc_control.cp_meter_at_last_plugin)
+                    self._internal_cp.data.get.imported - cp_meter_at_last_plugin)
 
             log.info(f"---> Entering with load control state {self._current_control_state.name}, last RFID data "
                      + f"{self._last_rfid_data}, valid standard socket tag {self._valid_standard_socket_tag_found}")
@@ -171,7 +172,11 @@ class StatemachineYc():
             self._status_handler.update_cp_enabled(True)
             if self._internal_cp.data.get.plug_state:
                 if self._rfiddata_for_ev_activation is not None:
-                    self._status_handler.new_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported,
+                    meter_value_to_use = self._status_handler.get_cp_meter_at_last_plugin()
+                    if meter_value_to_use is None:
+                        meter_value_to_use = self._internal_cp.data.get.imported
+                    self._status_handler.new_accounting(datetime.datetime.utcnow(),
+                                                        meter_value_to_use,
                                                         self._internal_cp.data.get.charge_state,
                                                         self._internal_cp.data.get.plug_state,
                                                         self._rfiddata_for_ev_activation.last_tag)
@@ -199,7 +204,8 @@ class StatemachineYc():
         if self._internal_cp.data.get.plug_state:
             self._wait_for_plugin_entered = None
             if self._rfiddata_for_ev_activation is not None:
-                self._status_handler.new_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported,
+                self._status_handler.new_accounting(datetime.datetime.utcnow(),
+                                                    self._status_handler.get_cp_meter_at_last_plugin(),
                                                     self._internal_cp.data.get.charge_state,
                                                     self._internal_cp.data.get.plug_state,
                                                     self._rfiddata_for_ev_activation.last_tag)
