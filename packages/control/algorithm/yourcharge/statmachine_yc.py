@@ -154,7 +154,7 @@ class StatemachineYc():
             if plugin or plugout or (now_it_is - self._last_data_update_timestamp >= self._data_update_interval):
                 self._last_data_update_timestamp = now_it_is
                 self._status_handler.update_energy_charged_today(self._internal_cp.data.get.imported)
-                if plugin or plugout or self._internal_cp.data.get.plug_state:
+                if plugin or self._internal_cp.data.get.plug_state:
                     self._status_handler.update_accounting(now_it_is, self._internal_cp.data.get.imported,
                                                            self._internal_cp.data.get.charge_state,
                                                            self._internal_cp.data.get.plug_state)
@@ -267,6 +267,7 @@ class StatemachineYc():
 
         if not self._internal_cp.data.get.plug_state:
             self._status_handler.update_cp_enabled(False)
+            self._status_handler.end_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported)
             self._set_current("Detected unplug while in EV charge", 0.0, yourcharge.LmStatus.DownByDisable)
             self._state_change("Detected unplug while in EV charge", LoadControlState.Idle)
             return
