@@ -123,6 +123,16 @@ function addLog(message) {
 function handleMessage(topic, payload) {
 	addLog(`Topic: ${topic} Payload: ${payload}`);
 	// receives all topics and calls respective function to process them
+	if (!data["openWB/system/boot_done"]) {
+		document.getElementById("boot").classList.remove("hide");
+	} else {
+		document.getElementById("boot").classList.add("hide");
+	}
+	if (data["openWB/system/update_in_progress"]) {
+		document.getElementById("update").classList.remove("hide");
+	} else {
+		document.getElementById("update").classList.add("hide");
+	}
 	if (topic.match(/^openwb\/system\//i)) { processSystemTopics(topic, payload); }
 	setIframeSource();
 }  // end handleMessage
