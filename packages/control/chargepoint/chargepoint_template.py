@@ -44,7 +44,7 @@ class CpTemplateData:
     max_current_single_phase: int = 32
     dc_max_current: float = 435
     name: str = "neues Ladepunkt-Profil"
-    rfid_enabling: bool = False
+    disable_after_unplug: bool = False
     valid_tags: List = field(default_factory=empty_list_factory)
 
 
