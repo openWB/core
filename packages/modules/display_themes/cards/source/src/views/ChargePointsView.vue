@@ -342,11 +342,15 @@ export default {
     </template>
     <i-form>
       <i-form-group>
-        <i-form-label>Lademodus</i-form-label>
-        <i-button-group block>
+        <i-button-group
+          block
+          vertical
+        >
           <i-button
             v-for="mode in filteredChargeModes"
             :key="mode.id"
+            size="lg"
+            class="large-button"
             outline
             :color="mode.class != 'dark' ? mode.class : 'light'"
             :active="
@@ -373,6 +377,8 @@ export default {
         <i-form-label>Priorität</i-form-label>
         <i-button-group block>
           <i-button
+            size="lg"
+            class="large-button"
             :color="
               mqttStore.getChargePointConnectedVehiclePriority(
                 modalChargePointId,
