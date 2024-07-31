@@ -44,7 +44,7 @@ class ChargepointRfidMixin:
         if self.data.get.rfid is not None:
             if data.data.optional_data.data.rfid.active:
                 if (self.data.set.log.imported_at_plugtime == 0 or
-                        self.data.set.log.imported_at_plugtime == self.data.get.imported):
+                        self.data.get.charge_state is False):
                     rfid = self.data.get.rfid
                     if self.data.get.rfid_timestamp is None:
                         self.data.get.rfid_timestamp = timecheck.create_timestamp()
