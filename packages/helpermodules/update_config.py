@@ -42,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 54
+    DATASTORE_VERSION = 55
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1651,3 +1651,27 @@ class UpdateConfig:
                     return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 54)
+
+    def upgrade_datastore_54(self) -> None:
+        # es gibt noch Topics von Komponenten gelöschter Geräte
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/system/device/[0-9]+/component/[0-9]+", topic) is not None:
+                device_index = get_index(topic)
+                for device_topic in self.all_received_topics.keys():
+                    if f"openWB/system/device/{device_index}/config" == device_topic:
+                        return
+                else:
+                    log.debug(f"Entferne Topic von gelöschter Komponente {topic}")
+                    return {topic: ""}
+            elif re.search("openWB/(counter|pv|bat)/[0-9]+", topic) is not None:
+                for component_topic in self.all_received_topics.keys():
+                    if re.search(f"openWB/system/device/[0-9]+/component/{get_index(topic)}",
+                                 component_topic) is not None:
+                        device_index = get_index(component_topic)
+                        if f"openWB/system/device/{device_index}/config" in self.all_received_topics.keys():
+                            return
+                else:
+                    log.debug(f"Entferne Topic von gelöschter Komponente {topic}")
+                    return {topic: ""}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 55)
