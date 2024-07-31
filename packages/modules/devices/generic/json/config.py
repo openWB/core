@@ -11,8 +11,8 @@ class Json:
     def __init__(self,
                  name: str = "Json",
                  type: List[str] = ["generic", "json"],
-                 id: int = 0,
                  group: str = "generic",
+                 id: int = 0,
                  configuration: JsonConfiguration = None) -> None:
         self.name = name
         self.type = type
