@@ -1651,3 +1651,16 @@ class UpdateConfig:
                     return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 54)
+
+
+def upgrade_datastore_54(self) -> None:
+    def upgrade(topic: str, payload) -> None:
+        if re.search("openWB/system/device/[0-9]+", topic) is not None:
+            payload = decode_payload(payload)
+            # update version and firmware of GoodWe
+            if payload.get("name") == "SolarEdge externer Wechselrichter"\
+                    and "factor" not in payload["configuration"]:
+                payload["configuration"].update({"factor": 1})
+            Pub().pub(topic, payload)
+    self._loop_all_received_topics(upgrade)
+    self.__update_topic("openWB/system/datastore_version", 55)
