@@ -52,6 +52,20 @@ class SonnenbatterieCounterSetup(ComponentSetup[SonnenbatterieCounterConfigurati
         super().__init__(name, type, id, configuration or SonnenbatterieCounterConfiguration())
 
 
+class SonnenbatterieConsumptionCounterConfiguration:
+    def __init__(self):
+        pass
+
+
+class SonnenbatterieConsumptionCounterSetup(ComponentSetup[SonnenbatterieCounterConfiguration]):
+    def __init__(self,
+                 name: str = "SonnenBatterie Verbrauchs-Zähler",
+                 type: str = "counter_consumption",
+                 id: int = 0,
+                 configuration: SonnenbatterieConsumptionCounterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or SonnenbatterieConsumptionCounterConfiguration())
+
+
 class SonnenbatterieInverterConfiguration:
     def __init__(self):
         pass
