@@ -205,11 +205,20 @@ const realChargeAmpereString = computed(() => {
 	)
 })
 const chargedRangeString = computed(() => {
-	return (
-		Math.round(props.chargepoint.rangeCharged).toString() +
-		' ' +
-		props.chargepoint.rangeUnit
-	)
+	const rangeSincePlugged = props.chargepoint.rangeCharged
+	const energySincePlugged = props.chargepoint.chargedSincePlugged
+	const energyToday = props.chargepoint.dailyYield
+	if (energySincePlugged > 0) {
+		return (
+			Math.round(
+				(rangeSincePlugged / energySincePlugged) * energyToday,
+			).toString() +
+			' ' +
+			props.chargepoint.rangeUnit
+		)
+	} else {
+		return '0 km'
+	}
 })
 const statusString = computed(() => {
 	if (props.chargepoint.isLocked) {
