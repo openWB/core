@@ -72,11 +72,11 @@
 				{{ chargepoint.vehicleName }}
 				<span
 					v-if="chargepoint.hasPriority"
-					class="me-1 fa-solid fa-xs fa-star ps-1"
+					class="ms-2 me-0 fa-solid fa-xs fa-star ps-1"
 				/>
 				<span
 					v-if="chargepoint.etActive"
-					class="me-0 fa-solid fa-xs fa-coins ps-0"
+					class="ms-2 me-0 fa-solid fa-xs fa-coins ps-0"
 				/>
 			</h3>
 			<div class="grid12">
