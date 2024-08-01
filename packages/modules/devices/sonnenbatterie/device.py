@@ -8,16 +8,17 @@ from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.sonnenbatterie import bat, counter, inverter
+from modules.devices.sonnenbatterie import bat, counter, inverter, counter_consumption
 from modules.devices.sonnenbatterie.config import (SonnenBatterie, SonnenbatterieBatSetup, SonnenbatterieCounterSetup,
-                                                   SonnenbatterieInverterSetup)
+                                                   SonnenbatterieInverterSetup, SonnenbatterieConsumptionCounterSetup)
 log = logging.getLogger(__name__)
 
 
 sonnenbatterie_component_classes = Union[
     bat.SonnenbatterieBat,
     counter.SonnenbatterieCounter,
-    inverter.SonnenbatterieInverter
+    inverter.SonnenbatterieInverter,
+    counter_consumption.SonnenbatterieConsumptionCounter
 ]
 
 
@@ -25,7 +26,8 @@ class Device(AbstractDevice):
     COMPONENT_TYPE_TO_CLASS = {
         "bat": bat.SonnenbatterieBat,
         "counter": counter.SonnenbatterieCounter,
-        "inverter": inverter.SonnenbatterieInverter
+        "inverter": inverter.SonnenbatterieInverter,
+        "counter_consumption": counter_consumption.SonnenbatterieConsumptionCounter
     }
 
     def __init__(self, device_config: Union[Dict, SonnenBatterie]) -> None:
@@ -38,7 +40,8 @@ class Device(AbstractDevice):
     def add_component(self, component_config: Union[Dict,
                                                     SonnenbatterieBatSetup,
                                                     SonnenbatterieCounterSetup,
-                                                    SonnenbatterieInverterSetup]) -> None:
+                                                    SonnenbatterieInverterSetup,
+                                                    SonnenbatterieConsumptionCounterSetup]) -> None:
         if isinstance(component_config, Dict):
             component_type = component_config["type"]
         else:
@@ -75,7 +78,8 @@ class Device(AbstractDevice):
 COMPONENT_TYPE_TO_MODULE = {
     "bat": bat,
     "counter": counter,
-    "inverter": inverter
+    "inverter": inverter,
+    "counter_consumption": counter_consumption
 }
 
 
