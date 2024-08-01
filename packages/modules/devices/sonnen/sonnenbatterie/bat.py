@@ -20,10 +20,12 @@ class SonnenbatterieBat(AbstractBat):
                  device_id: int,
                  device_address: str,
                  device_variant: int,
+                 api_v2_token: str,
                  component_config: Union[Dict, SonnenbatterieBatSetup]) -> None:
         self.__device_id = device_id
         self.__device_address = device_address
         self.__device_variant = device_variant
+        self.__api_v2_token = api_v2_token
         self.component_config = dataclass_from_dict(SonnenbatterieBatSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
@@ -47,7 +49,9 @@ class SonnenbatterieBat(AbstractBat):
 
     def __read_variant_1(self, api: str = "v1"):
         return req.get_http_session().get(
-            "http://" + self.__device_address + "/api/" + api + "/status", timeout=5
+            "http://" + self.__device_address + "/api/" + api + "/status",
+            timeout=5,
+            headers={"Auth-Token": self.__api_v2_token} if api == "v2" else None
         ).json()
 
     def __update_variant_1(self, api: str = "v1") -> BatState:
