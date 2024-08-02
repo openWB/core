@@ -13,12 +13,11 @@ class SolarWorldConfiguration:
 class SolarWorld:
     def __init__(self,
                  name: str = "SolarWorld",
-                 type: List[str] = ["solar_world", "solar_world"],
+                 type: str = "solar_world",
                  id: int = 0,
                  configuration: SolarWorldConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SolarWorldConfiguration()
 

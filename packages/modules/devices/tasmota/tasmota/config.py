@@ -11,12 +11,11 @@ class TasmotaConfiguration:
 class Tasmota:
     def __init__(self,
                  name: str = "Tasmota",
-                 type: List[str] = ["tasmota", "tasmota"],
+                 type: str = "tasmota",
                  id: int = 0,
                  configuration: TasmotaConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or TasmotaConfiguration()
 

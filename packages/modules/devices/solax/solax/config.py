@@ -13,12 +13,11 @@ class SolaxConfiguration:
 class Solax:
     def __init__(self,
                  name: str = "Solax",
-                 type: List[str] = ["solax", "solax"],
+                 type: str = "solax",
                  id: int = 0,
                  configuration: SolaxConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SolaxConfiguration()
 

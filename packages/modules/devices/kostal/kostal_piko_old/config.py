@@ -15,12 +15,11 @@ class KostalPikoOldConfiguration:
 class KostalPikoOld:
     def __init__(self,
                  name: str = "Kostal Piko (alte Generation)",
-                 type: List[str] = ["kostal", "kostal_piko_old"],
+                 type: str = "kostal_piko_old",
                  id: int = 0,
                  configuration: KostalPikoOldConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or KostalPikoOldConfiguration()
 

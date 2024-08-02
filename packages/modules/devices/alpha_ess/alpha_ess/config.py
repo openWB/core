@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 
@@ -18,12 +18,11 @@ class AlphaEssConfiguration:
 class AlphaEss:
     def __init__(self,
                  name: str = "Alpha ESS",
-                 type: List[str] = ["alpha_ess", "alpha_ess"],
+                 type: str = "alpha_ess",
                  id: int = 0,
                  configuration: AlphaEssConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or AlphaEssConfiguration()
 

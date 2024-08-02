@@ -7,12 +7,12 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.openWB.openwb_bat_kit.bat import BatKit
-from modules.devices.openWB.openwb_evu_kit import bat
-from modules.devices.openWB.openwb_evu_kit import counter
-from modules.devices.openWB.openwb_evu_kit import inverter
-from modules.devices.openWB.openwb_evu_kit.config import EvuKit, EvuKitBatSetup, EvuKitCounterSetup, EvuKitInverterSetup
-from modules.devices.openWB.openwb_pv_kit.inverter import PvKit
+from modules.devices.openwb.openwb_bat_kit.bat import BatKit
+from modules.devices.openwb.openwb_evu_kit import bat
+from modules.devices.openwb.openwb_evu_kit import counter
+from modules.devices.openwb.openwb_evu_kit import inverter
+from modules.devices.openwb.openwb_evu_kit.config import EvuKit, EvuKitBatSetup, EvuKitCounterSetup, EvuKitInverterSetup
+from modules.devices.openwb.openwb_pv_kit.inverter import PvKit
 
 log = logging.getLogger(__name__)
 

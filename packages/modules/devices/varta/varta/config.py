@@ -15,12 +15,11 @@ class VartaConfiguration:
 class Varta:
     def __init__(self,
                  name: str = "Varta",
-                 type: List[str] = ["varta", "varta"],
+                 type: str = "varta",
                  id: int = 0,
                  configuration: VartaConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or VartaConfiguration()
 

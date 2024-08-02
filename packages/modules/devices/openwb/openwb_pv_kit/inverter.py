@@ -3,10 +3,10 @@ from typing import Union
 
 from modules.common import modbus
 from modules.common.component_type import ComponentDescriptor
-from modules.devices.openWB.openwb_evu_kit.config import EvuKitInverterSetup
-from modules.devices.openWB.openwb_flex.config import convert_to_flex_setup
-from modules.devices.openWB.openwb_flex.inverter import PvKitFlex
-from modules.devices.openWB.openwb_pv_kit.config import PvKitInverterSetup
+from modules.devices.openwb.openwb_evu_kit.config import EvuKitInverterSetup
+from modules.devices.openwb.openwb_flex.config import convert_to_flex_setup
+from modules.devices.openwb.openwb_flex.inverter import PvKitFlex
+from modules.devices.openwb.openwb_pv_kit.config import PvKitInverterSetup
 
 
 class PvKit(PvKitFlex):

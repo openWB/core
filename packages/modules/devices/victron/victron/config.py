@@ -12,12 +12,11 @@ class VictronConfiguration:
 class Victron:
     def __init__(self,
                  name: str = "Victron",
-                 type: List[str] = ["victron", "victron"],
+                 type: str = "victron",
                  id: int = 0,
                  configuration: VictronConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or VictronConfiguration()
 

@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 
@@ -12,12 +12,11 @@ class FemsConfiguration:
 class Fems:
     def __init__(self,
                  name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control",
-                 type: List[str] = ["fems", "fems"],
+                 type: str = "fems",
                  id: int = 0,
                  configuration: FemsConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or FemsConfiguration()
 

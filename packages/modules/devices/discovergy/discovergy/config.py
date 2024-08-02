@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 
@@ -12,12 +12,11 @@ class DiscovergyConfiguration:
 class Discovergy:
     def __init__(self,
                  name: str = "Discovergy",
-                 type: List[str] = ["discovergy", "discovergy"],
+                 type: str = "discovergy",
                  id: int = 0,
                  configuration: DiscovergyConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or DiscovergyConfiguration()
 

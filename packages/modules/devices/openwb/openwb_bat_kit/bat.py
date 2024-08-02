@@ -3,10 +3,10 @@ from typing import Union
 
 from modules.common import modbus
 from modules.common.component_type import ComponentDescriptor
-from modules.devices.openWB.openwb_bat_kit.config import BatKitBatSetup
-from modules.devices.openWB.openwb_evu_kit.config import EvuKitBatSetup
-from modules.devices.openWB.openwb_flex.bat import BatKitFlex
-from modules.devices.openWB.openwb_flex.config import convert_to_flex_setup
+from modules.devices.openwb.openwb_bat_kit.config import BatKitBatSetup
+from modules.devices.openwb.openwb_evu_kit.config import EvuKitBatSetup
+from modules.devices.openwb.openwb_flex.bat import BatKitFlex
+from modules.devices.openwb.openwb_flex.config import convert_to_flex_setup
 
 
 class BatKit(BatKitFlex):

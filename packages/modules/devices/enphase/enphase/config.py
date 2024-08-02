@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, List
+from typing import Optional
 from modules.common.component_setup import ComponentSetup
 
 
@@ -26,12 +26,11 @@ class EnphaseConfiguration:
 class Enphase:
     def __init__(self,
                  name: str = "Enphase",
-                 type: List[str] = ["enphase", "enphase"],
+                 type: str = "enphase",
                  id: int = 0,
                  configuration: EnphaseConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or EnphaseConfiguration()
 

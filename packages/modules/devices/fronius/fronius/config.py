@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from enum import Enum
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 
@@ -32,12 +32,11 @@ class FroniusConfiguration:
 class Fronius:
     def __init__(self,
                  name: str = "Fronius",
-                 type: List[str] = ["fronius", "fronius"],
+                 type: str = "fronius",
                  id: int = 0,
                  configuration: FroniusConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or FroniusConfiguration()
 

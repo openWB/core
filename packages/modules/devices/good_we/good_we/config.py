@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 from modules.devices.good_we.good_we.version import GoodWeVersion
@@ -20,12 +20,11 @@ class GoodWeConfiguration:
 class GoodWe:
     def __init__(self,
                  name: str = "GoodWe ET-Serie",
-                 type: List[str] = ["good_we", "good_we"],
+                 type: str = "good_we",
                  id: int = 0,
                  configuration: GoodWeConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or GoodWeConfiguration()
 

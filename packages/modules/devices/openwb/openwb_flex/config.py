@@ -1,9 +1,9 @@
-from typing import Optional, Union, overload, List
+from typing import Optional, Union, overload
 
 from modules.common.component_setup import ComponentSetup
-from modules.devices.openWB.openwb_bat_kit.config import BatKitBatSetup
-from modules.devices.openWB.openwb_evu_kit.config import EvuKitBatSetup, EvuKitCounterSetup, EvuKitInverterSetup
-from modules.devices.openWB.openwb_pv_kit.config import PvKitInverterSetup
+from modules.devices.openwb.openwb_bat_kit.config import BatKitBatSetup
+from modules.devices.openwb.openwb_evu_kit.config import EvuKitBatSetup, EvuKitCounterSetup, EvuKitInverterSetup
+from modules.devices.openwb.openwb_pv_kit.config import PvKitInverterSetup
 
 
 class FlexConfiguration:
@@ -15,12 +15,11 @@ class FlexConfiguration:
 class Flex:
     def __init__(self,
                  name: str = "openWB-Kit flex",
-                 type: List[str] = ["openWB", "openwb_flex"],
+                 type: str = "openwb_flex",
                  id: int = 0,
                  configuration: FlexConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "openWB"
         self.id = id
         self.configuration = configuration or FlexConfiguration()
 

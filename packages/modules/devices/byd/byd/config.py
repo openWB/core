@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 
@@ -16,12 +16,11 @@ class BYDConfiguration:
 class BYD:
     def __init__(self,
                  name: str = "BYD",
-                 type: List[str] = ["byd", "byd"],
+                 type: str = "byd",
                  id: int = 0,
                  configuration: BYDConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or BYDConfiguration()
 

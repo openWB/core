@@ -13,12 +13,11 @@ class SolaredgeConfiguration:
 class Solaredge:
     def __init__(self,
                  name: str = "SolarEdge",
-                 type: List[str] = ["solaredge", "solaredge"],
+                 type: str = "solaredge",
                  id: int = 0,
                  configuration:  SolaredgeConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SolaredgeConfiguration()
 

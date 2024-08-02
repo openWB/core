@@ -1,6 +1,5 @@
 from modules.common.component_setup import ComponentSetup
 from helpermodules.auto_str import auto_str
-from typing import List
 
 
 @auto_str
@@ -15,12 +14,11 @@ class E3dcConfiguration:
 class E3dc:
     def __init__(self,
                  name: str = "E3DC",
-                 type: List[str] = ["e3dc", "e3dc"],
+                 type: str = "e3dc",
                  id: int = 0,
                  configuration: E3dcConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or E3dcConfiguration()
 

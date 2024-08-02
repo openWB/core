@@ -6,8 +6,8 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.openWB.openwb_pv_kit import inverter
-from modules.devices.openWB.openwb_pv_kit.config import PvKit, PvKitInverterSetup
+from modules.devices.openwb.openwb_pv_kit import inverter
+from modules.devices.openwb.openwb_pv_kit.config import PvKit, PvKitInverterSetup
 
 log = logging.getLogger(__name__)
 

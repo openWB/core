@@ -11,12 +11,11 @@ class KostalPikoConfiguration:
 class KostalPiko:
     def __init__(self,
                  name: str = "Kostal Piko",
-                 type: List[str] = ["kostal", "kostal_piko"],
+                 type: str = "kostal_piko",
                  id: int = 0,
                  configuration: KostalPikoConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or KostalPikoConfiguration()
 

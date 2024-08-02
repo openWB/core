@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import Optional, List
+from typing import Optional
 from helpermodules.auto_str import auto_str
 from modules.devices.generic.json.config import Json, JsonConfiguration, JsonInverterConfiguration, JsonInverterSetup
 
@@ -14,11 +14,10 @@ class OpenDTUConfiguration(JsonConfiguration):
 class OpenDTU(Json):
     def __init__(self,
                  name: str = "Hoymiles über openDTU",
-                 type: List[str] = ["opendtu", "opendtu"],
-                 group: str = "other",
+                 type: str = "opendtu",
                  id: int = 0,
                  configuration: OpenDTUConfiguration = None) -> None:
-        super().__init__(name, type, group, id, configuration)
+        super().__init__(name, type, id, configuration)
 
 
 @auto_str

@@ -13,12 +13,11 @@ class VZLoggerConfiguration:
 class VZLogger:
     def __init__(self,
                  name: str = "VZLogger",
-                 type: List[str] = ["vzlogger", "vzlogger"],
+                 type: str = "vzlogger",
                  id: int = 0,
                  configuration: VZLoggerConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or VZLoggerConfiguration()
 

@@ -13,12 +13,11 @@ class SmaSunnyBoyConfiguration:
 class SmaSunnyBoy:
     def __init__(self,
                  name: str = "SMA Sunny Boy/Tripower",
-                 type: List[str] = ["sma", "sma_sunny_boy"],
+                 type: str = "sma_sunny_boy",
                  id: int = 0,
                  configuration: SmaSunnyBoyConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SmaSunnyBoyConfiguration()
 

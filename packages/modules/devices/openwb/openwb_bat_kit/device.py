@@ -6,8 +6,8 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
-from modules.devices.openWB.openwb_bat_kit import bat
-from modules.devices.openWB.openwb_bat_kit.config import BatKit, BatKitBatSetup
+from modules.devices.openwb.openwb_bat_kit import bat
+from modules.devices.openwb.openwb_bat_kit.config import BatKit, BatKitBatSetup
 
 log = logging.getLogger(__name__)
 

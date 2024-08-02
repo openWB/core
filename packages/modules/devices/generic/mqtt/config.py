@@ -1,6 +1,4 @@
-from typing import List
-
-
+#!/usr/bin/env python3
 class MqttConfiguration:
     def __init__(self):
         pass
@@ -9,13 +7,11 @@ class MqttConfiguration:
 class Mqtt:
     def __init__(self,
                  name: str = "MQTT",
-                 type: List[str] = ["generic", "mqtt"],
-                 group: str = "generic",
+                 type: str = "mqtt",
                  id: int = 0,
                  configuration: MqttConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
         self.id = id
         self.configuration = configuration or MqttConfiguration()
 

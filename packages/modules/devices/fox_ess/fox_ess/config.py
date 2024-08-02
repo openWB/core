@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 from helpermodules.auto_str import auto_str
 
 from modules.common.component_setup import ComponentSetup
@@ -15,12 +15,11 @@ class FoxEssConfiguration:
 class FoxEss:
     def __init__(self,
                  name: str = "FoxESS",
-                 type: List[str] = ["fox_ess", "fox_ess"],
+                 type: str = "fox_ess",
                  id: int = 0,
                  configuration: FoxEssConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or FoxEssConfiguration()
 

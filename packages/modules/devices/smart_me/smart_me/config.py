@@ -12,12 +12,11 @@ class SmartMeConfiguration:
 class SmartMe:
     def __init__(self,
                  name: str = "smart-me",
-                 type: List[str] = ["smart_me", "smart_me"],
+                 type: str = "smart_me",
                  id: int = 0,
                  configuration: SmartMeConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SmartMeConfiguration()
 

@@ -13,12 +13,11 @@ class PowerdogConfiguration:
 class Powerdog:
     def __init__(self,
                  name: str = "Powerdog",
-                 type: List[str] = ["powerdog", "powerdog"],
+                 type: str = "powerdog",
                  id: int = 0,
                  configuration: PowerdogConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or PowerdogConfiguration()
 

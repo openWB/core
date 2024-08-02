@@ -13,12 +13,11 @@ class TeslaConfiguration:
 class Tesla:
     def __init__(self,
                  name: str = "Tesla",
-                 type: List[str] = ["tesla", "tesla"],
+                 type: str = "tesla",
                  id: int = 0,
                  configuration: TeslaConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or TeslaConfiguration()
 

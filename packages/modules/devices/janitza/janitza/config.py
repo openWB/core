@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 
@@ -13,12 +13,11 @@ class JanitzaConfiguration:
 class Janitza:
     def __init__(self,
                  name: str = "Janitza",
-                 type: List[str] = ["janitza", "janitza"],
+                 type: str = "janitza",
                  id: int = 0,
                  configuration: JanitzaConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or JanitzaConfiguration()
 
