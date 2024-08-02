@@ -12,12 +12,11 @@ class SunwaysConfiguration:
 class Sunways:
     def __init__(self,
                  name: str = "Sunways",
-                 type: List[str] = ["sunways", "sunways"],
+                 type: str = "sunways",
                  id: int = 0,
                  configuration: SunwaysConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SunwaysConfiguration()
 

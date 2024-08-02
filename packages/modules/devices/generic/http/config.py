@@ -1,6 +1,5 @@
 from helpermodules.auto_str import auto_str
 from modules.common.component_setup import ComponentSetup
-from typing import List
 
 
 @auto_str
@@ -13,13 +12,11 @@ class HTTPConfiguration:
 class HTTP:
     def __init__(self,
                  name: str = "HTTP",
-                 type: List[str] = ["generic", "http"],
-                 group: str = "generic",
+                 type: str = "http",
                  id: int = 0,
                  configuration: HTTPConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
         self.id = id
         self.configuration = configuration or HTTPConfiguration()
 

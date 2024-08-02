@@ -10,12 +10,11 @@ class SpeedwireComponentConfiguration:
 class Speedwire:
     def __init__(self,
                  name: str = "SMA Sunny Home Manager 2.0, Energy Meter",
-                 type: List[str] = ["sma", "sma_shm"],
+                 type: str = "sma_shm",
                  id: int = 0,
                  configuration: SpeedwireComponentConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SpeedwireComponentConfiguration()
 

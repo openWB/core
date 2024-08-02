@@ -13,12 +13,11 @@ class SaxpowerConfiguration:
 class Saxpower:
     def __init__(self,
                  name: str = "Saxpower",
-                 type: List[str] = ["saxpower", "saxpower"],
+                 type: str = "saxpower",
                  id: int = 0,
                  configuration: SaxpowerConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SaxpowerConfiguration()
 

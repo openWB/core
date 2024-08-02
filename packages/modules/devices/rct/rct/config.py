@@ -13,12 +13,11 @@ class RctConfiguration:
 class Rct:
     def __init__(self,
                  name: str = "RCT",
-                 type: List[str] = ["rct", "rct"],
+                 type: str = "rct",
                  id: int = 0,
                  configuration: RctConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or RctConfiguration()
 

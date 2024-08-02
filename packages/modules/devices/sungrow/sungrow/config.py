@@ -19,12 +19,11 @@ class SungrowConfiguration:
 class Sungrow:
     def __init__(self,
                  name: str = "Sungrow",
-                 type: List[str] = ["sungrow", "sungrow"],
+                 type: str = "sungrow",
                  id: int = 0,
                  configuration: SungrowConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SungrowConfiguration()
 

@@ -8,8 +8,8 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
-from modules.devices.openWB.openwb_flex.config import ConsumptionCounterFlexSetup
-from modules.devices.openWB.openwb_flex.versions import consumption_counter_factory
+from modules.devices.openwb.openwb_flex.config import ConsumptionCounterFlexSetup
+from modules.devices.openwb.openwb_flex.versions import consumption_counter_factory
 
 
 class ConsumptionCounterFlex:

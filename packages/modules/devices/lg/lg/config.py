@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 
@@ -12,12 +12,11 @@ class LgConfiguration:
 class LG:
     def __init__(self,
                  name: str = "LG ESS V1.0",
-                 type: List[str] = ["lg", "lg"],
+                 type: str = "lg",
                  id: int = 0,
                  configuration: LgConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or LgConfiguration()
 

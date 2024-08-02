@@ -13,12 +13,11 @@ class SiemensSentronConfiguration:
 class SiemensSentron:
     def __init__(self,
                  name: str = "Siemens Sentron",
-                 type: List[str] = ["siemens", "siemens_sentron"],
+                 type: str = "siemens_sentron",
                  id: int = 0,
                  configuration: SiemensSentronConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SiemensSentronConfiguration()
 

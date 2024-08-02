@@ -14,12 +14,11 @@ class ShellyConfiguration:
 class Shelly:
     def __init__(self,
                  name: str = "Shelly",
-                 type: List[str] = ["shelly", "shelly"],
+                 type: str = "shelly",
                  id: int = 0,
                  configuration: ShellyConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or ShellyConfiguration()
 

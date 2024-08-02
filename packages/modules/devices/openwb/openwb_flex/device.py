@@ -6,15 +6,15 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.openWB.openwb_flex.bat import BatKitFlex
-from modules.devices.openWB.openwb_flex.config import (BatKitFlexSetup,
+from modules.devices.openwb.openwb_flex.bat import BatKitFlex
+from modules.devices.openwb.openwb_flex.config import (BatKitFlexSetup,
                                                        ConsumptionCounterFlexSetup,
                                                        EvuKitFlexSetup,
                                                        Flex,
                                                        PvKitFlexSetup)
-from modules.devices.openWB.openwb_flex.consumption_counter import ConsumptionCounterFlex
-from modules.devices.openWB.openwb_flex.counter import EvuKitFlex
-from modules.devices.openWB.openwb_flex.inverter import PvKitFlex
+from modules.devices.openwb.openwb_flex.consumption_counter import ConsumptionCounterFlex
+from modules.devices.openwb.openwb_flex.counter import EvuKitFlex
+from modules.devices.openwb.openwb_flex.inverter import PvKitFlex
 
 log = logging.getLogger(__name__)
 

@@ -11,12 +11,11 @@ class SmaWWebboxConfiguration:
 class SmaWebbox:
     def __init__(self,
                  name: str = "SMA Webbox",
-                 type: List[str] = ["sma", "sma_webbox"],
+                 type: str = "sma_webbox",
                  id: int = 0,
                  configuration: SmaWWebboxConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SmaWWebboxConfiguration()
 

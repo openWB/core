@@ -11,12 +11,11 @@ class SmartfoxConfiguration:
 class Smartfox:
     def __init__(self,
                  name: str = "Smartfox",
-                 type: List[str] = ["smartfox", "smartfox"],
+                 type: str = "smartfox",
                  id: int = 0,
                  configuration: SmartfoxConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SmartfoxConfiguration()
 

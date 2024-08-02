@@ -9,8 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
-from modules.devices.openWB.openwb_flex.config import PvKitFlexSetup
-from modules.devices.openWB.openwb_flex.versions import kit_inverter_version_factory
+from modules.devices.openwb.openwb_flex.config import PvKitFlexSetup
+from modules.devices.openwb.openwb_flex.versions import kit_inverter_version_factory
 
 
 class PvKitFlex:

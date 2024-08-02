@@ -12,12 +12,11 @@ class SolarWattConfiguration:
 class SolarWatt:
     def __init__(self,
                  name: str = "Solarwatt/My Reserve",
-                 type: List[str] = ["solar_watt", "solar_watt"],
+                 type: str = "solar_watt",
                  id: int = 0,
                  configuration: SolarWattConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or SolarWattConfiguration()
 

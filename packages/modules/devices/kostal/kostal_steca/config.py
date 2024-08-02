@@ -13,12 +13,11 @@ class KostalStecaConfiguration:
 class KostalSteca:
     def __init__(self,
                  name: str = "Kostal Piko MP oder Steca Grid Coolcept",
-                 type: List[str] = ["kostal", "kostal_steca"],
+                 type: str = "kostal_steca",
                  id: int = 0,
                  configuration: KostalStecaConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or KostalStecaConfiguration()
 

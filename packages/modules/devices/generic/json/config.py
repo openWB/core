@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 from modules.common.component_setup import ComponentSetup
 
 
@@ -10,13 +10,11 @@ class JsonConfiguration:
 class Json:
     def __init__(self,
                  name: str = "Json",
-                 type: List[str] = ["generic", "json"],
-                 group: str = "generic",
+                 type: str = "json",
                  id: int = 0,
                  configuration: JsonConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = group
         self.id = id
         self.configuration = configuration or JsonConfiguration()
 

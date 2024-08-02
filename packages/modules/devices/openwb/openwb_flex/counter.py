@@ -11,8 +11,8 @@ from modules.common.mpm3pm import Mpm3pm
 from modules.common.b23 import B23
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
-from modules.devices.openWB.openwb_flex.config import EvuKitFlexSetup
-from modules.devices.openWB.openwb_flex.versions import kit_counter_version_factory
+from modules.devices.openwb.openwb_flex.config import EvuKitFlexSetup
+from modules.devices.openwb.openwb_flex.versions import kit_counter_version_factory
 
 
 class EvuKitFlex:

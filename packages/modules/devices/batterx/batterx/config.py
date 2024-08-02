@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 
@@ -11,12 +11,11 @@ class BatterXConfiguration:
 class BatterX:
     def __init__(self,
                  name: str = "BatterX",
-                 type: List[str] = ["batterx", "batterx"],
+                 type: str = "batterx",
                  id: int = 0,
                  configuration: BatterXConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.group = "other"
         self.id = id
         self.configuration = configuration or BatterXConfiguration()
 
