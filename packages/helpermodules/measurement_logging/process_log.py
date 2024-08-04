@@ -367,8 +367,8 @@ def analyse_percentage(entry):
         bat_exported = entry["bat"]["all"]["energy_exported"] if "all" in entry["bat"].keys() else 0
         cp_exported = entry["cp"]["all"]["energy_exported"] if "all" in entry["cp"].keys() else 0
         pv = entry["pv"]["all"]["energy_exported"] if "all" in entry["pv"].keys() else 0
-        grid_imported = sum(for counter["energy_imported"] in entry["counter"].values() if counter.get("grid"))
-        grid_exported = sum(for counter["energy_exported"] in entry["counter"].values() if counter.get("grid"))
+        grid_imported = sum(counter["energy_imported"] for counter in entry["counter"].values() if counter.get("grid"))
+        grid_exported = sum(counter["energy_exported"] for counter in entry["counter"].values() if counter.get("grid"))
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
         try:
             if grid_exported > pv:
