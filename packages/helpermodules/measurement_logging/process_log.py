@@ -367,13 +367,9 @@ def analyse_percentage(entry):
         bat_exported = entry["bat"]["all"]["energy_exported"] if "all" in entry["bat"].keys() else 0
         cp_exported = entry["cp"]["all"]["energy_exported"] if "all" in entry["cp"].keys() else 0
         pv = entry["pv"]["all"]["energy_exported"] if "all" in entry["pv"].keys() else 0
-        for counter in entry["counter"].values():
-            if counter.get("grid") is None:
-                return
-            # ToDo: add "grid" to old data in update_config.py
-            if counter["grid"]:
-                grid_imported = counter["energy_imported"]
-                grid_exported = counter["energy_exported"]
+        grid_imported = entry["counter"]["grid"]["energy_imported"] if "grid" in entry["counter"].keys() else 0
+        grid_exported = entry["counter"]["grid"]["energy_exported"] if "grid" in entry["counter"].keys() else 0
+        
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
         try:
             if grid_exported > pv:
