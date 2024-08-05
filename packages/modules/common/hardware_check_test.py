@@ -44,8 +44,8 @@ def test_hardware_check_fails(evse_side_effect,
     # setup
     mock_evse_client = Mock(spec=Evse, get_firmware_version=Mock(
         side_effect=evse_side_effect, return_value=evse_return_value))
-    mock_evse_facotry = Mock(spec=Evse, return_value=mock_evse_client)
-    monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
+    mock_evse_factory = Mock(spec=Evse, return_value=mock_evse_client)
+    monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_factory)
 
     mock_meter_client = Mock(spec=sdm.Sdm630_72, get_voltages=Mock(
         side_effect=meter_side_effect, return_value=meter_return_value))
@@ -66,8 +66,8 @@ def test_hardware_check_fails(evse_side_effect,
 def test_hardware_check_succeeds(monkeypatch):
     # setup
     mock_evse_client = Mock(spec=Evse, get_firmware_version=Mock(return_value=18))
-    mock_evse_facotry = Mock(spec=Evse, return_value=mock_evse_client)
-    monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
+    mock_evse_factory = Mock(spec=Evse, return_value=mock_evse_client)
+    monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_factory)
 
     mock_meter_client = Mock(spec=sdm.Sdm630_72, get_voltages=Mock(return_value=[230]*3))
     mock_find_meter_client = Mock(spec=sdm.Sdm630_72, return_value=mock_meter_client)
