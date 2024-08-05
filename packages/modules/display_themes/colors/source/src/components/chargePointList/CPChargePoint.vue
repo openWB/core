@@ -72,11 +72,11 @@
 				{{ chargepoint.vehicleName }}
 				<span
 					v-if="chargepoint.hasPriority"
-					class="me-1 fa-solid fa-xs fa-star ps-1"
+					class="ms-2 me-0 fa-solid fa-xs fa-star ps-1"
 				/>
 				<span
 					v-if="chargepoint.etActive"
-					class="me-0 fa-solid fa-xs fa-coins ps-0"
+					class="ms-2 me-0 fa-solid fa-xs fa-coins ps-0"
 				/>
 			</h3>
 			<div class="grid12">
@@ -205,11 +205,20 @@ const realChargeAmpereString = computed(() => {
 	)
 })
 const chargedRangeString = computed(() => {
-	return (
-		Math.round(props.chargepoint.rangeCharged).toString() +
-		' ' +
-		props.chargepoint.rangeUnit
-	)
+	const rangeSincePlugged = props.chargepoint.rangeCharged
+	const energySincePlugged = props.chargepoint.chargedSincePlugged
+	const energyToday = props.chargepoint.dailyYield
+	if (energySincePlugged > 0) {
+		return (
+			Math.round(
+				(rangeSincePlugged / energySincePlugged) * energyToday,
+			).toString() +
+			' ' +
+			props.chargepoint.rangeUnit
+		)
+	} else {
+		return '0 km'
+	}
 })
 const statusString = computed(() => {
 	if (props.chargepoint.isLocked) {
