@@ -378,7 +378,7 @@ class Chargepoint(ChargepointRfidMixin):
             if ((self.data.set.phases_to_use != self.data.get.phases_in_use or
                 # Vorgegebene Phasenzahl hat sich geändert
                  self.data.set.phases_to_use != self.data.control_parameter.phases) and
-                # Wenn ein Sollstrom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
+                # Wenn ein Soll-Strom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
                     ((self.data.set.current != 0 and self.data.get.power != 0) or
@@ -407,7 +407,7 @@ class Chargepoint(ChargepointRfidMixin):
                     phase_switch_required = False
                     self.set_state_and_log(
                         "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
-                        "Ladeinstellungen deaktiviert wurde. Die aktuelle "
+                        "Ladeeinstellungen deaktiviert wurde. Die aktuelle "
                         "Phasenzahl wird bis zum Abstecken beibehalten.")
         return phase_switch_required
 

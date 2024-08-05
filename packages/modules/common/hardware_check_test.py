@@ -22,7 +22,7 @@ from modules.internal_chargepoint_handler.clients import ClientHandler
                   EVSE_BROKEN + " " + METER_BROKEN.format([230, 0, 230]) + OPEN_TICKET,
                   id="EVSE defekt und Zähler eine Phase defekt"),
      pytest.param(None, 18, Exception("Modbus"), None, None, None,
-                  ModbusSerialClient_, METER_PROBLEM, id="Zähler verkonfiguriert"),
+                  ModbusSerialClient_, METER_PROBLEM, id="Zähler falsch konfiguriert"),
      pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, None, False, ModbusSerialClient_,
                   USB_ADAPTER_BROKEN, id="USB-Adapter defekt"),
      pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, None, False, ModbusTcpClient_,
