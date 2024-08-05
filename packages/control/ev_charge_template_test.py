@@ -190,7 +190,7 @@ def test_calculate_duration(selected: str, phases: int, expected_duration: float
     ])
 def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
                      check_duration_return2: Tuple[Optional[float], bool],
-                     expected_plan_num: int,
+                     expected_plan_num: Optional[int],
                      monkeypatch):
     # setup
     calculate_duration_mock = Mock(return_value=(100, 200))
