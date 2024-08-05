@@ -107,8 +107,8 @@ def generateMSALAuthCode(cloudbackup: OneDriveBackupCloud) -> dict:
         "openWB/set/system/backup_cloud/config", cloudbackupconfig_to_mqtt, retain=True, hostname="localhost"
         )
 
-    result["message"] = """Authorisierung gestartet, bitte den Link öffen, Code eingeben,
-        und Zugang authorisieren. Anschließend Zugangsberechtigung abrufen."""
+    result["message"] = """Autorisierung gestartet, bitte den Link öffnen, Code eingeben,
+        und Zugang autorisieren. Anschließend Zugangsberechtigung abrufen."""
     result["MessageType"] = MessageType.SUCCESS
 
     return result
@@ -134,7 +134,7 @@ def retrieveMSALTokens(cloudbackup: OneDriveBackupCloud) -> dict:
     f = cloudbackup.configuration.flow
     if f is None:
         result["message"] = """Es ist wurde kein Auth-Code erstellt.
-                            Bitte zunächst Auth-Code erstellen und den Authorisierungsprozess beenden.<br />"""
+                            Bitte zunächst Auth-Code erstellen und den Autorisierungsprozess beenden.<br />"""
         result["MessageType"] = MessageType.WARNING
         return result
     flow = pickle.loads(bytes(f, encoding='latin1'))

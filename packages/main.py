@@ -4,7 +4,7 @@
 # flake8: noqa: F402
 import logging
 from helpermodules import logger
-# als erstes logging initalisieren, damit auch ImportError geloggt werden
+# als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
 

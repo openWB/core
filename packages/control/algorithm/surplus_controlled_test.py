@@ -99,11 +99,11 @@ def test_set_required_current_to_max(phases: int,
 @pytest.mark.parametrize(
     "evse_current, limited_current, expected_current",
     [
-        pytest.param(None, 6, 6, id="Kein Sollstrom aus der EVSE ausgelesen"),
-        pytest.param(15, 15, 15, id="Auto lädt mit Sollstromstärke"),
-        pytest.param(15.5, 15.5, 16, id="Auto lädt mit weniger als Sollstromstärke"),
+        pytest.param(None, 6, 6, id="Kein Soll-Strom aus der EVSE ausgelesen"),
+        pytest.param(15, 15, 15, id="Auto lädt mit Soll-Stromstärke"),
+        pytest.param(15.5, 15.5, 16, id="Auto lädt mit weniger als Soll-Stromstärke"),
         pytest.param(16, 16, 16,
-                     id="Auto lädt mit weniger als Sollstromstärke, aber EVSE-Begrenzung ist erreicht.")
+                     id="Auto lädt mit weniger als Soll-Stromstärke, aber EVSE-Begrenzung ist erreicht.")
     ])
 def test_add_unused_evse_current(evse_current: float, limited_current: float, expected_current: float):
     # setup

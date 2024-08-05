@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 def upload_backup(config: OneDriveBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
-    # upload a single file to onedrive useing credentials from OneDriveBackupCloudConfiguration
+    # upload a single file to onedrive using credentials from OneDriveBackupCloudConfiguration
     # https://docs.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_put_content?view=odsp-graph-online
     tokens = get_tokens(config)  # type: ignore
     log.debug("token object retrieved, access_token: %s", tokens.__len__)

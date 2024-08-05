@@ -119,7 +119,7 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
                         f"{ip}; Stecker-Status: {cp.data.get.plug_state}, Leistung: "
                         f"{cp.data.get.power/1000}kW, {cp.data.get.currents}A, {cp.data.get.voltages}V, Lademodus: "
                         f"{cp.data.control_parameter.chargemode}, Submode: "
-                        f"{cp.data.control_parameter.submode}, Sollstrom: "
+                        f"{cp.data.control_parameter.submode}, Soll-Strom: "
                         f"{cp.data.set.current}A, Status: {cp.data.get.state_str}, "
                         f"Fehlerstatus: {cp.data.get.fault_str}\n")
         if cp.chargepoint_module.config.type == "openwb_pro":

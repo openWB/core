@@ -29,7 +29,7 @@ class Algorithm:
             common.reset_current()
             log.info("**Mindestrom setzen**")
             self.min_current.set_min_current()
-            log.info("**Sollstrom setzen**")
+            log.info("**Soll-Strom setzen**")
             common.reset_current_to_target_current()
             self.additional_current.set_additional_current()
             counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
@@ -48,7 +48,7 @@ class Algorithm:
 
     def _check_auto_phase_switch_delay(self) -> None:
         """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung
-        möglich ist und ob ob ein Timer gestartet oder geChargemode.STOPpt werden muss oder ob
+        möglich ist und ob ob ein Timer gestartet oder gestoppt werden muss oder ob
         ein Timer abgelaufen ist.
         """
         for cp in data.data.cp_data.values():
