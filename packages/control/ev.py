@@ -286,7 +286,7 @@ class Ev:
                     max_phases_hw,
                     phase_switch_supported,
                     charging_type)
-                soc_request_intervall_offset = 0
+                soc_request_interval_offset = 0
                 if plan_data:
                     name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
@@ -295,11 +295,11 @@ class Ev:
                             name != control_parameter.current_plan):
                         control_parameter.imported_at_plan_start = imported
                     # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
-                    # Zielladen kannn nicht genauer arbeiten, als das Abfrageintervall vom SoC.
+                    # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
                     if (self.soc_module and
                             self.charge_template.data.chargemode.
                             scheduled_charging.plans[plan_data.num].limit.selected == "soc"):
-                        soc_request_intervall_offset = self.soc_module.general_config.request_interval_charging
+                        soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
                     control_parameter.current_plan = name
                 else:
                     control_parameter.current_plan = None
@@ -309,7 +309,7 @@ class Ev:
                     used_amount,
                     control_parameter.phases,
                     control_parameter.min_current,
-                    soc_request_intervall_offset)
+                    soc_request_interval_offset)
 
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
             if (submode != "instant_charging" and
@@ -427,7 +427,7 @@ class Ev:
                                        get_power: float,
                                        max_current_cp: int,
                                        limit: LimitingValue) -> Tuple[bool, Optional[str]]:
-        # Manche EV laden mit 6.1A bei 6A Sollstrom
+        # Manche EV laden mit 6.1A bei 6A Soll-Strom
         min_current = control_parameter.min_current + self.ev_template.data.nominal_difference
         max_current = (min(self.ev_template.data.max_current_single_phase, max_current_cp)
                        - self.ev_template.data.nominal_difference)
@@ -854,7 +854,7 @@ class ChargeTemplate:
                                         used_amount: float,
                                         control_parameter_phases: int,
                                         min_current: int,
-                                        soc_request_intervall_offset: int) -> Tuple[float, str, str, int]:
+                                        soc_request_interval_offset: int) -> Tuple[float, str, str, int]:
         current = 0
         submode = "stop"
         if plan_data is None:
@@ -877,7 +877,7 @@ class ChargeTemplate:
             phases = control_parameter_phases
         elif limit.selected == "amount" and used_amount >= limit.amount:
             message = self.SCHEDULED_CHARGING_REACHED_AMOUNT
-        elif 0 - soc_request_intervall_offset < plan_data.remaining_time < 300 + soc_request_intervall_offset:
+        elif 0 - soc_request_interval_offset < plan_data.remaining_time < 300 + soc_request_interval_offset:
             # 5 Min vor spätestem Ladestart
             if limit.selected == "soc":
                 limit_string = self.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(limit.soc_scheduled)
@@ -889,7 +889,7 @@ class ChargeTemplate:
             submode = "instant_charging"
         # weniger als die berechnete Zeit verfügbar
         # Ladestart wurde um maximal 20 Min verpasst.
-        elif plan_data.remaining_time <= 0 - soc_request_intervall_offset:
+        elif plan_data.remaining_time <= 0 - soc_request_interval_offset:
             if plan_data.duration + plan_data.remaining_time < 0:
                 current = plan_data.max_current
             else:
@@ -901,9 +901,9 @@ class ChargeTemplate:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
             if self.data.et.active and data.data.optional_data.et_provider_available():
-                hourlist = data.data.optional_data.et_get_loading_hours(plan_data.duration, plan_data.remaining_time)
-                log.debug(f"Günstige Ladezeiten: {hourlist}")
-                if timecheck.is_list_valid(hourlist):
+                hour_list = data.data.optional_data.et_get_loading_hours(plan_data.duration, plan_data.remaining_time)
+                log.debug(f"Günstige Ladezeiten: {hour_list}")
+                if timecheck.is_list_valid(hour_list):
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR
                     current = plan_data.available_current
                     submode = "instant_charging"
