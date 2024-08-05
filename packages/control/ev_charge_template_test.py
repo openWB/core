@@ -285,8 +285,8 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
     ct.data.et.active = True
     mock_et_get_loading_hours = Mock(return_value=[])
     monkeypatch.setattr(data.data.optional_data, "et_get_loading_hours", mock_et_get_loading_hours)
-    mock_et_provider_availble = Mock(return_value=True)
-    monkeypatch.setattr(data.data.optional_data, "et_provider_availble", mock_et_provider_availble)
+    mock_et_provider_available = Mock(return_value=True)
+    monkeypatch.setattr(data.data.optional_data, "et_provider_available", mock_et_provider_available)
     mock_is_list_valid = Mock(return_value=loading_hour)
     monkeypatch.setattr(timecheck, "is_list_valid", mock_is_list_valid)
 
