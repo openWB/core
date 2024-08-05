@@ -99,7 +99,7 @@ def get_current_to_set(set_current: float, diff: float, prev_current: float) -> 
     new_current = prev_current + diff
     if set_current is not None:
         if new_current > set_current:
-            log.debug("Neuer Sollstrom darf nicht höher als bisher gesetzter sein: "
+            log.debug("Neuer Soll-Strom darf nicht höher als bisher gesetzter sein: "
                       f"bisher {set_current}A, neuer {new_current}")
             return set_current
     return new_current
@@ -126,7 +126,7 @@ def available_current_for_cp(chargepoint: Chargepoint,
 def update_raw_data(preferenced_chargepoints: List[Chargepoint],
                     diff_to_zero: bool = False,
                     surplus: bool = False) -> None:
-    """alle CP, die schon einen Sollstrom haben, wieder rausrechnen, da dieser neu gesetzt wird
+    """alle CP, die schon einen Soll-Strom haben, wieder herausrechnen, da dieser neu gesetzt wird
         und die neue Differenz bei den Zählern eingetragen wird."""
     for chargepoint in preferenced_chargepoints:
         if consider_not_charging_chargepoint_in_loadmanagement(chargepoint):

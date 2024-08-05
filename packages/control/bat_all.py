@@ -181,7 +181,7 @@ class BatAll:
                     self._get_charging_power_left()
                     log.info(f"{self.data.set.charging_power_left}W verbleibende Speicher-Leistung")
                 else:
-                    # Bei Warnung oder Fehlerfall, zB durch Kalibierungs-Meldung, Speicher-Leistung nicht in der
+                    # Bei Warnung oder Fehlerfall, zB durch Kalibrierung, Speicher-Leistung nicht in der
                     # Regelung berücksichtigen.
                     self.data.set.charging_power_left = 0
             else:

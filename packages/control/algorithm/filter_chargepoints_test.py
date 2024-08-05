@@ -114,7 +114,7 @@ preferenced_cases = [
                          Chargemode.INSTANT_CHARGING, False),
                      1, (Chargemode.SCHEDULED_CHARGING,
                          Chargemode.INSTANT_CHARGING, True),
-                     [mock_cp1], id="cp2 is prioritised")
+                     [mock_cp1], id="cp2 is prioritized")
     ])
 def test_get_chargepoints_by_mode(set_mode_tuple: Tuple[Optional[str], str, bool],
                                   charging_ev_1: int,

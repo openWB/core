@@ -28,7 +28,7 @@ class ChargepointModule(AbstractChargepoint):
             "Ladepunkt", "chargepoint"))
         self.__session = req.get_http_session()
         self.__client_error_context = ErrorCounterContext(
-            "Anhaltender Fehler beim Auslesen des Ladepunkts. Sollstromstärke wird zurückgesetzt.")
+            "Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke wird zurückgesetzt.")
 
         with SingleComponentUpdateContext(self.fault_state, False):
             with self.__client_error_context:
