@@ -20,7 +20,7 @@ def upload_backup(config: OneDriveBackupCloudConfiguration, backup_filename: str
     log.debug("instantiate OneDrive connection")
     onedrive = OneDrive(access_token=tokens["access_token"])
 
-    localbackup = os.path.join(pathlib.Path().resolve(), 'data', 'backup', backup_filename)
+    local_backup = os.path.join(pathlib.Path().resolve(), 'data', 'backup', backup_filename)
     remote_filename = backup_filename.replace(':', '-')  # file won't upload when name contains ':'
 
     if not config.backuppath.endswith("/"):
@@ -28,7 +28,7 @@ def upload_backup(config: OneDriveBackupCloudConfiguration, backup_filename: str
         config.backuppath = config.backuppath + "/"
 
     log.debug("uploading file %s to OneDrive", backup_filename)
-    onedrive.upload_item(item_path=(config.backuppath+remote_filename), file_path=localbackup,
+    onedrive.upload_item(item_path=(config.backuppath+remote_filename), file_path=local_backup,
                          conflict_behavior="replace")
 
 
