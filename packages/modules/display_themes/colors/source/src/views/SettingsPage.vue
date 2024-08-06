@@ -138,7 +138,7 @@
 				aria-labelledby="pv-tab"
 			>
 				<CPConfigPv
-					:chargepoint="cp"
+					:chargepoint="cp as ChargePoint"
 					:vehicles="vehicles"
 					:charge-templates="chargeTemplates"
 				/>

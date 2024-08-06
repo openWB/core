@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { globalData } from '@/assets/js/model.ts'
+import { globalData } from '@/assets/js/model'
 </script>
 
 <style scoped>
