@@ -362,20 +362,17 @@ def _analyse_energy_source(data) -> Dict:
 def analyse_percentage(entry):
     def format(value):
         return round(value, 4)
+    def get_grid_from(entry) -> float, float:
+        grids = ( counter in entry["counter"] if counter.get("grid"))
+        if not grids:
+             raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
+        return sum(grid["energy_imported"] for grid in grids), sum(grid["energy_exported"] for grid in grids)    
     try:
         bat_imported = entry["bat"]["all"]["energy_imported"] if "all" in entry["bat"].keys() else 0
         bat_exported = entry["bat"]["all"]["energy_exported"] if "all" in entry["bat"].keys() else 0
         cp_exported = entry["cp"]["all"]["energy_exported"] if "all" in entry["cp"].keys() else 0
         pv = entry["pv"]["all"]["energy_exported"] if "all" in entry["pv"].keys() else 0
-        grid_imported = 0
-        grid_exported = 0
-        for counter in entry["counter"].values():
-            if counter.get("grid") is None:
-                return
-            # ToDo: add "grid" to old data in update_config.py
-            if counter["grid"]:
-                grid_imported = counter["energy_imported"]
-                grid_exported = counter["energy_exported"]
+        grid_imported, grid_exported = get_grid_from(entry)
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
         try:
             if grid_exported > pv:
