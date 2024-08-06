@@ -362,7 +362,7 @@ def _analyse_energy_source(data) -> Dict:
 def analyse_percentage(entry):
     def format(value):
         return round(value, 4)
-    def get_grid_from(entry) -> float, float:
+    def get_grid_from(entry) -> Tupel[float, float]:
         grids = ( counter in entry["counter"] if counter.get("grid"))
         if not grids:
              raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
