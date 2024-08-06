@@ -1,4 +1,4 @@
-name: Build Display Theme Cards
+name: Build Display Theme Colors
 
 on:
   push:
