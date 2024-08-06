@@ -32,7 +32,7 @@ const props = defineProps<{
 .modal-content {
 	background-color: var(--color-bg);
 	border-color: var(--color-menu);
-	box-shadow: 3px 5px black ;
+	box-shadow: 3px 5px black;
 }
 .modal-footer,
 .modal-header,

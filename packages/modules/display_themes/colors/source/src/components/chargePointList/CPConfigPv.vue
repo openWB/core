@@ -67,7 +67,7 @@
 				unit="A"
 			/>
 		</ConfigItem>
-		
+
 		<!-- Min+PV-Laden -->
 		<ConfigItem
 			title="Minimaler Ladestrom"

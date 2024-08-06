@@ -1,5 +1,4 @@
 <template>
-	
 	<div class="m-0 mt-1 p-0 grid-col-12 tabarea">
 		<nav class="nav nav-tabs nav-justified mx-1 mt-1" role="tablist">
 			<a
@@ -64,59 +63,60 @@
 			>
 				<CPChargeConfig :chargepoint="chargepoint" />
 				<div class="settingslist">
-		<ConfigItem
-			v-if="globalData.isBatteryConfigured"
-			title="PV-Priorität (global)"
-			icon="fa-car-battery"
-			iconcolor="var(--color-battery)"
-			infotext="Priority during PV production"
-			:fullwidth="true"
-		>
-			<RadioInput
-				v-model="globalData.pvBatteryPriority"
-				:options="evPriorityModes"
-			>
-			</RadioInput>
-		</ConfigItem>
-		<hr class="grid-col-12" />
-		<ConfigItem title="Fahrzeug wechseln" icon="fa-car" :fullwidth="true">
-			<RadioInput
-				v-model.number="connectedVehicle"
-				:options="Object.values(vehicles).map((v) => [v.name, v.id])"
-			/>
-		</ConfigItem>
-		<hr class="grid-col-12" />
-		<ConfigItem
-			title="Strompreisbasiert laden"
-			icon="fa-coins"
-			iconcolor="var(--color-battery)"
-			infotext="Settings"
-		>
-			<SwitchInput v-model="etActive"></SwitchInput>
-		</ConfigItem>
-		<ConfigItem
-			title="Zeitplan aktivieren"
-			icon="fa-clock"
-			iconcolor="var(--color-battery)"
-		>
-			<SwitchInput v-model="timedCharging"></SwitchInput>
-		</ConfigItem>
-		<ConfigItem
-			title="Ladeprofil"
-			icon="fa-sliders"
-			iconcolor="var(--color-pv)"
-		>
-			<RadioInput
-				v-if="vehicles[connectedVehicle]"
-				v-model.number="vehicles[connectedVehicle].chargeTemplateId"
-				:options="
-					Object.keys(chargeTemplates).map((v) => [chargeTemplates[+v].name, v])
-				"
-			/>
-		</ConfigItem>
-
-	</div>
-
+					<ConfigItem
+						v-if="globalData.isBatteryConfigured"
+						title="PV-Priorität (global)"
+						icon="fa-car-battery"
+						iconcolor="var(--color-battery)"
+						infotext="Priority during PV production"
+						:fullwidth="true"
+					>
+						<RadioInput
+							v-model="globalData.pvBatteryPriority"
+							:options="evPriorityModes"
+						>
+						</RadioInput>
+					</ConfigItem>
+					<hr class="grid-col-12" />
+					<ConfigItem title="Fahrzeug wechseln" icon="fa-car" :fullwidth="true">
+						<RadioInput
+							v-model.number="connectedVehicle"
+							:options="Object.values(vehicles).map((v) => [v.name, v.id])"
+						/>
+					</ConfigItem>
+					<hr class="grid-col-12" />
+					<ConfigItem
+						title="Strompreisbasiert laden"
+						icon="fa-coins"
+						iconcolor="var(--color-battery)"
+						infotext="Settings"
+					>
+						<SwitchInput v-model="etActive"></SwitchInput>
+					</ConfigItem>
+					<ConfigItem
+						title="Zeitplan aktivieren"
+						icon="fa-clock"
+						iconcolor="var(--color-battery)"
+					>
+						<SwitchInput v-model="timedCharging"></SwitchInput>
+					</ConfigItem>
+					<ConfigItem
+						title="Ladeprofil"
+						icon="fa-sliders"
+						iconcolor="var(--color-pv)"
+					>
+						<RadioInput
+							v-if="vehicles[connectedVehicle]"
+							v-model.number="vehicles[connectedVehicle].chargeTemplateId"
+							:options="
+								Object.keys(chargeTemplates).map((v) => [
+									chargeTemplates[+v].name,
+									v,
+								])
+							"
+						/>
+					</ConfigItem>
+				</div>
 			</div>
 			<div
 				:id="'instantSettings' + cpid"
