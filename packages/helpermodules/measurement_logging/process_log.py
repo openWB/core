@@ -364,7 +364,7 @@ def analyse_percentage(entry):
         return round(value, 4)
 
     def get_grid_from(entry) -> Tuple[float, float]:
-        grids = [counter for counter in entry["counter"] if counter.get("grid")]
+        grids = [counter for counter in entry["counter"].values() if counter.get("grid")]
         if not grids:
             raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
         return sum(grid["energy_imported"] for grid in grids), sum(grid["energy_exported"] for grid in grids)
