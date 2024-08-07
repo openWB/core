@@ -81,6 +81,8 @@ log = logging.getLogger(__name__)
 #                 ... (dynamisch, je nach Anzahl konfigurierter Geräte)
 #             },
 #             "hc": {"all": {"imported": Wh # Hausverbrauch}}
+#
+#             "prices": {grid: 0.3, grid: (electriciy_tariff, fault_state, None), pv: 0.1, bat: 0,2}
 #         }],
 #      "names": "names": {"sh1": "", "cp1": "", "counter2": "", "pv3": ""}
 #      }
@@ -243,6 +245,24 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
     hc_dict = {"all": {"imported": data.data.counter_all_data.data.set.imported_home_consumption}}
+
+    try:
+        if data.data.optional_data.et_module is None:
+            prices_dict = {"grid": None,
+                           "pv": data.data.general_data.data.prices.pv*1000,
+                           "bat": data.data.general_data.data.prices.bat*1000}
+        if (data.data.optional_data.et_module is not None and
+                data.data.optional_data.et_module.fault_state.fault_state == 0):
+            prices_dict = {"grid": list(data.data.optional_data.data.et.get.prices.values())[0]*1000,
+                           "pv": data.data.general_data.data.prices.pv*1000,
+                           "bat": data.data.general_data.data.prices.bat*1000}
+        if data.data.optional_data.et_module.fault_state.fault_state == 2:
+            prices_dict = {"grid": "Fehler im dynamischen Strompreistarif",
+                           "pv": data.data.general_data.data.prices.pv*1000,
+                           "bat": data.data.general_data.data.prices.bat*1000}
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für Stromanbieterpreise")
+
     new_entry = {
         "timestamp": current_timestamp,
         "date": date,
@@ -252,7 +272,8 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         "pv": pv_dict,
         "bat": bat_dict,
         "sh": sh_log_data.sh_dict,
-        "hc": hc_dict
+        "hc": hc_dict,
+        "prices": prices_dict
     }
 
     return fix_values(new_entry, previous_entry)
