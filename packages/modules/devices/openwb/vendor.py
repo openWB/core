@@ -5,7 +5,7 @@ from modules.devices.vendors import VendorGroup
 class Vendor:
     def __init__(self):
         self.vendor = "openWB"
-        self.group = "openwb"
+        self.group = VendorGroup.OPENWB.value
 
 
 vendor_descriptor = DeviceDescriptor(configuration_factory=Vendor)
