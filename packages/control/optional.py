@@ -7,8 +7,7 @@ from helpermodules.pub import Pub
 from helpermodules.constants import NO_ERROR
 from dataclass_utils.factories import empty_dict_factory
 from datetime import datetime
-from ocpp.v16 import ChargePoint as cp
-from ocpp.v16 import call
+from ocpp.v16 import call, ChargePoint as cp
 import websockets
 import asyncio
 from dataclasses import dataclass, field
@@ -199,82 +198,39 @@ class Optional:
                     asyncio.run(
                         OCPPClient._transfer_values(
                             connector_id, meter_value_charged))
-                except Exception as e:
-                    log.exception("Fehler Trigger Meter Values", e)
+                except Exception:
+                    log.exception("Fehler Trigger Meter Values")
 
 
 class ChargePoint(cp):
-
-    async def send_heart_beat(self):
-        try:
-            await self.call(call.Heartbeat())
-        except asyncio.exceptions.TimeoutError:
-            # log.exception("Erwarteter TimeOut Heartbeat")
-            pass
-
-    async def start_transaction(self, connector_id, id_tag, meter_value_charged):
-        try:
-            await self.call(call.StartTransaction(
-                connector_id=connector_id,
-                id_tag=id_tag,
-                meter_start=meter_value_charged,
-                timestamp=current_time
-            ))
-        except asyncio.exceptions.TimeoutError:
-            # log.exception("Erwarteter TimeOut Start Transaction")
-            pass
-
-    async def stop_transaction(self, meter_value_charged, transaction_id, id_tag):
-        try:
-            await self.call(call.StopTransaction(meter_stop=meter_value_charged,
-                                                 timestamp=current_time,
-                                                 transaction_id=transaction_id,
-                                                 reason="Local",
-                                                 id_tag=id_tag
-                                                 ))
-        except asyncio.exceptions.TimeoutError:
-            # log.exception("Erwarteter TimeOut Stop Transaction")
-            pass
-
-    async def get_meter(self, connector_id, meter_value_charged):
-        try:
-            await self.call(call.MeterValues(
-                connector_id=connector_id,
-                meter_value=[{"timestamp": current_time,
-                              "sampledValue": [
-                                  {
-                                      "value": f'{meter_value_charged}',
-                                      "context": "Sample.Periodic",
-                                      "format": "Raw",
-                                      "measurand": "Energy.Active.Import.Register",
-                                      "location": "Outlet",
-                                      "unit": "Wh"
-                                  },
-                              ]}],
-            ))
-        except asyncio.exceptions.TimeoutError:
-            # log.exception("Erwarteter TimeOut Meter Values")
-            pass
+    pass
 
 
-class OCPPClient(ChargePoint):
+class OCPPClient():
 
     # Test URL: ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1
 
     async def _start_transaction(connector_id, id_tag, meter_value_charged):
         try:
-            try:
-                url = data.data.optional_data.data.ocpp.url
-            except Exception as e:
-                print(e)
+            # url = data.data.optional_data.data.ocpp.url
+            url = "ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1"
             if len(url) > 0:
                 async with websockets.connect(
                     url,
                     subprotocols=['ocpp1.6']
                 ) as ws:
-                    cp = ChargePoint('openWB', ws, 1)
-                # Start Transaction
-                    await cp.start_transaction(connector_id, id_tag, meter_value_charged)
+                    # Start Transaction
+                    try:
+                        cp = ChargePoint('openWB', ws, 1)
+                        await cp.call(call.StartTransaction(
+                            connector_id=connector_id,
+                            id_tag=id_tag,
+                            meter_start=meter_value_charged,
+                            timestamp=current_time
+                        ))
+                    except asyncio.exceptions.TimeoutError:
+                        # log.exception("Erwarteter TimeOut StartTransaction")
+                        pass
                     # TransactionId extrahieren
                     transaction_str = str(ws.messages[0])[slice(str(ws.messages[0]).index(("idTag")))]
                     index1 = str(transaction_str).index(("transactionId"))
@@ -287,42 +243,74 @@ class OCPPClient(ChargePoint):
 
     async def _transfer_values(connector_id, meter_value_charged):
         try:
-            url = data.data.optional_data.data.ocpp.url
+            # url = data.data.optional_data.data.ocpp.url
+            url = "ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1"
             if len(url) > 0:
                 async with websockets.connect(
                     url,
                     subprotocols=['ocpp1.6']
-                ) as ws:
+                )as ws:
                     cp = ChargePoint('openWB', ws, 1)
-                # transfer meter values
-                    await cp.get_meter(connector_id, meter_value_charged)
+                    # transfer meter values
+                    try:
+                        await cp.call(call.MeterValues(
+                            connector_id=connector_id,
+                            meter_value=[{"timestamp": current_time,
+                                          "sampledValue": [
+                                              {
+                                                  "value": f'{meter_value_charged}',
+                                                  "context": "Sample.Periodic",
+                                                  "format": "Raw",
+                                                  "measurand": "Energy.Active.Import.Register",
+                                                  "location": "Outlet",
+                                                  "unit": "Wh"
+                                              },
+                                          ]}],
+                        ))
+                    except asyncio.exceptions.TimeoutError:
+                        # log.exception("Erwarteter TimeOut Meter Values")
+                        pass
         except Exception:
             log.exception("Fehler OCPP: _transfer_values")
 
     async def _send_heart_beat():
         try:
-            url = data.data.optional_data.data.ocpp.url
+            # url = data.data.optional_data.data.ocpp.url
+            url = "ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1"
             if len(url) > 0:
                 async with websockets.connect(
                     url,
                     subprotocols=['ocpp1.6']
-                ) as ws:
+                )as ws:
                     cp = ChargePoint('openWB', ws, 1)
-                # transfer meter values
-                    await cp.send_heart_beat()
+                    try:
+                        await cp.call(call.Heartbeat())
+                    except asyncio.exceptions.TimeoutError:
+                        # log.exception("Erwarteter TimeOut Heartbeat")
+                        pass
         except Exception:
             log.exception("Fehler OCPP: _send_heart_beat")
 
     async def _stop_transaction(meter_value_charged, transaction_id, id_tag):
         try:
-            url = data.data.optional_data.data.ocpp.url
+            # url = data.data.optional_data.data.ocpp.url
+            url = "ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1"
             if len(url) > 0:
                 async with websockets.connect(
                     url,
                     subprotocols=['ocpp1.6']
-                ) as ws:
+                )as ws:
                     cp = ChargePoint('openWB', ws, 1)
-                # Stop transaction
-                    await cp.stop_transaction(meter_value_charged, transaction_id, id_tag)
+                    # Stop transaction
+                    try:
+                        await cp.call(call.StopTransaction(meter_stop=meter_value_charged,
+                                                           timestamp=current_time,
+                                                           transaction_id=transaction_id,
+                                                           reason="Local",
+                                                           id_tag=id_tag
+                                                           ))
+                    except asyncio.exceptions.TimeoutError:
+                        # log.exception("Erwarteter TimeOut Stop Transaction")
+                        pass
         except Exception:
             log.exception("Fehler OCPP: _stop_transaction")
