@@ -136,6 +136,7 @@ class Set:
     rfid: Optional[str] = None
     target_current: float = 0  # Sollstrom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
+    ocpp_transaction_id: Optional[int] = None
 
 
 @dataclass

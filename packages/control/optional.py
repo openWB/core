@@ -1,19 +1,30 @@
 """Optionale Module
 """
+from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.common.configurable_tariff import ConfigurableElectricityTariff
+from helpermodules.timecheck import create_unix_timestamp_current_full_hour
+from helpermodules.pub import Pub
+from helpermodules.constants import NO_ERROR
+from dataclass_utils.factories import empty_dict_factory
+from datetime import datetime
+from ocpp.v16 import call, ChargePoint as cp
+import websockets
+import asyncio
 from dataclasses import dataclass, field
 import logging
 from math import ceil  # Aufrunden
 import threading
 from typing import Dict, List
+import re
+import copy
+from control import data
 
-from dataclass_utils.factories import empty_dict_factory
-from helpermodules.constants import NO_ERROR
-from helpermodules.pub import Pub
-from helpermodules.timecheck import create_unix_timestamp_current_full_hour
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
-from modules.display_themes.cards.config import CardsDisplayTheme
 
 log = logging.getLogger(__name__)
+
+# timestamp hat spezielles Format!
+now = datetime.now()
+current_time = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 @dataclass
@@ -69,11 +80,21 @@ def rfid_factory() -> Rfid:
 
 
 @dataclass
+class Ocpp:
+    url: str = ""
+
+
+def ocpp_factory() -> Ocpp:
+    return Ocpp()
+
+
+@dataclass
 class OptionalData:
     et: Et = field(default_factory=et_factory)
     int_display: InternalDisplay = field(default_factory=int_display_factory)
     led: Led = field(default_factory=led_factory)
     rfid: Rfid = field(default_factory=rfid_factory)
+    ocpp: Ocpp = field(default_factory=ocpp_factory)
 
 
 class Optional:
@@ -153,3 +174,137 @@ class Optional:
                     Pub().pub("openWB/set/optional/et/get/fault_str", NO_ERROR)
         except Exception:
             log.exception("Fehler im Optional-Modul")
+
+    def ocpp_transaction():
+        try:
+            for thread in threading.enumerate():
+                if thread.name == "OCPP Client":
+                    log.debug("Don't start multiple instances of ocpp client thread.")
+                    return
+            threading.Thread(target=Optional.ocpp_transfer_meter_values, args=(), name="OCPP Client").start()
+        except Exception:
+            log.exception("Fehler im OCPP-Optional-Modul")
+
+    def ocpp_transfer_meter_values():
+        from helpermodules.subdata import SubData
+        for chpnt in SubData.cp_data:
+            if SubData.cp_data[chpnt].chargepoint.data.set.ocpp_transaction_id is not None:
+                meter_value_charged_copy = copy.deepcopy(SubData.cp_data[chpnt].chargepoint.data.get.imported)
+                meter_value_charged = int(meter_value_charged_copy)
+                connector_id = SubData.cp_data[chpnt].chargepoint.num
+                try:
+                    asyncio.run(
+                        OCPPClient._send_heart_beat())
+                    asyncio.run(
+                        OCPPClient._transfer_values(
+                            connector_id, meter_value_charged))
+                except Exception:
+                    log.exception("Fehler Trigger Meter Values")
+
+
+class ChargePoint(cp):
+    pass
+
+
+class OCPPClient():
+
+    async def _start_transaction(connector_id, id_tag, meter_value_charged):
+        try:
+            url = data.data.optional_data.data.ocpp.url
+            if len(url) > 0:
+                async with websockets.connect(
+                    url,
+                    subprotocols=['ocpp1.6']
+                ) as ws:
+                    # Start Transaction
+                    try:
+                        cp = ChargePoint('openWB', ws, 1)
+                        await cp.call(call.StartTransaction(
+                            connector_id=connector_id,
+                            id_tag=id_tag,
+                            meter_start=meter_value_charged,
+                            timestamp=current_time
+                        ))
+                    except asyncio.exceptions.TimeoutError:
+                        # log.exception("Erwarteter TimeOut StartTransaction")
+                        pass
+                    # TransactionId extrahieren
+                    transaction_str = str(ws.messages[0])[slice(str(ws.messages[0]).index(("idTag")))]
+                    index1 = str(transaction_str).index(("transactionId"))
+                    index2 = len(transaction_str)-1
+                    transaction_str_sliced = transaction_str[index1:index2]
+                    transaction_id = list(map(int, re.findall(r'\d+', transaction_str_sliced)))
+                    return int(transaction_id[0])
+        except Exception:
+            log.exception("Fehler OCPP: _start_transaction")
+
+    async def _transfer_values(connector_id, meter_value_charged):
+        try:
+            url = data.data.optional_data.data.ocpp.url
+            if len(url) > 0:
+                async with websockets.connect(
+                    url,
+                    subprotocols=['ocpp1.6']
+                )as ws:
+                    cp = ChargePoint('openWB', ws, 1)
+                    # transfer meter values
+                    try:
+                        await cp.call(call.MeterValues(
+                            connector_id=connector_id,
+                            meter_value=[{"timestamp": current_time,
+                                          "sampledValue": [
+                                              {
+                                                  "value": f'{meter_value_charged}',
+                                                  "context": "Sample.Periodic",
+                                                  "format": "Raw",
+                                                  "measurand": "Energy.Active.Import.Register",
+                                                  "location": "Outlet",
+                                                  "unit": "Wh"
+                                              },
+                                          ]}],
+                        ))
+                    except asyncio.exceptions.TimeoutError:
+                        # log.exception("Erwarteter TimeOut Meter Values")
+                        pass
+        except Exception:
+            log.exception("Fehler OCPP: _transfer_values")
+
+    async def _send_heart_beat():
+        try:
+            url = data.data.optional_data.data.ocpp.url
+            if len(url) > 0:
+                async with websockets.connect(
+                    url,
+                    subprotocols=['ocpp1.6']
+                )as ws:
+                    cp = ChargePoint('openWB', ws, 1)
+                    try:
+                        await cp.call(call.Heartbeat())
+                    except asyncio.exceptions.TimeoutError:
+                        # log.exception("Erwarteter TimeOut Heartbeat")
+                        pass
+        except Exception:
+            log.exception("Fehler OCPP: _send_heart_beat")
+
+    async def _stop_transaction(meter_value_charged, transaction_id, id_tag):
+        try:
+            url = data.data.optional_data.data.ocpp.url
+            if len(url) > 0:
+                async with websockets.connect(
+                    url,
+                    subprotocols=['ocpp1.6']
+                )as ws:
+                    cp = ChargePoint('openWB', ws, 1)
+                    # Stop transaction
+                    try:
+                        await cp.call(call.StopTransaction(meter_stop=meter_value_charged,
+                                                           timestamp=current_time,
+                                                           transaction_id=transaction_id,
+                                                           reason="Local",
+                                                           id_tag=id_tag
+                                                           ))
+                    except asyncio.exceptions.TimeoutError:
+                        # log.exception("Erwarteter TimeOut Stop Transaction")
+                        pass
+        except Exception:
+            log.exception("Fehler OCPP: _stop_transaction")
