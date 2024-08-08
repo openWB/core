@@ -6,7 +6,7 @@ from modules import configuration
 from test_utils.test_environment import running_on_github
 
 
-def test_pub_configurable(monkeypatch, mock_pub):
+def test_pub_configurable(monkeypatch):
     # setup
     if running_on_github():
         # run test on github
