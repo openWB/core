@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 from helpermodules.auto_str import auto_str
 from modules.common.component_setup import ComponentSetup
 

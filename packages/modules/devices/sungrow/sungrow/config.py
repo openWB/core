@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 from modules.devices.sungrow.sungrow.version import Version
