@@ -208,12 +208,9 @@ class ChargePoint(cp):
 
 class OCPPClient():
 
-    # Test URL: ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1
-
     async def _start_transaction(connector_id, id_tag, meter_value_charged):
         try:
-            # url = data.data.optional_data.data.ocpp.url
-            url = "ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1"
+            url = data.data.optional_data.data.ocpp.url
             if len(url) > 0:
                 async with websockets.connect(
                     url,
@@ -243,8 +240,7 @@ class OCPPClient():
 
     async def _transfer_values(connector_id, meter_value_charged):
         try:
-            # url = data.data.optional_data.data.ocpp.url
-            url = "ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1"
+            url = data.data.optional_data.data.ocpp.url
             if len(url) > 0:
                 async with websockets.connect(
                     url,
@@ -275,8 +271,7 @@ class OCPPClient():
 
     async def _send_heart_beat():
         try:
-            # url = data.data.optional_data.data.ocpp.url
-            url = "ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1"
+            url = data.data.optional_data.data.ocpp.url
             if len(url) > 0:
                 async with websockets.connect(
                     url,
@@ -293,8 +288,7 @@ class OCPPClient():
 
     async def _stop_transaction(meter_value_charged, transaction_id, id_tag):
         try:
-            # url = data.data.optional_data.data.ocpp.url
-            url = "ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1"
+            url = data.data.optional_data.data.ocpp.url
             if len(url) > 0:
                 async with websockets.connect(
                     url,
