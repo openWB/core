@@ -9,7 +9,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
-from modules.devices.sonnenbatterie.sonnenbatterie.config import SonnenbatterieInverterSetup
+from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieInverterSetup
 
 log = logging.getLogger(__name__)
 
