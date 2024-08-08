@@ -9,7 +9,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
-from modules.devices.sonnenbatterie.sonnenbatterie.config import SonnenbatterieCounterSetup
+from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieCounterSetup
 
 log = logging.getLogger(__name__)
 
