@@ -1118,7 +1118,7 @@ class SetData:
                         with open(self._get_ramdisk_path()/f"smarthome_device_manual_control_{index}", 'w') as f:
                             f.write(str(decode_payload(msg.payload)))
                     if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/manueb" in msg.topic:
-                        manueb = int(msg.payload)                            
+                        manueb = int(msg.payload)
                         with open(self._get_ramdisk_path()/f"smarthome_device_manual_ueb_{index}", 'w') as f:
                             f.write(str(manueb))
                 elif (f"openWB/set/LegacySmartHome/Devices/{index}/Ueberschuss" in msg.topic or
