@@ -140,7 +140,9 @@ class Command:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
         """
         new_id = self.max_id_device + 1
-        dev = importlib.import_module(".devices."+payload["data"]["type"]+".device", "modules")
+        device_data = payload["data"]["type"]
+        device_path = ".".join(device_data)
+        dev = importlib.import_module(".devices."+device_path+".device", "modules")
         device_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
         device_default["id"] = new_id
         Pub().pub(f'openWB/set/system/device/{new_id}/config', device_default)
