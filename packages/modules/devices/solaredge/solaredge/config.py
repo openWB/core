@@ -1,5 +1,4 @@
 from modules.common.component_setup import ComponentSetup
-from typing import List
 
 
 class SolaredgeConfiguration:

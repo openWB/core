@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 from modules.devices.sma.sma_sunny_boy.inv_version import SmaInverterVersion

@@ -1,5 +1,5 @@
 from modules.common.component_setup import ComponentSetup
-from typing import Optional, List
+from typing import Optional
 
 
 class TasmotaConfiguration:
