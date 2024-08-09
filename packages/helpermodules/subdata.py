@@ -737,7 +737,8 @@ class SubData:
                                   str(index)+" gefunden werden.")
                 else:
                     device_config = decode_payload(msg.payload)
-                    dev = importlib.import_module(".devices."+device_config["type"]+".device", "modules")
+                    dev = importlib.import_module(f".devices.{device_config['vendor']}.{device_config['type']}.device",
+                                                  "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, device_config)
                     var["device"+index] = (dev.Device if hasattr(dev, "Device") else dev.create_device)(config)
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
@@ -768,8 +769,10 @@ class SubData:
                     # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
                     # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     component_config = decode_payload(msg.payload)
-                    component = importlib.import_module(
-                        f'.devices.{var["device"+index].device_config.type}.{component_config["type"]}', "modules")
+                    component = importlib.import_module(f'.devices.{var["device"+index].device_config.vendor}'
+                                                        f'.{var["device"+index].device_config.type}'
+                                                        f'.{component_config["type"]}',
+                                                        "modules")
                     config = dataclass_from_dict(component.component_descriptor.configuration_factory, component_config)
                     var["device"+index].add_component(config)
                     client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation", 2)
