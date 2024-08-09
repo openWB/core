@@ -140,9 +140,9 @@ class Command:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
         """
         new_id = self.max_id_device + 1
-        device_data = payload["data"]["type"]
-        device_path = ".".join(device_data)
-        dev = importlib.import_module(".devices."+device_path+".device", "modules")
+        dev = importlib.import_module(f'.devices.{payload["data"]["vendor"]}'
+                                      f'.{payload["data"]["type"]}.device',
+                                      "modules")
         device_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
         device_default["id"] = new_id
         Pub().pub(f'openWB/set/system/device/{new_id}/config', device_default)
@@ -433,8 +433,9 @@ class Command:
             for k, v in defaults.items():
                 Pub().pub(f'{topic}/{k}', v)
         new_id = self.max_id_hierarchy + 1
-        component = importlib.import_module(
-            ".devices."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
+        component = importlib.import_module(f'.devices.{payload["data"]["deviceVendor"]}'
+                                            f'.{payload["data"]["deviceType"]}.{payload["data"]["type"]}',
+                                            "modules")
         component_default = dataclass_utils.asdict(component.component_descriptor.configuration_factory())
         component_default["id"] = new_id
         general_type = special_to_general_type_mapping(payload["data"]["type"])
