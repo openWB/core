@@ -449,8 +449,10 @@ class Sbase(Sbase0):
         #    (1 = mit Speicher, 2 = mit offset , 0 = manual eingeschaltet)
         if (self.ueberschussberechnung == 2):
             self.devuberschuss = self._uberschussoffset
-        else:
+        elif (self.ueberschussberechnung == 1):
             self.devuberschuss = self._uberschuss
+        else:
+            self.devuberschuss = self.device_manual_ueb
 
     def preturn(self, zustand: int, ueberschussberechnung: int, updatecnt: int) -> None:
         self.ueberschussberechnung = ueberschussberechnung
@@ -483,6 +485,8 @@ class Sbase(Sbase0):
     def conditions(self, speichersoc: int) -> None:
         # do not do anything in case none type or can switch = no
         # or device manuam mode
+        if (self.device_manual == 1):
+            self.ueberschussberechnung = 0
         if ((self.device_canswitch == 0) or
            (self.device_manual == 1)):
             return
