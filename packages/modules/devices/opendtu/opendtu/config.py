@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 from typing import Optional
+
 from helpermodules.auto_str import auto_str
 from modules.devices.generic.json.config import Json, JsonConfiguration, JsonInverterConfiguration, JsonInverterSetup
+from ..vendor import vendor_descriptor
 
 
 @auto_str
@@ -18,6 +20,7 @@ class OpenDTU(Json):
                  id: int = 0,
                  configuration: OpenDTUConfiguration = None) -> None:
         super().__init__(name, type, id, configuration)
+        self.vendor = vendor_descriptor.configuration_factory().type
 
 
 @auto_str

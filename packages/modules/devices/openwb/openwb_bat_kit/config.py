@@ -1,4 +1,5 @@
 from modules.common.component_setup import ComponentSetup
+from ..vendor import vendor_descriptor
 
 
 class BatKitConfiguration:
@@ -14,6 +15,7 @@ class BatKit:
                  configuration: BatKitConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.vendor = vendor_descriptor.configuration_factory().type
         self.id = id
         self.configuration = configuration or BatKitConfiguration()
 

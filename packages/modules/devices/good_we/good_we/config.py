@@ -2,6 +2,7 @@ from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 from modules.devices.good_we.good_we.version import GoodWeVersion
+from ..vendor import vendor_descriptor
 
 
 class GoodWeConfiguration:
@@ -25,6 +26,7 @@ class GoodWe:
                  configuration: GoodWeConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.vendor = vendor_descriptor.configuration_factory().type
         self.id = id
         self.configuration = configuration or GoodWeConfiguration()
 

@@ -2,6 +2,7 @@ from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 from modules.devices.sungrow.sungrow.version import Version
+from ..vendor import vendor_descriptor
 
 
 class SungrowConfiguration:
@@ -24,6 +25,7 @@ class Sungrow:
                  configuration: SungrowConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.vendor = vendor_descriptor.configuration_factory().type
         self.id = id
         self.configuration = configuration or SungrowConfiguration()
 

@@ -1,6 +1,7 @@
 from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
+from ..vendor import vendor_descriptor
 
 
 class KostalPikoConfiguration:
@@ -15,6 +16,7 @@ class KostalPiko:
                  id: int = 0,
                  configuration: KostalPikoConfiguration = None) -> None:
         self.name = name
+        self.vendor = vendor_descriptor.configuration_factory().type
         self.type = type
         self.id = id
         self.configuration = configuration or KostalPikoConfiguration()

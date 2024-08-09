@@ -4,6 +4,7 @@ from modules.common.component_setup import ComponentSetup
 from modules.devices.openwb.openwb_bat_kit.config import BatKitBatSetup
 from modules.devices.openwb.openwb_evu_kit.config import EvuKitBatSetup, EvuKitCounterSetup, EvuKitInverterSetup
 from modules.devices.openwb.openwb_pv_kit.config import PvKitInverterSetup
+from ..vendor import vendor_descriptor
 
 
 class FlexConfiguration:
@@ -20,6 +21,7 @@ class Flex:
                  configuration: FlexConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.vendor = vendor_descriptor.configuration_factory().type
         self.id = id
         self.configuration = configuration or FlexConfiguration()
 
