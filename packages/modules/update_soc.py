@@ -10,7 +10,7 @@ from helpermodules import subdata
 from helpermodules import timecheck
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
-from helpermodules.utils import thread_handler
+from helpermodules.utils import joined_thread_handler
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.utils import wait_for_module_update_completed
 
@@ -31,10 +31,10 @@ class UpdateSoc:
             topic = "openWB/set/vehicle/set/vehicle_update_completed"
             try:
                 threads_update, threads_store = self._get_threads()
-                thread_handler(threads_update, 300)
+                joined_thread_handler(threads_update, 300)
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
                 # threads_store = self._filter_failed_store_threads(threads_store)
-                thread_handler(threads_store, data.data.general_data.data.control_interval/3)
+                joined_thread_handler(threads_store, data.data.general_data.data.control_interval/3)
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
