@@ -361,7 +361,6 @@ class CounterAll:
                     "type": ComponentType.COUNTER.value,
                     "children": self.data.get.hierarchy
                 }]
-                Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
                 self.data.get.hierarchy = hierarchy
             else:
                 raise ValueError(self.MISSING_EVU_COUNTER)
