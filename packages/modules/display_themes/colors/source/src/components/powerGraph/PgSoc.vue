@@ -21,7 +21,7 @@
 		:style="{ fill: cpColor, fontSize: 10 }"
 		:text-anchor="textPosition"
 	>
-		{{ cpName }}
+		{{ vName }}
 	</text>
 </template>
 
@@ -62,9 +62,16 @@ const myline = computed(() => {
 		)
 
 	let p = path(graphData.data)
-	return p ? p : ''
+	return p ?? ''
 })
-const cpName = computed(() => {
+const vID = computed(() => {
+	if (props.order == 2) {
+		return 'Speicher'
+	} else {
+		return cp.value.connectedVehicle
+	}
+})
+const vName = computed(() => {
 	if (props.order == 2) {
 		return 'Speicher'
 	} else {
@@ -105,14 +112,10 @@ const nameY = computed(() => {
 		switch (props.order) {
 			case 0:
 				index = graphData.data.length - 1
-				return yScale.value(
-					graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
-				)
+				return yScale.value(graphData.data[index]['soc' + vID.value] + 2)
 			case 1:
 				index = 0
-				return yScale.value(
-					graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
-				)
+				return yScale.value(graphData.data[index]['soc' + vID.value] + 2)
 			case 2:
 				index = Math.round(graphData.data.length / 2)
 				return yScale.value(graphData.data[index].batSoc + 2)
