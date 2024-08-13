@@ -1,4 +1,5 @@
 
+import copy
 import logging
 from requests import Session
 
@@ -13,6 +14,16 @@ class CustomSession(Session):
     def request(self, method, url, *args, **kwargs):
         kwargs.setdefault('timeout', self.default_timeout)
         return super().request(method, url, *args, **kwargs)
+
+    def __deepcopy__(self, memo):
+        """die deepcopy-methode von python kopiert keine Klassenattribute, daher wird hier eine eigene deepcopy-Methode
+        implementiert"""
+        new_copy = self.__class__()
+        new_copy.default_timeout = self.default_timeout
+        for k, v in self.__dict__.items():
+            if k != 'default_timeout':
+                setattr(new_copy, k, copy.deepcopy(v, memo))
+        return new_copy
 
 
 def get_http_session() -> CustomSession:
