@@ -37,7 +37,7 @@ def joined_thread_handler(threads: List[threading.Thread], timeout: Optional[int
 
 def thread_handler(thread: threading.Thread):
     if is_thread_alive(thread.name):
-        log.error(f"{thread.name} ist bereits aktiv und wird nicht erneut gestartet.")
+        log.error(f"Thread {thread.name} ist bereits aktiv und wird nicht erneut gestartet.")
     else:
         thread.start()
 
