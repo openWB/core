@@ -131,17 +131,17 @@ class BatAll:
             log.exception("Fehler im Bat-Modul")
 
     def _max_bat_power_hybrid_system(self, battery: Bat) -> float:
+        """gibt die maximale Entladeleistung des Speichers zurück, bis die maximale Ausgangsleistung des WR erreicht
+        ist."""
         # tested
         parent = data.data.counter_all_data.get_entry_of_parent(battery.num)
         if parent.get("type") == "inverter":
             parent_data = data.data.pv_data[f"pv{parent['id']}"].data
-            # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
-            # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
             # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
             # genutzt werden.
             if parent_data.config.max_ac_out > 0:
                 max_bat_discharge_power = parent_data.config.max_ac_out + \
-                    parent_data.get.power + max(battery.data.get.power, 0)
+                    parent_data.get.power + min(battery.data.get.power, 0)
                 return max_bat_discharge_power, True
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
@@ -153,6 +153,8 @@ class BatAll:
             return abs(battery.data.get.power) + 50, False
 
     def _limit_bat_power_discharge(self, required_power):
+        """begrenzt die für den Algorithmus benötigte Entladeleistung des Speichers, wenn die maximale Ausgangsleistung
+        des WR erreicht ist."""
         available_power = 0
         hybrid = False
         if required_power > 0:
