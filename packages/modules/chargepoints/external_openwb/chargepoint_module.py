@@ -22,7 +22,7 @@ class ChargepointModule(AbstractChargepoint):
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
             current = 0
-        with SingleComponentUpdateContext(self.fault_state, False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 if self.config.configuration.duo_num == 0:
                     pub.pub_single("openWB/set/internal_chargepoint/0/data/set_current", current,
@@ -59,8 +59,15 @@ class ChargepointModule(AbstractChargepoint):
                 self.client_error_context.reset_error_counter()
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
+
+
+<< << << < HEAD
         with SingleComponentUpdateContext(self.fault_state, False):
             with self.client_error_context:
+== == == =
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
+            with self.__client_error_context:
+>>>>>> > 1fcaff093(fix)
                 pub.pub_single(
                     f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/phases_to_use",
                     phases_to_use,
@@ -74,7 +81,7 @@ class ChargepointModule(AbstractChargepoint):
                 time.sleep(6+duration-1)
 
     def interrupt_cp(self, duration: int) -> None:
-        with SingleComponentUpdateContext(self.fault_state, False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 if (self.config.configuration.duo_num == 1):

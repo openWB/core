@@ -26,7 +26,7 @@ class ChargepointModule(AbstractChargepoint):
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
             current = 0
-        with SingleComponentUpdateContext(self.fault_state, False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 timeout = self.config.configuration.timeout
@@ -101,7 +101,7 @@ class ChargepointModule(AbstractChargepoint):
                 req.get_http_session().get('http://'+ip_address+'/clearRfid', timeout=(timeout, None))
 
     def interrupt_cp(self, duration: int) -> None:
-        with SingleComponentUpdateContext(self.fault_state, False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 timeout = self.config.configuration.timeout

@@ -31,7 +31,7 @@ class ChargepointModule(AbstractChargepoint):
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         self.old_chargepoint_state = ChargepointState()
 
-        with SingleComponentUpdateContext(self.fault_state, False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 self.__session.post(
                     'http://' + self.config.configuration.ip_address + '/connect.php',
@@ -40,7 +40,7 @@ class ChargepointModule(AbstractChargepoint):
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
             current = 0
-        with SingleComponentUpdateContext(self.fault_state, False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': current})
@@ -100,7 +100,7 @@ class ChargepointModule(AbstractChargepoint):
             raise ValueError(self.WRONG_PLUG_STATE)
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
-        with SingleComponentUpdateContext(self.fault_state, False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 response = self.__session.get('http://'+ip_address+'/connect.php')

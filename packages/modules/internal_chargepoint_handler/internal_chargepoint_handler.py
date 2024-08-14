@@ -145,27 +145,26 @@ class InternalChargepointHandler:
         self.event_start = event_start
         self.event_stop = event_stop
         self.heartbeat = False
-        fault_state_info_cp0 = FaultState(
+        self.fault_state_info_cp0 = FaultState(
             ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
                           parent_hostname=global_data.parent_ip))
         fault_state_info_cp1 = FaultState(
             ComponentInfo(hierarchy_id_cp1, "Interner Ladepunkt 1", "chargepoint", parent_id=parent_cp1,
                           parent_hostname=global_data.parent_ip))
-        with SingleComponentUpdateContext(fault_state_info_cp0):
+        with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
             self.init_gpio()
         try:
-            with SingleComponentUpdateContext(fault_state_info_cp0):
+            with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
                 # Allgemeine Fehlermeldungen an LP 1:
-                self.cp0_client_handler = client_factory(0, fault_state_info_cp0)
+                self.cp0_client_handler = client_factory(0, self.fault_state_info_cp0)
                 self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
                                               global_data, parent_cp0, hierarchy_id_cp0)
         except Exception:
-            log.exception("Fehler beim Initialisieren des ersten internen Ladepunkts.")
             self.cp0_client_handler = None
             self.cp0 = None
         try:
             if mode == InternalChargepointMode.DUO.value:
-                with SingleComponentUpdateContext(fault_state_info_cp1):
+                with SingleComponentUpdateContext(fault_state_info_cp1, reraise=True):
                     log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
                     self.cp1_client_handler = client_factory(1, fault_state_info_cp1, self.cp0_client_handler)
                     self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
@@ -174,7 +173,6 @@ class InternalChargepointHandler:
                 self.cp1 = None
                 self.cp1_client_handler = None
         except Exception:
-            log.exception("Fehler beim Initialisieren des zweiten internen Ladepunkts.")
             self.cp1 = None
             self.cp1_client_handler = None
 
@@ -207,7 +205,7 @@ class InternalChargepointHandler:
                 if self.cp1:
                     self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
                 time.sleep(1.1)
-        with SingleComponentUpdateContext(self.cp0.module.fault_state):
+        with SingleComponentUpdateContext(self.fault_state_info_cp0):
             # Allgemeine Fehlermeldungen an LP 1
             if self.cp0_client_handler is not None and self.cp1_client_handler is None:
                 with self.cp0_client_handler.client:
