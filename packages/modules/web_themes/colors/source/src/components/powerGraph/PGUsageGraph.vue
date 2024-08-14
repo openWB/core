@@ -37,11 +37,21 @@ const props = defineProps<{
 }>()
 
 //state
-const keys = [
+const keys = computed (() => {
+	if (globalConfig.showInverters) {
+		return [
 	['house', 'charging', 'devices', 'batIn'],
 	['charging', 'devices', 'house', 'batIn'],
 	['devices', 'charging', 'house', 'batIn'],
-]
+	]
+	} else {
+		return [
+		['house', 'charging', 'devices', 'batIn', 'evuOut'],
+		['charging', 'devices', 'house', 'batIn', 'evuOut'],
+		['devices', 'charging', 'house', 'batIn', 'evuOut'],
+		]
+	}
+})
 const colors: { [key: string]: string } = {
 	house: 'var(--color-house)',
 	charging: 'var(--color-charging)',
@@ -114,9 +124,9 @@ const yScale = computed(() => {
 
 const keysToUse = computed(() => {
 	if (graphData.graphMode != 'today' && graphData.graphMode != 'day') {
-		return keys[props.stackOrder]
+		return keys.value[props.stackOrder]
 	} else {
-		const k = keys[props.stackOrder].slice()
+		const k = keys.value[props.stackOrder].slice()
 		const idx = k.indexOf('charging')
 		k.splice(idx, 1)
 		const pattern = /cp\d+/
@@ -230,7 +240,7 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
 			.append('g')
-			.attr('fill', (d, i) => colors[keys[props.stackOrder][i]])
+			.attr('fill', (d, i) => colors[keys.value[props.stackOrder][i]])
 			.selectAll('rect')
 			.data((d) => d)
 			.enter()
@@ -264,7 +274,7 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
 			.append('g')
-			.attr('fill', (d, i) => colors[keys[props.stackOrder][i]])
+			.attr('fill', (d, i) => colors[keys.value[props.stackOrder][i]])
 			.selectAll('rect')
 			.data((d) => d)
 			.enter()
