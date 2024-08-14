@@ -624,6 +624,18 @@ class SubData:
                 elif "openWB/general/modbus_control" == msg.topic:
                     if decode_payload(msg.payload) and self.general_data.data.extern:
                         self.event_modbus_server.set()
+                elif "openWB/general/http_api" == msg.topic:
+                    if (
+                        self.event_subdata_initialized.is_set() and
+                        self.general_data.data.http_api != decode_payload(msg.payload)
+                    ):
+                        pub_system_message(
+                            msg.payload,
+                            "Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">"
+                            "neu starten</a>, damit die Änderungen an der HTTP-API wirksam werden.",
+                            MessageType.SUCCESS
+                        )
+                    self.set_json_payload_class(var.data, msg)
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:

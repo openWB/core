@@ -1,6 +1,6 @@
 <template>
 	<div class="numberpad">
-		<p class="codedisplay">{{ hiddencode }}</p>
+		<p class="codedisplay scaled">{{ hiddencode }}</p>
 		<div class="numberentry">
 			<PadButton
 				v-for="val in 9"
@@ -38,7 +38,7 @@ const code = ref(props.modelValue)
 const emit = defineEmits(['update:modelValue'])
 const hiddencode = computed(() => {
 	return code.value.length == 0
-		? 'Bitte geben Sie den PIN ein'
+		? 'Bitte geben Sie die PIN ein'
 		: '*'.repeat(code.value.length)
 })
 function addDigit(digit: number) {
@@ -66,12 +66,13 @@ function addDigit(digit: number) {
 	justify-content: center;
 	font-size: 24px;
 	border: 10px;
+	color: var(--color-bg);
 }
 
 .numberentry {
 	display: grid;
-	grid-template-columns: 70px 70px 70px;
-	grid-template-rows: 75px 75px 75px 75px;
+	grid-template-columns: 60px 60px 60px;
+	grid-template-rows: 65px 65px 65px 65px;
 	grid-gap: 5px;
 }
 </style>

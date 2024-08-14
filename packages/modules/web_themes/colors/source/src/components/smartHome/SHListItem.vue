@@ -4,13 +4,11 @@
 			{{ device.name }}
 		</template>
 		<template #buttons>
-			<WbBadge
-				v-for="(temp, idx) in device.temp"
-				:key="idx"
-				bgcolor="var(--color-battery)"
-			>
-				<span v-if="temp < 300">{{ formatTemp(temp) }} </span>
-			</WbBadge>
+			<span v-for="(temp, idx) in device.temp" :key="idx">
+				<WbBadge v-if="temp < 300" bgcolor="var(--color-battery)">
+					<span>{{ formatTemp(temp) }} </span>
+				</WbBadge>
+			</span>
 			<span
 				v-if="props.device.canSwitch"
 				:class="switchIcon"

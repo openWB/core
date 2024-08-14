@@ -10,55 +10,12 @@
 			:class="element[1] == v ? 'active' : ''"
 			@click="setValue"
 		>
-			<span :style="getColor(index)">
+			<span :style="getColor(index)" class="scaled">
 				<i v-if="element[3]" class="fa-solid" :class="element[3]" />
 				{{ element[0] }}
 			</span>
 		</button>
 	</div>
-	<!-- 
-<div class="form-check">
-   <span v-for="(element, index) in options">
-    <input
-      class="btn-check"
-      type="radio"
-      name="foo"
-      :id="'radio-' + element[1]"
-      autocomplete="off"
-      :value="element[1]"
-      v-on:change="showValue"
-    />
-    <label
-      class="btn me-1 px-1 mb-1 btn-outline-secondary selectButton"
-      :for="'radio' + element[1]"
-    >
-      <span :style="getColor(index)">
-        <i class="fa-solid" :class="getIcon(index)"></i>
-        {{ element[0] }}
-      </span>
-    </label>
-  </span>
-  </div>
-  -->
-	<!--
-   <div>
-  <div class="form-check-inline" v-for="(element, index) in options">
-    <input
-      class="form-check-input"
-      type="radio"
-      :id="'radio-' + element[1]"
-      :value="element[1]"
-      v-model="v"
-    />
-    <label class="form-check-label" :for="'radio' + element[1]">
-      <span :style="getColor(index)">
-        <i class="fa-solid" :class="getIcon(index)"></i>
-        {{ element[0] }}
-      </span>
-    </label>
-  </div>
-  </div>
-  -->
 </template>
 
 <script setup lang="ts">
@@ -80,7 +37,7 @@ function getColor(index: number) {
 	if (props.options[index][2]) {
 		return { color: props.options[index][2] }
 	} else {
-		return { color: 'var(--color-fg)' }
+		return { color: 'var(--color-charging)' }
 	}
 }
 function setValue(event: Event) {
@@ -97,14 +54,17 @@ function setValue(event: Event) {
 
 <style scoped>
 .radiobutton {
-	border: 0.5px solid var(--color-input);
+	border: 0.5px solid var(--color-bg);
 	opacity: 0.5;
 	font-size: var(--font-settings);
 }
+.btn-outline-secondary {
+	background-color: var(--color-fg);
+}
 .btn-outline-secondary.active {
-	background-color: var(--color-bg);
-	border: 1px solid var(--color-fg);
-	box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+	background-color: var(--color-fg);
+	border: 1px solid var(--color-bg);
+	box-shadow: 0 0.5rem 1rem black;
 	opacity: 1;
 }
 </style>

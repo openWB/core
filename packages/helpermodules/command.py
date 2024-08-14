@@ -16,6 +16,7 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 # ToDo: move to module commands if implemented
+from helpermodules import pub
 from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
@@ -601,6 +602,18 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
                              f'ID \'{self.max_id_mqtt_bridge}\'.', MessageType.ERROR)
+
+    def chargepointReboot(self, connection_id: str, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemReboot", "data": {}},
+                       hostname=SubData.cp_data[f'cp{payload["data"]["chargepoint"]}'
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
+
+    def chargepointShutdown(self, connection_id: str, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemReboot", "data": {}},
+                       hostname=SubData.cp_data[payload["data"]["chargepoint"]
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
 
     def systemReboot(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Neustart wird ausgeführt.", MessageType.INFO)

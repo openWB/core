@@ -1,13 +1,6 @@
 <template>
 	<div class="content">
 		<div class="leftside">
-			<CPChargePoint
-				v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
-				:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"
-				:full-width="true"
-			></CPChargePoint>
-		</div>
-		<div class="rightside">
 			<div v-show="globalConfig.graphToShow == 'powermeter'">
 				<PowerMeter></PowerMeter>
 			</div>
@@ -18,14 +11,37 @@
 				<EnergyMeter></EnergyMeter>
 			</div>
 		</div>
+
+		<div class="rightside">
+			<CPChargePoint
+				v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
+				:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"
+				:full-width="true"
+			></CPChargePoint>
+		</div>
 	</div>
 	<ModalComponent modal-id="numberpad">
-		<template #title>PIN Eingeben</template>
+		<template #title>Code</template>
 		<NumberPad model-value="" @update:model-value="validateCode"></NumberPad>
 	</ModalComponent>
 	<ModalComponent modal-id="statuspage">
-		<template #title>Systemstatus</template>
+		<template #title><span class="statustitle">Systemstatus</span></template>
 		<StatusPage></StatusPage>
+	</ModalComponent>
+	<ModalComponent
+		v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
+		modal-id="settingspage"
+	>
+		<template #title
+			><span class="settingstitle"
+				>Einstellungen für
+				{{ Object.values(chargePoints)[globalConfig.cpToShow].name }}
+				({{ Object.values(chargePoints)[globalConfig.cpToShow].vehicleName }})
+			</span>
+		</template>
+		<SettingsPage
+			:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"
+		></SettingsPage>
 	</ModalComponent>
 </template>
 <script setup lang="ts">
@@ -37,7 +53,8 @@ import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
 import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
 import ModalComponent from '@/components/shared/ModalComponent.vue'
 import NumberPad from '@/components/shared/NumberPad.vue'
-import StatusPage from '@/components/statusPage/StatusPage.vue'
+import StatusPage from '@/views/StatusPage.vue'
+import SettingsPage from '@/views/SettingsPage.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import { initGraph } from '@/components/powerGraph/model'
 import CPChargePoint from '@/components/chargePointList/CPChargePoint.vue'
@@ -76,9 +93,15 @@ function haveFocus() {
 <style scoped>
 .content {
 	display: grid;
-	grid-template-columns: 420px 380px;
+	grid-template-columns: 380px 420px;
+	grid-template-rows: 430px;
 	overflow: hidden;
 	min-width: 0px;
+}
+
+.leftside {
+	min-width: 0px;
+	overflow: hidden;
 }
 
 .rightside {
@@ -86,8 +109,11 @@ function haveFocus() {
 	overflow: hidden;
 }
 
-.leftside {
-	min-width: 0px;
-	overflow: hidden;
+.settingstitle {
+	color: var(--color-charging);
+}
+
+.statustitle {
+	color: var(--color-charging);
 }
 </style>

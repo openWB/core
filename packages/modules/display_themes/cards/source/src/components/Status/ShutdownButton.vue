@@ -38,8 +38,17 @@ export default {
      * system shutdown is requested by command
      */
     confirm() {
+      this.toggleModal();
       console.log("shutdown requested");
-      this.$root.sendSystemCommand("systemShutdown");
+      if (this.mqttStore.settings.parentChargePoint1 !== undefined) {
+        console.log("shutting down secondary charge point:", this.mqttStore.settings.parentChargePoint1);
+        this.$root.sendSystemCommand("chargepointShutdown", {
+          chargePoint: this.mqttStore.settings.parentChargePoint1,
+        });
+      } else {
+        console.log("shutting down primary system");
+        this.$root.sendSystemCommand("systemShutdown");
+      }
     },
   },
 };

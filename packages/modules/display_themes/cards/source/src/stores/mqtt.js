@@ -3,6 +3,10 @@ import { defineStore } from "pinia";
 export const useMqttStore = defineStore("mqtt", {
   state: () => ({
     settings: {
+      localIp: undefined,
+      localBranch: undefined,
+      localCommit: undefined,
+      localVersion: undefined,
       parentChargePoint1: undefined,
       parentChargePoint2: undefined,
     },
@@ -795,24 +799,6 @@ export const useMqttStore = defineStore("mqtt", {
 
     /* system getters */
 
-    getSystemCurrentCommit(state) {
-      if (state.topics["openWB/system/current_commit"]) {
-        return state.topics["openWB/system/current_commit"];
-      }
-      return undefined;
-    },
-    getSystemIp(state) {
-      if (state.topics["openWB/system/ip_address"]) {
-        return state.topics["openWB/system/ip_address"];
-      }
-      return undefined;
-    },
-    getSystemBranch(state) {
-      if (state.topics["openWB/system/current_branch"]) {
-        return state.topics["openWB/system/current_branch"];
-      }
-      return undefined;
-    },
     getSystemTime(state) {
       if (state.topics["openWB/system/time"]) {
         return new Date(
@@ -821,9 +807,39 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return undefined;
     },
+    getSystemIp(state) {
+      if (state.settings.localIp !== undefined) {
+        return state.settings.localIp;
+      }
+      if (state.topics["openWB/system/ip_address"]) {
+        return state.topics["openWB/system/ip_address"];
+      }
+      return undefined;
+    },
     getSystemVersion(state) {
+      if (state.settings.localVersion !== undefined) {
+        return state.settings.localVersion;
+      }
       if (state.topics["openWB/system/version"]) {
         return state.topics["openWB/system/version"];
+      }
+      return undefined;
+    },
+    getSystemBranch(state) {
+      if (state.settings.localBranch !== undefined) {
+        return state.settings.localBranch;
+      }
+      if (state.topics["openWB/system/current_branch"]) {
+        return state.topics["openWB/system/current_branch"];
+      }
+      return undefined;
+    },
+    getSystemCurrentCommit(state) {
+      if (state.settings.localCommit !== undefined) {
+        return state.settings.localCommit;
+      }
+      if (state.topics["openWB/system/current_commit"]) {
+        return state.topics["openWB/system/current_commit"];
       }
       return undefined;
     },

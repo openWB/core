@@ -8,14 +8,14 @@ def get_index(topic: str) -> str:
     """
     regex = re.search('(?!/)([0-9]*)(?=/|$)', topic)
     if regex is None:
-        raise Exception(f"Couldn't find index in {topic}")
+        raise ValueError(f"Couldn't find index in {topic}")
     return regex.group()
 
 
 def get_index_position(topic: str) -> int:
     regex = re.search('(?!/)([0-9]*)(?=/|$)', topic)
     if regex is None:
-        raise Exception(f"Couldn't find index in {topic}")
+        raise ValueError(f"Couldn't find index in {topic}")
     return regex.end()
 
 
@@ -24,14 +24,14 @@ def get_second_index(topic: str) -> str:
     """
     regex = re.search('^.+/([0-9]*)/.+/([0-9]+)/*.*$', topic)
     if regex is None:
-        raise Exception(f"Couldn't find index in {topic}")
+        raise ValueError(f"Couldn't find index in {topic}")
     return regex.group(2)
 
 
 def get_second_index_position(topic: str) -> int:
     regex = re.search('^.+/([0-9]*)/.+/([0-9]+)/*.*$', topic)
     if regex is None:
-        raise Exception(f"Couldn't find index in {topic}")
+        raise ValueError(f"Couldn't find index in {topic}")
     return regex.end(2)
 
 

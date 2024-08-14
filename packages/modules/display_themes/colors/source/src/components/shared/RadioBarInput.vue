@@ -11,7 +11,7 @@
 				:class="element.value == v ? 'active' : ''"
 				@click="setValue"
 			>
-				<span :style="getColor(index)">
+				<span :style="getColor(index)" class="scaled">
 					<i v-if="element.icon" class="fa-solid" :class="element.icon" />
 					{{ element.text }}
 				</span>
@@ -77,6 +77,7 @@ export type InfoItemValues = {
 	opacity: 0.8;
 }
 .btn-group {
-	border: 1px solid var(--color-menu);
+	border: 0.1px solid var(--color-menu);
+	box-shadow: 1px 3px black;
 }
 </style>
