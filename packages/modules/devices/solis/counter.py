@@ -20,18 +20,14 @@ class SolisCounter:
     def update(self, client: ModbusTcpClient_):
         unit = self.component_config.configuration.modbus_id
         if self.version == SolisVersion.inverter:
-            # register offset -1
-            power = client.read_holding_registers(3262, ModbusDataType.INT_32, unit=unit)
-            powers = client.read_holding_registers(3256, [ModbusDataType.INT_32]*3, unit=unit)
-            frequency = client.read_holding_registers(3281, ModbusDataType.UINT_16, unit=unit) / 100
-            imported = client.read_holding_registers(3282, ModbusDataType.UINT_32, unit=unit) * 10
-            exported = client.read_holding_registers(3284, ModbusDataType.UINT_32, unit=unit) * 10
+            register_offset = -1
         elif self.version == SolisVersion.hybrid:
-            power = client.read_holding_registers(33263, ModbusDataType.INT_32, unit=unit)
-            powers = client.read_holding_registers(33257, [ModbusDataType.INT_32]*3, unit=unit)
-            frequency = client.read_holding_registers(33282, ModbusDataType.UINT_16, unit=unit) / 100
-            imported = client.read_holding_registers(33283, ModbusDataType.UINT_32, unit=unit) * 10
-            exported = client.read_holding_registers(33285, ModbusDataType.UINT_32, unit=unit) * 10
+            register_offset = 30000
+        power = client.read_holding_registers(3263 + register_offset, ModbusDataType.INT_32, unit=unit)
+        powers = client.read_holding_registers(3257 + register_offset, [ModbusDataType.INT_32]*3, unit=unit)
+        frequency = client.read_holding_registers(3282 + register_offset, ModbusDataType.UINT_16, unit=unit) / 100
+        imported = client.read_holding_registers(3283 + register_offset, ModbusDataType.UINT_32, unit=unit) * 10
+        exported = client.read_holding_registers(3285 + register_offset, ModbusDataType.UINT_32, unit=unit) * 10
 
         counter_state = CounterState(
             imported=imported,

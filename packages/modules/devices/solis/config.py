@@ -2,14 +2,17 @@ from typing import Optional
 from helpermodules.auto_str import auto_str
 
 from modules.common.component_setup import ComponentSetup
+from modules.devices.solis.version import SolisVersion
 
 
 class SolisConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 port: int = 502):
+                 port: int = 502,
+                 version: SolisVersion = SolisVersion.hybrid):
         self.ip_address = ip_address
         self.port = port
+        self.version = version
 
 
 class Solis:
