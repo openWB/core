@@ -18,7 +18,6 @@ var secondaryTopicsToSubscribe = {
 	"openWB/system/ip_address": false,
 	"openWB/system/current_branch": false,
 	"openWB/system/current_commit": false,
-	"openWB/system/version": false,
 	"openWB/general/extern_display_mode": false,
 	"openWB/internal_chargepoint/global_data": false,
 	"openWB/internal_chargepoint/0/data/parent_cp": false,
