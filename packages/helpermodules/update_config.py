@@ -1658,7 +1658,7 @@ def upgrade_datastore_54(self) -> None:
         if re.search("openWB/system/device/[0-9]+", topic) is not None:
             payload = decode_payload(payload)
             # update version and firmware of GoodWe
-            if payload.get("name") == "SolarEdge externer Wechselrichter"\
+            if payload.get("type") == "external_inverter"\
                     and "factor" not in payload["configuration"]:
                 payload["configuration"].update({"factor": 1})
             Pub().pub(topic, payload)
