@@ -13,3 +13,4 @@ TimeoutStartSec=900
 
 [Install]
 WantedBy=multi-user.target
+After=mosquitto_local.service

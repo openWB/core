@@ -10,3 +10,4 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
+After=mosquitto_local.service
