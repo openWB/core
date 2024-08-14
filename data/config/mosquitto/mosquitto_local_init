@@ -1,12 +1,14 @@
 #! /bin/sh
 
+# openwb-version:1
+
 # JFL 20190529: patched startup script for multiple mosquitto instances. Rename 
 # to an instance name, e.g. mosquitto_dev to initiate an instance expecting its
 # config in /etc/mosquitto/mosquitto_dev (i.e. based on this script's name)
 
 ### BEGIN INIT INFO
-# Provides:		mosquitto
-# Required-Start:	$remote_fs $syslog
+# Provides:		mosquitto_local
+# Required-Start:	$remote_fs $syslog mosquitto
 # Required-Stop:	$remote_fs $syslog
 # Default-Start:	2 3 4 5
 # Default-Stop:		0 1 6
