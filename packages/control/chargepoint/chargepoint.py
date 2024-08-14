@@ -350,12 +350,12 @@ class Chargepoint(ChargepointRfidMixin):
                     # Wird die Ladung gestartet?
                     if self.set_current_prev == 0 and self.data.set.current != 0:
                         # Die CP-Unterbrechung erfolgt in Threads, da diese länger als ein Zyklus dauert.
-                        thread_handler(threading.Thread(
-                            target=self.chargepoint_module.interrupt_cp,
-                            args=(charging_ev.ev_template.data.control_pilot_interruption_duration,),
-                            name=f"cp{self.chargepoint_module.config.id}"))
-                        message = "Control-Pilot-Unterbrechung für " + str(
-                            charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
+                        if thread_handler(threading.Thread(
+                                target=self.chargepoint_module.interrupt_cp,
+                                args=(charging_ev.ev_template.data.control_pilot_interruption_duration,),
+                                name=f"cp{self.chargepoint_module.config.id}")):
+                            message = "Control-Pilot-Unterbrechung für " + str(
+                                charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
                         self.set_state_and_log(message)
                 else:
                     message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."

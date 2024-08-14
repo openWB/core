@@ -35,11 +35,13 @@ def joined_thread_handler(threads: List[threading.Thread], timeout: Optional[int
     return not_finished_threads
 
 
-def thread_handler(thread: threading.Thread):
+def thread_handler(thread: threading.Thread) -> bool:
     if is_thread_alive(thread.name):
         log.error(f"Thread {thread.name} ist bereits aktiv und wird nicht erneut gestartet.")
+        return False
     else:
         thread.start()
+        return True
 
 
 def is_thread_alive(thread_name: str) -> bool:
