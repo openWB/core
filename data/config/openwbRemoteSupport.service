@@ -1,4 +1,4 @@
-# openwb-version:1
+# openwb-version:2
 [Unit]
 Description="Remote Support Handler openWB 2.0"
 

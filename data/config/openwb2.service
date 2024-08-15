@@ -1,4 +1,4 @@
-# openwb-version:2
+# openwb-version:3
 [Unit]
 Description="Regelung openWB 2.0"
 
