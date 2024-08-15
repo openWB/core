@@ -111,8 +111,7 @@ class Optional:
         return self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())]
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
-        """ geht die Preise der nächsten 24h durch und liefert eine Liste der Uhrzeiten, zu denen geladen werden soll
-
+        """
         Parameter
         ---------
         duration: float
