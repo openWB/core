@@ -804,6 +804,8 @@ class SetData:
             elif ("openWB/set/general/web_theme" in msg.topic or
                   "openWB/set/general/ripple_control_receiver/module" in msg.topic):
                 self._validate_value(msg, "json")
+            elif ("openWB/set/general/charge_log_data_config" in msg.topic):
+                self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
         except Exception:
