@@ -439,7 +439,7 @@ class UpdateConfig:
           "data_power_source": False, "vehicle_name": True, "vehicle_chargemode": True, "vehicle_prio": True,
           "vehicle_rfid": True, "vehicle_soc_at_start": False, "vehicle_soc_at_end": False, "chargepoint_name": True,
           "chargepoint_serial_number": False, "data_imported_since_mode_switch": True,
-          "chargepoint_imported_at_start": False, "chargepoint_imported_at_end": False, "data_power": False}),
+          "chargepoint_imported_at_start": False, "chargepoint_imported_at_end": False}),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 3),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
