@@ -1,4 +1,4 @@
-# openwb-version:2
+# openwb-version:3
 [Unit]
 Description="Regelung openWB 2.0"
 
@@ -13,3 +13,4 @@ TimeoutStartSec=900
 
 [Install]
 WantedBy=multi-user.target
+After=mosquitto_local.service
