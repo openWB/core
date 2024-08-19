@@ -575,6 +575,7 @@ class SetData:
                         "/control_parameter/min_current" in msg.topic or
                         "/control_parameter/timestamp_switch_on_off" in msg.topic or
                         "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
+                        "/control_parameter/timestamp_charge_start" in msg.topic or
                         "/control_parameter/timestamp_perform_phase_switch" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
@@ -884,7 +885,7 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/counter/config/reserve_for_not_charging" in msg.topic or
+            if ("openWB/set/counter/config/reserve_for_less_charging" in msg.topic or
                     "openWB/set/counter/set/loadmanagement_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/counter/set/invalid_home_consumption" in msg.topic:
