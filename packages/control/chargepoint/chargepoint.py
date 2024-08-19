@@ -714,9 +714,6 @@ class Chargepoint(ChargepointRfidMixin):
             else:
                 self._pub_configured_ev(ev_list)
             # OCPP Start Transaction nach Anstecken
-            # self.data.set.ocpp_transaction_active = False
-            # Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_active",
-            #          self.data.set.ocpp_transaction_active)
             if (self.data.get.plug_state and
                     self.data.set.ocpp_transaction_active is False and
                     self.data.set.manual_lock is False):
