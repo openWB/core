@@ -218,7 +218,7 @@ class OCPPClient():
                 ) as ws:
                     # Start Transaction
                     try:
-                        cp = ChargePoint('openWB', ws, 1)
+                        cp = ChargePoint('openWB', ws, 2)
                         await cp.call(call.StartTransaction(
                             connector_id=connector_id,
                             id_tag=id_tag,
