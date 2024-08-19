@@ -6,6 +6,7 @@ from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
+from helpermodules.timecheck import check_timestamp
 from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
@@ -28,6 +29,8 @@ CHARGEMODES = ((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, True
                (None, Chargemode.STANDBY, False),
                (None, Chargemode.STOP, True),
                (None, Chargemode.STOP, False))
+
+LESS_CHARGING_TIMEOUT = 60
 
 # tested
 
@@ -128,10 +131,10 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
     """alle CP, die schon einen Sollstrom haben, wieder rausrechnen, da dieser neu gesetzt wird
         und die neue Differenz bei den Zählern eingetragen wird."""
     for chargepoint in preferenced_chargepoints:
-        if consider_not_charging_chargepoint_in_loadmanagement(chargepoint):
-            continue
         required_currents = chargepoint.data.control_parameter.required_currents
         max_target_set_current = max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0)
+        max_target_set_current = consider_less_charging_chargepoint_in_loadmanagement(
+            chargepoint, max_target_set_current)
 
         if diff_to_zero is False:
             if chargepoint.data.control_parameter.min_current < max_target_set_current:
@@ -153,10 +156,14 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
                 data.data.counter_data[counter].update_values_left(diffs)
 
 
-def consider_not_charging_chargepoint_in_loadmanagement(cp: Chargepoint) -> bool:
-    # tested
-    return data.data.counter_all_data.data.config.reserve_for_less_charging is False and max(cp.data.get.currents) == 0
-
+def consider_less_charging_chargepoint_in_loadmanagement(cp: Chargepoint, set_current: float) -> bool:
+    if ((cp.data.set.current -
+        cp.data.set.charging_ev_data.ev_template.data.nominal_difference) > max(cp.data.get.currents) and
+            cp.data.control_parameter.timestamp_charge_start is not None and
+            check_timestamp(cp.data.control_parameter.timestamp_charge_start, LESS_CHARGING_TIMEOUT) is False):
+        return max(cp.data.get.currents)
+    else:
+        return set_current
 # tested
 
 

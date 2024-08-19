@@ -620,6 +620,18 @@ class Chargepoint(ChargepointRfidMixin):
                                    "was ggf eine unnötige Reduktion der Ladeleistung zur Folge hat.")
         self.data.set.required_power = sum(control_parameter.required_currents) * 230
 
+    def handle_less_power(self):
+        if self.data.set.current != 0 and self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED:
+            nominal_difference = self.data.set.charging_ev_data.ev_template.data.nominal_difference
+            if self.data.set.current - nominal_difference > max(self.data.get.currents):
+                if self.data.control_parameter.timestamp_charge_start is None:
+                    self.data.control_parameter.timestamp_charge_start = create_timestamp()
+            else:
+                self.data.control_parameter.timestamp_charge_start = None
+        else:
+            # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
+            self.data.control_parameter.timestamp_charge_start = None
+
     def update_ev(self, ev_list: Dict[str, Ev]) -> None:
         # Für Control-Pilot-Unterbrechung set current merken.
         self.set_current_prev = self.data.set.current
@@ -661,6 +673,7 @@ class Chargepoint(ChargepointRfidMixin):
                     charging_ev.set_submode_changed(self.data.control_parameter, submode)
                     self.set_control_parameter(submode, required_current)
                     self.set_required_currents(required_current)
+                    self.handle_less_power()
 
                     if charging_ev.chargemode_changed:
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
