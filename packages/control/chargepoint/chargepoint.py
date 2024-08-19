@@ -221,8 +221,9 @@ class Chargepoint(ChargepointRfidMixin):
                 rfid = "0"
             transaction_id = self.data.set.ocpp_transaction_id
             try:
+                ocpp_client = optional.OCPPClient()
                 asyncio.run(
-                    optional.OCPPClient._stop_transaction(
+                    ocpp_client._stop_transaction(
                         int(self.data.get.imported), transaction_id,
                         rfid))
             except Exception:
@@ -713,6 +714,9 @@ class Chargepoint(ChargepointRfidMixin):
             else:
                 self._pub_configured_ev(ev_list)
             # OCPP Start Transaction nach Anstecken
+            # self.data.set.ocpp_transaction_active = False
+            # Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_active",
+            #          self.data.set.ocpp_transaction_active)
             if (self.data.get.plug_state and
                     self.data.set.ocpp_transaction_active is False and
                     self.data.set.manual_lock is False):
@@ -721,8 +725,9 @@ class Chargepoint(ChargepointRfidMixin):
                 else:
                     rfid = "0"
                 try:
+                    ocpp_client = optional.OCPPClient()
                     self.data.set.ocpp_transaction_id = asyncio.run(
-                        optional.OCPPClient._start_transaction(
+                        ocpp_client._start_transaction(
                             self.num, rfid, int(self.data.get.imported)))
                     Pub().pub("openWB/set/chargepoint/"+str(self.num) +
                               "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)

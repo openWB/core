@@ -193,10 +193,11 @@ class Optional:
                 meter_value_charged = int(meter_value_charged_copy)
                 connector_id = SubData.cp_data[chpnt].chargepoint.num
                 try:
+                    ocpp_client = OCPPClient()
                     asyncio.run(
-                        OCPPClient._send_heart_beat())
+                        ocpp_client._send_heart_beat())
                     asyncio.run(
-                        OCPPClient._transfer_values(
+                        ocpp_client._transfer_values(
                             connector_id, meter_value_charged))
                 except Exception:
                     log.exception("Fehler Trigger Meter Values")
@@ -208,12 +209,14 @@ class ChargePoint(cp):
 
 class OCPPClient():
 
-    async def _start_transaction(connector_id, id_tag, meter_value_charged):
+    def __init__(self):
+        self.url = data.data.optional_data.data.ocpp.url
+
+    async def _start_transaction(self, connector_id, id_tag, meter_value_charged):
         try:
-            url = data.data.optional_data.data.ocpp.url
-            if len(url) > 0:
+            if len(self.url) > 0:
                 async with websockets.connect(
-                    url,
+                    self.url,
                     subprotocols=['ocpp1.6']
                 ) as ws:
                     # Start Transaction
@@ -238,12 +241,11 @@ class OCPPClient():
         except Exception:
             log.exception("Fehler OCPP: _start_transaction")
 
-    async def _transfer_values(connector_id, meter_value_charged):
+    async def _transfer_values(self, connector_id, meter_value_charged):
         try:
-            url = data.data.optional_data.data.ocpp.url
-            if len(url) > 0:
+            if len(self.url) > 0:
                 async with websockets.connect(
-                    url,
+                    self.url,
                     subprotocols=['ocpp1.6']
                 )as ws:
                     cp = ChargePoint('openWB', ws, 1)
@@ -269,12 +271,11 @@ class OCPPClient():
         except Exception:
             log.exception("Fehler OCPP: _transfer_values")
 
-    async def _send_heart_beat():
+    async def _send_heart_beat(self):
         try:
-            url = data.data.optional_data.data.ocpp.url
-            if len(url) > 0:
+            if len(self.url) > 0:
                 async with websockets.connect(
-                    url,
+                    self.url,
                     subprotocols=['ocpp1.6']
                 )as ws:
                     cp = ChargePoint('openWB', ws, 1)
@@ -286,12 +287,11 @@ class OCPPClient():
         except Exception:
             log.exception("Fehler OCPP: _send_heart_beat")
 
-    async def _stop_transaction(meter_value_charged, transaction_id, id_tag):
+    async def _stop_transaction(self, meter_value_charged, transaction_id, id_tag):
         try:
-            url = data.data.optional_data.data.ocpp.url
-            if len(url) > 0:
+            if len(self.url) > 0:
                 async with websockets.connect(
-                    url,
+                    self.url,
                     subprotocols=['ocpp1.6']
                 )as ws:
                     cp = ChargePoint('openWB', ws, 1)
