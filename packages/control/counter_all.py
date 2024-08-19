@@ -22,8 +22,8 @@ log = logging.getLogger(__name__)
 class Config:
     home_consumption_source_id: Optional[str] = field(
         default=None, metadata={"topic": "config/home_consumption_source_id"})
-    reserve_for_not_charging: bool = field(
-        default=False, metadata={"topic": "config/reserve_for_not_charging"})
+    reserve_for_less_charging: bool = field(
+        default=False, metadata={"topic": "config/reserve_for_less_charging"})
 
 
 def config_factory() -> Config:

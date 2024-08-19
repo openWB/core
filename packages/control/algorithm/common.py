@@ -155,7 +155,7 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
 
 def consider_not_charging_chargepoint_in_loadmanagement(cp: Chargepoint) -> bool:
     # tested
-    return data.data.counter_all_data.data.config.reserve_for_not_charging is False and max(cp.data.get.currents) == 0
+    return data.data.counter_all_data.data.config.reserve_for_less_charging is False and max(cp.data.get.currents) == 0
 
 # tested
 
