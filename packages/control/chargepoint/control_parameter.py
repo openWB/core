@@ -28,6 +28,8 @@ class ControlParameter:
     submode: Chargemode_enum = field(default=Chargemode_enum.STOP, metadata={"topic": "control_parameter/submode"})
     timestamp_auto_phase_switch: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_auto_phase_switch"})
+    timestamp_charge_start: Optional[float] = field(
+        default=None, metadata={"topic": "control_parameter/timestamp_charge_start"})
     timestamp_perform_phase_switch: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_perform_phase_switch"})
     timestamp_switch_on_off: Optional[float] = field(
