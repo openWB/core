@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { globalData } from '@/assets/js/model.ts'
+import { globalData } from '@/assets/js/model'
 </script>
 
 <style scoped>
@@ -23,10 +23,10 @@ import { globalData } from '@/assets/js/model.ts'
 	display: grid;
 	grid-template-columns: 35% 65%;
 	font-size: 16px;
-	color: black;
+	color: white;
 }
 
 .header {
-	color: var(--color-charging);
+	color: var(--color-fg);
 }
 </style>
