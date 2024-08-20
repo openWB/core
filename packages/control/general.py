@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 
 from control import data
 from control.bat_all import BatConsiderationMode
+from control.chargemode import Chargemode
 from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
 from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
@@ -200,7 +201,8 @@ class General:
             if chargemode == "stop" or chargemode == "standby":
                 # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
                 return None
-            elif chargemode == "scheduled_charging" and submode == "pv_charging":
+            elif chargemode == "scheduled_charging" and (submode == "pv_charging" or submode == Chargemode.PV_CHARGING):
+                # todo Lademodus von String auf Enum umstellen
                 # Phasenumschaltung bei PV-Ueberschuss nutzen
                 return getattr(self.data.chargemode_config, chargemode).phases_to_use_pv
             else:
