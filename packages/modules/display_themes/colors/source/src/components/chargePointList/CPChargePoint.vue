@@ -67,7 +67,10 @@
 
 		<!-- Car information-->
 		<template #footer>
-			<h3 class="d-flex justify-content-left align-items-center">
+			<h3
+				class="d-flex justify-content-left align-items-center"
+				@click="openSettings"
+			>
 				<i class="fa-solid fa-sm fa-car me-3" />
 				{{ chargepoint.vehicleName }}
 				<span

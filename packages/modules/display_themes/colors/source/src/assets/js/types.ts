@@ -39,7 +39,7 @@ export class GlobalData {
 	evuId = 0
 	etProvider = ''
 	ipAddress = ''
-	systemTime = ''
+	systemTime = 0.0
 	version = ''
 	versionDetails = ''
 	devBranch = ''
