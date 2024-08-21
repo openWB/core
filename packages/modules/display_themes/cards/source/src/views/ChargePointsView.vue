@@ -342,11 +342,15 @@ export default {
     </template>
     <i-form>
       <i-form-group>
-        <i-form-label>Lademodus</i-form-label>
-        <i-button-group block>
+        <i-button-group
+          block
+          vertical
+        >
           <i-button
             v-for="mode in filteredChargeModes"
             :key="mode.id"
+            size="lg"
+            class="large-button"
             outline
             :color="mode.class != 'dark' ? mode.class : 'light'"
             :active="
@@ -373,6 +377,8 @@ export default {
         <i-form-label>Priorität</i-form-label>
         <i-button-group block>
           <i-button
+            size="lg"
+            class="large-button"
             :color="
               mqttStore.getChargePointConnectedVehiclePriority(
                 modalChargePointId,
@@ -424,6 +430,8 @@ export default {
           <i-button
             v-for="vehicle in vehicleList"
             :key="vehicle.id"
+            size="lg"
+            class="large-button"
             :active="
               mqttStore.getChargePointConnectedVehicleId(modalChargePointId) ==
                 vehicle.id
@@ -1052,6 +1060,12 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(36rem, 1fr));
   grid-gap: var(--spacing);
+}
+
+.large-button {
+  height: 3.5rem;
+  font-size: 1.5rem;
+  padding: 0.75rem 1.5rem;
 }
 
 :deep(.toggle .toggle-label::before) {

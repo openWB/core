@@ -15,14 +15,6 @@
 					@shift-up="shiftUp"
 					@shift-down="shiftDown"
 				/>
-				<span
-					v-if="widescreen"
-					type="button"
-					class="ms-1 p-0 pt-1"
-					@click="zoomGraph"
-				>
-					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
-				</span>
 			</div>
 		</template>
 
@@ -73,8 +65,7 @@
 					/>
 					<PgSoc
 						v-if="
-							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today') &&
+							['day', 'today', 'live'].includes(graphData.graphMode) &&
 							globalData.isBatteryConfigured
 						"
 						:width="width - margin.left - 2 * margin.right"
@@ -83,25 +74,11 @@
 						:order="2"
 					/>
 					<PgSocAxis
-						v-if="
-							graphData.graphMode == 'day' || graphData.graphMode == 'today'
-						"
+						v-if="['day', 'today', 'live'].includes(graphData.graphMode)"
 						:width="width - margin.left - margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
 						:margin="margin"
 					/>
-				</g>
-				<g id="button">
-					<text
-						:x="width"
-						:y="height - 10"
-						color="var(--color-menu)"
-						text-anchor="end"
-					>
-						<tspan fill="var(--color-menu)" class="fas fa-lg">
-							{{ '\uf0dc' }}
-						</tspan>
-					</text>
 				</g>
 			</svg>
 		</figure>
@@ -125,7 +102,7 @@ import {
 	height,
 	margin,
 } from './model'
-import { globalConfig, widescreen } from '@/assets/js/themeConfig'
+import { globalConfig } from '@/assets/js/themeConfig'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
 import { chargePoints } from '../chargePointList/model'
@@ -142,9 +119,6 @@ function changeStackOrder() {
 	}
 	globalConfig.usageStackOrder = newOrder
 	setInitializeUsageGraph(true)
-}
-function zoomGraph() {
-	globalConfig.zoomGraph = !globalConfig.zoomGraph
 }
 </script>
 

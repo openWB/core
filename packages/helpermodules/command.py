@@ -16,6 +16,7 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 # ToDo: move to module commands if implemented
+from helpermodules import pub
 from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
@@ -197,6 +198,7 @@ class Command:
             evu_counter = data.data.counter_all_data.get_id_evu_counter()
             data.data.counter_all_data.hierarchy_add_item_below(
                 new_id, ComponentType.CHARGEPOINT, evu_counter)
+            Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
             setup_added_chargepoint()
         except (TypeError, IndexError):
             if chargepoint_config["type"] == 'internal_openwb' and SubData.general_data.data.extern:
@@ -256,6 +258,7 @@ class Command:
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
         ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
         data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
+        Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
@@ -435,6 +438,7 @@ class Command:
         general_type = special_to_general_type_mapping(payload["data"]["type"])
         try:
             data.data.counter_all_data.hierarchy_add_item_below_evu(new_id, general_type)
+            Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
         except ValueError:
             pub_user_message(payload, connection_id, counter_all.CounterAll.MISSING_EVU_COUNTER, MessageType.ERROR)
             return
@@ -601,6 +605,18 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
                              f'ID \'{self.max_id_mqtt_bridge}\'.', MessageType.ERROR)
+
+    def chargepointReboot(self, connection_id: str, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemReboot", "data": {}},
+                       hostname=SubData.cp_data[f'cp{payload["data"]["chargepoint"]}'
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
+
+    def chargepointShutdown(self, connection_id: str, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemReboot", "data": {}},
+                       hostname=SubData.cp_data[payload["data"]["chargepoint"]
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
 
     def systemReboot(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Neustart wird ausgeführt.", MessageType.INFO)
@@ -814,6 +830,7 @@ class ProcessBrokerBranch:
                     payload = decode_payload(msg.payload)
                     topic = type_to_topic_mapping(payload["type"])
                     data.data.counter_all_data.hierarchy_remove_item(payload["id"])
+                    Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
                     client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
                 elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
                     payload = decode_payload(msg.payload)

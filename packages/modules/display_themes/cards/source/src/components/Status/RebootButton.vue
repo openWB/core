@@ -38,8 +38,17 @@ export default {
      * system reboot is requested by command
      */
     confirm() {
+      this.toggleModal();
       console.log("reboot requested");
-      this.$root.sendSystemCommand("systemReboot");
+      if (this.mqttStore.settings.parentChargePoint1 !== undefined) {
+        console.log("rebooting secondary charge point:", this.mqttStore.settings.parentChargePoint1);
+        this.$root.sendSystemCommand("chargepointReboot", {
+          chargePoint: this.mqttStore.settings.parentChargePoint1,
+        });
+      } else {
+        console.log("rebooting primary system");
+        this.$root.sendSystemCommand("systemReboot");
+      }
     },
   },
 };

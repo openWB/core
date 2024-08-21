@@ -69,15 +69,16 @@ export function updateLiveGraph(topic: string, rawString: string) {
 	}
 }
 function extractValues(data: RawGraphDataItem): GraphDataItem {
-	const car1id =
+	const car1 =
 		Object.values(chargePoints).length > 0
-			? 'ev' + Object.values(chargePoints)[0].connectedVehicle + '-soc'
-			: 'ev0-soc'
-	const car2id =
+			? Object.values(chargePoints)[0].connectedVehicle
+			: 0
+	const car2 =
 		Object.values(chargePoints).length > 1
-			? 'ev' + Object.values(chargePoints)[1].connectedVehicle + '-soc'
-			: 'ev1-soc'
-
+			? Object.values(chargePoints)[1].connectedVehicle
+			: 1
+	const car1id = 'ev' + car1 + '-soc'
+	const car2id = 'ev' + car2 + '-soc'
 	const values: GraphDataItem = {}
 	values.date = +data.timestamp * 1000
 	if (+data.grid > 0) {
@@ -115,10 +116,10 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 		values.batSoc = 0
 	}
 	if (data[car1id]) {
-		values.soc1 = +data['ev0-soc']
+		values['soc' + car1] = +data[car1id]
 	}
 	if (data[car2id]) {
-		values.soc2 = +data['ev1-soc']
+		values['soc' + car2] = +data[car2id]
 	}
 
 	values.charging = +data['charging-all']

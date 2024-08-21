@@ -1,6 +1,6 @@
 <template>
 	<div class="padbutton" :style="buttoncolor" @click="buttonClicked">
-		<span class="digit" type="button">
+		<span class="digit scaled" type="button">
 			<slot />
 		</span>
 	</div>
@@ -26,7 +26,7 @@ function buttonClicked() {
 const buttoncolor = computed(() => {
 	return active.value
 		? { 'background-color': 'white', color: 'black' }
-		: { 'background-color': props.color ?? 'black' }
+		: { 'background-color': props.color ?? 'var(--color-axis)' }
 })
 const emit = defineEmits(['update:modelValue'])
 </script>
@@ -37,6 +37,8 @@ const emit = defineEmits(['update:modelValue'])
 	align-items: center;
 	justify-content: center;
 	border-radius: 50%;
+	border: 0.1px dotted var(--color-menu);
+	box-shadow: 1px 3px black;
 }
 .digit {
 	font-size: 24px;

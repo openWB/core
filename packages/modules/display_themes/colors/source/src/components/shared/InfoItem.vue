@@ -2,12 +2,16 @@
 	<span
 		class="d-flex flex-column align-items-center justify-content-start infoitem"
 	>
-		<span class="d-flex heading" :style="headingstyle" :class="headingclass">
+		<span
+			class="d-flex heading scaled"
+			:style="headingstyle"
+			:class="headingclass"
+		>
 			{{ props.heading }}
 		</span>
 		<!-- <span class="d-flex mx-1"> -->
 		<span
-			class="d-flex my-0 me-0 align-items-center content"
+			class="d-flex my-0 me-0 align-items-center content scaled"
 			:style="contentstyle"
 		>
 			<slot />

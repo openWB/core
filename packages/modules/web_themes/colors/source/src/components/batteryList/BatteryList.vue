@@ -17,16 +17,13 @@ Hagen */
 			<WbBadge :bgcolor="statusbg">
 				{{ batteryState }}
 			</WbBadge>
-			<WbBadge bgcolor="var(--color-battery)">
-				<BatterySymbol
-					color="var(--color-bg)"
-					:soc="globalData.batterySoc"
-				></BatterySymbol>
-			</WbBadge>
 		</template>
 		<div class="px-3 subgrid grid-12">
-			<InfoItem heading="Leistung:" class="grid-left grid-col-4">
-				<span> {{ powerstring }} </span>
+			<InfoItem heading="Ladestand:" class="grid-left grid-col-4">
+				<BatterySymbol
+					color="var(--color-battery)"
+					:soc="globalData.batterySoc"
+				></BatterySymbol>
 			</InfoItem>
 			<InfoItem heading="Geladen:" class="grid-col-4">
 				<span>
@@ -63,9 +60,7 @@ const batteryState = computed(() => {
 		return `Bereit:`
 	}
 })
-const powerstring = computed(() => {
-	return formatWatt(sourceSummary.batOut.power + usageSummary.batIn.power)
-})
+
 
 const statusbg = computed(() => {
 	return sourceSummary.batOut.power > 0

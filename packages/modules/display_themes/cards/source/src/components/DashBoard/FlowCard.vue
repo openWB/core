@@ -576,10 +576,10 @@ export default {
             <!-- components -->
             <g
               v-for="component in svgComponents"
-              @click="beginAnimation(`animate-label-${component.id}`)"
               :key="component.id"
               :class="component.class.base"
               :transform="`translate(${calcColumnX(component.position.column)}, ${calcRowY(component.position.row)})`"
+              @click="beginAnimation(`animate-label-${component.id}`)"
             >
               <defs>
                 <clipPath
@@ -640,8 +640,8 @@ export default {
                     dur="5s"
                     :values="
                       '0; ' +
-                      (- calcSvgElementBoundingBox(`label-${component.id}`).width
-                      + svgRectWidth - 2.5 * svgSize.circleRadius - 2 * svgSize.strokeWidth) + '; 0;'
+                        (- calcSvgElementBoundingBox(`label-${component.id}`).width
+                          + svgRectWidth - 2.5 * svgSize.circleRadius - 2 * svgSize.strokeWidth) + '; 0;'
                     "
                     repeatCount="0"
                     begin="2s"
@@ -654,7 +654,7 @@ export default {
                   :class="component.class.valueLabel"
                   text-anchor="end"
                   :x="
-                      2 * svgSize.circleRadius +
+                    2 * svgSize.circleRadius +
                       svgSize.strokeWidth
                   "
                   :y="svgSize.textSize"
