@@ -348,9 +348,10 @@ class Ev:
             if phases is None:
                 phases = control_parameter.phases
             return state, message, submode, required_current, phases
-        except Exception:
+        except Exception as e:
             log.exception("Fehler im ev-Modul "+str(self.num))
-            return False, "ein interner Fehler aufgetreten ist.", "stop", 0, control_parameter.phases
+            return (False, f"Kein Ladevorgang, da ein Fehler aufgetreten ist: {' '.join(e.args)}", "stop", 0,
+                    control_parameter.phases)
 
     def set_chargemode_changed(self, control_parameter: ControlParameter, submode: str) -> None:
         if ((submode == "time_charging" and control_parameter.chargemode != "time_charging") or
@@ -718,7 +719,7 @@ class ChargeTemplate:
 
     def search_plan(self,
                     max_current: int,
-                    soc: float,
+                    soc: Optional[float],
                     ev_template: EvTemplate,
                     phases: int,
                     used_amount: float) -> Optional[SelectedPlan]:
@@ -728,6 +729,9 @@ class ChargeTemplate:
         battery_capacity = ev_template.data.battery_capacity
         for num, plan in self.data.chargemode.scheduled_charging.plans.items():
             if plan.active:
+                if plan.limit.selected == "soc" and soc is None:
+                    raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren "
+                                     f"oder im Plan {plan.name} als Begrenzung Energie einstellen.")
                 try:
                     duration, missing_amount = self.calculate_duration(plan, soc, battery_capacity, used_amount, phases)
                     remaining_time, missed_date_today = timecheck.check_duration(plan, duration, self.BUFFER)
@@ -864,7 +868,7 @@ class ChargeTemplate:
                     message = self.SCHEDULED_REACHED_LIMIT_SOC
             else:
                 # Wenn SoC-Limit erreicht wurde, soll nicht mehr mit Überschuss geladen werden
-                if soc >= limit.soc_limit:
+                if limit.selected == "soc" and soc >= limit.soc_limit:
                     message = self.SCHEDULED_REACHED_LIMIT_SOC
                 else:
                     message = self.SCHEDULED_CHARGING_USE_PV

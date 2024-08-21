@@ -217,7 +217,8 @@ class CounterAll:
         try:
             self._get_all_cp_connected_to_counter(counter_object)
         except KeyError:
-            log.debug(f"Kein Ladepunkt unter Zähler {counter}.")
+            # Kein Ladepunkt unter dem Zähler
+            pass
         return self.connected_chargepoints
 
     def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
@@ -361,7 +362,6 @@ class CounterAll:
                     "type": ComponentType.COUNTER.value,
                     "children": self.data.get.hierarchy
                 }]
-                Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
                 self.data.get.hierarchy = hierarchy
             else:
                 raise ValueError(self.MISSING_EVU_COUNTER)
