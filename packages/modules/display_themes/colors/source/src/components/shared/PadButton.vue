@@ -37,8 +37,8 @@ const emit = defineEmits(['update:modelValue'])
 	align-items: center;
 	justify-content: center;
 	border-radius: 50%;
-	border: 0.1px dotted black;
-	box-shadow: 1px 3px var(--color-axis);
+	border: 0.1px dotted var(--color-menu);
+	box-shadow: 1px 3px black;
 }
 .digit {
 	font-size: 24px;

@@ -37,7 +37,7 @@ function getColor(index: number) {
 	if (props.options[index][2]) {
 		return { color: props.options[index][2] }
 	} else {
-		return { color: 'var(--color-charging)' }
+		return { color: 'var(--color-fg)' }
 	}
 }
 function setValue(event: Event) {
@@ -54,17 +54,18 @@ function setValue(event: Event) {
 
 <style scoped>
 .radiobutton {
-	border: 0.5px solid var(--color-bg);
+	border: 0.5px solid var(--color-fg);
 	opacity: 0.5;
-	font-size: var(--font-settings);
+	font-size: 14px;
 }
 .btn-outline-secondary {
-	background-color: var(--color-fg);
+	background-color: var(--color-bg);
 }
 .btn-outline-secondary.active {
-	background-color: var(--color-fg);
-	border: 1px solid var(--color-bg);
-	box-shadow: 0 0.5rem 1rem black;
+	background-color: var(--color-bg);
+	border: 1px solid var(--color-fg);
+	box-shadow: 0 0.5rem 1rem white;
+	font-weight: bold;
 	opacity: 1;
 }
 </style>

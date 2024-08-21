@@ -110,10 +110,10 @@ function haveFocus() {
 }
 
 .settingstitle {
-	color: var(--color-charging);
+	color: var(--color-fg);
 }
 
 .statustitle {
-	color: var(--color-charging);
+	color: var(--color-fg);
 }
 </style>
