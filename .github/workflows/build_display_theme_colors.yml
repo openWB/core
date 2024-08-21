@@ -1,0 +1,37 @@
+name: Build Display Theme Colors
+
+on:
+  push:
+    paths:
+      - packages/modules/display_themes/colors/source/**
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: packages/modules/display_themes/colors/source/package-lock.json
+
+      - name: Install Dependencies and Build
+        run: |
+          cd packages/modules/display_themes/colors/source
+          npm install
+          npm run build --if-present
+
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git add packages/modules/display_themes/colors/web
+          git commit -m "Build Display Theme: Colors"
+          git push

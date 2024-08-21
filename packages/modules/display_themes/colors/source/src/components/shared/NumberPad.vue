@@ -59,6 +59,7 @@ function addDigit(digit: number) {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
+	background-color: var(--color-bg);
 }
 .codedisplay {
 	display: flex;
@@ -66,7 +67,7 @@ function addDigit(digit: number) {
 	justify-content: center;
 	font-size: 24px;
 	border: 10px;
-	color: var(--color-bg);
+	color: var(--color-fg);
 }
 
 .numberentry {
