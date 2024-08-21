@@ -77,6 +77,10 @@ class Log:
     prio: bool = False
     rfid: Optional[str] = None
     serial_number: Optional[str] = None
+    soc_at_start: Optional[int] = None
+    soc_at_end: Optional[int] = None
+    range_at_start: Optional[float] = None
+    range_at_end: Optional[float] = None
 
 
 def connected_vehicle_factory() -> ConnectedVehicle:
@@ -118,7 +122,6 @@ def log_factory() -> Log:
 
 @dataclass
 class Set:
-    change_ev_permitted: bool = False
     charging_ev: int = -1
     charging_ev_prev: int = -1
     current: float = 0

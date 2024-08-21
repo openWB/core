@@ -13,10 +13,10 @@ Exceptions dürfen daher nur abgefangen werden, wenn sie
 * behoben werden können.
 * weitere Aktionen vorgenommen werden sollen. Danach mit `raise e` die Exception erneut werfen, damit sie weiterverarbeitet werden kann.
 
-Bei Modulen, die einen http-Request ausführen, get/post-Requests immer mit `req.get_http_session().get/post()` stellen. [get_http_session](https://github.com/openWB/core/blob/02b34ff216b0dfc83fdc56a53b63d52d5d9a79d2/packages/modules/common/req.py#L8) prüft in einem Callback, ob ein Fehler aufgetreten ist und wirft eine Exception. Bei gängigen Fehlern wird diese in einen Text übersetzt, der auch für den Benutzer verständlich ist.  
+Bei Modulen, die einen http-Request ausführen, get/post-Requests immer mit `req.get_http_session().get/post()` aus dem Ordner modules/common stellen. [get_http_session](https://github.com/openWB/core/blob/02b34ff216b0dfc83fdc56a53b63d52d5d9a79d2/packages/modules/common/req.py#L8) loggt die Antwort und prüft in einem Callback, ob ein Fehler aufgetreten ist und wirft eine Exception. Bei gängigen Fehlern wird diese in einen Text übersetzt, der auch für den Benutzer verständlich ist.  
 
 Ein paar Hintergrund-Details, wie die Fehlerbehandlung umgesetzt ist:  
-Die update-Methode des Moduls wird immer mit dem [Kontextmanager](https://github.com/openWB/core/blob/02b34ff216b0dfc83fdc56a53b63d52d5d9a79d2/packages/modules/common/component_context.py#L11) aufgerufen. Dieser prüft nach dem Ende der Update-Methode, ob eine Exception aufgetreten ist und loggt diese und setzt die Topics `.../get/fault_state/ auf 2 und in `.../get/fault_str` den Text der Exception. fault_str wird dann im jeweiligen Modul auf der Status-Seite ausgegeben, um dem Benutzer eine Rückmeldung zu geben.
+Die update-Methode des Moduls wird immer mit dem [Kontextmanager](https://github.com/openWB/core/blob/02b34ff216b0dfc83fdc56a53b63d52d5d9a79d2/packages/modules/common/component_context.py#L11) aufgerufen. Dieser prüft nach dem Ende der Update-Methode, ob eine Exception aufgetreten ist und loggt diese und setzt die Topics `.../get/fault_state/` auf 2 und in `.../get/fault_str` den Text der Exception. fault_str wird dann im jeweiligen Modul auf der Status-Seite ausgegeben, um dem Benutzer eine Rückmeldung zu geben.
 
 ### Neues Gerät programmieren
 Für neue Geräte gibt es drei Muster:

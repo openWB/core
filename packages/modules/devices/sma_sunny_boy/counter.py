@@ -34,7 +34,8 @@ class SmaSunnyBoyCounter:
         else:
             power = exp * -1
 
-        imported, exported = self.sim_counter.sim_count(power)
+        imported = self.__tcp_client.read_holding_registers(30581, ModbusDataType.UINT_32, unit=unit)
+        exported = self.__tcp_client.read_holding_registers(30583, ModbusDataType.UINT_32, unit=unit)
 
         counter_state = CounterState(
             imported=imported,

@@ -6,7 +6,10 @@ from typing import Optional
 
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
+from control import data
 from helpermodules import pub, compatibility
+from helpermodules.utils.topic_parser import get_index, get_second_index
+from modules.common.component_type import type_to_topic_mapping
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.common.store import ramdisk_write, ramdisk_read_float
 from modules.common.store.ramdisk.io import RamdiskReadError
@@ -180,6 +183,23 @@ class SimCounterStoreBroker(SimCounterStore):
 
     def save(self, prefix: str, topic: str, state: SimCounterState):
         pub.Pub().pub(topic + "simulation", vars(state))
+
+
+def restore_last_energy(topic: str, value: str):
+    try:
+        device_id = get_index(topic)
+        component_id = get_second_index(topic)
+        module_type = type_to_topic_mapping(
+            data.data.system_data[f"device{device_id}"].components[f"component{component_id}"].component_config.type)
+        module = getattr(data.data, f"{module_type}_data")[f"{module_type}{get_second_index(topic)}"].data.get
+        return getattr(module, value)
+    except ValueError:
+        # Wenn kein Index enthalten, ist es Hausverbrauch.
+        if value == "exported":
+            # wird beim Hausverbrauch nicht ausgewertet.
+            return 0
+        elif value == "imported":
+            return data.data.counter_all_data.data.set.imported_home_consumption
 
 
 def get_sim_counter_store() -> SimCounterStore:

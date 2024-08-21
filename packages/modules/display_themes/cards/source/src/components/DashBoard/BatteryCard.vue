@@ -12,30 +12,36 @@ library.add(fasCarBattery);
 
 export default {
   name: "BatteryCard",
+  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
   props: {},
   data() {
     return {
       mqttStore: useMqttStore(),
     };
   },
-  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
 };
 </script>
 
 <template>
-  <dash-board-card color="warning" v-if="mqttStore.getBatteryConfigured">
+  <dash-board-card
+    v-if="mqttStore.getBatteryConfigured"
+    color="warning"
+  >
     <template #headerLeft>
-      <font-awesome-icon fixed-width :icon="['fas', 'fa-car-battery']" />
+      <font-awesome-icon
+        fixed-width
+        :icon="['fas', 'fa-car-battery']"
+      />
       Speicher
     </template>
     <template #headerRight>
-      {{ mqttStore.getBatterySoc }} /
-      {{ mqttStore.getBatteryPower }}
+      {{ mqttStore.getBatterySoc() }} /
+      {{ mqttStore.getBatteryPower() }}
     </template>
     <spark-line
       color="var(--color--warning)"
       :data="mqttStore.getBatteryPowerChartData"
-      :socData="mqttStore.getBatterySocChartData"
+      :soc-data="mqttStore.getBatterySocChartData"
     />
   </dash-board-card>
 </template>

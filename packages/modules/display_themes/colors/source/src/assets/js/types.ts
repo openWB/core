@@ -30,7 +30,7 @@ export class GlobalData {
 	batterySoc = 0
 	isBatteryConfigured = true
 	chargeMode = '0'
-	private _pvBatteryPriority = false
+	private _pvBatteryPriority = 'ev_mode' // 'ev_mode' | 'bat_mode' | 'min_soc_bat_mode'
 	displayLiveGraph = true
 	isEtEnabled = true
 	etMaxPrice = 0
@@ -38,14 +38,19 @@ export class GlobalData {
 	cpDailyExported = 0
 	evuId = 0
 	etProvider = ''
+	ipAddress = ''
+	systemTime = 0.0
+	version = ''
+	versionDetails = ''
+	devBranch = ''
 	get pvBatteryPriority() {
 		return this._pvBatteryPriority
 	}
-	set pvBatteryPriority(prio: boolean) {
+	set pvBatteryPriority(prio: string) {
 		this._pvBatteryPriority = prio
 		updateServer('pvBatteryPriority', prio)
 	}
-	updatePvBatteryPriority(prio: boolean) {
+	updatePvBatteryPriority(prio: string) {
 		this._pvBatteryPriority = prio
 	}
 }
@@ -90,3 +95,8 @@ export interface MarginType {
 	right: number
 	bottom: number
 }
+export const evPriorityModes: [string, string][] = [
+	['EV', 'ev_mode'],
+	['Speicher', 'bat_mode'],
+	['MinSoc', 'min_soc_bat_mode'],
+]

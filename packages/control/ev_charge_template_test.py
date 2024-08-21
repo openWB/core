@@ -196,7 +196,7 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
     check_duration_mock = Mock(side_effect=[check_duration_return1, check_duration_return2])
     monkeypatch.setattr(timecheck, "check_duration", check_duration_mock)
     ct = ChargeTemplate(0)
-    plan_mock = Mock(spec=ScheduledChargingPlan, active=True, current=14)
+    plan_mock = Mock(spec=ScheduledChargingPlan, active=True, current=14, limit=Limit(selected="amount"))
     ct.data.chargemode.scheduled_charging.plans = {0: plan_mock, 1: plan_mock}
     # execution
     plan_data = ct.search_plan(14, 60, EvTemplate(), 3, 200)

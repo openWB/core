@@ -12,7 +12,7 @@
 				>
 				<span
 					v-if="cp.faultState == 2"
-					class="badge rounded-pill errorbadge ms-3"
+					class="WbBadge rounded-pill errorWbBadge ms-3"
 					>Fehler</span
 				>
 			</span>
@@ -212,7 +212,7 @@
 								props.chargepoint.etActive
 									? (
 											Math.round(props.chargepoint.etMaxPrice * 10) / 10
-									  ).toFixed(1) + ' ct'
+										).toFixed(1) + ' ct'
 									: '-'
 							}}
 
@@ -474,7 +474,7 @@ const editPrice = ref(false)
 	grid-template-columns: repeat(12, auto);
 	justify-content: space-between;
 }
-.errorbadge {
+.errorWbBadge {
 	color: var(--color-bg);
 	background-color: var(--color-evu);
 	font-size: var(--font-small);

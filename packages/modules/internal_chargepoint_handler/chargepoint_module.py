@@ -63,7 +63,7 @@ class ChargepointModule(AbstractChargepoint):
             self.store_internal.set(chargepoint_state)
             self.store_internal.update()
         try:
-            self._client.check_hardware()
+            self._client.check_hardware(self.fault_state)
             powers, power = self._client.meter_client.get_power()
             if power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
@@ -111,7 +111,7 @@ class ChargepointModule(AbstractChargepoint):
             )
         except Exception as e:
             self._client.read_error += 1
-            if self._client.read_error > 5:
+            if self._client.read_error > 10:
                 msg = ("Anhaltender Fehler beim Auslesen von EVSE und/oder Zähler. " +
                        "Lade- und Stecker-Status werden zurückgesetzt.")
                 chargepoint_state = ChargepointState()

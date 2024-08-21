@@ -41,9 +41,7 @@
 			</div>
 		</div>
 		<!-- Battery priority settings -->
-		<div
-			v-if="globalData.isBatteryConfigured && cp.chargeMode == 'pv_charging'"
-		>
+		<div v-if="globalData.isBatteryConfigured">
 			<hr />
 			<div class="row">
 				<div class="col text-center">Vorrang im Lademodus PV-Laden:</div>

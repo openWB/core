@@ -14,9 +14,8 @@ log = logging.getLogger(__name__)
 
 # In den Metadaten wird unter dem Key der Topic-Suffix ab "openWB/ev/2/" angegeben. Der Topic-Prefix ("openWB/ev/2/")
 # wird automatisch ermittelt.
-# Der Key mutable_by_algorithm ist True, wenn die Werte im Algorithmus geändert werden können. Nur diese Werte werden
-# automatisiert gepublished. Werte, die an anderer Stelle gepublished werden, wie zB Zählerstände, werden mit False
-# gekennzeichnet. Um eine Dokumentation der Topics zu erhalten, sollten die Metadaten dennoch ausgefüllt werden.
+# Der Kontextmanager muss immer verwendet werden, wenn in den Funktionen Werte geändert werden, die nicht gepublished
+# werden.
 # Metadaten werden nur für Felder erzeugt, die gepublished werden sollen, dh bei ganzen Klassen für das Feld der
 # jeweiligen Klasse. Wenn Werte aus einer instanziierten Klasse gepublished werden sollen, erhält die übergeordnete
 # Klasse keine Metadaten (siehe Beispiel unten).
@@ -34,8 +33,8 @@ log = logging.getLogger(__name__)
 
 # @dataclass
 # class SampleNested:
-#     parameter1: bool = field(default=False, metadata={"topic": "get/nested1", "mutable_by_algorithm": True})
-#     parameter2: int = field(default=0, metadata={"topic": "get/nested2", "mutable_by_algorithm": True})
+#     parameter1: bool = field(default=False, metadata={"topic": "get/nested1"})
+#     parameter2: int = field(default=0, metadata={"topic": "get/nested2"})
 
 
 # def sample_nested() -> SampleNested:
@@ -48,12 +47,12 @@ log = logging.getLogger(__name__)
 # diese Klasse eingetragen. Die Felder der Konfigurationsklasse bekommen keine Metadaten, da diese nicht einzeln
 # gepublished werden.
 #     sample_field_class: SampleClass = field(
-#         default_factory=sample_class, metadata={"topic": "get/field_class", "mutable_by_algorithm": True})
-#     sample_field_int: int = field(default=0, metadata={"topic": "get/field_int", "mutable_by_algorithm": True})
+#         default_factory=sample_class, metadata={"topic": "get/field_class"})
+#     sample_field_int: int = field(default=0, metadata={"topic": "get/field_int"})
 #     sample_field_immutable: float = field(
-#         default=0, metadata={"topic": "get/field_immutable", "mutable_by_algorithm": False})
+#         default=0, metadata={"topic": "get/field_immutable"})
 #     sample_field_list: List = field(default_factory=currents_list_factory, metadata={
-#                                     "topic": "get/field_list", "mutable_by_algorithm": True})
+#                                     "topic": "get/field_list"})
 #     # Bei verschachtelten Klassen, wo der zu publishende Wert auf einer tieferen Ebene liegt, werden nur für den zu
 # publishenden Wert Metadaten erzeugt.
 #     sample_field_nested: SampleNested = field(default_factory=sample_nested)
@@ -78,48 +77,69 @@ class ChangedValuesHandler:
     def pub_changed_values(self):
         try:
             # publishen der geänderten Werte
-            self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data.get, data.data.bat_all_data.data.get)
+            self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data, data.data.bat_all_data.data)
+            self._update_value("openWB/set/chargepoint/", self.prev_data.cp_all_data.data.get,
+                               data.data.cp_all_data.data.get)
+            self._update_value("openWB/set/counter/", self.prev_data.counter_all_data.data,
+                               data.data.counter_all_data.data)
             for key, value in data.data.cp_data.items():
+                self._update_value(f"openWB/set/chargepoint/{value.num}/", self.prev_data.cp_data[key].data, value.data)
+            for key, value in data.data.bat_data.items():
+                self._update_value(f"openWB/set/bat/{value.num}/", self.prev_data.bat_data[key].data, value.data)
+            for key, value in data.data.counter_data.items():
+                self._update_value(f"openWB/set/counter/{value.num}/",
+                                   self.prev_data.counter_data[key].data, value.data)
+            # chargepoint, ev template, autolock, time and scheduled charging plans mutable_by_algorithm immer false
+        except Exception as e:
+            log.exception(e)
+
+    def _update_value(self, topic_prefix, data_inst_previous, data_inst):
+        try:
+            for f in fields(data_inst):
                 try:
-                    self._update_value(f"openWB/set/chargepoint/{value.num}/",
-                                       self.prev_data.cp_data[key].data, value.data)
+                    changed = False
+                    value = getattr(data_inst, f.name)
+                    if isinstance(value, Enum):
+                        value = value.value
+                    previous_value = getattr(data_inst_previous, f.name)
+                    if isinstance(previous_value, Enum):
+                        previous_value = previous_value.value
+                    if hasattr(f, "metadata"):
+                        if f.metadata.get("topic"):
+                            if isinstance(value, (str, int, float, Dict, List, Tuple)):
+                                if previous_value != value:
+                                    changed = True
+                            elif isinstance(value, (bool, type(None))):
+                                if previous_value is not value:
+                                    changed = True
+                            else:
+                                dict_prev = dict(asdict(previous_value))
+                                dict_current = dict(asdict(value))
+                                if dict_prev != dict_current:
+                                    changed = True
+                                    value = asdict(value)
+                                    previous_value = asdict(previous_value)
+
+                            if changed:
+                                topic = f"{topic_prefix}{f.metadata['topic']}"
+                                Pub().pub(topic, value)
+                                log.debug(f"Topic {topic}, Payload {value}, vorherige Payload: {previous_value}")
+                            continue
+                    if is_dataclass(value):
+                        self._update_value(topic_prefix, previous_value, value)
                 except Exception as e:
                     log.exception(e)
         except Exception as e:
             log.exception(e)
 
-    def _update_value(self, topic_prefix, data_inst_previous, data_inst):
-        for f in fields(data_inst):
-            try:
-                changed = False
-                value = getattr(data_inst, f.name)
-                if isinstance(value, Enum):
-                    value = value.value
-                previous_value = getattr(data_inst_previous, f.name)
-                if isinstance(previous_value, Enum):
-                    previous_value = previous_value.value
-                if hasattr(f, "metadata"):
-                    if f.metadata.get("mutable_by_algorithm"):
-                        if isinstance(value, (str, int, float, Dict, List, Tuple)):
-                            if previous_value != value:
-                                changed = True
-                        elif isinstance(value, (bool, type(None))):
-                            if previous_value is not value:
-                                changed = True
-                        else:
-                            dict_prev = dict(asdict(previous_value))
-                            dict_current = dict(asdict(value))
-                            if dict_prev != dict_current:
-                                changed = True
-                                value = asdict(value)
-                                previous_value = asdict(previous_value)
 
-                        if changed:
-                            topic = f"{topic_prefix}{f.metadata['topic']}"
-                            Pub().pub(topic, value)
-                            log.debug(f"Topic {topic}, Payload {value}, vorherige Payload: {previous_value}")
-                        continue
-                if is_dataclass(value):
-                    self._update_value(topic_prefix, previous_value, value)
-            except Exception as e:
-                log.exception(e)
+class ChangedValuesContext:
+    def __init__(self, event_module_update_completed: threading.Event):
+        self.changed_values_handler = ChangedValuesHandler(event_module_update_completed)
+
+    def __enter__(self):
+        self.changed_values_handler.store_initial_values()
+
+    def __exit__(self, exception_type, exception, exception_traceback) -> bool:
+        self.changed_values_handler.pub_changed_values()
+        return False

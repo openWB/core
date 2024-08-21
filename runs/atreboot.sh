@@ -263,50 +263,8 @@ chmod 666 "$LOGFILE"
 		"${OPENWBBASEDIR}/runs/update_local_display.sh"
 	fi
 
-	# check for apache configuration
-	echo "apache default site..."
-	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/000-default.conf"; then
-		echo "...ok"
-	else
-		sudo cp "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/"
-		restartService=1
-		echo "...updated"
-	fi
-	echo "checking required apache modules..."
-	if sudo a2query -m headers; then
-		echo "headers already enabled"
-	else
-		echo "headers currently disabled; enabling module"
-		sudo a2enmod headers
-		restartService=1
-	fi
-	if sudo a2query -m ssl; then
-		echo "ssl already enabled"
-	else
-		echo "ssl currently disabled; enabling module"
-		sudo a2enmod ssl
-		restartService=1
-	fi
-	if sudo a2query -m proxy_wstunnel; then
-		echo "proxy_wstunnel already enabled"
-	else
-		echo "proxy_wstunnel currently disabled; enabling module"
-		sudo a2enmod proxy_wstunnel
-		restartService=1
-	fi
-	if ! versionMatch "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/apache-openwb-ssl.conf"; then
-		echo "installing ssl site configuration"
-		sudo a2dissite default-ssl
-		sudo cp "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/apache2/sites-available/"
-		sudo a2ensite apache-openwb-ssl
-		restartService=1
-	fi
-	if ((restartService == 1)); then
-		echo -n "restarting apache..."
-		sudo systemctl restart apache2
-		echo "done"
-	fi
+	# check apache configuration
+	"${OPENWBBASEDIR}/runs/setup_apache2.sh"
 
 	# check for mosquitto configuration
 	echo "check mosquitto installation..."
@@ -348,7 +306,18 @@ chmod 666 "$LOGFILE"
 	fi
 
 	#check for mosquitto_local instance
-	restartService=0
+	# restartService=0  # if we restart mosquitto, we need to restart mosquitto_local as well
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" "/etc/init.d/mosquitto_local"; then
+		echo "mosquitto_local service definition already up to date"
+	else
+		echo "updating mosquitto_local service definition"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" /etc/init.d/mosquitto_local
+		sudo chown root:root /etc/init.d/mosquitto_local
+		sudo chmod 755 /etc/init.d/mosquitto_local
+		sudo systemctl daemon-reload
+		sudo systemctl enable mosquitto_local
+		restartService=1
+	fi
 	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
 		echo "mosquitto_local.conf already up to date"
 	else

@@ -35,8 +35,12 @@ def write_and_check(file_path, content):
 
     try:
         backup_path = file_path + '.bak'
-        shutil.copyfile(file_path, backup_path)
-        _write_and_check()
+        if os.path.exists(file_path):
+            shutil.copyfile(file_path, backup_path)
+            _write_and_check()
+        else:
+            with open(file_path, 'w', encoding="utf-8") as file:
+                json.dump(content, file)
     except Exception:
         log.exception("Fehler beim Schreiben der Datei. Wiederherstellen der Sicherung.")
         handle_broken_file()

@@ -51,12 +51,6 @@
 			>
 				{{ displayDate }}
 			</span>
-			<DateInput
-				v-if="editmode == 2"
-				:model-value="graphdate"
-				:mode="graphData.graphMode"
-				@update:model-value="setDate"
-			/>
 
 			<!-- Right Button -->
 			<span
@@ -70,10 +64,11 @@
 		</div>
 		<!-- Row 3 -->
 		<div class="d-flex align-items-center" :class="row3layout">
-			<!-- Settings button -->
-			<span v-if="editmode == 1" type="button" class="p-1" @click="toggleEdit">
-				<span class="fa-solid fa-xl fa-gear" />
-			</span>
+			<span
+				v-if="editmode == 1"
+				class="fa-solid fa-xl fa-chevron-circle-down p-1"
+				:style="{ color: 'var(--color-bg)' }"
+			/>
 			<!-- Down Button -->
 			<span
 				v-if="editmode == 1"
@@ -94,7 +89,6 @@
 <script setup lang="ts">
 import { formatMonth } from '@/assets/js/helpers'
 import { computed, ref } from 'vue'
-import DateInput from '../shared/DateInput.vue'
 import RadioBarInput from '../shared/RadioBarInput.vue'
 import {
 	dayGraph,
@@ -117,15 +111,6 @@ const editmode = ref(0)
 const displayDate = computed(() => {
 	switch (graphData.graphMode) {
 		case 'live':
-			/* 	if (graphData.data.length) {
-				const startTime = graphData.data[0].date
-				const endTime = graphData.data[graphData.data.length - 1].date
-				const liveGraphMinutes = Math.round((endTime - startTime) / 60000)
-				return liveGraphMinutes + ' min'
-			} else {
-				console.warn('Graph Data empty.')
-				return '???'
-			} */
 			return props.ignoreLive ? 'heute' : `${liveGraph.duration} min`
 		case 'today':
 			return 'heute'
@@ -167,23 +152,9 @@ const gmode = computed({
 		}
 	},
 })
-const graphdate = computed(() => {
-	switch (graphData.graphMode) {
-		case 'live':
-		case 'today':
-			return dayGraph.getDate()
-		case 'month':
-			return monthGraph.getDate()
-		default:
-			return dayGraph.getDate()
-	}
-})
-function setDate(v: Date) {
-	setGraphDate(v)
-}
 function toggleEdit() {
 	editmode.value += 1
-	if (editmode.value > 2) {
+	if (editmode.value > 1) {
 		editmode.value = 0
 	}
 }

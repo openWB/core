@@ -12,24 +12,27 @@ library.add(fasHome);
 
 export default {
   name: "HomeCard",
+  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
   props: {},
   data() {
     return {
       mqttStore: useMqttStore(),
     };
   },
-  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
 };
 </script>
 
 <template>
   <dash-board-card color="light">
     <template #headerLeft>
-      <font-awesome-icon fixed-width :icon="['fas', 'fa-home']" />
+      <font-awesome-icon
+        fixed-width
+        :icon="['fas', 'fa-home']"
+      />
       Hausverbrauch
     </template>
     <template #headerRight>
-      {{ mqttStore.getHomePower }}
+      {{ mqttStore.getHomePower() }}
     </template>
     <spark-line
       color="var(--color--light)"
