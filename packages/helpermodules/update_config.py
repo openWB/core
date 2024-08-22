@@ -18,7 +18,11 @@ from helpermodules import timecheck
 from helpermodules import hardware_configuration
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.constants import NO_ERROR
-from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
+from helpermodules.hardware_configuration import (
+    get_hardware_configuration_setting,
+    update_hardware_configuration,
+    get_serial_number
+)
 from helpermodules.measurement_logging.process_log import get_default_charge_log_columns, get_totals
 from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
@@ -503,6 +507,7 @@ class UpdateConfig:
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/mqtt/valid_partner_ids", []),
         ("openWB/system/release_train", "master"),
+        ("openWB/system/serial_number", get_serial_number()),
     )
     invalid_topic = (
         # Tuple: (Regex, callable)
