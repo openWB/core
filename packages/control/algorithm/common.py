@@ -77,8 +77,15 @@ def get_min_current(chargepoint: Chargepoint) -> Tuple[List[float], List[int]]:
 # tested
 
 
-def set_current_counterdiff(diff: float, current: float, chargepoint: Chargepoint, surplus: bool = False) -> None:
+def set_current_counterdiff(diff_curent: float,
+                            current: float,
+                            chargepoint: Chargepoint,
+                            surplus: bool = False) -> None:
     required_currents = chargepoint.data.control_parameter.required_currents
+    considered_current = consider_less_charging_chargepoint_in_loadmanagement(
+        chargepoint, current)
+    # gar nicht ladende Autos?
+    diff = max(considered_current - diff_curent, 0)
     diffs = [diff if required_currents[i] != 0 else 0 for i in range(3)]
     if max(diffs) > 0:
         counters = data.data.counter_all_data.get_counters_to_check(chargepoint.num)
@@ -157,10 +164,13 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
 
 
 def consider_less_charging_chargepoint_in_loadmanagement(cp: Chargepoint, set_current: float) -> bool:
-    if ((cp.data.set.current -
-        cp.data.set.charging_ev_data.ev_template.data.nominal_difference) > max(cp.data.get.currents) and
-            cp.data.control_parameter.timestamp_charge_start is not None and
-            check_timestamp(cp.data.control_parameter.timestamp_charge_start, LESS_CHARGING_TIMEOUT) is False):
+    if (data.data.counter_all_data.data.config.reserve_for_less_charging and
+        ((set_current -
+          cp.data.set.charging_ev_data.ev_template.data.nominal_difference) > max(cp.data.get.currents) and
+         cp.data.control_parameter.timestamp_charge_start is not None and
+         check_timestamp(cp.data.control_parameter.timestamp_charge_start, LESS_CHARGING_TIMEOUT) is False)):
+        log.debug(
+            f"LP {cp.num} lädt deutlich unter dem Sollstrom und wird nur mit {cp.data.get.currents}A berücksichtigt.")
         return max(cp.data.get.currents)
     else:
         return set_current

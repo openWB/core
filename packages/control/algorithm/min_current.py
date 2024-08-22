@@ -35,10 +35,8 @@ class MinCurrent:
                                 cp.set_state_and_log(
                                     f"Ladung kann nicht gestartet werden{limit.value.format(counter.num)}")
                         else:
-                            current = common.consider_less_charging_chargepoint_in_loadmanagement(
-                                cp, cp.data.set.target_current)
                             common.set_current_counterdiff(
-                                (cp.data.control_parameter.min_current - current),
+                                cp.data.set.target_current,
                                 cp.data.control_parameter.min_current,
                                 cp)
                     else:
