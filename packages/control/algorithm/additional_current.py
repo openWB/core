@@ -37,7 +37,7 @@ class AdditionalCurrent:
                         cp.data.set.current, available_for_cp, cp.data.set.target_current)
                     self._set_loadmangement_message(current, limit, cp, counter)
                     common.set_current_counterdiff(
-                        current - cp.data.control_parameter.min_current,
+                        cp.data.control_parameter.min_current,
                         current,
                         cp)
                     preferenced_chargepoints.pop(0)

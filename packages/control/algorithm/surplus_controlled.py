@@ -57,7 +57,7 @@ class SurplusControlled:
             limited_current = self._limit_adjust_current(cp, current)
             limited_current = self._add_unused_evse_current(limited_current, cp)
             common.set_current_counterdiff(
-                limited_current - cp.data.control_parameter.min_current,
+                cp.data.control_parameter.min_current,
                 limited_current,
                 cp,
                 surplus=True)
