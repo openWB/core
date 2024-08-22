@@ -22,6 +22,27 @@ class CalculationType(Enum):
 FILE_ERRORS = (FileNotFoundError, json.decoder.JSONDecodeError)
 
 
+def get_default_charge_log_columns() -> Dict:
+    return {
+        "time_begin": True,
+        "time_end": True,
+        "time_time_charged": True,
+        "data_costs": False,
+        "data_power_source": False,
+        "vehicle_name": True,
+        "vehicle_chargemode": True,
+        "vehicle_prio": True,
+        "vehicle_rfid": True,
+        "vehicle_soc_at_start": False,
+        "vehicle_soc_at_end": False,
+        "chargepoint_name": True,
+        "chargepoint_serial_number": False,
+        "data_imported_since_mode_switch": True,
+        "chargepoint_imported_at_start": False,
+        "chargepoint_imported_at_end": False
+    }
+
+
 def string_to_float(value: str, default: float = 0) -> float:
     try:
         return float(value)
