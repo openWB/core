@@ -18,7 +18,7 @@ from helpermodules import hardware_configuration
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.constants import NO_ERROR
 from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
-from helpermodules.measurement_logging.process_log import get_totals
+from helpermodules.measurement_logging.process_log import get_default_charge_log_columns, get_totals
 from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
@@ -434,12 +434,7 @@ class UpdateConfig:
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
         ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData(name="Fahrzeug-Profil", min_current=10))),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
-        ("openWB/general/charge_log_data_config",
-         {"time_begin": True, "time_end": True, "time_time_charged": True, "data_costs": False,
-          "data_power_source": False, "vehicle_name": True, "vehicle_chargemode": True, "vehicle_prio": True,
-          "vehicle_rfid": True, "vehicle_soc_at_start": False, "vehicle_soc_at_end": False, "chargepoint_name": True,
-          "chargepoint_serial_number": False, "data_imported_since_mode_switch": True,
-          "chargepoint_imported_at_start": False, "chargepoint_imported_at_end": False}),
+        ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 3),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
