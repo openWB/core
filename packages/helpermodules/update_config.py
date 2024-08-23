@@ -433,6 +433,7 @@ class UpdateConfig:
         ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
+        ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
         ("openWB/vehicle/0/soc_module/config", NO_MODULE),
         ("openWB/vehicle/0/soc_module/general_config", dataclass_utils.asdict(GeneralVehicleConfig())),
@@ -1724,13 +1725,14 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> Optional[dict]:
             # add manufacturer and model to vehicles
             if re.search("openWB/vehicle/[0-9]+/name", topic) is not None:
-                return {
-                    topic.replace("/name", "/info"): {"manufacturer": None, "model": None},
-                }
+                vehicle_info_topic = topic.replace("/name", "/info")
+                if vehicle_info_topic not in self.all_received_topics:
+                    return {vehicle_info_topic: {"manufacturer": None, "model": None}}
             # add manufacturer and model to components
             if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config", topic) is not None:
                 config_payload = decode_payload(payload)
-                config_payload.update({"info": {"manufacturer": None, "model": None}})
-                return {topic: config_payload}
+                if "info" not in config_payload:
+                    config_payload.update({"info": {"manufacturer": None, "model": None}})
+                    return {topic: config_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 59)
