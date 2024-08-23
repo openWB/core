@@ -47,9 +47,9 @@ def test_hardware_check_fails(evse_side_effect,
     mock_evse_facotry = Mock(spec=Evse, return_value=mock_evse_client)
     monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
 
-    mock_meter_client = Mock(spec=sdm.Sdm630, get_voltages=Mock(
+    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_voltages=Mock(
         side_effect=meter_side_effect, return_value=meter_return_value))
-    mock_find_meter_client = Mock(spec=sdm.Sdm630, return_value=mock_meter_client)
+    mock_find_meter_client = Mock(spec=sdm.Sdm630_72, return_value=mock_meter_client)
     monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
 
     handle_exception_mock = Mock(side_effect=handle_exception_side_effect, return_value=handle_exception_return_value)
@@ -69,8 +69,8 @@ def test_hardware_check_succeeds(monkeypatch):
     mock_evse_facotry = Mock(spec=Evse, return_value=mock_evse_client)
     monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
 
-    mock_meter_client = Mock(spec=sdm.Sdm630, get_voltages=Mock(return_value=[230]*3))
-    mock_find_meter_client = Mock(spec=sdm.Sdm630, return_value=mock_meter_client)
+    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_voltages=Mock(return_value=[230]*3))
+    mock_find_meter_client = Mock(spec=sdm.Sdm630_72, return_value=mock_meter_client)
     monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
 
     mock_modbus_client = MagicMock(spec=ModbusClient)
