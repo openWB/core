@@ -158,13 +158,19 @@ class CounterAll:
         elements_to_sum_up = self.get_elements_for_downstream_calculation(id_source)
         for element in elements_to_sum_up:
             if element["type"] == ComponentType.CHARGEPOINT.value:
-                power += data.data.cp_data[f"cp{element['id']}"].data.get.power
+                component = data.data.cp_data[f"cp{element['id']}"]
             elif element["type"] == ComponentType.BAT.value:
-                power += data.data.bat_data[f"bat{element['id']}"].data.get.power
+                component = data.data.bat_data[f"bat{element['id']}"]
             elif element["type"] == ComponentType.COUNTER.value:
-                power += data.data.counter_data[f"counter{element['id']}"].data.get.power
+                component = data.data.counter_data[f"counter{element['id']}"]
             elif element["type"] == ComponentType.INVERTER.value:
-                power += data.data.pv_data[f"pv{element['id']}"].data.get.power
+                component = data.data.pv_data[f"pv{element['id']}"]
+
+            if component.data.get.fault_state < 2:
+                power += component.data.get.power
+            else:
+                log.warning(
+                    f"Komponente {element['type']}{component.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
         evu = data.data.counter_data[f"counter{id_source}"].data.get.power
         return evu - power - self.data.set.smarthome_power_excluded_from_home_consumption, elements_to_sum_up
 
