@@ -69,9 +69,9 @@ import json
 import logging
 from datetime import date
 from responses import (CarwingsInitialAppResponse, CarwingsLoginResponse, CarwingsBatteryStatusResponse,
-                       CarwingsStartClimateControlResponse, CarwingsStopClimateControlResponse, 
-                       CarwingsClimateControlScheduleResponse, CarwingsDrivingAnalysisResponse, 
-                       CarwingsLatestBatteryStatusResponse, CarwingsLatestClimateControlStatusResponse, 
+                       CarwingsStartClimateControlResponse, CarwingsStopClimateControlResponse,
+                       CarwingsClimateControlScheduleResponse, CarwingsDrivingAnalysisResponse,
+                       CarwingsLatestBatteryStatusResponse, CarwingsLatestClimateControlStatusResponse,
                        CarwingsElectricRateSimulationResponse, CarwingsMyCarFinderResponse)
 import base64
 from Crypto.Cipher import Blowfish
