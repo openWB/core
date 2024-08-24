@@ -369,6 +369,7 @@ export const infotext: { [key: string]: string } = {
 	pricebased:
 		'Laden bei dynamischem Stromtarif, wenn eingestellter Maximalpreis unterboten wird.',
 }
+
 interface Preferences {
 	hideSH?: number[]
 	showLG?: boolean
