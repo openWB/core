@@ -97,23 +97,29 @@ def test_set_required_current_to_max(phases: int,
 
 
 @pytest.mark.parametrize(
-    "evse_current, limited_current, expected_current",
+    "evse_current, limited_current, required_current, expected_current",
     [
-        pytest.param(None, 6, 6, id="Kein Soll-Strom aus der EVSE ausgelesen"),
-        pytest.param(15, 15, 15, id="Auto lädt mit Soll-Stromstärke"),
-        pytest.param(15.5, 15.5, 16, id="Auto lädt mit weniger als Soll-Stromstärke"),
-        pytest.param(16, 16, 16,
-                     id="Auto lädt mit weniger als Soll-Stromstärke, aber EVSE-Begrenzung ist erreicht.")
+        pytest.param(None, 6, 16, 6, id="Kein Soll-Strom aus der EVSE ausgelesen"),
+        pytest.param(15, 15, 16, 15, id="Auto lädt mit Soll-Stromstärke"),
+        pytest.param(14.5, 14.5, 14.5, 14, id="Auto lädt mit mehr als Soll-Stromstärke"),
+        pytest.param(15.5, 15.5, 16, 16, id="Auto lädt mit weniger als Soll-Stromstärke"),
+        pytest.param(16, 16, 16, 16, id="Auto lädt mit weniger als Soll-Stromstärke, aber EVSE-Begrenzung ist erreicht.")
     ])
-def test_add_unused_evse_current(evse_current: float, limited_current: float, expected_current: float):
+def test_add_unused_evse_current(evse_current: float,
+                                 limited_current: float,
+                                 required_current: float,
+                                 expected_current: float):
     # setup
     c = Chargepoint(0, None)
     c.data.get.currents = [15]*3
     c.data.get.evse_current = evse_current
-    c.data.control_parameter.required_current = 16
+    c.data.control_parameter.required_current = required_current
 
     # execution
-    current = SurplusControlled()._add_unused_evse_current(limited_current, c)
+    current = SurplusControlled()._fix_deviating_evse_current(limited_current, c)
+
+    # assertion
+    assert current == expected_current
 
     # evaluation
     assert current == expected_current
