@@ -4,6 +4,8 @@ OPENWBDIRNAME=${OPENWBBASEDIR##*/}
 OPENWBDIRNAME=${OPENWBDIRNAME:-/}
 TARBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 BACKUPDIR="$OPENWBBASEDIR/data/backup"
+RAMDISKDIR="$OPENWBBASEDIR/ramdisk"
+TEMPDIR="$RAMDISKDIR/temp"
 LOGFILE="$OPENWBBASEDIR/data/log/backup.log"
 
 useExtendedFilename=$1
@@ -51,42 +53,41 @@ fi
 		--directory="/var/lib/" \
 		"mosquitto/" "mosquitto_local/"
 	echo "adding git information"
-	git branch --no-color --show-current >"$OPENWBBASEDIR/ramdisk/GIT_BRANCH"
-	git log --pretty='format:%H' -n1 >"$OPENWBBASEDIR/ramdisk/GIT_HASH"
-	echo "branch: $(<"$OPENWBBASEDIR/ramdisk/GIT_BRANCH") commit-hash: $(<"$OPENWBBASEDIR/ramdisk/GIT_HASH")"
+	git branch --no-color --show-current >"$RAMDISKDIR/GIT_BRANCH"
+	git log --pretty='format:%H' -n1 >"$RAMDISKDIR/GIT_HASH"
+	echo "branch: $(<"$RAMDISKDIR/GIT_BRANCH") commit-hash: $(<"$RAMDISKDIR/GIT_HASH")"
 	tar --verbose --append \
 		--file="$BACKUPFILE" \
-		--directory="$OPENWBBASEDIR/ramdisk/" \
+		--directory="$RAMDISKDIR/" \
 		"GIT_BRANCH" "GIT_HASH"
 
 	echo "calculating checksums"
-	# openwb directory
-	find "$OPENWBBASEDIR" \( \
-		-path "$OPENWBBASEDIR/.git" -o \
-		-path "$OPENWBBASEDIR/data/backup" -o \
-		-path "$OPENWBBASEDIR/.pytest" -o \
-		-name "__pycache__" -o \
-		-path "$OPENWBBASEDIR/.pytest_cache" -o \
-		-path "$OPENWBBASEDIR/ramdisk" -o \
-		-name "backup.log" \
-		\) -prune -o \
-		-type f -print0 | xargs -0 sha256sum | sed -n "s|$TARBASEDIR/||p" >"$OPENWBBASEDIR/ramdisk/SHA256SUM"
-	# configuration file
-	echo -n "/home/openwb/configuration.json" | xargs -0 sha256sum | sed -n "s|/home/openwb/||p" >>"$OPENWBBASEDIR/ramdisk/SHA256SUM"
-	# git info files
-	find "$OPENWBBASEDIR/ramdisk/GIT_"* \
-		-type f -print0 | xargs -0 sha256sum | sed -n "s|$OPENWBBASEDIR/ramdisk/||p" >>"$OPENWBBASEDIR/ramdisk/SHA256SUM"
-	# mosquitto databases
-	find "/var/lib/mosquitto"* \
-		-type f -print0 | xargs -0 sudo sha256sum | sed -n "s|/var/lib/||p" >>"$OPENWBBASEDIR/ramdisk/SHA256SUM"
+	IFS=$'\n'
+	mapfile -t file_list < <(tar -tf "$BACKUPFILE")
+	mkdir -p "$TEMPDIR"
+	# process each file
+	for file in "${file_list[@]}"; do
+		# skip directories
+		if [[ $file =~ /$ ]]; then
+			echo "skipping directory $file"
+			continue
+		fi
+		# extract the file
+		tar -xf "$BACKUPFILE" -C "$TEMPDIR" "$file"
+		# calculate the checksum
+		sha256sum "$TEMPDIR/$file" | sed -n "s|$TEMPDIR/||p" >> "$RAMDISKDIR/SHA256SUM"
+		# remove the file
+		rm -f "$TEMPDIR/$file"
+	done
 	tar --verbose --append \
 		--file="$BACKUPFILE" \
-		--directory="$OPENWBBASEDIR/ramdisk/" \
+		--directory="$RAMDISKDIR/" \
 		"SHA256SUM"
 
 	# cleanup
 	echo "removing temporary files"
-	rm -v "$OPENWBBASEDIR/ramdisk/GIT_BRANCH" "$OPENWBBASEDIR/ramdisk/GIT_HASH" "$OPENWBBASEDIR/ramdisk/SHA256SUM"
+	rm -v "$RAMDISKDIR/GIT_BRANCH" "$RAMDISKDIR/GIT_HASH" "$RAMDISKDIR/SHA256SUM"
+	rm -rf "${TEMPDIR:?}/"
 	tar --append \
 		--file="$BACKUPFILE" \
 		--directory="$OPENWBBASEDIR/data/log/" \
