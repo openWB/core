@@ -35,13 +35,10 @@ fi
 	tar --verbose --create \
 		--file="$BACKUPFILE" \
 		--directory="$TARBASEDIR/" \
-		--exclude="$OPENWBDIRNAME/data/backup/*.tar" \
-		--exclude="$OPENWBDIRNAME/data/log/backup.log" \
-		--exclude="$OPENWBDIRNAME/.git" \
-		--exclude "$OPENWBDIRNAME/ramdisk" \
-		--exclude "__pycache__" \
-		--exclude "$OPENWBDIRNAME/.pytest_cache" \
-		"$OPENWBDIRNAME"
+		"$OPENWBDIRNAME/data/charge_log" \
+		"$OPENWBDIRNAME/data/daily_log" \
+		"$OPENWBDIRNAME/data/monthly_log" \
+		"$OPENWBDIRNAME/data/log/uuid"
 	echo "adding configuration file"
 	sudo tar --verbose --append \
 		--file="$BACKUPFILE" \
@@ -52,6 +49,7 @@ fi
 		--file="$BACKUPFILE" \
 		--directory="/var/lib/" \
 		"mosquitto/" "mosquitto_local/"
+	# ToDo: add mosquitto configuration files
 	echo "adding git information"
 	git branch --no-color --show-current >"$RAMDISKDIR/GIT_BRANCH"
 	git log --pretty='format:%H' -n1 >"$RAMDISKDIR/GIT_HASH"
