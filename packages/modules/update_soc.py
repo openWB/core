@@ -25,6 +25,7 @@ class UpdateSoc:
         self.event_update_soc = event_update_soc
 
     def update(self) -> None:
+        # kein ChangedValuesHandler, da dieser mit data.data arbeitet
         while True:
             self.event_update_soc.wait(timeout=10)
             self.event_update_soc.clear()
@@ -69,11 +70,15 @@ class UpdateSoc:
                                                         args=(), name=f"store soc_ev{ev.num}"))
                 else:
                     # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
-                    if ev.data.get.fault_state != 0 or ev.data.get.fault_str != NO_ERROR:
+                    if ev.data.get.fault_state != 0:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_state", 0)
+                    if ev.data.get.fault_str != NO_ERROR:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_str", NO_ERROR)
+                    if ev.data.get.soc is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", None)
+                    if ev.data.get.soc_timestamp is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", None)
+                    if ev.data.get.range is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")

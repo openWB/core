@@ -14,20 +14,36 @@ export default {
 </script>
 
 <template>
-  <i-nav vertical class="_align-items:stretch">
-    <nav-item v-if="mqttStore.getDashBoardEnabled" :to="{ name: 'dash-board' }">
+  <i-nav
+    vertical
+    class="_align-items:stretch"
+    size="lg"
+  >
+    <nav-item
+      v-if="mqttStore.getDashBoardEnabled"
+      :to="{ name: 'dash-board' }"
+    >
       Übersicht
+    </nav-item>
+    <nav-item
+      v-if="mqttStore.getEnergyFlowEnabled"
+      :to="{ name: 'energy-flow' }"
+    >
+      Energiefluss
     </nav-item>
     <nav-item
       v-if="
         mqttStore.getChargePointsEnabled &&
-        mqttStore.getChargePointIds.length > 0
+          mqttStore.getChargePointIds.length > 0
       "
       :to="{ name: 'charge-points' }"
     >
       Ladepunkte
     </nav-item>
-    <nav-item v-if="mqttStore.getStateEnabled" :to="{ name: 'status' }">
+    <nav-item
+      v-if="mqttStore.getStateEnabled"
+      :to="{ name: 'status' }"
+    >
       Status
     </nav-item>
   </i-nav>

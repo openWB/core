@@ -3,7 +3,6 @@ from typing import Dict, Union
 
 from pymodbus.constants import Endian
 
-from dataclass_utils import dataclass_from_dict
 from modules.devices.carlo_gavazzi.config import CarloGavazziCounterSetup
 from modules.common import modbus
 from modules.common.component_state import CounterState
@@ -21,7 +20,7 @@ class CarloGavazziCounter:
                  tcp_client: modbus.ModbusTcpClient_,
                  modbus_id: int) -> None:
         self.__device_id = device_id
-        self.component_config = dataclass_from_dict(CarloGavazziCounterSetup, component_config)
+        self.component_config = component_config
         self.__tcp_client = tcp_client
         self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")

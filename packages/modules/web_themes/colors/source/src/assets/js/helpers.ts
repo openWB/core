@@ -120,6 +120,6 @@ export function formatTemp(t: number) {
 	return t != 999
 		? (Math.round(t * 10) / 10).toLocaleString(undefined, {
 				minimumFractionDigits: 1,
-		  }) + '°'
+			}) + '°'
 		: '-'
 }

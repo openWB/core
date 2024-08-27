@@ -30,7 +30,7 @@ import { counters } from './model'
 	font-weight: normal;
 }
 
-.tempbadge {
+.tempWbBadge {
 	background-color: var(--color-battery);
 	color: var(--color-bg);
 	font-size: var(--font-verysmall);

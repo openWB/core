@@ -9,7 +9,7 @@ import LockNavItem from "@/components/LockNavItem.vue";
 import { useMqttStore } from "@/stores/mqtt.js";
 
 export default {
-  name: "openwbDisplayCardsApp",
+  name: "OpenwbDisplayCardsApp",
   components: {
     RouterView,
     DateTime,
@@ -41,7 +41,6 @@ export default {
         "openWB/chargepoint/+/get/plug_state",
         "openWB/chargepoint/+/get/power",
         "openWB/chargepoint/+/get/rfid",
-        "openWB/chargepoint/+/set/change_ev_permitted",
         "openWB/chargepoint/+/set/current",
         "openWB/chargepoint/+/set/manual_lock",
         "openWB/chargepoint/+/set/log",
@@ -76,6 +75,34 @@ export default {
       );
     },
   },
+  created() {
+    this.createConnection();
+  },
+  mounted() {
+    // parse and add url parameters to store
+    let uri = window.location.search;
+    if (uri != "") {
+      console.debug("search", uri);
+      let params = new URLSearchParams(uri);
+      if (params.has("data")) {
+        let data = JSON.parse(params.get("data"));
+        Object.entries(data).forEach(([key, value]) => {
+          console.log("updateSetting", key, value);
+          this.mqttStore.updateSetting(key, value);
+        });
+      }
+    }
+    // subscribe our topics
+    this.doSubscribe(this.mqttTopicsToSubscribe);
+    // timer for chart data
+    this.chartInterval = setInterval(this.mqttStore.updateChartData, 5000);
+  },
+  beforeUnmount() {
+    // unsubscribe our topics
+    this.doUnsubscribe(this.mqttTopicsToSubscribe);
+    // clear timer for chart data
+    clearInterval(this.chartInterval);
+  },
   methods: {
     /**
      * Establishes a connection to the configured broker
@@ -105,7 +132,7 @@ export default {
           try {
             myPayload = JSON.parse(message.toString());
           } catch (error) {
-            console.debug("Json parsing failed, fallback to string: ", topic);
+            console.debug("Json parsing failed, fallback to string: ", topic, error);
             myPayload = message.toString();
           }
           this.mqttStore.addTopic(topic, myPayload);
@@ -197,37 +224,16 @@ export default {
       });
     },
   },
-  created() {
-    this.createConnection();
-  },
-  mounted() {
-    // parse and add url parameters to store
-    let uri = window.location.search;
-    if (uri != "") {
-      console.debug("search", uri);
-      let params = new URLSearchParams(uri);
-      params.forEach((value, key) => {
-        this.mqttStore.updateSetting(key, parseInt(value));
-      });
-    }
-    // subscribe our topics
-    this.doSubscribe(this.mqttTopicsToSubscribe);
-    // timer for chart data
-    this.chartInterval = setInterval(this.mqttStore.updateChartData, 5000);
-  },
-  beforeUnmount() {
-    // unsubscribe our topics
-    this.doUnsubscribe(this.mqttTopicsToSubscribe);
-    // clear timer for chart data
-    clearInterval(this.chartInterval);
-  },
 };
 </script>
 
 <template>
   <i-layout vertical>
     <i-layout-aside class="_position:fixed">
-      <i-container fluid class="_margin-bottom:1">
+      <i-container
+        fluid
+        class="_margin-bottom:1"
+      >
         <i-row center>
           <i-column>
             <DateTime />
@@ -235,11 +241,11 @@ export default {
         </i-row>
       </i-container>
       <LockNavItem />
-      <NavBar :changesLocked="changesLocked" />
+      <NavBar :changes-locked="changesLocked" />
     </i-layout-aside>
 
     <i-layout-content>
-      <RouterView :changesLocked="changesLocked" />
+      <RouterView :changes-locked="changesLocked" />
     </i-layout-content>
   </i-layout>
 </template>

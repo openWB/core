@@ -27,8 +27,14 @@ class LoggingValueStore(Generic[T], ValueStore[T]):
         self.delegate.set(state)
 
     def update(self) -> None:
-        log.info("Saving %s", self.delegate.state)
-        self.delegate.update()
+        try:
+            log.info("Saving %s", self.delegate.state)
+            self.delegate.update()
+        except AttributeError:
+            # Wenn keine Daten ausgelesen werden, fehlt das state-Attribut.
+            pass
+        except Exception:
+            log.exception("Error while publishing module data")
 
 
 def update_values(component):

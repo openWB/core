@@ -9,10 +9,27 @@ import {
 } from './model'
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
 import { itemNames } from './model'
+import { chargePoints } from '../chargePointList/model'
 
 let columnValues: { [key: string]: number } = {}
 const consumerCategories = ['charging', 'house', 'batIn', 'devices']
-const nonPvCategories = ['evuIn', 'pv', 'batOut', 'evuOut']
+const nonPvCategories = [
+	'evuIn',
+	'pv',
+	'batOut',
+	'batIn',
+	'evuOut',
+	'devices',
+	'sh1',
+	'sh2',
+	'sh3',
+	'sh4',
+	'sh5',
+	'sh6',
+	'sh7',
+	'sh8',
+	'sh9',
+]
 let gridCounters: string[] = []
 
 // methods:
@@ -142,7 +159,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	Object.entries(inputRow.cp).forEach(([id, values]) => {
 		if (id != 'all') {
 			if (!historicSummary.keys().includes(id)) {
-				historicSummary.addItem(id)
+				historicSummary.addItem(id, chargePoints[+id.slice(2)].color)
 			}
 			outputRow[id] = values.energy_imported
 		} else {

@@ -4,7 +4,7 @@ import copy
 from dataclasses import dataclass, field
 import logging
 import re
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from control import data
 from control.counter import Counter
@@ -20,7 +20,10 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Config:
-    reserve_for_not_charging: bool = False
+    home_consumption_source_id: Optional[str] = field(
+        default=None, metadata={"topic": "config/home_consumption_source_id"})
+    reserve_for_not_charging: bool = field(
+        default=False, metadata={"topic": "config/reserve_for_not_charging"})
 
 
 def config_factory() -> Config:
@@ -29,18 +32,26 @@ def config_factory() -> Config:
 
 @dataclass
 class Set:
-    loadmanagement_active: bool = False
-    home_consumption: float = 0
-    smarthome_power_excluded_from_home_consumption: float = 0
-    invalid_home_consumption: int = 0
-    daily_yield_home_consumption: float = 0
-    imported_home_consumption: float = 0
-    disengageable_smarthome_power: float = 0
+    loadmanagement_active: bool = field(
+        default=False, metadata={"topic": "set/loadmanagement_active"})
+    home_consumption: float = field(default=0, metadata={"topic": "set/home_consumption"})
+    smarthome_power_excluded_from_home_consumption: float = field(
+        default=0,
+        metadata={"topic": "set/smarthome_power_excluded_from_home_consumption"})
+    invalid_home_consumption: int = field(
+        default=0, metadata={"topic": "set/invalid_home_consumption"})
+    daily_yield_home_consumption: float = field(
+        default=0, metadata={"topic": "set/daily_yield_home_consumption"})
+    imported_home_consumption: float = field(
+        default=0, metadata={"topic": "set/imported_home_consumption"})
+    disengageable_smarthome_power: float = field(
+        default=0, metadata={"topic": "set/disengageable_smarthome_power"})
 
 
 @dataclass
 class Get:
-    hierarchy: List = field(default_factory=empty_list_factory)
+    hierarchy: List = field(default_factory=empty_list_factory, metadata={
+                            "topic": "get/hierarchy"})
 
 
 def get_factory() -> Get:
@@ -59,8 +70,7 @@ class CounterAllData:
 
 
 class CounterAll:
-    """
-    """
+    MISSING_EVU_COUNTER = "Bitte erst einen EVU-Zähler konfigurieren."
 
     def __init__(self):
         self.data = CounterAllData()
@@ -89,51 +99,63 @@ class CounterAll:
                 "möglich.")
             raise
 
-    def put_stats(self) -> None:
-        try:
-            Pub().pub("openWB/set/counter/set/loadmanagement_active", self.data.set.loadmanagement_active)
-        except Exception:
-            log.exception("Fehler in der allgemeinen Zähler-Klasse")
-
     def set_home_consumption(self) -> None:
         try:
+            self._validate_home_consumption_counter()
             home_consumption, elements = self._calc_home_consumption()
             if home_consumption < 0:
                 log.error(
                     f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
-                evu_counter_data = data.data.counter_data[self.get_evu_counter_str()].data
-                if evu_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
-                    evu_counter_data.get.fault_state = FaultStateLevel.WARNING.value
-                    evu_counter_data.get.fault_str = ("Der Wert für den Hausverbrauch ist nicht plausibel (negativ). "
-                                                      "Bitte die Leistungen der Komponenten und die Anordnung in der "
-                                                      "Hierarchie prüfen.")
-                    evu_counter = self.get_id_evu_counter()
-                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
-                              evu_counter_data.get.fault_state)
-                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
-                              evu_counter_data.get.fault_str)
+                if self.data.config.home_consumption_source_id is None:
+                    hc_counter_source = self.get_evu_counter_str()
+                else:
+                    hc_counter_source = f"counter{self.data.config.home_consumption_source_id}"
+                hc_counter_data = data.data.counter_data[hc_counter_source].data
+                if hc_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
+                    hc_counter_data.get.fault_state = FaultStateLevel.WARNING.value
+                    hc_counter_data.get.fault_str = ("Hinweis: Es gibt mehr Stromerzeuger im Haus als in der openWB "
+                                                     "eingetragen sind. Der Hausverbrauch kann nicht korrekt berechnet "
+                                                     "werden. Dies hat auf die PV-Überschussladung keine negativen "
+                                                     "Auswirkungen.")
                 if self.data.set.invalid_home_consumption < 3:
                     self.data.set.invalid_home_consumption += 1
-                    Pub().pub("openWB/set/counter/set/invalid_home_consumption",
-                              self.data.set.invalid_home_consumption)
                     return
                 else:
                     home_consumption = 0
             else:
                 self.data.set.invalid_home_consumption = 0
-                Pub().pub("openWB/set/counter/set/invalid_home_consumption",
-                          self.data.set.invalid_home_consumption)
             self.data.set.home_consumption = home_consumption
-            Pub().pub("openWB/set/counter/set/home_consumption", self.data.set.home_consumption)
             imported, _ = self.sim_counter.sim_count(self.data.set.home_consumption)
-            Pub().pub("openWB/set/counter/set/imported_home_consumption", imported)
             self.data.set.imported_home_consumption = imported
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
+    EVU_IS_HC_COUNTER_ERROR = ("Der EVU-Zähler kann nicht als Quelle für den Hausverbrauch verwendet werden. Meist ist "
+                               "der Zähler am EVU-Punkt installiert, dann muss im Lastmanagement unter Hausverbrauch"
+                               " 'von openWB berechnen' ausgewählt werden. Wenn der Zähler im Hausverbrauchszweig "
+                               "installiert ist, einen virtuellen Zähler anlegen und im Lastmanagement ganz links "
+                               "anordnen.")
+
+    def _validate_home_consumption_counter(self):
+        if self.data.config.home_consumption_source_id is not None:
+            if self.data.config.home_consumption_source_id == self.get_id_evu_counter():
+                hc_counter_data = data.data.counter_data[self.get_evu_counter_str()].data
+                hc_counter_data.get.fault_state = FaultStateLevel.ERROR.value
+                hc_counter_data.get.fault_str = self.EVU_IS_HC_COUNTER_ERROR
+                evu_counter = self.get_id_evu_counter()
+                Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
+                          hc_counter_data.get.fault_state)
+                Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
+                          hc_counter_data.get.fault_str)
+                raise Exception(self.EVU_IS_HC_COUNTER_ERROR)
+
     def _calc_home_consumption(self) -> Tuple[float, List]:
         power = 0
-        elements_to_sum_up = self.get_elements_for_downstream_calculation(self.get_id_evu_counter())
+        if self.data.config.home_consumption_source_id is None:
+            id_source = self.get_id_evu_counter()
+        else:
+            id_source = self.data.config.home_consumption_source_id
+        elements_to_sum_up = self.get_elements_for_downstream_calculation(id_source)
         for element in elements_to_sum_up:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 power += data.data.cp_data[f"cp{element['id']}"].data.get.power
@@ -143,7 +165,7 @@ class CounterAll:
                 power += data.data.counter_data[f"counter{element['id']}"].data.get.power
             elif element["type"] == ComponentType.INVERTER.value:
                 power += data.data.pv_data[f"pv{element['id']}"].data.get.power
-        evu = data.data.counter_data[self.get_evu_counter_str()].data.get.power
+        evu = data.data.counter_data[f"counter{id_source}"].data.get.power
         return evu - power - self.data.set.smarthome_power_excluded_from_home_consumption, elements_to_sum_up
 
     def _add_hybrid_bat(self, id: int) -> List:
@@ -195,7 +217,8 @@ class CounterAll:
         try:
             self._get_all_cp_connected_to_counter(counter_object)
         except KeyError:
-            log.debug(f"Kein Ladepunkt unter Zähler {counter}.")
+            # Kein Ladepunkt unter dem Zähler
+            pass
         return self.connected_chargepoints
 
     def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
@@ -290,7 +313,6 @@ class CounterAll:
         """
         if self.__is_id_in_top_level(id_to_find):
             self.data.get.hierarchy.append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
         else:
             if (self.__edit_element_in_hierarchy(
                     self.data.get.hierarchy[0],
@@ -301,7 +323,6 @@ class CounterAll:
             self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
         if id_to_find == child["id"]:
             current_entry["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
             return True
         else:
             return False
@@ -315,7 +336,6 @@ class CounterAll:
             if keep_children:
                 self.data.get.hierarchy.extend(item["children"])
             self.data.get.hierarchy.remove(item)
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
         else:
             if (self.__edit_element_in_hierarchy(
                     self.data.get.hierarchy[0],
@@ -327,10 +347,24 @@ class CounterAll:
             if keep_children:
                 current_entry["children"].extend(child["children"])
             current_entry["children"].remove(child)
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
             return True
         else:
             return False
+
+    def hierarchy_add_item_below_evu(self, new_id: int, new_type: ComponentType) -> None:
+        try:
+            self.hierarchy_add_item_below(new_id, new_type, self.get_id_evu_counter())
+        except (TypeError, IndexError):
+            if new_type == ComponentType.COUNTER:
+                # es gibt noch keinen EVU-Zähler
+                hierarchy = [{
+                    "id": new_id,
+                    "type": ComponentType.COUNTER.value,
+                    "children": self.data.get.hierarchy
+                }]
+                self.data.get.hierarchy = hierarchy
+            else:
+                raise ValueError(self.MISSING_EVU_COUNTER)
 
     def hierarchy_add_item_below(self, new_id: int, new_type: ComponentType, id_to_find: int) -> None:
         """ruft die rekursive Funktion zum Hinzufügen eines Elements als Kind des angegebenen Elements.
@@ -338,7 +372,6 @@ class CounterAll:
         item = self.__is_id_in_top_level(id_to_find)
         if item:
             item["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
         else:
             if (self.__edit_element_in_hierarchy(
                     self.data.get.hierarchy[0],
@@ -349,7 +382,6 @@ class CounterAll:
             self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
         if id_to_find == child["id"]:
             child["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
             return True
         else:
             return False
@@ -419,24 +451,21 @@ class CounterAll:
                         break
                 else:
                     try:
-                        self.hierarchy_add_item_below(entry_num, type_name, self.get_evu_counter().num)
-                    except (TypeError, IndexError):
-                        # es gibt noch keinen EVU-Zähler
-                        hierarchy = [{
-                            "id": entry_num,
-                            "type": ComponentType.COUNTER.value,
-                            "children": data.data.counter_all_data.data.get.hierarchy
-                        }]
-                        Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
-                        data.data.counter_all_data.data.get.hierarchy = hierarchy
+                        self.hierarchy_add_item_below_evu(entry_num, type_name)
+                    except ValueError:
+                        pub_system_message({}, "Die Struktur des Lastmanagements ist nicht plausibel. Bitte prüfe die "
+                                           "Konfiguration und Anordnung der Komponenten in der Hierarchie.",
+                                           MessageType.WARNING)
 
                     pub_system_message({}, f"{component_type_to_readable_text(type_name)} mit ID {element['id']} wurde"
-                                       " in der Hierarchie hinzugefügt, da kein Eintrag in der Hierarchie gefunden "
-                                       "wurde. Bitte prüfe die Anordnung der Komponenten in der Hierarchie.",
+                                       " in der Struktur des Lastmanagements hinzugefügt, da kein Eintrag in der "
+                                       "Struktur gefunden wurde. Bitte prüfe die Anordnung der Komponenten in der "
+                                       "Struktur.",
                                        MessageType.WARNING)
 
-        check_and_add(ComponentType.BAT, data.data.bat_data)
+        # Falls EVU-Zähler fehlt, zuerst hinzufügen.
         check_and_add(ComponentType.COUNTER, data.data.counter_data)
+        check_and_add(ComponentType.BAT, data.data.bat_data)
         check_and_add(ComponentType.CHARGEPOINT, data.data.cp_data)
         check_and_add(ComponentType.INVERTER, data.data.pv_data)
 

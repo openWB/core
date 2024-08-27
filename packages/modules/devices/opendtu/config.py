@@ -13,7 +13,7 @@ class OpenDTUConfiguration(JsonConfiguration):
 @auto_str
 class OpenDTU(Json):
     def __init__(self,
-                 name: str = "OpenDTU",
+                 name: str = "Hoymiles über openDTU",
                  type: str = "opendtu",
                  id: int = 0,
                  configuration: OpenDTUConfiguration = None) -> None:
@@ -29,7 +29,7 @@ class OpenDTUInverterConfiguration:
 @auto_str
 class OpenDTUInverterSetup(JsonInverterSetup):
     def __init__(self,
-                 name: str = "Hoymiles Wechselrichter",
+                 name: str = "Hoymiles Wechselrichter über openDTU",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: JsonInverterConfiguration = None) -> None:

@@ -16,7 +16,7 @@ export default {
     active-class="-active"
     class="_border _border-color:primary _text-align:center"
   >
-    <slot></slot>
+    <slot />
   </i-nav-item>
 </template>
 

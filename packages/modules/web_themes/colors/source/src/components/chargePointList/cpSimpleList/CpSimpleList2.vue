@@ -5,13 +5,9 @@
 			Ladepunkte
 		</template>
 		<template #buttons>
-			<div class="d-flex float-right justify-content-end align-items-center">
-				<span
-					v-if="etData.active"
-					class="badge rounded-pill pricebadge mb-1 ms-2"
-					>Strompreis: {{ etData.etCurrentPriceString }}</span
-				>
-			</div>
+			<WbBadge v-if="etData.active" bgcolor="var(--color-menu)"
+				>Strompreis: {{ etData.etCurrentPriceString }}</WbBadge
+			>
 		</template>
 		<div
 			v-for="(cp, index) in chargepointsToDisplay"
@@ -28,6 +24,7 @@ import { computed } from 'vue'
 import { chargePoints } from '../model'
 import WbWidgetFlex from '@/components/shared/WbWidgetFlex.vue'
 import CpsListItem2 from './CpsListItem2.vue'
+import WbBadge from '@/components/shared/WbBadge.vue'
 import { etData } from '@/components/priceChart/model'
 const chargepointsToDisplay = computed(() => {
 	return Object.values(chargePoints)
@@ -59,7 +56,7 @@ const chargepointsToDisplay = computed(() => {
 	background-color: var(--color-bg);
 }
 
-.pricebadge {
+.priceWbBadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
 }

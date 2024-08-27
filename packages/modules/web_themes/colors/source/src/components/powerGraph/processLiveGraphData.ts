@@ -69,15 +69,16 @@ export function updateLiveGraph(topic: string, rawString: string) {
 	}
 }
 function extractValues(data: RawGraphDataItem): GraphDataItem {
-	const car1id =
+	const car1 =
 		Object.values(chargePoints).length > 0
-			? 'ev' + Object.values(chargePoints)[0].connectedVehicle + '-soc'
-			: 'ev0-soc'
-	const car2id =
+			? Object.values(chargePoints)[0].connectedVehicle
+			: 0
+	const car2 =
 		Object.values(chargePoints).length > 1
-			? 'ev' + Object.values(chargePoints)[1].connectedVehicle + '-soc'
-			: 'ev1-soc'
-
+			? Object.values(chargePoints)[1].connectedVehicle
+			: 1
+	const car1id = 'ev' + car1 + '-soc'
+	const car2id = 'ev' + car2 + '-soc'
 	const values: GraphDataItem = {}
 	values.date = +data.timestamp * 1000
 	if (+data.grid > 0) {
@@ -110,22 +111,22 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 		values.batIn = 0
 	}
 	if (data['bat-all-soc']) {
-		values.batterySoc = +data['bat-all-soc']
+		values.batSoc = +data['bat-all-soc']
 	} else {
-		values.batterySoc = 0
+		values.batSoc = 0
 	}
 	if (data[car1id]) {
-		values.soc0 = +data['ev0-soc']
+		values['soc' + car1] = +data[car1id]
 	}
 	if (data[car2id]) {
-		values.soc1 = +data['ev1-soc']
+		values['soc' + car2] = +data[car2id]
 	}
 
 	values.charging = +data['charging-all']
 	// charge points - we only show a maximum of 10 chargepoints in the graph
 	for (let i = 0; i < 10; i++) {
 		const idx = 'cp' + i
-		values[idx] = +data[idx + '-power'] ?? 0
+		values[idx] = +(data[idx + '-power'] ?? 0)
 	}
 	values.selfUsage = values.pv - values.evuOut
 	if (values.selfUsage < 0) {

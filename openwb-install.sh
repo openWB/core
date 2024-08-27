@@ -40,11 +40,11 @@ else
 fi
 
 echo -n "check for ramdisk... "
-if grep -Fxq "tmpfs ${OPENWBBASEDIR}/ramdisk tmpfs nodev,nosuid,size=32M 0 0" /etc/fstab; then
+if grep -Fq "tmpfs ${OPENWBBASEDIR}/ramdisk" /etc/fstab; then
 	echo "ok"
 else
 	mkdir -p "${OPENWBBASEDIR}/ramdisk"
-	echo "tmpfs ${OPENWBBASEDIR}/ramdisk tmpfs nodev,nosuid,size=32M 0 0" >> /etc/fstab
+	sudo tee -a "/etc/fstab" <"${OPENWBBASEDIR}/data/config/ramdisk_config.txt" >/dev/null
 	mount -a
 	echo "created"
 fi

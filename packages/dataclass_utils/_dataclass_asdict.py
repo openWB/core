@@ -20,5 +20,4 @@ def asdict(value):
         return [None if v is None else asdict(v) for v in value]
     if not isinstance(value, dict):
         value = vars(value)
-    log.debug(value)
     return {key: None if value is None else asdict(value) for key, value in value.items()}

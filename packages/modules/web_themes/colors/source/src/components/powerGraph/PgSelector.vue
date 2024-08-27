@@ -42,7 +42,7 @@
 			>
 				<span class="fa-solid fa-xl fa-chevron-circle-left arrowButton" />
 			</span>
-			<!-- Badge -->
+			<!-- badge -->
 			<span
 				v-if="editmode < 2"
 				type="button"
@@ -116,7 +116,7 @@ defineEmits(['shiftLeft', 'shiftRight', 'shiftUp', 'shiftDown'])
 const editmode = ref(0)
 const displayDate = computed(() => {
 	if (graphData.waitForData) {
-		return 'Lädt...'
+		return 'Lädt'
 	} else {
 		switch (graphData.graphMode) {
 			case 'live':

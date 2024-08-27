@@ -26,24 +26,24 @@ def data_module() -> None:
         pytest.param({"0": TimeChargingPlan()}, 0, 0,  None,
                      (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None), id="no plan active"),
         pytest.param({"0": TimeChargingPlan()}, 0, 0,  TimeChargingPlan(),
-                     (16, "time_charging", None, "Zeitladen-Standard"), id="plan active"),
+                     (16, "time_charging", None, "neuer Zeitladen-Plan"), id="plan active"),
         pytest.param({"0": TimeChargingPlan(limit=Limit(selected="soc"))}, 100, 0,
                      TimeChargingPlan(limit=Limit(selected="soc")),
-                     (0, "stop", ChargeTemplate.TIME_CHARGING_SOC_REACHED, "Zeitladen-Standard"),
+                     (0, "stop", ChargeTemplate.TIME_CHARGING_SOC_REACHED, "neuer Zeitladen-Plan"),
                      id="plan active, soc is reached"),
         pytest.param({"0": TimeChargingPlan(limit=Limit(selected="soc"))}, 40, 0,
                      TimeChargingPlan(limit=Limit(selected="soc")),
-                     (16, "time_charging", None, "Zeitladen-Standard"), id="plan active, soc is not reached"),
+                     (16, "time_charging", None, "neuer Zeitladen-Plan"), id="plan active, soc is not reached"),
         pytest.param({"0": TimeChargingPlan(limit=Limit(selected="soc"))}, None, 0,
                      TimeChargingPlan(limit=Limit(selected="soc")),
-                     (16, "time_charging", None, "Zeitladen-Standard"), id="plan active, soc is not defined"),
+                     (16, "time_charging", None, "neuer Zeitladen-Plan"), id="plan active, soc is not defined"),
         pytest.param({"0": TimeChargingPlan(limit=Limit(selected="amount"))}, 0, 1500,
                      TimeChargingPlan(limit=Limit(selected="amount")),
-                     (0, "stop", ChargeTemplate.TIME_CHARGING_AMOUNT_REACHED, "Zeitladen-Standard"),
+                     (0, "stop", ChargeTemplate.TIME_CHARGING_AMOUNT_REACHED, "neuer Zeitladen-Plan"),
                      id="plan active, used_amount_time_charging is reached"),
         pytest.param({"0": TimeChargingPlan(limit=Limit(selected="amount"))}, 0, 500,
                      TimeChargingPlan(limit=Limit(selected="amount")),
-                     (16, "time_charging", None, "Zeitladen-Standard"),
+                     (16, "time_charging", None, "neuer Zeitladen-Plan"),
                      id="plan active, used_amount_time_charging is not reached"),
         pytest.param({"0": TimeChargingPlan()}, 0, 0,  None,
                      (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None), id="plan defined but not found"),
@@ -196,7 +196,7 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
     check_duration_mock = Mock(side_effect=[check_duration_return1, check_duration_return2])
     monkeypatch.setattr(timecheck, "check_duration", check_duration_mock)
     ct = ChargeTemplate(0)
-    plan_mock = Mock(spec=ScheduledChargingPlan, active=True, current=14)
+    plan_mock = Mock(spec=ScheduledChargingPlan, active=True, current=14, limit=Limit(selected="amount"))
     ct.data.chargemode.scheduled_charging.plans = {0: plan_mock, 1: plan_mock}
     # execution
     plan_data = ct.search_plan(14, 60, EvTemplate(), 3, 200)

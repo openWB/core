@@ -11,6 +11,10 @@ import CodeInputModal from "./CodeInputModal.vue";
 
 export default {
   name: "ChargePointCodeButton",
+  components: {
+    FontAwesomeIcon,
+    CodeInputModal,
+  },
   props: {
     chargePointId: { type: Number, required: true },
   },
@@ -21,10 +25,6 @@ export default {
       modalIdTagEntryColor: "warning",
       code: "",
     };
-  },
-  components: {
-    FontAwesomeIcon,
-    CodeInputModal,
   },
   computed: {
     tagState() {
@@ -68,11 +68,11 @@ export default {
 
 <template>
   <i-button
-    @click="toggleIdTagModal()"
     class="_margin-right:1"
     size="lg"
     :color="tagButtonColor"
     :disabled="tagState == 2"
+    @click="toggleIdTagModal()"
   >
     <FontAwesomeIcon
       fixed-width
@@ -82,13 +82,15 @@ export default {
   </i-button>
   <!-- modals -->
   <CodeInputModal
-    v-model="modalIdTagEntryVisible"
-    @update:input-value="sendIdTag"
     ref="lockInput"
-    :minLength="4"
-    :maxLength="20"
+    v-model="modalIdTagEntryVisible"
+    :min-length="4"
+    :max-length="20"
+    @update:input-value="sendIdTag"
   >
-    <template #header> Bitte einen ID-Tag eingeben. </template>
+    <template #header>
+      Bitte einen ID-Tag eingeben.
+    </template>
   </CodeInputModal>
 </template>
 
