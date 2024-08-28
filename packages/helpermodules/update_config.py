@@ -1725,14 +1725,23 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> Optional[dict]:
             # add manufacturer and model to vehicles
             if re.search("openWB/vehicle/[0-9]+/name", topic) is not None:
+                vehicle_name = decode_payload(payload)
+                log.debug(f"Checking vehicle '{vehicle_name}' for info topic")
                 vehicle_info_topic = topic.replace("/name", "/info")
                 if vehicle_info_topic not in self.all_received_topics:
+                    log.debug(f"Vehicle '{vehicle_name}' has no info topic, adding manufacturer and model")
                     return {vehicle_info_topic: {"manufacturer": None, "model": None}}
+                else:
+                    log.debug(f"Vehicle '{vehicle_name}' already has info topic")
             # add manufacturer and model to components
             if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config", topic) is not None:
                 config_payload = decode_payload(payload)
+                log.debug(f"Checking component '{config_payload['name']}' for info topic")
                 if "info" not in config_payload:
+                    log.debug(f"Component '{config_payload['name']}' has no info topic, adding manufacturer and model")
                     config_payload.update({"info": {"manufacturer": None, "model": None}})
                     return {topic: config_payload}
+                else:
+                    log.debug(f"Component '{config_payload['name']}' already has info topic")
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 59)
