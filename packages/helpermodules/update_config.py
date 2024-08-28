@@ -1602,6 +1602,7 @@ class UpdateConfig:
 
     def upgrade_datastore_49(self) -> None:
         Pub().pub("openWB/system/installAssistantDone", True)
+        self.all_received_topics.update({"openWB/system/installAssistantDone": "true"})
         Pub().pub("openWB/system/datastore_version", 50)
 
     def upgrade_datastore_50(self) -> None:
