@@ -5,7 +5,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from control import optional
 from dataclass_utils.factories import currents_list_factory
 from helpermodules.changed_values_handler import ChangedValuesHandler
 
@@ -107,8 +106,6 @@ cases = [
 def test_update_value(params: Params, mock_pub: Mock, monkeypatch):
     # setup
     handler = ChangedValuesHandler(Mock())
-    mock_hardware_config = Mock(return_value=False)
-    monkeypatch.setattr(optional, "get_hardware_configuration_setting", mock_hardware_config)
 
     # execution
     handler._update_value("openWB/", SampleData(), params.sample_data)
