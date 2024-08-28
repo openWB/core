@@ -138,7 +138,7 @@ class UpdateConfig:
         "^openWB/command/[A-Za-z0-9_]+/error$",
         "^openWB/command/todo$",
 
-        "^openWB/counter/config/reserve_for_less_charging$",
+        "^openWB/counter/config/consider_less_charging$",
         "^openWB/counter/config/home_consumption_source_id$",
         "^openWB/counter/get/hierarchy$",
         "^openWB/counter/set/disengageable_smarthome_power$",
@@ -425,7 +425,7 @@ class UpdateConfig:
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
-        ("openWB/counter/config/reserve_for_less_charging", counter_all.Config().reserve_for_less_charging),
+        ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
