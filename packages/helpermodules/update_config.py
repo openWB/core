@@ -43,7 +43,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 55
+    DATASTORE_VERSION = 56
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1669,3 +1669,11 @@ class UpdateConfig:
                     return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 55)
+
+    def upgrade_datastore_55(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/counter/config/reserve_for_less_charging" == topic:
+                payload = decode_payload(payload)
+                return {"openWB/counter/config/consider_less_charging": payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 56)
