@@ -151,13 +151,13 @@ def test_get_missing_currents_left(required_currents_1: List[float],
 
 
 @pytest.mark.parametrize(
-    "reserve_for_less_charging, get_currents, expected_considered",
+    "consider_less_charging, get_currents, expected_considered",
     [
-        pytest.param(True, [6]*3, 6, id="reserve_for_less_charging active, charging less"),
-        pytest.param(True, [10]*3, 10, id="reserve_for_less_charging active, charging with set current"),
-        pytest.param(False, [0]*3, 10, id="reserve_for_less_charging inactive"),
+        pytest.param(True, [6]*3, 6, id="consider_less_charging active, charging less"),
+        pytest.param(True, [10]*3, 10, id="consider_less_charging active, charging with set current"),
+        pytest.param(False, [0]*3, 10, id="consider_less_charging inactive"),
     ])
-def test_consider_less_charging_chargepoint_in_loadmanagement(reserve_for_less_charging: bool,
+def test_consider_less_charging_chargepoint_in_loadmanagement(consider_less_charging: bool,
                                                               get_currents: List[float],
                                                               expected_considered: bool):
     # setup
@@ -165,7 +165,7 @@ def test_consider_less_charging_chargepoint_in_loadmanagement(reserve_for_less_c
     cp.data.get.currents = get_currents
     cp.data.set.current = 10
     cp.data.control_parameter.timestamp_charge_start = 1652683152
-    data.data.counter_all_data.data.config.reserve_for_less_charging = reserve_for_less_charging
+    data.data.counter_all_data.data.config.consider_less_charging = consider_less_charging
 
     # evaluation
     considered = common.consider_less_charging_chargepoint_in_loadmanagement(cp, 10)
