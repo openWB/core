@@ -189,9 +189,10 @@ class Counter:
     def calc_surplus(self):
         # reservierte Leistung wird nicht berücksichtigt, weil diese noch verwendet werden kann, bis die EV
         # eingeschaltet werden. Es darf bloß nicht für zu viele zB die Einschaltverzögerung gestartet werden.
+        disengageable_smarthome_power = data.data.counter_all_data.data.set.disengageable_smarthome_power
         evu_counter = data.data.counter_all_data.get_evu_counter()
         bat_surplus = data.data.bat_all_data.power_for_bat_charging()
-        surplus = evu_counter.data.get.power - bat_surplus
+        surplus = evu_counter.data.get.power - bat_surplus - disengageable_smarthome_power
         return surplus
 
     def calc_raw_surplus(self):
