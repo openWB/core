@@ -21,12 +21,14 @@ class MTecCounter:
         unit = self.component_config.configuration.modbus_id
 
         power = client.read_holding_registers(11000, ModbusDataType.INT_32, unit=unit)
+        powers = client.read_holding_registers(10994, [ModbusDataType.INT_32]*3, unit=self.modbus_id)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
             imported=imported,
             exported=exported,
-            power=power
+            power=power,
+            powers=powers
         )
         self.store.set(counter_state)
 
