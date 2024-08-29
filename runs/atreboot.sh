@@ -1,5 +1,6 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+hasInet=0
 
 # setup log file
 LOGFILE="${OPENWBBASEDIR}/ramdisk/main.log"
@@ -151,7 +152,15 @@ chmod 666 "$LOGFILE"
 
 	# network setup
 	echo "Network..."
-	"${OPENWBBASEDIR}/runs/setup_network.sh"
+	if "${OPENWBBASEDIR}/runs/setup_network.sh"; then
+		hasInet=1
+		echo "network setup done"
+	else
+		hasInet=0
+		echo "#### network setup failed!"
+		echo "#### unable to update dependencies and version information"
+		echo "#### continue anyway..."
+	fi
 
 	# tune apt configuration and install required packages
 	if [ -d "/etc/apt/apt.conf.d" ]; then
@@ -164,7 +173,11 @@ chmod 666 "$LOGFILE"
 	else
 		echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
 	fi
-	"${OPENWBBASEDIR}/runs/install_packages.sh"
+	if ((hasInet == 1)); then
+		"${OPENWBBASEDIR}/runs/install_packages.sh"
+	else
+		echo "no internet connection, skipping package installation"
+	fi
 
 	# check for openwb cron jobs
 	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"; then
@@ -187,16 +200,6 @@ chmod 666 "$LOGFILE"
 		echo "openwb2.service definition updated. rebooting..."
 		sudo reboot now &
 	fi
-
-	# this check is obsolete as openwb2 service definition is a symlink!
-	# ToDo: remove lines
-	# if versionMatch "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"; then
-	# 	echo "openwb2.service already up to date"
-	# else
-	# 	echo "updating openwb2.service"
-	# 	sudo cp "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"
-	# 	sudo reboot now &
-	# fi
 
 	# check for remote support service definition
 	if [ ! -f "/etc/systemd/system/openwbRemoteSupport.service" ]; then
@@ -346,26 +349,30 @@ chmod 666 "$LOGFILE"
 	fi
 
 	# check for python dependencies
-	echo "install required python packages with 'pip3'..."
-	if pip3 install -r "${OPENWBBASEDIR}/requirements.txt"; then
-		echo "done"
+	if ((hasInet == 1)); then
+		echo "install required python packages with 'pip3'..."
+		if pip3 install -r "${OPENWBBASEDIR}/requirements.txt"; then
+			echo "done"
+		else
+			echo "failed!"
+			message="Bei der Installation der benötigten Python-Bibliotheken ist ein Fehler aufgetreten! Bitte die Logdateien prüfen."
+			payload=$(printf '{"source": "system", "type": "danger", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
+			mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
+		fi
 	else
-		echo "failed!"
-		message="Bei der Installation der benötigten Python-Bibliotheken ist ein Fehler aufgetreten! Bitte die Logdateien prüfen."
-		payload=$(printf '{"source": "system", "type": "danger", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
-		mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
+		echo "no internet connection, skipping python package installation"
 	fi
 
 	# collect some hardware info
 	"${OPENWBBASEDIR}/runs/uuid.sh"
 
 	# update current published versions
-	echo "load versions..."
-	"$OPENWBBASEDIR/runs/update_available_versions.sh"
-	# # and record the current commit details
-	# commitId=$(git -C "${OPENWBBASEDIR}/" log --format="%h" -n 1)
-	# echo "$commitId" > "${OPENWBBASEDIR}/ramdisk/currentCommitHash"
-	# git -C "${OPENWBBASEDIR}/" branch -a --contains "$commitId" | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs > "${OPENWBBASEDIR}/ramdisk/currentCommitBranches"
+	if ((hasInet == 1)); then
+		echo "load versions..."
+		"$OPENWBBASEDIR/runs/update_available_versions.sh"
+	else
+		echo "no internet connection, skipping version update"
+	fi
 
 	# set restore dir permissions to allow file upload for apache
 	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
