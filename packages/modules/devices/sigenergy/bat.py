@@ -7,7 +7,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
-from modules.devices.mtec.config import SigenergyBatSetup
+from modules.devices.sigenergy.config import SigenergyBatSetup
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class SigenergyBat:
         unit = self.component_config.configuration.modbus_id
 
         power = client.read_holding_registers(30037, ModbusDataType.INT_32, unit=unit) * -1
-        # soc unit 0.01%
+        # soc unit 0.1%
         soc = client.read_holding_registers(30014, ModbusDataType.UINT_16, unit=unit) / 10
         imported, exported = self.sim_counter.sim_count(power)
 

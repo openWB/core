@@ -33,7 +33,7 @@ class SigenergyBatConfiguration:
 @auto_str
 class SigenergyBatSetup(ComponentSetup[SigenergyBatConfiguration]):
     def __init__(self,
-                 name: str = "Sigenery Speicher",
+                 name: str = "Sigenergy Speicher",
                  type: str = "bat",
                  id: int = 0,
                  configuration: SigenergyBatConfiguration = None) -> None:
