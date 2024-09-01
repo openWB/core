@@ -169,6 +169,7 @@ class ControlAlgorithmYc:
 
             # if we're not charging, we always start off with minimum supported current
             if not charging_phase_infos.is_charging:
+                status_to_use = LmStatus.DownByEv
                 if llneu < data.data.yc_data.data.yc_config.min_evse_current_allowed:
                     status_to_use = LmStatus.DownByLm
                     log.error("Slow ramping: Not charging: Too few current left to start:"
