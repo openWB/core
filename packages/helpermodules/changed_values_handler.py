@@ -77,53 +77,60 @@ class ChangedValuesHandler:
     def pub_changed_values(self):
         try:
             # publishen der geänderten Werte
-            self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data.get, data.data.bat_all_data.data.get)
+            self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data, data.data.bat_all_data.data)
             self._update_value("openWB/set/chargepoint/", self.prev_data.cp_all_data.data.get,
                                data.data.cp_all_data.data.get)
+            self._update_value("openWB/set/counter/", self.prev_data.counter_all_data.data,
+                               data.data.counter_all_data.data)
             for key, value in data.data.cp_data.items():
-                try:
-                    self._update_value(f"openWB/set/chargepoint/{value.num}/",
-                                       self.prev_data.cp_data[key].data, value.data)
-                except Exception as e:
-                    log.exception(e)
+                self._update_value(f"openWB/set/chargepoint/{value.num}/", self.prev_data.cp_data[key].data, value.data)
+            for key, value in data.data.bat_data.items():
+                self._update_value(f"openWB/set/bat/{value.num}/", self.prev_data.bat_data[key].data, value.data)
+            for key, value in data.data.counter_data.items():
+                self._update_value(f"openWB/set/counter/{value.num}/",
+                                   self.prev_data.counter_data[key].data, value.data)
+            # chargepoint, ev template, autolock, time and scheduled charging plans mutable_by_algorithm immer false
         except Exception as e:
             log.exception(e)
 
     def _update_value(self, topic_prefix, data_inst_previous, data_inst):
-        for f in fields(data_inst):
-            try:
-                changed = False
-                value = getattr(data_inst, f.name)
-                if isinstance(value, Enum):
-                    value = value.value
-                previous_value = getattr(data_inst_previous, f.name)
-                if isinstance(previous_value, Enum):
-                    previous_value = previous_value.value
-                if hasattr(f, "metadata"):
-                    if f.metadata.get("topic"):
-                        if isinstance(value, (str, int, float, Dict, List, Tuple)):
-                            if previous_value != value:
-                                changed = True
-                        elif isinstance(value, (bool, type(None))):
-                            if previous_value is not value:
-                                changed = True
-                        else:
-                            dict_prev = dict(asdict(previous_value))
-                            dict_current = dict(asdict(value))
-                            if dict_prev != dict_current:
-                                changed = True
-                                value = asdict(value)
-                                previous_value = asdict(previous_value)
+        try:
+            for f in fields(data_inst):
+                try:
+                    changed = False
+                    value = getattr(data_inst, f.name)
+                    if isinstance(value, Enum):
+                        value = value.value
+                    previous_value = getattr(data_inst_previous, f.name)
+                    if isinstance(previous_value, Enum):
+                        previous_value = previous_value.value
+                    if hasattr(f, "metadata"):
+                        if f.metadata.get("topic"):
+                            if isinstance(value, (str, int, float, Dict, List, Tuple)):
+                                if previous_value != value:
+                                    changed = True
+                            elif isinstance(value, (bool, type(None))):
+                                if previous_value is not value:
+                                    changed = True
+                            else:
+                                dict_prev = dict(asdict(previous_value))
+                                dict_current = dict(asdict(value))
+                                if dict_prev != dict_current:
+                                    changed = True
+                                    value = asdict(value)
+                                    previous_value = asdict(previous_value)
 
-                        if changed:
-                            topic = f"{topic_prefix}{f.metadata['topic']}"
-                            Pub().pub(topic, value)
-                            log.debug(f"Topic {topic}, Payload {value}, vorherige Payload: {previous_value}")
-                        continue
-                if is_dataclass(value):
-                    self._update_value(topic_prefix, previous_value, value)
-            except Exception as e:
-                log.exception(e)
+                            if changed:
+                                topic = f"{topic_prefix}{f.metadata['topic']}"
+                                Pub().pub(topic, value)
+                                log.debug(f"Topic {topic}, Payload {value}, vorherige Payload: {previous_value}")
+                            continue
+                    if is_dataclass(value):
+                        self._update_value(topic_prefix, previous_value, value)
+                except Exception as e:
+                    log.exception(e)
+        except Exception as e:
+            log.exception(e)
 
 
 class ChangedValuesContext:

@@ -10,6 +10,7 @@ import type { ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
 import { ChargeMode, vehicles } from '@/components/chargePointList/model'
 import { sourceSummary } from './model'
+import { sourceGraphIsNotInitialized, usageGraphIsNotInitialized } from '@/components/powerGraph/model'
 export class Config {
 	private _showRelativeArcs = false
 	showTodayGraph = true
@@ -261,6 +262,8 @@ export class Config {
 	}
 	set showInverters(show: boolean) {
 		this._showInverters = show
+		sourceGraphIsNotInitialized()
+		usageGraphIsNotInitialized()
 		savePrefs()
 	}
 	setShowInverters(show: boolean) {
@@ -387,6 +390,8 @@ export const infotext: { [key: string]: string } = {
 		'Durchgehend mit mindestens dem eingestellten Strom laden. Wenn notwendig mit Netzstrom.',
 	pricebased:
 		'Laden bei dynamischem Stromtarif, wenn eingestellter Maximalpreis unterboten wird.',
+	pvpriority:
+		'Ladepriorität bei PV-Produktion. Bevorzung von Fahzeugen, Speicher, oder Fahrzeugen bis zum eingestellten Mindest-Ladestand. Die Einstellung ist für alle Ladepunkte gleich.',
 }
 interface Preferences {
 	hideSH?: number[]

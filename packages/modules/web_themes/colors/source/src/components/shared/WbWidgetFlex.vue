@@ -42,11 +42,12 @@ const widgetWidth = computed(() => {
 <style scoped>
 .wb-widget {
 	width: 100%;
+	height: 100%;
 	border-radius: 30px;
 }
 .widgetname {
 	font-weight: bold;
 	color: var(--color-fg);
-	font-size: var(--font-normal);
+	font-size: var(--font-large);
 }
 </style>

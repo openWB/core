@@ -18,6 +18,7 @@ import {
 	axisLeft,
 	area,
 	easeLinear,
+	curveBumpX,
 } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
@@ -36,11 +37,21 @@ const props = defineProps<{
 }>()
 
 //state
-const keys = [
+const keys = computed (() => {
+	if (globalConfig.showInverters) {
+		return [
 	['house', 'charging', 'devices', 'batIn'],
 	['charging', 'devices', 'house', 'batIn'],
 	['devices', 'charging', 'house', 'batIn'],
-]
+	]
+	} else {
+		return [
+		['house', 'charging', 'devices', 'batIn', 'evuOut'],
+		['charging', 'devices', 'house', 'batIn', 'evuOut'],
+		['devices', 'charging', 'house', 'batIn', 'evuOut'],
+		]
+	}
+})
 const colors: { [key: string]: string } = {
 	house: 'var(--color-house)',
 	charging: 'var(--color-charging)',
@@ -113,9 +124,9 @@ const yScale = computed(() => {
 
 const keysToUse = computed(() => {
 	if (graphData.graphMode != 'today' && graphData.graphMode != 'day') {
-		return keys[props.stackOrder]
+		return keys.value[props.stackOrder]
 	} else {
-		const k = keys[props.stackOrder].slice()
+		const k = keys.value[props.stackOrder].slice()
 		const idx = k.indexOf('charging')
 		k.splice(idx, 1)
 		const pattern = /cp\d+/
@@ -176,10 +187,12 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	const area0 = area()
 		.x((d, i) => xScale.value(graphData.data[i].date))
 		.y(yScale.value(0))
+		.curve(curveBumpX)
 	const area1 = area()
 		.x((d, i) => xScale.value(graphData.data[i].date))
 		.y0((d) => yScale.value(d[0]))
 		.y1((d) => yScale.value(d[1]))
+		.curve(curveBumpX)
 	if (globalConfig.showAnimations) {
 		if (animateUsageGraph) {
 			graph.selectAll('*').remove()
@@ -227,7 +240,7 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
 			.append('g')
-			.attr('fill', (d, i) => colors[keys[props.stackOrder][i]])
+			.attr('fill', (d, i) => colors[keys.value[props.stackOrder][i]])
 			.selectAll('rect')
 			.data((d) => d)
 			.enter()
@@ -261,7 +274,7 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
 			.append('g')
-			.attr('fill', (d, i) => colors[keys[props.stackOrder][i]])
+			.attr('fill', (d, i) => colors[keys.value[props.stackOrder][i]])
 			.selectAll('rect')
 			.data((d) => d)
 			.enter()
@@ -292,6 +305,7 @@ const autozoom = computed(() => {
 			.x((d, i) => xScale.value(graphData.data[i].date))
 			.y0((d) => yScale.value(d[0]))
 			.y1((d) => yScale.value(d[1]))
+			.curve(curveBumpX)
 		graph
 			.selectAll('path')
 			.attr('d', (series) =>

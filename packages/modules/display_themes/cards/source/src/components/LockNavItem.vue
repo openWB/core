@@ -16,6 +16,10 @@ import CodeInputModal from "./CodeInputModal.vue";
 
 export default {
   name: "LockNavItem",
+  components: {
+    FontAwesomeIcon,
+    CodeInputModal,
+  },
   props: {},
   data() {
     return {
@@ -27,10 +31,6 @@ export default {
       countdownInterval: undefined,
       events: ["mousemove", "touchmove", "wheel"],
     };
-  },
-  components: {
-    FontAwesomeIcon,
-    CodeInputModal,
   },
   computed: {
     changesLocked: {
@@ -48,6 +48,10 @@ export default {
         (this.countdown % 60).toString().padStart(2, "0")
       );
     },
+  },
+  mounted() {
+    // init in locked state
+    this.changesLocked = true;
   },
   methods: {
     toggleChangesLock() {
@@ -101,38 +105,37 @@ export default {
       this.countdown = this.mqttStore.getDisplayStandby;
     },
   },
-  mounted() {
-    // init in locked state
-    this.changesLocked = true;
-  },
 };
 </script>
 
 <template>
   <i-button
     v-if="mqttStore.getLockChanges"
-    @click="toggleChangesLock()"
     class="_padding-left:0 _padding-right:0 _margin-bottom:1"
     size="lg"
     block
-    :color="this.changesLocked ? 'danger' : 'success'"
+    :color="changesLocked ? 'danger' : 'success'"
+    @click="toggleChangesLock()"
   >
     <FontAwesomeIcon
       fixed-width
-      :icon="this.changesLocked ? ['fas', 'fa-lock'] : ['fas', 'fa-lock-open']"
-      :class="this.changesLocked ? '_color:danger-80' : '_color:success-80'"
+      :icon="changesLocked ? ['fas', 'fa-lock'] : ['fas', 'fa-lock-open']"
+      :class="changesLocked ? '_color:danger-80' : '_color:success-80'"
     />
-    <span v-if="!changesLocked && countdownInterval" class="_padding-left:1">
+    <span
+      v-if="!changesLocked && countdownInterval"
+      class="_padding-left:1"
+    >
       {{ timer }}
     </span>
   </i-button>
   <!-- modals -->
   <CodeInputModal
-    v-model="modalPinEntryVisible"
-    @update:input-value="checkUnlockCode"
     ref="lockInput"
-    :minLength="4"
-    :maxLength="10"
+    v-model="modalPinEntryVisible"
+    :min-length="4"
+    :max-length="10"
+    @update:input-value="checkUnlockCode"
   >
     <template #header>
       Bitte den PIN zur Freigabe von Änderungen eingeben.

@@ -10,15 +10,15 @@ import { useMqttStore } from "@/stores/mqtt.js";
 
 export default {
   name: "RebootButton",
+  components: {
+    FontAwesomeIcon,
+  },
   props: {},
   data() {
     return {
       mqttStore: useMqttStore(),
       showModal: false,
     };
-  },
-  components: {
-    FontAwesomeIcon,
   },
   methods: {
     /**
@@ -38,20 +38,41 @@ export default {
      * system reboot is requested by command
      */
     confirm() {
+      this.toggleModal();
       console.log("reboot requested");
-      this.$root.sendSystemCommand("systemReboot");
+      if (this.mqttStore.settings.parentChargePoint1 !== undefined) {
+        console.log("rebooting secondary charge point:", this.mqttStore.settings.parentChargePoint1);
+        this.$root.sendSystemCommand("chargepointReboot", {
+          chargePoint: this.mqttStore.settings.parentChargePoint1,
+        });
+      } else {
+        console.log("rebooting primary system");
+        this.$root.sendSystemCommand("systemReboot");
+      }
     },
   },
 };
 </script>
 
 <template>
-  <i-button color="warning" @click="toggleModal()">
+  <i-button
+    color="warning"
+    size="lg"
+    @click="toggleModal()"
+  >
     openWB neu starten
-    <FontAwesomeIcon fixed-width :icon="['fas', 'fa-undo']" />
+    <FontAwesomeIcon
+      fixed-width
+      :icon="['fas', 'fa-undo']"
+    />
     <Teleport to="body">
-      <i-modal v-model="showModal" size="sm">
-        <template #header> openWB neu starten... </template>
+      <i-modal
+        v-model="showModal"
+        size="sm"
+      >
+        <template #header>
+          openWB neu starten...
+        </template>
         <i-container>
           Möchten Sie diese openWB wirklich neu starten?
         </i-container>
@@ -59,10 +80,20 @@ export default {
           <i-container>
             <i-row>
               <i-column class="_text-align:right">
-                <i-button color="success" @click="cancel()"> Zurück </i-button>
+                <i-button
+                  color="success"
+                  @click="cancel()"
+                >
+                  Zurück
+                </i-button>
               </i-column>
               <i-column>
-                <i-button color="danger" @click="confirm()">Neustart</i-button>
+                <i-button
+                  color="danger"
+                  @click="confirm()"
+                >
+                  Neustart
+                </i-button>
               </i-column>
             </i-row>
           </i-container>

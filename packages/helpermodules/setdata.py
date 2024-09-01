@@ -730,7 +730,8 @@ class SetData:
         try:
             if "openWB/set/general/extern_display_mode" in msg.topic:
                 self._validate_value(msg, str)
-            elif ("openWB/set/general/modbus_control" in msg.topic or
+            elif ("openWB/set/general/http_api" in msg.topic or
+                  "openWB/set/general/modbus_control" in msg.topic or
                   "openWB/set/general/extern" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:
@@ -802,6 +803,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif ("openWB/set/general/web_theme" in msg.topic or
                   "openWB/set/general/ripple_control_receiver/module" in msg.topic):
+                self._validate_value(msg, "json")
+            elif ("openWB/set/general/charge_log_data_config" in msg.topic):
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
@@ -899,7 +902,6 @@ class SetData:
                     self._validate_value(
                         msg, float, [(-1, 1)], collection=list)
                 elif ("/get/power_average" in msg.topic
-                        or "/get/unbalanced_load" in msg.topic
                         or "/get/frequency" in msg.topic
                         or "/get/daily_exported" in msg.topic
                         or "/get/daily_imported" in msg.topic
@@ -911,8 +913,7 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/set/error_counter" in msg.topic:
                     self._validate_value(msg, int, [(0, float("inf"))])
-                elif ("/get/fault_str" in msg.topic or
-                      "/set/state_str" in msg.topic):
+                elif "/get/fault_str" in msg.topic:
                     self._validate_value(msg, str)
                 elif "/get/power" in msg.topic:
                     self._validate_value(

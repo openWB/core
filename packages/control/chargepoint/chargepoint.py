@@ -101,8 +101,8 @@ class Chargepoint(ChargepointRfidMixin):
                             general_data.grid_protection_random_stop):
                         state = False
                         message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
-                        Pub().pub("openWB/set/general/grid_protection_timestamp", None)
-                        Pub().pub("openWB/set/general/grid_protection_random_stop", 0)
+                        general_data.grid_protection_timestamp = None
+                        general_data.grid_protection_random_stop = 0
                 else:
                     state = False
                     message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
@@ -518,7 +518,7 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
-            phases = self.data.get.phases_in_use
+            phases = self.data.get.phases_in_use or self.data.set.phases_to_use
         elif (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
                                    self.data.get.phases_in_use == 0)):
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,

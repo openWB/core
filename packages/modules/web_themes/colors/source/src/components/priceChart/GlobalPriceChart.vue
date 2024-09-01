@@ -7,13 +7,10 @@
 			<span>Strompreis</span>
 		</template>
 		<template #buttons>
-			<WbBadge
-				v-if="etData.active"
-				bgcolor="var(--color-charging)"
-				color="white"
-				>{{ etData.etCurrentPriceString }}</WbBadge
-			>
-			<WbBadge v-if="etData.active" color="white">{{
+			<WbBadge v-if="etData.active" bgcolor="var(--color-charging)">{{
+				etData.etCurrentPriceString
+			}}</WbBadge>
+			<WbBadge v-if="etData.active" bgcolor="var(--color-menu)">{{
 				etData.etProvider
 			}}</WbBadge>
 		</template>

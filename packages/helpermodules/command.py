@@ -16,6 +16,7 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 # ToDo: move to module commands if implemented
+from helpermodules import pub
 from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
@@ -23,7 +24,7 @@ from helpermodules.broker import InternalBrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
-from helpermodules.parse_send_debug import parse_send_debug_data
+from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
@@ -197,6 +198,7 @@ class Command:
             evu_counter = data.data.counter_all_data.get_id_evu_counter()
             data.data.counter_all_data.hierarchy_add_item_below(
                 new_id, ComponentType.CHARGEPOINT, evu_counter)
+            Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
             setup_added_chargepoint()
         except (TypeError, IndexError):
             if chargepoint_config["type"] == 'internal_openwb' and SubData.general_data.data.extern:
@@ -256,6 +258,7 @@ class Command:
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
         ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
         data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
+        Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
@@ -435,6 +438,7 @@ class Command:
         general_type = special_to_general_type_mapping(payload["data"]["type"])
         try:
             data.data.counter_all_data.hierarchy_add_item_below_evu(new_id, general_type)
+            Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
         except ValueError:
             pub_user_message(payload, connection_id, counter_all.CounterAll.MISSING_EVU_COUNTER, MessageType.ERROR)
             return
@@ -536,10 +540,8 @@ class Command:
 
     def sendDebug(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Systembericht wird erstellt...", MessageType.INFO)
-        parent_file = Path(__file__).resolve().parents[2]
         previous_log_level = SubData.system_data["system"].data["debug_level"]
-        run_command([str(parent_file / "runs" / "send_debug.sh"),
-                     json.dumps(payload["data"]), parse_send_debug_data()])
+        create_debug_log(payload["data"])
         Pub().pub("openWB/set/system/debug_level", previous_log_level)
         pub_user_message(payload, connection_id, "Systembericht wurde versandt.", MessageType.SUCCESS)
 
@@ -603,6 +605,18 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
                              f'ID \'{self.max_id_mqtt_bridge}\'.', MessageType.ERROR)
+
+    def chargepointReboot(self, connection_id: str, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemReboot", "data": {}},
+                       hostname=SubData.cp_data[f'cp{payload["data"]["chargepoint"]}'
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
+
+    def chargepointShutdown(self, connection_id: str, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemReboot", "data": {}},
+                       hostname=SubData.cp_data[payload["data"]["chargepoint"]
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
 
     def systemReboot(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Neustart wird ausgeführt.", MessageType.INFO)
@@ -808,40 +822,53 @@ class ProcessBrokerBranch:
         client.subscribe(f'openWB/set/{self.topic_str}#', 2)
 
     def __on_message_rm(self, client, userdata, msg):
-        if decode_payload(msg.payload) != '':
-            log.debug(f'Gelöschtes Topic: {msg.topic}')
-            Pub().pub(msg.topic, "")
-            if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
-                payload = decode_payload(msg.payload)
-                topic = type_to_topic_mapping(payload["type"])
-                data.data.counter_all_data.hierarchy_remove_item(payload["id"])
-                client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
-            elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
-                payload = decode_payload(msg.payload)
-                if payload["type"] == "external_openwb":
-                    pub_single(
-                        f'openWB/set/internal_chargepoint/{payload["configuration"]["duo_num"]}/data/parent_cp',
-                        None,
-                        hostname=payload["configuration"]["ip_address"])
-            elif re.search("openWB/chargepoint/template/[0-9]+$", msg.topic) is not None:
-                for cp in SubData.cp_data.values():
-                    if cp.chargepoint.data.config.template == int(msg.topic.split("/")[-1]):
-                        pub_single(f'openWB/set/chargepoint/{cp.chargepoint.num}/config/template', 0)
-            elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
-                for vehicle in SubData.ev_data.values():
-                    if vehicle.data.charge_template == int(msg.topic.split("/")[-1]):
-                        pub_single(f'openWB/set/vehicle/{vehicle.num}/charge_template', 0)
-            elif re.search("openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
-                for vehicle in SubData.ev_data.values():
-                    if vehicle.data.ev_template == int(msg.topic.split("/")[-1]):
-                        pub_single(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
+        try:
+            if decode_payload(msg.payload) != '':
+                log.debug(f'Gelöschtes Topic: {msg.topic}')
+                Pub().pub(msg.topic, "")
+                if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
+                    payload = decode_payload(msg.payload)
+                    topic = type_to_topic_mapping(payload["type"])
+                    data.data.counter_all_data.hierarchy_remove_item(payload["id"])
+                    Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+                    client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
+                elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
+                    payload = decode_payload(msg.payload)
+                    if payload["type"] == "external_openwb":
+                        pub_single(
+                            f'openWB/set/internal_chargepoint/{payload["configuration"]["duo_num"]}/data/parent_cp',
+                            None,
+                            hostname=payload["configuration"]["ip_address"])
+                elif re.search("openWB/chargepoint/template/[0-9]+$", msg.topic) is not None:
+                    for cp in SubData.cp_data.values():
+                        if cp.chargepoint.data.config.template == int(msg.topic.split("/")[-1]):
+                            pub_single(f'openWB/set/chargepoint/{cp.chargepoint.num}/config/template', 0)
+                elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
+                    for vehicle in SubData.ev_data.values():
+                        if vehicle.data.charge_template == int(msg.topic.split("/")[-1]):
+                            pub_single(f'openWB/set/vehicle/{vehicle.num}/charge_template', 0)
+                elif re.search("openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
+                    for vehicle in SubData.ev_data.values():
+                        if vehicle.data.ev_template == int(msg.topic.split("/")[-1]):
+                            pub_single(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
 
     def __on_message_max_id(self, client, userdata, msg):
-        self.received_topics.append(msg.topic)
+        try:
+            self.received_topics.append(msg.topic)
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
 
     def __get_payload(self, client, userdata, msg):
-        self.payload = msg.payload
+        try:
+            self.payload = msg.payload
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
 
     def __on_message_mqtt_bridge_exists(self, client, userdata, msg):
-        if decode_payload(msg.payload)["name"] == self.name:
-            self.mqtt_bridge_exists = True
+        try:
+            if decode_payload(msg.payload)["name"] == self.name:
+                self.mqtt_bridge_exists = True
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")

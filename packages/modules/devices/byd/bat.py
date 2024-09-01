@@ -3,7 +3,6 @@ import logging
 from html.parser import HTMLParser
 from typing import Dict, List, Union, Tuple
 
-from dataclass_utils import dataclass_from_dict
 from modules.devices.byd.config import BYDBatSetup
 from modules.common import req
 from modules.common.component_state import BatState
@@ -20,7 +19,7 @@ class BYDBat:
                  component_config: Union[Dict, BYDBatSetup],
                  device_config) -> None:
         self.__device_config = device_config
-        self.component_config = dataclass_from_dict(BYDBatSetup, component_config)
+        self.component_config = component_config
         self.sim_counter = SimCounter(self.__device_config.id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

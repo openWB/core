@@ -195,6 +195,8 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
     log_data.time_charged, duration = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
     power = 0
     if duration > 0:
+        # power calculation needs to be fixed if useful:
+        # log_data.imported_since_mode_switch / (duration / 3600)
         power = get_value_or_default(lambda: round(log_data.imported_since_mode_switch / duration, 2))
     calculate_charge_cost(chargepoint, True)
     energy_source = get_value_or_default(lambda: analyse_percentage(get_log_from_date_until_now(
@@ -450,8 +452,7 @@ def get_reference_time(cp, reference_position):
         return timecheck.create_timestamp() - 3540
     elif reference_position == ReferenceTime.END:
         # Wenn der Ladevorgang erst innerhalb der letzten Stunde gestartet wurde.
-        one_hour_back = timecheck.create_timestamp() - 3600
-        if (one_hour_back - cp.data.set.log.timestamp_start_charging) < 0:
+        if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
             return cp.data.set.log.timestamp_start_charging
         else:
             return timecheck.create_unix_timestamp_current_full_hour() + 60
