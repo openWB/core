@@ -309,6 +309,9 @@ try:
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()
+    if event_jobs_running.is_set():
+        # Nach dem Starten als erstes den 10Sek-Handler aufrufen, damit die Werte der data.data initialisiert werden.
+        handler.handler10Sec()
 except Exception:
     traceback.print_exc()
     log.exception("Fehler im Main-Modul")
