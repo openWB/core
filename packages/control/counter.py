@@ -231,12 +231,8 @@ class Counter:
 
     def _control_range_offset(self):
         if data.data.bat_all_data.data.set.regulate_up:
-            # 100(50 reichen auch?) W Überschuss übrig lassen, damit der Speicher bis zur max Ladeleistung hochregeln
-            # kann. Regelmodus ignorieren, denn mit Regelmodus Bezug kann keine Einspeisung für den Speicher erzeugt
-            # werden.
-            log.debug("Damit der Speicher hochregeln kann, muss unabhängig vom eingestellten Regelmodus Einspeisung"
-                      " erzeugt werden.")
-            return - 100
+            # Regelmodus ignorieren, denn mit Regelmodus Bezug kann keine Einspeisung für den Speicher erzeugt werden.
+            return 0
         control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
         control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
         control_range_center = control_range_high - (control_range_high - control_range_low) / 2

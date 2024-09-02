@@ -251,6 +251,12 @@ class BatAll:
                         charging_power_left = self.data.get.power
             # Keine Ladeleistung vom Speicher für Fahrzeuge einplanen, wenn max
             # Ausgangsleistung erreicht ist.
+            if self.data.set.regulate_up:
+                # 100(50 reichen auch?) W Überschuss übrig lassen, damit der Speicher bis zur max Ladeleistung
+                # hochregeln kann.
+                log.debug("Damit der Speicher hochregeln kann, muss unabhängig vom eingestellten Regelmodus "
+                          "Einspeisung erzeugt werden.")
+                charging_power_left -= 100
             self.data.set.charging_power_left = self._limit_bat_power_discharge(charging_power_left)
         except Exception:
             log.exception("Fehler im Bat-Modul")
