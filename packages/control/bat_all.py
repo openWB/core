@@ -235,17 +235,11 @@ class BatAll:
                     charging_power_left = self.data.get.power
                 else:
                     if config.bat_power_discharge_active:
-                        if self.data.get.power > 0:
-                            # Speicher wird geladen
-                            charging_power_left = self.data.get.power + config.bat_power_discharge
-                        else:
-                            if self.data.get.power * -1 >= config.bat_power_discharge:
-                                # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
-                                # vom Überschuss subtrahiert werden.
-                                charging_power_left = config.bat_power_discharge + self.data.get.power
-                                log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
-                            else:
-                                charging_power_left = self.data.get.power + config.bat_power_discharge
+                        # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
+                        # vom Überschuss subtrahiert werden.
+                        # Wenn der Speicher mit weniger als der erlaubten Entladeleistung entladen wird
+                        charging_power_left = config.bat_power_discharge + self.data.get.power
+                        log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
                     else:
                         # Speicher sollte weder ge- noch entladen werden.
                         charging_power_left = self.data.get.power
