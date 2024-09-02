@@ -1,6 +1,6 @@
 <template>
-	<span>
-		<i class="fa" :class="batterySymbol" :style="batStyle" />
+	<span class="d-flex justify-content-center align-items-center">
+		<i class="fa me-1" :class="batterySymbol" :style="batStyle" />
 		{{ Math.round(soc) + '%' }}
 	</span>
 </template>
