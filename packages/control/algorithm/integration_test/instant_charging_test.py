@@ -16,6 +16,8 @@ from dataclass_utils.factories import currents_list_factory
 def all_cp_instant_charging_1p():
     for i in range(3, 6):
         control_parameter = data.data.cp_data[f"cp{i}"].data.control_parameter
+        control_parameter.min_current = data.data.cp_data[
+            f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.required_currents = [0]*3
         control_parameter.required_currents[i-3] = 16
         control_parameter.required_current = 16
@@ -34,6 +36,8 @@ def all_cp_charging_1p():
 def all_cp_instant_charging_3p():
     for i in range(3, 6):
         control_parameter = data.data.cp_data[f"cp{i}"].data.control_parameter
+        control_parameter.min_current = data.data.cp_data[
+            f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.required_currents = [16]*3
         control_parameter.required_current = 16
         control_parameter.chargemode = Chargemode.INSTANT_CHARGING

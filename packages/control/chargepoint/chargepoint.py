@@ -22,12 +22,12 @@ import traceback
 from typing import Dict, Optional, Tuple
 
 from control.chargelog import chargelog
-from control import cp_interruption
 from control import data
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
+from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev import Ev
 from control import phase_switch
@@ -35,6 +35,7 @@ from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from helpermodules.utils import thread_handler
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from helpermodules.timecheck import create_timestamp
 
@@ -276,6 +277,10 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.set.charging_ev_data.charge_template.data.chargemode.selected)
             self.data.control_parameter.prio = self.data.set.charging_ev_data.charge_template.data.prio
             self.data.control_parameter.required_current = required_current
+            if self.template.data.charging_type == ChargingType.AC.value:
+                self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.min_current
+            else:
+                self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.dc_min_current
         except Exception:
             log.exception("Fehler im LP-Modul "+str(self.num))
 
@@ -349,12 +354,13 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.data.config.control_pilot_interruption_hw:
                     # Wird die Ladung gestartet?
                     if self.set_current_prev == 0 and self.data.set.current != 0:
-                        cp_interruption.thread_cp_interruption(self.num,
-                                                               self.chargepoint_module,
-                                                               charging_ev.ev_template.data.
-                                                               control_pilot_interruption_duration)
-                        message = "Control-Pilot-Unterbrechung für " + str(
-                            charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
+                        # Die CP-Unterbrechung erfolgt in Threads, da diese länger als ein Zyklus dauert.
+                        if thread_handler(threading.Thread(
+                                target=self.chargepoint_module.interrupt_cp,
+                                args=(charging_ev.ev_template.data.control_pilot_interruption_duration,),
+                                name=f"cp{self.chargepoint_module.config.id}")):
+                            message = "Control-Pilot-Unterbrechung für " + str(
+                                charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
                         self.set_state_and_log(message)
                 else:
                     message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."
@@ -583,14 +589,19 @@ class Chargepoint(ChargepointRfidMixin):
 
     def check_min_max_current(self, required_current: float, phases: int, pv: bool = False) -> float:
         required_current_prev = required_current
-        required_current, msg = self.data.set.charging_ev_data.check_min_max_current(self.data.control_parameter,
-                                                                                     required_current,
-                                                                                     phases,
-                                                                                     pv)
-        if phases == 1:
-            required_current = min(required_current, self.template.data.max_current_single_phase)
+        required_current, msg = self.data.set.charging_ev_data.check_min_max_current(
+            self.data.control_parameter,
+            required_current,
+            phases,
+            self.template.data.charging_type,
+            pv)
+        if self.template.data.charging_type == ChargingType.AC.value:
+            if phases == 1:
+                required_current = min(required_current, self.template.data.max_current_single_phase)
+            else:
+                required_current = min(required_current, self.template.data.max_current_multi_phases)
         else:
-            required_current = min(required_current, self.template.data.max_current_multi_phases)
+            required_current = min(required_current, self.template.data.dc_max_current)
         if required_current != required_current_prev and msg is None:
             msg = ("Die Einstellungen in dem Ladepunkt-Profil beschränken den Strom auf "
                    f"maximal {required_current} A.")
@@ -609,6 +620,18 @@ class Chargepoint(ChargepointRfidMixin):
                                    " angeben. Andernfalls wird der benötigte Strom auf allen 3 Phasen vorgehalten, " +
                                    "was ggf eine unnötige Reduktion der Ladeleistung zur Folge hat.")
         self.data.set.required_power = sum(control_parameter.required_currents) * 230
+
+    def handle_less_power(self):
+        if self.data.set.current != 0 and self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED:
+            nominal_difference = self.data.set.charging_ev_data.ev_template.data.nominal_difference
+            if self.data.set.current - nominal_difference > max(self.data.get.currents):
+                if self.data.control_parameter.timestamp_charge_start is None:
+                    self.data.control_parameter.timestamp_charge_start = create_timestamp()
+            else:
+                self.data.control_parameter.timestamp_charge_start = None
+        else:
+            # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
+            self.data.control_parameter.timestamp_charge_start = None
 
     def update_ev(self, ev_list: Dict[str, Ev]) -> None:
         # Für Control-Pilot-Unterbrechung set current merken.
@@ -638,16 +661,20 @@ class Chargepoint(ChargepointRfidMixin):
                         self.data.control_parameter,
                         self.data.get.imported,
                         max_phase_hw,
-                        self.cp_ev_support_phase_switch())
+                        self.cp_ev_support_phase_switch(),
+                        self.template.data.charging_type)
                     phases = self.set_phases(phases)
                     self._pub_connected_vehicle(charging_ev)
+                    required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = self.check_min_max_current(
                         required_current, self.data.control_parameter.phases)
+                    required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
                     charging_ev.set_chargemode_changed(self.data.control_parameter, submode)
                     charging_ev.set_submode_changed(self.data.control_parameter, submode)
                     self.set_control_parameter(submode, required_current)
                     self.set_required_currents(required_current)
+                    self.handle_less_power()
 
                     if charging_ev.chargemode_changed:
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
