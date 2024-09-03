@@ -13,13 +13,3 @@ class SimCounter:
     def sim_count(self, power: float) -> Tuple[float, float]:
         self.data = sim_count(power, self.topic, self.data, self.prefix)
         return self.data.imported, self.data.exported
-
-
-class SimCounterChargepoint:
-    def __init__(self, chargepoint_id: int):
-        self.topic = f"openWB/set/chargepoint/{chargepoint_id}/get/"
-        self.data = None  # type: Optional[SimCounterState]
-
-    def sim_count(self, power: float) -> Tuple[float, float]:
-        self.data = sim_count(power, self.topic, self.data, "")
-        return self.data.imported, self.data.exported

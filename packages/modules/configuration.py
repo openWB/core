@@ -228,11 +228,10 @@ def _pub_configurable_chargepoints() -> None:
                     dev_defaults = importlib.import_module(
                         f".chargepoints.{path.parts[-2]}.chargepoint_module",
                         "modules").chargepoint_descriptor.configuration_factory()
-                    if dev_defaults.visibility:
-                        chargepoints.append({
-                            "value": dev_defaults.type,
-                            "text": dev_defaults.name
-                        })
+                    chargepoints.append({
+                        "value": dev_defaults.type,
+                        "text": dev_defaults.name
+                    })
                 except Exception:
                     log.exception("Fehler im configuration-Modul")
             chargepoints = sorted(chargepoints, key=lambda d: d['text'].upper())

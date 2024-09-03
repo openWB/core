@@ -22,8 +22,6 @@ def all_cp_pv_charging_3p():
             f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.required_currents = [
             data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current]*3
-        control_parameter.min_current = data.data.cp_data[
-            f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.chargemode = Chargemode.PV_CHARGING
         control_parameter.submode = Chargemode.PV_CHARGING
         control_parameter.phases = 3
@@ -54,8 +52,6 @@ def all_cp_pv_charging_1p():
     for i in range(3, 6):
         control_parameter = data.data.cp_data[f"cp{i}"].data.control_parameter
         charging_ev_data = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data
-        control_parameter.min_current = data.data.cp_data[
-            f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.required_current = data.data.cp_data[
             f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.required_currents = [0]*3

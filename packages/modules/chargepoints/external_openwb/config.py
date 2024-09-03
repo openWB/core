@@ -1,7 +1,5 @@
 from typing import Optional
 
-from modules.common.abstract_chargepoint import SetupChargepoint
-
 
 class OpenWBSeriesConfiguration:
     def __init__(self, ip_address: Optional[str] = None, duo_num: int = 0):
@@ -9,10 +7,13 @@ class OpenWBSeriesConfiguration:
         self.duo_num = duo_num
 
 
-class OpenWBSeries(SetupChargepoint[OpenWBSeriesConfiguration]):
+class OpenWBSeries:
     def __init__(self,
                  name: str = "Externe openWB",
                  type: str = "external_openwb",
                  id: int = 0,
                  configuration: OpenWBSeriesConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or OpenWBSeriesConfiguration())
+        self.name = name
+        self.type = type
+        self.id = id
+        self.configuration = configuration or OpenWBSeriesConfiguration()

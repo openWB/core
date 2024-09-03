@@ -7,28 +7,23 @@ from helpermodules.utils.json_file_handler import write_and_check
 HARDWARE_CONFIGURATION_FILE = "/home/openwb/configuration.json"
 
 
-def _read_configuration() -> Dict:
-    with open(HARDWARE_CONFIGURATION_FILE, "r") as f:
-        return json.loads(f.read())
-
-
 def update_hardware_configuration(new_setting: Dict) -> None:
-    data = _read_configuration()
+    with open(HARDWARE_CONFIGURATION_FILE, "r") as f:
+        data = json.loads(f.read())
     write_and_check(HARDWARE_CONFIGURATION_FILE, data.update(new_setting))
 
 
 def remove_setting_hardware_configuration(obsolet_setting: str) -> None:
-    data = _read_configuration()
+    with open(HARDWARE_CONFIGURATION_FILE, "r") as f:
+        data = json.loads(f.read())
     if obsolet_setting in data:
         write_and_check(HARDWARE_CONFIGURATION_FILE, data.pop(obsolet_setting))
 
 
 def get_hardware_configuration_setting(name: str, default=None):
-    return _read_configuration().get(name, default)
-
-
-def exists_hardware_configuration_setting(name: str) -> bool:
-    return name in _read_configuration()
+    with open(HARDWARE_CONFIGURATION_FILE, "r") as f:
+        configuration = json.loads(f.read())
+    return configuration.get(name, default)
 
 
 def get_serial_number() -> str:

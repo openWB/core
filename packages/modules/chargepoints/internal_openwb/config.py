@@ -1,7 +1,5 @@
 from enum import Enum
 
-from modules.common.abstract_chargepoint import SetupChargepoint
-
 
 class InternalChargepointMode(Enum):
     SOCKET = "socket"
@@ -16,10 +14,13 @@ class InternalOpenWBConfiguration:
         self.duo_num = duo_num
 
 
-class InternalOpenWB(SetupChargepoint[InternalOpenWBConfiguration]):
+class InternalOpenWB:
     def __init__(self,
                  name: str = "Interne openWB",
                  type: str = "internal_openwb",
                  id: int = 0,
                  configuration: InternalOpenWBConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or InternalOpenWBConfiguration())
+        self.name = name
+        self.type = type
+        self.id = id
+        self.configuration = configuration or InternalOpenWBConfiguration()

@@ -9,7 +9,6 @@ import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from control.bat_all import BatConsiderationMode
-from control.chargepoint.charging_type import ChargingType
 from control.general import ChargemodeConfig
 import dataclass_utils
 
@@ -43,7 +42,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 56
+    DATASTORE_VERSION = 54
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -107,7 +106,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/serial_number$",
         "^openWB/chargepoint/[0-9]+/get/soc$",
         "^openWB/chargepoint/[0-9]+/get/soc_timestamp$",
-        "^openWB/chargepoint/[0-9]+/get/simulation$",
         "^openWB/chargepoint/[0-9]+/get/state_str$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/soc$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/info$",
@@ -138,7 +136,7 @@ class UpdateConfig:
         "^openWB/command/[A-Za-z0-9_]+/error$",
         "^openWB/command/todo$",
 
-        "^openWB/counter/config/consider_less_charging$",
+        "^openWB/counter/config/reserve_for_not_charging$",
         "^openWB/counter/config/home_consumption_source_id$",
         "^openWB/counter/get/hierarchy$",
         "^openWB/counter/set/disengageable_smarthome_power$",
@@ -425,7 +423,7 @@ class UpdateConfig:
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
-        ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
+        ("openWB/counter/config/reserve_for_not_charging", counter_all.Config().reserve_for_not_charging),
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
@@ -1355,6 +1353,7 @@ class UpdateConfig:
                     return {topic: updated_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 39)
+        Pub().pub("openWB/system/datastore_version", 39)
 
     def upgrade_datastore_39(self) -> None:
         def upgrade(topic: str, payload) -> None:
@@ -1655,25 +1654,3 @@ class UpdateConfig:
                     return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 54)
-
-    def upgrade_datastore_54(self) -> None:
-        def upgrade(topic: str, payload) -> Optional[dict]:
-            if "openWB/counter/config/reserve_for_less_charging" == topic:
-                payload = decode_payload(payload)
-                return {"openWB/counter/config/consider_less_charging": payload}
-        self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 55)
-
-    def upgrade_datastore_55(self) -> None:
-        if hardware_configuration.exists_hardware_configuration_setting("dc_charging") is False:
-            hardware_configuration.update_hardware_configuration({"dc_charging": False})
-
-        def upgrade(topic: str, payload) -> Optional[dict]:
-            if re.search("openWB/chargepoint/template/[0-9]+", topic) is not None:
-                payload = decode_payload(payload)
-                if "charging_type" not in payload:
-                    updated_payload = payload
-                    updated_payload["charging_type"] = ChargingType.AC.value
-                    return {topic: updated_payload}
-        self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 56)
