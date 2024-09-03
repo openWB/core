@@ -13,6 +13,7 @@ from typing import List, Dict, Optional, Tuple
 
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
+from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.limiting_value import LimitingValue
 from dataclass_utils.factories import empty_dict_factory, empty_list_factory
@@ -67,11 +68,14 @@ class TimeCharging:
 @dataclass
 class InstantCharging:
     current: int = 10
+    dc_current: float = 145
     limit: Limit = field(default_factory=limit_factory)
 
 
 @dataclass
 class PvCharging:
+    dc_min_current: float = 145
+    dc_min_soc_current: float = 145
     min_soc_current: int = 10
     min_current: int = 0
     feed_in_limit: bool = False
@@ -133,6 +137,8 @@ def charge_template_data_factory() -> ChargeTemplateData:
 
 @dataclass
 class EvTemplateData:
+    dc_min_current: int = 0
+    dc_max_current: int = 0
     name: str = "neues Fahrzeug-Profil"
     max_current_multi_phases: int = 16
     max_phases: int = 3
@@ -243,7 +249,8 @@ class Ev:
                              control_parameter: ControlParameter,
                              imported: float,
                              max_phases_hw: int,
-                             phase_switch_supported: bool) -> Tuple[bool, Optional[str], str, float, int]:
+                             phase_switch_supported: bool,
+                             charging_type: str) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -277,7 +284,8 @@ class Ev:
                     control_parameter.phases,
                     used_amount,
                     max_phases_hw,
-                    phase_switch_supported)
+                    phase_switch_supported,
+                    charging_type)
                 soc_request_intervall_offset = 0
                 if plan_data:
                     name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].name
@@ -300,7 +308,7 @@ class Ev:
                     self.data.get.soc,
                     used_amount,
                     control_parameter.phases,
-                    self.ev_template.data.min_current,
+                    control_parameter.min_current,
                     soc_request_intervall_offset)
 
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
@@ -311,7 +319,8 @@ class Ev:
                 used_amount = imported - control_parameter.imported_at_plan_start
                 tmp_current, tmp_submode, tmp_message, name = self.charge_template.time_charging(
                     self.data.get.soc,
-                    used_amount
+                    used_amount,
+                    charging_type
                 )
                 # Info vom Zielladen erhalten
                 message = f"{message or ''} {tmp_message or ''}".strip()
@@ -331,10 +340,11 @@ class Ev:
                     used_amount = imported - control_parameter.imported_instant_charging
                     required_current, submode, message = self.charge_template.instant_charging(
                         self.data.get.soc,
-                        used_amount)
+                        used_amount,
+                        charging_type)
                 elif self.charge_template.data.chargemode.selected == "pv_charging":
                     required_current, submode, message = self.charge_template.pv_charging(
-                        self.data.get.soc, self.ev_template.data.min_current)
+                        self.data.get.soc, control_parameter.min_current, charging_type)
                 elif self.charge_template.data.chargemode.selected == "standby":
                     # Text von Zeit-und Zielladen nicht überschreiben.
                     if message is None:
@@ -369,7 +379,8 @@ class Ev:
                               control_parameter: ControlParameter,
                               required_current: float,
                               phases: int,
-                              pv: bool = False) -> Tuple[float, Optional[str]]:
+                              charging_type: str,
+                              pv: bool = False,) -> Tuple[float, Optional[str]]:
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt.
         Falls nicht, wird der Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom des EV gesetzt.
         Wenn PV-Laden aktiv ist, darf die Stromstärke nicht unter den PV-Mindeststrom gesetzt werden.
@@ -381,7 +392,10 @@ class Ev:
             # EV soll/darf nicht laden
             if required_current != 0:
                 if not pv:
-                    min_current = self.ev_template.data.min_current
+                    if charging_type == ChargingType.AC.value:
+                        min_current = self.ev_template.data.min_current
+                    else:
+                        min_current = self.ev_template.data.dc_min_current
                 else:
                     min_current = control_parameter.required_current
                 if required_current < min_current:
@@ -389,10 +403,13 @@ class Ev:
                     msg = ("Die Einstellungen in dem Fahrzeug-Profil beschränken den Strom auf "
                            f"mindestens {required_current} A.")
                 else:
-                    if phases == 1:
-                        max_current = self.ev_template.data.max_current_single_phase
+                    if charging_type == ChargingType.AC.value:
+                        if phases == 1:
+                            max_current = self.ev_template.data.max_current_single_phase
+                        else:
+                            max_current = self.ev_template.data.max_current_multi_phases
                     else:
-                        max_current = self.ev_template.data.max_current_multi_phases
+                        max_current = self.ev_template.data.dc_max_current
                     if required_current > max_current:
                         required_current = max_current
                         msg = ("Die Einstellungen in dem Fahrzeug-Profil beschränken den Strom auf "
@@ -411,7 +428,7 @@ class Ev:
                                        max_current_cp: int,
                                        limit: LimitingValue) -> Tuple[bool, Optional[str]]:
         # Manche EV laden mit 6.1A bei 6A Sollstrom
-        min_current = self.ev_template.data.min_current + self.ev_template.data.nominal_difference
+        min_current = control_parameter.min_current + self.ev_template.data.nominal_difference
         max_current = (min(self.ev_template.data.max_current_single_phase, max_current_cp)
                        - self.ev_template.data.nominal_difference)
         phases_in_use = control_parameter.phases
@@ -422,7 +439,7 @@ class Ev:
         else:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
-        required_surplus = self.ev_template.data.min_current * max_phases_ev * 230 - get_power
+        required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
         condition_1_to_3 = (((max(get_currents) > max_current and
                             all_surplus > required_surplus) or limit == LimitingValue.UNBALANCED_LOAD.value) and
                             phases_in_use == 1)
@@ -462,11 +479,11 @@ class Ev:
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
             delay = cm_config.phase_switch_delay * 60
-            required_reserved_power = (self.ev_template.data.min_current * max_phases * 230 -
+            required_reserved_power = (control_parameter.min_current * max_phases * 230 -
                                        self.ev_template.data.max_current_single_phase * 230)
 
             new_phase = max_phases
-            new_current = self.ev_template.data.min_current
+            new_current = control_parameter.min_current
         else:
             direction_str = f"Umschaltung von {max_phases} auf 1"
             delay = (16 - cm_config.phase_switch_delay) * 60
@@ -590,7 +607,8 @@ class ChargeTemplate:
 
     def time_charging(self,
                       soc: Optional[float],
-                      used_amount_time_charging: float) -> Tuple[int, str, Optional[str], Optional[str]]:
+                      used_amount_time_charging: float,
+                      charging_type: str) -> Tuple[int, str, Optional[str], Optional[str]]:
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         message = None
@@ -598,22 +616,23 @@ class ChargeTemplate:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
+                    current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                     if self.data.et.active and data.data.optional_data.et_provider_availble():
                         if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
                             return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.name
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
-                        return plan.current, "time_charging", message, plan.name
+                        return current, "time_charging", message, plan.name
                     elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
                         if soc:
                             if soc < plan.limit.soc:
-                                return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
+                                return current, "time_charging", message, plan.name  # Limit nicht erreicht
                             else:
                                 return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
                         else:
                             return plan.current, "time_charging", message, plan.name
                     elif plan.limit.selected == "amount":  # Energiemengenlimit konfiguriert
                         if used_amount_time_charging < plan.limit.amount:
-                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
+                            return current, "time_charging", message, plan.name  # Limit nicht erreicht
                         else:
                             return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.name  # Limit erreicht
                     else:
@@ -633,28 +652,33 @@ class ChargeTemplate:
 
     def instant_charging(self,
                          soc: Optional[float],
-                         imported_instant_charging: float) -> Tuple[int, str, Optional[str]]:
+                         imported_instant_charging: float,
+                         charging_type: str) -> Tuple[int, str, Optional[str]]:
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
         """
         message = None
         try:
             instant_charging = self.data.chargemode.instant_charging
+            if charging_type == ChargingType.AC.value:
+                current = instant_charging.current
+            else:
+                current = instant_charging.dc_current
             if self.data.et.active and data.data.optional_data.et_provider_availble():
                 if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
                     return 0, "stop", self.CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
-                return instant_charging.current, "instant_charging", message
+                return current, "instant_charging", message
             elif instant_charging.limit.selected == "soc":
                 if soc:
                     if soc < instant_charging.limit.soc:
-                        return instant_charging.current, "instant_charging", message
+                        return current, "instant_charging", message
                     else:
                         return 0, "stop", self.INSTANT_CHARGING_SOC_REACHED
                 else:
-                    return instant_charging.current, "instant_charging", message
+                    return current, "instant_charging", message
             elif instant_charging.limit.selected == "amount":
                 if imported_instant_charging < self.data.chargemode.instant_charging.limit.amount:
-                    return instant_charging.current, "instant_charging", message
+                    return current, "instant_charging", message
                 else:
                     return 0, "stop", self.INSTANT_CHARGING_AMOUNT_REACHED
             else:
@@ -665,7 +689,7 @@ class ChargeTemplate:
 
     PV_CHARGING_SOC_REACHED = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
 
-    def pv_charging(self, soc: Optional[float], min_current: int) -> Tuple[int, str, Optional[str]]:
+    def pv_charging(self, soc: Optional[float], min_current: int, charging_type: str) -> Tuple[int, str, Optional[str]]:
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
         """
         message = None
@@ -674,13 +698,21 @@ class ChargeTemplate:
             if soc is None or soc < pv_charging.max_soc:
                 if pv_charging.min_soc != 0 and soc is not None:
                     if soc < pv_charging.min_soc:
-                        return pv_charging.min_soc_current, "instant_charging", message
-                if pv_charging.min_current == 0:
+                        if charging_type == ChargingType.AC.value:
+                            current = pv_charging.min_soc_current
+                        else:
+                            current = pv_charging.dc_min_soc_current
+                        return current, "instant_charging", message
+                if charging_type == ChargingType.AC.value:
+                    pv_min_current = pv_charging.min_current
+                else:
+                    pv_min_current = pv_charging.dc_min_current
+                if pv_min_current == 0:
                     # nur PV; Ampere darf nicht 0 sein, wenn geladen werden soll
                     return min_current, "pv_charging", message
                 else:
                     # Min PV
-                    return pv_charging.min_current, "instant_charging", message
+                    return pv_min_current, "instant_charging", message
             else:
                 return 0, "stop", self.PV_CHARGING_SOC_REACHED
         except Exception:
@@ -693,28 +725,36 @@ class ChargeTemplate:
                                        phases: int,
                                        used_amount: float,
                                        max_phases: int,
-                                       phase_switch_supported: bool) -> Tuple[Optional[SelectedPlan], float]:
+                                       phase_switch_supported: bool,
+                                       charging_type: str) -> Tuple[Optional[SelectedPlan], float]:
         """ prüft, ob der Ziel-SoC oder die Ziel-Energiemenge erreicht wurde und stellt den zur Erreichung nötigen
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
         """
         if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging",
                                                                                    "instant_charging") == 0:
-            max_current = ev_template.data.max_current_multi_phases
-            plan_data = self.search_plan(max_current, soc, ev_template, max_phases, used_amount)
-            if plan_data:
+            if charging_type == ChargingType.AC.value:
+                max_current = ev_template.data.max_current_multi_phases
+            else:
+                max_current = ev_template.data.dc_max_current
+            plan_data = self.search_plan(max_current, soc, ev_template, max_phases, used_amount, charging_type)
+            if plan_data and charging_type == ChargingType.AC.value:
                 if plan_data.remaining_time > 300 and self.data.et.active is False:
                     max_current = ev_template.data.max_current_single_phase
-                    plan_data_single_phase = self.search_plan(max_current, soc, ev_template, 1, used_amount)
+                    plan_data_single_phase = self.search_plan(
+                        max_current, soc, ev_template, 1, used_amount, charging_type)
                     if plan_data_single_phase:
                         if plan_data_single_phase.remaining_time > 300:
                             plan_data = plan_data_single_phase
         else:
-            if phases == 1:
-                max_current = ev_template.data.max_current_single_phase
+            if charging_type == ChargingType.AC.value:
+                if phases == 1:
+                    max_current = ev_template.data.max_current_single_phase
+                else:
+                    max_current = ev_template.data.max_current_multi_phases
             else:
-                max_current = ev_template.data.max_current_multi_phases
-            plan_data = self.search_plan(max_current, soc, ev_template, phases, used_amount)
+                max_current = ev_template.data.dc_max_current
+            plan_data = self.search_plan(max_current, soc, ev_template, phases, used_amount, charging_type)
         return plan_data
 
     def search_plan(self,
@@ -722,7 +762,8 @@ class ChargeTemplate:
                     soc: Optional[float],
                     ev_template: EvTemplate,
                     phases: int,
-                    used_amount: float) -> Optional[SelectedPlan]:
+                    used_amount: float,
+                    charging_type: str) -> Optional[SelectedPlan]:
         smallest_remaining_time = float("inf")
         missed_date_today_of_plan_with_smallest_remaining_time = False
         plan_data: Optional[SelectedPlan] = None
@@ -733,7 +774,8 @@ class ChargeTemplate:
                     raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren "
                                      f"oder im Plan {plan.name} als Begrenzung Energie einstellen.")
                 try:
-                    duration, missing_amount = self.calculate_duration(plan, soc, battery_capacity, used_amount, phases)
+                    duration, missing_amount = self.calculate_duration(
+                        plan, soc, battery_capacity, used_amount, phases, charging_type)
                     remaining_time, missed_date_today = timecheck.check_duration(plan, duration, self.BUFFER)
                     if remaining_time:
                         # Wenn der Zeitpunkt vorüber, aber noch nicht abgelaufen ist oder
@@ -748,9 +790,13 @@ class ChargeTemplate:
                                     (missed_date_today_of_plan_with_smallest_remaining_time and 0 < remaining_time)):
                                 smallest_remaining_time = remaining_time
                                 missed_date_today_of_plan_with_smallest_remaining_time = missed_date_today
+                                if charging_type == ChargingType.AC.value:
+                                    available_current = plan.current
+                                else:
+                                    available_current = plan.dc_current
                                 plan_data = SelectedPlan(
                                     remaining_time=remaining_time,
-                                    available_current=plan.current,
+                                    available_current=available_current,
                                     max_current=max_current,
                                     phases=phases,
                                     num=num,
@@ -767,7 +813,8 @@ class ChargeTemplate:
                            soc: Optional[float],
                            battery_capacity: float,
                            used_amount: float,
-                           phases: int) -> Tuple[float, float]:
+                           phases: int,
+                           charging_type: str) -> Tuple[float, float]:
         if plan.limit.selected == "soc":
             if soc:
                 missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
@@ -775,7 +822,8 @@ class ChargeTemplate:
                 raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren.")
         else:
             missing_amount = plan.limit.amount - used_amount
-        duration = missing_amount/(plan.current * phases*230) * 3600
+        current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
+        duration = missing_amount/(current * phases*230) * 3600
         return duration, missing_amount
 
     SCHEDULED_REACHED_LIMIT_SOC = ("Kein Zielladen, da noch Zeit bis zum Zieltermin ist. "
