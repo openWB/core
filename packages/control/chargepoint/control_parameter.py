@@ -18,6 +18,7 @@ class ControlParameter:
     imported_instant_charging: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/imported_instant_charging"})
     limit: Optional[LimitingValue] = field(default=None, metadata={"topic": "control_parameter/limit"})
+    min_current: int = field(default=6, metadata={"topic": "control_parameter/min_current"})
     phases: int = field(default=0, metadata={"topic": "control_parameter/phases"})
     prio: bool = field(default=False, metadata={"topic": "control_parameter/prio"})
     required_current: float = field(default=0, metadata={"topic": "control_parameter/required_current"})
@@ -27,6 +28,8 @@ class ControlParameter:
     submode: Chargemode_enum = field(default=Chargemode_enum.STOP, metadata={"topic": "control_parameter/submode"})
     timestamp_auto_phase_switch: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_auto_phase_switch"})
+    timestamp_charge_start: Optional[float] = field(
+        default=None, metadata={"topic": "control_parameter/timestamp_charge_start"})
     timestamp_perform_phase_switch: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_perform_phase_switch"})
     timestamp_switch_on_off: Optional[float] = field(
