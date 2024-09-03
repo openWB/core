@@ -14,13 +14,7 @@ from control.counter import Set as CounterSet
 from control.counter_all import CounterAll
 from control.pv import Pv, PvData
 from control.pv import Get as PvGet
-from helpermodules import hardware_configuration, pub, timecheck
-
-
-@pytest.fixture(autouse=True)
-def mock_open_file(monkeypatch) -> None:
-    mock_config = Mock(return_value={"dc_charging": False, "openwb-version": 1, "max_c_socket": 32})
-    monkeypatch.setattr(hardware_configuration, "_read_configuration", mock_config)
+from helpermodules import pub, timecheck
 
 
 @pytest.fixture(autouse=True)

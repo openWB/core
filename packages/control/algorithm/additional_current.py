@@ -29,15 +29,13 @@ class AdditionalCurrent:
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)
                     available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
-                    log.debug(f"cp {cp.num} available currents {available_currents} missing currents "
-                              f"{missing_currents} limit {limit}")
                     cp.data.control_parameter.limit = limit
                     available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
                     current = common.get_current_to_set(
                         cp.data.set.current, available_for_cp, cp.data.set.target_current)
                     self._set_loadmangement_message(current, limit, cp, counter)
                     common.set_current_counterdiff(
-                        cp.data.control_parameter.min_current,
+                        current - cp.data.set.charging_ev_data.ev_template.data.min_current,
                         current,
                         cp)
                     preferenced_chargepoints.pop(0)
@@ -52,12 +50,9 @@ class AdditionalCurrent:
                                    chargepoint: Chargepoint,
                                    counter: Counter) -> None:
         # Strom muss an diesem Zähler geändert werden
-        log.debug(
-            f"current {current} target {chargepoint.data.set.target_current} set current {chargepoint.data.set.current}"
-            f" required currents {chargepoint.data.control_parameter.required_currents}")
         if (current != max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0) and
                 # Strom erreicht nicht die vorgegebene Stromstärke
-                round(current, 2) != round(max(
-                    chargepoint.data.control_parameter.required_currents), 2)):
+                current != max(
+                    chargepoint.data.control_parameter.required_currents)):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
                                           f"{limit.value.format(get_component_name_by_id(counter.num))}")

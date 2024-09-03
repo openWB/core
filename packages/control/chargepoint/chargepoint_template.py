@@ -5,7 +5,6 @@ from typing import Dict, List
 
 from control import data
 from control import ev as ev_module
-from control.chargepoint.charging_type import ChargingType
 from dataclass_utils.factories import empty_dict_factory, empty_list_factory
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules import timecheck
@@ -38,11 +37,9 @@ def autolock_factory():
 @dataclass
 class CpTemplateData:
     autolock: Autolock = field(default_factory=autolock_factory, metadata={"topic": ""})
-    charging_type: str = ChargingType.AC.value
     id: int = 0
     max_current_multi_phases: int = 32
     max_current_single_phase: int = 32
-    dc_max_current: float = 435
     name: str = "neues Ladepunkt-Profil"
     disable_after_unplug: bool = False
     valid_tags: List = field(default_factory=empty_list_factory)
