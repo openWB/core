@@ -26,7 +26,7 @@ from helpermodules.hardware_configuration import update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals, string_to_float, string_to_int
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, get_names
 from helpermodules.timecheck import convert_timedelta_to_time_string, get_difference
-from helpermodules.utils import thread_handler
+from helpermodules.utils import joined_thread_handler
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
 from modules.ripple_control_receivers.gpio.config import GpioRcr
@@ -88,9 +88,9 @@ class MigrateData:
             log.info("Version wird geprüft...")
             self._check_version()
             log.info("Logdateien werden importiert...")
-            thread_handler(self.convert_csv_to_json_chargelog(), None)
-            thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
-            thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
+            joined_thread_handler(self.convert_csv_to_json_chargelog(), None)
+            joined_thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
+            joined_thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
             log.info("Seriennummer wird übernommen...")
             self._migrate_settings_from_openwb_conf()
         except Exception as e:
