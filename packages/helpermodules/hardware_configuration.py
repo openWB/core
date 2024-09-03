@@ -14,13 +14,15 @@ def _read_configuration() -> Dict:
 
 def update_hardware_configuration(new_setting: Dict) -> None:
     data = _read_configuration()
-    write_and_check(HARDWARE_CONFIGURATION_FILE, data.update(new_setting))
+    data.update(new_setting)
+    write_and_check(HARDWARE_CONFIGURATION_FILE, data)
 
 
 def remove_setting_hardware_configuration(obsolet_setting: str) -> None:
     data = _read_configuration()
     if obsolet_setting in data:
-        write_and_check(HARDWARE_CONFIGURATION_FILE, data.pop(obsolet_setting))
+        data.pop(obsolet_setting)
+        write_and_check(HARDWARE_CONFIGURATION_FILE, data)
 
 
 def get_hardware_configuration_setting(name: str, default=None):
