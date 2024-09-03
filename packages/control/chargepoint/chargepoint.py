@@ -22,7 +22,6 @@ import traceback
 from typing import Dict, Optional, Tuple
 
 from control.chargelog import chargelog
-from control import cp_interruption
 from control import data
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
@@ -35,6 +34,7 @@ from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from helpermodules.utils import thread_handler
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from helpermodules.timecheck import create_timestamp
 
@@ -349,12 +349,13 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.data.config.control_pilot_interruption_hw:
                     # Wird die Ladung gestartet?
                     if self.set_current_prev == 0 and self.data.set.current != 0:
-                        cp_interruption.thread_cp_interruption(self.num,
-                                                               self.chargepoint_module,
-                                                               charging_ev.ev_template.data.
-                                                               control_pilot_interruption_duration)
-                        message = "Control-Pilot-Unterbrechung für " + str(
-                            charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
+                        # Die CP-Unterbrechung erfolgt in Threads, da diese länger als ein Zyklus dauert.
+                        if thread_handler(threading.Thread(
+                                target=self.chargepoint_module.interrupt_cp,
+                                args=(charging_ev.ev_template.data.control_pilot_interruption_duration,),
+                                name=f"cp{self.chargepoint_module.config.id}")):
+                            message = "Control-Pilot-Unterbrechung für " + str(
+                                charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
                         self.set_state_and_log(message)
                 else:
                     message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."

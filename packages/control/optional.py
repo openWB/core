@@ -10,6 +10,7 @@ from dataclass_utils.factories import empty_dict_factory
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_unix_timestamp_current_full_hour
+from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.display_themes.cards.config import CardsDisplayTheme
 
@@ -141,11 +142,7 @@ class Optional:
     def et_get_prices(self):
         try:
             if self.et_module:
-                for thread in threading.enumerate():
-                    if thread.name == "electricity tariff":
-                        log.debug("Don't start multiple instances of electricity tariff thread.")
-                        return
-                threading.Thread(target=self.et_module.update, args=(), name="electricity tariff").start()
+                thread_handler(threading.Thread(target=self.et_module.update, args=(), name="electricity tariff"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:

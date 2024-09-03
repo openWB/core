@@ -8,7 +8,7 @@ from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
 from modules.common.store import update_values
 from modules.common.utils.component_parser import get_component_obj_by_id
-from helpermodules.utils import thread_handler
+from helpermodules.utils import joined_thread_handler
 
 log = logging.getLogger(__name__)
 
@@ -28,8 +28,8 @@ class Loadvars:
                 wait_for_module_update_completed(self.event_module_update_completed, topic)
                 data.data.copy_module_data()
             wait_for_module_update_completed(self.event_module_update_completed, topic)
-            thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
-            thread_handler(self._set_general(), data.data.general_data.data.control_interval/3)
+            joined_thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
+            joined_thread_handler(self._set_general(), data.data.general_data.data.control_interval/3)
             wait_for_module_update_completed(self.event_module_update_completed, topic)
         except Exception:
             log.exception("Fehler im loadvars-Modul")
@@ -50,7 +50,7 @@ class Loadvars:
                                        args=(), name=f"set values cp{cp.chargepoint_module.config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
-        return thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
+        return joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def _update_values_of_level(self, elements, not_finished_threads: List[str]) -> None:
         """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu
@@ -73,7 +73,7 @@ class Loadvars:
                         component,), name=f"component{component.component_config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {element}")
-        thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
+        joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def thread_without_set_value(self,
                                  modules_threads: List[threading.Thread],
