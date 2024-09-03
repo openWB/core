@@ -4,7 +4,7 @@ In den Sicherungseinstellungen kann ein Cloud-Dienst für automatische Sicherung
 Die Konfiguration des Cloud-Dienstes wird in diesem Wiki-Beitrag beschrieben. 
 
 Automatische Sicherungen werden nur ausgeführt, wenn die openWB als *primary* konfiguriert (oder die einzige) ist.
-Auf als *secondary* konfigurierten openWBs werden nur manuelle Sicherungen ausgeführt, da hier keine Arbeitsdaten (Log-Dateien) zu sichern sind.
+Auf als *secondary* konfigurierten openWBs werden nur manuelle Sicherungen und Sicherungen vor einem Update (falls aktiviert)  ausgeführt, da hier keine Arbeitsdaten (Log-Dateien) zu sichern sind.
 
 Folgende Anbieter werden unterstützt:
 
