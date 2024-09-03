@@ -1599,7 +1599,7 @@ class UpdateConfig:
                     payload["configuration"].update({"version": GoodWeVersion.V_1_7})
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 40)
+        self.__update_topic("openWB/system/datastore_version", 49)
 
     def upgrade_datastore_49(self) -> None:
         Pub().pub("openWB/system/installAssistantDone", True)
