@@ -120,66 +120,6 @@ class ChargepointModule(AbstractChargepoint):
                     raise Exception(f"Ladepunkt nicht verfügbar. Status: {ChargingStatus(json_rsp['state'])}")
                 self.store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()
-    # # Test mit pro
-    # def set_current(self, current: float) -> None:
-    #     if self.__client_error_context.error_counter_exceeded():
-    #         current = 0
-    #     with SingleComponentUpdateContext(self.fault_state, False):
-    #         with self.__client_error_context:
-    #             ip_address = self.config.configuration.ip_address
-    #             raw_current = self.subtract_conversion_loss_from_current(current)
-    #             raw_power = raw_current * 3 * 230
-    #             log.debug(f"DC-Stromstärke: {raw_current}A ≙ {raw_power / 1000}kW")
-    #             self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': raw_current})
-
-    # def get_values(self) -> None:
-    #     with SingleComponentUpdateContext(self.fault_state):
-    #         with self.__client_error_context:
-    #             ip_address = self.config.configuration.ip_address
-    #             json_rsp = self.__session.get('http://'+ip_address+'/connect.php').json()
-
-    #             # if json_rsp["fault_state"] == 1:
-    #             #     self.fault_state.warning(json_rsp["fault_str"])
-    #             # elif json_rsp["fault_state"] == 2:
-    #             #     raise Exception(json_rsp["fault_str"])
-
-    #             charging_power = self.add_conversion_loss_to_current(json_rsp["power_all"])
-    #             imported, exported = self.sim_counter.sim_count(charging_power)
-    #             chargepoint_state = ChargepointState(
-    #                 charge_state=json_rsp["charge_state"],
-    #                 charging_current=self.add_conversion_loss_to_current(json_rsp["currents"][0]),
-    #                 charging_power=charging_power,
-    #                 charging_voltage=230,
-    #                 currents=json_rsp["currents"],
-    #                 exported=exported,
-    #                 imported=imported,
-    #                 phases_in_use=3,
-    #                 power=json_rsp["power_all"],
-    #                 powers=json_rsp["powers"],
-    #                 plug_state=json_rsp["plug_state"],
-    #                 rfid=json_rsp["rfid_tag"],
-    #                 soc=json_rsp["soc_value"],
-    #                 soc_timestamp=json_rsp["soc_timestamp"],
-    #                 vehicle_id=json_rsp["vehicle_id"],
-    #                 serial_number=json_rsp["serial"],
-    #             )
-
-    #             if chargepoint_state.charge_state:
-    #                 try:
-    #                     self.efficiency = chargepoint_state.charging_power / chargepoint_state.power
-    #                 except ZeroDivisionError:
-    #                     self.efficiency = None
-    #             else:
-    #                 self.efficiency = None
-    #             # if not (json_rsp["state"] == ChargingStatus.AVAILABLE.value or
-    #             #         json_rsp["state"] == ChargingStatus.PREPARING_TAGID_READY.value or
-    #             #         json_rsp["state"] == ChargingStatus.PREPARING_EV_READY.value or
-    #             #         json_rsp["state"] == ChargingStatus.CHARGING.value or
-    #             #         json_rsp["state"] == ChargingStatus.FINISHING.value):
-    #             #     raise Exception(
-    #             #   f"Ladepunkt nicht verfügbar. Status: {ChargepointState(json_rsp['state']).name}")
-    #             self.store.set(chargepoint_state)
-    #             self.__client_error_context.reset_error_counter()
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=OpenWBDcAdapter)
