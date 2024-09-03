@@ -1,6 +1,6 @@
 <template>
 	<div :id="props.modalId" class="modal fade">
-		<div class="modal-dialog modal-lg modal-fullscreen-sm-down">
+		<div class="modal-dialog modal-lg modal-fullscreen-lg-down">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h3 class="modal-title scaled">
@@ -14,7 +14,7 @@
 						<i class="fa-solid fa-lg fa-circle-check m-0 p-0" />
 					</button>
 				</div>
-				<div class="modal-body" style="background-color: var(--color-fg)">
+				<div class="modal-body">
 					<slot />
 				</div>
 				<div class="modal-footer"></div>
@@ -23,40 +23,36 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { onMounted } from 'vue'
-// import { Modal } from 'bootstrap'
-
 const props = defineProps<{
 	modalId: string
 }>()
-// state
-//let mod: Modal
-
-// lifecycle
-onMounted(() => {
-	/* let target = document.getElementById(props.modalId)
-	if (target) {
-		mod = new Modal(target, {})
-	} */
-})
 </script>
 
 <style scoped>
+.modal-content {
+	background-color: var(--color-bg);
+	border-color: var(--color-menu);
+	box-shadow: 3px 5px black;
+}
 .modal-footer,
 .modal-header,
 .modal-body {
-	background: var(--color-fg);
+	background-color: var(--color-bg);
+	color: var(--color-fg);
+}
+.modal-body {
+	border-color: var(--color-fg);
 }
 .modal-footer {
 	text-align: right;
 }
 .modal-header .btn-close {
-	color: var(--color-bg);
-	background: var(--color-fg);
+	color: var(--color-fg);
+	background-color: var(--color-bg);
 	border: 0px;
 }
 .modal-title {
-	color: var(--color-bg);
+	color: var(--color-fg);
 }
 .closebutton {
 	background: var(--color-fg);
@@ -73,6 +69,6 @@ onMounted(() => {
 	scale: 1;
 }
 .fa-circle-check {
-	color: var(--color-bg);
+	color: var(--color-fg);
 }
 </style>

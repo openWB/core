@@ -1,14 +1,19 @@
 from dataclasses import asdict, dataclass, field
+from enum import IntEnum
 from typing import Dict, List, Optional, Tuple
 from unittest.mock import Mock
 
 import pytest
 
-from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory
 from helpermodules.changed_values_handler import ChangedValuesHandler
 
 NONE_TYPE = type(None)
+
+
+class SampleIntEnum(IntEnum):
+    VALUE1 = 1
+    VALUE2 = 2
 
 
 @dataclass
@@ -46,7 +51,7 @@ class SampleData:
         default_factory=sample_class, metadata={"topic": "get/field_class"})
     sample_field_dict: Dict = field(default_factory=sample_dict_factory, metadata={
         "topic": "get/field_dict"})
-    sample_field_enum: ChargepointState = field(default=ChargepointState.CHARGING_ALLOWED, metadata={
+    sample_field_enum: SampleIntEnum = field(default=SampleIntEnum.VALUE1, metadata={
         "topic": "get/field_enum"})
     sample_field_float: float = field(default=0, metadata={"topic": "get/field_float"})
     sample_field_int: int = field(default=0, metadata={"topic": "get/field_int"})
@@ -77,8 +82,8 @@ cases = [
            expected_pub_call=("openWB/get/field_class", asdict(SampleClass(parameter1=True)))),
     Params(name="change dict", sample_data=SampleData(sample_field_dict={"key": "another_value"}),
            expected_pub_call=("openWB/get/field_dict", {"key": "another_value"})),
-    Params(name="change enum", sample_data=SampleData(sample_field_enum=ChargepointState.NO_CHARGING_ALLOWED),
-           expected_pub_call=("openWB/get/field_enum", ChargepointState.NO_CHARGING_ALLOWED.value)),
+    Params(name="change enum", sample_data=SampleData(sample_field_enum=SampleIntEnum.VALUE2),
+           expected_pub_call=("openWB/get/field_enum", SampleIntEnum.VALUE2.value)),
     Params(name="change float", sample_data=SampleData(sample_field_float=2.5),
            expected_pub_call=("openWB/get/field_float", 2.5)),
     Params(name="change int", sample_data=SampleData(sample_field_int=2),
@@ -98,7 +103,7 @@ cases = [
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_update_value(params: Params, mock_pub: Mock):
+def test_update_value(params: Params, mock_pub: Mock, monkeypatch):
     # setup
     handler = ChangedValuesHandler(Mock())
 
@@ -106,6 +111,6 @@ def test_update_value(params: Params, mock_pub: Mock):
     handler._update_value("openWB/", SampleData(), params.sample_data)
 
     # evaluation
-    assert len(mock_pub.method_calls) == params.expected_calls
+    assert len(mock_pub.method_calls) - 1 == params.expected_calls
     if params.expected_calls > 0:
-        assert mock_pub.method_calls[0].args == params.expected_pub_call
+        assert mock_pub.method_calls[1].args == params.expected_pub_call

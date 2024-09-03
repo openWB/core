@@ -22,8 +22,8 @@ log = logging.getLogger(__name__)
 class Config:
     home_consumption_source_id: Optional[str] = field(
         default=None, metadata={"topic": "config/home_consumption_source_id"})
-    reserve_for_not_charging: bool = field(
-        default=False, metadata={"topic": "config/reserve_for_not_charging"})
+    consider_less_charging: bool = field(
+        default=False, metadata={"topic": "config/consider_less_charging"})
 
 
 def config_factory() -> Config:
@@ -217,7 +217,8 @@ class CounterAll:
         try:
             self._get_all_cp_connected_to_counter(counter_object)
         except KeyError:
-            log.debug(f"Kein Ladepunkt unter Zähler {counter}.")
+            # Kein Ladepunkt unter dem Zähler
+            pass
         return self.connected_chargepoints
 
     def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
