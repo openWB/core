@@ -306,7 +306,7 @@ class Api:
         return Tokens
 
     # get Soc,range of Vehicle
-    def get_status(self, vin: str) -> int:
+    def get_status(self, vin: str) -> Union[int, float, int]:
         self.method += " 1-get_status"
         if self.init:
             url = STATUS_URL + "/seqc/v0/vehicles/" + vin +\
@@ -329,6 +329,7 @@ class Api:
             response = self.session.get(url, headers=headers, verify=SSL_VERIFY_STATUS)
             res = json.loads(response.text)
             res_json = json.dumps(res, indent=4)
+            # self.log.info("get_status: result json:\n" + res_json)
             if (nested_key_exists(res, 'precond', 'data', 'soc', 'value') and
                nested_key_exists(res, 'precond', 'data', 'rangeelectric', 'value')):
                 _ts = res['precond']['data']['soc']['ts']
@@ -345,15 +346,18 @@ class Api:
                 try:
                     soc = int(res['precond']['data']['soc']['value'])
                     range = float(res['precond']['data']['rangeelectric']['value'])
+                    kms = int(res['precond']['data']['odo']['value'])
                     self.log.debug("get_status: result json:\n" + res_json)
                 except Exception:
                     soc = -1
                     range = 0.0
+                    kms = -1
             elif 'error' in res and res['error'] == 'unauthorized':
                 self.log.warning("get_status: access_token expired - try refresh")
                 self.log.debug("get_status: error - result json:\n" + res_json)
                 soc = -1
                 range = 0.0
+                kms = -1
 
         except Exception:
             log.exception('get_status')
@@ -363,7 +367,7 @@ class Api:
         if "Vehicle not found" in res_json:
             soc = -2
             range = 0.0
-        return soc, range
+        return soc, range, kms
 
     # fetch soc in 3 stages:
     #   1. get_status via stored access_token
@@ -380,10 +384,11 @@ class Api:
         try:
             soc = -1
             range = 0.0
+            kms = -1
             if 'refresh_token' in self.store['Tokens']:
                 self.store['Tokens'] = self.reconnect()
             if 'access_token' in self.store['Tokens']:
-                soc, range = self.get_status(self.vin)
+                soc, range, kms = self.get_status(self.vin)
                 if soc > 0:
                     self.log.debug("fetch_soc: 1st attempt successful")
                 else:
@@ -393,7 +398,7 @@ class Api:
                 self.log.debug("fetch_soc: (re)connecting ...")
                 self.store['Tokens'] = self.reconnect()
                 if 'access_token' in self.store['Tokens']:
-                    soc, range = self.get_status(self.vin)
+                    soc, range, kms = self.get_status(self.vin)
                     if soc > 0:
                         self.log.debug("fetch_soc: 2nd attempt successful")
                     else:
@@ -412,9 +417,10 @@ class Api:
             log.exception("fetch_soc: exception, (re-)connecting ...")
             self.store['Tokens'] = self.reconnect()
             if 'access_token' in self.store['Tokens']:
-                soc, range = self.get_status(self.vin)
+                soc, range, kms = self.get_status(self.vin)
         self.log.info(" SOC/Range: " + str(soc) + '%/' + str(range) +
                       '@' + self.soc_ts +
+                      ', km-Stand: ' + str(kms) +
                       ', Method: ' + self.method)
 
         if self.store['Tokens'] != self.oldTokens:
