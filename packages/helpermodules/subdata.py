@@ -432,6 +432,12 @@ class SubData:
                                 Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
                                           '/get/force_soc_update', True)
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/error_timestamp$", msg.topic) is not None:
+                            var["cp" +
+                                index].chargepoint.chargepoint_module.client_error_context.error_timestamp = (
+                                decode_payload(msg.payload)
+                            )
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                         elif re.search("/chargepoint/[0-9]+/get/simulation$", msg.topic) is not None:
                             var["cp"+index].chargepoint.chargepoint_module.sim_counter.data = dataclass_from_dict(
                                 SimCounterState,
