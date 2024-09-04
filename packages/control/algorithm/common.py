@@ -164,7 +164,7 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
 
 
 def consider_less_charging_chargepoint_in_loadmanagement(cp: Chargepoint, set_current: float) -> bool:
-    if (data.data.counter_all_data.data.config.consider_less_charging and
+    if (data.data.counter_all_data.data.config.consider_less_charging is False and
         ((set_current -
           cp.data.set.charging_ev_data.ev_template.data.nominal_difference) > max(cp.data.get.currents) and
          cp.data.control_parameter.timestamp_charge_start is not None and
