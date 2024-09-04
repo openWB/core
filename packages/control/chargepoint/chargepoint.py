@@ -502,10 +502,6 @@ class Chargepoint(ChargepointRfidMixin):
                         # Wenn keine Phasenumschaltung durchgeführt wird, Status auf CHARGING_ALLOWED setzen, sonst
                         # bleibt PHASE_SWITCH_DELAY_EXPIRED stehen.
                         self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
-                else:
-                    log.error(
-                        "Phasenumschaltung an Ladepunkt" + str(self.num) +
-                        " nicht möglich, da der Ladepunkt keine Phasenumschaltung unterstützt.")
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 

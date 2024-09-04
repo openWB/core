@@ -289,6 +289,8 @@ class Counter:
                     self.data.set.reserved_surplus += power_to_reserve
                     message = self.SWITCH_ON_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
                         timestamp_switch_on_off, pv_config.switch_on_delay))
+                    if feed_in_limit:
+                        message += "Die Einspeisegrenze wird berücksichtigt."
                     control_parameter.state = ChargepointState.SWITCH_ON_DELAY
                 else:
                     # Einschaltschwelle nicht erreicht
