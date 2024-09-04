@@ -6,7 +6,7 @@ from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
 
-CP_ERROR = ("Anhaltender Fehler beim Auslesen des Ladepunkts. Sollstromstärke, Lade- und Stecker-Status wird "
+CP_ERROR = ("Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke, Lade- und Stecker-Status wird "
             "zurückgesetzt.")
 
 

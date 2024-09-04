@@ -138,7 +138,7 @@ class Set:
     plug_time: Optional[float] = None
     required_power: float = 0
     rfid: Optional[str] = None
-    target_current: float = 0  # Sollstrom aus fest vorgegebener Stromstärke
+    target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
 
 
