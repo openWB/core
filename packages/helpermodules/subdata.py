@@ -425,24 +425,25 @@ class SubData:
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
                         if re.search("/chargepoint/[0-9]+/get/connected_vehicle/", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)
-                        elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
-                            if (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
-                                    decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
-                                # Wenn das Auto noch nicht zugeordnet ist, wird der SoC nach der Zuordnung aktualisiert
-                                if var["cp"+index].chargepoint.data.set.charging_ev > -1:
-                                    Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
-                                              '/get/force_soc_update', True)
-                                self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
-                            elif re.search("/chargepoint/[0-9]+/get/error_timestamp$", msg.topic) is not None:
-                                var["cp" +
-                                    index].chargepoint.chargepoint_module.client_error_context.error_timestamp = (
-                                    decode_payload(msg.payload)
-                                )
-                                self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
-                            elif re.search("/chargepoint/[0-9]+/get/simulation$", msg.topic) is not None:
-                                var["cp"+index].chargepoint.chargepoint_module.sim_counter.data = dataclass_from_dict(
-                                    SimCounterState,
-                                    decode_payload(msg.payload))
+                        elif (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
+                              decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
+                            # Wenn das Auto noch nicht zugeordnet ist, wird der SoC nach der Zuordnung aktualisiert
+                            if var["cp"+index].chargepoint.data.set.charging_ev > -1:
+                                Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
+                                          '/get/force_soc_update', True)
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/error_timestamp$", msg.topic) is not None:
+                            var["cp" +
+                                index].chargepoint.chargepoint_module.client_error_context.error_timestamp = (
+                                decode_payload(msg.payload)
+                            )
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/simulation$", msg.topic) is not None:
+                            var["cp"+index].chargepoint.chargepoint_module.sim_counter.data = dataclass_from_dict(
+                                SimCounterState,
+                                decode_payload(msg.payload))
+                        else:
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                     elif re.search("/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         self.process_chargepoint_config_topic(var, msg)
                     elif re.search("/chargepoint/[0-9]+/control_parameter/", msg.topic) is not None:
