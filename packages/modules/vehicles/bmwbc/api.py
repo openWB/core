@@ -105,12 +105,13 @@ async def _fetch_soc(user_id: str, password: str, vin: str, vnum: int) -> Union[
         # get soc, range, lastUpdated from vehicle data
         soc = int(state['electricChargingState']['chargingLevelPercent'])
         range = float(state['electricChargingState']['range'])
+        kms = int(state['currentMileage'])
         lastUpdatedAt = state['lastUpdatedAt']
 
         # save the vehicle data for further analysis if required
         dump_json(respd, '/soc_bmwbc_reply_vehicle_' + str(vnum))
 
-        log.info(" SOC/Range: " + str(soc) + '%/' + str(range) + 'KM@' + lastUpdatedAt)
+        log.info(" SOC/Range: " + str(soc) + '%/' + str(range) + 'KM@' + lastUpdatedAt + ", km-Stand: " + str(kms))
 
         # store token and expires_at if changed
         expires_at = datetime.datetime.isoformat(auth.expires_at)
