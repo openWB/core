@@ -48,7 +48,7 @@ class api:
             self.w = libvwid.vwid(self.session)
             self.w.set_vin(self.vin)
             self.w.set_credentials(self.user_id, self.password)
-            self.w.set_jobs(['charging'])
+            self.w.set_jobs(['charging', 'measurements'])
             self.w.tokens = {}
             self.w.headers = {}
 
@@ -91,6 +91,7 @@ class api:
                     self.soc = int(self.data['charging']['batteryStatus']['value']['currentSOC_pct'])
                     self.range = float(self.data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'])
                     soc_tsZ = self.data['charging']['batteryStatus']['value']['carCapturedTimestamp']
+                    self.kms = int(self.data['measurements']['odometerStatus']['value']['odometer'])
                     soc_tsdtZ = datetime.strptime(soc_tsZ, ts_fmt + "Z")
                     soc_tsdtL = utc2local(soc_tsdtZ)
                     self.soc_ts = datetime.strftime(soc_tsdtL, ts_fmt)
@@ -142,7 +143,7 @@ class api:
                 if (self.w.tokens['accessToken'] != self.accessTokenOld):  # modified accessToken?
                     self.su.write_token_file(self.accessTokenFile, self.w.tokens['accessToken'])
 
-                return self.soc, self.range, self.soc_ts
+                return self.soc, self.range, self.soc_ts, self.kms
 
 
 def fetch_soc(conf: VWId, vehicle: int) -> Union[int, float, str]:
@@ -153,6 +154,7 @@ def fetch_soc(conf: VWId, vehicle: int) -> Union[int, float, str]:
 
     # get soc, range from server
     a = api()
-    soc, range, soc_ts = loop.run_until_complete(a._fetch_soc(conf, vehicle))
+    soc, range, soc_ts, kms = loop.run_until_complete(a._fetch_soc(conf, vehicle))
+    log.debug("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts + ", km-Stand=" + str(kms))
 
-    return soc, range, soc_ts
+    return soc, range, soc_ts, kms

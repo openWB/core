@@ -16,8 +16,8 @@ log = logging.getLogger(__name__)
 
 
 def fetch(vehicle_update_data: VehicleUpdateData, config: VWId, vehicle: int) -> CarState:
-    soc, range, soc_ts = api.fetch_soc(config, vehicle)
-    log.info("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts)
+    soc, range, soc_ts, kms = api.fetch_soc(config, vehicle)
+    log.info("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts + ', km-Stand=' + str(kms))
     return CarState(soc, range)
 
 
