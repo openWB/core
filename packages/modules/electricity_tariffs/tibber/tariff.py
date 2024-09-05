@@ -30,7 +30,7 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
         tomorrow_prices = _get_sorted_price_data(response_json, 'tomorrow')
         sorted_market_prices = today_prices + tomorrow_prices
         prices: Dict[int, float] = {}
-        for price_data in sorted_marketprices:
+        for price_data in sorted_market_prices:
             # konvertiere Time-String (Format 2021-02-06T00:00:00+01:00) ()':' nicht von strptime unterstützt)
             time_str = ''.join(price_data['startsAt'].rsplit(':', 1))
             startzeit_localized = datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S.%f%z')
