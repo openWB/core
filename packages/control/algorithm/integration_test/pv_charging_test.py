@@ -115,7 +115,7 @@ def assert_counter_set(params: ParamsExpectedCounterSet):
 
 
 def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch):
-    # alle 3 im PV-laden, keine Ladung -> bei zweien die Verz starten, für den 3 reichts nicht
+    # alle 3 im PV-laden, keine Ladung -> bei zwei die Verzögerung starten, für den 3. reicht es nicht
     # setup
     data.data.counter_data["counter0"].data.set.raw_power_left = 31775
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]
@@ -142,7 +142,7 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
 
 
 def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch):
-    # alle 3 im PV-laden, keine Ladung -> bei einem die Verz abgelaufen, erhält minstrom
+    # alle 3 im PV-laden, keine Ladung -> bei einem die Verzögerung abgelaufen, erhält Mindeststrom
     # setup
     data.data.counter_data["counter0"].data.set.raw_power_left = 31200
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]

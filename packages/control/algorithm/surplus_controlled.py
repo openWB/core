@@ -111,14 +111,14 @@ class SurplusControlled:
 
     def _add_unused_evse_current(self, limited_current, chargepoint: Chargepoint) -> float:
         """Wenn Autos nicht die volle Ladeleistung nutzen, wird unnötig eingespeist. Dann kann um den noch nicht
-        genutzten Sollstrom hochgeregelt werden."""
+        genutzten Soll-Strom hoch geregelt werden."""
         evse_current = chargepoint.data.get.evse_current
         if evse_current:
             formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
             current_with_offset = limited_current + max(formatted_evse_current - max(chargepoint.data.get.currents), 0)
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
             if current != limited_current:
-                log.debug(f"Ungenutzten Sollstrom aufschlagen ergibt {current}A.")
+                log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
             return current
         else:
             return limited_current

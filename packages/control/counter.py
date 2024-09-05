@@ -189,9 +189,10 @@ class Counter:
     def calc_surplus(self):
         # reservierte Leistung wird nicht berücksichtigt, weil diese noch verwendet werden kann, bis die EV
         # eingeschaltet werden. Es darf bloß nicht für zu viele zB die Einschaltverzögerung gestartet werden.
+        disengageable_smarthome_power = data.data.counter_all_data.data.set.disengageable_smarthome_power
         evu_counter = data.data.counter_all_data.get_evu_counter()
         bat_surplus = data.data.bat_all_data.power_for_bat_charging()
-        surplus = evu_counter.data.get.power - bat_surplus
+        surplus = evu_counter.data.get.power - bat_surplus - disengageable_smarthome_power
         return surplus
 
     def calc_raw_surplus(self):
@@ -289,6 +290,8 @@ class Counter:
                     self.data.set.reserved_surplus += power_to_reserve
                     message = self.SWITCH_ON_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
                         timestamp_switch_on_off, pv_config.switch_on_delay))
+                    if feed_in_limit:
+                        message += "Die Einspeisegrenze wird berücksichtigt."
                     control_parameter.state = ChargepointState.SWITCH_ON_DELAY
                 else:
                     # Einschaltschwelle nicht erreicht
