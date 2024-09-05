@@ -28,7 +28,7 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
     if response_json.get("errors") is None:
         today_prices = _get_sorted_price_data(response_json, 'today')
         tomorrow_prices = _get_sorted_price_data(response_json, 'tomorrow')
-        sorted_marketprices = today_prices + tomorrow_prices
+        sorted_market_prices = today_prices + tomorrow_prices
         prices: Dict[int, float] = {}
         for price_data in sorted_marketprices:
             # konvertiere Time-String (Format 2021-02-06T00:00:00+01:00) ()':' nicht von strptime unterstützt)

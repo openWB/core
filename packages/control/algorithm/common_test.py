@@ -153,9 +153,9 @@ def test_get_missing_currents_left(required_currents_1: List[float],
 @pytest.mark.parametrize(
     "consider_less_charging, get_currents, expected_considered",
     [
-        pytest.param(True, [6]*3, 6, id="consider_less_charging active, charging less"),
-        pytest.param(True, [10]*3, 10, id="consider_less_charging active, charging with set current"),
-        pytest.param(False, [0]*3, 10, id="consider_less_charging inactive"),
+        pytest.param(False, [6]*3, 6, id="not consider_less_charging, charging less"),
+        pytest.param(False, [10]*3, 10, id="not consider_less_charging, charging with set current"),
+        pytest.param(True, [0]*3, 10, id="consider_less_charging"),
     ])
 def test_consider_less_charging_chargepoint_in_loadmanagement(consider_less_charging: bool,
                                                               get_currents: List[float],

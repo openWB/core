@@ -3,7 +3,7 @@ from enum import IntEnum
 import logging
 
 from helpermodules import hardware_configuration
-from helpermodules.utils.error_counter import ErrorCounterContext
+from helpermodules.utils.error_counter import CP_ERROR, ErrorTimerContext
 from modules.chargepoints.openwb_dc_adapter.config import OpenWBDcAdapter
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
@@ -41,24 +41,24 @@ class ChargepointModule(AbstractChargepoint):
             "Ladepunkt", "chargepoint"))
         self.sim_counter = SimCounterChargepoint(self.config.id)
         self.__session = req.get_http_session()
-        self.__client_error_context = ErrorCounterContext(
-            "Anhaltender Fehler beim Auslesen des Ladepunkts. Sollstromstärke wird zurückgesetzt.")
+        self.client_error_context = ErrorTimerContext(
+            f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         if hardware_configuration.get_hardware_configuration_setting("openwb_dc_adapter") is False:
             raise Exception(
                 "DC-Laden muss durch den Support freigeschaltet werden. Bitte nehme Kontakt mit dem Support auf.")
         self.efficiency = None
 
         with SingleComponentUpdateContext(self.fault_state, False):
-            with self.__client_error_context:
+            with self.client_error_context:
                 self.__session.post(
                     'http://' + self.config.configuration.ip_address + '/connect.php',
                     data={'heartbeatenabled': '1'})
 
     def set_current(self, current: float) -> None:
-        if self.__client_error_context.error_counter_exceeded():
+        if self.client_error_context.error_counter_exceeded():
             current = 0
         with SingleComponentUpdateContext(self.fault_state, False):
-            with self.__client_error_context:
+            with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 raw_current = self.subtract_conversion_loss_from_current(current)
                 raw_power = raw_current * 3 * 230
@@ -73,7 +73,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            with self.__client_error_context:
+            with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 json_rsp = self.__session.get('http://'+ip_address+'/connect.php').json()
 
@@ -119,7 +119,7 @@ class ChargepointModule(AbstractChargepoint):
                         json_rsp["state"] == ChargingStatus.UNAVAILABLE_CONN_OBJ.value):
                     raise Exception(f"Ladepunkt nicht verfügbar. Status: {ChargingStatus(json_rsp['state'])}")
                 self.store.set(chargepoint_state)
-                self.__client_error_context.reset_error_counter()
+                self.client_error_context.reset_error_counter()
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=OpenWBDcAdapter)
