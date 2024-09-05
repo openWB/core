@@ -20,7 +20,7 @@ class Process:
 
     def process_algorithm_results(self) -> None:
         try:
-            modules_threads = []  # type: List[threading.Thread]
+            modules_threads: List[threading.Thread] = []
             log.info("# Ladung starten.")
             for cp in data.data.cp_data.values():
                 try:

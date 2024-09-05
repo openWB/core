@@ -432,6 +432,12 @@ class SubData:
                                 Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
                                           '/get/force_soc_update', True)
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/error_timestamp$", msg.topic) is not None:
+                            var["cp" +
+                                index].chargepoint.chargepoint_module.client_error_context.error_timestamp = (
+                                decode_payload(msg.payload)
+                            )
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                         elif re.search("/chargepoint/[0-9]+/get/simulation$", msg.topic) is not None:
                             var["cp"+index].chargepoint.chargepoint_module.sim_counter.data = dataclass_from_dict(
                                 SimCounterState,
@@ -587,7 +593,7 @@ class SubData:
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                         var.data.ripple_control_receiver.module = config_dict
                         var.ripple_control_receiver = ConfigurableRcr(
-                            config=config, component_initialiser=mod.create_ripple_control_receiver)
+                            config=config, component_initializer=mod.create_ripple_control_receiver)
                 elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
                 elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
