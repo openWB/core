@@ -7,7 +7,7 @@ from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
-from modules.common.sdm import Sdm630
+from modules.common.sdm import Sdm630_72
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.openwb_flex.config import BatKitFlexSetup
@@ -34,7 +34,7 @@ class BatKitFlex:
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,
         # dass offene Verbindungen den Modbus-Adapter blockieren.
         with self.__tcp_client:
-            if isinstance(self.__client, Sdm630):
+            if isinstance(self.__client, Sdm630_72):
                 _, power = self.__client.get_power()
                 power = power * -1
             else:

@@ -5,7 +5,7 @@
 import logging
 from helpermodules import logger
 from helpermodules.utils import thread_handler
-# als erstes logging initalisieren, damit auch ImportError geloggt werden
+# als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
 
