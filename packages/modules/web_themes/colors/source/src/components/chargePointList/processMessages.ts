@@ -142,7 +142,7 @@ export function processVehicleMessages(topic: string, message: string) {
 		if (!(index in vehicles)) {
 			const v = new Vehicle(index)
 			vehicles[index] = v
-			console.info('New vehicle created: ' + index)
+			// console.info('New vehicle created: ' + index)
 		}
 		if (topic.match(/^openwb\/vehicle\/[0-9]+\/name$/i)) {
 			// set car Name for charge point

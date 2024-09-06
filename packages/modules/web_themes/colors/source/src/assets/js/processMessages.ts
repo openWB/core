@@ -188,7 +188,7 @@ function processHierarchy(hierarchy: Hierarchy) {
 function processPvMessages(topic: string, message: string) {
 	const index = getIndex(topic)
 	if (index && !pvSystems.value.has(index)) {
-		console.warn('Creating PV system: ' + index)
+		// console.warn('Creating PV system: ' + index)
 		addPvSystem(index)
 	}
 	if (topic == 'openWB/pv/get/power') {
