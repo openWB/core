@@ -2,6 +2,7 @@ import { reactive } from 'vue'
 import { updateServer } from '@/assets/js/sendMessages'
 import { ChargeMode, type PowerItem } from '@/assets/js/types'
 import { globalConfig } from '@/assets/js/themeConfig'
+import { masterData } from '@/assets/js/model'
 export class ChargePoint {
 	id: number
 	name = 'Ladepunkt'
@@ -427,8 +428,11 @@ export const evTemplates: { [key: number]: EvTemplate } = reactive({})
 export function addChargePoint(chargePointIndex: number) {
 	if (!(chargePointIndex in chargePoints)) {
 		chargePoints[chargePointIndex] = new ChargePoint(chargePointIndex)
-		chargePoints[chargePointIndex].color =
+		const cpcolor =
 			'var(--color-cp' + (Object.values(chargePoints).length - 1) + ')'
+		chargePoints[chargePointIndex].color = cpcolor
+
+		masterData['cp' + chargePointIndex].color = cpcolor
 		// console.info('Added chargepoint ' + chargePointIndex)
 	} else {
 		// console.info('Duplicate chargepoint message: ' + chargePointIndex)
