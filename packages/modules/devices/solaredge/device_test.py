@@ -48,7 +48,7 @@ def test_set_component_registers_assigns_effective_meter_ids(monkeypatch, params
     (SolaredgeCounter, True),
     (SolaredgeExternalInverter, True),
     (SolaredgeBat, False),
-    (SolaredgeInverter, False),
+    (SolaredgeInverter, True),
 ])
 def test_set_component_registers_ignores_wrong_types(monkeypatch, type: Type, should_use: bool):
     # setup
