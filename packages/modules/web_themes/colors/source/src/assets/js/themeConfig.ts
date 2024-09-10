@@ -6,11 +6,14 @@
 
 import { computed, reactive } from 'vue'
 import { select } from 'd3'
-import type { ChargeModeInfo } from './types'
+import { ChargeMode, type ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
-import { ChargeMode, vehicles } from '@/components/chargePointList/model'
 import { sourceSummary } from './model'
-import { sourceGraphIsNotInitialized, usageGraphIsNotInitialized } from '@/components/powerGraph/model'
+import {
+	sourceGraphIsNotInitialized,
+	usageGraphIsNotInitialized,
+} from '@/components/powerGraph/model'
+import { updateServer } from './sendMessages'
 export class Config {
 	private _showRelativeArcs = false
 	showTodayGraph = true
@@ -241,7 +244,6 @@ export class Config {
 	}
 	set showStandardVehicle(show: boolean) {
 		this._showStandardVehicle = show
-		vehicles[0].visible = show
 		savePrefs()
 	}
 	setShowStandardVehicle(show: boolean) {
@@ -334,6 +336,30 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 		icon: 'fa-bolt',
 	},
 }
+export class GlobalData {
+	batterySoc = 0
+	isBatteryConfigured = true
+	chargeMode = '0'
+	private _pvBatteryPriority = 'ev_mode' // 'ev_mode' | 'bat_mode' | 'min_soc_bat_mode'
+	displayLiveGraph = true
+	isEtEnabled = true
+	etMaxPrice = 0
+	etCurrentPrice = 0
+	cpDailyExported = 0
+	evuId = 0
+	etProvider = ''
+	get pvBatteryPriority() {
+		return this._pvBatteryPriority
+	}
+	set pvBatteryPriority(prio: string) {
+		this._pvBatteryPriority = prio
+		updateServer('pvBatteryPriority', prio)
+	}
+	updatePvBatteryPriority(prio: string) {
+		this._pvBatteryPriority = prio
+	}
+}
+
 // methods
 export function savePrefs() {
 	writeCookie()
