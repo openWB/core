@@ -106,9 +106,9 @@ class Device(AbstractDevice):
 
     @staticmethod
     def set_component_registers(components: Iterable[solaredge_component_classes], synergy_units: int) -> None:
-        meters = [None]*3  # type: List[Union[SolaredgeExternalInverter, SolaredgeCounter, None]]
+        meters = [None]*3  # type: List[Union[SolaredgeExternalInverter, SolaredgeCounter, SolaredgeInverter, None]]
         for component in components:
-            if isinstance(component, (SolaredgeExternalInverter, SolaredgeCounter)):
+            if isinstance(component, (SolaredgeExternalInverter, SolaredgeCounter, SolaredgeInverter)):
                 meters[component.component_config.configuration.meter_id-1] = component
 
         # https://www.solaredge.com/sites/default/files/sunspec-implementation-technical-note.pdf:
