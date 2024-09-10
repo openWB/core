@@ -305,7 +305,7 @@ class MigrateData:
     def _daily_log_entry(self, file: str):
         """ Generator-Funktion, die einen Eintrag aus dem Tages-Log konvertiert.
         alte Spaltenbelegung:
-            15, 23 oder 39 Felder! Wurde in 1.9 nie vereinheitlicht!
+            8, 15, 23 oder 39 Felder! Wurde in 1.9 nie vereinheitlicht!
         Allgemein:
             0: Datum "HHMM"
         EVU:
@@ -385,12 +385,12 @@ class MigrateData:
                             )
                         if self.id_map.bat is not None:
                             new_entry["bat"].update({"all": {
-                                "imported": string_to_float(row[8]),
-                                "exported": string_to_float(row[9]),
+                                "imported": string_to_float(row[8]) if len(row) >= 9 else 0,
+                                "exported": string_to_float(row[9]) if len(row) >= 10 else 0,
                                 "soc": string_to_int(row[20]) if len(row) >= 23 else 0
                             }, f"bat{self.map_to_new_ids('bat')}": {
-                                "imported": string_to_float(row[8]),
-                                "exported": string_to_float(row[9]),
+                                "imported": string_to_float(row[8]) if len(row) >= 9 else 0,
+                                "exported": string_to_float(row[9]) if len(row) >= 10 else 0,
                                 "soc": string_to_int(row[20]) if len(row) >= 23 else 0
                             }})
                         # SmartHome Devices 1+2 with temperatures
