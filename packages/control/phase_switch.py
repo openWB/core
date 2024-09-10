@@ -45,4 +45,4 @@ def _perform_phase_switch(chargepoint_module: AbstractChargepoint, phases: int, 
 
 
 def phase_switch_thread_alive(cp_num):
-    is_thread_alive(f"phase switch cp{cp_num}")
+    return is_thread_alive(f"phase switch cp{cp_num}")

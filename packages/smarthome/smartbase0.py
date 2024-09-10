@@ -102,6 +102,7 @@ class Sbase0:
         self._wpos = 0
         self._deviceconfigured = '1'
         self._deviceconfiguredold = '9'
+        self.device_manual_ueb = 0
         # not none !
         self._oldmeasuretype1 = 'empty'
         self.c_oldstampeinschaltdauer = 0
