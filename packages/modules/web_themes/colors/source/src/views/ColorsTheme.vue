@@ -152,7 +152,10 @@ Hagen */
 				aria-labelledby="chargepoint-tab"
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
-					<ChargePointList id="3" :compact="globalConfig.shortCpList == 'always'" />
+					<ChargePointList
+						id="3"
+						:compact="globalConfig.shortCpList == 'always'"
+					/>
 				</div>
 			</div>
 			<div

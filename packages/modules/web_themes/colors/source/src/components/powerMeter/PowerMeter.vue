@@ -86,7 +86,9 @@
 						:labeltext="
 							trimName(vehicle2.name) + ': ' + Math.round(vehicle2.soc) + '%'
 						"
-						:labelcolor="chargepoints[1].color"
+						:labelcolor="
+							chargepoints[1] ? chargepoints[1].color : 'var(--color-charging)'
+						"
 						:anchor="'end'"
 						:config="globalConfig"
 					/>
@@ -240,10 +242,14 @@ function labelCoordinates(item: number) {
 }
 
 const vehicle1 = computed(() => {
-	if (chargepoints.value.length < 1) {
-		return undefined
+	if (
+		chargepoints.value.length >= 1 &&
+		chargepoints.value[0].connectedVehicle != undefined &&
+		vehicles[chargepoints.value[0].connectedVehicle]
+	) {
+		return vehicles[chargepoints.value[0].connectedVehicle]
 	} else {
-		return vehicles[chargepoints.value[0].connectedVehicle] ?? undefined
+		return undefined
 	}
 })
 const vehicle2 = computed(() => {

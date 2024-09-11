@@ -431,8 +431,16 @@ export function addChargePoint(chargePointIndex: number) {
 		const cpcolor =
 			'var(--color-cp' + (Object.values(chargePoints).length - 1) + ')'
 		chargePoints[chargePointIndex].color = cpcolor
-
-		masterData['cp' + chargePointIndex].color = cpcolor
+		const cpId = 'cp' + chargePointIndex
+		if (!masterData[cpId]) {
+			masterData[cpId] = {
+				name: 'Ladepunkt',
+				color: cpcolor,
+				icon: 'Ladepunkt',
+			}
+		} else {
+			masterData['cp' + chargePointIndex].color = cpcolor
+		}
 		// console.info('Added chargepoint ' + chargePointIndex)
 	} else {
 		// console.info('Duplicate chargepoint message: ' + chargePointIndex)
