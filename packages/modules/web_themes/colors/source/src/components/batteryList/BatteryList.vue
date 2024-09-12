@@ -61,7 +61,6 @@ const batteryState = computed(() => {
 	}
 })
 
-
 const statusbg = computed(() => {
 	return sourceSummary.batOut.power > 0
 		? 'var(--color-pv)'

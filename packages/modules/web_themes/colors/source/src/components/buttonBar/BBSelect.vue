@@ -103,7 +103,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { globalData } from '@/assets/js/model'
-import type { ChargeMode } from '../chargePointList/model'
+import { ChargeMode } from '@/assets/js/types'
 import { chargePoints } from '@/components/chargePointList/model'
 
 const props = defineProps<{
@@ -116,12 +116,12 @@ const buttons = [
 		name: 'Sofort',
 		color: 'var(--color-charging)',
 	},
-	{ mode: 'pv_charging', name: 'PV', color: 'var(--color-pv)' },
 	{
 		mode: 'scheduled_charging',
 		name: 'Zielladen',
 		color: 'var(--color-battery)',
 	},
+	{ mode: 'pv_charging', name: 'PV', color: 'var(--color-pv)' },
 	{ mode: 'standby', name: 'Standby', color: 'var(--color-axis)' },
 	{ mode: 'stop', name: 'Stop', color: 'var(--color-axis)' },
 ]

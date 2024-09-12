@@ -110,15 +110,23 @@ const confirmButtonStyle = computed(() => {
 })
 const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
-
+	if (xdomain[1]) {
+		xdomain[1] = new Date(xdomain[1])
+		xdomain[1].setTime(xdomain[1].getTime() + 3600000)
+	}
 	return scaleTime()
-		.range([margin.left, width - margin.left - margin.right])
+		.range([margin.left, width - margin.right])
 		.domain(xdomain)
 })
 const yDomain = computed(() => {
-	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
-	yd[0] = Math.floor(yd[0] - 1)
-	yd[1] = Math.floor(yd[1] + 1)
+	let yd = [0, 0]
+	if (plotdata.value.length > 0) {
+		yd = extent(plotdata.value, (d) => d[1]) as [number, number]
+		yd[0] = Math.floor(yd[0] - 1)
+		yd[1] = Math.floor(yd[1] + 1)
+	} else {
+		yd = [0, 0]
+	}
 	return yd
 })
 const yScale = computed(() => {
@@ -128,6 +136,7 @@ const yScale = computed(() => {
 })
 const linePath = computed(() => {
 	const generator = line()
+
 	const points = [
 		[margin.left, yScale.value(maxPrice.value)],
 		[width - margin.right, yScale.value(maxPrice.value)],

@@ -13,8 +13,9 @@ from modules.devices.varta import bat_modbus
 from modules.devices.varta.bat_api import VartaBatApi
 from modules.devices.varta.bat_modbus import VartaBatModbus
 from modules.devices.varta.config import (Varta, VartaConfiguration, VartaBatApiSetup, VartaBatModbusSetup,
-                                          VartaCounterSetup)
+                                          VartaCounterSetup, VartaInverterSetup)
 from modules.devices.varta.counter import VartaCounter
+from modules.devices.varta.inverter import VartaInverter
 
 log = logging.getLogger(__name__)
 
@@ -29,10 +30,13 @@ def create_device(device_config: Varta):
     def create_counter_component(component_config: VartaCounterSetup):
         return VartaCounter(device_config.id, component_config, device_config.configuration.modbus_id)
 
-    def update_components(components: Iterable[Union[VartaBatApi, VartaBatModbus, VartaCounter]]):
+    def create_inverter_component(component_config: VartaInverterSetup):
+        return VartaInverter(device_config.id, component_config, device_config.configuration.modbus_id)
+
+    def update_components(components: Iterable[Union[VartaBatApi, VartaBatModbus, VartaCounter, VartaInverter]]):
         with client as c:
             for component in components:
-                if isinstance(component, (VartaBatModbus, VartaCounter)):
+                if isinstance(component, (VartaBatModbus, VartaCounter, VartaInverter)):
                     with SingleComponentUpdateContext(component.fault_state):
                         component.update(c)
         for component in components:
@@ -49,7 +53,8 @@ def create_device(device_config: Varta):
         component_factory=ComponentFactoryByType(
             bat_api=create_bat_api_component,
             bat_modbus=create_bat_modbus_component,
-            counter=create_counter_component
+            counter=create_counter_component,
+            inverter=create_inverter_component
         ),
         component_updater=MultiComponentUpdater(update_components)
     )

@@ -188,7 +188,7 @@ function processHierarchy(hierarchy: Hierarchy) {
 function processPvMessages(topic: string, message: string) {
 	const index = getIndex(topic)
 	if (index && !pvSystems.value.has(index)) {
-		console.warn('Creating PV system: ' + index)
+		// console.warn('Creating PV system: ' + index)
 		addPvSystem(index)
 	}
 	if (topic == 'openWB/pv/get/power') {
@@ -250,12 +250,33 @@ function processSystemMessages(topic: string, message: string) {
 		topic.match(/^openWB\/system\/device\/[0-9]+\/component\/[0-9]+\/config$/i)
 	) {
 		const config = JSON.parse(message)
-		if (
+		switch (config.type) {
+			case 'counter':
+			case 'consumption_counter':
+				if (counters[config.id]) {
+					counters[config.id].name = config.name
+				}
+				break
+			case 'inverter':
+			case 'inverter_secondary':
+				if (!pvSystems.value.has(config.id)) {
+					pvSystems.value.set(config.id, new PvSystem(config.id))
+				}
+				pvSystems.value.get(config.id)!.name = config.name
+				break
+			case 'bat':
+				if (!batteries.value.has(config.id)) {
+					addBattery(config.id)
+				}
+				batteries.value.get(config.id)!.name = config.name
+		}
+
+		/* 	if (
 			(config.type == 'counter' || config.type == 'consumption_counter') &&
 			counters[config.id]
 		) {
 			counters[config.id].name = config.name
-		} else if (config.type == 'inverter') {
+		} else if (config.type == 'inverter' ) {
 			if (!pvSystems.value.has(config.id)) {
 				pvSystems.value.set(config.id, new PvSystem(config.id))
 			}
@@ -265,7 +286,7 @@ function processSystemMessages(topic: string, message: string) {
 				addBattery(config.id)
 			}
 			batteries.value.get(config.id)!.name = config.name
-		}
+		} */
 	}
 }
 
