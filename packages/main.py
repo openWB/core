@@ -4,7 +4,8 @@
 # flake8: noqa: F402
 import logging
 from helpermodules import logger
-# als erstes logging initalisieren, damit auch ImportError geloggt werden
+from helpermodules.utils import thread_handler
+# als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
 
@@ -108,14 +109,14 @@ class HandlerAlgorithm:
             if not sub.heartbeat:
                 log.error("Heartbeat für Subdata nicht zurückgesetzt.")
                 sub.disconnect()
-                Thread(target=sub.sub_topics, args=(), name="Subdata").start()
+                thread_handler(Thread(target=sub.sub_topics, args=(), name="Subdata"))
             else:
                 sub.heartbeat = False
 
             if not set.heartbeat:
                 log.error("Heartbeat für Setdata nicht zurückgesetzt.")
                 set.disconnect()
-                Thread(target=set.set_data, args=(), name="Setdata").start()
+                thread_handler(Thread(target=set.set_data, args=(), name="Setdata"))
             else:
                 set.heartbeat = False
 
@@ -254,6 +255,9 @@ try:
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()
+    if event_jobs_running.is_set():
+        # Nach dem Starten als erstes den 10Sek-Handler aufrufen, damit die Werte der data.data initialisiert werden.
+        handler.handler10Sec()
 except Exception:
     log.exception("Fehler im Main-Modul")
 

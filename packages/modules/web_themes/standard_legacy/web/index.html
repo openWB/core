@@ -638,6 +638,29 @@
 											</div>
 										</div>
 									</div>
+									<div class="dc-charging-configured hide">
+										<div class="form-row vaRow mb-0">
+											<div class="col">
+												DC-Sollleistung
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range"
+															class="charge-point-instant-charge-dc-current form-control-range rangeInput"
+															id="dcCurrentInstantChargeCpT"
+															data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/dc_current"
+															min="4" max="300" step="1">
+													</div>
+													<label for="dcCurrentInstantChargeCpT"
+														class="col-2 col-form-label valueLabel text-right" data-suffix="kW">
+														-- kW
+													</label>
+												</div>
+											</div>
+										</div>
+									</div>
 									<div class="form-row vaRow">
 										<div class="col">
 											<label class="col-form-label">Begrenzung</label>
@@ -660,7 +683,7 @@
 										<div
 											class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-soc">
 											<div class="col">
-												Maximaler SoC
+												SoC-Limit für das Fahrzeug
 											</div>
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
@@ -679,7 +702,7 @@
 										<div
 											class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-amount">
 											<div class="col">
-												Zu ladende Energie
+												Energie-Limit
 											</div>
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
@@ -720,9 +743,32 @@
 											</div>
 										</div>
 									</div>
+									<div class="dc-charging-configured hide">
+										<div class="form-row vaRow mb-0">
+											<div class="col">
+												Minimale DC-Dauerleistung
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range"
+															class="charge-point-pv-charge-dc-min-current form-control-range rangeInput"
+															id="minDcCurrentPvCpT"
+															data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/dc_min_current"
+															min="0" max="300" step="1">
+													</div>
+													<label for="minDcCurrentPvCpT"
+														class="col-2 col-form-label valueLabel text-right" data-suffix="kW">
+														-- kW
+													</label>
+												</div>
+											</div>
+										</div>
+									</div>
 									<div class="form-row vaRow mb-0">
 										<div class="col">
-											Mindest-SoC
+											Mindest-SoC für das Fahrzeug
 										</div>
 										<div class="col-md-8">
 											<div class="form-row form-group mb-1 vaRow">
@@ -759,9 +805,32 @@
 											</div>
 										</div>
 									</div>
+									<div class="dc-charging-configured hide">
+										<div class="form-row vaRow mb-0">
+											<div class="col">
+												DC Mindest-SoC-Leistung
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range"
+															class="charge-point-pv-charge-dc-min-soc-current form-control-range rangeInput"
+															id="minSocDcCurrentPvCpT"
+															data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/dc_min_soc_current"
+															min="4" max="300" step="1">
+													</div>
+													<label for="minSocDcCurrentPvCpT"
+														class="col-2 col-form-label valueLabel text-right" data-suffix="kW">
+														-- kW
+													</label>
+												</div>
+											</div>
+										</div>
+									</div>
 									<div class="form-row vaRow mb-0">
 										<div class="col">
-											SoC-Limit
+											SoC-Limit für das Fahrzeug
 										</div>
 										<div class="col-md-8">
 											<div class="form-row form-group mb-1 vaRow">

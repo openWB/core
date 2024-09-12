@@ -88,6 +88,8 @@ class ModbusClient:
                          byteorder: Endian = Endian.Big,
                          wordorder: Endian = Endian.Big,
                          **kwargs):
+        if self.is_socket_open() is False:
+            self.connect()
         try:
             multi_request = isinstance(types, Iterable)
             if not multi_request:
@@ -107,12 +109,15 @@ class ModbusClient:
                       ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in types]
             return result if multi_request else result[0]
         except pymodbus.exceptions.ConnectionException as e:
+            self.close()
             e.args += (NO_CONNECTION.format(self.address, self.port),)
             raise e
         except pymodbus.exceptions.ModbusIOException as e:
+            self.close()
             e.args += (NO_VALUES.format(self.address, self.port),)
             raise e
         except Exception as e:
+            self.close()
             raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
     @overload

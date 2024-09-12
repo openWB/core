@@ -16,7 +16,6 @@
 			<CPChargePoint
 				v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
 				:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"
-				:full-width="true"
 			></CPChargePoint>
 		</div>
 	</div>
@@ -35,8 +34,9 @@
 		<template #title
 			><span class="settingstitle"
 				>Einstellungen für
+				{{ Object.values(chargePoints)[globalConfig.cpToShow].vehicleName }}
+				an Ladepunkt
 				{{ Object.values(chargePoints)[globalConfig.cpToShow].name }}
-				({{ Object.values(chargePoints)[globalConfig.cpToShow].vehicleName }})
 			</span>
 		</template>
 		<SettingsPage
@@ -110,10 +110,10 @@ function haveFocus() {
 }
 
 .settingstitle {
-	color: var(--color-charging);
+	color: var(--color-fg);
 }
 
 .statustitle {
-	color: var(--color-charging);
+	color: var(--color-fg);
 }
 </style>

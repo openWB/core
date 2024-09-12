@@ -34,10 +34,9 @@ def test_reset_current(set_current: int, expected_current: int):
 @pytest.mark.parametrize(
     "diff, required_currents, expected_set_current, expected_diffs",
     [
-        pytest.param(2, [10, 0, 0], 8, [2, 0, 0], id="set diff one phase"),
-        pytest.param(2, [12]*3, 8, [2]*3, id="set diff three phases"),
-        pytest.param(8, [8]*3, 8, [8]*3, id="set min current three phases"),
-        pytest.param(0, [8]*3, 8, [0]*3, id="min current is already set, three phases"),
+        pytest.param(10, [10, 0, 0], 10, [2, 0, 0], id="set diff one phase"),
+        pytest.param(10, [12]*3, 10, [2]*3, id="set diff three phases"),
+        pytest.param(8, [8]*3, 8, [0]*3, id="min current is already set, three phases"),
     ])
 def test_set_current_counterdiff(diff: float,
                                  required_currents: List[float],
@@ -55,11 +54,11 @@ def test_set_current_counterdiff(diff: float,
     data.data.counter_data = {"cp0": Mock(spec=Counter), "cp6": Mock(spec=Counter)}
 
     # evaluation
-    common.set_current_counterdiff(diff, 8, cp)
+    common.set_current_counterdiff(8, diff, cp)
 
     # assertion
     assert cp.data.set.current == expected_set_current
-    if diff != 0:
+    if max(expected_diffs) != 0:
         assert data.data._counter_data['cp0'].update_values_left.call_args_list[0][0][0] == expected_diffs
         assert data.data._counter_data['cp6'].update_values_left.call_args_list[0][0][0] == expected_diffs
 
@@ -152,23 +151,24 @@ def test_get_missing_currents_left(required_currents_1: List[float],
 
 
 @pytest.mark.parametrize(
-    "reserve_for_not_charging, get_currents, expected_considered",
+    "consider_less_charging, get_currents, expected_considered",
     [
-        pytest.param(True, [0]*3, False, id="reserve_for_not_charging active"),
-        pytest.param(True, [6]*3, False, id="reserve_for_not_charging active"),
-        pytest.param(False, [0]*3, True, id="not charging"),
-        pytest.param(False, [6]*3, False, id="charging"),
+        pytest.param(False, [6]*3, 6, id="not consider_less_charging, charging less"),
+        pytest.param(False, [10]*3, 10, id="not consider_less_charging, charging with set current"),
+        pytest.param(True, [0]*3, 10, id="consider_less_charging"),
     ])
-def test_consider_not_charging_chargepoint_in_loadmanagement(reserve_for_not_charging: bool,
-                                                             get_currents: List[float],
-                                                             expected_considered: bool):
+def test_consider_less_charging_chargepoint_in_loadmanagement(consider_less_charging: bool,
+                                                              get_currents: List[float],
+                                                              expected_considered: bool):
     # setup
     cp = Chargepoint(4, None)
     cp.data.get.currents = get_currents
-    data.data.counter_all_data.data.config.reserve_for_not_charging = reserve_for_not_charging
+    cp.data.set.current = 10
+    cp.data.control_parameter.timestamp_charge_start = 1652683152
+    data.data.counter_all_data.data.config.consider_less_charging = consider_less_charging
 
     # evaluation
-    considered = common.consider_not_charging_chargepoint_in_loadmanagement(cp)
+    considered = common.consider_less_charging_chargepoint_in_loadmanagement(cp, 10)
 
     # assertion
     assert considered == expected_considered

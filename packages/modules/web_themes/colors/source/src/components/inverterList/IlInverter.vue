@@ -11,10 +11,10 @@
 			</WbBadge>
 		</template>
 		<div class="subgrid pt-1">
-			<InfoItem heading="Heute:" :small="false" class="grid-col-4">
+			<InfoItem heading="Heute:" :small="false" class="grid-col-4 grid-left">
 				<FormatWattH :watt-h="props.inverter.energy"></FormatWattH>
 			</InfoItem>
-			<InfoItem heading="Monat:" :small="false" class="grid-right grid-col-4">
+			<InfoItem heading="Monat:" :small="false" class="grid-col-4">
 				<FormatWattH :watt-h="props.inverter.energy_month"></FormatWattH>
 			</InfoItem>
 			<InfoItem heading="Jahr:" :small="false" class="grid-right grid-col-4">

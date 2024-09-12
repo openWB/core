@@ -90,10 +90,14 @@ def connected_vehicle_factory() -> ConnectedVehicle:
 @dataclass
 class Get:
     charge_state: bool = False
+    charging_current: Optional[float] = 0
+    charging_power: Optional[float] = 0
+    charging_voltage: Optional[float] = 0
     connected_vehicle: ConnectedVehicle = field(default_factory=connected_vehicle_factory)
     currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = 0
     daily_exported: float = 0
+    error_timestamp: int = 0
     evse_current: Optional[float] = None
     exported: float = 0
     fault_str: str = NO_ERROR
@@ -134,7 +138,7 @@ class Set:
     plug_time: Optional[float] = None
     required_power: float = 0
     rfid: Optional[str] = None
-    target_current: float = 0  # Sollstrom aus fest vorgegebener Stromstärke
+    target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
 
 

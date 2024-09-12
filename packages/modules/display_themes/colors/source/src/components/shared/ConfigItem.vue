@@ -54,7 +54,7 @@ const props = defineProps<{
 .configitem {
 	font-size: var(--font-settings);
 
-	align-items: center;
+	align-items: baseline;
 	justify-content: space-between;
 }
 </style>
