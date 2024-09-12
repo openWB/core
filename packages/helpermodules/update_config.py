@@ -43,7 +43,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 57
+    DATASTORE_VERSION = 58
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1701,3 +1701,15 @@ class UpdateConfig:
                     return {topic: ""}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 57)
+
+    def upgrade_datastore_57(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # add factor for existing SolarEdge externel inverter
+                if payload.get("type") == "external_inverter"\
+                        and "factor" not in payload["configuration"]:
+                    payload["configuration"].update({"factor": 1})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 58)
