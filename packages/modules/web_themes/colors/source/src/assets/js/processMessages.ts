@@ -255,7 +255,7 @@ function processSystemMessages(topic: string, message: string) {
 			case 'consumption_counter':
 				if (counters[config.id]) {
 					counters[config.id].name = config.name
-			}
+				}
 				break
 			case 'inverter':
 			case 'inverter_secondary':
@@ -268,10 +268,10 @@ function processSystemMessages(topic: string, message: string) {
 				if (!batteries.value.has(config.id)) {
 					addBattery(config.id)
 				}
-				batteries.value.get(config.id)!.name = config.name	
+				batteries.value.get(config.id)!.name = config.name
 		}
-		
-	/* 	if (
+
+		/* 	if (
 			(config.type == 'counter' || config.type == 'consumption_counter') &&
 			counters[config.id]
 		) {

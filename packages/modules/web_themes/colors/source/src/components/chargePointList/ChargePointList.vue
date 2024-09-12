@@ -5,7 +5,7 @@
 		:slides-per-view="1"
 		:pagination="{ clickable: true }"
 		class="cplist m-0 p-0 d-flex align-items-stretch"
-		:class="cplistclasses" 
+		:class="cplistclasses"
 	>
 		<swiper-slide
 			v-for="chargepoint in chargepointsToDisplay"
@@ -47,7 +47,7 @@ const chargepointsToDisplay = computed(() => {
 	return cpArray
 })
 const cplistclasses = computed(() => {
-	return (totalWidth.value + ' ' + widgetId.value)
+	return totalWidth.value + ' ' + widgetId.value
 })
 const totalWidth = computed(() => {
 	switch (Object.values(chargePoints).length) {
@@ -61,12 +61,12 @@ const totalWidth = computed(() => {
 			return 'col-lg-12'
 	}
 })
-const widgetId = computed(()=> {
-	return 'swiper-chargepoints-'+props.id
+const widgetId = computed(() => {
+	return 'swiper-chargepoints-' + props.id
 })
 function updateLayout() {
 	// update swiper layout
-	let tmp = document.querySelector('.'+ widgetId.value)
+	let tmp = document.querySelector('.' + widgetId.value)
 	if (tmp) {
 		swiperEl = tmp as SwiperContainer
 		swiper = swiperEl.swiper
@@ -92,7 +92,7 @@ function updateLayout() {
 }
 
 onMounted(() => {
-	let tmp = document.querySelector('.'+ widgetId.value)
+	let tmp = document.querySelector('.' + widgetId.value)
 	if (tmp) {
 		swiperEl = tmp as SwiperContainer
 		swiper = swiperEl.swiper
