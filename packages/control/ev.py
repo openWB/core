@@ -31,6 +31,10 @@ def get_vehicle_default() -> dict:
         "charge_template": 0,
         "ev_template": 0,
         "name": "neues Fahrzeug",
+        "info": {
+            "manufacturer": None,
+            "model": None,
+        },
         "tag_id": [],
         "get/soc": 0
     }
