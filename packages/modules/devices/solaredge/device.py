@@ -91,6 +91,8 @@ class Device(AbstractDevice):
                                                    unit=component_config.configuration.modbus_id
                                                    ) == synergy_unit_identifier and
                     (component_type == "external_inverter" or component_type == "counter")):
+                # Snyergy-Units vom Haupt-WR des angeschlossenen Meters ermitteln. Es kann mehrere Haupt-WR mit
+                # # unterschiedlichen Modbus-IDs im Verbund geben.
                 log.debug("Synergy Units supported")
                 synergy_units = int(self.client.read_holding_registers(
                     40129, modbus.ModbusDataType.UINT_16,
