@@ -51,7 +51,6 @@ class Device(AbstractDevice):
                                                   self.device_config.configuration.port,
                                                   reconnect_delay=reconnect_delay)
             self.inverter_counter = 0
-            self.synergy_units = 1
         except Exception:
             log.exception("Fehler im Modul "+self.device_config.name)
 
@@ -88,16 +87,16 @@ class Device(AbstractDevice):
             # except Exception as e:
             #     log.exception("Fehler beim Auslesen der Modbus-Register: " + str(e))
             #     pass
-            if self.client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
-                                                  unit=component_config.configuration.modbus_id
-                                                  ) == synergy_unit_identifier:
+            if (self.client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
+                                                   unit=component_config.configuration.modbus_id
+                                                   ) == synergy_unit_identifier and
+                    (component_type == "external_inverter" or component_type == "counter")):
                 log.debug("Synergy Units supported")
-                self.synergy_units = int(self.client.read_holding_registers(
+                synergy_units = int(self.client.read_holding_registers(
                     40129, modbus.ModbusDataType.UINT_16,
                     unit=component_config.configuration.modbus_id)) or 1
-                log.debug("Synergy Units detected: %s", self.synergy_units)
-            if component_type == "external_inverter" or component_type == "counter" or component_type == "inverter":
-                self.set_component_registers(self.components.values(), self.synergy_units)
+                log.debug("Synergy Units detected: %s", synergy_units)
+                self.set_component_registers(self.components.values(), synergy_units)
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -106,9 +105,9 @@ class Device(AbstractDevice):
 
     @staticmethod
     def set_component_registers(components: Iterable[solaredge_component_classes], synergy_units: int) -> None:
-        meters = [None]*3  # type: List[Union[SolaredgeExternalInverter, SolaredgeCounter, SolaredgeInverter, None]]
+        meters = [None]*3  # type: List[Union[SolaredgeExternalInverter, SolaredgeCounter, None]]
         for component in components:
-            if isinstance(component, (SolaredgeExternalInverter, SolaredgeCounter, SolaredgeInverter)):
+            if isinstance(component, (SolaredgeExternalInverter, SolaredgeCounter)):
                 meters[component.component_config.configuration.meter_id-1] = component
 
         # https://www.solaredge.com/sites/default/files/sunspec-implementation-technical-note.pdf:
