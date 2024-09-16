@@ -1,6 +1,6 @@
 import json
 import sys
-from typing import Dict
+from typing import Dict, Optional
 
 from helpermodules.utils.json_file_handler import write_and_check
 
@@ -33,12 +33,12 @@ def exists_hardware_configuration_setting(name: str) -> bool:
     return name in _read_configuration()
 
 
-def get_serial_number() -> str:
+def get_serial_number() -> Optional[str]:
     try:
         with open("/home/openwb/snnumber", "r") as file:
-            return file.read().replace("\n", "")
+            return file.read().replace("snnumber=", "").replace("\n", "")
     except FileNotFoundError:
-        return "noSerialNumber"
+        return None
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ try:
     TCPServer.allow_reuse_address = True
     app = get_server(TCPServer, ('0.0.0.0', 1502), RequestHandler)
 
-    serial_number = get_serial_number().replace("snnumber=", "")
+    serial_number = get_serial_number()
 except (Exception, OSError):
     log.exception("Fehler im Modbus-Server")
 
