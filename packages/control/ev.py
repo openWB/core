@@ -779,7 +779,7 @@ class ChargeTemplate:
                                      f"oder im Plan {plan.name} als Begrenzung Energie einstellen.")
                 try:
                     duration, missing_amount = self.calculate_duration(
-                        plan, soc, battery_capacity, used_amount, phases, charging_type)
+                        plan, soc, battery_capacity, used_amount, phases, charging_type, ev_template)
                     remaining_time, missed_date_today = timecheck.check_duration(plan, duration, self.BUFFER)
                     if remaining_time:
                         # Wenn der Zeitpunkt vorüber, aber noch nicht abgelaufen ist oder
@@ -818,7 +818,8 @@ class ChargeTemplate:
                            battery_capacity: float,
                            used_amount: float,
                            phases: int,
-                           charging_type: str) -> Tuple[float, float]:
+                           charging_type: str,
+                           ev_template: EvTemplate) -> Tuple[float, float]:
         if plan.limit.selected == "soc":
             if soc:
                 missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
@@ -827,6 +828,8 @@ class ChargeTemplate:
         else:
             missing_amount = plan.limit.amount - used_amount
         current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
+        current = max(current, ev_template.data.min_current if charging_type ==
+                      ChargingType.AC.value else ev_template.data.dc_min_current)
         duration = missing_amount/(current * phases*230) * 3600
         return duration, missing_amount
 
