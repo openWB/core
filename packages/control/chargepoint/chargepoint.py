@@ -165,7 +165,7 @@ class Chargepoint(ChargepointRfidMixin):
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
         if self.data.set.manual_lock and self.template.data.disable_after_unplug or self.data.set.manual_lock is False:
-            if ((self.data.get.rfid or self.data.set.rfid) in self.template.data.valid_tags
+            if ((self.data.get.rfid or self.data.get.vehicle_id or self.data.set.rfid) in self.template.data.valid_tags
                     or self.data.set.manual_lock is False):
                 Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
                 charging_possible = True
