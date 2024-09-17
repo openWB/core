@@ -381,7 +381,7 @@ class Chargepoint(ChargepointRfidMixin):
                 # Wenn ein Soll-Strom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
-                    ((self.data.set.current != 0 and self.data.get.power != 0) or
+                    ((self.data.set.current != 0 and self.data.get.charge_state) or
                      (self.data.set.current != 0 and self.set_current_prev == 0) or
                      self.data.set.current == 0)):
                 phase_switch_required = True
