@@ -164,18 +164,16 @@ class Chargepoint(ChargepointRfidMixin):
         return state, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
-        if self.data.set.manual_lock and self.template.data.disable_after_unplug or self.data.set.manual_lock is False:
-            if ((self.data.get.rfid or self.data.get.vehicle_id or self.data.set.rfid) in self.template.data.valid_tags
-                    or self.data.set.manual_lock is False):
-                Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
-                charging_possible = True
-                message = None
-            else:
-                charging_possible = False
-                message = "Ladepunkt gesperrt, da kein zum Ladepunkt passender ID-Tag gefunden wurde."
+        if (self.data.set.manual_lock is False or
+                (self.data.get.rfid or
+                 self.data.get.vehicle_id or
+                 self.data.set.rfid) in self.template.data.valid_tags):
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
+            charging_possible = True
+            message = None
         else:
             charging_possible = False
-            message = "Keine Ladung, da der Ladepunkt gesperrt wurde."
+            message = "Keine Ladung, da der Ladepunkt gesperrt ist."
         return charging_possible, message
 
     def _is_ev_plugged(self) -> Tuple[bool, Optional[str]]:
@@ -195,18 +193,14 @@ class Chargepoint(ChargepointRfidMixin):
                 if charging_possible:
                     charging_possible, message = self._is_loadmanagement_available()
                     if charging_possible:
-                        charging_possible, message = self._is_ev_plugged()
+                        charging_possible, message = self._is_manual_lock_inactive()
                         if charging_possible:
-                            charging_possible, message = self._is_autolock_inactive()
+                            charging_possible, message = self._is_ev_plugged()
                             if charging_possible:
-                                charging_possible, message = self._is_manual_lock_inactive()
+                                charging_possible, message = self._is_autolock_inactive()
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
-        if self.data.get.rfid and message is not None:
-            message += (f"\n ID-Tag {self.data.get.rfid} kann erst einem EV zugeordnet werden, wenn der Ladepunkt"
-                        " nicht mehr gesperrt ist. Wenn nach dem Scannen nicht innerhalb von 5 Minuten ein Auto"
-                        " angesteckt wird, wird der ID-Tag verworfen.")
         return charging_possible, message
 
     def _process_charge_stop(self) -> None:
@@ -317,32 +311,6 @@ class Chargepoint(ChargepointRfidMixin):
         control_parameter.imported_at_plan_start = self.data.control_parameter.imported_at_plan_start
         control_parameter.imported_instant_charging = self.data.control_parameter.imported_instant_charging
         self.data.control_parameter = control_parameter
-
-    def prepare_cp(self) -> Tuple[int, Optional[str]]:
-        try:
-            # Für Control-Pilot-Unterbrechung set current merken.
-            self.set_current_prev = self.data.set.current
-            self._validate_rfid()
-            charging_possible, message = self.is_charging_possible()
-            if charging_possible:
-                if self.data.get.rfid is not None:
-                    self._link_rfid_to_cp()
-                num, message_ev = self.template.get_ev(self.data.set.rfid,
-                                                       self.data.get.vehicle_id,
-                                                       self.data.config.ev)
-                if message_ev:
-                    message = message_ev
-                if num != -1:
-                    return num, message
-                else:
-                    self.data.get.state_str = message
-            else:
-                num = -1
-            self._process_charge_stop()
-            return num, message
-        except Exception:
-            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
-            return -1, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def initiate_control_pilot_interruption(self):
         """ prüft, ob eine Control Pilot- Unterbrechung erforderlich ist und führt diese durch.
@@ -646,8 +614,19 @@ class Chargepoint(ChargepointRfidMixin):
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
-            vehicle, message = self.prepare_cp()
-            if vehicle != -1:
+            # Für Control-Pilot-Unterbrechung set current merken.
+            self.set_current_prev = self.data.set.current
+            self._validate_rfid()
+            charging_possible, message = self.is_charging_possible()
+            if self.data.get.rfid is not None and self.data.get.plug_state:
+                self._link_rfid_to_cp()
+            vehicle, message_ev = self.template.get_ev(self.data.set.rfid or self.data.get.rfid,
+                                                       self.data.get.vehicle_id,
+                                                       self.data.config.ev)
+            if message_ev:
+                message += message_ev
+
+            if charging_possible:
                 try:
                     charging_ev = self._get_charging_ev(vehicle, ev_list)
                     max_phase_hw = self.get_max_phase_hw()
@@ -714,14 +693,17 @@ class Chargepoint(ChargepointRfidMixin):
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
                     self.data.control_parameter.submode = "stop"
             else:
-                self._pub_configured_ev(ev_list)
+                self._process_charge_stop()
+                if vehicle != -1:
+                    self._pub_connected_vehicle(ev_list[f"ev{vehicle}"])
+                else:
+                    self._pub_configured_ev(ev_list)
             # SoC nach Anstecken aktualisieren
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.get.plug_state is False and self.data.set.plug_state_prev)):
                 Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
                 log.debug("SoC nach Anstecken")
-            if message is not None and self.data.get.state_str is None:
-                self.set_state_and_log(message)
+            self.set_state_and_log(message)
         except Exception:
             log.exception(f"Fehler bei Ladepunkt {self.num}")
 
