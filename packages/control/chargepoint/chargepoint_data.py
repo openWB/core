@@ -140,6 +140,7 @@ class Set:
     rfid: Optional[str] = None
     target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
+    ocpp_transaction_id: Optional[int] = None
 
 
 @dataclass
@@ -154,6 +155,7 @@ class Config:
     auto_phase_switch_hw: bool = False
     control_pilot_interruption_hw: bool = False
     id: int = 0
+    ocpp_chargebox_id: Optional[str] = None
 
     def __post_init__(self):
         self.event_update_state: threading.Event

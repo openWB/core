@@ -128,6 +128,8 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/log$",
         "^openWB/chargepoint/[0-9]+/set/phases_to_use$",
         "^openWB/chargepoint/[0-9]+/set/charging_ev_prev$",
+        "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_id$",
+        "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_active$",
 
         "^openWB/command/max_id/autolock_plan$",
         "^openWB/command/max_id/charge_template$",
@@ -252,6 +254,9 @@ class UpdateConfig:
         "^openWB/optional/int_display/only_local_charge_points",
         "^openWB/optional/led/active$",
         "^openWB/optional/rfid/active$",
+        "^openWB/optional/ocpp/active$",
+        "^openWB/optional/ocpp/url$",
+        "^openWB/optional/ocpp/version$",
 
         "^openWB/pv/config/configured$",
         "^openWB/pv/get/exported$",
@@ -499,6 +504,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/led/active", False),
+        ("openWB/optional/ocpp/active", False),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/backup_cloud/backup_before_update", True),
