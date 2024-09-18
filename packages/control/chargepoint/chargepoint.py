@@ -386,9 +386,7 @@ class Chargepoint(ChargepointRfidMixin):
 
     STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
 
-    def initiate_phase_switch(self):
-        """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
-        """
+    def check_phase_switch_completed(self):
         try:
             evu_counter = data.data.counter_all_data.get_evu_counter()
             charging_ev = self.data.set.charging_ev_data
@@ -428,6 +426,15 @@ class Chargepoint(ChargepointRfidMixin):
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
                 if phase_switch.phase_switch_thread_alive(self.num) is False:
                     self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+        except Exception:
+            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
+
+    def initiate_phase_switch(self):
+        """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
+        """
+        try:
+            evu_counter = data.data.counter_all_data.get_evu_counter()
+            charging_ev = self.data.set.charging_ev_data
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
             if (not charging_ev.ev_template.data.prevent_phase_switch or
@@ -655,6 +662,7 @@ class Chargepoint(ChargepointRfidMixin):
                     self.set_control_parameter(submode, required_current)
                     self.set_required_currents(required_current)
                     self.handle_less_power()
+                    self.check_phase_switch_completed()
 
                     if charging_ev.chargemode_changed:
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
