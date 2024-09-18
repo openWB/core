@@ -59,15 +59,8 @@ class ChargepointModule(AbstractChargepoint):
                 self.client_error_context.reset_error_counter()
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
-
-
-<< << << < HEAD
-        with SingleComponentUpdateContext(self.fault_state, False):
-            with self.client_error_context:
-== == == =
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            with self.__client_error_context:
->>>>>> > 1fcaff093(fix)
+            with self.client_error_context:
                 pub.pub_single(
                     f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/phases_to_use",
                     phases_to_use,
