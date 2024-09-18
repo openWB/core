@@ -1,14 +1,14 @@
-import re
 from typing import List, Optional, Tuple, Union
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from modules.common import sdm
+from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_NO_SERIAL_NUMBER, METER_PROBLEM, OPEN_TICKET,
-    USB_ADAPTER_BROKEN, SeriesHardwareCheckMixin, check_meter_values)
-from modules.common.modbus import NO_CONNECTION, ModbusClient, ModbusSerialClient_, ModbusTcpClient_
+    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_BROKEN_VOLTAGES, METER_NO_SERIAL_NUMBER, METER_PROBLEM,
+    OPEN_TICKET, USB_ADAPTER_BROKEN, SeriesHardwareCheckMixin, check_meter_values)
+from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
 
@@ -42,59 +42,67 @@ def test_hardware_check_fails(evse_side_effect,
                               expected_error_msg,
                               monkeypatch):
     # setup
-    mock_evse_client = Mock(spec=Evse, get_firmware_version=Mock(
-        side_effect=evse_side_effect, return_value=evse_return_value))
-    mock_evse_factory = Mock(spec=Evse, return_value=mock_evse_client)
-    monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_factory)
+    evse_state = Mock(spec=EvseState, version=evse_return_value)
+    mock_evse_client = Mock(spec=Evse, get_evse_state=Mock(side_effect=evse_side_effect, return_value=evse_state))
+    mock_evse_facotry = Mock(spec=Evse, return_value=mock_evse_client)
+    monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
 
-    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_voltages=Mock(
-        side_effect=meter_side_effect, return_value=meter_return_value))
+    counter_state_mock = Mock(spec=CounterState, side_effect=meter_side_effect,
+                              voltages=meter_return_value, currents=[0, 0, 0], powers=[0, 0, 0], power=0)
+    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_counter_state=Mock(return_value=counter_state_mock))
     mock_find_meter_client = Mock(spec=sdm.Sdm630_72, return_value=mock_meter_client)
     monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
 
     handle_exception_mock = Mock(side_effect=handle_exception_side_effect, return_value=handle_exception_return_value)
     monkeypatch.setattr(SeriesHardwareCheckMixin, "handle_exception", handle_exception_mock)
 
-    mock_modbus_client = MagicMock(spec=client_spec, address=SAMPLE_IP, port=SAMPLE_PORT)
-    mock_modbus_client.__enter__.return_value = mock_modbus_client
+    enter_mock = Mock(return_value=None)
+    exit_mock = Mock(return_value=True)
+    client = Mock(spec=client_spec, __enter__=enter_mock, __exit__=exit_mock)
 
     # execution and evaluation
-    with pytest.raises(Exception, match=re.escape(expected_error_msg)):
-        ClientHandler(0, mock_modbus_client, [1], Mock())
+    with pytest.raises(Exception, match=expected_error_msg):
+        ClientHandler(0, client, [1], Mock())
 
 
 def test_hardware_check_succeeds(monkeypatch):
     # setup
-    mock_evse_client = Mock(spec=Evse, get_firmware_version=Mock(return_value=18))
-    mock_evse_factory = Mock(spec=Evse, return_value=mock_evse_client)
-    monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_factory)
+    evse_state = Mock(spec=EvseState, version=17)
+    mock_evse_client = Mock(spec=Evse, get_evse_state=Mock(return_value=evse_state))
+    mock_evse_facotry = Mock(spec=Evse, return_value=mock_evse_client)
+    monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
 
-    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_voltages=Mock(return_value=[230]*3))
+    counter_state_mock = Mock(spec=CounterState, voltages=[230]*3, currents=[0, 0, 0], powers=[0, 0, 0], power=0)
+    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_counter_state=Mock(return_value=counter_state_mock))
     mock_find_meter_client = Mock(spec=sdm.Sdm630_72, return_value=mock_meter_client)
     monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
 
-    mock_modbus_client = MagicMock(spec=ModbusClient)
-    mock_modbus_client.__enter__.return_value = mock_modbus_client
+    enter_mock = Mock(return_value=None)
+    exit_mock = Mock(return_value=True)
+    client = Mock(spec=ModbusTcpClient_, __enter__=enter_mock, __exit__=exit_mock)
 
     # execution and evaluation
     # keine Exception
-    ClientHandler(0, mock_modbus_client, [1], Mock())
+    ClientHandler(0, client, [1], Mock())
 
 
 @pytest.mark.parametrize(
-    "voltages, expected_msg",
-    [pytest.param([230, 0, 0], None, id="einphasig oder zweiphasig L2 defekt (nicht erkennbar)"),
-     pytest.param([0, 0, 0], METER_BROKEN, id="einphasig, L1 defekt"),
-     pytest.param([230, 230, 0], None, id="zweiphasig oder dreiphasig, L3 defekt (nicht erkennbar)"),
-     pytest.param([0, 230, 0], METER_BROKEN, id="zweiphasig, L1 defekt"),
-     pytest.param([230, 230, 230], None, id="dreiphasig"),
-     pytest.param([0, 230, 230], METER_BROKEN, id="dreiphasig, L1 defekt"),
-     pytest.param([230, 0, 230], METER_BROKEN, id="dreiphasig, L2 defekt"),
+    "voltages, power, expected_msg",
+    [pytest.param([230, 0, 0], 0, None, id="einphasig oder zweiphasig L2 defekt (nicht erkennbar)"),
+     pytest.param([0, 0, 0], 0, METER_BROKEN_VOLTAGES, id="einphasig, L1 defekt"),
+     pytest.param([230, 230, 0], 0, None, id="zweiphasig oder dreiphasig, L3 defekt (nicht erkennbar)"),
+     pytest.param([0, 230, 0], 0, METER_BROKEN_VOLTAGES, id="zweiphasig, L1 defekt"),
+     pytest.param([230, 230, 230], 0, None, id="dreiphasig"),
+     pytest.param([0, 230, 230], 0, METER_BROKEN_VOLTAGES, id="dreiphasig, L1 defekt"),
+     pytest.param([230, 0, 230], 0, METER_BROKEN_VOLTAGES, id="dreiphasig, L2 defekt"),
+     pytest.param([230]*3, 100, METER_BROKEN, id="Phantom-Leistung"),
      ]
 )
-def test_check_meter_values(voltages, expected_msg, monkeypatch):
-    # setup & execution
-    msg = check_meter_values(voltages)
+def test_check_meter(voltages, power, expected_msg, monkeypatch):
+    # setup
+    counter_state = Mock(voltages=voltages, currents=[0, 0, 0], powers=[0, 0, 0], power=power)
+    # execution
+    msg = check_meter_values(counter_state)
 
     # assert
     assert msg == expected_msg if expected_msg is None else expected_msg.format(voltages)
