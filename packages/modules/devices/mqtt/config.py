@@ -1,3 +1,6 @@
+from modules.common.component_setup import ComponentSetup
+
+
 class MqttConfiguration:
     def __init__(self):
         pass
@@ -20,16 +23,13 @@ class MqttBatConfiguration:
         pass
 
 
-class MqttBatSetup:
+class MqttBatSetup(ComponentSetup[MqttBatConfiguration]):
     def __init__(self,
                  name: str = "MQTT-Speicher",
                  type: str = "bat",
                  id: int = 0,
                  configuration: MqttBatConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.id = id
-        self.configuration = configuration or MqttBatConfiguration()
+        super().__init__(name, type, id, configuration or MqttBatConfiguration())
 
 
 class MqttCounterConfiguration:
@@ -37,16 +37,13 @@ class MqttCounterConfiguration:
         pass
 
 
-class MqttCounterSetup:
+class MqttCounterSetup(ComponentSetup[MqttCounterConfiguration]):
     def __init__(self,
                  name: str = "MQTT-Zähler",
                  type: str = "counter",
                  id: int = 0,
                  configuration: MqttCounterConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.id = id
-        self.configuration = configuration or MqttCounterConfiguration()
+        super().__init__(name, type, id, configuration or MqttCounterConfiguration())
 
 
 class MqttInverterConfiguration:
@@ -54,13 +51,10 @@ class MqttInverterConfiguration:
         pass
 
 
-class MqttInverterSetup:
+class MqttInverterSetup(ComponentSetup[MqttInverterConfiguration]):
     def __init__(self,
                  name: str = "MQTT-Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: MqttInverterConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.id = id
-        self.configuration = configuration or MqttInverterConfiguration()
+        super().__init__(name, type, id, configuration or MqttInverterConfiguration())
