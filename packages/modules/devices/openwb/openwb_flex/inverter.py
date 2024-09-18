@@ -38,24 +38,23 @@ class PvKitFlex(AbstractInverter):
         """ liest die Werte des Moduls aus.
         """
         with self.__tcp_client:
-            powers, power = self.__client.get_power()
+            counter_state = self.__client.get_counter_state()
 
-            version = self.component_config.configuration.version
-            if version == 1:
-                power = sum(powers)
-            if power > 10:
-                power = power*-1
-            currents = self.__client.get_currents()
-
-            if isinstance(self.__client, Lovato) or isinstance(self.__client, Sdm120):
-                _, exported = self.sim_counter.sim_count(power)
-            else:
-                exported = self.__client.get_exported()
+        power = counter_state.power
+        version = self.component_config.configuration.version
+        if version == 1:
+            power = sum(counter_state.powers)
+        if power > 10:
+            power = power*-1
+        if isinstance(self.__client, Lovato) or isinstance(self.__client, Sdm120):
+            _, exported = self.sim_counter.sim_count(power)
+        else:
+            exported = counter_state.exported
 
         inverter_state = InverterState(
             power=power,
             exported=exported,
-            currents=currents
+            currents=counter_state.currents
         )
         self.store.set(inverter_state)
 

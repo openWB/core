@@ -3,10 +3,8 @@ from typing import TypedDict, Any
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractCounter
-from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.lovato import Lovato
 from modules.common.mpm3pm import Mpm3pm
 from modules.common.b23 import B23
 from modules.common.simcount import SimCounter
@@ -38,33 +36,13 @@ class EvuKitFlex(AbstractCounter):
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,
         # dass offene Verbindungen den Modbus-Adapter blockieren.
         with self.__tcp_client:
-            voltages = self.__client.get_voltages()
-            powers, power = self.__client.get_power()
-            frequency = self.__client.get_frequency()
-            power_factors = self.__client.get_power_factors()
-
-            if isinstance(self.__client, Mpm3pm or B23):
-                imported = self.__client.get_imported()
-                exported = self.__client.get_exported()
-            else:
-                currents = self.__client.get_currents()
+            counter_state = self.__client.get_counter_state()
 
         if isinstance(self.__client, Mpm3pm or B23):
-            currents = [powers[i] / voltages[i] for i in range(3)]
+            counter_state.currents = [counter_state.powers[i] / counter_state.voltages[i] for i in range(3)]
         else:
-            if isinstance(self.__client, Lovato):
-                power = sum(powers)
-            imported, exported = self.sim_counter.sim_count(power)
-        counter_state = CounterState(
-            voltages=voltages,
-            currents=currents,
-            powers=powers,
-            power_factors=power_factors,
-            imported=imported,
-            exported=exported,
-            power=power,
-            frequency=frequency
-        )
+            counter_state.imported, counter_state.exported = self.sim_counter.sim_count(counter_state.power)
+
         self.store.set(counter_state)
 
 
