@@ -3,6 +3,7 @@
 from modules.common import modbus
 from typing import List, Tuple
 from modules.common.abstract_counter import AbstractCounter
+from modules.common.component_state import CounterState
 from modules.common.modbus import ModbusDataType
 
 
@@ -36,3 +37,14 @@ class Lovato(AbstractCounter):
     def get_currents(self) -> List[float]:
         return [val / 10000 for val in self.client.read_input_registers(
             0x0007, [ModbusDataType.INT_32]*3, unit=self.id)]
+
+    def get_counter_state(self) -> CounterState:
+        powers, power = self.get_power()
+        return CounterState(
+            power=power,
+            voltages=self.get_voltages(),
+            currents=self.get_currents(),
+            powers=powers,
+            power_factors=self.get_power_factors(),
+            frequency=self.get_frequency()
+        )
