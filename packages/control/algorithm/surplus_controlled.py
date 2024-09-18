@@ -55,7 +55,7 @@ class SurplusControlled:
             current = common.get_current_to_set(cp.data.set.current, available_for_cp, cp.data.set.target_current)
             self._set_loadmangement_message(current, limit, cp, counter)
             limited_current = self._limit_adjust_current(cp, current)
-            limited_current = self._add_unused_evse_current(limited_current, cp)
+            limited_current = self._fix_deviating_evse_current(limited_current, cp)
             common.set_current_counterdiff(
                 cp.data.control_parameter.min_current,
                 limited_current,
@@ -109,13 +109,15 @@ class SurplusControlled:
             chargepoint.set_state_and_log(msg)
             return max(current, chargepoint.data.control_parameter.min_current)
 
-    def _add_unused_evse_current(self, limited_current, chargepoint: Chargepoint) -> float:
+    def _fix_deviating_evse_current(self, limited_current, chargepoint: Chargepoint) -> float:
         """Wenn Autos nicht die volle Ladeleistung nutzen, wird unnötig eingespeist. Dann kann um den noch nicht
-        genutzten Soll-Strom hoch geregelt werden."""
+        genutzten Soll-Strom hochgeregelt werden. Wenn Fahrzeuge entgegen der Norm mehr Ladeleistung beziehen, als
+        freigegeben, wird entsprechend weniger freigegeben, da sonst uU die untere Grenze für die Abschaltschwelle
+        nicht erreicht wird."""
         evse_current = chargepoint.data.get.evse_current
         if evse_current:
             formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
-            current_with_offset = limited_current + max(formatted_evse_current - max(chargepoint.data.get.currents), 0)
+            current_with_offset = limited_current + formatted_evse_current - max(chargepoint.data.get.currents)
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
             if current != limited_current:
                 log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
