@@ -6,7 +6,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
-from modules.devices.sigenergy.config import SigenergyCounterSetup
+from modules.devices.sigenergy.sigenergy.config import SigenergyCounterSetup
 
 
 class SigenergyCounter:

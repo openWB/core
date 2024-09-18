@@ -2,7 +2,7 @@ from typing import Optional
 from helpermodules.auto_str import auto_str
 
 from modules.common.component_setup import ComponentSetup
-from modules.devices.solis.version import SolisVersion
+from modules.devices.solis.solis.version import SolisVersion
 
 
 class SolisConfiguration:

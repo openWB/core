@@ -6,10 +6,10 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.solis.bat import SolisBat
-from modules.devices.solis.counter import SolisCounter
-from modules.devices.solis.inverter import SolisInverter
-from modules.devices.solis.config import Solis, SolisBatSetup, SolisCounterSetup, SolisInverterSetup
+from modules.devices.solis.solis.bat import SolisBat
+from modules.devices.solis.solis.counter import SolisCounter
+from modules.devices.solis.solis.inverter import SolisInverter
+from modules.devices.solis.solis.config import Solis, SolisBatSetup, SolisCounterSetup, SolisInverterSetup
 
 log = logging.getLogger(__name__)
 

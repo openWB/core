@@ -8,7 +8,7 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import BatState
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.varta.inverter import VartaInverter
+from modules.devices.varta.varta.inverter import VartaInverter
 from modules.devices.varta.varta import bat_api, counter
 from modules.devices.varta.varta import bat_modbus
 from modules.devices.varta.varta.bat_api import VartaBatApi

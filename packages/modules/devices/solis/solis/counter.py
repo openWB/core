@@ -5,8 +5,8 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_counter_value_store
-from modules.devices.solis.config import SolisCounterSetup
-from modules.devices.solis.version import SolisVersion
+from modules.devices.solis.solis.config import SolisCounterSetup
+from modules.devices.solis.solis.version import SolisVersion
 
 
 class SolisCounter:

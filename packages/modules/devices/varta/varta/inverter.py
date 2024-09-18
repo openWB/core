@@ -6,7 +6,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
-from modules.devices.varta.config import VartaInverterSetup
+from modules.devices.varta.varta.config import VartaInverterSetup
 
 
 class VartaInverter:

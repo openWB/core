@@ -6,10 +6,15 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.sigenergy.bat import SigenergyBat
-from modules.devices.sigenergy.counter import SigenergyCounter
-from modules.devices.sigenergy.inverter import SigenergyInverter
-from modules.devices.sigenergy.config import Sigenergy, SigenergyBatSetup, SigenergyCounterSetup, SigenergyInverterSetup
+from modules.devices.sigenergy.sigenergy.bat import SigenergyBat
+from modules.devices.sigenergy.sigenergy.counter import SigenergyCounter
+from modules.devices.sigenergy.sigenergy.inverter import SigenergyInverter
+from modules.devices.sigenergy.sigenergy.config import (
+    Sigenergy,
+    SigenergyBatSetup,
+    SigenergyCounterSetup,
+    SigenergyInverterSetup,
+)
 
 log = logging.getLogger(__name__)
 
