@@ -77,7 +77,7 @@ class ChargepointModule(AbstractChargepoint):
                 with self.client_error_context:
                     try:
                         self.delay_second_cp(self.CP1_DELAY)
-                        evse_state, counter_state = self._client.request_and_check_hardware()
+                        evse_state, counter_state = self._client.request_and_check_hardware(self.fault_state)
                         if self.version is False:
                             self._validate_version()
 
