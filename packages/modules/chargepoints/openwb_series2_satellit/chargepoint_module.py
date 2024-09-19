@@ -97,6 +97,7 @@ class ChargepointModule(AbstractChargepoint):
                             max_evse_current=evse_state.max_evse_current
                         )
                         self.store.set(chargepoint_state)
+                        self.client_error_context.reset_error_counter()
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
