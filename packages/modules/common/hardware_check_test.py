@@ -1,3 +1,4 @@
+import re
 from typing import List, Optional, Tuple, Union
 from unittest.mock import Mock, patch
 
@@ -7,7 +8,7 @@ from modules.common import hardware_check
 from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN, METER_BROKEN_VOLTAGES, METER_NO_SERIAL_NUMBER, METER_PROBLEM,
+    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_NO_SERIAL_NUMBER, METER_PROBLEM,
     OPEN_TICKET, USB_ADAPTER_BROKEN, SeriesHardwareCheckMixin, check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
@@ -66,7 +67,7 @@ def test_hardware_check_fails(evse_side_effect,
     client = Mock(spec=client_spec, __enter__=enter_mock, __exit__=exit_mock)
 
     # execution and evaluation
-    with pytest.raises(Exception, match=expected_error_msg):
+    with pytest.raises(Exception, match=re.escape(expected_error_msg)):
         ClientHandler(0, client, [1], Mock())
 
 
@@ -95,13 +96,13 @@ def test_hardware_check_succeeds(monkeypatch):
 @pytest.mark.parametrize(
     "voltages, power, expected_msg",
     [pytest.param([230, 0, 0], 0, None, id="einphasig oder zweiphasig L2 defekt (nicht erkennbar)"),
-     pytest.param([0, 0, 0], 0, METER_BROKEN_VOLTAGES, id="einphasig, L1 defekt"),
+     pytest.param([0, 0, 0], 0, METER_BROKEN_VOLTAGES.format([0]*3), id="einphasig, L1 defekt"),
      pytest.param([230, 230, 0], 0, None, id="zweiphasig oder dreiphasig, L3 defekt (nicht erkennbar)"),
-     pytest.param([0, 230, 0], 0, METER_BROKEN_VOLTAGES, id="zweiphasig, L1 defekt"),
+     pytest.param([0, 230, 0], 0, METER_BROKEN_VOLTAGES.format([0, 230, 0]), id="zweiphasig, L1 defekt"),
      pytest.param([230, 230, 230], 0, None, id="dreiphasig"),
-     pytest.param([0, 230, 230], 0, METER_BROKEN_VOLTAGES, id="dreiphasig, L1 defekt"),
-     pytest.param([230, 0, 230], 0, METER_BROKEN_VOLTAGES, id="dreiphasig, L2 defekt"),
-     pytest.param([230]*3, 100, METER_BROKEN, id="Phantom-Leistung"),
+     pytest.param([0, 230, 230], 0, METER_BROKEN_VOLTAGES.format([0, 230, 230]), id="dreiphasig, L1 defekt"),
+     pytest.param([230, 0, 230], 0, METER_BROKEN_VOLTAGES.format([230, 0, 230]), id="dreiphasig, L2 defekt"),
+     pytest.param([230]*3, 100, METER_PROBLEM, id="Phantom-Leistung"),
      ]
 )
 def test_check_meter_values(voltages, power, expected_msg, monkeypatch):

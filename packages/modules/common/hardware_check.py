@@ -16,8 +16,7 @@ USB_ADAPTER_BROKEN = RS485_ADAPTER_BROKEN.format('der USB-Adapter')
 LAN_ADAPTER_BROKEN = (f"{RS485_ADAPTER_BROKEN.format('der LAN-Konverter abgestürzt,')} "
                       "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = "Der Zähler konnte nicht ausgelesen werden. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
-METER_BROKEN = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
-METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. Der Zähler ist defekt."
+METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
                           "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
@@ -34,10 +33,10 @@ def check_meter_values(counter_state: CounterState) -> Optional[str]:
             (valid_voltage(voltages[0]) and 115 < voltages[1] < 135 and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
-        return METER_BROKEN_VOLTAGES
+        return METER_BROKEN_VOLTAGES.format(voltages)
     interdependent_values = [sum(counter_state.currents), counter_state.power]
     if not (all(v == 0 for v in interdependent_values) or all(v != 0 for v in interdependent_values)):
-        return METER_BROKEN
+        return METER_PROBLEM
     return None
 
 
