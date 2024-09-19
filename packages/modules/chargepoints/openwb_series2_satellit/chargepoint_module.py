@@ -97,6 +97,7 @@ class ChargepointModule(AbstractChargepoint):
                             serial_number=counter_state.serial_number,
                         )
                         self.store.set(chargepoint_state)
+                        self.client_error_context.reset_error_counter()
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
