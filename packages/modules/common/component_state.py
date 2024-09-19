@@ -81,6 +81,7 @@ class CounterState:
         powers: Optional[List[Optional[float]]] = None,
         power_factors: Optional[List[Optional[float]]] = None,
         frequency: float = 50,
+        serial_number: str = "",
     ):
         """Args:
             imported: total imported energy in Wh
@@ -100,6 +101,7 @@ class CounterState:
         self.exported = exported
         self.power = power
         self.frequency = frequency
+        self.serial_number = serial_number
 
 
 @auto_str

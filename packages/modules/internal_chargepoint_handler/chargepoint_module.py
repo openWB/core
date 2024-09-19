@@ -63,7 +63,7 @@ class ChargepointModule(AbstractChargepoint):
             self.store_internal.set(chargepoint_state)
             self.store_internal.update()
         try:
-            evse_state, counter_state = self._client.request_and_check_hardware()
+            evse_state, counter_state = self._client.request_and_check_hardware(self.fault_state)
             power = counter_state.power
             if counter_state.power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
