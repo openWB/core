@@ -75,7 +75,8 @@ class ChargepointModule(AbstractChargepoint):
             chargepoint_state = self.old_chargepoint_state
             self.set_current_evse = chargepoint_state.evse_current
 
-            evse_state, counter_state = self._client.request_and_check_hardware()
+            evse_state, counter_state = self._client.request_and_check_hardware(self.fault_state)
+            power = counter_state.power
             if counter_state.power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
             phases_in_use = sum(1 for current in counter_state.currents if current > 3)

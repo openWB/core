@@ -17,8 +17,7 @@ LAN_ADAPTER_BROKEN = (f"{RS485_ADAPTER_BROKEN.format('der LAN-Konverter abgestü
                       "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = "Der Zähler konnte nicht ausgelesen werden. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
 METER_BROKEN = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
-METER_BROKEN_VOLTAGES = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
-                         f"Der Zähler ist defekt.")
+METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. Der Zähler ist defekt."
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
                           "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
@@ -55,6 +54,12 @@ class ClientHandlerProtocol(Protocol):
     def meter_client(self) -> Any: ...
     @property
     def read_error(self) -> int: ...
+    @property
+    def handle_exception(self, exception: Exception) -> bool: ...
+    @property
+    def request_and_check_hardware(self, fault_state: FaultState) -> Tuple[EvseState, CounterState]: ...
+    @property
+    def check_meter(self) -> Tuple[bool, Optional[str], CounterState]: ...
 
 
 class SeriesHardwareCheckMixin:
@@ -69,7 +74,8 @@ class SeriesHardwareCheckMixin:
         else:
             return False
 
-    def request_and_check_hardware(self: ClientHandlerProtocol, fault_state: FaultState) -> Tuple[EvseState, CounterState]:
+    def request_and_check_hardware(self: ClientHandlerProtocol,
+                                   fault_state: FaultState) -> Tuple[EvseState, CounterState]:
         try:
             with self.client:
                 evse_state = self.evse_client.get_evse_state()
@@ -109,7 +115,7 @@ class SeriesHardwareCheckMixin:
             with self.client:
                 counter_state = self.meter_client.get_counter_state()
             if counter_state.serial_number == "0" or counter_state.serial_number is None:
-                return True, METER_NO_SERIAL_NUMBER
+                return True, METER_NO_SERIAL_NUMBER, counter_state
             return True, check_meter_values(counter_state), counter_state
         except Exception:
             return False, METER_PROBLEM, None

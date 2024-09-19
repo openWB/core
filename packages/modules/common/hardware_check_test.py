@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from modules.common import sdm
+from modules.common import hardware_check
 from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
@@ -19,7 +20,7 @@ from modules.internal_chargepoint_handler.clients import ClientHandler
     [pytest.param(Exception("Modbus"), None, None, [230]*3, None, False, ModbusSerialClient_, EVSE_BROKEN,
                   id="EVSE defekt"),
      pytest.param(Exception("Modbus"), None, None, [230, 0, 230], None, False, ModbusSerialClient_,
-                  EVSE_BROKEN + " " + METER_BROKEN.format([230, 0, 230]) + OPEN_TICKET,
+                  EVSE_BROKEN + " " + METER_BROKEN_VOLTAGES.format([230, 0, 230]) + OPEN_TICKET,
                   id="EVSE defekt und Zähler eine Phase defekt"),
      pytest.param(None, 18, Exception("Modbus"), None, None, None,
                   ModbusSerialClient_, METER_PROBLEM, id="Zähler falsch konfiguriert"),
@@ -48,7 +49,11 @@ def test_hardware_check_fails(evse_side_effect,
     monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
 
     counter_state_mock = Mock(spec=CounterState, side_effect=meter_side_effect,
-                              voltages=meter_return_value, currents=[0, 0, 0], powers=[0, 0, 0], power=0)
+                              voltages=meter_return_value,
+                              currents=[0, 0, 0],
+                              powers=[0, 0, 0],
+                              power=0,
+                              serial_number="1234")
     mock_meter_client = Mock(spec=sdm.Sdm630_72, get_counter_state=Mock(return_value=counter_state_mock))
     mock_find_meter_client = Mock(spec=sdm.Sdm630_72, return_value=mock_meter_client)
     monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
@@ -72,7 +77,8 @@ def test_hardware_check_succeeds(monkeypatch):
     mock_evse_facotry = Mock(spec=Evse, return_value=mock_evse_client)
     monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
 
-    counter_state_mock = Mock(spec=CounterState, voltages=[230]*3, currents=[0, 0, 0], powers=[0, 0, 0], power=0)
+    counter_state_mock = Mock(spec=CounterState, voltages=[
+                              230]*3, currents=[0, 0, 0], powers=[0, 0, 0], power=0, serial_number="1234")
     mock_meter_client = Mock(spec=sdm.Sdm630_72, get_counter_state=Mock(return_value=counter_state_mock))
     mock_find_meter_client = Mock(spec=sdm.Sdm630_72, return_value=mock_meter_client)
     monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
@@ -98,7 +104,7 @@ def test_hardware_check_succeeds(monkeypatch):
      pytest.param([230]*3, 100, METER_BROKEN, id="Phantom-Leistung"),
      ]
 )
-def test_check_meter(voltages, power, expected_msg, monkeypatch):
+def test_check_meter_values(voltages, power, expected_msg, monkeypatch):
     # setup
     counter_state = Mock(voltages=voltages, currents=[0, 0, 0], powers=[0, 0, 0], power=power)
     # execution
@@ -109,28 +115,34 @@ def test_check_meter(voltages, power, expected_msg, monkeypatch):
 
 
 @patch('modules.common.hardware_check.ClientHandlerProtocol')
-@pytest.mark.parametrize("serial_number_return, voltages_return, expected",
-                         [("0", [230]*3, (True, METER_NO_SERIAL_NUMBER)),
-                          (12345, [230]*3, (True, None)),
-                          (Exception(), [230]*3, (False, METER_PROBLEM))])
+@pytest.mark.parametrize("serial_number, voltages, expected",
+                         [("0", [230]*3, (True, METER_NO_SERIAL_NUMBER, CounterState)),
+                          (12345, [230]*3, (True, None, CounterState)),
+                          (Exception(), [230]*3, (False, METER_PROBLEM, None))])
 def test_check_meter(
     MockClientHandlerProtocol: Mock,
-    serial_number_return: Union[int, Exception],
-    voltages_return: List[int],
+    serial_number: Union[int, Exception],
+    voltages: List[int],
     expected: Tuple[bool, Optional[str]],
+    monkeypatch,
 ):
     # Arrange
-    mock_meter_client = Mock()
-    if isinstance(serial_number_return, Exception):
-        mock_meter_client.get_serial_number.side_effect = serial_number_return
+
+    if isinstance(serial_number, Exception):
+        counter_state_mock = Mock(spec=CounterState, side_effect=serial_number)
     else:
-        mock_meter_client.get_serial_number.return_value = serial_number_return
-    mock_meter_client.get_voltages.return_value = voltages_return
+        counter_state_mock = Mock(spec=CounterState, serial_number=serial_number, voltages=voltages)
+    mock_meter_client = Mock()
+    mock_meter_client.get_counter_state.return_value = counter_state_mock
     MockClientHandlerProtocol.meter_client = mock_meter_client
     mixin = SeriesHardwareCheckMixin
+    mock_check_meter_values = Mock(return_value=expected[1])
+    monkeypatch.setattr(hardware_check, "check_meter_values", mock_check_meter_values)
 
     # Act
     result = mixin.check_meter(MockClientHandlerProtocol)
 
     # Assert
-    assert result == expected
+    assert result[0] == expected[0]
+    assert result[1] == expected[1]
+    assert isinstance(result[2], expected[2] if expected[2] is not None else type(result[2]))

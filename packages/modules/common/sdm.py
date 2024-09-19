@@ -79,7 +79,8 @@ class Sdm630_72(Sdm):
             currents=self.get_currents(),
             powers=powers,
             power_factors=self.get_power_factors(),
-            frequency=self.get_frequency()
+            frequency=self.get_frequency(),
+            serial_number=self.get_serial_number()
         )
 
 
@@ -113,5 +114,6 @@ class Sdm120(Sdm):
             power=power,
             currents=self.get_currents(),
             powers=powers,
-            frequency=self.get_frequency()
+            frequency=self.get_frequency(),
+            serial_number=self.get_serial_number()
         )
