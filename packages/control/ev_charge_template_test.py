@@ -172,7 +172,7 @@ def test_calculate_duration(selected: str, phases: int, expected_duration: float
     plan = ScheduledChargingPlan()
     plan.limit.selected = selected
     # execution
-    duration, missing_amount = ct.calculate_duration(plan, 60, 45000, 200, phases, ChargingType.AC.value)
+    duration, missing_amount = ct.calculate_duration(plan, 60, 45000, 200, phases, ChargingType.AC.value, EvTemplate())
 
     # evaluation
     assert duration == expected_duration
