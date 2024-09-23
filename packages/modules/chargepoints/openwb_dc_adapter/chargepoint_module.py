@@ -48,7 +48,7 @@ class ChargepointModule(AbstractChargepoint):
                 "DC-Laden muss durch den Support freigeschaltet werden. Bitte nehme Kontakt mit dem Support auf.")
         self.efficiency = None
 
-        with SingleComponentUpdateContext(self.fault_state, False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 self.__session.post(
                     'http://' + self.config.configuration.ip_address + '/connect.php',
@@ -57,7 +57,7 @@ class ChargepointModule(AbstractChargepoint):
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
             current = 0
-        with SingleComponentUpdateContext(self.fault_state, False):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 raw_current = self.subtract_conversion_loss_from_current(current)
