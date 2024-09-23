@@ -9,7 +9,20 @@ HARDWARE_CONFIGURATION_FILE = "/home/openwb/configuration.json"
 
 def _read_configuration() -> Dict:
     with open(HARDWARE_CONFIGURATION_FILE, "r") as f:
-        return json.loads(f.read())
+        config = json.loads(f.read())
+    if isinstance(config, dict):
+        return config
+    else:
+        with open(HARDWARE_CONFIGURATION_FILE, "r") as f:
+            config = json.loads(f.read())
+        if isinstance(config, dict):
+            return config
+        else:
+            # wenn zweimal kein gültiges json gelesen wurde, configuration.json mit default Werten erstellen
+            with open("./data/config/configuration.json", "r") as f:
+                config_file = json.loads(f.read())
+            write_and_check(HARDWARE_CONFIGURATION_FILE, config_file)
+            return config_file
 
 
 def update_hardware_configuration(new_setting: Dict) -> None:
