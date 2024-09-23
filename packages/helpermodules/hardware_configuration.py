@@ -1,8 +1,11 @@
+import logging
 import json
 import sys
 from typing import Dict, Optional
 
 from helpermodules.utils.json_file_handler import write_and_check
+
+log = logging.getLogger(__name__)
 
 HARDWARE_CONFIGURATION_FILE = "/home/openwb/configuration.json"
 
@@ -18,7 +21,7 @@ def _read_configuration() -> Dict:
         if isinstance(config, dict):
             return config
         else:
-            # wenn zweimal kein gültiges json gelesen wurde, configuration.json mit default Werten erstellen
+            log.error("Invalid configuration.json file. Creating new one with default values.")
             with open("./data/config/configuration.json", "r") as f:
                 config_file = json.loads(f.read())
             write_and_check(HARDWARE_CONFIGURATION_FILE, config_file)
