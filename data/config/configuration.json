@@ -1,1 +1,1 @@
-{"openwb-version": 1, "ripple_control_receiver_configured": false, "max_c_socket": 32}
+{"openwb-version": 1, "max_c_socket": 32, "dc_charging": false}
