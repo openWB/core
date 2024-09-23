@@ -237,22 +237,22 @@ class BatAll:
                     charging_power_left = self.data.get.power
                 else:
                     if config.bat_power_discharge_active:
-                        if self.data.get.power > 0:
-                            # Speicher wird geladen
-                            charging_power_left = self.data.get.power + config.bat_power_discharge
-                        else:
-                            if self.data.get.power * -1 >= config.bat_power_discharge:
-                                # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
-                                # vom Überschuss subtrahiert werden.
-                                charging_power_left = config.bat_power_discharge + self.data.get.power
-                                log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
-                            else:
-                                charging_power_left = self.data.get.power + config.bat_power_discharge
+                        # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
+                        # vom Überschuss subtrahiert werden.
+                        # Wenn der Speicher mit weniger als der erlaubten Entladeleistung entladen wird
+                        charging_power_left = config.bat_power_discharge + self.data.get.power
+                        log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
                     else:
                         # Speicher sollte weder ge- noch entladen werden.
                         charging_power_left = self.data.get.power
             # Keine Ladeleistung vom Speicher für Fahrzeuge einplanen, wenn max
             # Ausgangsleistung erreicht ist.
+            if self.data.set.regulate_up:
+                # 100(50 reichen auch?) W Überschuss übrig lassen, damit der Speicher bis zur max Ladeleistung
+                # hochregeln kann.
+                log.debug("Damit der Speicher hochregeln kann, muss unabhängig vom eingestellten Regelmodus "
+                          "Einspeisung erzeugt werden.")
+                charging_power_left -= 100
             self.data.set.charging_power_left = self._limit_bat_power_discharge(charging_power_left)
         except Exception:
             log.exception("Fehler im Bat-Modul")

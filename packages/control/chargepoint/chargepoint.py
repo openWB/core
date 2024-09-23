@@ -344,7 +344,8 @@ class Chargepoint(ChargepointRfidMixin):
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
         # nicht zwischendurch eine neue Umschaltung getriggert werden.
         if (self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED or
-                self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY_EXPIRED):
+                self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY_EXPIRED or
+                self.data.control_parameter.state == ChargepointState.SWITCH_OFF_DELAY):
             # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
             if ((self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
                 # Vorgegebene Phasenzahl hat sich geändert

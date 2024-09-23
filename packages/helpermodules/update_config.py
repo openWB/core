@@ -35,11 +35,11 @@ from control import ev
 from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
-from modules.devices.sungrow.version import Version
+from modules.devices.sungrow.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
-from modules.devices.good_we.version import GoodWeVersion
+from modules.devices.good_we.good_we.version import GoodWeVersion
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 59
+    DATASTORE_VERSION = 60
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1736,3 +1736,42 @@ class UpdateConfig:
                     return {topic: config_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 59)
+
+    def upgrade_datastore_59(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                # add "vendor" to devices
+                device_config = decode_payload(payload)
+                # defaults to vendor = type
+                device_vendor = device_config.get("type")
+                # 1. generic devices
+                if device_config.get("type") in ["http", "json", "mqtt", "virtual"]:
+                    device_vendor = "generic"
+                # 2. openWB
+                if device_config.get("type").startswith("openwb_"):
+                    device_vendor = "openwb"
+                # 3. huawei
+                elif device_config.get("type").startswith("huawei"):
+                    device_vendor = "huawei"
+                # 4. kostal
+                elif device_config.get("type").startswith("kostal"):
+                    device_vendor = "kostal"
+                # 5. Siemens
+                elif device_config.get("type").startswith("siemens"):
+                    device_vendor = "siemens"
+                # 6 sma
+                elif device_config.get("type").startswith("sma_"):
+                    device_vendor = "sma"
+                elif device_config.get("type") == "sonnenbatterie":
+                    device_vendor = "sonnen"
+                elif device_config.get("type") == "azzurro_sofar":
+                    device_config.update({"type": "sofar"})
+                    device_vendor = "sofar"
+                # add "vendor" to device
+                if "vendor" not in device_config:
+                    device_config.update({"vendor": device_vendor})
+                    log.debug(f"Added vendor '{device_vendor}' to device '{device_config['name']}'")
+                    log.debug(f"Device configuration: {device_config}")
+                    return {topic: device_config}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 60)
