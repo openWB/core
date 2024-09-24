@@ -3,6 +3,7 @@ from helpermodules.auto_str import auto_str
 
 from modules.common.component_setup import ComponentSetup
 from modules.devices.solis.solis.version import SolisVersion
+from ..vendor import vendor_descriptor
 
 
 class SolisConfiguration:
@@ -23,6 +24,7 @@ class Solis:
                  configuration: SolisConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.vendor = vendor_descriptor.configuration_factory().type
         self.id = id
         self.configuration = configuration or SolisConfiguration()
 
