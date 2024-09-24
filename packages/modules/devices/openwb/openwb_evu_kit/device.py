@@ -8,7 +8,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.openwb.openwb_bat_kit.bat import BatKit
 from modules.devices.openwb.openwb_evu_kit.counter import EvuKit
-from modules.devices.openwb.openwb_evu_kit.config import EvuKitSetup, EvuKitBatSetup, EvuKitCounterSetup, EvuKitInverterSetup
+from modules.devices.openwb.openwb_evu_kit.config import (EvuKitSetup, EvuKitBatSetup, EvuKitCounterSetup,
+                                                          EvuKitInverterSetup)
 from modules.devices.openwb.openwb_pv_kit.inverter import PvKit
 
 log = logging.getLogger(__name__)
