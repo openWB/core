@@ -3,6 +3,7 @@ import logging
 from control.algorithm import common
 from control.loadmanagement import Loadmanagement
 from control.algorithm.filter_chargepoints import get_chargepoints_by_mode_and_counter
+from modules.common.utils.component_parser import get_component_name_by_id
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +34,8 @@ class MinCurrent:
                             common.set_current_counterdiff(-(cp.data.set.current or 0), 0, cp)
                             if limit:
                                 cp.set_state_and_log(
-                                    f"Ladung kann nicht gestartet werden{limit.value.format(counter.num)}")
+                                    "Ladung kann nicht gestartet werden"
+                                    f"{limit.value.format(get_component_name_by_id(counter.num))}")
                         else:
                             common.set_current_counterdiff(
                                 cp.data.set.target_current,
