@@ -1,99 +1,48 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Optional, List, Union
+from typing import Iterable, Union
 
-from dataclass_utils import dataclass_from_dict
-from helpermodules.cli import run_using_positional_cli_args
-from modules.common import modbus
-from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
+from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.solax.solax import bat
-from modules.devices.solax.solax import counter
-from modules.devices.solax.solax import inverter
+from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
+from modules.common.modbus import ModbusTcpClient_
+from modules.devices.solax.solax.bat import SolaxBat
 from modules.devices.solax.solax.config import Solax, SolaxBatSetup, SolaxCounterSetup, SolaxInverterSetup
+from modules.devices.solax.solax.counter import SolaxCounter
+from modules.devices.solax.solax.inverter import SolaxInverter
 
 log = logging.getLogger(__name__)
 
 
-class Device(AbstractDevice):
-    COMPONENT_TYPE_TO_CLASS = {
-        "bat": bat.SolaxBat,
-        "counter": counter.SolaxCounter,
-        "inverter": inverter.SolaxInverter
-    }
+def create_device(device_config: Solax):
+    def create_bat_component(component_config: SolaxBatSetup):
+        return SolaxBat(device_config.id, component_config, client, device_config.configuration.modbus_id)
 
-    def __init__(self, device_config: Union[Dict, Solax]) -> None:
-        self.components = {}  # type: Dict[str, counter.SolaxCounter]
-        try:
-            self.device_config = dataclass_from_dict(Solax, device_config)
-            self.client = modbus.ModbusTcpClient_(
-                self.device_config.configuration.ip_address, self.device_config.configuration.port)
-        except Exception:
-            log.exception("Fehler im Modul "+self.device_config.name)
+    def create_counter_component(component_config: SolaxCounterSetup):
+        return SolaxCounter(device_config.id, component_config, client, device_config.configuration.modbus_id)
 
-    def add_component(self, component_config: Union[Dict,
-                                                    SolaxBatSetup,
-                                                    SolaxCounterSetup,
-                                                    SolaxInverterSetup]) -> None:
-        if isinstance(component_config, Dict):
-            component_type = component_config["type"]
-        else:
-            component_type = component_config.type
-        component_config = dataclass_from_dict(COMPONENT_TYPE_TO_MODULE[
-            component_type].component_descriptor.configuration_factory, component_config)
-        if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self.components["component"+str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config.id, component_config, self.client,
-                self.device_config.configuration.modbus_id))
-        else:
-            raise Exception(
-                "illegal component type " + component_type + ". Allowed values: " +
-                ','.join(self.COMPONENT_TYPE_TO_CLASS.keys())
-            )
+    def create_inverter_component(component_config: SolaxInverterSetup):
+        return SolaxInverter(device_config.id, component_config, client, device_config.configuration.modbus_id)
 
-    def update(self) -> None:
-        log.debug("Start device reading " + str(self.components))
-        if self.components:
-            for component in self.components:
-                # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                with SingleComponentUpdateContext(self.components[component].fault_state):
-                    self.components[component].update()
-        else:
-            log.warning(
-                self.device_config.name +
-                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden.")
+    def update_components(components: Iterable[Union[SolaxBat, SolaxCounter, SolaxInverter]]):
+        with client:
+            for component in components:
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update()
 
-
-COMPONENT_TYPE_TO_MODULE = {
-    "bat": bat,
-    "counter": counter,
-    "inverter": inverter
-}
-
-
-def read_legacy(component_type: str, ip_address: str, modbus_id: int, num: Optional[int] = None) -> None:
-    device_config = Solax()
-    device_config.configuration.ip_address = ip_address
-    device_config.configuration.modbus_id = modbus_id
-    dev = Device(device_config)
-    if component_type in COMPONENT_TYPE_TO_MODULE:
-        component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
-    else:
-        raise Exception(
-            "illegal component type " + component_type + ". Allowed values: " +
-            ','.join(COMPONENT_TYPE_TO_MODULE.keys())
-        )
-    component_config.id = num
-    dev.add_component(component_config)
-
-    log.debug('Solax IP-Adresse: ' + ip_address)
-    log.debug('Solax ID: ' + str(modbus_id))
-
-    dev.update()
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(read_legacy, argv)
+    try:
+        client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
+    except Exception:
+        log.exception("Fehler in create_device")
+    return ConfigurableDevice(
+        device_config=device_config,
+        component_factory=ComponentFactoryByType(
+            bat=create_bat_component,
+            counter=create_counter_component,
+            inverter=create_inverter_component,
+        ),
+        component_updater=MultiComponentUpdater(update_components)
+    )
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Solax)
