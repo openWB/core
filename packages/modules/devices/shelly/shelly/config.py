@@ -7,9 +7,9 @@ from ..vendor import vendor_descriptor
 
 @auto_str
 class ShellyConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, generation: Optional[int] = None):
+    def __init__(self, ip_address: Optional[str] = None, factor: Optional[int] = -1):
         self.ip_address = ip_address
-        self.generation = generation
+        self.factor = factor
 
 
 @auto_str

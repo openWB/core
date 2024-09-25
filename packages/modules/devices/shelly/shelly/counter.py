@@ -18,12 +18,14 @@ class ShellyCounter:
                  device_id: int,
                  component_config: ShellyCounterSetup,
                  address: str,
+                 factor: int,
                  generation: Optional[int]) -> None:
         self.component_config = component_config
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.address = address
+        self.factor = factor
         self.generation = generation
 
     def update(self) -> None:
@@ -39,7 +41,7 @@ class ShellyCounter:
                 # shelly3EM has three meters:
                 for meter in meters:
                     power = power + meter['power']
-                power = power * -1
+                power = power * self.factor
 
                 voltages = [status['emeters'][i]['voltage'] for i in range(0, 3)]
                 currents = [status['emeters'][i]['current'] for i in range(0, 3)]
@@ -52,7 +54,7 @@ class ShellyCounter:
                 currents = [status['em:0'][f'{i}_current'] for i in 'abc']
                 powers = [status['em:0'][f'{i}_act_power'] for i in 'abc']
                 power_factors = [status['em:0'][f'{i}_pf'] for i in 'abc']
-                power = status['em:0']['total_act_power'] * -1
+                power = status['em:0']['total_act_power'] * self.factor
                 imported, exported = self.sim_counter.sim_count(power)
 
             counter_state = CounterState(

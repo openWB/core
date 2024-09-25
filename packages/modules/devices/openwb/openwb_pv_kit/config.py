@@ -7,7 +7,7 @@ class PvKitConfiguration:
         pass
 
 
-class PvKit:
+class PvKitSetup:
     def __init__(self,
                  name: str = "openWB PV-Kit",
                  type: str = "openwb_pv_kit",
