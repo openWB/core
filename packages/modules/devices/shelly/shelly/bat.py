@@ -18,12 +18,14 @@ class ShellyBat:
                  device_id: int,
                  component_config: ShellyBatSetup,
                  address: str,
+                 factor: int,
                  generation: Optional[int]) -> None:
         self.component_config = component_config
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.address = address
+        self.factor = factor
         self.generation = generation
 
     def total_power_from_shelly(self) -> int:
@@ -35,18 +37,27 @@ class ShellyBat:
         status = req.get_http_session().get(status_url, timeout=3).json()
         try:
             if self.generation == 1:
-                meters = status['emeters']  # shelly3EM
+                if 'meters' in status:
+                    meters = status['meters']  # shelly
+                else:
+                    meters = status['emeters']  # shellyEM & shelly3EM
+                # shellyEM has one meter, shelly3EM has three meters:
                 for meter in meters:
                     total = total + meter['power']
             else:
-                total = status['em:0']['total_act_power']  # shelly Pro3EM
+                if 'switch:0' in status:
+                    total = status['switch:0']['apower']
+                elif 'pm1:0' in status:
+                    total = status['pm1:0']['apower']  # shelly PM Mini Gen 3
+                else:
+                    total = status['em:0']['total_act_power']  # shelly Pro3EM
         except KeyError:
             log.exception("unsupported shelly device?")
         finally:
             return int(total)
 
     def update(self) -> None:
-        bat = self.total_power_from_shelly() * -1
+        bat = self.total_power_from_shelly() * self.factor
         imported, exported = self.sim_counter.sim_count(bat)
         bat_state = BatState(
             power=bat,

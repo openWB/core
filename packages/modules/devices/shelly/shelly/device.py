@@ -23,7 +23,7 @@ def get_device_generation(address: str) -> int:
     url = "http://" + address + "/shelly"
     generation = 1
     device_info = req.get_http_session().get(url, timeout=3).json()
-    if 'gen' in device_info:
+    if 'gen' in device_info:  # gen 2+
         generation = int(device_info['gen'])
     return generation
 
@@ -31,18 +31,18 @@ def get_device_generation(address: str) -> int:
 def create_device(device_config: Shelly) -> ConfigurableDevice:
     def create_counter_component(component_config: ShellyCounterSetup) -> ShellyCounter:
         return ShellyCounter(device_config.id, component_config, device_config.configuration.ip_address,
-                             device_config.configuration.generation)
+                             device_config.configuration.factor,
+                             get_device_generation(device_config.configuration.ip_address))
 
     def create_inverter_component(component_config: ShellyInverterSetup) -> ShellyInverter:
         return ShellyInverter(device_config.id, component_config, device_config.configuration.ip_address,
-                              device_config.configuration.generation)
+                              device_config.configuration.factor,
+                              get_device_generation(device_config.configuration.ip_address))
 
     def create_bat_component(component_config: ShellyBatSetup) -> ShellyBat:
         return ShellyBat(device_config.id, component_config, device_config.configuration.ip_address,
-                         device_config.configuration.generation)
-
-    if device_config.configuration.generation is None and device_config.configuration.ip_address is not None:
-        device_config.configuration.generation = get_device_generation(device_config.configuration.ip_address)
+                         device_config.configuration.factor,
+                         get_device_generation(device_config.configuration.ip_address))
 
     return ConfigurableDevice(
         device_config=device_config,
