@@ -125,13 +125,12 @@ class Counter:
                     if self.num == data.data.counter_all_data.get_id_evu_counter():
                         data.data.cp_data[cp].set_state_and_log(
                             f"Fehler beim Auslesen des Zählers {get_component_name_by_id(self.num)}. Es wird eine "
-                            f"Leistung von {self.data.config.max_power_errorcase/1000} kW bei einer maximalen "
-                            f"Leistung von {self.data.config.max_total_power/1000} kW angenommen.")
+                            f"maximale Leistung von {self.data.config.max_power_errorcase/1000} kW genutzt.")
                     else:
                         data.data.cp_data[cp].set_state_and_log(
-                            f"Fehler beim Auslesen des Zählers {get_component_name_by_id(self.num)}. Es werden Ströme "
-                            f"von {[int(round(self.data.config.max_power_errorcase/230/3, 0))]*3} A bei maximalen "
-                            f"Strömen von {self.data.config.max_currents} A angenommen.")
+                            f"Fehler beim Auslesen des Zählers {get_component_name_by_id(self.num)}. Es werden"
+                            f" maximal Ströme von {[int(round(self.data.config.max_power_errorcase/230/3, 0))]*3} A"
+                            " genutzt.")
                 return False
         else:
             self.data.set.error_timer = None
