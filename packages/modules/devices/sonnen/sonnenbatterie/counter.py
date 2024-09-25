@@ -4,6 +4,7 @@ from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -14,7 +15,7 @@ from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieCounterSe
 log = logging.getLogger(__name__)
 
 
-class SonnenbatterieCounter:
+class SonnenbatterieCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  device_address: str,

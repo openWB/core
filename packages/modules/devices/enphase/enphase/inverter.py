@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, Union
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -12,7 +13,7 @@ from modules.devices.enphase.enphase.config import EnphaseInverterSetup
 log = logging.getLogger(__name__)
 
 
-class EnphaseInverter:
+class EnphaseInverter(AbstractInverter):
     def __init__(self, device_id: int, component_config: Union[Dict, EnphaseInverterSetup]) -> None:
         self.component_config = dataclass_from_dict(EnphaseInverterSetup, component_config)
         self.store = get_inverter_value_store(self.component_config.id)

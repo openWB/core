@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -9,7 +10,7 @@ from modules.devices.vzlogger.vzlogger.config import VZLoggerCounterSetup
 from modules.devices.vzlogger.vzlogger.utils import parse_line
 
 
-class VZLoggerCounter:
+class VZLoggerCounter(AbstractCounter):
     def __init__(self, device_id: int, component_config: VZLoggerCounterSetup) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(VZLoggerCounterSetup, component_config)

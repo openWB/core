@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -14,7 +15,7 @@ from modules.devices.kostal.kostal_piko.config import KostalPikoCounterSetup
 log = logging.getLogger(__name__)
 
 
-class KostalPikoCounter:
+class KostalPikoCounter(AbstractCounter):
     def __init__(self, device_id: int, component_config: Union[Dict, KostalPikoCounterSetup], ip_address: str) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(KostalPikoCounterSetup, component_config)

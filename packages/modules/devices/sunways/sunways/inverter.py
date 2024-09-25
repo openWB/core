@@ -4,6 +4,7 @@ from requests.auth import HTTPDigestAuth
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -17,7 +18,7 @@ x
 """
 
 
-class SunwaysInverter:
+class SunwaysInverter(AbstractInverter):
     def __init__(self,
                  component_config: Union[Dict, SunwaysInverterSetup],
                  ip_address: str,

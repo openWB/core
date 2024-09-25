@@ -31,6 +31,26 @@ class AbstractBat:
         pass
 
 
+class AbstractCounter:
+    @abstractmethod
+    def __init__(self, *kwargs) -> None:
+        pass
+
+    @abstractmethod
+    def update(self, *kwargs) -> None:
+        pass
+
+
+class AbstractInverter:
+    @abstractmethod
+    def __init__(self, *kwargs) -> None:
+        pass
+
+    @abstractmethod
+    def update(self, *kwargs) -> None:
+        pass
+
+
 class DeviceDescriptor:
     def __init__(self, configuration_factory: Type):
         self.configuration_factory = configuration_factory

@@ -3,6 +3,7 @@ import logging
 from typing import Tuple, List
 
 from modules.common import modbus
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -39,7 +40,7 @@ def read_counter(client: modbus.ModbusTcpClient_, modbus_id: int) -> Tuple[int, 
     return power, powers
 
 
-class E3dcCounter:
+class E3dcCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config: E3dcCounterSetup,

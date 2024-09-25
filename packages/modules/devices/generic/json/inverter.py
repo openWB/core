@@ -4,6 +4,7 @@ from typing import Dict, Union
 import jq
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -12,7 +13,7 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.generic.json.config import JsonInverterSetup
 
 
-class JsonInverter:
+class JsonInverter(AbstractInverter):
     def __init__(self, device_id: int, component_config: Union[Dict, JsonInverterSetup]) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(JsonInverterSetup, component_config)

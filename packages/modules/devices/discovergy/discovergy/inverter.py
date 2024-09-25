@@ -1,5 +1,6 @@
 from requests import Session
 
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -8,7 +9,7 @@ from modules.devices.discovergy.discovergy import api
 from modules.devices.discovergy.discovergy.config import DiscovergyInverterSetup
 
 
-class DiscovergyInverter:
+class DiscovergyInverter(AbstractInverter):
     def __init__(self, component_config: DiscovergyInverterSetup) -> None:
         self.component_config = component_config
         self.store = get_inverter_value_store(self.component_config.id)

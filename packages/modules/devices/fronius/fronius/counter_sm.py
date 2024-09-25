@@ -6,6 +6,7 @@ from requests import Session
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -17,7 +18,7 @@ from modules.devices.fronius.fronius.config import FroniusSmCounterSetup
 log = logging.getLogger(__name__)
 
 
-class FroniusSmCounter:
+class FroniusSmCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, FroniusSmCounterSetup],

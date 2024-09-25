@@ -5,6 +5,7 @@ from typing import Dict, Union
 from dataclass_utils import dataclass_from_dict
 from modules.devices.alpha_ess.alpha_ess.config import AlphaEssConfiguration, AlphaEssCounterSetup
 from modules.common import modbus
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -12,7 +13,7 @@ from modules.common.modbus import ModbusDataType
 from modules.common.store import get_counter_value_store
 
 
-class AlphaEssCounter:
+class AlphaEssCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, AlphaEssCounterSetup],

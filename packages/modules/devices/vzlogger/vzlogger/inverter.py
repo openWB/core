@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -9,7 +10,7 @@ from modules.devices.vzlogger.vzlogger.config import VZLoggerInverterSetup
 from modules.devices.vzlogger.vzlogger.utils import parse_line
 
 
-class VZLoggerInverter:
+class VZLoggerInverter(AbstractInverter):
     def __init__(self, device_id: int, component_config: VZLoggerInverterSetup) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(VZLoggerInverterSetup, component_config)

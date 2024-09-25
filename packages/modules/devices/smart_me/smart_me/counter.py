@@ -5,6 +5,7 @@ from requests import Session
 
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -14,7 +15,7 @@ from modules.devices.smart_me.smart_me.config import SmartMeCounterSetup
 log = logging.getLogger(__name__)
 
 
-class SmartMeCounter:
+class SmartMeCounter(AbstractCounter):
     def __init__(self,
                  component_config: Union[Dict, SmartMeCounterSetup]) -> None:
         self.component_config = dataclass_from_dict(SmartMeCounterSetup, component_config)

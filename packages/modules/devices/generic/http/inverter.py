@@ -5,6 +5,7 @@ from requests import Session
 
 from dataclass_utils import dataclass_from_dict
 from helpermodules import compatibility
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -14,7 +15,7 @@ from modules.devices.generic.http.api import create_request_function
 from modules.devices.generic.http.config import HttpInverterSetup
 
 
-class HttpInverter:
+class HttpInverter(AbstractInverter):
     def __init__(self, device_id: int, component_config: Union[Dict, HttpInverterSetup], url: str) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(HttpInverterSetup, component_config)

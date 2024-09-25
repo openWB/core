@@ -3,6 +3,7 @@ from typing import Dict, Union
 from pymodbus.constants import Endian
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,7 +12,7 @@ from modules.common.store import get_counter_value_store
 from modules.devices.qcells.qcells.config import QCellsCounterSetup
 
 
-class QCellsCounter:
+class QCellsCounter(AbstractCounter):
     def __init__(self,
                  component_config: Union[Dict, QCellsCounterSetup],
                  modbus_id: int) -> None:

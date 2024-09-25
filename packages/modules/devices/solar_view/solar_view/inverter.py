@@ -4,6 +4,7 @@ from typing import Dict, Union
 
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -14,7 +15,7 @@ from modules.devices.solar_view.solar_view.config import SolarViewInverterSetup
 log = logging.getLogger(__name__)
 
 
-class SolarViewInverter:
+class SolarViewInverter(AbstractInverter):
     def __init__(self, component_config: Union[Dict, SolarViewInverterSetup]) -> None:
         self.component_config = dataclass_from_dict(SolarViewInverterSetup, component_config)
         self.store = get_inverter_value_store(self.component_config.id)

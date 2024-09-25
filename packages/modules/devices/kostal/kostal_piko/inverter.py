@@ -2,6 +2,7 @@
 from typing import Dict, Tuple, Union
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -10,7 +11,7 @@ from modules.common import req
 from modules.devices.kostal.kostal_piko.config import KostalPikoInverterSetup
 
 
-class KostalPikoInverter:
+class KostalPikoInverter(AbstractInverter):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, KostalPikoInverterSetup],

@@ -4,6 +4,7 @@ from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -14,7 +15,7 @@ from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieInverterS
 log = logging.getLogger(__name__)
 
 
-class SonnenbatterieInverter:
+class SonnenbatterieInverter(AbstractInverter):
     def __init__(self,
                  device_id: int,
                  device_address: str,

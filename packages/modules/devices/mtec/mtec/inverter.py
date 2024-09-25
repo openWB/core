@@ -2,6 +2,7 @@
 from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,7 +12,7 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.mtec.mtec.config import MTecInverterSetup
 
 
-class MTecInverter:
+class MTecInverter(AbstractInverter):
     def __init__(self, device_id: int, component_config: Union[Dict, MTecInverterSetup]) -> None:
         self.component_config = dataclass_from_dict(MTecInverterSetup, component_config)
         self.store = get_inverter_value_store(self.component_config.id)

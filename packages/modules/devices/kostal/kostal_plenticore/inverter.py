@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from typing import Any, Callable
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -8,7 +9,7 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreInverterSetup
 
 
-class KostalPlenticoreInverter:
+class KostalPlenticoreInverter(AbstractInverter):
     def __init__(self,
                  component_config: KostalPlenticoreInverterSetup) -> None:
         self.component_config = component_config

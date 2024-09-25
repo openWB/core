@@ -6,6 +6,7 @@ import re
 from math import isnan
 
 from modules.common import req
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -15,7 +16,7 @@ from modules.devices.kostal.kostal_steca.config import KostalStecaInverterSetup
 log = logging.getLogger(__name__)
 
 
-class KostalStecaInverter:
+class KostalStecaInverter(AbstractInverter):
     def __init__(self, component_config: KostalStecaInverterSetup, ip_address: str) -> None:
         self.ip_address = ip_address
         self.component_config = component_config
