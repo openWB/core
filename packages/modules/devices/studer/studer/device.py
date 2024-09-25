@@ -2,91 +2,44 @@
 """ Modul zum Auslesen von Alpha Ess Speichern, Zählern und Wechselrichtern.
 """
 import logging
-from typing import Dict, List, Union, Optional
+from typing import Iterable, Union
 
-from dataclass_utils import dataclass_from_dict
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
-from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
+from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.studer.studer import bat
-from modules.devices.studer.studer import inverter
-from modules.devices.studer.studer.config import (
-    Studer, StuderBatSetup, StuderInverterConfiguration, StuderInverterSetup)
+from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
+from modules.devices.studer.studer.bat import StuderBat
+from modules.devices.studer.studer.config import Studer, StuderBatSetup, StuderInverterSetup
+from modules.devices.studer.studer.inverter import StuderInverter
 
 log = logging.getLogger(__name__)
 
 
-class Device(AbstractDevice):
-    COMPONENT_TYPE_TO_CLASS = {
-        "bat": bat.StuderBat,
-        "inverter": inverter.StuderInverter
-    }
+def create_device(device_config: Studer):
+    def create_bat_component(component_config: StuderBatSetup):
+        return StuderBat(component_config, client)
 
-    def __init__(self, device_config: Union[Dict, Studer]) -> None:
-        self.components = {}  # type: Dict[str, Union[bat.StuderBat, inverter.StuderInverter]]
-        try:
-            self.device_config = dataclass_from_dict(Studer, device_config)
-            self.client = modbus.ModbusTcpClient_(
-                self.device_config.configuration.ip_address, self.device_config.configuration.port)
-        except Exception:
-            log.exception("Fehler im Modul "+self.device_config.name)
+    def create_inverter_component(component_config: StuderInverterSetup):
+        return StuderInverter(component_config, client)
 
-    def add_component(self, component_config: Union[Dict, StuderBatSetup, StuderInverterSetup]) -> None:
-        if isinstance(component_config, Dict):
-            component_type = component_config["type"]
-        else:
-            component_type = component_config.type
-        component_config = dataclass_from_dict(COMPONENT_TYPE_TO_MODULE[
-            component_type].component_descriptor.configuration_factory, component_config)
-        if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self.components["component"+str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
-                component_config, self.client))
-        else:
-            raise Exception(
-                "illegal component type " + component_type + ". Allowed values: " +
-                ','.join(self.COMPONENT_TYPE_TO_CLASS.keys())
-            )
+    def update_components(components: Iterable[Union[StuderBat, StuderInverter]]):
+        with client:
+            for component in components:
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update()
 
-    def update(self) -> None:
-        log.debug("Start device reading " + str(self.components))
-        if self.components:
-            for component in self.components:
-                # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                with SingleComponentUpdateContext(self.components[component].fault_state):
-                    self.components[component].update()
-        else:
-            log.warning(
-                self.device_config.name +
-                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
-            )
-
-
-COMPONENT_TYPE_TO_MODULE = {
-    "bat": bat,
-    "inverter": inverter
-}
-
-
-def read_legacy(ip_address: str, component_config: Union[StuderBatSetup, StuderInverterSetup]):
-    device_config = Studer()
-    device_config.configuration.ip_address = ip_address
-    dev = Device(device_config)
-    dev.add_component(component_config)
-    dev.update()
-
-
-def read_legacy_bat(ip_address: str, num: Optional[int] = None):
-    read_legacy(ip_address, bat.component_descriptor.configuration_factory(id=None))
-
-
-def read_legacy_inverter(ip_address: str, vc_count: int, vc_type: str, num: int):
-    read_legacy(ip_address, inverter.component_descriptor.configuration_factory(
-        id=num, configuration=StuderInverterConfiguration(vc_count=vc_count, vc_type=vc_type)))
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args({"bat": read_legacy_bat, "inverter": read_legacy_inverter}, argv)
+    try:
+        client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
+    except Exception:
+        log.exception("Fehler in create_device")
+    return ConfigurableDevice(
+        device_config=device_config,
+        component_factory=ComponentFactoryByType(
+            bat=create_bat_component,
+            inverter=create_inverter_component,
+        ),
+        component_updater=MultiComponentUpdater(update_components)
+    )
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Studer)

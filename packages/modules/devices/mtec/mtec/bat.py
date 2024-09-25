@@ -20,7 +20,7 @@ class MTecBat:
         self.__device_id = device_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
 
-    def update(self, client: ModbusTcpClient_, generation: int) -> None:
+    def update(self, client: ModbusTcpClient_) -> None:
         unit = self.component_config.configuration.modbus_id
         generation = self.component_config.configuration.generation
 
