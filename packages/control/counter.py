@@ -36,7 +36,7 @@ class ControlRangeState(Enum):
 
 @dataclass
 class Config:
-    max_power_errorcase: float = field(default=0, metadata={"topic": "get/max_power_errorcase"})
+    max_power_errorcase: float = field(default=7000, metadata={"topic": "get/max_power_errorcase"})
     max_currents: List[float] = field(default_factory=currents_list_factory, metadata={
                                       "topic": "get/max_currents"})
     max_total_power: float = field(default=0, metadata={"topic": "get/max_total_power"})

@@ -71,7 +71,7 @@ def test_get_unbalanced_load_exceeding(raw_currents_left: List[float],
 @pytest.mark.parametrize("loadmanagement_available, max_currents, expected_raw_currents_left",
                          [pytest.param(True, [40]*3, [40, 0, 10], id="Überbelastung"),
                           pytest.param(True, [60]*3, [60, 15, 30]),
-                          pytest.param(False, [40]*3, [12.46376811594203]*3, id="Kein Lastmanagement")])
+                          pytest.param(False, [40]*3, [10.1449275362318853]*3, id="Kein Lastmanagement")])
 def test_set_current_left(loadmanagement_available: bool,
                           max_currents: List[float],
                           expected_raw_currents_left: List[float],
@@ -83,7 +83,7 @@ def test_set_current_left(loadmanagement_available: bool,
     counter = Counter(0)
     counter.data.config.max_currents = max_currents
     counter.data.config.max_total_power = sum(max_currents)*230
-    counter.data.config.max_power_errorcase = 19000
+    counter.data.config.max_power_errorcase = 7000
     counter.data.get.currents = [55]*3
 
     # execution
