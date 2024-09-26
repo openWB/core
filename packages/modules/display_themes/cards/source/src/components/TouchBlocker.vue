@@ -11,6 +11,7 @@ export default {
       countdownInterval: undefined,
       events: ["mousemove", "touchmove", "wheel", "click"],
       eventHandlerSetup: false,
+      debug: true,
     };
   },
   computed: {
@@ -19,6 +20,21 @@ export default {
         return undefined;
       }
       return this.mqttStore.getDisplayStandby;
+    },
+    touchBlockerTimeout() {
+      // show touch blocker right before the configured standby time
+      return Math.max(this.configuredDisplayStandby - 3, 1);
+    },
+  },
+  // ToDo: Remove debug output
+  watch: {
+    countdown() {
+      if (this.debug)
+        console.debug("countdown", `${this.countdown}/${this.configuredDisplayStandby}`);
+    },
+    show() {
+      if (this.debug)
+        console.debug("touch-blocker shown?", this.show);
     },
   },
   mounted() {
@@ -66,7 +82,7 @@ export default {
     },
     updateCountdown() {
       if (this.countdown === undefined) {
-        this.countdown = this.configuredDisplayStandby;
+        this.countdown = this.touchBlockerTimeout;
       } else {
         this.countdown -= 1;
         if (this.countdown < 1) {
@@ -75,7 +91,7 @@ export default {
       }
     },
     handleDocumentEvent() {
-      this.countdown = this.configuredDisplayStandby;
+      this.countdown = this.touchBlockerTimeout;
       this.show = false;
     },
     showTouchBlocker() {
