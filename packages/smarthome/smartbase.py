@@ -452,7 +452,10 @@ class Sbase(Sbase0):
         elif (self.ueberschussberechnung == 1):
             self.devuberschuss = self._uberschuss
         else:
-            self.devuberschuss = self.device_manual_ueb
+            # eigene Leistung abziehen um endlosregelung zu vermeiden
+            self.devuberschuss = self.device_manual_ueb - self._oldwatt
+            if (self.devuberschuss < 0):
+                self.devuberschuss = 0
 
     def preturn(self, zustand: int, ueberschussberechnung: int, updatecnt: int) -> None:
         self.ueberschussberechnung = ueberschussberechnung
