@@ -7,7 +7,6 @@ Im einfachsten Fall geschieht dies durch Kauf und Einbau eines [EVU-Kits](##EVU-
 
 Es gibt viele verschiedene Möglichkeiten, Zähler als auch Wechselrichter in das openWB-System einzufügen.  Die Struktur der Zähler muss dann im  [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dem System bekanntgegeben werden. Hier können auch [virtuelle Zähler](##Virtuelle Zähler)  hinzugefügt werden, welche openWB-intern die untergeordneten Zähler verrechnen.
 
-
 ## EVU-Kit
 
 Das [EVU-Kit (Link zum Shop)](https://openwb.de/shop/?product=openwb-evu-kit) ist die einfachste Art in der Software einen Zähler an die openWB zu integrieren. Der Zähler muss von einem Elektriker direkt hinter dem Zähler des EVU in den Zählerschrank integriert werden. Es gibt, je nach Kapazität des Hausanschlusses, verschiedene Messvarianten des Zählers, welche sich von der Integration unterscheiden. Dies betrifft aber nur die Arbeit des Elektrikers.
@@ -21,6 +20,7 @@ openWB hat einen MQTT-Broker integriert, welcher unter Port 1883 (ohne Verschlü
 
 Folgende Werte können dem MQTT-Zähler übergeben werden. Die ID ist individuell und wird beim Anlegen der MQTT-Komponente angezeigt.
 Die folgenden Topics sind für einen reibungslosen Betrieb unbedingt erforderlich:
+
 - **openWB/set/counter/id/get/power**
   - **Beschreibung**: Bezugsleistung in Watt, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen, positiv für Bezug, negativ für Einspeisung.
   - **Beispiel**: `-123.45`
@@ -34,11 +34,13 @@ Die folgenden Topics sind für einen reibungslosen Betrieb unbedingt erforderlic
   - **Beispiel**: `123.45`
 
 Ströme je Phase sind für phasenbasiertes Lastmanagement unbedingt erforderlich, sonst erfolgt das Lastmanagement ausschließlich auf Basis der Gesamtleistung am EVU-Punkt:
+
 - **openWB/set/counter/id/get/currents**
   - **Beschreibung**: Array mit den Strömen je Phase in Ampere, mit Nachkommastellen (Float), positiv für Bezug, negativ für Einspeisung.
   - **Beispiel**: `[1.2,2.3,-2.1]`
 
 Die Netzfrequenz, Spannungen, Leistungen und Leistungsfaktoren jeder Phase werden ausschließlich zu Anzeigezwecken verwendet:
+
 - **openWB/set/counter/id/get/frequency**
   - **Beschreibung**: Netzfrequenz in Hz, Zahl mit oder ohne Nachkommastellen (Float, Integer) und einem Punkt als Dezimaltrennzeichen.
   - **Beispiel**: `50.12`
@@ -65,27 +67,24 @@ Eine weitere Möglichkeit des Datenabrufs wird im [openWB-Forum](https://openwb.
 
 ### Solaranzeige
 
-[Solaranzeige](https://solaranzeige.de)  ist ebenfalls ein OpenSource Projekt, welches der Visualisierung, Speicherung und Weiterverarbeitung von PV-Daten dient. 
-Dieses Projekt unterstützt aktuell (Stand 2024-02) mehr Wechselrichter als openWB. Somit können hier mit etwas Aufwand existierende Wechselrichter eingebunden und die Daten weitergereicht werden, ohne Arbeiten am Zählerschrank durchzuführen zu lassen. 
+[Solaranzeige](https://solaranzeige.de)  ist ebenfalls ein OpenSource Projekt, welches der Visualisierung, Speicherung und Weiterverarbeitung von PV-Daten dient.
+Dieses Projekt unterstützt aktuell (Stand 2024-02) mehr Wechselrichter als openWB. Somit können hier mit etwas Aufwand existierende Wechselrichter eingebunden und die Daten weitergereicht werden, ohne Arbeiten am Zählerschrank durchzuführen zu lassen.
 Die Software ist originär dafür vorgesehen auf einen Raspberry per Image installiert zu werden und nach wenigen Konfigurationsschritten lauffähig zu sein. Es gibt auch schon Portierungen für [Docker](https://github.com/DeBaschdi/docker.solaranzeige).
 Solaranzeige kann mit vielen Wechselrichtern kommunizieren und auch teilweise die angeschlossenen Zähler auslesen. Eine zeitbasierte Datenbank (InfluxDb), Datenweitergabe über einen MQTT-Client sowie eine Visualisierung mit Grafana sind direkt integriert. Es kann aber auch bereits existierende Infrastruktur verwendet werden.
 In dem Projekt wird (mit Stand von 2021) auch die Möglichkeit dokumentiert die Daten direkt an openWB weiterzuleiten. Dann kann jedoch kein weiterer MQTT-Broker bedient werden.
-Alternativ können die Zählerwerte an eine Hausautomationsserver weitergegeben, dort ggf. vorzeichenkorrigiert und dann über einen zweiten MQTT-Client zur openWB geschickt werden. 
+Alternativ können die Zählerwerte an eine Hausautomationsserver weitergegeben, dort ggf. vorzeichenkorrigiert und dann über einen zweiten MQTT-Client zur openWB geschickt werden.
 
 ## Virtuelle Zähler
 
-Virtuelle Zähler sind, wie der Name schon sagt, nicht physikalisch vorhanden. Sie dienen in der Struktur des [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dazu, Ströme und/oder Leistung zu begrenzen oder Werte aus untergeordneten einzelnen Zählern zu akkumulieren. 
+Virtuelle Zähler sind, wie der Name schon sagt, nicht physikalisch vorhanden. Sie dienen in der Struktur des [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dazu, Ströme und/oder Leistung zu begrenzen oder Werte aus untergeordneten einzelnen Zählern zu akkumulieren.
 
 ## Timing
-Das zyklische Senden bzw. Bereitstellen der Zählerwerte ist für eine funktionierende Regelung essentiell. Unter 
 
-> Einstellungen - Allgemein - Hardware
+Das zyklische Senden bzw. Bereitstellen der Zählerwerte ist für eine funktionierende Regelung essentiell. Unter ``Einstellungen - Allgemein - Hardware`` kann die Regelgeschwindigkeit ausgewählt werden. Es gibt die Intervalle:
 
-kann die Regelgeschwindigkeit ausgewählt werden. Es gibt die Intervalle:
- - Normal
- - Langsam (20s)
- - Sehr langsam (60s)
+- Normal
+- Langsam (20s)
+- Sehr langsam (60s)
 
-Hier muss eine Regelgeschwindigkeit entsprechend der Aktualisierungsrate der Zählerwerte angegeben werden, da ansonsten die Rückmeldung des Systems zu spät kommt und die openWB weiter versucht nachzuregeln. 
-Insbesondere bei der Verwendung von [Solaranzeige](### Solaranzeige) ist aufgrund der 20-30s dauerenden Aktualisierungsrate die Regelungsgeschwindigkeit anzupassen. 
-
+Hier muss eine Regelgeschwindigkeit entsprechend der Aktualisierungsrate der Zählerwerte angegeben werden, da ansonsten die Rückmeldung des Systems zu spät kommt und die openWB weiter versucht nachzuregeln.
+Insbesondere bei der Verwendung von [Solaranzeige](### Solaranzeige) ist aufgrund der 20-30s dauerenden Aktualisierungsrate die Regelungsgeschwindigkeit anzupassen.

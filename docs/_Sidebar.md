@@ -15,7 +15,7 @@
   * [ID-Tag/Ladung nur nach Freischaltung](https://github.com/openWB/core/wiki/Ladung-nur-nach-Freischaltung)
   * [Hybrid-System aus Wechselrichter und Speicher](https://github.com/openWB/core/wiki/Hybrid-System-aus-Wechselrichter-und-Speicher)
 * Integration in Heimautomation
-  *  [MQTT](https://github.com/openWB/core/wiki/MQTT)
+  * [MQTT](https://github.com/openWB/core/wiki/MQTT)
 * Mitarbeit am Projekt
   * [Wiki-Eintrag erstellen](https://github.com/openWB/core/wiki/Wiki-Eintrag_erstellen)
   * [Entwicklungsumgebung](https://github.com/openWB/core/wiki/Entwicklungsumgebung)
