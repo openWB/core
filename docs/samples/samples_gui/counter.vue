@@ -2,24 +2,15 @@
 	<div class="device-sample-counter">
 		<openwb-base-heading>
 			Einstellungen für Sample Zähler
-			<span class="small">(Modul: {{ $options.name }})</span>
 		</openwb-base-heading>
 	</div>
 </template>
 
 <script>
+import ComponentConfigMixin from "../../ComponentConfigMixin.vue";
+
 export default {
 	name: "DeviceSampleCounter",
-	emits: ["update:configuration"],
-	props: {
-		configuration: { type: Object, required: true },
-		deviceId: { type: Number, default: undefined },
-		componentId: { type: Number, required: true },
-	},
-	methods: {
-		updateConfiguration(event, path = undefined) {
-			this.$emit("update:configuration", { value: event, object: path });
-		},
-	},
+	mixins: [ComponentConfigMixin],
 };
 </script>
