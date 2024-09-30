@@ -25,15 +25,15 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 
 defineOptions({
   name: 'SliderQuaser',
 });
 
-const currentCharge = ref(35);
-const targetCharge = ref(80);
+const currentCharge = ref<number>(35);
+const targetCharge = ref<number>(80);
 </script>
 
 <style scoped>
