@@ -1,12 +1,250 @@
 <template>
-  <q-page class="row items-center justify-evenly">
-    
+  <q-page class="bg-blue-grey-6">
+    <q-carousel
+      v-model="slideTop"
+      swipeable
+      animated
+      padding
+      infinite
+      height="300px"
+      class="bg-blue-grey-6 text-white rounded-borders custom-carousel"
+      @mousedown.prevent
+      @touchstart.passive="onTouchStartTop"
+      @touchmove.passive="onTouchMoveTop"
+      @touchend.passive="onTouchEndTop"
+    >
+      <q-carousel-slide
+        v-for="(item, index) in carouselItemsTop"
+        :key="index"
+        :name="item.name"
+        class="column no-wrap flex-center"
+      >
+        <img :src="item.image" alt="Carousel Image" style="max-width: 100%; height: auto;" />
+      </q-carousel-slide>
+    </q-carousel>
+
+    <!-- Card with Tabs for Details -->
+    <q-card class="q-mt-md">
+      <q-tabs v-model="tab" class="bg-grey-3 text-black">
+        <q-tab name="smartHome">
+          <q-icon name="home" size="25px" color="grey-8" />
+        </q-tab>
+        <q-tab name="lp">
+          <q-icon name="ev_station" size="25px" color="blue-7" />
+        </q-tab>
+        <q-tab name="speicher">
+          <q-icon name="battery_full" size="25px" color="black" />
+        </q-tab>
+      </q-tabs>
+
+      <q-separator />
+
+      <q-tab-panels v-model="tab">
+        <q-tab-panel name="lp">
+          <q-carousel
+            v-model="slideBottom"
+            swipeable
+            animated
+            
+            padding
+            height="300px"
+            class="bg-blue-grey-6 text-white rounded-borders custom-carousel"
+            @mousedown.prevent
+            @touchstart.passive="onTouchStart"
+            @touchmove.passive="onTouchMove"
+            @touchend.passive="onTouchEnd"
+          >
+            <q-carousel-slide
+              v-for="(item, index) in carouselItems"
+              :key="index"
+              :name="item.name"
+              class="column no-wrap flex-center"
+            >
+              <q-icon :name="item.icon" size="56px" />
+              <div class="q-mt-md text-center">
+                {{ item.text }}
+              </div>
+            </q-carousel-slide>
+          </q-carousel>
+        </q-tab-panel>
+
+        <q-tab-panel name="speicher">
+          <div class="q-pa-md">
+            <p>Speicher</p>
+            <div class="q-mt-md">
+              <q-list bordered>
+                <q-item>
+                  <q-item-section>
+                    <q-item-label>Leistung</q-item-label>
+                    <q-item-label caption>22.0 kW</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Geladen</q-item-label>
+                    <q-item-label caption>7.2 kWh</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item>
+                  <q-item-section>
+                    <q-item-label>Ladestand</q-item-label>
+                    <q-item-label caption>30% (100 km)</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Ladeziel</q-item-label>
+                    <q-item-label caption>90% (360 km)</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
+          </div>
+        </q-tab-panel>
+
+        <q-tab-panel name="smartHome">
+          <div class="q-pa-md">
+            <p>Smart Home</p>
+            <!-- Custom charge slider component (insert your slider here) -->
+
+            <div class="q-mt-md">
+              <q-list bordered>
+                <q-item>
+                  <q-item-section>
+                    <q-item-label>Leistung</q-item-label>
+                    <q-item-label caption>22.0 kW</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Geladen</q-item-label>
+                    <q-item-label caption>7.2 kWh</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item>
+                  <q-item-section>
+                    <q-item-label>Ladestand</q-item-label>
+                    <q-item-label caption>30% (100 km)</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Ladeziel</q-item-label>
+                    <q-item-label caption>90% (360 km)</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
+          </div>
+        </q-tab-panel>
+      </q-tab-panels>
+    </q-card>
   </q-page>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
+import DIA1 from '/src/assets/Dia_1.png';
+import DIA2 from '/src/assets/Dia_2.png';
 
-defineOptions({
-  name: 'IndexPage',
-});
+// Type definitions for carousel items
+interface CarouselItemTop {
+  name: string;
+  image: string;
+}
+
+interface CarouselItem {
+  name: string;
+  icon: string;
+  text: string;
+}
+
+// States
+//const slide = ref<number>(1);
+const slideTop = ref<string>('DIA1');
+const tab = ref<string>('lp');
+const slideBottom = ref<string>('style');
+
+// Data for carousels
+const carouselItemsTop: CarouselItemTop[] = [
+  { name: 'DIA1', image: DIA1 },
+  { name: 'DIA2', image: DIA2 }
+];
+
+const carouselItems: CarouselItem[] = [
+  {
+    name: 'style',
+    icon: 'style',
+    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+  },
+  {
+    name: 'tv',
+    icon: 'live_tv',
+    text: 'Praesent bibendum, neque at hendrerit pretium, nunc nisi tempus nunc.'
+  },
+  {
+    name: 'layers',
+    icon: 'layers',
+    text: 'Donec euismod, nisl eget ultricies ultricies, nunc nunc ultricies nunc.'
+  },
+  {
+    name: 'map',
+    icon: 'terrain',
+    text: 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
+  }
+];
+
+// Touch handling variables and functions
+let touchStartX = 0;
+let touchEndX = 0;
+
+const onTouchStartTop = (event: TouchEvent) => {
+  touchStartX = event.touches[0].clientX;
+};
+
+const onTouchMoveTop = (event: TouchEvent) => {
+  touchEndX = event.touches[0].clientX;
+};
+
+const onTouchEndTop = () => {
+  if (touchStartX - touchEndX > 50) {
+    // Swipe left on top carousel
+    slideTop.value =
+      carouselItemsTop[
+        (carouselItemsTop.findIndex((item) => item.name === slideTop.value) + 1) %
+          carouselItemsTop.length
+      ].name;
+  } else if (touchEndX - touchStartX > 50) {
+    // Swipe right on top carousel
+    slideTop.value =
+      carouselItemsTop[
+        (carouselItemsTop.findIndex((item) => item.name === slideTop.value) - 1 + carouselItemsTop.length) %
+          carouselItemsTop.length
+      ].name;
+  }
+};
+
+const onTouchStart = (event: TouchEvent) => {
+  touchStartX = event.touches[0].clientX;
+};
+
+const onTouchMove = (event: TouchEvent) => {
+  touchEndX = event.touches[0].clientX;
+};
+
+const onTouchEnd = () => {
+  if (touchStartX - touchEndX > 50) {
+    // Swipe left on bottom carousel
+    slideBottom.value =
+      carouselItems[
+        (carouselItems.findIndex((item) => item.name === slideBottom.value) + 1) %
+          carouselItems.length
+      ].name;
+  } else if (touchEndX - touchStartX > 50) {
+    // Swipe right on bottom carousel
+    slideBottom.value =
+      carouselItems[
+        (carouselItems.findIndex((item) => item.name === slideBottom.value) - 1 + carouselItems.length) %
+          carouselItems.length
+      ].name;
+  }
+};
 </script>
+
+<style scoped>
+.custom-carousel .q-carousel__slide {
+  touch-action: pan-y;
+}
+</style>
