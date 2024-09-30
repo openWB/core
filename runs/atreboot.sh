@@ -249,7 +249,7 @@ chmod 666 "$LOGFILE"
 		echo "'tvservice' not found, assuming a display is present"
 	fi
 	echo "displayDetected: $displayDetected"
-	mosquitto_pub -p 1886 -t "openWB/optional_int_display/detected" -r -m "$displayDetected"
+	mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
 
 	# display setup
 	echo "display setup..."
