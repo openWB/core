@@ -1,5 +1,5 @@
 <template>
-  <q-page class="flex flex-col">
+  <q-page class="column items-stretch" >
     <!-- Top Carousel -->
     <div class="top-carousel">
       <q-carousel
@@ -7,7 +7,7 @@
         swipeable
         animated
         infinite
-        class="full-height"
+        class="full-height bg-blue-grey-6"
       >
         <q-carousel-slide
           v-for="(item, index) in carouselItemsTop"
@@ -21,7 +21,7 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <q-tabs v-model="tab" class="bg-grey-3 text-black">
+    <q-tabs v-model="tab" class="bg-blue-grey-4 text-black">
       <q-tab name="smartHome">
         <q-icon name="home" size="25px" color="grey-8" />
       </q-tab>
@@ -55,7 +55,7 @@
             <div class="text-center q-mt-md">
               {{ item.text }}
             </div>
-            <SliderQuasar class="q-mt-lg" />
+            <SliderQuasar />
           </q-carousel-slide>
         </q-carousel>
       </q-tab-panel>
@@ -130,13 +130,6 @@ const carouselItems: CarouselItem[] = [
 </script>
 
 <style scoped>
-.q-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
 .top-carousel {
   height: 30vh;
 }
@@ -145,7 +138,7 @@ const carouselItems: CarouselItem[] = [
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  overflow: hidden;
+  
 }
 
 .q-tab-panel {
