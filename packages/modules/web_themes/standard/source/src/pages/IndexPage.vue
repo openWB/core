@@ -1,17 +1,13 @@
 <template>
-  <q-page class="bg-blue-grey-6">
+  <q-page class="bg-blue-grey-6 full-height flex column">
+    <!-- Top Carousel -->
     <q-carousel
       v-model="slideTop"
       swipeable
       animated
-      padding
+      height="30vh"
       infinite
-      height="300px"
       class="bg-blue-grey-6 text-white rounded-borders custom-carousel"
-      @mousedown.prevent
-      @touchstart.passive="onTouchStartTop"
-      @touchmove.passive="onTouchMoveTop"
-      @touchend.passive="onTouchEndTop"
     >
       <q-carousel-slide
         v-for="(item, index) in carouselItemsTop"
@@ -19,12 +15,17 @@
         :name="item.name"
         class="column no-wrap flex-center"
       >
-        <img :src="item.image" alt="Carousel Image" style="max-width: 100%; height: auto;" />
+        <img
+          :src="item.image"
+          alt="Carousel Image"
+          class="carousel-image"
+          draggable="false"
+        />
       </q-carousel-slide>
     </q-carousel>
 
     <!-- Card with Tabs for Details -->
-    <q-card class="q-mt-md">
+    <q-card class="flex-grow-1 flex column overflow-hidden">
       <q-tabs v-model="tab" class="bg-grey-3 text-black">
         <q-tab name="smartHome">
           <q-icon name="home" size="25px" color="grey-8" />
@@ -39,20 +40,16 @@
 
       <q-separator />
 
-      <q-tab-panels v-model="tab">
-        <q-tab-panel name="lp">
+      <q-tab-panels v-model="tab" animated class="flex-grow-1 flex column">
+        <q-tab-panel name="lp" class="q-pa-none flex-grow-1 flex column">
           <q-carousel
             v-model="slideBottom"
             swipeable
             animated
-            
-            padding
-            height="300px"
-            class="bg-blue-grey-6 text-white rounded-borders custom-carousel"
+            navigation
+            infinite
+            class="bg-blue-grey-6 text-white custom-carousel flex-grow-1"
             @mousedown.prevent
-            @touchstart.passive="onTouchStart"
-            @touchmove.passive="onTouchMove"
-            @touchend.passive="onTouchEnd"
           >
             <q-carousel-slide
               v-for="(item, index) in carouselItems"
@@ -61,14 +58,15 @@
               class="column no-wrap flex-center"
             >
               <q-icon :name="item.icon" size="56px" />
-              <div class="q-mt-md text-center">
+              <div class="text-center q-mt-md">
                 {{ item.text }}
               </div>
+              <SliderQuasar class="q-mt-lg" />
             </q-carousel-slide>
           </q-carousel>
         </q-tab-panel>
 
-        <q-tab-panel name="speicher">
+        <q-tab-panel name="speicher" class="flex-grow-1 overflow-auto">
           <div class="q-pa-md">
             <p>Speicher</p>
             <div class="q-mt-md">
@@ -98,11 +96,9 @@
           </div>
         </q-tab-panel>
 
-        <q-tab-panel name="smartHome">
+        <q-tab-panel name="smartHome" class="flex-grow-1 overflow-auto">
           <div class="q-pa-md">
             <p>Smart Home</p>
-            <!-- Custom charge slider component (insert your slider here) -->
-
             <div class="q-mt-md">
               <q-list bordered>
                 <q-item>
@@ -138,6 +134,11 @@
 import { ref } from 'vue';
 import DIA1 from '/src/assets/Dia_1.png';
 import DIA2 from '/src/assets/Dia_2.png';
+import SliderQuasar from '../components/SliderQuasar.vue';
+
+defineOptions({
+  name: 'IndexPage',
+});
 
 // Type definitions for carousel items
 interface CarouselItemTop {
@@ -160,91 +161,54 @@ const slideBottom = ref<string>('style');
 // Data for carousels
 const carouselItemsTop: CarouselItemTop[] = [
   { name: 'DIA1', image: DIA1 },
-  { name: 'DIA2', image: DIA2 }
+  { name: 'DIA2', image: DIA2 },
 ];
 
 const carouselItems: CarouselItem[] = [
   {
     name: 'style',
     icon: 'style',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
   {
     name: 'tv',
     icon: 'live_tv',
-    text: 'Praesent bibendum, neque at hendrerit pretium, nunc nisi tempus nunc.'
+    text: 'Praesent bibendum, neque at hendrerit pretium, nunc nisi tempus nunc.',
   },
   {
     name: 'layers',
     icon: 'layers',
-    text: 'Donec euismod, nisl eget ultricies ultricies, nunc nunc ultricies nunc.'
+    text: 'Donec euismod, nisl eget ultricies ultricies, nunc nunc ultricies nunc.',
   },
   {
     name: 'map',
     icon: 'terrain',
-    text: 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
-  }
+    text: 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+  },
 ];
-
-// Touch handling variables and functions
-let touchStartX = 0;
-let touchEndX = 0;
-
-const onTouchStartTop = (event: TouchEvent) => {
-  touchStartX = event.touches[0].clientX;
-};
-
-const onTouchMoveTop = (event: TouchEvent) => {
-  touchEndX = event.touches[0].clientX;
-};
-
-const onTouchEndTop = () => {
-  if (touchStartX - touchEndX > 50) {
-    // Swipe left on top carousel
-    slideTop.value =
-      carouselItemsTop[
-        (carouselItemsTop.findIndex((item) => item.name === slideTop.value) + 1) %
-          carouselItemsTop.length
-      ].name;
-  } else if (touchEndX - touchStartX > 50) {
-    // Swipe right on top carousel
-    slideTop.value =
-      carouselItemsTop[
-        (carouselItemsTop.findIndex((item) => item.name === slideTop.value) - 1 + carouselItemsTop.length) %
-          carouselItemsTop.length
-      ].name;
-  }
-};
-
-const onTouchStart = (event: TouchEvent) => {
-  touchStartX = event.touches[0].clientX;
-};
-
-const onTouchMove = (event: TouchEvent) => {
-  touchEndX = event.touches[0].clientX;
-};
-
-const onTouchEnd = () => {
-  if (touchStartX - touchEndX > 50) {
-    // Swipe left on bottom carousel
-    slideBottom.value =
-      carouselItems[
-        (carouselItems.findIndex((item) => item.name === slideBottom.value) + 1) %
-          carouselItems.length
-      ].name;
-  } else if (touchEndX - touchStartX > 50) {
-    // Swipe right on bottom carousel
-    slideBottom.value =
-      carouselItems[
-        (carouselItems.findIndex((item) => item.name === slideBottom.value) - 1 + carouselItems.length) %
-          carouselItems.length
-      ].name;
-  }
-};
 </script>
 
 <style scoped>
-.custom-carousel .q-carousel__slide {
+.full-height {
+  height: 100vh;
+}
+
+.custom-carousel {
   touch-action: pan-y;
+}
+
+.carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  touch-action: none;
+}
+
+.q-page {
+  padding: 0;
+}
+
+.q-card {
+  border-radius: 0;
 }
 </style>
