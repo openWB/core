@@ -617,7 +617,8 @@ class UpdateConfig:
     def __solve_breaking_changes(self) -> None:
         """ solve breaking changes in the datastore
         """
-        datastore_version = decode_payload(self.all_received_topics.get("openWB/system/datastore_version")) or 0
+        datastore_version = (decode_payload(self.all_received_topics.get("openWB/system/datastore_version")) or
+                             self.DATASTORE_VERSION)
         log.debug(f"current datastore version: {datastore_version}")
         log.debug(f"target datastore version: {self.DATASTORE_VERSION}")
         for version in range(datastore_version, self.DATASTORE_VERSION):

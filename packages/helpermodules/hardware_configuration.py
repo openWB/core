@@ -1,15 +1,31 @@
+import logging
 import json
 import sys
 from typing import Dict, Optional
 
 from helpermodules.utils.json_file_handler import write_and_check
 
+log = logging.getLogger(__name__)
+
 HARDWARE_CONFIGURATION_FILE = "/home/openwb/configuration.json"
 
 
 def _read_configuration() -> Dict:
-    with open(HARDWARE_CONFIGURATION_FILE, "r") as f:
-        return json.loads(f.read())
+    for i in range(2):
+        try:
+            with open(HARDWARE_CONFIGURATION_FILE, "r") as f:
+                config = json.loads(f.read())
+            if isinstance(config, dict):
+                return config
+        except Exception:
+            # wird im else-Zweig abgefangen
+            pass
+    else:
+        log.error("Invalid configuration.json file. Creating new one with default values.")
+        with open("./data/config/configuration.json", "r") as f:
+            config_file = json.loads(f.read())
+        write_and_check(HARDWARE_CONFIGURATION_FILE, config_file)
+        return config_file
 
 
 def update_hardware_configuration(new_setting: Dict) -> None:
