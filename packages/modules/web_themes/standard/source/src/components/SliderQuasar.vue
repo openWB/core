@@ -1,14 +1,17 @@
 <template>
-  <div class="q-pa-md my-card">
-    <div class="q-mt-md relative-position" style="height: 40px">
+  <div class="my-card">
+    <div class="relative-position" style="height: 40px">
       <q-slider
         v-model="currentCharge"
         :min="0"
         :max="100"
         color="green-7"
-        track-size="27px"
+        track-size="20px"
         thumb-size="0px"
         readonly
+        @touchstart.stop
+        @touchmove.stop
+        @touchend.stop
         style="position: absolute; width: 100%; z-index: 1"
       />
       <q-slider
@@ -17,8 +20,11 @@
         :max="100"
         color="light-green-5"
         inner-track-color="blue-grey-2"
-        track-size="27px"
-        thumb-size="43px"
+        track-size="20px"
+        thumb-size="37px"
+        @touchstart.stop
+        @touchmove.stop
+        @touchend.stop
         style="position: absolute; width: 100%; z-index:"
       />
     </div>
@@ -29,7 +35,7 @@
 import { ref } from 'vue';
 
 defineOptions({
-  name: 'SliderQuaser',
+  name: 'SliderQuasar',
 });
 
 const currentCharge = ref<number>(35);
