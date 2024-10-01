@@ -11,7 +11,6 @@ export default {
       countdownInterval: undefined,
       events: ["mousemove", "touchmove", "wheel", "click"],
       eventHandlerSetup: false,
-      debug: true,
     };
   },
   computed: {
@@ -24,17 +23,6 @@ export default {
     touchBlockerTimeout() {
       // show touch blocker right before the configured standby time
       return Math.max(this.configuredDisplayStandby - 3, 1);
-    },
-  },
-  // ToDo: Remove debug output
-  watch: {
-    countdown() {
-      if (this.debug)
-        console.debug("countdown", `${this.countdown}/${this.configuredDisplayStandby}`);
-    },
-    show() {
-      if (this.debug)
-        console.debug("touch-blocker shown?", this.show);
     },
   },
   mounted() {
@@ -96,7 +84,6 @@ export default {
     },
     showTouchBlocker() {
       this.show = true;
-      // this.clearEventHandler();
       this.clearTimeout();
     },
   },
