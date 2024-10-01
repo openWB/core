@@ -5,6 +5,7 @@ import mqtt from "mqtt";
 import DateTime from "@/components/DateTime.vue";
 import NavBar from "@/components/NavBar.vue";
 import LockNavItem from "@/components/LockNavItem.vue";
+import TouchBlocker from "@/components/TouchBlocker.vue";
 
 import { useMqttStore } from "@/stores/mqtt.js";
 
@@ -15,6 +16,7 @@ export default {
     DateTime,
     NavBar,
     LockNavItem,
+    TouchBlocker,
   },
   data() {
     return {
@@ -242,6 +244,7 @@ export default {
       </i-container>
       <LockNavItem />
       <NavBar :changes-locked="changesLocked" />
+      <TouchBlocker />
     </i-layout-aside>
 
     <i-layout-content>

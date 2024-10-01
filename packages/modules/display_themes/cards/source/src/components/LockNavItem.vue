@@ -29,7 +29,7 @@ export default {
       code: "",
       countdown: 0,
       countdownInterval: undefined,
-      events: ["mousemove", "touchmove", "wheel"],
+      events: ["mousemove", "touchmove", "wheel", "click"],
     };
   },
   computed: {
@@ -65,7 +65,6 @@ export default {
       this.modalPinEntryVisible = true;
     },
     checkUnlockCode(event) {
-      console.log("checkUnlockCode", event);
       if (this.mqttStore.checkChangesLockCode(event)) {
         this.$refs.lockInput.success("success");
         this.changesLocked = false;
