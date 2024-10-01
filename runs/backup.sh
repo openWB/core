@@ -6,7 +6,8 @@ TARBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 BACKUPDIR="$OPENWBBASEDIR/data/backup"
 RAMDISKDIR="$OPENWBBASEDIR/ramdisk"
 TEMPDIR="$RAMDISKDIR/temp"
-LOGFILE="$OPENWBBASEDIR/data/log/backup.log"
+LOGDIR="$OPENWBBASEDIR/data/log"
+LOGFILE="$LOGDIR/backup.log"
 
 useExtendedFilename=$1
 if ((useExtendedFilename == 1)); then
@@ -18,6 +19,18 @@ else
 fi
 
 {
+	echo "starting backup script"
+	echo "environment:"
+	echo "  OPENWBBASEDIR: $OPENWBBASEDIR"
+	echo "  OPENWBDIRNAME: $OPENWBDIRNAME"
+	echo "  TARBASEDIR: $TARBASEDIR"
+	echo "  BACKUPDIR: $BACKUPDIR"
+	echo "  RAMDISKDIR: $RAMDISKDIR"
+	echo "  TEMPDIR: $TEMPDIR"
+	echo "  LOGDIR: $LOGDIR"
+	echo "  LOGFILE: $LOGFILE"
+	echo "  FILENAME: $FILENAME"
+
 	echo "deleting old backup files if present in '$BACKUPDIR'"
 	# remove old backup files
 	rm -v "$BACKUPDIR/"*
@@ -88,7 +101,7 @@ fi
 	rm -rf "${TEMPDIR:?}/"
 	tar --append \
 		--file="$BACKUPFILE" \
-		--directory="$OPENWBBASEDIR/data/log/" \
+		--directory="$LOGDIR/" \
 		"backup.log"
 	echo "zipping archive"
 	gzip --verbose "$BACKUPFILE"
