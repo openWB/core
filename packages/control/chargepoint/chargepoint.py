@@ -32,6 +32,7 @@ from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import ChargepointState
+from helpermodules.constants import NO_ERROR
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -210,6 +211,7 @@ class Chargepoint(ChargepointRfidMixin):
         if not self.data.get.plug_state and self.data.set.ocpp_transaction_id is not None:
             data.data.optional_data.stop_transaction(
                 self.data.config.ocpp_chargebox_id,
+                self.chargepoint_module.fault_state,
                 self.data.get.imported,
                 self.data.set.ocpp_transaction_id,
                 self.data.set.rfid)
@@ -721,17 +723,16 @@ class Chargepoint(ChargepointRfidMixin):
                 else:
                     self._pub_configured_ev(ev_list)
             # OCPP Start Transaction nach Anstecken
-            if self.data.get.plug_state and self.data.set.plug_state_prev is False:
-                try:
-                    self.data.set.ocpp_transaction_id = data.data.optional_data.start_transaction(
-                        self.data.config.ocpp_chargebox_id,
-                        self.num,
-                        self.data.set.rfid,
-                        self.data.get.imported)
-                    Pub().pub("openWB/set/chargepoint/"+str(self.num) +
-                              "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
-                except Exception:
-                    log.exception("Fehler im OCPP-Modul _start_transaction()")
+            if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
+                    (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):
+                self.data.set.ocpp_transaction_id = data.data.optional_data.start_transaction(
+                    self.data.config.ocpp_chargebox_id,
+                    self.chargepoint_module.fault_state,
+                    self.num,
+                    self.data.set.rfid,
+                    self.data.get.imported)
+                Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                          "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
             # SoC nach Anstecken aktualisieren
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.get.plug_state is False and self.data.set.plug_state_prev)):

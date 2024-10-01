@@ -10,6 +10,7 @@ from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
+from modules.common.fault_state_level import FaultStateLevel
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +54,8 @@ class Process:
                             f"openWB/set/chargepoint/{cp.num}/get/state_str",
                             "Ladevorgang wurde gestartet... (bei Problemen: Prüfe bitte zuerst in den Einstellungen"
                             " 'Ladeeinstellungen' und 'Konfiguration'.)")
+                    if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NO_ERROR:
+                        cp.chargepoint_module.fault_state.store_error()
                     modules_threads.append(self._start_charging(cp))
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))

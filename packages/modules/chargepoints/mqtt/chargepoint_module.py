@@ -20,8 +20,7 @@ class ChargepointModule(AbstractChargepoint):
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
 
     def set_current(self, current: float) -> None:
-        with SingleComponentUpdateContext(self.fault_state):
-            log.debug("MQTT-Ladepunkte abonnieren die Soll-Stromstärke direkt vom Broker.")
+        log.debug("MQTT-Ladepunkte abonnieren die Soll-Stromstärke direkt vom Broker.")
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):

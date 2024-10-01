@@ -103,15 +103,17 @@ class Optional(OcppMixin):
 
     def _transfer_meter_values(self):
         for cp in data.data.cp_data.values():
-            if self.ocpp_boot_notification_send is False:
-                # Boot-Notfification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
-                self.boot_notification(cp.data.config.ocpp_chargebox_id,
-                                       cp.chargepoint_module.config.type,
-                                       cp.data.get.serial_number)
-                self.ocpp_boot_notification_send = True
-            if cp.data.set.ocpp_transaction_id is not None:
-                try:
-                    self.send_heart_beat(cp.data.config.ocpp_chargebox_id)
-                    self.transfer_values(cp.data.config.ocpp_chargebox_id, cp.num, int(cp.data.get.imported))
-                except Exception:
-                    log.exception("Fehler Trigger Meter Values")
+            try:
+                if self.ocpp_boot_notification_send is False:
+                    # Boot-Notfification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
+                    self.boot_notification(cp.data.config.ocpp_chargebox_id,
+                                           cp.chargepoint_module.fault_state,
+                                           cp.chargepoint_module.config.type,
+                                           cp.data.get.serial_number)
+                    self.ocpp_boot_notification_send = True
+                if cp.data.set.ocpp_transaction_id is not None:
+                    self.send_heart_beat(cp.data.config.ocpp_chargebox_id, cp.chargepoint_module.fault_state)
+                    self.transfer_values(cp.data.config.ocpp_chargebox_id,
+                                         cp.chargepoint_module.fault_state, cp.num, int(cp.data.get.imported))
+            except Exception as e:
+                cp.set_error_and_log(str(e))
