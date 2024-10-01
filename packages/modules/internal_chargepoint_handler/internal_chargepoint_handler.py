@@ -205,9 +205,11 @@ class InternalChargepointHandler:
                 if self.cp1:
                     self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
                 time.sleep(1.1)
-        with SingleComponentUpdateContext(self.fault_state_info_cp0):
+        with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
             # Allgemeine Fehlermeldungen an LP 1
-            if self.cp0_client_handler is not None and self.cp1_client_handler is None:
+            if self.cp0_client_handler is None and self.cp1_client_handler is None:
+                log.error("Kein ClientHandler vorhanden. Beende.")
+            elif self.cp0_client_handler is not None and self.cp1_client_handler is None:
                 with self.cp0_client_handler.client:
                     _loop()
             elif self.cp0_client_handler is None and self.cp1_client_handler is not None:
