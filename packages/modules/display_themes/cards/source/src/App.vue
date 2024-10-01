@@ -90,7 +90,11 @@ export default {
         let data = JSON.parse(params.get("data"));
         Object.entries(data).forEach(([key, value]) => {
           console.log("updateSetting", key, value);
-          this.mqttStore.updateSetting(key, value);
+          if (key.startsWith("parentChargePoint")) {
+            this.mqttStore.updateSetting(key, parseInt(value));
+          } else {
+            this.mqttStore.updateSetting(key, value);
+          }
         });
       }
     }
