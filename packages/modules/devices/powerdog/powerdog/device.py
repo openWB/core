@@ -24,22 +24,22 @@ def create_device(device_config: Powerdog):
         with client:
             if len(components) == 1:
                 for component in components:
-                    if isinstance(components[component], PowerdogInverter):
-                        with SingleComponentUpdateContext(components[component].fault_state):
-                            components[component].update()
+                    if isinstance(component, PowerdogInverter):
+                        with SingleComponentUpdateContext(component.fault_state):
+                            component.update()
                     else:
                         raise Exception(
                             "Wenn ein EVU-Zähler konfiguriert wurde, muss immer auch ein WR konfiguriert sein.")
             elif len(components) == 2:
                 for component in components:
-                    if isinstance(components[component], PowerdogInverter):
-                        inverter_power = components[component].update()
+                    if isinstance(component, PowerdogInverter):
+                        inverter_power = component.update()
                         break
                 else:
                     inverter_power = 0
                 for component in components:
-                    if isinstance(components[component], PowerdogCounter):
-                        components[component].update(inverter_power)
+                    if isinstance(component, PowerdogCounter):
+                        component.update(inverter_power)
             else:
                 log.warning(
                     device_config.name +
