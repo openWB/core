@@ -3,8 +3,8 @@ import pytest
 
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
-from modules.devices.mqtt.config import Mqtt
-from modules.devices.mqtt.device import create_device
+from modules.devices.generic.mqtt.config import Mqtt
+from modules.devices.generic.mqtt.device import create_device
 
 
 @pytest.fixture()

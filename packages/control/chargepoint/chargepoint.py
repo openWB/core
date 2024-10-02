@@ -32,7 +32,6 @@ from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import ChargepointState
-from helpermodules.constants import NO_ERROR
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
