@@ -1,55 +1,37 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Iterable, Union
 import logging
 
-from dataclass_utils import dataclass_from_dict
-from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
-from modules.common.component_context import MultiComponentUpdateContext
+from modules.common.abstract_device import DeviceDescriptor
+from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.generic.mqtt import bat, counter, inverter
 from modules.devices.generic.mqtt.config import Mqtt, MqttBatSetup, MqttCounterSetup, MqttInverterSetup
 
 log = logging.getLogger(__name__)
 
 
-class Device(AbstractDevice):
-    COMPONENT_TYPE_TO_CLASS = {
-        "bat": bat.MqttBat,
-        "counter": counter.MqttCounter,
-        "inverter": inverter.MqttInverter
-    }
-    COMPONENT_TYPE_TO_MODULE = {
-        "bat": bat,
-        "counter": counter,
-        "inverter": inverter
-    }
+def create_device(device_config: Mqtt):
+    def create_bat_component(component_config: MqttBatSetup):
+        return bat.MqttBat(component_config)
 
-    def __init__(self, device_config: Union[Dict, Mqtt]) -> None:
-        self.components = {}
-        try:
-            self.device_config = dataclass_from_dict(Mqtt, device_config)
-        except Exception:
-            log.exception("Fehler im Modul " + self.device_config.name)
+    def create_counter_component(component_config: MqttCounterSetup):
+        return counter.MqttCounter(component_config)
 
-    def add_component(self, component_config: Union[Dict, MqttBatSetup, MqttCounterSetup, MqttInverterSetup]) -> None:
-        if isinstance(component_config, Dict):
-            component_type = component_config["type"]
-        else:
-            component_type = component_config.type
-        component_config = dataclass_from_dict(self.COMPONENT_TYPE_TO_MODULE[
-            component_type].component_descriptor.configuration_factory, component_config)
-        if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self.components["component"+str(component_config.id)
-                            ] = (self.COMPONENT_TYPE_TO_CLASS[component_type](component_config))
+    def create_inverter_component(component_config: MqttInverterSetup):
+        return inverter.MqttInverter(component_config)
 
-    def update(self) -> None:
-        if self.components:
-            with MultiComponentUpdateContext(self.components):
-                log.debug("MQTT-Module müssen nicht ausgelesen werden.")
-        else:
-            log.warning(
-                self.device_config.name +
-                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
-            )
+    def update_components(components: Iterable[Union[bat.MqttBat, counter.MqttCounter, inverter.MqttInverter]]):
+        log.debug("MQTT-Module müssen nicht ausgelesen werden.")
+
+    return ConfigurableDevice(
+        device_config=device_config,
+        component_factory=ComponentFactoryByType(
+            bat=create_bat_component,
+            counter=create_counter_component,
+            inverter=create_inverter_component,
+        ),
+        component_updater=MultiComponentUpdater(update_components)
+    )
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Mqtt)
