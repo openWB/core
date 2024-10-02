@@ -729,7 +729,7 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.config.ocpp_chargebox_id,
                     self.chargepoint_module.fault_state,
                     self.num,
-                    self.data.set.rfid,
+                    self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id,
                     self.data.get.imported)
                 Pub().pub("openWB/set/chargepoint/"+str(self.num) +
                           "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
