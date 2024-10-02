@@ -1,7 +1,7 @@
 <template>
-  <q-page class="column items-stretch" >
+  <q-page class="column">
     <!-- Top Carousel -->
-    <div class="top-carousel">
+    <div class="col-4">
       <q-carousel
         v-model="slideTop"
         swipeable
@@ -13,9 +13,9 @@
           v-for="(item, index) in carouselItemsTop"
           :key="index"
           :name="item.name"
-          class="column no-wrap flex-center"
+          class="column items-center justify-center"
         >
-          <img :src="item.image" alt="Carousel Image" class="carousel-image" draggable="false" />
+          <img :src="item.image" draggable="false" style="width: 100%; height: 100%; object-fit: contain" />
         </q-carousel-slide>
       </q-carousel>
     </div>
@@ -34,8 +34,8 @@
     </q-tabs>
 
     <!-- Tab Panels -->
-    <q-tab-panels v-model="tab" animated class="flex-grow">
-      <q-tab-panel name="lp" class="q-pa-none flex flex-col">
+    <q-tab-panels v-model="tab" animated class="col">
+      <q-tab-panel name="lp" class="q-pa-none column">
         <q-carousel
           v-model="slideBottom"
           swipeable
@@ -49,7 +49,7 @@
             v-for="(item, index) in carouselItems"
             :key="index"
             :name="item.name"
-            class="column no-wrap flex-center"
+            class="column items-center justify-center"
           >
             <q-icon :name="item.icon" size="56px" />
             <div class="text-center q-mt-md">
@@ -59,11 +59,9 @@
           </q-carousel-slide>
         </q-carousel>
       </q-tab-panel>
-
       <q-tab-panel name="speicher" class="scroll">
         <!-- Speicher content -->
       </q-tab-panel>
-
       <q-tab-panel name="smartHome" class="scroll">
         <!-- Smart Home content -->
       </q-tab-panel>
@@ -94,7 +92,6 @@ interface CarouselItem {
 }
 
 // States
-//const slide = ref<number>(1);
 const slideTop = ref<string>('DIA1');
 const tab = ref<string>('lp');
 const slideBottom = ref<string>('style');
@@ -130,39 +127,7 @@ const carouselItems: CarouselItem[] = [
 </script>
 
 <style scoped>
-.top-carousel {
-  height: 30vh;
-}
-
-.q-tab-panels {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  
-}
-
-.q-tab-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 0;
-}
-
-.full-height {
-  height: 100%;
-}
-
-.carousel-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 .scroll {
   overflow-y: auto;
 }
 </style>
-
-
-
-
