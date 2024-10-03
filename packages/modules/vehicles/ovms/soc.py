@@ -10,14 +10,32 @@ from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.ovms import api
 from modules.vehicles.ovms.config import OVMS, OVMSConfiguration
+import datetime
+from json import dumps
 
-
+date_fmt = '%Y-%m-%d %H:%M:%S'
 log = logging.getLogger(__name__)
 
 
 def fetch(vehicle_update_data: VehicleUpdateData, config: OVMS, vehicle: int) -> CarState:
-    soc, range, soc_ts = api.fetch_soc(config, vehicle)
-    log.info("Result: soc/range=" + str(soc)+"/" + str(range) + "@" + soc_ts)
+    soc, range, soc_ts, kms, vehicle12v = api.fetch_soc(config, vehicle)
+    logs = {}
+    logs['timestamp'] = datetime.datetime.now().strftime(date_fmt)
+    logs['vehicle'] = str(vehicle)
+    logs['module_name'] = config.name
+    logs['module_type'] = config.type
+    logs['soc'] = str(soc)
+    logs['range'] = str(range)
+    logs['km_stand'] = str(kms)
+    logs['car_timestamp'] = soc_ts
+    logs['SoC12V'] = str(vehicle12v)
+    log.info("##LOG" + str(vehicle) + ":" + dumps(logs))
+
+    log.info("\nResult: soc=" + str(soc) +
+             ", range=" + str(range) + "km" +
+             ", car_timestamp=" + soc_ts +
+             ", km-Stand=" + str(kms) + "km" +
+             ", 12V-Batt=" + str(vehicle12v) + "V")
     return CarState(soc, range)
 
 
@@ -27,10 +45,14 @@ def create_vehicle(vehicle_config: OVMS, vehicle: int):
     return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
 
 
-def ovms_update(user_id: str, password: str, vehicleId: str, token: str, charge_point: int):
-    log.debug("ovms: user_id="+user_id+"vehicleId="+vehicleId+"charge_point="+str(charge_point))
+def ovms_update(server_url: str, user_id: str, password: str, vehicleId: str, token: str, charge_point: int):
+    log.debug("ovms: server_url=" + server_url +
+              "user_id=" + user_id +
+              "vehicleId=" + vehicleId +
+              "charge_point=" + str(charge_point))
     store.get_car_value_store(charge_point).store.set(
-        fetch(None, OVMS(configuration=OVMSConfiguration(user_id, password, vehicleId, token)), charge_point))
+        fetch(None,
+              OVMS(configuration=OVMSConfiguration(server_url, user_id, password, vehicleId, token)), charge_point))
 
 
 def main(argv: List[str]):

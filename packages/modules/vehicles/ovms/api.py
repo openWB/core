@@ -9,7 +9,7 @@ from helpermodules.pub import Pub
 from modules.common import req
 from copy import deepcopy
 
-OVMS_SERVER = "https://ovms.dexters-web.de:6869"
+OVMS_SERVER = "https://ovms.dexters-web.de:6869"   # replaced by config parameter self.server_url
 TOKEN_CMD = "/api/token"
 STATUS_CMD = "/api/status"
 OVMS_APPL_LABEL = "application"
@@ -36,7 +36,7 @@ class api:
 
     # create a new token and store it in the soc_module configuration
     def create_token(self) -> str:
-        token_url = f"{OVMS_SERVER}{TOKEN_CMD}"
+        token_url = f"{self.server_url}{TOKEN_CMD}"
         data = {
             "username": self.user_id,
             "password": self.password
@@ -64,7 +64,7 @@ class api:
     # check list of token on OVMS server for unused token created by the soc mudule
     # if any obsolete token are found these are deleted.
     def cleanup_token(self):
-        tokenlist_url = f"{OVMS_SERVER}{TOKEN_CMD}?username={self.user_id}&password={self.token}"
+        tokenlist_url = f"{self.server_url}{TOKEN_CMD}?username={self.user_id}&password={self.token}"
 
         try:
             resp = self.session.get(tokenlist_url)
@@ -90,7 +90,7 @@ class api:
                 for tok in obsolete_tokenlist:
                     token_to_delete = tok["token"]
                     log.debug("cleanup_token: token_to_delete=" + dumps(tok, indent=4))
-                    token_del_url = f"{OVMS_SERVER}{TOKEN_CMD}/{token_to_delete}"
+                    token_del_url = f"{self.server_url}{TOKEN_CMD}/{token_to_delete}"
                     token_del_url = f"{token_del_url}?username={self.user_id}&password={self.token}"
                     try:
                         resp = self.session.delete(token_del_url)
@@ -106,7 +106,7 @@ class api:
 
     # get status for vehicleId
     def get_status(self) -> Union[int, dict]:
-        status_url = f"{OVMS_SERVER}{STATUS_CMD}/{self.vehicleId}?username={self.user_id}&password={self.token}"
+        status_url = f"{self.server_url}{STATUS_CMD}/{self.vehicleId}?username={self.user_id}&password={self.token}"
 
         log.debug("status-url=" + status_url)
         try:
@@ -127,8 +127,12 @@ class api:
     # async function to fetch soc, range, soc_ts
     async def _fetch_soc(self,
                          conf: OVMS,
-                         vehicle: int) -> Union[int, float, str]:
+                         vehicle: int) -> Union[int, float, str, float, float]:
         self.config_topic = "openWB/set/vehicle/" + vehicle + "/soc_module/config"
+        if conf.configuration.server_url is None or conf.configuration.server_url == "":
+            self.server_url = OVMS_SERVER
+        else:
+            self.server_url = conf.configuration.server_url
         self.user_id = conf.configuration.user_id
         self.password = conf.configuration.password
         self.vehicleId = conf.configuration.vehicleId
@@ -169,14 +173,20 @@ class api:
         if float(self.range) > 1000.0:
             self.range = str(float(self.range) / 10)
 
+        self.kms = float(statusDict['odometer']) / 10
+        self.vehicle12v = statusDict['vehicle12v']
         self.soc_ts = statusDict['m_msgtime_s']
-        log.debug("soc=" + str(self.soc) + ", range=" + str(self.range) + ", soc_ts=" + str(self.soc_ts))
+        log.debug("soc=" + str(self.soc) +
+                  ", range=" + str(self.range) +
+                  ", soc_ts=" + str(self.soc_ts) +
+                  ", km-Stand=" + str(self.kms) +
+                  ", vehicle12v=" + str(self.vehicle12v))
 
-        return int(float(self.soc)), float(self.range), self.soc_ts
+        return int(float(self.soc)), float(self.range), self.soc_ts, float(self.kms), float(self.vehicle12v)
 
 
 # sync function
-def fetch_soc(conf: OVMS, vehicle: int) -> Union[int, float, str]:
+def fetch_soc(conf: OVMS, vehicle: int) -> Union[int, float, str, float, float]:
 
     # prepare and call async method
     loop = asyncio.new_event_loop()
@@ -184,6 +194,6 @@ def fetch_soc(conf: OVMS, vehicle: int) -> Union[int, float, str]:
 
     # get soc, range from server
     a = api()
-    soc, range, soc_ts = loop.run_until_complete(a._fetch_soc(conf, vehicle))
+    soc, range, soc_ts, kms, vehicle12v = loop.run_until_complete(a._fetch_soc(conf, vehicle))
 
-    return soc, range, soc_ts
+    return soc, range, soc_ts, kms, vehicle12v
