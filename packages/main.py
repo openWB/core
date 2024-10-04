@@ -87,9 +87,9 @@ class HandlerAlgorithm:
         """ führt den YourCharge Algorithmus durch.
         """
         try:
-            # @exit_after(5)
+            @exit_after(5)
             def handler_with_control_interval():
-                if (data.data.general_data.data.control_interval / 5) == self.interval_counter:
+                if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
                     loadvars_.get_values()
                     wait_for_module_update_completed(loadvars_.event_module_update_completed,

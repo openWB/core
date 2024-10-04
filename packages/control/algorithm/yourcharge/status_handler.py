@@ -4,6 +4,7 @@ import logging
 import json
 
 from dataclasses import dataclass
+from helpermodules import timecheck
 
 from typing import Dict, List, Optional
 from control import data, yourcharge
@@ -36,6 +37,7 @@ class YcStatusHandler:
         self._energy_limit_status_topic = f"{yourcharge.yc_status_topic}/energy_limit"
         self._socket_approved_topic = f"{yourcharge.yc_status_topic}/socket_approved"
         self._scanned_rfid_topic = f"{yourcharge.yc_status_topic}/scanned_rfid"
+        self._time_topic = f"{yourcharge.yc_status_topic}/time"
         self._status_dict: Dict[str, object] = {}
         self._changed_keys: List[str] = []
         self._rfid_info_cache = None
@@ -44,6 +46,8 @@ class YcStatusHandler:
 
     def publish_changes(self):
         try:
+            # upon publish, we always also publish the timestamp in case we're not in heartbeat timeout
+            self.update_time()
             for changed_key in self._changed_keys:
                 new_value = self._status_dict[changed_key]
                 log.debug(f"Publishing status update: {changed_key} = '{new_value}'")
@@ -132,6 +136,9 @@ class YcStatusHandler:
 
     def has_changed_nightly_meter_reading(self) -> bool:
         return self._cp_meter_at_last_night_meter_reading_control_topic in self._changed_keys
+
+    def update_time(self) -> None:
+        self._update(self._time_topic, timecheck.create_timestamp())
 
     # energy limit
     def update_energy_limit(self, limit_value: float) -> None:
