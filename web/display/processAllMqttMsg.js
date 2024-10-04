@@ -12,8 +12,8 @@ function reloadDisplay() {
 		// wait again to give the broker some time and avoid a reload loop
 		setTimeout(() => {
 			location.reload();
-		}, 2000);
-	}, 2000);
+		}, 4000);
+	}, 4000);
 }
 
 function setIframeSource() {
@@ -35,7 +35,8 @@ function setIframeSource() {
 		var host = "";
 		var query = new URLSearchParams();
 		var destination = "";
-		if (data["openWB/general/extern"] === true) {
+		const theme = data["openWB/optional/int_display/theme"].type;
+		if (data["openWB/general/extern"] === true && theme.toLowerCase() !== "yourcharge") {
 			// load secondary display (from secondary openWB)
 			switch (data["openWB/general/extern_display_mode"]) {
 				case "local":
@@ -68,11 +69,10 @@ function setIframeSource() {
 			// no iframe here as this would result in another nesting with the wrapper on primary
 			setTimeout(() => {
 				location.href = destination;
-			}, 2000);
+			}, 4000);
 		} else {
 			// load primary display (from primary or secondary openWB)
 			host = location.host;
-			const theme = data["openWB/optional/int_display/theme"].type;
 
 			if (data["openWB/optional/int_display/only_local_charge_points"]) {
 				const searchParams = new URLSearchParams(location.search);
@@ -104,7 +104,7 @@ function setIframeSource() {
 				console.warn("onTimeout", this.readyState, this.status);
 				addLog(`check for theme '${theme}' timed out!`);
 			};
-			request.timeout = 2000;
+			request.timeout = 5000;
 			console.debug("checking url:", destination);
 			request.open("GET", destination, true);
 			request.send();
