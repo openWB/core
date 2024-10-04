@@ -9,6 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
 from modules.common.mpm3pm import Mpm3pm
 from modules.common.b23 import B23
+from modules.common.sdm import Sdm
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.openwb.openwb_flex.config import EvuKitFlexSetup
@@ -40,7 +41,11 @@ class EvuKitFlex:
             frequency = self.__client.get_frequency()
             power_factors = self.__client.get_power_factors()
 
-            if isinstance(self.__client, Mpm3pm or B23):
+            if isinstance(self.__client, Sdm):
+                imported = self.__client.get_imported()
+                exported = self.__client.get_exported()
+                currents = self.__client.get_currents()
+            elif isinstance(self.__client, Mpm3pm or B23):
                 imported = self.__client.get_imported()
                 exported = self.__client.get_exported()
             else:
