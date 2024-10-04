@@ -82,7 +82,7 @@ export default configure((/* ctx */) => {
         '/ws': {
           target: 'ws://localhost:9001',
           ws: true,
-        }
+        },
       },
     },
 
