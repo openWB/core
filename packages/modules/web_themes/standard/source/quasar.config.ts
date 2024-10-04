@@ -78,6 +78,12 @@ export default configure((/* ctx */) => {
     devServer: {
       // https: true
       open: true, // opens browser window automatically
+      proxy: {
+        '/ws': {
+          target: 'ws://localhost:9001',
+          ws: true,
+        }
+      },
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
