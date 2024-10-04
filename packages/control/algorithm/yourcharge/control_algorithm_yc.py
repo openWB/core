@@ -19,6 +19,7 @@ class _AggregatedData:
     number_of_charging_phases = 0
     is_charging: bool = False
     total_current_of_charging_phase_with_maximum_total_current: float = 0.0
+    current_of_charging_phase_with_maximum_current: float = 0.0
     charging_phase_with_maximum_total_current: int = -1
     charging_ev_adjusted_for_this_cp: int = 0
     max_number_of_charging_vehicles_across_all_phases: int = 0
@@ -44,6 +45,7 @@ class ControlAlgorithmYc:
         self._internal_cp_key: str = cp_key
         self._internal_cp: Chargepoint = data.data.cp_data[self._internal_cp_key]
         self._previous_expected_charge_current: float = 0.0
+        self._previous_measured_charge_current: float = 0.0
         self._previous_charging_phase_info: List[bool] = [False, False, False]
         self._expected_change: _ExpectedChange = _ExpectedChange()
         self._status_handler = status_handler
@@ -52,6 +54,8 @@ class ControlAlgorithmYc:
     def do_load_control(self) -> None:
         self._internal_cp = data.data.cp_data[self._internal_cp_key]
         # log.error(f"Internal CP now '{id(self._internal_cp)}'")
+
+        charging_phase_infos = self._aggregate_data()
 
         if data.data.yc_data.data.yc_control.fixed_charge_current is not None:
             # handling of superseded, fixed charge current
@@ -63,19 +67,32 @@ class ControlAlgorithmYc:
                 # fixed value >= 0.0 provided
                 self.set_current("Fixed current requested by yc_data.data.yc_control.fixed_charge_current",
                                  data.data.yc_data.data.yc_control.fixed_charge_current, yourcharge.LmStatus.Superseded)
+
+            # following must be done right before leaving so "previous" is previous throughout the whole algo run
+            self._previous_measured_charge_current = \
+                charging_phase_infos.current_of_charging_phase_with_maximum_current
             return
 
         # check if control interval is actuall due
         now_it_is = datetime.datetime.utcnow()
-        if (now_it_is -
-                self._last_control_run).total_seconds() < data.data.yc_data.data.yc_config.minimum_adjustment_interval:
+        if (now_it_is - self._last_control_run).total_seconds() + 2.5 \
+                < data.data.yc_data.data.yc_config.minimum_adjustment_interval:
             log.debug("Control loop not yet due")
+            # following must be done right before leaving so "previous" is previous throughout the whole algo run
+            self._previous_measured_charge_current = \
+                charging_phase_infos.current_of_charging_phase_with_maximum_current
             return
+
         self._last_control_run = now_it_is
 
+        self._print_aggregated(charging_phase_infos)
+
         # now we can start with actual load control calculation
-        charging_phase_infos = self._aggregate_data()
         self._compute_current(charging_phase_infos)
+
+        # following must be done right before leaving so "previous" is previous throughout the whole algo run
+        self._previous_measured_charge_current = \
+            charging_phase_infos.current_of_charging_phase_with_maximum_current
 
     def _compute_current(self, charging_phase_infos: _AggregatedData) -> None:
         # check if the car has done the adjustment that it has last been asked for
@@ -179,11 +196,13 @@ class ControlAlgorithmYc:
                 else:
                     llneu = data.data.yc_data.data.yc_config.min_evse_current_allowed
                     if llneu + charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current \
+                            - self._previous_measured_charge_current \
                             > data.data.yc_data.data.yc_config.allowed_total_current_per_phase:
                         log.error("Slow ramping: Not charging: Cannot start charging: "
                                   + f"llneu ({llneu} A) + total_current_of_charging_phase_with_maximum_total_current ("
                                   + str(charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current)
-                                  + " A) > (allowed_total_current_per_phase ("
+                                  + " A) - self._previous_measured_charge_current ("
+                                  + f"{self._previous_measured_charge_current} A) > (allowed_total_current_per_phase ("
                                   + f"{data.data.yc_data.data.yc_config.allowed_total_current_per_phase})")
                         llneu = 0
                         status_to_use = LmStatus.DownByLm
@@ -275,7 +294,7 @@ class ControlAlgorithmYc:
 
     def _call_set_current(self, charging_phase_infos: _AggregatedData, current_to_set: float, status_reason: LmStatus) \
             -> None:
-        log.error(f"callSetCurent {current_to_set} {status_reason}")
+        log.error(f"callSetCurent {current_to_set} {status_reason.name}")
         computed_reason = status_reason
         if current_to_set < data.data.yc_data.data.yc_config.min_evse_current_allowed:
             log.error(f"current_to_set={current_to_set} < yc_config.min_evse_current_allowed="
@@ -333,6 +352,8 @@ class ControlAlgorithmYc:
                     charging_phase_infos.charging_phase_with_maximum_total_current = i
                 if yc_control.charging_vehicles[i] > charging_phase_infos.charging_ev_adjusted_for_this_cp:
                     charging_phase_infos.charging_ev_adjusted_for_this_cp = yc_control.charging_vehicles[i]
+            if phase_charge_current > charging_phase_infos.current_of_charging_phase_with_maximum_current:
+                charging_phase_infos.current_of_charging_phase_with_maximum_current = phase_charge_current
             if yc_control.charging_vehicles[i] > charging_phase_infos.max_number_of_charging_vehicles_across_all_phases:
                 charging_phase_infos.max_number_of_charging_vehicles_across_all_phases = yc_control.charging_vehicles[i]
 
@@ -383,6 +404,9 @@ class ControlAlgorithmYc:
         if charging_phase_infos.number_of_charging_phases == 0:
             charging_phase_infos.number_of_charging_phases = 3
 
+        return charging_phase_infos
+
+    def _print_aggregated(self, charging_phase_infos: _AggregatedData) -> None:
         log.error(f"""
 YC LM Info:
 ===========
@@ -402,6 +426,7 @@ Chargbox-related:
 Metered current flow               : {self._internal_cp.data.get.currents} A (@{self._internal_cp.data.get.voltages}) \
 V -> {self._internal_cp.data.get.power} W
 Charging phase list                : {charging_phase_infos.charging_on_phase_list}
+Highest charge current             : {charging_phase_infos.current_of_charging_phase_with_maximum_current} A
 Number of charging phases          : {charging_phase_infos.number_of_charging_phases}
 Highest total current across phases: {charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current}\
 (on phase {charging_phase_infos.charging_phase_with_maximum_total_current})
@@ -409,13 +434,11 @@ Charging EVs to consider           : {charging_phase_infos.charging_ev_adjusted_
 Max. charging EV over all phases   : {charging_phase_infos.max_number_of_charging_vehicles_across_all_phases}
 """)
 
-        return charging_phase_infos
-
     def set_current(self, justification: str, current: float, status: yourcharge.LmStatus):
         self._status_handler.update_lm_status(status)
         if abs(self._internal_cp.data.set.current - current) > 0.001 or (self._previous_justification != justification):
             log.error(f"{justification}: Setting CP '{self._internal_cp_key}' charge current to {current} A "
-                      + f"(status {status})")
+                      + f"(status {status.name})")
             self._internal_cp.data.set.current = current
             self._internal_cp.chargepoint_module.set_current(current)
             self._previous_expected_charge_current = current
