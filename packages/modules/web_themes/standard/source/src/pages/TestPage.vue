@@ -36,7 +36,7 @@
     <!-- Tab Panels -->
     <q-tab-panels v-model="tab" animated class="col">
       <q-tab-panel name="lp" class="q-pa-none column">
-        <LadePunkt/>
+        <ChargePoint/>
       </q-tab-panel>
       <q-tab-panel name="speicher" class="scroll">
         <div class="q-pa-md">
@@ -104,8 +104,7 @@
 import { ref, onMounted } from 'vue';
 import DIA1 from '/src/assets/Dia_1.png';
 import DIA2 from '/src/assets/Dia_2.png';
-
-import LadePunkt from 'src/components/LadePunkt.vue';
+import ChargePoint from 'src/components/ChargePoint.vue';
 
 import { useMqttStore } from 'src/stores/mqtt-store';
 
@@ -120,26 +119,18 @@ const topicsToSubscribe = <string[]>[
   'openWB/system/version',
 ];
 
-// Type definitions for carousel items
 interface CarouselItemTop {
   name: string;
   image: string;
 }
 
-
-
-// States
 const slideTop = ref<string>('DIA1');
 const tab = ref<string>('lp');
 
-
-// Data for carousels
 const carouselItemsTop: CarouselItemTop[] = [
   { name: 'DIA1', image: DIA1 },
   { name: 'DIA2', image: DIA2 },
 ];
-
-
 
 onMounted(()=>{
   mqttStore.subscribe(topicsToSubscribe);
