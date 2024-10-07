@@ -36,28 +36,7 @@
     <!-- Tab Panels -->
     <q-tab-panels v-model="tab" animated class="col">
       <q-tab-panel name="lp" class="q-pa-none column">
-        <q-carousel
-          v-model="slideBottom"
-          swipeable
-          animated
-          navigation
-          infinite
-          class="bg-blue-grey-6 text-white full-height"
-          @mousedown.prevent
-        >
-          <q-carousel-slide
-            v-for="(item, index) in carouselItems"
-            :key="index"
-            :name="item.name"
-            class="column items-center justify-center"
-          >
-            <q-icon :name="item.icon" size="56px" />
-            <div class="text-center q-mt-md">
-              {{ item.text }}
-            </div>
-            <SliderQuasar />
-          </q-carousel-slide>
-        </q-carousel>
+        <LadePunkt ></LadePunkt>
       </q-tab-panel>
       <q-tab-panel name="speicher" class="scroll">
         <div class="q-pa-md">
@@ -122,14 +101,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import DIA1 from '/src/assets/Dia_1.png';
 import DIA2 from '/src/assets/Dia_2.png';
-import SliderQuasar from '../components/SliderQuasar.vue';
+
+import LadePunkt from 'src/components/LadePunkt.vue';
+
+import { useMqttStore } from 'src/stores/mqtt-store';
 
 defineOptions({
   name: 'IndexPage',
 });
+
+const mqttStore = useMqttStore();
+const topicsToSubscribe = <string[]>[
+  'openWB/system/ip_address',
+  'openWB/system/time',
+  'openWB/system/version',
+];
 
 // Type definitions for carousel items
 interface CarouselItemTop {
@@ -137,16 +126,12 @@ interface CarouselItemTop {
   image: string;
 }
 
-interface CarouselItem {
-  name: string;
-  icon: string;
-  text: string;
-}
+
 
 // States
 const slideTop = ref<string>('DIA1');
 const tab = ref<string>('lp');
-const slideBottom = ref<string>('style');
+
 
 // Data for carousels
 const carouselItemsTop: CarouselItemTop[] = [
@@ -154,28 +139,11 @@ const carouselItemsTop: CarouselItemTop[] = [
   { name: 'DIA2', image: DIA2 },
 ];
 
-const carouselItems: CarouselItem[] = [
-  {
-    name: 'style',
-    icon: 'style',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-  },
-  {
-    name: 'tv',
-    icon: 'live_tv',
-    text: 'Praesent bibendum, neque at hendrerit pretium, nunc nisi tempus nunc.',
-  },
-  {
-    name: 'layers',
-    icon: 'layers',
-    text: 'Donec euismod, nisl eget ultricies ultricies, nunc nunc ultricies nunc.',
-  },
-  {
-    name: 'map',
-    icon: 'terrain',
-    text: 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-  },
-];
+
+
+onMounted(()=>{
+  mqttStore.subscribe(topicsToSubscribe);
+});
 </script>
 
 <style scoped>
