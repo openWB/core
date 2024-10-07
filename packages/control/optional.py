@@ -115,5 +115,5 @@ class Optional(OcppMixin):
                     self.send_heart_beat(cp.data.config.ocpp_chargebox_id, cp.chargepoint_module.fault_state)
                     self.transfer_values(cp.data.config.ocpp_chargebox_id,
                                          cp.chargepoint_module.fault_state, cp.num, int(cp.data.get.imported))
-            except Exception as e:
-                cp.set_error_and_log(str(e))
+            except Exception:
+                log.exception("Fehler im OCPP-Optional-Modul")
