@@ -32,7 +32,7 @@ class ErrorTimerContext:
         return True
 
     def error_counter_exceeded(self) -> bool:
-        if self.error_timestamp and timecheck.check_timestamp(self.error_timestamp, self.timeout):
+        if self.error_timestamp and timecheck.check_timestamp(self.error_timestamp, self.timeout) is False:
             log.error(self.__exceeded_msg)
             return True
         else:
