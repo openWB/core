@@ -7,6 +7,10 @@ export interface ConnectionOptions {
   reconnectPeriod: number;
 }
 
+export interface TopicObject {
+  [key: string]: unknown;
+}
+
 export interface TopicList {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
