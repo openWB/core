@@ -58,8 +58,6 @@ def create_device(device_config: Solaredge):
         nonlocal device
         nonlocal inverter_counter
         inverter_counter += 1
-        synergy_units = get_synergy_units(component_config)
-        set_component_registers(device.components.values(), synergy_units, component_config.configuration.modbus_id)
         return SolaredgeInverter(device_config.id, component_config, client)
 
     def create_external_inverter_component(component_config: SolaredgeExternalInverterSetup):
@@ -109,6 +107,7 @@ def create_device(device_config: Solaredge):
         )
     except Exception:
         log.exception("Fehler in create_device")
+    return device
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Solaredge)
