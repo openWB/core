@@ -1,26 +1,28 @@
 <template>
   <div>
     <p>{{ title }}</p>
-    <p>IP: {{ mqttStore.topics['openWB/system/ip_address'] }}</p>
-    <p>Version: {{ mqttStore.topics['openWB/system/version'] }}</p>
-    <p>Time: {{ mqttStore.getSystemTime }}</p>
+    <p>IP: {{ mqttStore.systemIp }}</p>
+    <p>Version: {{ mqttStore.systemVersion }}</p>
+    <p>Time: {{ mqttStore.systemDateTime('locale-string') }}</p>
+    <p>Theme Configuration: {{ mqttStore.themeConfiguration }}</p>
+    <p>
+      General getter:
+      {{ mqttStore.getValue('openWB/general/web_theme', 'configuration') }}
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
-// import { computed, ref } from 'vue';
 import { onMounted } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
-const topicsToSubscribe = <string[]>[
-  'openWB/system/ip_address',
-  'openWB/system/time',
-  'openWB/system/version',
-];
+// const topicsToSubscribe = <string[]>[
+// ];
 
 onMounted(() => {
-  mqttStore.subscribe(topicsToSubscribe);
+  // explicit subscriptions are only necessary if subscribing to topics with wildcards
+  // mqttStore.subscribe(topicsToSubscribe);
 });
 
 interface Props {
