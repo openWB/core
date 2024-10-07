@@ -36,7 +36,7 @@
     <!-- Tab Panels -->
     <q-tab-panels v-model="tab" animated class="col">
       <q-tab-panel name="lp" class="q-pa-none column">
-        <LadePunkt ></LadePunkt>
+        <LadePunkt/>
       </q-tab-panel>
       <q-tab-panel name="speicher" class="scroll">
         <div class="q-pa-md">

@@ -16,8 +16,9 @@
           >
             <q-icon :name="item.icon" size="56px" />
             <div class="text-center q-mt-md">
+              {{ chargePointNames }}
               {{ item.text }}
-              <p>IP: {{ mqttStore.topics['openWB/system/ip_address'] }}</p>
+              
             </div>
             <SliderQuasar />
           </q-carousel-slide>
@@ -25,15 +26,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import SliderQuasar from './SliderQuasar.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
 const topicsToSubscribe = <string[]>[
-  'openWB/system/ip_address',
-  'openWB/system/time',
-  'openWB/system/version',
+  'openWB/chargepoint/+/config',
 ];
 
 const slideBottom = ref<string>('style');
@@ -66,6 +65,8 @@ const carouselItems: CarouselItem[] = [
     text: 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
   },
 ];
+
+const chargePointNames = computed(() => mqttStore.getChargePointNames);
 
 onMounted(()=>{
   mqttStore.subscribe(topicsToSubscribe);
