@@ -55,15 +55,10 @@ def create_device(device_config: Solaredge):
         return SolaredgeCounter(device_config.id, component_config, client)
 
     def create_inverter_component(component_config: SolaredgeInverterSetup):
-        nonlocal device
-        nonlocal inverter_counter
-        inverter_counter += 1
         return SolaredgeInverter(device_config.id, component_config, client)
 
     def create_external_inverter_component(component_config: SolaredgeExternalInverterSetup):
         nonlocal device
-        nonlocal inverter_counter
-        inverter_counter += 1
         synergy_units = get_synergy_units(component_config)
         set_component_registers(device.components.values(), synergy_units, component_config.configuration.modbus_id)
         return SolaredgeExternalInverter(device_config.id, component_config, client)
@@ -78,10 +73,9 @@ def create_device(device_config: Solaredge):
                                                   SolaredgeCounterSetup,
                                                   SolaredgeInverterSetup,
                                                   SolaredgeExternalInverterSetup]) -> None:
-        if (client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
-                                          unit=component_config.configuration.modbus_id
-                                          ) == synergy_unit_identifier and
-                (component_config.type == "external_inverter" or component_config.type == "counter")):
+        if client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
+                                         unit=component_config.configuration.modbus_id
+                                         ) == synergy_unit_identifier:
             # Snyergy-Units vom Haupt-WR des angeschlossenen Meters ermitteln. Es kann mehrere Haupt-WR mit
             # unterschiedlichen Modbus-IDs im Verbund geben.
             log.debug("Synergy Units supported")
@@ -91,7 +85,6 @@ def create_device(device_config: Solaredge):
             log.debug("Synergy Units detected: %s", synergy_units)
             return synergy_units
     try:
-        inverter_counter = 0
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address,
                                          device_config.configuration.port,
                                          reconnect_delay=reconnect_delay)
