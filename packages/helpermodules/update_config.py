@@ -10,6 +10,7 @@ from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
+from control.counter import get_counter_default_config
 from control.general import ChargemodeConfig
 import dataclass_utils
 
@@ -47,7 +48,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 61
+    DATASTORE_VERSION = 62
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -164,9 +165,10 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/get/imported$",
         "^openWB/counter/[0-9]+/get/exported$",
         "^openWB/counter/[0-9]+/set/consumption_left$",
-        "^openWB/counter/[0-9]+/set/error_counter$",
+        "^openWB/counter/[0-9]+/set/error_timer$",
         "^openWB/counter/[0-9]+/set/released_surplus$",
         "^openWB/counter/[0-9]+/set/reserved_surplus$",
+        "^openWB/counter/[0-9]+/config/max_power_errorcase$",
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
 
@@ -1792,3 +1794,13 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 61)
+
+    def upgrade_datastore_61(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/counter/[0-9]+/config/max_total_power", topic) is not None:
+                index = get_index(topic)
+                if f"openWB/counter/{index}/config/max_power_errorcase" not in self.all_received_topics.keys():
+                    max_power_errorcase = get_counter_default_config()["max_power_errorcase"]
+                    return {f"openWB/counter/{index}/config/max_power_errorcase": max_power_errorcase}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 62)

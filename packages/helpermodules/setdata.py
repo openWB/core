@@ -910,7 +910,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "/config/max_currents" in msg.topic:
                 self._validate_value(msg, int, [(7, 1500)], collection=list)
-            elif "/config/max_total_power" in msg.topic:
+            elif ("/config/max_total_power" in msg.topic or
+                  "/config/max_power_errorcase" in msg.topic):
                 self._validate_value(msg, int, [(0,  float("inf"))])
             elif subdata.SubData.counter_data.get(f"counter{get_index(msg.topic)}"):
                 if ("/get/powers" in msg.topic or
@@ -933,8 +934,8 @@ class SetData:
                         msg, float, [(0, float("inf"))])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
-                elif "/set/error_counter" in msg.topic:
-                    self._validate_value(msg, int, [(0, float("inf"))])
+                elif "/set/error_timer" in msg.topic:
+                    self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/get/fault_str" in msg.topic:
                     self._validate_value(msg, str)
                 elif "/get/power" in msg.topic:
