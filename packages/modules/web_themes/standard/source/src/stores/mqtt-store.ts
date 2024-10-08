@@ -418,6 +418,16 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  const getChargePoints = computed(()=>{
+    return getWildcardValues.value('openWB/chargepoint/+/config');
+  });
+
+  const getChargePointNames = computed(() => {
+    const chargePoints = getWildcardValues.value('openWB/chargepoint/+/config');
+    // Extract the name from each charge point's config
+    return Object.values(chargePoints).map((config) => config?.name);
+  });
+
   // exports
   return {
     topics,
@@ -434,5 +444,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     systemCommit,
     themeConfiguration,
     systemDateTime,
+    getChargePoints,
+    getChargePointNames,
   };
 });
