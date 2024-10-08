@@ -242,6 +242,7 @@ class UpdateConfig:
         "^openWB/optional/et/get/prices$",
         "^openWB/optional/et/provider$",
         "^openWB/optional/int_display/active$",
+        "^openWB/optional/int_display/detected$",
         "^openWB/optional/int_display/on_if_plugged_in$",
         "^openWB/optional/int_display/pin_active$",
         "^openWB/optional/int_display/pin_code$",
@@ -488,12 +489,13 @@ class UpdateConfig:
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
         ("openWB/optional/et/provider", NO_MODULE),
-        ("openWB/optional/int_display/active", False),
+        ("openWB/optional/int_display/active", True),
+        ("openWB/optional/int_display/detected", True),
         ("openWB/optional/int_display/on_if_plugged_in", True),
         ("openWB/optional/int_display/pin_active", False),
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
-        ("openWB/optional/int_display/rotation", 180),
+        ("openWB/optional/int_display/rotation", 0),
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/led/active", False),
@@ -617,7 +619,8 @@ class UpdateConfig:
     def __solve_breaking_changes(self) -> None:
         """ solve breaking changes in the datastore
         """
-        datastore_version = decode_payload(self.all_received_topics.get("openWB/system/datastore_version")) or 0
+        datastore_version = (decode_payload(self.all_received_topics.get("openWB/system/datastore_version")) or
+                             self.DATASTORE_VERSION)
         log.debug(f"current datastore version: {datastore_version}")
         log.debug(f"target datastore version: {self.DATASTORE_VERSION}")
         for version in range(datastore_version, self.DATASTORE_VERSION):

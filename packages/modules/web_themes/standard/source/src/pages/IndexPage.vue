@@ -9,10 +9,8 @@
 
 <script setup lang="ts">
 import SystemInformation from 'src/components/SystemInformation.vue';
+
 defineOptions({
   name: 'TestPage',
 });
 </script>
-
-
-

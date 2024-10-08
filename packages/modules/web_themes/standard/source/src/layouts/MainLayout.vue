@@ -1,6 +1,6 @@
- <template>
-  <q-layout view="lHh Lpr lFf" >
-    <q-header class="bg-blue-grey-6 text-white">
+<template>
+  <q-layout view="lHh Lpr lFf">
+    <q-header elevated>
       <q-toolbar>
         <q-toolbar-title>openWB</q-toolbar-title>
         <q-btn flat round icon="menu" aria-label="Menu" />
