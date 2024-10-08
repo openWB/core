@@ -9,6 +9,7 @@
       General getter:
       {{ mqttStore.getValue('openWB/general/web_theme', 'configuration') }}
     </p>
+    <p>Charge point Names: {{ mqttStore.getChargePointNames }}</p>
   </div>
 </template>
 
@@ -17,12 +18,13 @@ import { onMounted } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
-// const topicsToSubscribe = <string[]>[
-// ];
+const topicsToSubscribe = <string[]>[
+  'openWB/chargepoint/+/config'
+];
 
 onMounted(() => {
   // explicit subscriptions are only necessary if subscribing to topics with wildcards
-  // mqttStore.subscribe(topicsToSubscribe);
+  mqttStore.subscribe(topicsToSubscribe);
 });
 
 interface Props {
