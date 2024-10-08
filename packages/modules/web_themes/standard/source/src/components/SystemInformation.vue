@@ -18,9 +18,7 @@ import { onMounted } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
-const topicsToSubscribe = <string[]>[
-  'openWB/chargepoint/+/config'
-];
+const topicsToSubscribe = <string[]>['openWB/chargepoint/+/config'];
 
 onMounted(() => {
   // explicit subscriptions are only necessary if subscribing to topics with wildcards
