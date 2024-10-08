@@ -15,6 +15,7 @@ from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
+from control.optional_data import Ocpp
 from helpermodules import graph, system
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
@@ -678,6 +679,9 @@ class SubData:
                             var.et_get_prices()
                     else:
                         self.set_json_payload_class(var.data.et, msg)
+                elif re.search("/optional/ocpp/", msg.topic) is not None:
+                    config_dict = decode_payload(msg.payload)
+                    var.data.ocpp = dataclass_from_dict(Ocpp, config_dict)
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:

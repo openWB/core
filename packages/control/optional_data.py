@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Protocol
+from typing import Dict, Optional, Protocol
 
 from dataclass_utils.factories import empty_dict_factory
 from helpermodules.constants import NO_ERROR
@@ -61,7 +61,7 @@ def rfid_factory() -> Rfid:
 @dataclass
 class Ocpp:
     active: bool = False
-    url: str = ""
+    url: Optional[str] = None
     version: str = "ocpp1.6"
 
 

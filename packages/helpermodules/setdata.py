@@ -854,14 +854,11 @@ class SetData:
                 self._validate_value(msg, int, [(0, 2)])
             elif "openWB/set/optional/et/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
-            elif "openWB/set/optional/et/provider" in msg.topic:
+            elif ("openWB/set/optional/et/provider" in msg.topic or
+                  "openWB/set/optional/ocpp/config" in msg.topic):
                 self._validate_value(msg, "json")
-            elif ("openWB/set/optional/rfid/active" in msg.topic or
-                  "openWB/set/optional/ocpp/active" in msg.topic):
+            elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)
-            elif ("openWB/set/optional/ocpp/url" in msg.topic or
-                  "openWB/set/optional/ocpp/version" in msg.topic):
-                self._validate_value(msg, str)
             elif "openWB/set/optional/int_display/rotation" in msg.topic:
                 self._validate_value(msg, int, [(0, 0), (90, 90), (180, 180), (270, 270)])
             elif "openWB/set/optional/int_display/active" in msg.topic:

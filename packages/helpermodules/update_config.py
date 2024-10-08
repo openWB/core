@@ -11,6 +11,7 @@ from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
 from control.general import ChargemodeConfig
+from control.optional_data import Ocpp
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -254,9 +255,7 @@ class UpdateConfig:
         "^openWB/optional/int_display/only_local_charge_points",
         "^openWB/optional/led/active$",
         "^openWB/optional/rfid/active$",
-        "^openWB/optional/ocpp/active$",
-        "^openWB/optional/ocpp/url$",
-        "^openWB/optional/ocpp/version$",
+        "^openWB/optional/ocpp/config$",
 
         "^openWB/pv/config/configured$",
         "^openWB/pv/get/exported$",
@@ -504,7 +503,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/led/active", False),
-        ("openWB/optional/ocpp/active", False),
+        ("openWB/optional/ocpp/config", dataclass_utils.asdict(Ocpp())),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/backup_cloud/backup_before_update", True),
