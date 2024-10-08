@@ -418,7 +418,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
-  const getChargePoints = computed(()=>{
+  const getChargePoints = computed(() => {
     return getWildcardValues.value('openWB/chargepoint/+/config');
   });
 

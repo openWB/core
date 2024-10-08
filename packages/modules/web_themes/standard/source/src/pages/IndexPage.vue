@@ -4,8 +4,7 @@
   </q-page>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
 
 <script setup lang="ts">
 import SystemInformation from 'src/components/SystemInformation.vue';
