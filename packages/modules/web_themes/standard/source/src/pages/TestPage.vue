@@ -1,19 +1,24 @@
 <template>
   <q-page class="column">
     <!-- Top Carousel -->
-    <div class="col-4">
+    <div class="row justify-center">
       <q-carousel
         v-model="slideTop"
+        v-model:fullscreen="fullscreen"
         swipeable
+        navigation
+        control-color="primary"
+        arrows
+        padding
         animated
         infinite
-        class="full-height bg-blue-grey-6"
+        class="full-height bg-transparent"
       >
         <q-carousel-slide
           v-for="(item, index) in carouselItemsTop"
           :key="index"
           :name="item.name"
-          class="column items-center justify-center"
+          class="col items-center justify-center"
         >
           <img
             :src="item.image"
@@ -21,19 +26,31 @@
             style="width: 100%; height: 100%; object-fit: contain"
           />
         </q-carousel-slide>
+        <template v-slot:control>
+          <q-carousel-control position="bottom-right" :offset="[18, 18]">
+            <q-btn
+              push
+              round
+              dense
+              text-color="primary"
+              :icon="fullscreen ? 'fullscreen_exit' : 'fullscreen'"
+              @click="fullscreen = !fullscreen"
+            />
+          </q-carousel-control>
+        </template>
       </q-carousel>
     </div>
 
     <!-- Navigation Tabs -->
-    <q-tabs v-model="tab" class="bg-blue-grey-4 text-black">
-      <q-tab name="smartHome">
-        <q-icon name="home" size="25px" color="grey-8" />
-      </q-tab>
+    <q-tabs v-model="tab">
       <q-tab name="lp">
-        <q-icon name="ev_station" size="25px" color="blue-7" />
+        <q-icon name="ev_station" size="25px" color="primary" />
       </q-tab>
       <q-tab name="speicher">
-        <q-icon name="battery_full" size="25px" color="black" />
+        <q-icon name="battery_full" size="25px" color="warning" />
+      </q-tab>
+      <q-tab name="smartHome">
+        <q-icon name="home" size="25px" color="accent" />
       </q-tab>
     </q-tabs>
 
@@ -110,18 +127,13 @@ import DIA1 from '/src/assets/Dia_1.png';
 import DIA2 from '/src/assets/Dia_2.png';
 import ChargePoint from 'src/components/ChargePoint.vue';
 
-import { useMqttStore } from 'src/stores/mqtt-store';
+// import { useMqttStore } from 'src/stores/mqtt-store';
 
 defineOptions({
   name: 'IndexPage',
 });
 
-const mqttStore = useMqttStore();
-const topicsToSubscribe = <string[]>[
-  'openWB/system/ip_address',
-  'openWB/system/time',
-  'openWB/system/version',
-];
+// const mqttStore = useMqttStore();
 
 interface CarouselItemTop {
   name: string;
@@ -130,6 +142,7 @@ interface CarouselItemTop {
 
 const slideTop = ref<string>('DIA1');
 const tab = ref<string>('lp');
+const fullscreen = ref(false);
 
 const carouselItemsTop: CarouselItemTop[] = [
   { name: 'DIA1', image: DIA1 },
@@ -137,7 +150,7 @@ const carouselItemsTop: CarouselItemTop[] = [
 ];
 
 onMounted(() => {
-  mqttStore.subscribe(topicsToSubscribe);
+  // mqttStore.subscribe(topicsToSubscribe);
 });
 </script>
 
