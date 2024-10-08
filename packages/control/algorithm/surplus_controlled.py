@@ -107,7 +107,9 @@ class SurplusControlled:
                     current = max(chargepoint.data.get.currents) + MAX_CURRENT
                     msg = "Es darf um max 5A über den aktuell genutzten Strom geregelt werden."
             chargepoint.set_state_and_log(msg)
-            return max(current, chargepoint.data.control_parameter.min_current)
+            return max(current,
+                       chargepoint.data.control_parameter.min_current,
+                       chargepoint.data.set.target_current)
 
     def _fix_deviating_evse_current(self, limited_current, chargepoint: Chargepoint) -> float:
         """Wenn Autos nicht die volle Ladeleistung nutzen, wird unnötig eingespeist. Dann kann um den noch nicht
