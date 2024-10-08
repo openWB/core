@@ -1,28 +1,27 @@
 <template>
-    <q-carousel
-          v-model="slideBottom"
-          swipeable
-          animated
-          navigation
-          infinite
-          class="bg-blue-grey-6 text-white full-height"
-          @mousedown.prevent
-        >
-          <q-carousel-slide
-            v-for="(item, index) in carouselItems"
-            :key="index"
-            :name="item.name"
-            class="column items-center justify-center"
-          >
-            <q-icon :name="item.icon" size="56px" />
-            <div class="text-center q-mt-md">
-              {{ chargePointNames }}
-              {{ item.text }}
-              
-            </div>
-            <SliderQuasar />
-          </q-carousel-slide>
-        </q-carousel>
+  <q-carousel
+    v-model="slideBottom"
+    swipeable
+    animated
+    navigation
+    infinite
+    class="bg-blue-grey-6 text-white full-height"
+    @mousedown.prevent
+  >
+    <q-carousel-slide
+      v-for="(item, index) in carouselItems"
+      :key="index"
+      :name="item.name"
+      class="column items-center justify-center"
+    >
+      <q-icon :name="item.icon" size="56px" />
+      <div class="text-center q-mt-md">
+        {{ chargePointNames }}
+        {{ item.text }}
+      </div>
+      <SliderQuasar />
+    </q-carousel-slide>
+  </q-carousel>
 </template>
 
 <script setup lang="ts">
@@ -31,9 +30,7 @@ import SliderQuasar from './SliderQuasar.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
-const topicsToSubscribe = <string[]>[
-  'openWB/chargepoint/+/config',
-];
+const topicsToSubscribe = <string[]>['openWB/chargepoint/+/config'];
 
 const slideBottom = ref<string>('style');
 
@@ -68,8 +65,7 @@ const carouselItems: CarouselItem[] = [
 
 const chargePointNames = computed(() => mqttStore.getChargePointNames);
 
-onMounted(()=>{
+onMounted(() => {
   mqttStore.subscribe(topicsToSubscribe);
 });
-
 </script>
