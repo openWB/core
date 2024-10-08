@@ -8,12 +8,12 @@ library.add(fasUndo);
 
 export default {
   name: "ReloadButton",
+  components: {
+    FontAwesomeIcon,
+  },
   props: {},
   data() {
     return {};
-  },
-  components: {
-    FontAwesomeIcon,
   },
   methods: {
     /**
@@ -27,9 +27,16 @@ export default {
 </script>
 
 <template>
-  <i-button color="success" @click="reloadDisplay()">
+  <i-button
+    color="success"
+    size="lg"
+    @click="reloadDisplay()"
+  >
     Display neu laden
-    <FontAwesomeIcon fixed-width :icon="['fas', 'fa-undo']" />
+    <FontAwesomeIcon
+      fixed-width
+      :icon="['fas', 'fa-undo']"
+    />
   </i-button>
 </template>
 

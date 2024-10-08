@@ -10,7 +10,7 @@ from helpermodules import subdata
 from helpermodules import timecheck
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
-from helpermodules.utils import thread_handler
+from helpermodules.utils import joined_thread_handler
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.utils import wait_for_module_update_completed
 
@@ -25,16 +25,17 @@ class UpdateSoc:
         self.event_update_soc = event_update_soc
 
     def update(self) -> None:
+        # kein ChangedValuesHandler, da dieser mit data.data arbeitet
         while True:
             self.event_update_soc.wait(timeout=10)
             self.event_update_soc.clear()
             topic = "openWB/set/vehicle/set/vehicle_update_completed"
             try:
                 threads_update, threads_store = self._get_threads()
-                thread_handler(threads_update, 300)
+                joined_thread_handler(threads_update, 300)
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
                 # threads_store = self._filter_failed_store_threads(threads_store)
-                thread_handler(threads_store, data.data.general_data.data.control_interval/3)
+                joined_thread_handler(threads_store, data.data.general_data.data.control_interval/3)
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
@@ -69,11 +70,15 @@ class UpdateSoc:
                                                         args=(), name=f"store soc_ev{ev.num}"))
                 else:
                     # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
-                    if ev.data.get.fault_state != 0 or ev.data.get.fault_str != NO_ERROR:
+                    if ev.data.get.fault_state != 0:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_state", 0)
+                    if ev.data.get.fault_str != NO_ERROR:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_str", NO_ERROR)
+                    if ev.data.get.soc is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", None)
+                    if ev.data.get.soc_timestamp is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", None)
+                    if ev.data.get.range is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
@@ -98,9 +103,12 @@ class UpdateSoc:
                 if ev.soc_module.general_config.use_soc_from_cp:
                     soc_from_cp = cp.data.get.soc
                     timestamp_soc_from_cp = cp.data.get.soc_timestamp
+                    log.debug(f"cp.num {cp.num} cp.data.get {cp.data.get}")
+                    log.debug(f"1 soc_from_cp: {soc_from_cp}, timestamp_soc_from_cp: {timestamp_soc_from_cp}")
                 else:
                     soc_from_cp = None
                     timestamp_soc_from_cp = None
+                    log.debug(f"2 soc_from_cp: {soc_from_cp}, timestamp_soc_from_cp: {timestamp_soc_from_cp}")
                 break
         else:
             plug_state = False
@@ -110,6 +118,7 @@ class UpdateSoc:
             efficiency = ev_template.data.efficiency
             soc_from_cp = None
             timestamp_soc_from_cp = None
+            log.debug(f"3 soc_from_cp: {soc_from_cp}, timestamp_soc_from_cp: {timestamp_soc_from_cp}")
         return VehicleUpdateData(plug_state=plug_state,
                                  charge_state=charge_state,
                                  efficiency=efficiency,

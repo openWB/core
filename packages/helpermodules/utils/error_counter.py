@@ -1,14 +1,21 @@
 import logging
 
+from helpermodules import timecheck
+from helpermodules.pub import Pub
+
 
 log = logging.getLogger(__name__)
 
+CP_ERROR = ("Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke, Lade- und Stecker-Status wird "
+            "zurückgesetzt.")
 
-class ErrorCounterContext:
-    def __init__(self, exceeded_msg: str, max_errors: int = 2, hide_exception: bool = False):
-        self.max_errors = max_errors
+
+class ErrorTimerContext:
+    def __init__(self, topic: str, exceeded_msg: str, timeout: int = 60, hide_exception: bool = False):
+        self.topic = topic
+        self.timeout = timeout
         self.hide_exception = hide_exception
-        self.__error_counter = 0
+        self.error_timestamp = None
         self.__exceeded_msg = exceeded_msg
 
     def __enter__(self):
@@ -16,18 +23,21 @@ class ErrorCounterContext:
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
         if exception:
-            self.__error_counter += 1
+            if self.error_timestamp is None:
+                self.error_timestamp = timecheck.create_timestamp()
+                Pub().pub(self.topic, self.error_timestamp)
             log.error(exception)
-            if self.hide_exception is False or self.__error_counter >= self.max_errors:
+            if self.hide_exception is False or timecheck.check_timestamp(self.error_timestamp, self.timeout) is False:
                 raise exception
         return True
 
     def error_counter_exceeded(self) -> bool:
-        if self.__error_counter > self.max_errors:
+        if self.error_timestamp and timecheck.check_timestamp(self.error_timestamp, self.timeout):
             log.error(self.__exceeded_msg)
             return True
         else:
             return False
 
     def reset_error_counter(self):
-        self.__error_counter = 0
+        Pub().pub(self.topic, self.error_timestamp)
+        self.error_timestamp = None

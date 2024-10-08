@@ -20,24 +20,25 @@ def data_fixture() -> None:
                                                        config=Mock(spec=Config, max_ac_out=7200)))
 
 
-@pytest.mark.parametrize("parent, bat_power, pv_power, expected_power",
-                         [
-                             pytest.param({"id": 6, "type": "counter", "children": [
-                                          {"id": 2, "type": "bat", "children": []}]}, 100, -6400, (150, False),
-                                          id="kein Hybrid-System, Speicher wird geladen"),
-                             pytest.param({"id": 6, "type": "counter", "children": [
-                                          {"id": 2, "type": "bat", "children": []}]}, -100, -6400, (150, False),
-                                          id="kein Hybrid-System, Speicher wird entladen"),
-                             pytest.param({"id": 1, "type": "inverter", "children": []}, 600, -6400, (1400, True),
-                                          id="maximale Entladeleistung des WR, Speicher lädt"),
-                             pytest.param({"id": 1, "type": "inverter", "children": []}, 600, -7200, (600, True),
-                                          id="maximale Entladeleistung des WR, Speicher lädt"),
-                             pytest.param({"id": 1, "type": "inverter", "children": []}, -600, -6400, (800, True),
-                                          id="maximale Entladeleistung des WR, Speicher entlädt"),
-                         ])
-def test_max_bat_power_hybrid_system(parent, bat_power, pv_power, expected_power, data_fixture, monkeypatch):
+@pytest.mark.parametrize(
+    "parent, bat_power, pv_power, expected_power_hybrid",
+    [
+        pytest.param({"id": 6, "type": "counter", "children": [
+            {"id": 2, "type": "bat", "children": []}]}, 100, -6400, (150, False),
+            id="kein Hybrid-System, Speicher wird geladen"),
+        pytest.param({"id": 6, "type": "counter", "children": [
+            {"id": 2, "type": "bat", "children": []}]}, -100, -6400, (150, False),
+            id="kein Hybrid-System, Speicher wird entladen"),
+        pytest.param({"id": 1, "type": "inverter", "children": []}, 600, -6400, (800, True),
+                     id="Speicher lädt mit 600W, max 800W bis WR max"),
+        pytest.param({"id": 1, "type": "inverter", "children": []}, 600, -7200, (0, True),
+                     id="maximale Entladeleistung des WR erreicht, Speicher lädt, keine Entladeleistung über"),
+        pytest.param({"id": 1, "type": "inverter", "children": []}, -600, -6400, (200, True),
+                     id="Speicher entlädt mit 600W, max 200W bis WR max"),
+    ])
+def test_max_bat_power_hybrid_system(parent, bat_power, pv_power, expected_power_hybrid, data_fixture, monkeypatch):
     # setup
-    # pv1-Data: max_ac_out 7200, power 6400
+    # pv1-Data: max_ac_out 7200
     mock_get_entry_of_parent = Mock(return_value=parent)
     monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_parent", mock_get_entry_of_parent)
     data.data.pv_data["pv1"].data.get.power = pv_power
@@ -50,7 +51,7 @@ def test_max_bat_power_hybrid_system(parent, bat_power, pv_power, expected_power
     power = b._max_bat_power_hybrid_system(bat2)
 
     # evaluation
-    assert power == expected_power
+    assert power == expected_power_hybrid
 
 
 @pytest.mark.parametrize(
@@ -87,21 +88,22 @@ class Params:
 
 
 cases = [
-    Params("Speicher, Speicher lädt", PvCharging(bat_mode="bat_mode"), 500, 90, 0, True),
-    Params("Speicher, Speicher entlädt", PvCharging(bat_mode="bat_mode"), -500, 90, -500, True),
+    Params("Speicher, Speicher lädt", PvCharging(bat_mode="bat_mode"), 500, 90, -100, True),
+    Params("Speicher, Speicher entlädt", PvCharging(bat_mode="bat_mode"), -500, 90, -600, True),
     Params("Speicher, Speicher ist voll", PvCharging(bat_mode="bat_mode"), 0, 100, 0, False),
     Params("EV, Speicher lädt", PvCharging(bat_mode="ev_mode"), 500, 90, 500, False),
     Params("EV, Speicher entlädt", PvCharging(bat_mode="ev_mode"), -500, 90, -500, False),
     Params("EV, Speicher ist voll", PvCharging(bat_mode="ev_mode"), 0, 100, 0, False),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher entlädt",
-           PvCharging(bat_mode="min_soc_bat_mode"), -500, 40, -500, True),
-    Params("Mindest-SoC, SoC nicht erreicht, Speicher lädt", PvCharging(bat_mode="min_soc_bat_mode"), 500, 40, 0, True),
+           PvCharging(bat_mode="min_soc_bat_mode"), -500, 40, -600, True),
+    Params("Mindest-SoC, SoC nicht erreicht, Speicher lädt",
+           PvCharging(bat_mode="min_soc_bat_mode"), 500, 40, -100, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve, Speicher entlädt",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000, bat_power_reserve_active=True),
-           -500, 40, -500, True),
+           -500, 40, -600, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve nicht ausgenutzt, Speicher lädt",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000, bat_power_reserve_active=True),
-           1600, 40, -400, True),
+           1600, 40, -500, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve ausgenutzt, Speicher lädt",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000, bat_power_reserve_active=True),
            2200, 40, 200, False),

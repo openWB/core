@@ -7,18 +7,12 @@
 			<span>Strompreis</span>
 		</template>
 		<template #buttons>
-			<div class="d-flex float-right justify-content-end align-items-center">
-				<span
-					v-if="etData.active"
-					class="badge rounded-pill pricebadge mb-1 me-1"
-					>{{ etData.etCurrentPriceString }}</span
-				>
-				<span
-					v-if="etData.active"
-					class="badge rounded-pill providerbadge mb-1 m-0"
-					>{{ etData.etProvider }}</span
-				>
-			</div>
+			<WbBadge v-if="etData.active" bgcolor="var(--color-charging)">{{
+				etData.etCurrentPriceString
+			}}</WbBadge>
+			<WbBadge v-if="etData.active" bgcolor="var(--color-menu)">{{
+				etData.etProvider
+			}}</WbBadge>
 		</template>
 		<div class="grapharea">
 			<figure id="pricechart" class="p-1 m-0 pricefigure">
@@ -38,6 +32,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { etData } from './model'
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
+import WbBadge from '../shared/WbBadge.vue'
 import {
 	extent,
 	scaleTime,
@@ -224,12 +219,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.pricebadge {
+.priceWbBadge {
 	background-color: var(--color-charging);
 	font-weight: normal;
 }
 
-.providerbadge {
+.providerWbBadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
 }

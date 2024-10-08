@@ -35,7 +35,8 @@ function setIframeSource() {
 		var host = "";
 		var query = new URLSearchParams();
 		var destination = "";
-		if (data["openWB/general/extern"]) {
+		if (data["openWB/general/extern"] === true) {
+			// load secondary display (from secondary openWB)
 			switch (data["openWB/general/extern_display_mode"]) {
 				case "local":
 					// host = location.host;
@@ -47,34 +48,36 @@ function setIframeSource() {
 				default:
 					// retrieve display theme from primary
 					host = data["openWB/internal_chargepoint/global_data"]["parent_ip"];
-					// we need to know how to map local charge points to primary
-					query.append("parentChargePoint1", data["openWB/internal_chargepoint/0/data/parent_cp"]);
-					query.append("parentChargePoint2", data["openWB/internal_chargepoint/1/data/parent_cp"]);
+					const queryObject = {
+						// we need our own ip address for status information
+						localIp: data["openWB/system/ip_address"],
+						// we need to know the current branch, commit and version
+						localBranch: data["openWB/system/current_branch"],
+						localCommit: data["openWB/system/current_commit"],
+						localVersion: data["openWB/system/version"],
+						// we need to know how to map local charge points to primary
+						parentChargePoint1: data["openWB/internal_chargepoint/0/data/parent_cp"],
+						parentChargePoint2: data["openWB/internal_chargepoint/1/data/parent_cp"]
+					}
+					query.append("data", JSON.stringify(queryObject));
 					break;
 			}
 			// load display from primary or local
 			destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
-			if (destination != iframe.src) {
-				addLog(`all done, loading theme from primary`);
-				// iframe.src = destination;
-			}
+			addLog(`all done, loading theme from primary`);
+			// no iframe here as this would result in another nesting with the wrapper on primary
 			setTimeout(() => {
-				// startup.classList.add("hide");
-				// iframe.classList.remove("hide");
 				location.href = destination;
 			}, 2000);
 		} else {
+			// load primary display (from primary or secondary openWB)
 			host = location.host;
 			const theme = data["openWB/optional/int_display/theme"].type;
 
 			if (data["openWB/optional/int_display/only_local_charge_points"]) {
 				const searchParams = new URLSearchParams(location.search);
-
-				if (searchParams.has("parentChargePoint1")) {
-					query.append("parentChargePoint1", searchParams.get("parentChargePoint1"));
-				}
-				if (searchParams.has("parentChargePoint2")) {
-					query.append("parentChargePoint2", searchParams.get("parentChargePoint2"));
+				if (searchParams.has("data")) {
+					query.append("data", searchParams.get("data"));
 				}
 			}
 			destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/?${query.toString()}`;
@@ -120,6 +123,16 @@ function addLog(message) {
 function handleMessage(topic, payload) {
 	addLog(`Topic: ${topic} Payload: ${payload}`);
 	// receives all topics and calls respective function to process them
+	if (!data["openWB/system/boot_done"]) {
+		document.getElementById("boot").classList.remove("hide");
+	} else {
+		document.getElementById("boot").classList.add("hide");
+	}
+	if (data["openWB/system/update_in_progress"]) {
+		document.getElementById("update").classList.remove("hide");
+	} else {
+		document.getElementById("update").classList.add("hide");
+	}
 	if (topic.match(/^openwb\/system\//i)) { processSystemTopics(topic, payload); }
 	setIframeSource();
 }  // end handleMessage

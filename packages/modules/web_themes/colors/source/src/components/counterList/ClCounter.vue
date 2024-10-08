@@ -4,17 +4,10 @@
 			<span class="countername">{{ counter.name }} </span>
 		</template>
 		<template #buttons>
-			<div class="d-flex float-right justify-content-end align-items-center">
-				<span
-					v-if="props.counter.power != 0"
-					class="badge rounded-pill modebadge mx-2"
-					:style="modestyle"
-					>{{ modestring }}</span
-				>
-				<span class="badge rounded-pill idbadge mx-2"
-					>ID: {{ props.counter.id }}</span
-				>
-			</div>
+			<WbBadge v-if="props.counter.power != 0" :bgcolor="modebg">
+				{{ modestring }}
+			</WbBadge>
+			<WbBadge color="var(--color-bg)"> ID: {{ props.counter.id }} </WbBadge>
 		</template>
 		<div class="subgrid pt-1">
 			<InfoItem heading="Leistung:" :small="true" class="grid-left grid-col-4">
@@ -36,6 +29,7 @@
 <script setup lang="ts">
 import InfoItem from '../shared/InfoItem.vue'
 import WbSubwidget from '../shared/WbSubwidget.vue'
+import WbBadge from '../shared/WbBadge.vue'
 import type { Counter } from './model'
 import FormatWattH from '../shared/FormatWattH.vue'
 import FormatWatt from '../shared/FormatWatt.vue'
@@ -52,18 +46,16 @@ const modestring = computed(() => {
 	}
 })
 
-const modestyle = computed(() => {
-	let col = ''
+const modebg = computed(() => {
 	if (props.counter.power > 0) {
-		col = 'var(--color-evu)'
+		return 'var(--color-evu)'
 	} else {
-		col = 'var(--color-pv)'
+		return 'var(--color-pv)'
 	}
-	return { 'background-color': col, 'font-weight': 'normal' }
 })
 </script>
 <style scoped>
-.idbadge {
+.idWbBadge {
 	background-color: var(--color-menu);
 	font-weight: normal;
 }

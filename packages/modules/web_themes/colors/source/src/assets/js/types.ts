@@ -5,8 +5,6 @@
  */
 
 // Type definitions for all components
-import { updateServer } from '@/assets/js/sendMessages'
-import { ChargeMode } from '@/components/chargePointList/model'
 
 export class ShDevice implements PowerItem {
 	id: number
@@ -26,34 +24,17 @@ export class ShDevice implements PowerItem {
 	}
 }
 
-export class GlobalData {
-	batterySoc = 0
-	isBatteryConfigured = true
-	chargeMode = '0'
-	private _pvBatteryPriority = 'ev_mode' // 'ev_mode' | 'bat_mode' | 'min_soc_bat_mode'
-	displayLiveGraph = true
-	isEtEnabled = true
-	etMaxPrice = 0
-	etCurrentPrice = 0
-	cpDailyExported = 0
-	evuId = 0
-	etProvider = ''
-	get pvBatteryPriority() {
-		return this._pvBatteryPriority
-	}
-	set pvBatteryPriority(prio: string) {
-		this._pvBatteryPriority = prio
-		updateServer('pvBatteryPriority', prio)
-	}
-	updatePvBatteryPriority(prio: string) {
-		this._pvBatteryPriority = prio
-	}
-}
-
 export interface Hierarchy {
 	id: number
 	type: string
 	children: [Hierarchy]
+}
+export enum ChargeMode {
+	instant_charging = 'instant_charging',
+	pv_charging = 'pv_charging',
+	scheduled_charging = 'scheduled_charging',
+	standby = 'standby',
+	stop = 'stop',
 }
 
 export interface ChargeModeInfo {
@@ -106,3 +87,9 @@ export class PvSystem {
 		this.id = index
 	}
 }
+
+export const evPriorityModes: [string, string][] = [
+	['EV', 'ev_mode'],
+	['Speicher', 'bat_mode'],
+	['MinSoc', 'min_soc_bat_mode'],
+]

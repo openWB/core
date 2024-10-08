@@ -1,6 +1,7 @@
 Zunächst einen neuen Ordner erstellen/auswählen, in den die Sicherungen hochgeladen werden sollen.
 
 Nachfolgende Schritte müssen auf dem Bereitstellenden system gemacht werden
+
 1. SMB Freigabe erstellen (Auf NAS etc.)
 2. User einrichten und berechtigen - R/W
 
@@ -22,7 +23,7 @@ Bei manchen Systemen kann es notwendig sein das Mindest-SMB-Protokoll auf SMB2 z
 
 Anleitung für Samba Server auf einem Raspberry Pi (z.B.: Stand alone)
 
-1. Installieren von Samba 
+1. Installieren von Samba
 sudo apt-get update
 sudo apt-get install samba samba-common smbclient
 2. Prüfen ob Samba läuft
@@ -30,8 +31,8 @@ sudo service smbd status
 sudo service nmbd status
 3. Samba User anlegen
 sudo useradd testsmb
-Optional: 
-4. Falls users nicht vorhanden: sudo groupadd users 
+Optional:
+4. Falls users nicht vorhanden: sudo groupadd users
 check mit getent group
 5. Hinzufügen des Samba Users zur Gruppe users
 sudo usermod -aG users testsmb
@@ -58,14 +59,13 @@ sudo nano /etc/samba/smb.conf
   valid users = testsmb
   path = /home/smb/testsmb
   read only = no
-  
 9. Testen ob die smb.conf noch funktioniert
 testparm
 10. Benutzer aktivieren
 sudo smbpasswd -a testsmb
 New SMB password: testSMB
 Retype new SMB password: testSMB
-Optional 
+Optional
 11. Sichergehen, dass Benutzer aktiviert ist
 sudo smbpasswd -e testsmb
 12. IP-Adresse des Raspberry Pis notieren

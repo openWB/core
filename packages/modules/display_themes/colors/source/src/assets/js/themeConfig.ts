@@ -43,6 +43,7 @@ export class Config {
 	animationDuration = 300
 	animationDelay = 100
 	zoomGraph = false
+
 	constructor() {}
 	get showRelativeArcs() {
 		return this._showRelativeArcs
@@ -368,6 +369,7 @@ export const infotext: { [key: string]: string } = {
 	pricebased:
 		'Laden bei dynamischem Stromtarif, wenn eingestellter Maximalpreis unterboten wird.',
 }
+
 interface Preferences {
 	hideSH?: number[]
 	showLG?: boolean

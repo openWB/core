@@ -1,6 +1,7 @@
-# openwb-version:2
+# openwb-version:4
 [Unit]
 Description="Regelung openWB 2.0"
+After=mosquitto_local.service
 
 [Service]
 User=openwb

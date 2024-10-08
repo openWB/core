@@ -16,7 +16,7 @@ from modules.smarthome.nxdacxx.smartnxdacxx import Snxdacxx
 from modules.smarthome.acthor.smartacthor import Sacthor
 from modules.smarthome.avmhomeautomation.smartavm import Savm
 from smarthome.smartbase import Sbase
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any
 import paho.mqtt.client as mqtt
 import re
 import time
@@ -26,7 +26,7 @@ import logging
 log = logging.getLogger(__name__)
 mydevices = []
 mqtt_cache = {}  # type: Dict[str, str]
-parammqtt = []
+parammqtt = []  # type: [str, str, str]
 # will be populated with open 1.9 / openwb 2.0 specifc param
 mqttcg = 'none'
 mqttcs = 'none'
@@ -42,7 +42,7 @@ maxspeicher = 0
 firststart = True
 
 
-def on_connect(client: mqtt.Client, userdata, flags: Dict, rc: int) -> None:
+def on_connect(client: mqtt.Client, userdata: Any, flags: Dict, rc: int) -> None:
     global mqttcg
     global mqttsdevstat
     #  mqttcg = 'openWB/config/get/SmartHome/'
@@ -79,7 +79,7 @@ def logmqgl(keyword: str, value: str) -> None:
                           '" -r -m "' + str(value) + '"'), file=f)
 
 
-def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage) -> None:
+def on_message(client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> None:
     # wenn exception hier wird mit nächster msg weitergemacht
     # macht paho unter phyton 3 immer so
     # für neuer python 3.7 version gibt es absturz
@@ -150,6 +150,10 @@ def getdevicevalues(uberschuss: int, uberschussoffset: int, pvwatt: int, charges
         for keyread, value in mydevice.mqtt_param.items():
             key = mqttsdevstat + keyread
             mqtt_all[key] = value
+        topic = mqttsdevstat + '/' + str(mydevice.device_nummer) + '/mode'
+        mqtt_all[topic] = str(mydevice.device_manual)
+        topic = mqttsdevstat + '/' + str(mydevice.device_nummer) + '/device_manual_control'
+        mqtt_all[topic] = str(mydevice.device_manual_control)
     # device_total_watt is needed for calculation the proper überschuss
     # (including switchable smarthomedevices)
     if ramdiskwrite:
@@ -403,6 +407,7 @@ def loadregelvars(wattbezug: int, speicherleistung: int, speichersoc: int,
                   pvwatt: int,  chargestatus: bool) -> Tuple[int, int]:
     global maxspeicher
     global mydevices
+    global firststart
     uberschuss = wattbezug + speicherleistung
     uberschussoffset = wattbezug + speicherleistung - maxspeicher
     log.info("EVU Bezug(-)/Einspeisung(+): " + str(wattbezug) +
@@ -421,23 +426,34 @@ def loadregelvars(wattbezug: int, speicherleistung: int, speichersoc: int,
         with open(bp+'/ramdisk/rereadsmarthomedevices', 'w') as f:
             f.write(str(0))
         readmq()
-    for i in range(1, (numberOfSupportedDevices+1)):
-        try:
-            with open(bp+'/ramdisk/smarthome_device_manual_'
-                      + str(i), 'r') as value:
-                for mydevice in mydevices:
-                    if (str(i) == str(mydevice.device_nummer)):
-                        mydevice.device_manual = int(value.read())
-        except Exception:
-            pass
-        try:
-            with open(bp+'/ramdisk/smarthome_device_manual_control_'
-                      + str(i), 'r') as value:
-                for mydevice in mydevices:
-                    if (str(i) == str(mydevice.device_nummer)):
-                        mydevice.device_manual_control = int(value.read())
-        except Exception:
-            pass
+    if firststart:
+        pass
+    else:
+        for i in range(1, (numberOfSupportedDevices+1)):
+            try:
+                with open(bp+'/ramdisk/smarthome_device_manual_'
+                          + str(i), 'r') as value:
+                    for mydevice in mydevices:
+                        if (str(i) == str(mydevice.device_nummer)):
+                            mydevice.device_manual = int(value.read())
+            except Exception:
+                pass
+            try:
+                with open(bp+'/ramdisk/smarthome_device_manual_control_'
+                          + str(i), 'r') as value:
+                    for mydevice in mydevices:
+                        if (str(i) == str(mydevice.device_nummer)):
+                            mydevice.device_manual_control = int(value.read())
+            except Exception:
+                pass
+            try:
+                with open(bp+'/ramdisk/smarthome_device_manual_ueb_'
+                          + str(i), 'r') as value:
+                    for mydevice in mydevices:
+                        if (str(i) == str(mydevice.device_nummer)):
+                            mydevice.device_manual_ueb = int(value.read())
+            except Exception:
+                pass
     return uberschuss, uberschussoffset
 
 
@@ -465,6 +481,28 @@ def mainloop(wattbezug: int, speicherleistung: int, speichersoc: int, pvwatt: in
     if firststart:
         readmq()
         firststart = False
+        for i in range(1, (numberOfSupportedDevices+1)):
+            # restore manual mode from mqtt
+            for mydevice in mydevices:
+                if (str(i) == str(mydevice.device_nummer)):
+                    fname = bp+'/ramdisk/smarthome_device_manual_'+str(i)
+                    if not os.path.isfile(fname):
+                        with open(fname, 'w') as f:
+                            f.write(str(mydevice.device_manual))
+                    os.chmod(fname, 0o777)
+                    log.info("File: " + str(fname) + " created. Content: " + str(mydevice.device_manual))
+                    fname = bp+'/ramdisk/smarthome_device_manual_control_'+str(i)
+                    if not os.path.isfile(fname):
+                        with open(fname,  'w') as f:
+                            f.write(str(mydevice.device_manual_control))
+                    log.info("File: " + str(fname) + " created. Content: " + str(mydevice.device_manual_control))
+                    os.chmod(fname, 0o777)
+                    fname = bp+'/ramdisk/smarthome_device_manual_ueb_'+str(i)
+                    if not os.path.isfile(fname):
+                        with open(fname,  'w') as f:
+                            f.write(str(mydevice.device_manual_ueb))
+                    log.info("File: " + str(fname) + " created. Content: " + str(mydevice.device_manual_ueb))
+                    os.chmod(fname, 0o777)
     mqtt_man = {}
     sendmess = 0
     uberschuss, uberschussoffset = loadregelvars(wattbezug, speicherleistung, speichersoc, pvwatt, chargestatus)

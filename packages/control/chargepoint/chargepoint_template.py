@@ -5,6 +5,7 @@ from typing import Dict, List
 
 from control import data
 from control import ev as ev_module
+from control.chargepoint.charging_type import ChargingType
 from dataclass_utils.factories import empty_dict_factory, empty_list_factory
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules import timecheck
@@ -36,21 +37,28 @@ def autolock_factory():
 
 @dataclass
 class CpTemplateData:
-    autolock: Autolock = field(default_factory=autolock_factory)
+    autolock: Autolock = field(default_factory=autolock_factory, metadata={"topic": ""})
+    charging_type: str = ChargingType.AC.value
     id: int = 0
     max_current_multi_phases: int = 32
     max_current_single_phase: int = 32
+    dc_max_current: float = 435
     name: str = "neues Ladepunkt-Profil"
-    rfid_enabling: bool = False
+    disable_after_unplug: bool = False
     valid_tags: List = field(default_factory=empty_list_factory)
 
 
+def cp_template_data_factory() -> CpTemplateData:
+    return CpTemplateData()
+
+
+@dataclass
 class CpTemplate:
     """ Profil für einen Ladepunkt.
     """
 
-    def __init__(self):
-        self.data: CpTemplateData = CpTemplateData()
+    data: CpTemplateData = field(default_factory=cp_template_data_factory, metadata={
+        "topic": ""})
 
     def is_locked_by_autolock(self, charge_state: bool) -> bool:
         if self.data.autolock.active:
@@ -90,13 +98,7 @@ class CpTemplate:
             if data.data.optional_data.data.rfid.active and (rfid is not None or vehicle_id is not None):
                 vehicle = ev_module.get_ev_to_rfid(rfid, vehicle_id)
                 if vehicle is None:
-                    if self.data.rfid_enabling:
-                        num = -1
-                        message = (
-                            f"Keine Ladung, da dem ID-Tag {rfid} kein Fahrzeug-Profil zugeordnet werden kann. Eine "
-                            "Freischaltung ist nur mit gültigen ID-Tag möglich.")
-                    else:
-                        num = assigned_ev
+                    num = assigned_ev
                 else:
                     num = vehicle
             else:

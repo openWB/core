@@ -2,46 +2,70 @@
 	<!-- Fixed navbar -->
 
 	<div class="navigation">
-		<span class="timedisplay">{{ formatCurrentTime(currentTime) }}</span>
-		<DisplayButton @click="cpLeft">
-			<span class="fas fa-arrow-left px-2" />
-			<span class="fas fa-charging-station pe-2" />
-		</DisplayButton>
-		<DisplayButton @click="cpRight">
-			<span class="fas fa-charging-station px-2" />
-			<span class="fas fa-arrow-right pe-2" />
-		</DisplayButton>
-		<DisplayButton color="var(--color-evu)" data-bs-toggle="modal" data-bs-target="#numberpad">
-			<span class="fas fa-lock px-4" />
-		</DisplayButton>
-		<DisplayButton>Status</DisplayButton>
-		<DisplayButton icon="fa-chart-pie" @click="selectPowermeter">Leistung</DisplayButton>
-		<DisplayButton icon="fa-chart-line" @click="selectPowergraph">Verlauf</DisplayButton>
-		<DisplayButton icon="fa-chart-column" @click="selectEnergymeter">Energie</DisplayButton>
+		<span class="graphbuttons">
+			<span class="brand me-4">openWB</span>
+			<DisplayButton icon="fa-chart-pie" @click="selectPowermeter"
+				>Leistung</DisplayButton
+			>
+			<DisplayButton icon="fa-chart-line" @click="selectPowergraph"
+				>Verlauf</DisplayButton
+			>
+			<DisplayButton icon="fa-chart-column" @click="selectEnergymeter"
+				>Energie</DisplayButton
+			>
+		</span>
+
+		<DisplayButton
+			icon="fa-rectangle-list"
+			data-bs-toggle="modal"
+			data-bs-target="#statuspage"
+			>Status</DisplayButton
+		>
+		<span class="cpbuttons">
+			<DisplayButton
+				v-if="Object.values(chargePoints).length > 1"
+				color="var(--color-cp0)"
+				@click="cpLeft"
+			>
+				<span class="fas fa-arrow-left px-2" />
+				<span class="fas fa-charging-station pe-2" />
+			</DisplayButton>
+			<DisplayButton
+				:bgcolor="displayConfig.locked ? 'var(--color-evu)' : 'var(--color-pv)'"
+				@click="unlockDisplay"
+			>
+				<span class="fas fa-lock px-4" />
+			</DisplayButton>
+			<DisplayButton
+				v-if="Object.values(chargePoints).length > 1"
+				color="var(--color-cp0)"
+				@click="cpRight"
+			>
+				<span class="fas fa-charging-station px-2" />
+				<span class="fas fa-arrow-right pe-2" />
+			</DisplayButton>
+			<span class="timedisplay ms-4">{{ formatCurrentTime(currentTime) }}</span>
+		</span>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { formatCurrentTime } from '@/assets/js/helpers'
-import { currentTime } from '@/assets/js/model'
+import { displayConfig, currentTime, unlockDisplay } from '@/assets/js/model'
 import DisplayButton from '@/components/shared/DisplayButton.vue'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { chargePoints } from '@/components/chargePointList/model'
-
 let interval: ReturnType<typeof setInterval>
 
 function cpRight() {
-	console.log('Charge Point clicked')
 	let cpcount = Object.values(chargePoints).length
 	globalConfig.cpToShow = (globalConfig.cpToShow + 1) % cpcount
 }
 function cpLeft() {
-	console.log('Charge Point clicked')
 	let cpcount = Object.values(chargePoints).length
 	globalConfig.cpToShow =
 		(((globalConfig.cpToShow - 1) % cpcount) + cpcount) % cpcount
-	console.log(globalConfig.cpToShow)
 }
 function selectPowermeter() {
 	globalConfig.graphToShow = 'powermeter'
@@ -72,16 +96,8 @@ onBeforeUnmount(() => {
 	padding-top: 2px;
 	padding-bottom: 2px;
 	align-items: center;
-	border-top: 0.1px solid var(--color-menu);
-	border-bottom: 1px solid var(--color-menu);
-}
-
-.mybutton {
-	border: 10px;
-	padding: 8px;
-	align-self: top;
-	background-color: var(--color-menu);
-	border-radius: 8px;
+	border-top: 0px solid var(--color-menu);
+	border-bottom: 0px solid var(--color-menu);
 }
 
 .timedisplay {
@@ -94,6 +110,20 @@ onBeforeUnmount(() => {
 	background-color: var(--color-bg);
 	color: var(--color-fg);
 	font-size: var(--font-normal);
+}
+
+.graphbuttons {
+	display: flex;
+	justify-content: left;
+	align-items: center;
+	gap: 5px;
+}
+
+.cpbuttons {
+	display: flex;
+	justify-content: left;
+	align-items: center;
+	gap: 5px;
 }
 
 .dropdown-menu {
@@ -134,5 +164,10 @@ onBeforeUnmount(() => {
 	font-weight: bold;
 	color: var(--color-menu);
 	font-size: var(--font-normal);
+}
+.brand {
+	font-size: var(--font-medium);
+	font-weight: bold;
+	color: var(--color-input);
 }
 </style>

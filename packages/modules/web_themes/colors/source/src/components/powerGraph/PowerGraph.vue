@@ -74,7 +74,8 @@
 					<PgSoc
 						v-if="
 							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today') &&
+								graphData.graphMode == 'today' ||
+								graphData.graphMode == 'live') &&
 							globalData.isBatteryConfigured
 						"
 						:width="width - margin.left - 2 * margin.right"
@@ -84,7 +85,9 @@
 					/>
 					<PgSocAxis
 						v-if="
-							graphData.graphMode == 'day' || graphData.graphMode == 'today'
+							graphData.graphMode == 'day' ||
+							graphData.graphMode == 'today' ||
+							graphData.graphMode == 'live'
 						"
 						:width="width - margin.left - margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -197,7 +200,7 @@ onMounted(() => {
 	color: var(--color-menu);
 }
 
-.datebadge {
+.dateWbBadge {
 	background-color: var(--color-menu);
 	color: var(--color-bg);
 	font-size: var(--font-medium);

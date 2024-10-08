@@ -1,15 +1,19 @@
 <script>
 export default {
   name: "DateTime",
-  props: {
-    separator: { String, default: "<br />" },
-  },
   data() {
     return {
       dateTimeInterval: "",
       date: "",
       time: "",
     };
+  },
+  mounted() {
+    this.update();
+    this.dateTimeInterval = setInterval(this.update, 1000);
+  },
+  beforeUnmount() {
+    clearInterval(this.dateTimeInterval);
   },
   methods: {
     update() {
@@ -29,16 +33,9 @@ export default {
       this.time = now.toLocaleTimeString(undefined, timeOptions);
     },
   },
-  mounted() {
-    this.update();
-    this.dateTimeInterval = setInterval(this.update, 1000);
-  },
-  beforeUnmount() {
-    clearInterval(this.dateTimeInterval);
-  },
 };
 </script>
 
-<template>{{ time }}<span v-html="separator" />{{ date }}</template>
+<template>{{ time }}<slot><br></slot>{{ date }}</template>
 
 <style scoped></style>

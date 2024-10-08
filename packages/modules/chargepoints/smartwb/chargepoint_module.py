@@ -1,6 +1,6 @@
 
 import time
-from helpermodules.utils.error_counter import ErrorCounterContext
+from helpermodules.utils.error_counter import CP_ERROR, ErrorTimerContext
 from modules.chargepoints.smartwb.config import SmartWB
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
@@ -18,16 +18,16 @@ class ChargepointModule(AbstractChargepoint):
         self.fault_state = FaultState(ComponentInfo(
             self.config.id,
             "Ladepunkt", "chargepoint"))
-        self.__client_error_context = ErrorCounterContext(
-            "Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke wird zurückgesetzt.")
+        self.client_error_context = ErrorTimerContext(
+            f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         self.phases_in_use = 1
         self.session = req.get_http_session()
 
     def set_current(self, current: float) -> None:
-        if self.__client_error_context.error_counter_exceeded():
+        if self.client_error_context.error_counter_exceeded():
             current = 0
-        with SingleComponentUpdateContext(self.fault_state, False):
-            with self.__client_error_context:
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
+            with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 timeout = self.config.configuration.timeout
                 # Stromvorgabe in Hundertstel Ampere
@@ -36,7 +36,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            with self.__client_error_context:
+            with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 timeout = self.config.configuration.timeout
                 response = self.session.get('http://'+ip_address+'/getParameters', timeout=timeout)
@@ -91,18 +91,18 @@ class ChargepointModule(AbstractChargepoint):
                 )
 
                 self.store.set(chargepoint_state)
-                self.__client_error_context.reset_error_counter()
+                self.client_error_context.reset_error_counter()
 
     def clear_rfid(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            with self.__client_error_context:
+            with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 timeout = self.config.configuration.timeout
                 req.get_http_session().get('http://'+ip_address+'/clearRfid', timeout=(timeout, None))
 
     def interrupt_cp(self, duration: int) -> None:
-        with SingleComponentUpdateContext(self.fault_state, False):
-            with self.__client_error_context:
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
+            with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 timeout = self.config.configuration.timeout
                 req.get_http_session().get(

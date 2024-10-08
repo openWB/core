@@ -15,6 +15,9 @@ var primaryTopicsToSubscribe = {
 	"openWB/optional/int_display/only_local_charge_points": false,
 }
 var secondaryTopicsToSubscribe = {
+	"openWB/system/ip_address": false,
+	"openWB/system/current_branch": false,
+	"openWB/system/current_commit": false,
 	"openWB/general/extern_display_mode": false,
 	"openWB/internal_chargepoint/global_data": false,
 	"openWB/internal_chargepoint/0/data/parent_cp": false,
@@ -35,6 +38,7 @@ var options = {
 	onSuccess: function () {
 		console.debug("connected!");
 		retries = 0;
+		updateProgress();
 		Object.keys(topicsToSubscribe).forEach((topic) => {
 			client.subscribe(topic, { qos: 0 });
 		});
@@ -79,6 +83,7 @@ client.onMessageArrived = function (message) {
 		secondaryTopicsToSubscribe[message.destinationName] = true;
 	}
 	data[message.destinationName] = JSON.parse(message.payloadString);
+	updateProgress();
 	handleMessage(message.destinationName, message.payloadString);
 };
 
@@ -96,19 +101,45 @@ function publish(payload, topic) {
 	client.send(message);
 }
 
-function allTopicsReceived() {
-	var ready = true;
+function totalTopicCount() {
+	var counter = Object.keys(topicsToSubscribe).length;
+	if (data["openWB/general/extern"] === true) {
+		counter += Object.keys(secondaryTopicsToSubscribe).length;
+	} else {
+		Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
+			counter += primaryTopicsToSubscribe[topic];
+		});
+	}
+	return counter;
+}
+
+function missingTopics() {
+	var counter = 0;
 	Object.keys(topicsToSubscribe).forEach((topic) => {
-		ready &= topicsToSubscribe[topic];
+		if (topicsToSubscribe[topic] === false) {
+			counter++;
+		};
 	});
-	if (data["openWB/general/extern"]) {
+	if (data["openWB/general/extern"] === true) {
 		Object.keys(secondaryTopicsToSubscribe).forEach((topic) => {
-			ready &= secondaryTopicsToSubscribe[topic];
+			if (secondaryTopicsToSubscribe[topic] === false) {
+				counter++;
+			};
 		});
 	} else {
 		Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
-			ready &= primaryTopicsToSubscribe[topic];
+			if (primaryTopicsToSubscribe[topic] === false) {
+				counter++;
+			};
 		});
 	}
-	return ready;
+	return counter;
+}
+
+function allTopicsReceived() {
+	return (missingTopics() == 0);
+}
+
+function updateProgress() {
+	document.getElementById("progress-value").style.width = `${(totalTopicCount() - missingTopics()) / totalTopicCount() * 100}%`;
 }

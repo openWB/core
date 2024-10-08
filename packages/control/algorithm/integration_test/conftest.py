@@ -26,10 +26,12 @@ def data_() -> None:
         data.data.cp_data[f"cp{i}"].data.config.phase_1 = i-2
         data.data.cp_data[f"cp{i}"].data.set.charging_ev = i
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data = Ev(i)
+        data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.max_current_single_phase = 32
         data.data.cp_data[f"cp{i}"].data.get.plug_state = True
         data.data.cp_data[f"cp{i}"].data.set.plug_time = f"12/01/2022, 15:0{i}:11"
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.nominal_difference = 2
     data.data.cp_data["cp3"].data.set.charging_ev_data.ev_template.data.min_current = 10
+    data.data.cp_data["cp3"].data.control_parameter.min_current = 10
     data.data.bat_data.update({"bat2": Bat(2), "all": BatAll()})
     data.data.pv_data.update({"pv1": Pv(1)})
     data.data.counter_data.update({
@@ -45,7 +47,7 @@ def data_() -> None:
     data.data.counter_data["counter6"].data.config.max_total_power = 11000
     data.data.counter_all_data = CounterAll()
     data.data.counter_all_data.data.get.hierarchy = NESTED_HIERARCHY
-    data.data.counter_all_data.data.config.reserve_for_not_charging = True
+    data.data.counter_all_data.data.config.consider_less_charging = True
 
 
 @dataclass

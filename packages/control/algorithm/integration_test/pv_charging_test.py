@@ -22,6 +22,8 @@ def all_cp_pv_charging_3p():
             f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.required_currents = [
             data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current]*3
+        control_parameter.min_current = data.data.cp_data[
+            f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.chargemode = Chargemode.PV_CHARGING
         control_parameter.submode = Chargemode.PV_CHARGING
         control_parameter.phases = 3
@@ -52,6 +54,8 @@ def all_cp_pv_charging_1p():
     for i in range(3, 6):
         control_parameter = data.data.cp_data[f"cp{i}"].data.control_parameter
         charging_ev_data = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data
+        control_parameter.min_current = data.data.cp_data[
+            f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.required_current = data.data.cp_data[
             f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
         control_parameter.required_currents = [0]*3
@@ -111,7 +115,7 @@ def assert_counter_set(params: ParamsExpectedCounterSet):
 
 
 def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch):
-    # alle 3 im PV-laden, keine Ladung -> bei zweien die Verz starten, für den 3 reichts nicht
+    # alle 3 im PV-laden, keine Ladung -> bei zwei die Verzögerung starten, für den 3. reicht es nicht
     # setup
     data.data.counter_data["counter0"].data.set.raw_power_left = 31775
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]
@@ -138,7 +142,7 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
 
 
 def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch):
-    # alle 3 im PV-laden, keine Ladung -> bei einem die Verz abgelaufen, erhält minstrom
+    # alle 3 im PV-laden, keine Ladung -> bei einem die Verzögerung abgelaufen, erhält Mindeststrom
     # setup
     data.data.counter_data["counter0"].data.set.raw_power_left = 31200
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]

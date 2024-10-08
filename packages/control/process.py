@@ -9,6 +9,7 @@ from control.chargepoint import chargepoint
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
+from helpermodules.utils._thread_handler import joined_thread_handler
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class Process:
 
     def process_algorithm_results(self) -> None:
         try:
-            modules_threads = []  # type: List[threading.Thread]
+            modules_threads: List[threading.Thread] = []
             log.info("# Ladung starten.")
             for cp in data.data.cp_data.values():
                 try:
@@ -57,20 +58,7 @@ class Process:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
 
             if modules_threads:
-                for thread in modules_threads:
-                    thread.start()
-
-                # Wait for all to complete
-                for thread in modules_threads:
-                    thread.join(timeout=3)
-
-                for thread in modules_threads:
-                    if thread.is_alive():
-                        log.error(
-                            thread.name +
-                            " konnte nicht innerhalb des Timeouts die Werte senden.")
-
-            data.data.counter_all_data.get_evu_counter().put_stats()
+                joined_thread_handler(modules_threads, 3)
         except Exception:
             log.exception("Fehler im Process-Modul")
 

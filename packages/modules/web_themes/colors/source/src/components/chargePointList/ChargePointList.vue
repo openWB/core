@@ -1,12 +1,11 @@
 <template>
-	<!-- <div v-if="true && !globalConfig.simpleCpList" class="p-0 m-0 d-flex align-items-stretch" :class="totalWidth"> -->
 	<swiper-container
-		v-if="!props.shortlist"
+		v-if="!props.compact"
 		:space-between="0"
 		:slides-per-view="1"
 		:pagination="{ clickable: true }"
-		class="cplist m-0 p-0 swiper-chargepoints d-flex align-items-stretch"
-		:class="totalWidth"
+		class="cplist m-0 p-0 d-flex align-items-stretch"
+		:class="cplistclasses"
 	>
 		<swiper-slide
 			v-for="chargepoint in chargepointsToDisplay"
@@ -20,9 +19,7 @@
 			</div>
 		</swiper-slide>
 	</swiper-container>
-	<!-- </div> -->
-	<!-- <CPSimpleList v-if="props.shortlist" /> -->
-	<CpSimpleList2 v-if="props.shortlist" />
+	<CpSimpleList2 v-if="props.compact" />
 </template>
 
 <script setup lang="ts">
@@ -30,7 +27,6 @@ import { computed, onMounted } from 'vue'
 import { chargePoints } from './model'
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import CPChargePoint from './CPChargePoint.vue'
-// import CPSimpleList from './cpSimpleList/CPSimpleList.vue'
 import Swiper from 'swiper'
 import 'swiper/css'
 import 'swiper/css/pagination'
@@ -41,7 +37,8 @@ let swiper: Swiper
 let swiperEl: SwiperContainer
 //props
 const props = defineProps<{
-	shortlist: boolean
+	id: string
+	compact: boolean
 }>()
 
 const chargepointsToDisplay = computed(() => {
@@ -49,7 +46,9 @@ const chargepointsToDisplay = computed(() => {
 	updateLayout()
 	return cpArray
 })
-
+const cplistclasses = computed(() => {
+	return totalWidth.value + ' ' + widgetId.value
+})
 const totalWidth = computed(() => {
 	switch (Object.values(chargePoints).length) {
 		case 0:
@@ -62,9 +61,12 @@ const totalWidth = computed(() => {
 			return 'col-lg-12'
 	}
 })
+const widgetId = computed(() => {
+	return 'swiper-chargepoints-' + props.id
+})
 function updateLayout() {
 	// update swiper layout
-	let tmp = document.querySelector('.swiper-chargepoints')
+	let tmp = document.querySelector('.' + widgetId.value)
 	if (tmp) {
 		swiperEl = tmp as SwiperContainer
 		swiper = swiperEl.swiper
@@ -90,7 +92,7 @@ function updateLayout() {
 }
 
 onMounted(() => {
-	let tmp = document.querySelector('.swiper-chargepoints')
+	let tmp = document.querySelector('.' + widgetId.value)
 	if (tmp) {
 		swiperEl = tmp as SwiperContainer
 		swiper = swiperEl.swiper

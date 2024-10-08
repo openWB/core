@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """Starten der benötigten Prozesse
 """
+# flake8: noqa: F402
 import logging
+from helpermodules import logger
+from helpermodules.utils import thread_handler
+# als erstes logging initialisieren, damit auch ImportError geloggt werden
+logger.setup_logging()
+log = logging.getLogger()
+
 from pathlib import Path
 from random import randrange
 import schedule
@@ -19,7 +26,6 @@ from modules import configuration
 from helpermodules import timecheck, update_config
 from helpermodules import subdata
 from helpermodules import setdata
-from helpermodules import logger
 from helpermodules import command
 from helpermodules.modbusserver import start_modbus_server
 from helpermodules.pub import Pub
@@ -33,9 +39,6 @@ from modules.internal_chargepoint_handler.internal_chargepoint_handler import Ge
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
-
-logger.setup_logging()
-log = logging.getLogger()
 
 
 class HandlerAlgorithm:
@@ -71,6 +74,7 @@ class HandlerAlgorithm:
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
+            log.debug(f"Threads: {threading.enumerate()}")
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
         except KeyboardInterrupt:
@@ -106,14 +110,14 @@ class HandlerAlgorithm:
             if not sub.heartbeat:
                 log.error("Heartbeat für Subdata nicht zurückgesetzt.")
                 sub.disconnect()
-                Thread(target=sub.sub_topics, args=(), name="Subdata").start()
+                thread_handler(Thread(target=sub.sub_topics, args=(), name="Subdata"))
             else:
                 sub.heartbeat = False
 
             if not set.heartbeat:
                 log.error("Heartbeat für Setdata nicht zurückgesetzt.")
                 set.disconnect()
-                Thread(target=set.set_data, args=(), name="Setdata").start()
+                thread_handler(Thread(target=set.set_data, args=(), name="Setdata"))
             else:
                 set.heartbeat = False
 
@@ -252,6 +256,9 @@ try:
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()
+    if event_jobs_running.is_set():
+        # Nach dem Starten als erstes den 10Sek-Handler aufrufen, damit die Werte der data.data initialisiert werden.
+        handler.handler10Sec()
 except Exception:
     log.exception("Fehler im Main-Modul")
 

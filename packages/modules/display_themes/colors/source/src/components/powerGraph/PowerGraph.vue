@@ -1,5 +1,5 @@
 <template>
-	<WBWidget :full-width="true">
+	<WBWidget>
 		<template #title>
 			{{ heading }}
 		</template>
@@ -15,96 +15,78 @@
 					@shift-up="shiftUp"
 					@shift-down="shiftDown"
 				/>
-				<span
-					v-if="widescreen"
-					type="button"
-					class="ms-1 p-0 pt-1"
-					@click="zoomGraph"
-				>
-					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
-				</span>
 			</div>
 		</template>
-
-		<figure id="powergraph" class="p-0 m-0" @click="changeStackOrder">
-			<svg :viewBox="'0 0 ' + width + ' ' + height">
-				<!-- Draw the source graph -->
-				<PGSourceGraph
-					:width="width - margin.left - 2 * margin.right"
-					:height="(height - margin.top - margin.bottom) / 2"
-					:margin="margin"
-				/>
-				<PGUsageGraph
-					:width="width - margin.left - 2 * margin.right"
-					:height="(height - margin.top - margin.bottom) / 2"
-					:margin="margin"
-					:stack-order="globalConfig.usageStackOrder"
-				/>
-				<PGXAxis
-					:width="width - margin.left - 2 * margin.right"
-					:height="height - margin.top - margin.bottom"
-					:margin="margin"
-					:graph-data="graphData"
-				/>
-				<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
-					<PgSoc
-						v-if="
-							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today' ||
-								graphData.graphMode == 'live') &&
-							Object.values(chargePoints).length > 0
-						"
+		<div class="grid-col-12">
+			<figure
+				id="powergraph"
+				class="p-0 m-0 align-self-stretch"
+				@click="changeStackOrder"
+			>
+				<svg :viewBox="'0 0 ' + width + ' ' + height">
+					<!-- Draw the source graph -->
+					<PGSourceGraph
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
 						:margin="margin"
-						:order="0"
 					/>
-					<PgSoc
-						v-if="
-							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today' ||
-								graphData.graphMode == 'live') &&
-							Object.values(chargePoints).length > 1
-						"
+					<PGUsageGraph
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
 						:margin="margin"
-						:order="1"
+						:stack-order="globalConfig.usageStackOrder"
 					/>
-					<PgSoc
-						v-if="
-							(graphData.graphMode == 'day' ||
-								graphData.graphMode == 'today') &&
-							globalData.isBatteryConfigured
-						"
+					<PGXAxis
 						:width="width - margin.left - 2 * margin.right"
-						:height="(height - margin.top - margin.bottom) / 2"
+						:height="height - margin.top - margin.bottom"
 						:margin="margin"
-						:order="2"
+						:graph-data="graphData"
 					/>
-					<PgSocAxis
-						v-if="
-							graphData.graphMode == 'day' || graphData.graphMode == 'today'
-						"
-						:width="width - margin.left - margin.right"
-						:height="(height - margin.top - margin.bottom) / 2"
-						:margin="margin"
-					/>
-				</g>
-				<g id="button">
-					<text
-						:x="width"
-						:y="height - 10"
-						color="var(--color-menu)"
-						text-anchor="end"
-					>
-						<tspan fill="var(--color-menu)" class="fas fa-lg">
-							{{ '\uf0dc' }}
-						</tspan>
-					</text>
-				</g>
-			</svg>
-		</figure>
+					<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
+						<PgSoc
+							v-if="
+								(graphData.graphMode == 'day' ||
+									graphData.graphMode == 'today' ||
+									graphData.graphMode == 'live') &&
+								Object.values(chargePoints).length > 0
+							"
+							:width="width - margin.left - 2 * margin.right"
+							:height="(height - margin.top - margin.bottom) / 2"
+							:margin="margin"
+							:order="0"
+						/>
+						<PgSoc
+							v-if="
+								(graphData.graphMode == 'day' ||
+									graphData.graphMode == 'today' ||
+									graphData.graphMode == 'live') &&
+								Object.values(chargePoints).length > 1
+							"
+							:width="width - margin.left - 2 * margin.right"
+							:height="(height - margin.top - margin.bottom) / 2"
+							:margin="margin"
+							:order="1"
+						/>
+						<PgSoc
+							v-if="
+								['day', 'today', 'live'].includes(graphData.graphMode) &&
+								globalData.isBatteryConfigured
+							"
+							:width="width - margin.left - 2 * margin.right"
+							:height="(height - margin.top - margin.bottom) / 2"
+							:margin="margin"
+							:order="2"
+						/>
+						<PgSocAxis
+							v-if="['day', 'today', 'live'].includes(graphData.graphMode)"
+							:width="width - margin.left - margin.right"
+							:height="(height - margin.top - margin.bottom) / 2"
+							:margin="margin"
+						/>
+					</g>
+				</svg>
+			</figure>
+		</div>
 	</WBWidget>
 </template>
 
@@ -125,7 +107,7 @@ import {
 	height,
 	margin,
 } from './model'
-import { globalConfig, widescreen } from '@/assets/js/themeConfig'
+import { globalConfig } from '@/assets/js/themeConfig'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
 import { chargePoints } from '../chargePointList/model'
@@ -142,9 +124,6 @@ function changeStackOrder() {
 	}
 	globalConfig.usageStackOrder = newOrder
 	setInitializeUsageGraph(true)
-}
-function zoomGraph() {
-	globalConfig.zoomGraph = !globalConfig.zoomGraph
 }
 </script>
 

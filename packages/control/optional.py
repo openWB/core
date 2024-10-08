@@ -7,9 +7,11 @@ import threading
 from typing import Dict, List
 
 from dataclass_utils.factories import empty_dict_factory
+from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_unix_timestamp_current_full_hour
+from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.display_themes.cards.config import CardsDisplayTheme
 
@@ -74,6 +76,7 @@ class OptionalData:
     int_display: InternalDisplay = field(default_factory=int_display_factory)
     led: Led = field(default_factory=led_factory)
     rfid: Rfid = field(default_factory=rfid_factory)
+    dc_charging: bool = False
 
 
 class Optional:
@@ -81,10 +84,12 @@ class Optional:
         try:
             self.data = OptionalData()
             self.et_module: ConfigurableElectricityTariff = None
+            self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
+            Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
-    def et_provider_availble(self) -> bool:
+    def et_provider_available(self) -> bool:
         return self.et_module is not None and self.data.et.get.fault_state != 2
 
     def et_price_lower_than_limit(self, max_price: float):
@@ -111,8 +116,7 @@ class Optional:
         return self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())]
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
-        """ geht die Preise der nächsten 24h durch und liefert eine Liste der Uhrzeiten, zu denen geladen werden soll
-
+        """
         Parameter
         ---------
         duration: float
@@ -141,11 +145,7 @@ class Optional:
     def et_get_prices(self):
         try:
             if self.et_module:
-                for thread in threading.enumerate():
-                    if thread.name == "electricity tariff":
-                        log.debug("Don't start multiple instances of electricity tariff thread.")
-                        return
-                threading.Thread(target=self.et_module.update, args=(), name="electricity tariff").start()
+                thread_handler(threading.Thread(target=self.et_module.update, args=(), name="electricity tariff"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:

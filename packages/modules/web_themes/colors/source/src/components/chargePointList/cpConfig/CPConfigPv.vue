@@ -4,7 +4,15 @@
 
 		<!-- Maximum SoC -->
 		<ConfigItem
-			title="Maximaler Ladestand"
+			title="Ladestand begrenzen"
+			icon="fa-battery-three-quarters"
+			:fullwidth="true"
+		>
+			<SwitchInput id="limitSoc" v-model="limitSoc" />
+		</ConfigItem>
+		<ConfigItem
+			v-if="limitSoc"
+			title="...auf maximal..."
 			icon="fa-battery-three-quarters"
 			:fullwidth="true"
 		>
@@ -22,20 +30,11 @@
 			icon="fa-hand"
 			:fullwidth="true"
 		>
-			<div class="form-check form-switch">
-				<input
-					id="feedInLimitSwitch"
-					v-model="cp.pvFeedInLimit"
-					class="form-check-input"
-					type="checkbox"
-					role="switch"
-				/>
-			</div>
+			<SwitchInput v-model="cp.pvFeedInLimit" />
 		</ConfigItem>
-		<hr />
 		<!-- Min-PV-Laden -->
 		<ConfigItem
-			title="Minimaler Ladestand"
+			title="Mindest-Ladestand"
 			icon="fa-battery-half"
 			:infotext="infotext['minsoc']"
 			:fullwidth="true"
@@ -136,6 +135,18 @@ const useMinSoc = computed({
 		}
 	},
 })
+const limitSoc = computed({
+	get() {
+		return cp.value.pvMaxSoc <= 100
+	},
+	set(v: boolean) {
+		if (v) {
+			cp.value.pvMaxSoc = 100
+		} else {
+			cp.value.pvMaxSoc = 101
+		}
+	},
+})
 </script>
 
 <style scoped>
@@ -143,6 +154,7 @@ const useMinSoc = computed({
 	background: var(--color-bg);
 	color: var(--color-fg);
 }
+
 .heading {
 	color: var(--color-pv);
 }

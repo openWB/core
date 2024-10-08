@@ -15,7 +15,7 @@ Hagen */
 			<PowerMeter />
 			<PowerGraph />
 			<EnergyMeter />
-			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+			<ChargePointList id="0" :compact="globalConfig.shortCpList == 'always'" />
 			<GlobalPriceChart id="Hidden" />
 			<VehicleList />
 			<CounterList />
@@ -39,7 +39,7 @@ Hagen */
 			v-if="!globalConfig.showQuickAccess"
 			class="row py-0 m-0 d-flex justify-content-center"
 		>
-			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+			<ChargePointList id="1" :compact="globalConfig.shortCpList == 'always'" />
 			<GlobalPriceChart
 				v-if="globalConfig.showPrices"
 				id="NoTabs"
@@ -136,7 +136,7 @@ Hagen */
 				aria-labelledby="showall-tab"
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
-					<ChargePointList :shortlist="globalConfig.shortCpList != 'no'" />
+					<ChargePointList id="2" :compact="globalConfig.shortCpList != 'no'" />
 					<GlobalPriceChart v-if="globalConfig.showPrices" id="Overview" />
 					<VehicleList v-if="globalConfig.showVehicles" />
 					<BatteryList />
@@ -152,7 +152,10 @@ Hagen */
 				aria-labelledby="chargepoint-tab"
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
-					<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+					<ChargePointList
+						id="3"
+						:compact="globalConfig.shortCpList == 'always'"
+					/>
 				</div>
 			</div>
 			<div

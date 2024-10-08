@@ -16,13 +16,15 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 # ToDo: move to module commands if implemented
+from helpermodules import pub
+from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
-from helpermodules.parse_send_debug import parse_send_debug_data
+from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
@@ -138,7 +140,9 @@ class Command:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
         """
         new_id = self.max_id_device + 1
-        dev = importlib.import_module(".devices."+payload["data"]["type"]+".device", "modules")
+        dev = importlib.import_module(f'.devices.{payload["data"]["vendor"]}'
+                                      f'.{payload["data"]["type"]}.device',
+                                      "modules")
         device_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
         device_default["id"] = new_id
         Pub().pub(f'openWB/set/system/device/{new_id}/config', device_default)
@@ -196,6 +200,7 @@ class Command:
             evu_counter = data.data.counter_all_data.get_id_evu_counter()
             data.data.counter_all_data.hierarchy_add_item_below(
                 new_id, ComponentType.CHARGEPOINT, evu_counter)
+            Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
             setup_added_chargepoint()
         except (TypeError, IndexError):
             if chargepoint_config["type"] == 'internal_openwb' and SubData.general_data.data.extern:
@@ -255,6 +260,7 @@ class Command:
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
         ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
         data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
+        Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
@@ -427,13 +433,15 @@ class Command:
             for k, v in defaults.items():
                 Pub().pub(f'{topic}/{k}', v)
         new_id = self.max_id_hierarchy + 1
-        component = importlib.import_module(
-            ".devices."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
+        component = importlib.import_module(f'.devices.{payload["data"]["deviceVendor"]}'
+                                            f'.{payload["data"]["deviceType"]}.{payload["data"]["type"]}',
+                                            "modules")
         component_default = dataclass_utils.asdict(component.component_descriptor.configuration_factory())
         component_default["id"] = new_id
         general_type = special_to_general_type_mapping(payload["data"]["type"])
         try:
             data.data.counter_all_data.hierarchy_add_item_below_evu(new_id, general_type)
+            Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
         except ValueError:
             pub_user_message(payload, connection_id, counter_all.CounterAll.MISSING_EVU_COUNTER, MessageType.ERROR)
             return
@@ -535,10 +543,8 @@ class Command:
 
     def sendDebug(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Systembericht wird erstellt...", MessageType.INFO)
-        parent_file = Path(__file__).resolve().parents[2]
         previous_log_level = SubData.system_data["system"].data["debug_level"]
-        subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
-                        json.dumps(payload["data"]), parse_send_debug_data()])
+        create_debug_log(payload["data"])
         Pub().pub("openWB/set/system/debug_level", previous_log_level)
         pub_user_message(payload, connection_id, "Systembericht wurde versandt.", MessageType.SUCCESS)
 
@@ -559,21 +565,17 @@ class Command:
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
-        try:
-            result = subprocess.check_output(
-                ["php", "-f", str(parent_file / "runs" / "cloudRegister.php"), json.dumps(payload["data"])]
-            )
-            # exit status = 0 is success, std_out contains json: {"username", "password"}
-            result_dict = json.loads(result)
-            connect_payload = {
-                "data": result_dict
-            }
-            connect_payload["data"]["partner"] = payload["data"]["partner"]
-            self.connectCloud(connection_id, connect_payload)
-            pub_user_message(payload, connection_id, "Verbindung zur Cloud wurde eingerichtet.", MessageType.SUCCESS)
-        except subprocess.CalledProcessError as error:
-            # exit status = 1 is failure, std_out contains error message
-            pub_user_message(payload, connection_id, error.output.decode("utf-8", MessageType.ERROR))
+        result = run_command(
+            ["php", "-f", str(parent_file / "runs" / "cloudRegister.php"), json.dumps(payload["data"])]
+        )
+        # exit status = 0 is success, std_out contains json: {"username", "password"}
+        result_dict = json.loads(result)
+        connect_payload = {
+            "data": result_dict
+        }
+        connect_payload["data"]["partner"] = payload["data"]["partner"]
+        self.connectCloud(connection_id, connect_payload)
+        pub_user_message(payload, connection_id, "Verbindung zur Cloud wurde eingerichtet.", MessageType.SUCCESS)
 
     def connectCloud(self, connection_id: str, payload: dict) -> None:
         cloud_config = bridge.get_cloud_config()
@@ -607,15 +609,27 @@ class Command:
                              f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
                              f'ID \'{self.max_id_mqtt_bridge}\'.', MessageType.ERROR)
 
+    def chargepointReboot(self, connection_id: str, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemReboot", "data": {}},
+                       hostname=SubData.cp_data[f'cp{payload["data"]["chargepoint"]}'
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
+
+    def chargepointShutdown(self, connection_id: str, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemReboot", "data": {}},
+                       hostname=SubData.cp_data[payload["data"]["chargepoint"]
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
+
     def systemReboot(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Neustart wird ausgeführt.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        subprocess.run([str(parent_file / "runs" / "reboot.sh")])
+        run_command([str(parent_file / "runs" / "reboot.sh")])
 
     def systemShutdown(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "openWB wird heruntergefahren.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        subprocess.run([str(parent_file / "runs" / "shutdown.sh")])
+        run_command([str(parent_file / "runs" / "shutdown.sh")])
 
     def systemUpdate(self, connection_id: str, payload: dict) -> None:
         log.info("Update requested")
@@ -639,13 +653,13 @@ class Command:
                 payload, connection_id,
                 f'Wechsel auf Zweig \'{payload["data"]["branch"]}\' Tag \'{payload["data"]["tag"]}\' gestartet.',
                 MessageType.SUCCESS)
-            subprocess.run([
+            run_command([
                 str(parent_file / "runs" / "update_self.sh"),
                 str(payload["data"]["branch"]),
                 str(payload["data"]["tag"])])
         else:
             pub_user_message(payload, connection_id, "Update gestartet.", MessageType.INFO)
-            subprocess.run([
+            run_command([
                 str(parent_file / "runs" / "update_self.sh"),
                 SubData.system_data["system"].data["current_branch"]])
 
@@ -653,31 +667,20 @@ class Command:
         log.info("Fetch versions requested")
         pub_user_message(payload, connection_id, "Versionsliste wird aktualisiert...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        result = subprocess.run([str(parent_file / "runs" / "update_available_versions.sh")])
-        if result.returncode == 0:
-            pub_user_message(payload, connection_id, "Versionsliste erfolgreich aktualisiert.", MessageType.SUCCESS)
-        else:
-            pub_user_message(
-                payload, connection_id,
-                f'Version-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8", MessageType.ERROR)}')
+        run_command([str(parent_file / "runs" / "update_available_versions.sh")])
+        pub_user_message(payload, connection_id, "Versionsliste erfolgreich aktualisiert.", MessageType.SUCCESS)
 
     def createBackup(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Backup wird erstellt...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        result = subprocess.run(
+        result = run_command(
             [str(parent_file / "runs" / "backup.sh"),
-             "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"],
-            stdout=subprocess.PIPE)
-        if result.returncode == 0:
-            file_name = result.stdout.decode("utf-8").rstrip('\n')
-            file_link = "/openWB/data/backup/" + file_name
-            pub_user_message(payload, connection_id,
-                             "Backup erfolgreich erstellt.<br />"
-                             f'Jetzt <a href="{file_link}" target="_blank">herunterladen</a>.', MessageType.SUCCESS)
-        else:
-            pub_user_message(payload, connection_id,
-                             f'Backup-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
-                             MessageType.ERROR)
+             "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"])
+        file_name = result.rstrip('\n')
+        file_link = "/openWB/data/backup/" + file_name
+        pub_user_message(payload, connection_id,
+                         "Backup erfolgreich erstellt.<br />"
+                         f'Jetzt <a href="{file_link}" target="_blank">herunterladen</a>.', MessageType.SUCCESS)
 
     def createCloudBackup(self, connection_id: str, payload: dict) -> None:
         if SubData.system_data["system"].backup_cloud is not None:
@@ -692,18 +695,11 @@ class Command:
 
     def restoreBackup(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
-        result = subprocess.run(
-            [str(parent_file / "runs" / "prepare_restore.sh")],
-            stdout=subprocess.PIPE)
-        if result.returncode == 0:
-            pub_user_message(payload, connection_id,
-                             "Wiederherstellung wurde vorbereitet. openWB wird jetzt zum Abschluss neu gestartet.",
-                             MessageType.INFO)
-            self.systemReboot(connection_id, payload)
-        else:
-            pub_user_message(payload, connection_id,
-                             f'Restore-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
-                             MessageType.ERROR)
+        run_command([str(parent_file / "runs" / "prepare_restore.sh")])
+        pub_user_message(payload, connection_id,
+                         "Wiederherstellung wurde vorbereitet. openWB wird jetzt zum Abschluss neu gestartet.",
+                         MessageType.INFO)
+        self.systemReboot(connection_id, payload)
 
     # ToDo: move to module commands if implemented
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
@@ -760,6 +756,12 @@ class ErrorHandlingContext:
             pub_user_message(self.payload, self.connection_id,
                              f'Es ist ein interner Fehler aufgetreten: {exception}', MessageType.ERROR)
             log.error({traceback.format_exc()})
+            return True
+        elif isinstance(exception, subprocess.CalledProcessError):
+            log.debug(exception.stdout)
+            pub_user_message(self.payload, self.connection_id,
+                             f'Fehler-Status: {exception.returncode}<br />Meldung: {exception.stderr}',
+                             MessageType.ERROR)
             return True
         else:
             return False
@@ -823,40 +825,53 @@ class ProcessBrokerBranch:
         client.subscribe(f'openWB/set/{self.topic_str}#', 2)
 
     def __on_message_rm(self, client, userdata, msg):
-        if decode_payload(msg.payload) != '':
-            log.debug(f'Gelöschtes Topic: {msg.topic}')
-            Pub().pub(msg.topic, "")
-            if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
-                payload = decode_payload(msg.payload)
-                topic = type_to_topic_mapping(payload["type"])
-                data.data.counter_all_data.hierarchy_remove_item(payload["id"])
-                client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
-            elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
-                payload = decode_payload(msg.payload)
-                if payload["type"] == "external_openwb":
-                    pub_single(
-                        f'openWB/set/internal_chargepoint/{payload["configuration"]["duo_num"]}/data/parent_cp',
-                        None,
-                        hostname=payload["configuration"]["ip_address"])
-            elif re.search("openWB/chargepoint/template/[0-9]+$", msg.topic) is not None:
-                for cp in SubData.cp_data.values():
-                    if cp.chargepoint.data.config.template == int(msg.topic.split("/")[-1]):
-                        pub_single(f'openWB/set/chargepoint/{cp.chargepoint.num}/config/template', 0)
-            elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
-                for vehicle in SubData.ev_data.values():
-                    if vehicle.data.charge_template == int(msg.topic.split("/")[-1]):
-                        pub_single(f'openWB/set/vehicle/{vehicle.num}/charge_template', 0)
-            elif re.search("openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
-                for vehicle in SubData.ev_data.values():
-                    if vehicle.data.ev_template == int(msg.topic.split("/")[-1]):
-                        pub_single(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
+        try:
+            if decode_payload(msg.payload) != '':
+                log.debug(f'Gelöschtes Topic: {msg.topic}')
+                Pub().pub(msg.topic, "")
+                if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
+                    payload = decode_payload(msg.payload)
+                    topic = type_to_topic_mapping(payload["type"])
+                    data.data.counter_all_data.hierarchy_remove_item(payload["id"])
+                    Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+                    client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
+                elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
+                    payload = decode_payload(msg.payload)
+                    if payload["type"] == "external_openwb":
+                        pub_single(
+                            f'openWB/set/internal_chargepoint/{payload["configuration"]["duo_num"]}/data/parent_cp',
+                            None,
+                            hostname=payload["configuration"]["ip_address"])
+                elif re.search("openWB/chargepoint/template/[0-9]+$", msg.topic) is not None:
+                    for cp in SubData.cp_data.values():
+                        if cp.chargepoint.data.config.template == int(msg.topic.split("/")[-1]):
+                            pub_single(f'openWB/set/chargepoint/{cp.chargepoint.num}/config/template', 0)
+                elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
+                    for vehicle in SubData.ev_data.values():
+                        if vehicle.data.charge_template == int(msg.topic.split("/")[-1]):
+                            pub_single(f'openWB/set/vehicle/{vehicle.num}/charge_template', 0)
+                elif re.search("openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
+                    for vehicle in SubData.ev_data.values():
+                        if vehicle.data.ev_template == int(msg.topic.split("/")[-1]):
+                            pub_single(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
 
     def __on_message_max_id(self, client, userdata, msg):
-        self.received_topics.append(msg.topic)
+        try:
+            self.received_topics.append(msg.topic)
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
 
     def __get_payload(self, client, userdata, msg):
-        self.payload = msg.payload
+        try:
+            self.payload = msg.payload
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
 
     def __on_message_mqtt_bridge_exists(self, client, userdata, msg):
-        if decode_payload(msg.payload)["name"] == self.name:
-            self.mqtt_bridge_exists = True
+        try:
+            if decode_payload(msg.payload)["name"] == self.name:
+                self.mqtt_bridge_exists = True
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")

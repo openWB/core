@@ -1,9 +1,10 @@
+import datetime
 from decimal import Decimal
 from enum import Enum
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
@@ -19,6 +20,27 @@ class CalculationType(Enum):
 
 
 FILE_ERRORS = (FileNotFoundError, json.decoder.JSONDecodeError)
+
+
+def get_default_charge_log_columns() -> Dict:
+    return {
+        "time_begin": True,
+        "time_end": True,
+        "time_time_charged": True,
+        "data_costs": True,
+        "data_power_source": False,
+        "vehicle_name": True,
+        "vehicle_chargemode": True,
+        "vehicle_prio": True,
+        "vehicle_rfid": True,
+        "vehicle_soc_at_start": False,
+        "vehicle_soc_at_end": False,
+        "chargepoint_name": True,
+        "chargepoint_serial_number": False,
+        "data_imported_since_mode_switch": True,
+        "chargepoint_imported_at_start": False,
+        "chargepoint_imported_at_end": False
+    }
 
 
 def string_to_float(value: str, default: float = 0) -> float:
@@ -181,14 +203,14 @@ def get_monthly_log(date: str):
 
 def _collect_monthly_log_data(date: str):
     try:
-        with open(str(Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
+        with open(f"{_get_data_folder_path()}/monthly_log/{date}.json", "r") as jsonFile:
             log_data = json.load(jsonFile)
         this_month = timecheck.create_timestamp_YYYYMM()
         if date == this_month:
             # add last entry of current day, if current month is requested
             try:
                 today = timecheck.create_timestamp_YYYYMMDD()
-                with open(str(Path(__file__).resolve().parents[3] / "data" / "daily_log"/(today+".json")),
+                with open(f"{_get_data_folder_path()}/daily_log/{today}.json",
                           "r") as todayJsonFile:
                     today_log_data = json.load(todayJsonFile)
                     if len(today_log_data["entries"]) > 0:
@@ -199,7 +221,7 @@ def _collect_monthly_log_data(date: str):
             # add first entry of next month
             try:
                 next_date = timecheck.get_relative_date_string(date, month_offset=1)
-                with open(str(Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(next_date+".json")),
+                with open(f"{_get_data_folder_path()}/monthly_log/{next_date}.json",
                           "r") as nextJsonFile:
                     next_log_data = json.load(nextJsonFile)
                     log_data["entries"].append(next_log_data["entries"][0])
@@ -216,6 +238,66 @@ def get_yearly_log(year: str):
     data["totals"] = get_totals(data["entries"], False)
     data = _analyse_energy_source(data)
     return data
+
+
+def get_log_from_date_until_now(timestamp: int):
+    data = {}
+    try:
+        entries = _collect_log_data_from_date_until_now(timestamp)
+        data["entries"] = _process_entries(entries, CalculationType.ENERGY)
+        data["totals"] = get_totals(data["entries"], False)
+        data = _analyse_energy_source(data)
+    except Exception:
+        log.exception(f"Fehler beim Zusammenstellen der Logdaten von {timestamp}")
+    finally:
+        return data
+
+
+def _collect_log_data_from_date_until_now(timestamp: int):
+    def add_to_list(log_data: List, data: Union[Dict, List]):
+        if isinstance(data, list):
+            log_data.extend(data)
+        else:
+            log_data.append(data)
+        return log_data
+    log_data = []
+    try:
+        date = datetime.datetime.fromtimestamp(timestamp).strftime("%Y%m%d")
+        try:
+            with open(f"{_get_data_folder_path()}/daily_log/{date}.json", "r") as jsonFile:
+                entries = json.load(jsonFile)["entries"]
+        except FILE_ERRORS:
+            pass
+        for index, entry in enumerate(entries):
+            if entry["timestamp"] > timestamp:
+                log_data = add_to_list(log_data, entries[index:])
+                break
+        else:
+            try:
+                # Wenn der Ladevorgang nicht über volle 5 Minuten ging, wurde während dem Laden kein Eintrag ins
+                # daily-log geschrieben.
+                log_data = add_to_list(log_data, entries[-1])
+            except KeyError:
+                log.exception(f"Fehler beim Zusammenstellen der Logdaten. Bitte Logdatei daily_log/{date}.json prüfen.")
+        # Das Teillog vom ersten Tag wurde bereits ermittelt.
+        start_date = datetime.datetime.fromtimestamp(timestamp) + datetime.timedelta(days=1)
+        end_date = datetime.datetime.now()
+        current_date = start_date
+        date_list = []
+        while current_date <= end_date:
+            date_list.append(current_date.strftime('%Y%m%d'))
+            current_date += datetime.timedelta(days=1)
+        for date_str in date_list:
+            try:
+                with open(f"{_get_data_folder_path()}/daily_log/{date_str}.json", "r") as jsonFile:
+                    log_data = add_to_list(log_data, json.load(jsonFile)["entries"])
+            except FILE_ERRORS:
+                pass
+        log_data = add_to_list(log_data, create_entry(LogType.DAILY, LegacySmartHomeLogData(), log_data[-1]))
+    except Exception:
+        log.exception(f"Fehler beim Zusammenstellen der Logdaten von {timestamp}")
+    finally:
+        return log_data
 
 
 def _collect_yearly_log_data(year: str):
@@ -238,8 +320,7 @@ def _collect_yearly_log_data(year: str):
 
     def add_daily_log(day: str) -> None:
         try:
-            with open(str(Path(__file__).resolve().parents[3] / "data" / "daily_log"/(day+".json")),
-                      "r") as dayJsonFile:
+            with open(f"{_get_data_folder_path()}/daily_log/{day}.json", "r") as dayJsonFile:
                 day_log_data = json.load(dayJsonFile)
                 if len(day_log_data["entries"]) > 0:
                     entries.append(day_log_data["entries"][-1])
@@ -302,18 +383,19 @@ def _analyse_energy_source(data) -> Dict:
 def analyse_percentage(entry):
     def format(value):
         return round(value, 4)
+
+    def get_grid_from(entry) -> Tuple[float, float]:
+        grids = [counter for counter in entry["counter"].values() if counter.get("grid")]
+        if not grids:
+            raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
+        return sum(grid["energy_imported"] for grid in grids), sum(grid["energy_exported"] for grid in grids)
+
     try:
         bat_imported = entry["bat"]["all"]["energy_imported"] if "all" in entry["bat"].keys() else 0
         bat_exported = entry["bat"]["all"]["energy_exported"] if "all" in entry["bat"].keys() else 0
         cp_exported = entry["cp"]["all"]["energy_exported"] if "all" in entry["cp"].keys() else 0
         pv = entry["pv"]["all"]["energy_exported"] if "all" in entry["pv"].keys() else 0
-        for counter in entry["counter"].values():
-            if counter.get("grid") is None:
-                return
-            # ToDo: add "grid" to old data in update_config.py
-            if counter["grid"]:
-                grid_imported = counter["energy_imported"]
-                grid_exported = counter["energy_exported"]
+        grid_imported, grid_exported = get_grid_from(entry)
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
         try:
             if grid_exported > pv:
@@ -473,3 +555,7 @@ def _calculate_average_power(time_diff: float, current_imported: float = 0, next
     power = power.quantize(Decimal('0.001'))  # limit precision
     power = f'{power: f}'
     return string_to_float(power) if "." in power else string_to_int(power)
+
+
+def _get_data_folder_path() -> str:
+    return str(Path(__file__).resolve().parents[3] / "data")

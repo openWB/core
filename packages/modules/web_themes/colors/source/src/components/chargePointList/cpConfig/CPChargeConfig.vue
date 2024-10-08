@@ -30,7 +30,11 @@
 	>
 		<RadioInput
 			v-model.number="cp.connectedVehicle"
-			:options="Object.values(vehicles).map((v) => [v.name, v.id])"
+			:options="
+				Object.values(vehicles)
+					.filter((v) => v.visible)
+					.map((v) => [v.name, v.id])
+			"
 		/>
 	</ConfigItem>
 	<ConfigItem
@@ -59,6 +63,21 @@
 	>
 		<SwitchInput v-model="cp.timedCharging" />
 	</ConfigItem>
+	<!-- Priority mode if battery exists -->
+	<ConfigItem
+		v-if="globalData.isBatteryConfigured"
+		title="PV-Priorität"
+		icon="fa-car-battery"
+		:infotext="infotext['pvpriority']"
+		:fullwidth="true"
+	>
+		<RadioInput
+			v-model="globalData.pvBatteryPriority"
+			:options="evPriorityModes"
+		>
+		</RadioInput
+	></ConfigItem>
+
 	<!-- Price based Charging -->
 	<ConfigItem
 		v-if="etData.active"
@@ -79,6 +98,8 @@ import { infotext } from '@/assets/js/themeConfig'
 import SwitchInput from '../../shared/SwitchInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
 import { etData } from '@/components/priceChart/model'
+import { globalData } from '@/assets/js/model'
+import { evPriorityModes } from '@/assets/js/types'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()

@@ -105,7 +105,7 @@ $numDevices = 9;
 											Wenn die Ausschaltbedingung erreicht ist wird einmalig 0 als Überschuss übertragen.
 											Die Ausschaltschwelle/ Ausschaltverzögerung in openWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Acthor nicht zu stören.
 											Wenn Acthor als Gerät 1 oder 2 definiert ist, wird die Warmwassertemperatur als Temp1 angezeigt (Modbusadresse 1001). Ebenso wird Temp2 (Modbusadresse 1030) und Temp3 (Modbusadresse 1031) angezeigt (falls angeschlossen).
-											Elwa2 hat fast di gleiche Schnittstelle wie Acthor.
+											Elwa2 hat fast die gleiche Schnittstelle wie Acthor.
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-lambda hide">
 											Wp der Firma lambda<br>
@@ -117,12 +117,12 @@ $numDevices = 9;
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-mqtt hide">
 											Generisches MQTT modul<br>
-											Wenn Einschaltbedingung erreicht (Beispiel hier mit Device 2)<br>
-											openWB/set/LegacySmartHome/Devices/2/ReqRelay = 1<br>
-											openWB/set/LegacySmartHome/Devices/2/Ueberschuss = in Watt<br>
+											Wenn Einschaltbedingung erreicht (Beispiel hier mit Device 4)<br>
+											openWB/LegacySmartHome/Devices/4/ReqRelay = 1<br>
+											openWB/LegacySmartHome/Devices/4/Ueberschuss = in Watt<br>
 											Wenn Ausschaltbedingung erreicht<br>
-											openWB/set/LegacySmartHome/Devices/2/ReqRelay = 0<br>
-											openWB/set/LegacySmartHome/Devices/2/Ueberschuss = in Watt<br>
+											openWB/LegacySmartHome/Devices/4/ReqRelay = 0<br>
+											openWB/LegacySmartHome/Devices/4/Ueberschuss = in Watt<br>
 											ReqRelay gibt den Status vom Gerät aus Sicht openWb an (1 = eingeschaltet, 0 = ausgeschaltet)<br>
 											Bei der periodischen Abfrage wird die aktuelle Leistung<br>
 											openWB/set/LegacySmartHome/Devices/2/Aktpower = in Watt erwartet<br>
@@ -132,8 +132,14 @@ $numDevices = 9;
 											und der aktuelle Zähler in Wattstunden wird hier erwartet<br>
 											openWB/set/LegacySmartHome/Devices/2/Powerc<br>
 											wenn kein Zähler übergeben oder 0 übergeben wird, wird der Zähler selber gerechnet<br>
-											openWB/set/LegacySmartHome/Devices/2/Ueberschuss = in Watt<br>
-											alle Gerät können bezüglich manuell / automatisch von extern gestuert werden. Details hier: https://forum.openwb.de/viewtopic.php?t=8415
+											openWB/set/LegacySmartHome/Devices/4/Ueberschuss = in Watt<br>
+											alle Geräte (nicht nur MQTT) können bezüglich manuell / automatisch von extern gesteuert werden. <br>
+											openWB/set/LegacySmartHome/config/set/Devices/4/mode <br>
+											Mode steuert das Gerät (1 = manueller Modus, 0 = automatischer Modus)<br>
+											openWB/set/LegacySmartHome/config/set/Devices/4/device_manual_control<br>
+											device_manual_control steuert das Ferät im manuellen Modus (1 = ein, 0 = aus)<br>
+											openWB/set/LegacySmartHome/config/set/Devices/4/manueb = vorgebener Überschuss in Watt ohne Nachkommastellen<br>
+											Dieser Wert wird wenn das Gerät auf Manueller Modus und ein geschaltet ist, als Überschuss an das jeweilige Gerät übergeben. (nur relevant für Acthor, Elwa, IDM, Lambda die mit überschuss gesteuert werden)
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-NXDACXX hide">
 											DAC angesteuert über Lan. Der anliegende Überschuss wird in eine Voltzahl zwischen 0.01V und 10.0V umgewandelt. Bezug wird als 0 Volt übertragen.
@@ -302,7 +308,8 @@ $numDevices = 9;
 									</div>
 								</div>
 							</div>
-							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum;  ?>-option-viessmann device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-NXDACXX hide">
+							
+							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum;  ?>-option-viessmann device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-askoheat device<?php echo $devicenum;  ?>-option-NXDACXX hide">
 								<hr class="border-secondary">
 								<div class="form-row mb-1">
 									<label for="device_ipDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">IP Adresse</label>
@@ -411,6 +418,8 @@ $numDevices = 9;
 												<option value="E2M1" data-option="M1">Elwa2 M1</option>
 												<option value="E2M3" data-option="M3">Elwa2 M3</option>
 												<option value="9s" data-option="9s">Acthor 9s</option>
+												<option value="E2M1" data-option="M1">Elwa2 M1</option>
+												<option value="E2M3" data-option="M3">Elwa2 M3</option>												
 												<option value="9s18" data-option="9s18">Acthor 9s Dual 18k</option>
 												<option value="9s27" data-option="9s27">Acthor 9s Boost 27k</option>												
 												<option value="9s45" data-option="9s45">Acthor 9s Boost 45k</option>																								
@@ -472,7 +481,7 @@ $numDevices = 9;
 									</div>
 								</div>
 							</div>
-							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-http device<?php echo $devicenum; ?>-option-mqtt device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-NXDACXX device<?php echo $devicenum; ?>-option-viessmann hide">
+							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-http device<?php echo $devicenum; ?>-option-mqtt device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-NXDACXX device<?php echo $devicenum; ?>-option-askoheat device<?php echo $devicenum;  ?>-option-viessmann hide">
 								<hr class="border-secondary">
 								<div class="form-group">
 									<div class="form-row mb-1">

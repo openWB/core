@@ -131,17 +131,17 @@ class BatAll:
             log.exception("Fehler im Bat-Modul")
 
     def _max_bat_power_hybrid_system(self, battery: Bat) -> float:
+        """gibt die maximale Entladeleistung des Speichers zurück, bis die maximale Ausgangsleistung des WR erreicht
+        ist."""
         # tested
         parent = data.data.counter_all_data.get_entry_of_parent(battery.num)
         if parent.get("type") == "inverter":
             parent_data = data.data.pv_data[f"pv{parent['id']}"].data
-            # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
-            # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
             # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
             # genutzt werden.
             if parent_data.config.max_ac_out > 0:
                 max_bat_discharge_power = parent_data.config.max_ac_out + \
-                    parent_data.get.power + max(battery.data.get.power, 0)
+                    parent_data.get.power + min(battery.data.get.power, 0)
                 return max_bat_discharge_power, True
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
@@ -153,6 +153,8 @@ class BatAll:
             return abs(battery.data.get.power) + 50, False
 
     def _limit_bat_power_discharge(self, required_power):
+        """begrenzt die für den Algorithmus benötigte Entladeleistung des Speichers, wenn die maximale Ausgangsleistung
+        des WR erreicht ist."""
         available_power = 0
         hybrid = False
         if required_power > 0:
@@ -181,7 +183,7 @@ class BatAll:
                     self._get_charging_power_left()
                     log.info(f"{self.data.set.charging_power_left}W verbleibende Speicher-Leistung")
                 else:
-                    # Bei Warnung oder Fehlerfall, zB durch Kalibierungs-Meldung, Speicher-Leistung nicht in der
+                    # Bei Warnung oder Fehlerfall, zB durch Kalibrierung, Speicher-Leistung nicht in der
                     # Regelung berücksichtigen.
                     self.data.set.charging_power_left = 0
             else:
@@ -235,22 +237,22 @@ class BatAll:
                     charging_power_left = self.data.get.power
                 else:
                     if config.bat_power_discharge_active:
-                        if self.data.get.power > 0:
-                            # Speicher wird geladen
-                            charging_power_left = self.data.get.power + config.bat_power_discharge
-                        else:
-                            if self.data.get.power * -1 >= config.bat_power_discharge:
-                                # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
-                                # vom Überschuss subtrahiert werden.
-                                charging_power_left = config.bat_power_discharge + self.data.get.power
-                                log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
-                            else:
-                                charging_power_left = self.data.get.power + config.bat_power_discharge
+                        # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
+                        # vom Überschuss subtrahiert werden.
+                        # Wenn der Speicher mit weniger als der erlaubten Entladeleistung entladen wird
+                        charging_power_left = config.bat_power_discharge + self.data.get.power
+                        log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
                     else:
                         # Speicher sollte weder ge- noch entladen werden.
                         charging_power_left = self.data.get.power
             # Keine Ladeleistung vom Speicher für Fahrzeuge einplanen, wenn max
             # Ausgangsleistung erreicht ist.
+            if self.data.set.regulate_up:
+                # 100(50 reichen auch?) W Überschuss übrig lassen, damit der Speicher bis zur max Ladeleistung
+                # hochregeln kann.
+                log.debug("Damit der Speicher hochregeln kann, muss unabhängig vom eingestellten Regelmodus "
+                          "Einspeisung erzeugt werden.")
+                charging_power_left -= 100
             self.data.set.charging_power_left = self._limit_bat_power_discharge(charging_power_left)
         except Exception:
             log.exception("Fehler im Bat-Modul")

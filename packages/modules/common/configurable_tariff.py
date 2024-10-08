@@ -13,22 +13,25 @@ T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
 class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
     def __init__(self,
                  config: T_TARIFF_CONFIG,
-                 component_updater: Callable[[], None]) -> None:
-        self.__component_updater = component_updater
+                 component_initializer: Callable[[], float]) -> None:
         self.config = config
         self.store = store.get_electricity_tariff_value_store()
         self.fault_state = FaultState(ComponentInfo(None, self.config.name, ComponentType.ELECTRICITY_TARIFF.value))
+        with SingleComponentUpdateContext(self.fault_state):
+            self._component_updater = component_initializer(config)
 
     def update(self):
-        with SingleComponentUpdateContext(self.fault_state):
-            tariff_state = self.__component_updater()
-            current_hour = create_unix_timestamp_current_full_hour()
-            self.store.set(tariff_state)
-            self.store.update()
-            for timestamp in tariff_state.prices.keys():
-                if timestamp < current_hour:
-                    self.fault_state.warning('Die Preisliste startet nicht mit der aktuellen Stunde.')
-            if len(tariff_state.prices) < 24:
-                self.fault_state.no_error(f'Die Preisliste hat nicht 24, sondern {len(tariff_state.prices)} Einträge. '
-                                          'Die Strompreise werden vom Anbieter erst um 14:00 für den Folgetag '
-                                          'aktualisiert.')
+        if hasattr(self, "_component_updater"):
+            # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
+            with SingleComponentUpdateContext(self.fault_state):
+                tariff_state = self._component_updater()
+                current_hour = create_unix_timestamp_current_full_hour()
+                self.store.set(tariff_state)
+                self.store.update()
+                for timestamp in tariff_state.prices.keys():
+                    if timestamp < current_hour:
+                        self.fault_state.warning('Die Preisliste startet nicht mit der aktuellen Stunde.')
+                if len(tariff_state.prices) < 24:
+                    self.fault_state.no_error(
+                        f'Die Preisliste hat nicht 24, sondern {len(tariff_state.prices)} Einträge. '
+                        'Die Strompreise werden vom Anbieter erst um 14:00 für den Folgetag aktualisiert.')

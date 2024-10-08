@@ -1,46 +1,57 @@
 <template>
-	<p class="settingsheader mt-2 ms-1">Preisbasiertes Laden:</p>
-	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
-	<hr />
-	<div class="container">
-		<figure id="pricechart" class="p-0 m-0">
-			<svg viewBox="0 0 400 300">
-				<g
-					:id="chartId"
-					:origin="draw"
-					:transform="'translate(' + margin.top + ',' + margin.right + ')'"
-				/>
-			</svg>
-		</figure>
-	</div>
-	<div v-if="chargepoint != undefined" class="p-3">
-		<RangeInput
-			v-if="chargepoint.etActive"
-			id="foo"
-			v-model="maxPrice"
-			:min="-25"
-			:max="95"
-			:step="0.1"
-			:decimals="1"
-			unit="ct"
-		/>
-	</div>
-	<div v-if="chargepoint != undefined" class="d-flex justify-content-end">
-		<span class="me-3 pt-0" @click="setMaxPrice">
-			<button
-				type="button"
-				class="btn btn-secondary"
-				:style="confirmButtonStyle"
-				:disabled="!maxPriceEdited"
+	<div class="pricesettings grid12">
+		<div class="subtitle grid-col-12">Anbieter: {{ etData.etProvider }}</div>
+		<div class="grapharea">
+			<figure id="pricechart">
+				<svg viewBox="0 0 400 300">
+					<g
+						:id="chartId"
+						:origin="draw"
+						:transform="'translate(' + margin.top + ',' + margin.right + ')'"
+					/>
+				</svg>
+			</figure>
+		</div>
+		<div class="controlarea d-flex align-items-center">
+			<div
+				class="priceinput d-flex flex-column justify-content-center align-items-center"
 			>
-				Bestätigen
-			</button>
-		</span>
+				<div class="grid12 pb-5">
+					<ConfigItem
+						title="Strompreisbasiert laden"
+						icon="fa-coins"
+						iconcolor="var(--color-battery)"
+					>
+						<SwitchInput v-model="etActive"></SwitchInput>
+					</ConfigItem>
+				</div>
+				<RangeInput
+					id="etmaxprice"
+					v-model="maxPrice"
+					:min="-25"
+					:max="95"
+					:step="0.1"
+					:decimals="1"
+					unit="ct"
+				/>
+				<span class="pt-3" @click="setMaxPrice">
+					<button
+						type="button"
+						class="btn btn-lg btn-secondary"
+						:style="confirmButtonStyle"
+						:disabled="!maxPriceEdited"
+					>
+						Bestätigen
+					</button>
+				</span>
+			</div>
+		</div>
+		<span>{{ maxPrice }}</span>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUpdated, ref } from 'vue'
 import { etData } from './model'
 import {
 	extent,
@@ -53,29 +64,33 @@ import {
 	select,
 } from 'd3'
 import RangeInput from '../shared/RangeInput.vue'
-import { chargePoints, type ChargePoint } from '../chargePointList/model'
+import ConfigItem from '../shared/ConfigItem.vue'
+import SwitchInput from '../shared/SwitchInput.vue'
+import { chargePoints } from '../chargePointList/model'
+
 const props = defineProps<{
-	chargepoint?: ChargePoint
+	chargePointId: number
 	globalview?: boolean
 }>()
-
-let _maxPrice = props.chargepoint ? ref(props.chargepoint.etMaxPrice) : ref(0)
+const cp = computed(() => chargePoints[props.chargePointId])
+const _maxPrice = ref(cp.value.etMaxPrice)
 const maxPriceEdited = ref(false)
-const cp = ref(props.chargepoint)
 const maxPrice = computed({
-	get() {
-		return _maxPrice.value
-		// ref(props.chargepoint.etMaxPrice)
-	},
+	get: () => _maxPrice.value,
 	set(newmax) {
 		_maxPrice.value = newmax
 		maxPriceEdited.value = true
 	},
 })
-
+const etActive = computed({
+	get: () => cp.value.etActive,
+	set: (value: boolean) => {
+		cp.value.etActive = value
+	},
+})
 function setMaxPrice() {
 	if (cp.value) {
-		chargePoints[cp.value.id].etMaxPrice = maxPrice.value
+		cp.value.etMaxPrice = maxPrice.value
 	}
 	maxPriceEdited.value = false
 }
@@ -83,8 +98,9 @@ const needsUpdate = ref(false)
 let dummy = false
 const width = 400
 const height = 250
-const margin = { top: 0, bottom: 15, left: 20, right: 5 }
+const margin = { top: 0, bottom: 15, left: 20, right: 15 }
 const axisfontsize = 12
+
 const plotdata = computed(() => {
 	let valueArray: [Date, number][] = []
 	if (etData.etPriceList.size > 0) {
@@ -110,15 +126,18 @@ const confirmButtonStyle = computed(() => {
 })
 const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
-
+	if (xdomain[1]) {
+		xdomain[1] = new Date(xdomain[1])
+		xdomain[1].setTime(xdomain[1].getTime() + 3600000)
+	}
 	return scaleTime()
-		.range([margin.left, width - margin.left - margin.right])
+		.range([margin.left, width - margin.right])
 		.domain(xdomain)
 })
 const yDomain = computed(() => {
 	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
-	yd[0] = Math.floor(yd[0] - 1)
-	yd[1] = Math.floor(yd[1] + 1)
+	yd[0] = yd[0] ? Math.floor(yd[0] - 1) : 0
+	yd[1] = yd[1] ? Math.floor(yd[1] + 1) : 0
 	return yd
 })
 const yScale = computed(() => {
@@ -130,24 +149,17 @@ const linePath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(maxPrice.value)],
-		[width - margin.right, yScale.value(maxPrice.value)],
-	]
-	return generator(points as [number, number][])
-})
-const zeroPath = computed(() => {
-	const generator = line()
-	const points = [
-		[margin.left, yScale.value(0)],
-		[width - margin.right, yScale.value(0)],
+		[width - margin.right - 1, yScale.value(maxPrice.value)],
 	]
 	return generator(points as [number, number][])
 })
 
 const xAxisGenerator = computed(() => {
 	return axisBottom<Date>(xScale.value)
-		.ticks(6)
+		.ticks(plotdata.value.length)
 		.tickSize(5)
-		.tickFormat(timeFormat('%H:%M'))
+		.tickSizeInner(-height)
+		.tickFormat((d) => (d.getHours() % 6 == 0 ? timeFormat('%H:%M')(d) : ''))
 })
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
@@ -156,6 +168,7 @@ const yAxisGenerator = computed(() => {
 		.tickFormat((d) => d.toString())
 })
 const draw = computed(() => {
+	// force a redraw if needsUpdate is true
 	if (needsUpdate.value == true) {
 		dummy = !dummy
 	}
@@ -186,8 +199,10 @@ const draw = computed(() => {
 		.attr('color', 'var(--color-bg)')
 	xAxis
 		.selectAll('.tick line')
-		.attr('stroke', 'var(--color-fg)')
-		.attr('stroke-width', '0.5')
+		.attr('stroke', 'var(--color-bg)')
+		.attr('stroke-width', (d) =>
+			(d as Date).getHours() % 6 == 0 ? '2' : '0.5',
+		)
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
 	const yAxis = svg.append('g').attr('class', 'axis').call(yAxisGenerator.value)
@@ -200,23 +215,18 @@ const draw = computed(() => {
 	yAxis
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
-		.attr('stroke-width', '0.5')
+		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	// zero line
-	if (yDomain.value[0] < 0) {
-		svg
-			.append('path')
-			.attr('d', zeroPath.value)
-			.attr('stroke', 'var(--color-fg)')
-	}
+
 	// Line for max price
 	svg.append('path').attr('d', linePath.value).attr('stroke', 'yellow')
 
 	return 'PriceChart.vue'
 })
 const chartId = computed(() => {
-	if (props.chargepoint) {
-		return 'priceChartCanvas' + props.chargepoint.id
+	if (cp.value) {
+		return 'priceChartCanvas' + cp.value.id
 	} else {
 		return 'priceChartCanvasGlobal'
 	}
@@ -224,9 +234,27 @@ const chartId = computed(() => {
 onMounted(() => {
 	needsUpdate.value = !needsUpdate.value
 })
+onUpdated(() => {
+	_maxPrice.value = cp.value.etMaxPrice
+})
 </script>
-
 <style scoped>
+.grapharea {
+	width: 100%;
+	grid-column: span 9;
+}
+.controlarea {
+	width: 100%;
+	grid-column: span 3;
+}
+.subtitle {
+	font-size: var(--font-settings);
+	font-weight: regular;
+}
+.priceinput {
+	width: 100%;
+}
+
 .color-charging {
 	color: var(--color-charging);
 }

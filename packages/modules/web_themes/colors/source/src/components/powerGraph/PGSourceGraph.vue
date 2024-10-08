@@ -18,6 +18,7 @@ import {
 	axisLeft,
 	area,
 	easeLinear,
+	curveBumpX,
 } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
@@ -43,6 +44,7 @@ const colors: { [key: string]: string } = {
 	inverter: 'var(--color-pv)',
 	batOut: 'var(--color-battery)',
 	selfUsage: 'var(--color-pv)',
+	pv: 'var(--color-pv)',
 	evuOut: 'var(--color-export)',
 	evuIn: 'var(--color-evu)',
 }
@@ -64,11 +66,8 @@ const draw = computed(() => {
 			drawGraph(graph, xScale.value)
 		}
 		graph.selectAll('.axis').remove()
-		//const yAxis: Selection<SVGGElement, unknown, HTMLElement, unknown> = select('g#x-axis')
 		const yAxis = graph.append('g').attr('class', 'axis')
-
 		yAxis.call(yAxisGenerator.value)
-
 		yAxis.selectAll('.tick').attr('font-size', 12)
 		yAxis
 			.selectAll('.tick line')
@@ -99,16 +98,10 @@ const yScale = computed(() => {
 		)
 })
 const keysToUse = computed(() => {
-	if (
-		graphData.graphMode != 'today' &&
-		graphData.graphMode != 'day' &&
-		graphData.graphMode != 'live'
-	) {
-		return ['evuIn', 'batOut', 'selfUsage', 'evuOut']
-	} else if (globalConfig.showInverters) {
-		const k = ['batOut', 'evuIn']
+	let additionalKeys: string[] = []
+	const k = ['batOut', 'evuIn']
+	if (globalConfig.showInverters) {
 		const pattern = /pv\d+/
-		let additionalKeys: string[] = []
 		if (graphData.data.length > 0) {
 			additionalKeys = Object.keys(graphData.data[0]).reduce(
 				(list: string[], element: string) => {
@@ -120,12 +113,24 @@ const keysToUse = computed(() => {
 				[],
 			)
 		}
-		additionalKeys.forEach((key, i) => {
-			colors[key] = 'var(--color-pv' + (i + 1) + ')'
-		})
-		return [...additionalKeys, ...k]
-	} else {
-		return ['selfUsage', 'evuOut', 'batOut', 'evuIn']
+	}
+	switch (graphData.graphMode) {
+		case 'live':
+			if (globalConfig.showInverters) {
+				return ['pv', 'batOut', 'evuIn']
+			} else {
+				return ['selfUsage', 'evuOut', 'batOut', 'evuIn']
+			}
+		case 'today':
+		case 'day':
+			additionalKeys.forEach((key, i) => {
+				colors[key] = 'var(--color-pv' + (i + 1) + ')'
+			})
+			return globalConfig.showInverters
+				? [...additionalKeys, ...k]
+				: ['selfUsage', 'evuOut', 'batOut', 'evuIn']
+		default:
+			return ['evuIn', 'batOut', 'selfUsage', 'evuOut']
 	}
 })
 
@@ -167,7 +172,6 @@ const ticklineWidth = computed(() => {
 const ticklineColor = computed(() => {
 	return globalConfig.showGrid ? 'var(--color-grid)' : 'var(--color-bg)'
 })
-
 function drawGraph(
 	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
 	xScale: ScaleTime<number, number, never>,
@@ -175,10 +179,12 @@ function drawGraph(
 	const area0 = area()
 		.x((d, i) => xScale(graphData.data[i]['date']))
 		.y(yScale.value(0))
+		.curve(curveBumpX)
 	const area1 = area()
 		.x((d, i) => xScale(graphData.data[i]['date']))
 		.y0((d) => yScale.value(graphData.graphMode == 'year' ? d[0] / 1000 : d[0]))
 		.y1((d) => yScale.value(graphData.graphMode == 'year' ? d[1] / 1000 : d[1]))
+		.curve(curveBumpX)
 	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
 		paths = graph
@@ -286,6 +292,7 @@ const autozoom = computed(() => {
 			.x((d, i) => xScale.value(graphData.data[i].date))
 			.y0((d) => yScale.value(d[0]))
 			.y1((d) => yScale.value(d[1]))
+			.curve(curveBumpX)
 		graph
 			.selectAll('path')
 			.attr('d', (series) =>

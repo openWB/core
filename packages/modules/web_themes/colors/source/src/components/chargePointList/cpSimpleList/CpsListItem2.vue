@@ -306,7 +306,9 @@ const statusString = computed(() => {
 	font-weight: bold;
 	font-size: var(--font-verysmall);
 }
-
+.modebadge {
+	color: var(--color-bg);
+}
 .cpname {
 	font-size: var(--font-small);
 }

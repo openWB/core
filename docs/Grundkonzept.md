@@ -1,5 +1,6 @@
 Hier werden die Grundeinstellungen für Anfänger mit einer einfachen Konstellation, welche im privaten Umfeld häufig vorkommt, erklärt.
-Üblicherweise sind da ein oder zwei Autos und ein oder zwei Wallboxen, die bei der software2 nur noch openWBs sein dürfen. Hat man nur ein Auto und eine openWB ist es ganz simpel. Mit zwei Autos muss man sich - wenn man weiterreichende Features nutzen - oder nur ganz einfach die geladenen kWh loggen möchte - damit auseinander setzen, wie man der openWB mitteilt, welches Auto nun angeschlossen ist: 
+Üblicherweise sind da ein oder zwei Autos und ein oder zwei Wallboxen, die bei der software2 nur noch openWBs sein dürfen. Hat man nur ein Auto und eine openWB ist es ganz simpel. Mit zwei Autos muss man sich - wenn man weiterreichende Features nutzen - oder nur ganz einfach die geladenen kWh loggen möchte - damit auseinander setzen, wie man der openWB mitteilt, welches Auto nun angeschlossen ist:
+
 - man wählt das zu ladende Auto auf dem Handy oder auf dem Display der openWB aus
 - man macht das bei mit RFID-Leser ausgestatteten openWBs per RFID-Karte
 - man kauft für jedes Auto eine eigene openWB; das hat den Vorteil, dass die Autos immer eingesteckt bleiben können und so der gesamte PV-Überschuss garantiert in den Autos landet.
@@ -7,17 +8,17 @@ Hier werden die Grundeinstellungen für Anfänger mit einer einfachen Konstellat
 
 ## Konfiguration
 
-Die Konfiguration der Wallbox-Funktionalität verteilt sich auf zwei oder drei Menüpunkte im Konfigurations-Menü: Ladepunkte (ggf. Lastmanagement) und Fahrzeuge 
+Die Konfiguration der Wallbox-Funktionalität verteilt sich auf zwei oder drei Menüpunkte im Konfigurations-Menü: Ladepunkte (ggf. Lastmanagement) und Fahrzeuge
 
 ### Ladepunkte - die Infrastruktur
 
 Hier werden die vorhandenen Wallboxen als Ladepunkt angelegt und ihnen gemeinsame Eigenschaften in Form von Ladepunkt-Profilen zugewiesen. Im privaten Bereich ist es ja üblicherweise so, dass mit maximal 11kW geladen wird und die Ladepunkte entweder vor unbefugtem Zugriff geschützt werden wollen oder nicht. Das versteckt sich im Ladepunkt-Profil, weshalb wir uns um eigene Ladepunkt-Profile gar nicht kümmern müssen. Wir nehmen das Standard Ladepunkt-Profil für alle unsere openWBs und passen das nach unseren Wünschen an.
 
 Sind mehrere Ladepunkte an einer Unterverteilung angeschlossen, deren Zuleitung weniger verträgt, als die Ladepunkte abgeben können, muss man sich noch über das Loadsharing Gedanken machen. Zum Beispiel ist eine Unterverteilung an der zwei 22kW openWBs angeschlossen sind, in den seltensten Fällen mit den dafür notwendigen 63A abgesichert; häufig z.B. nur 35A. Hier fügt man noch eine Komponente "virtuellen Zähler" ein, setzt den im [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) in der Struktur über die beiden Ladepunkte und trägt dort die 24kW / 35A ein. Die maximal zulässige Leistung am EVU-Punkt trägt man dementsprechend in diesem [Zähler](https://github.com/openWB/core/wiki/Zaehler) ein.
- 
+
 ### Fahrzeuge - warum wir das hier alles machen
 
-Bei den Fahrzeugen zerteilt sich die Konfiguration in die technischen Eigenschaften und die ladungstechnischen Aspekte - das sind die beiden Profile für Fahrzeug und Ladung. Die beiden zusammengefasst ergibt das Fahrzeug. 
+Bei den Fahrzeugen zerteilt sich die Konfiguration in die technischen Eigenschaften und die ladungstechnischen Aspekte - das sind die beiden Profile für Fahrzeug und Ladung. Die beiden zusammengefasst ergibt das Fahrzeug.
 
 #### Fahrzeug-Profile
 

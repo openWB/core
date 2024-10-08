@@ -6,19 +6,15 @@
 			</span>
 		</template>
 		<template #buttons>
-			<div class="d-flex float-right justify-content-end align-items-center">
-				<span
-					v-if="props.inverter.power < 0"
-					class="my-0 badge rounded-pill modebadge mx-1"
-					>{{ formatWatt(-props.inverter.power) }}
-				</span>
-			</div>
+			<WbBadge v-if="props.inverter.power < 0" bgcolor="var(--color-pv)"
+				>{{ formatWatt(-props.inverter.power) }}
+			</WbBadge>
 		</template>
 		<div class="subgrid pt-1">
-			<InfoItem heading="Heute:" :small="false" class="grid-col-4">
+			<InfoItem heading="Heute:" :small="false" class="grid-col-4 grid-left">
 				<FormatWattH :watt-h="props.inverter.energy"></FormatWattH>
 			</InfoItem>
-			<InfoItem heading="Monat:" :small="false" class="grid-right grid-col-4">
+			<InfoItem heading="Monat:" :small="false" class="grid-col-4">
 				<FormatWattH :watt-h="props.inverter.energy_month"></FormatWattH>
 			</InfoItem>
 			<InfoItem heading="Jahr:" :small="false" class="grid-right grid-col-4">
@@ -32,6 +28,7 @@ import InfoItem from '../shared/InfoItem.vue'
 import WbSubwidget from '../shared/WbSubwidget.vue'
 import type { PvSystem } from '@/assets/js/types'
 import FormatWattH from '../shared/FormatWattH.vue'
+import WbBadge from '../shared/WbBadge.vue'
 import { computed } from 'vue'
 import { formatWatt } from '@/assets/js/helpers'
 const props = defineProps<{
@@ -43,7 +40,7 @@ const invertercolor = computed(() => {
 })
 </script>
 <style scoped>
-.modebadge {
+.modeWbBadge {
 	background-color: var(--color-pv);
 	color: var(--color-bg);
 	font-size: var(--font-verysmall);

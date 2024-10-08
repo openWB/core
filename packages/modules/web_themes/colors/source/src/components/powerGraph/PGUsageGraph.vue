@@ -18,6 +18,7 @@ import {
 	axisLeft,
 	area,
 	easeLinear,
+	curveBumpX,
 } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
@@ -28,6 +29,7 @@ import {
 	xScale,
 	zoomedRange,
 } from './model'
+import { chargePoints } from '../chargePointList/model'
 const props = defineProps<{
 	width: number
 	height: number
@@ -36,11 +38,23 @@ const props = defineProps<{
 }>()
 
 //state
-const keys = [
-	['house', 'charging', 'devices', 'batIn'],
-	['charging', 'devices', 'house', 'batIn'],
-	['devices', 'charging', 'house', 'batIn'],
-]
+const keys = computed(() => {
+	if (globalConfig.showInverters) {
+		return [
+			['house', 'charging', 'devices', 'batIn'],
+			['charging', 'devices', 'batIn', 'house'],
+			['devices', 'batIn', 'charging', 'house'],
+			['batIn', 'charging', 'house', 'devices'],
+		]
+	} else {
+		return [
+			['house', 'charging', 'devices', 'batIn', 'evuOut'],
+			['charging', 'devices', 'batIn', 'house', 'evuOut'],
+			['devices', 'batIn', 'charging', 'house', 'evuOut'],
+			['batIn', 'charging', 'house', 'devices', 'evuOut'],
+		]
+	}
+})
 const colors: { [key: string]: string } = {
 	house: 'var(--color-house)',
 	charging: 'var(--color-charging)',
@@ -112,10 +126,14 @@ const yScale = computed(() => {
 })
 
 const keysToUse = computed(() => {
-	if (graphData.graphMode != 'today' && graphData.graphMode != 'day') {
-		return keys[props.stackOrder]
+	if (
+		graphData.graphMode != 'today' &&
+		graphData.graphMode != 'day' &&
+		graphData.graphMode != 'live'
+	) {
+		return keys.value[props.stackOrder]
 	} else {
-		const k = keys[props.stackOrder].slice()
+		const k = keys.value[props.stackOrder].slice()
 		const idx = k.indexOf('charging')
 		k.splice(idx, 1)
 		const pattern = /cp\d+/
@@ -133,7 +151,7 @@ const keysToUse = computed(() => {
 		}
 		additionalKeys.forEach((key, i) => {
 			k.splice(idx + i, 0, key)
-			colors[key] = 'var(--color-cp' + i + ')'
+			colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
 		})
 		if (globalConfig.showInverters) {
 			k.push('evuOut')
@@ -176,10 +194,12 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	const area0 = area()
 		.x((d, i) => xScale.value(graphData.data[i].date))
 		.y(yScale.value(0))
+		.curve(curveBumpX)
 	const area1 = area()
 		.x((d, i) => xScale.value(graphData.data[i].date))
 		.y0((d) => yScale.value(d[0]))
 		.y1((d) => yScale.value(d[1]))
+		.curve(curveBumpX)
 	if (globalConfig.showAnimations) {
 		if (animateUsageGraph) {
 			graph.selectAll('*').remove()
@@ -227,7 +247,7 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
 			.append('g')
-			.attr('fill', (d, i) => colors[keys[props.stackOrder][i]])
+			.attr('fill', (d, i) => colors[keys.value[props.stackOrder][i]])
 			.selectAll('rect')
 			.data((d) => d)
 			.enter()
@@ -261,7 +281,7 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
 			.append('g')
-			.attr('fill', (d, i) => colors[keys[props.stackOrder][i]])
+			.attr('fill', (d, i) => colors[keys.value[props.stackOrder][i]])
 			.selectAll('rect')
 			.data((d) => d)
 			.enter()
@@ -292,6 +312,7 @@ const autozoom = computed(() => {
 			.x((d, i) => xScale.value(graphData.data[i].date))
 			.y0((d) => yScale.value(d[0]))
 			.y1((d) => yScale.value(d[1]))
+			.curve(curveBumpX)
 		graph
 			.selectAll('path')
 			.attr('d', (series) =>

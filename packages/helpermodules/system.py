@@ -11,6 +11,8 @@ from typing import Optional
 
 from helpermodules import pub
 from control import data
+from helpermodules.utils import thread_handler
+from helpermodules.utils.run_command import run_command
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
 log = logging.getLogger(__name__)
@@ -40,8 +42,8 @@ class System:
             self._trigger_ext_update(train)
             time.sleep(15)
             # aktuell soll kein Update für den Master durchgeführt werden.
-            # subprocess.run([str(Path(__file__).resolve().parents[2]/"runs"/"update_self.sh"), train])
-            subprocess.run(str(Path(__file__).resolve().parents[2]/"runs"/"atreboot.sh"))
+            # run_command([str(Path(__file__).resolve().parents[2]/"runs"/"update_self.sh"), train])
+            run_command(str(Path(__file__).resolve().parents[2]/"runs"/"atreboot.sh"), process_exception=True)
         except Exception:
             log.exception("Fehler im System-Modul")
 
@@ -83,12 +85,7 @@ class System:
                 self.create_backup_and_send_to_cloud()
             except Exception as e:
                 log.exception(f"Error in cloud backup: {e}")
-
-        for thread in threading.enumerate():
-            if thread.name == "cloud backup":
-                log.debug("Don't start multiple instances of cloud backup thread.")
-                return
-        threading.Thread(target=create, args=(), name="cloud backup").start()
+        thread_handler(threading.Thread(target=create, args=(), name="cloud backup"))
 
     def create_backup_and_send_to_cloud(self):
         if self.backup_cloud is not None:
@@ -99,12 +96,13 @@ class System:
             log.debug('Nächtliche Sicherung erstellt und hochgeladen.')
 
     def create_backup(self) -> str:
-        result = subprocess.run([str(self._get_parent_file() / "runs" / "backup.sh"), "1"], stdout=subprocess.PIPE)
-        if result.returncode == 0:
-            file_name = result.stdout.decode("utf-8").rstrip('\n')
+        try:
+            result = run_command([str(self._get_parent_file() / "runs" / "backup.sh"), "1"])
+            file_name = result.rstrip('\n')
             return file_name
-        else:
-            raise Exception(f'Backup-Status: {result.returncode}, Meldung: {result.stdout.decode("utf-8")}')
+        except subprocess.CalledProcessError as e:
+            log.debug(e.stdout)
+            raise Exception(f'Backup-Status: {e.returncode}, Meldung: {e.stderr}')
 
     def _get_parent_file(self) -> Path:
         return Path(__file__).resolve().parents[2]

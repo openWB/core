@@ -5,7 +5,6 @@ from pathlib import Path
 
 from modules.backup_clouds.nfs.config import NfsBackupCloud, NfsBackupCloudConfiguration
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
 log = logging.getLogger(__name__)
 nfs_mount = '/mnt/nfs_mount'
@@ -18,7 +17,7 @@ def _run(_cmd: str, _timeout: float, _shell: bool) -> bool:
         p = run([_cmd], timeout=_timeout, stdout=PIPE, stderr=PIPE, shell=_shell)
         p.check_returncode()
     except CalledProcessError as e:
-        log.exception('backup-nfs: cmd ' + _cmd + ', Faii: errorcode: '
+        log.exception('backup-nfs: cmd ' + _cmd + ', Fail: error code: '
                       + str(e.returncode) + ', stderr: ' + p.stderr.decode('utf-8'))
         raise e
         return False
@@ -67,7 +66,7 @@ def upload_backup(config: NfsBackupCloudConfiguration, backup_filename: str, bac
 def create_backup_cloud(config: NfsBackupCloud):
     def updater(backup_filename: str, backup_file: bytes):
         upload_backup(config.configuration, backup_filename, backup_file)
-    return ConfigurableBackupCloud(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=NfsBackupCloud)

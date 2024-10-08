@@ -12,6 +12,8 @@ html {
 body {
 	color: var(--color-fg);
 	background: var(--color-bg);
+	font-family: "San Francisco", "Arial", "Liberation sans", sans-serif;
+	
 }
 
 body>.container {
@@ -55,6 +57,7 @@ h3 {
 	font-size: var(--font-extralarge);
 	color: var(--color-title);
 	font-weight: bold;
+	transform: scaleX(0.9294)
 }
 h4 {
 	color: var(--color-axis);
@@ -210,24 +213,16 @@ body>.container-fluid {
 	background-color: var(--color-frame);
 }
 
-.wb-widget {
-	background-color: var(--color-bg);
-	border: 0.1px dotted var(--color-frame);
-	align-self: stretch;
-	width: 100%;
-	border-radius: 30px;
-}
 
-.wb-subwidget {
-	border: 0px solid var(--color-subframe);
-	padding: var(--padding-widget);
-}
 
 .grid12 {
 	display: grid;
 	grid-template-columns: repeat(12, auto);
 	gap: .2em;
-	justify-items: center;
+	justify-items: left;
+}
+.grid-col-2 {
+	grid-column: span 2;
 }
 .grid-col-3 {
 	grid-column: span 3;
@@ -313,4 +308,24 @@ option {
 .ttarea .ttmessage {visibility: hidden}
 .ttarea:hover  .ttmessage {
     visibility: visible;
+}
+
+.scaled {
+	transform: scaleX(0.9294)
+}
+
+.fa-car-battery {
+	color: var(--color-battery);
+}
+.fa-car {
+	color: var(--color-charging);
+}
+.fa-clock {
+	color: var(--color-battery);
+}
+.fa-coins {
+	color: var(--color-battery);
+}
+.fa-sliders {
+	color: var(--color-pv);
 }

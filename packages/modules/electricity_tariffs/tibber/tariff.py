@@ -5,7 +5,6 @@ from helpermodules import timecheck
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common import req
 from modules.electricity_tariffs.tibber.config import TibberTariffConfiguration
 from modules.electricity_tariffs.tibber.config import TibberTariff
@@ -29,20 +28,15 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
     if response_json.get("errors") is None:
         today_prices = _get_sorted_price_data(response_json, 'today')
         tomorrow_prices = _get_sorted_price_data(response_json, 'tomorrow')
-        sorted_marketprices = today_prices + tomorrow_prices
+        sorted_market_prices = today_prices + tomorrow_prices
         prices: Dict[int, float] = {}
-        i = 0
-        for price_data in sorted_marketprices:
+        for price_data in sorted_market_prices:
             # konvertiere Time-String (Format 2021-02-06T00:00:00+01:00) ()':' nicht von strptime unterstützt)
             time_str = ''.join(price_data['startsAt'].rsplit(':', 1))
-            startzeit_localized = datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S.%f%z')
-            starttime_utc = int(startzeit_localized.astimezone(timezone.utc).timestamp())
-            if timecheck.create_unix_timestamp_current_full_hour() <= starttime_utc:
-                if i < 24:
-                    prices.update({starttime_utc: price_data['total'] / 1000})
-                    i += 1
-                else:
-                    break
+            start_time_localized = datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S.%f%z')
+            start_time_utc = int(start_time_localized.astimezone(timezone.utc).timestamp())
+            if timecheck.create_unix_timestamp_current_full_hour() <= start_time_utc:
+                prices.update({start_time_utc: price_data['total'] / 1000})
     else:
         error = response_json['errors'][0]['message']
         raise Exception(error)
@@ -52,7 +46,7 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
 def create_electricity_tariff(config: TibberTariff):
     def updater():
         return TariffState(prices=fetch_prices(config.configuration))
-    return ConfigurableElectricityTariff(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=TibberTariff)
