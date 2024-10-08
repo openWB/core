@@ -4,8 +4,10 @@
     swipeable
     animated
     navigation
+    arrows
+    control-color="primary"
     infinite
-    class="bg-blue-grey-6 text-white full-height"
+    class="full-height"
     @mousedown.prevent
   >
     <q-carousel-slide
