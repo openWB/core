@@ -82,7 +82,8 @@ def create_device(device_config: Solaredge):
             synergy_units = int(client.read_holding_registers(
                 40129, modbus.ModbusDataType.UINT_16,
                 unit=component_config.configuration.modbus_id)) or 1
-            log.debug("Synergy Units detected: %s", synergy_units)
+            log.debug(
+                f"Synergy Units detected for Modbus ID {component_config.configuration.modbus_id}: {synergy_units}")
             return synergy_units
     try:
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address,
