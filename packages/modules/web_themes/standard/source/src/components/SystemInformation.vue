@@ -10,6 +10,11 @@
       {{ mqttStore.getValue('openWB/general/web_theme', 'configuration') }}
     </p>
     <p>Charge point Names: {{ mqttStore.getChargePointNames }}</p>
+    <p>Charge point All: {{ mqttStore.getChargePoints }}</p>
+    <div>
+      <hr />
+    </div>
+    <p>Charge point comp: {{ mqttStore.getChargePointDetails }}</p>
   </div>
 </template>
 
@@ -19,7 +24,10 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
 const topicsToSubscribe = <string[]>[
-  'openWB/chargepoint/+/config'
+  'openWB/chargepoint/+/config',
+  'openWB/chargepoint/+/set/manual_lock',
+  'openWB/chargepoint/+/get/power',
+  'openWB/chargepoint/+/get/state_str',
 ];
 
 onMounted(() => {

@@ -1,5 +1,5 @@
- <template>
-  <q-layout view="lHh Lpr lFf" >
+<template>
+  <q-layout view="lHh Lpr lFf">
     <q-header class="bg-blue-grey-6 text-white">
       <q-toolbar>
         <q-toolbar-title>openWB</q-toolbar-title>

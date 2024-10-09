@@ -418,14 +418,47 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
-  const getChargePoints = computed(()=>{
+  const getChargePoints = computed(() => {
     return getWildcardValues.value('openWB/chargepoint/+/config');
   });
 
   const getChargePointNames = computed(() => {
     const chargePoints = getWildcardValues.value('openWB/chargepoint/+/config');
-    // Extract the name from each charge point's config
     return Object.values(chargePoints).map((config) => config?.name);
+  });
+
+  const getChargePointDetails = computed(() => {
+    const chargePointConfigs = getWildcardValues.value(
+      'openWB/chargepoint/+/config',
+    );
+    const chargePointLocks = getWildcardValues.value(
+      'openWB/chargepoint/+/set/manual_lock',
+    );
+    const chargePointPowers = getWildcardValues.value(
+      'openWB/chargepoint/+/get/power',
+    );
+    const chargePointMessages = getWildcardValues.value(
+      'openWB/chargepoint/+/get/state_str',
+    );
+
+    return Object.keys(chargePointConfigs).map((key) => {
+      const chargePointId = key.split('/')[2]; // Extract the charge point ID (e.g., "2" from 'openWB/chargepoint/2/config')
+
+      return {
+        name: chargePointConfigs[key]?.name,
+        locked:
+          chargePointLocks[
+            `openWB/chargepoint/${chargePointId}/set/manual_lock`
+          ] || false,
+        power:
+          chargePointPowers[`openWB/chargepoint/${chargePointId}/get/power`] ||
+          0,
+        message:
+          chargePointMessages[
+            `openWB/chargepoint/${chargePointId}/get/state_str`
+          ] || '',
+      };
+    });
   });
 
   // exports
@@ -446,5 +479,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     systemDateTime,
     getChargePoints,
     getChargePointNames,
+    getChargePointDetails,
   };
 });

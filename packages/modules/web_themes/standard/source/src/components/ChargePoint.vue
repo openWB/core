@@ -1,75 +1,88 @@
 <template>
-    <q-carousel
-          v-model="slideBottom"
-          swipeable
-          animated
-          navigation
-          infinite
-          class="bg-blue-grey-6 text-white full-height"
-          @mousedown.prevent
-        >
-          <q-carousel-slide
-            v-for="(item, index) in carouselItems"
-            :key="index"
-            :name="item.name"
-            class="column items-center justify-center"
-          >
-            <q-icon :name="item.icon" size="56px" />
-            <div class="text-center q-mt-md">
-              {{ chargePointNames }}
-              {{ item.text }}
-              
-            </div>
-            <SliderQuasar />
-          </q-carousel-slide>
-        </q-carousel>
+  <q-carousel
+    v-model="slide"
+    swipeable
+    animated
+    navigation
+    infinite
+    class="bg-blue-grey-6 text-white full-height"
+    @mousedown.prevent
+  >
+    <q-carousel-slide
+      v-for="(item, index) in carouselItems"
+      :key="index"
+      :name="item.name"
+      class="column items-center justify-center"
+    >
+      <q-icon :name="item.icon" size="56px" />
+      <div class="text-center q-mt-md">
+        {{ item.text }}
+      </div>
+      <div>
+        {{ item.message }}
+      </div>
+      <div>
+        {{ item.locked }}
+      </div>
+      <div>
+        {{ item.power }}
+      </div>
+      <SliderQuasar />
+    </q-carousel-slide>
+  </q-carousel>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import SliderQuasar from './SliderQuasar.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
+const slide = ref<string>('');
 const topicsToSubscribe = <string[]>[
   'openWB/chargepoint/+/config',
+  'openWB/chargepoint/+/set/manual_lock',
+  'openWB/chargepoint/+/get/power',
+  'openWB/chargepoint/+/get/state_str',
 ];
-
-const slideBottom = ref<string>('style');
 
 interface CarouselItem {
   name: string;
   icon: string;
   text: string;
+  message: string;
+  locked: boolean;
+  power: number;
 }
 
-const carouselItems: CarouselItem[] = [
-  {
-    name: 'style',
-    icon: 'style',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-  },
-  {
-    name: 'tv',
-    icon: 'live_tv',
-    text: 'Praesent bibendum, neque at hendrerit pretium, nunc nisi tempus nunc.',
-  },
-  {
-    name: 'layers',
-    icon: 'layers',
-    text: 'Donec euismod, nisl eget ultricies ultricies, nunc nunc ultricies nunc.',
-  },
-  {
-    name: 'map',
-    icon: 'terrain',
-    text: 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-  },
-];
-
-const chargePointNames = computed(() => mqttStore.getChargePointNames);
-
-onMounted(()=>{
-  mqttStore.subscribe(topicsToSubscribe);
+// Computed property for carousel items
+const carouselItems = computed<CarouselItem[]>(() => {
+  const chargePoints = mqttStore.getChargePointDetails;
+  return chargePoints.map((cp) => ({
+    name: cp.name,
+    text: `Charge Point: ${cp.name}`,
+    message: cp.message,
+    locked: cp.locked,
+    icon: 'ev_station',
+    power: cp.power,
+  }));
 });
 
+// Computed property to control carousel visibility
+//const displayCarousel = computed(() => carouselItems.value.length > 0);
+
+// Watch for changes in carouselItems and set initial slide when data becomes available
+watch(
+  carouselItems,
+  (newItems) => {
+    if (newItems.length > 0 && !slide.value) {
+      slide.value = newItems[0].name;
+    }
+  },
+  { immediate: true },
+);
+
+onMounted(() => {
+  mqttStore.subscribe(topicsToSubscribe);
+});
 </script>
