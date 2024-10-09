@@ -11,7 +11,6 @@
           @click="toggleColorMode()"
           aria-label="Color-Mode"
         />
-
       </q-toolbar>
     </q-header>
 
@@ -23,7 +22,6 @@
 </template>
 
 <script setup lang="ts">
-
 import { computed } from 'vue';
 import { useQuasar } from 'quasar';
 const $q = useQuasar();
@@ -31,8 +29,6 @@ const $q = useQuasar();
 defineOptions({
   name: 'MainLayout',
 });
-</script>
-
 
 /**
  * Computed property that returns the icon name for the color mode button.
@@ -55,5 +51,4 @@ function toggleColorMode() {
   display: flex;
   flex-direction: column;
 }
-
 </style>
