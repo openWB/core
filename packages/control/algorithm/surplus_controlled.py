@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm import common
+from control.chargepoint.charging_type import ChargingType
 from control.loadmanagement import LimitingValue, Loadmanagement
 from control.counter import Counter
 from control.chargepoint.chargepoint import Chargepoint
@@ -87,7 +88,10 @@ class SurplusControlled:
 
     # tested
     def _limit_adjust_current(self, chargepoint: Chargepoint, new_current: float) -> float:
-        MAX_CURRENT = 5
+        if chargepoint.template.data.charging_type == ChargingType.AC.value:
+            MAX_CURRENT = 5
+        else:
+            MAX_CURRENT = 30
         msg = None
         nominal_difference = chargepoint.data.set.charging_ev_data.ev_template.data.nominal_difference
         if chargepoint.data.set.charging_ev_data.chargemode_changed:
@@ -101,11 +105,11 @@ class SurplusControlled:
             else:
                 if new_current < max(chargepoint.data.get.currents):
                     current = max(chargepoint.data.get.currents) - MAX_CURRENT
-                    msg = "Es darf um max 5A unter den aktuell genutzten Strom geregelt werden."
+                    msg = f"Es darf um max {MAX_CURRENT}A unter den aktuell genutzten Strom geregelt werden."
 
                 else:
                     current = max(chargepoint.data.get.currents) + MAX_CURRENT
-                    msg = "Es darf um max 5A über den aktuell genutzten Strom geregelt werden."
+                    msg = f"Es darf um max {MAX_CURRENT}A über den aktuell genutzten Strom geregelt werden."
             chargepoint.set_state_and_log(msg)
             return max(current,
                        chargepoint.data.control_parameter.min_current,
@@ -173,6 +177,14 @@ class SurplusControlled:
                 max_current = charging_ev_data.ev_template.data.max_current_single_phase
             else:
                 max_current = charging_ev_data.ev_template.data.max_current_multi_phases
+
+            if cp.template.data.charging_type == ChargingType.AC.value:
+                if control_parameter.phases == 1:
+                    max_current = charging_ev_data.ev_template.data.max_current_single_phase
+                else:
+                    max_current = charging_ev_data.ev_template.data.max_current_multi_phases
+            else:
+                max_current = charging_ev_data.ev_template.data.dc_max_current
 
             control_parameter.required_currents = [max_current if required_currents[i] != 0 else 0 for i in range(3)]
             control_parameter.required_current = max_current

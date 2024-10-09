@@ -8,6 +8,7 @@ from control.algorithm.surplus_controlled import SurplusControlled, get_chargepo
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Get, Set
+from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev import ChargeTemplate, Ev
 
@@ -62,6 +63,7 @@ def test_limit_adjust_current(new_current: float, expected_current: float, monke
     # setup
     cp = Chargepoint(0, None)
     cp.data = ChargepointData(get=Get(currents=[15]*3))
+    cp.template = CpTemplate()
     monkeypatch.setattr(Chargepoint, "set_state_and_log", Mock())
 
     # execution
@@ -85,6 +87,7 @@ def test_set_required_current_to_max(phases: int,
     mock_cp1.data = ChargepointData(set=Set(charging_ev_data=ev),
                                     control_parameter=ControlParameter(phases=phases,
                                                                        required_currents=required_currents))
+    mock_cp1.template = CpTemplate()
     mock_get_chargepoints_surplus_controlled = Mock(return_value=[mock_cp1])
     monkeypatch.setattr(surplus_controlled, "get_chargepoints_surplus_controlled",
                         mock_get_chargepoints_surplus_controlled)
