@@ -4,8 +4,10 @@
     swipeable
     animated
     navigation
+    arrows
+    control-color="primary"
     infinite
-    class="bg-blue-grey-6 text-white full-height"
+    class="full-height"
     @mousedown.prevent
   >
     <q-carousel-slide
@@ -16,6 +18,7 @@
     >
       <q-icon :name="item.icon" size="56px" />
       <div class="text-center q-mt-md">
+
         {{ item.text }}
       </div>
       <div>
@@ -27,17 +30,21 @@
       <div>
         {{ item.power }}
       </div>
+
       <SliderQuasar />
     </q-carousel-slide>
   </q-carousel>
 </template>
 
 <script setup lang="ts">
+
 import { ref, computed, watch, onMounted } from 'vue';
+
 import SliderQuasar from './SliderQuasar.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
+
 const slide = ref<string>('');
 const topicsToSubscribe = <string[]>[
   'openWB/chargepoint/+/config',

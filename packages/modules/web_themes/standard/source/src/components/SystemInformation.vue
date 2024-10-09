@@ -23,6 +23,7 @@ import { onMounted } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
+
 const topicsToSubscribe = <string[]>[
   'openWB/chargepoint/+/config',
   'openWB/chargepoint/+/set/manual_lock',
