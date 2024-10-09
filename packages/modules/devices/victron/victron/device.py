@@ -26,10 +26,10 @@ def create_device(device_config: Victron):
         return VictronInverter(device_config.id, component_config, client)
 
     def update_components(components: Iterable[Union[VictronBat, VictronCounter, VictronInverter]]):
-        with client as c:
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(c)
+                    component.update()
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)

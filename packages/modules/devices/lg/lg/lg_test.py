@@ -3,7 +3,10 @@ from requests import HTTPError
 from unittest.mock import Mock
 
 from modules.common.component_state import BatState, CounterState, InverterState
-from modules.devices.lg.lg import bat, counter, device, inverter
+from modules.common.configurable_device import ConfigurableDevice
+from modules.devices.lg.lg import bat, counter, inverter
+from modules.devices.lg.lg import device
+from modules.devices.lg.lg.device import create_device
 from modules.devices.lg.lg.config import LG, LgConfiguration
 from test_utils.mock_ramdisk import MockRamdisk
 
@@ -14,9 +17,10 @@ def mock_ramdisk(monkeypatch):
 
 
 @pytest.fixture
-def dev() -> device.Device:
-    dev = device.Device(LG(configuration=LgConfiguration(ip_address=API_URL, password="some password")))
-    dev.session_key = "67567d76-0c83-11ea-8a59-d84fb802005a"
+def dev(monkeypatch) -> ConfigurableDevice:
+    dev = create_device(LG(configuration=LgConfiguration(ip_address=API_URL, password="some password")))
+    mock_session_key = Mock(return_value="67567d76-0c83-11ea-8a59-d84fb802005a")
+    monkeypatch.setattr(device, "_update_session_key", mock_session_key)
     return dev
 
 
@@ -38,7 +42,7 @@ def assert_inverter_state_correct(state: InverterState):
     assert state.exported == 200
 
 
-def test_valid_login(monkeypatch, dev: device.Device):
+def test_valid_login(monkeypatch, dev: ConfigurableDevice):
     # setup
     mock_bat_value_store = Mock()
     monkeypatch.setattr(bat, "get_bat_value_store", Mock(return_value=mock_bat_value_store))
@@ -46,7 +50,7 @@ def test_valid_login(monkeypatch, dev: device.Device):
     monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
     mock_inverter_value_store = Mock()
     monkeypatch.setattr(inverter, "get_inverter_value_store", Mock(return_value=mock_inverter_value_store))
-    monkeypatch.setattr(device.Device, "_request_data", Mock(return_value=sample_auth_key_valid))
+    monkeypatch.setattr(device, "_request_data", Mock(return_value=sample_auth_key_valid))
     component_config = bat.component_descriptor.configuration_factory()
     component_config.id = None
     dev.add_component(component_config)
@@ -66,7 +70,7 @@ def test_valid_login(monkeypatch, dev: device.Device):
     assert_inverter_state_correct(mock_inverter_value_store.set.call_args[0][0])
 
 
-def test_update_session_key(monkeypatch, dev: device.Device):
+def test_update_session_key(monkeypatch, dev: ConfigurableDevice):
     # setup
     mock_bat_value_store = Mock()
     monkeypatch.setattr(bat, "get_bat_value_store", Mock(return_value=mock_bat_value_store))
@@ -74,8 +78,7 @@ def test_update_session_key(monkeypatch, dev: device.Device):
     monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
     mock_inverter_value_store = Mock()
     monkeypatch.setattr(inverter, "get_inverter_value_store", Mock(return_value=mock_inverter_value_store))
-    monkeypatch.setattr(device.Device, "_update_session_key", Mock())
-    monkeypatch.setattr(device.Device, "_request_data", Mock(
+    monkeypatch.setattr(device, "_request_data", Mock(
         side_effect=[HTTPError, sample_auth_key_valid]))
     component_config = bat.component_descriptor.configuration_factory()
     component_config.id = None

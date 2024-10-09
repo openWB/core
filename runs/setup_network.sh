@@ -28,6 +28,15 @@ function setup_pnp_network() {
 	fi
 }
 
+function check_internet_connection() {
+	if ping -c1 "www.openwb.de" &>/dev/null; then
+		echo "Internet connection is up"
+	else
+		echo "ERROR: no internet connection!"
+		exit 1
+	fi
+}
+
 # check for LAN/WLAN connection
 echo -n "Wait for connection..."
 connectCounter=0
@@ -37,13 +46,17 @@ while [[ ! $(ip route get 1) ]] && ((connectCounter < 30)); do
 	sleep 1
 done
 echo ""
-if ((connectCounter <30)); then
-	# image restricted to LAN only
-	# get local ip
-	ip="$(get_ip)"
-	echo "my primary IP: $ip"
-	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "\"$ip\""
-	setup_pnp_network
-else
+if ((connectCounter >= 30)); then
 	echo "ERROR: network not up after $connectCounter seconds!"
+	exit 1
+fi
+
+# image restricted to LAN only
+# get local ip
+ip="$(get_ip)"
+echo "my primary IP: $ip"
+mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "\"$ip\""
+setup_pnp_network
+if ! check_internet_connection; then
+	exit 1
 fi
