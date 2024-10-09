@@ -96,21 +96,6 @@ chmod 666 "$LOGFILE"
 
 	revision=$(grep "Revision" /proc/cpuinfo | awk '{print $3}')
 
-	# Ausgabe zur Erkennung von Compute Module 4 oder Raspberry Pi 4
-	case $revision in
-		a03140 | b03140 | c03140 | d03140)
-			echo "Raspberry Pi 4 Model B erkannt."
-			boot_config_source="${OPENWBBASEDIR}/data/config/boot_config.txt"
-			;;
-		a03111 | b03111 | c03111)
-			echo "Raspberry Pi Compute Module 4 erkannt."
-			boot_config_source="${OPENWBBASEDIR}/data/config/boot_config_enterprise.txt"
-			;;
-		*)
-			echo "Unbekanntes Raspberry Pi-Modell. Nutze Standardkonfiguration für boot/config.txt."
-			boot_config_source="${OPENWBBASEDIR}/data/config/boot_config.txt"
-		;;
-	esac
 	boot_config_target="/boot/config.txt"
 	echo "checking init in $boot_config_target..."
 	if versionMatch "$boot_config_source" "$boot_config_target"; then
