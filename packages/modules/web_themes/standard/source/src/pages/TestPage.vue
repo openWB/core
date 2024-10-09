@@ -44,7 +44,7 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <q-tabs v-model="tab">
+    <q-tabs v-model="tab" dense align="justify">
       <q-tab name="lp">
         <q-icon name="ev_station" size="25px" color="primary" />
       </q-tab>
@@ -53,7 +53,6 @@
       </q-tab>
       <q-tab name="smartHome">
         <q-icon name="home" size="25px" color="accent" />
-
       </q-tab>
     </q-tabs>
 

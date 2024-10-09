@@ -440,6 +440,9 @@ export const useMqttStore = defineStore('mqtt', () => {
     const chargePointMessages = getWildcardValues.value(
       'openWB/chargepoint/+/get/state_str',
     );
+    const chargePointState = getWildcardValues.value(
+      'openWB/chargepoint/+/get/plug_state',
+    );
 
     return Object.keys(chargePointConfigs).map((key) => {
       const chargePointId = key.split('/')[2]; // Extract the charge point ID (e.g., "2" from 'openWB/chargepoint/2/config')
@@ -457,6 +460,10 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointMessages[
             `openWB/chargepoint/${chargePointId}/get/state_str`
           ] || '',
+        id: chargePointId  || '',
+        state: chargePointState[
+          `openWB/chargepoint/${chargePointId}/get/plug_state`
+        ] || false,
       };
     });
   });
