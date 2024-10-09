@@ -41,8 +41,8 @@
       >
         {{ item.message }}
       </div>
-      <div style="margin-left: auto; margin-right: auto" display="block" >
-        <q-btn-group push rounded class="q-mt-md" >
+      <div style="margin-left: auto; margin-right: auto" display="block">
+        <q-btn-group push rounded class="q-mt-md">
           <q-btn
             flat
             label="Sofort"
@@ -182,5 +182,4 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

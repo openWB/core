@@ -460,10 +460,11 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointMessages[
             `openWB/chargepoint/${chargePointId}/get/state_str`
           ] || '',
-        id: chargePointId  || '',
-        state: chargePointState[
-          `openWB/chargepoint/${chargePointId}/get/plug_state`
-        ] || false,
+        id: chargePointId || '',
+        state:
+          chargePointState[
+            `openWB/chargepoint/${chargePointId}/get/plug_state`
+          ] || false,
       };
     });
   });
