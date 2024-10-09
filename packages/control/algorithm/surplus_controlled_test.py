@@ -15,9 +15,7 @@ from control.ev import ChargeTemplate, Ev
 
 @pytest.fixture(autouse=True)
 def mock_cp1() -> Chargepoint:
-    cp = Chargepoint(1, None)
-    cp.template = CpTemplate()
-    return cp
+    return Chargepoint(1, None)
 
 
 @pytest.fixture(autouse=True)
@@ -89,6 +87,7 @@ def test_set_required_current_to_max(phases: int,
     mock_cp1.data = ChargepointData(set=Set(charging_ev_data=ev),
                                     control_parameter=ControlParameter(phases=phases,
                                                                        required_currents=required_currents))
+    mock_cp1.template = CpTemplate()
     mock_get_chargepoints_surplus_controlled = Mock(return_value=[mock_cp1])
     monkeypatch.setattr(surplus_controlled, "get_chargepoints_surplus_controlled",
                         mock_get_chargepoints_surplus_controlled)
