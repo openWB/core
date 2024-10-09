@@ -48,7 +48,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 62
+    DATASTORE_VERSION = 63
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -546,7 +546,7 @@ class UpdateConfig:
             self.__update_version()
         except Exception:
             log.exception("Fehler bei der Aktualisierung des Brokers.")
-            pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Brokers.", MessageType.ERROR)
+            pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
         finally:
             self.__update_topic("openWB/system/update_config_completed", True)
 
@@ -1804,3 +1804,10 @@ class UpdateConfig:
                     return {f"openWB/counter/{index}/config/max_power_errorcase": max_power_errorcase}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 62)
+
+    def upgrade_datastore_62(self) -> None:
+        pub_system_message(
+            {}, "Bei einem Zählerausfall werden nun 7kW für diesen Zähler freigegeben. Bisher wurde im "
+            "Fehlerfall die Ladung gestoppt. Du kannst die maximale Leistung im Fehlerfall für jeden Zähler"
+            " unter Einstellungen -> Konfiguration -> Lastmanagement anpassen.", MessageType.WARNING)
+        self.__update_topic("openWB/system/datastore_version", 63)
