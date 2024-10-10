@@ -1,6 +1,7 @@
 <template>
   <q-page class="column">
     <!-- Top Carousel -->
+
     <div class="row justify-center">
       <q-carousel
         v-model="slideTop"
@@ -26,6 +27,7 @@
             style="width: 100%; height: 100%; object-fit: contain"
           />
         </q-carousel-slide>
+
         <template v-slot:control>
           <q-carousel-control position="bottom-right" :offset="[18, 18]">
             <q-btn
@@ -42,7 +44,7 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <q-tabs v-model="tab">
+    <q-tabs v-model="tab" dense align="justify">
       <q-tab name="lp">
         <q-icon name="ev_station" size="25px" color="primary" />
       </q-tab>
@@ -142,6 +144,7 @@ interface CarouselItemTop {
 
 const slideTop = ref<string>('DIA1');
 const tab = ref<string>('lp');
+
 const fullscreen = ref(false);
 
 const carouselItemsTop: CarouselItemTop[] = [
