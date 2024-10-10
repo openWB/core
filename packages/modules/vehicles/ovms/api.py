@@ -176,11 +176,6 @@ class api:
         self.kms = float(statusDict['odometer']) / 10
         self.vehicle12v = statusDict['vehicle12v']
         self.soc_ts = statusDict['m_msgtime_s']
-        log.debug("soc=" + str(self.soc) +
-                  ", range=" + str(self.range) +
-                  ", soc_ts=" + str(self.soc_ts) +
-                  ", km-Stand=" + str(self.kms) +
-                  ", vehicle12v=" + str(self.vehicle12v))
 
         return int(float(self.soc)), float(self.range), self.soc_ts, float(self.kms), float(self.vehicle12v)
 
