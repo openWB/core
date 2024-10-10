@@ -9,7 +9,6 @@ from helpermodules.pub import Pub
 from modules.common import req
 from copy import deepcopy
 
-OVMS_SERVER = "https://ovms.dexters-web.de:6869"   # replaced by config parameter self.server_url
 TOKEN_CMD = "/api/token"
 STATUS_CMD = "/api/status"
 OVMS_APPL_LABEL = "application"
