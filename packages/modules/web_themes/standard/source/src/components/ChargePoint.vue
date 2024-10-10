@@ -49,7 +49,7 @@
             color="red"
             size="sm"
             :model-value="selectedButton === 'Sofort'"
-            @click="setChargeMode(item.id, 'instant_charging')"
+            @click="setChargeMode(item.id, 'instant_charging', 'chargemode')"
           />
           <q-btn
             flat
@@ -57,7 +57,7 @@
             color="green"
             size="sm"
             :model-value="selectedButton === 'PV'"
-            @click="setChargeMode(item.id, 'pv_charging')"
+            @click="setChargeMode(item.id, 'pv_charging', 'chargemode')"
           />
           <q-btn
             flat
@@ -65,7 +65,7 @@
             color="blue"
             size="sm"
             :model-value="selectedButton === 'Zeil'"
-            @click="setChargeMode(item.id, 'scheduled_charging')"
+            @click="setChargeMode(item.id, 'scheduled_charging', 'chargemode')"
           />
           <q-btn
             flat
@@ -73,7 +73,7 @@
             color="grey"
             size="sm"
             :model-value="selectedButton === 'Standby'"
-            @click="setChargeMode(item.id, 'standby')"
+            @click="setChargeMode(item.id, 'standby', 'chargemode')"
           />
           <q-btn
             flat
@@ -81,7 +81,7 @@
             color="black"
             size="sm"
             :model-value="selectedButton === 'Stop'"
-            @click="setChargeMode(item.id, 'stop')"
+            @click="setChargeMode(item.id, 'stop', 'chargemode')"
           />
         </q-btn-group>
       </div>
@@ -124,6 +124,7 @@ interface CarouselItem {
 }
 
 const selectedButton = ref<string>('Stop');
+//const selectMode = ref<string>('chargemode');
 
 // Computed property for carousel items
 const carouselItems = computed<CarouselItem[]>(() => {
@@ -146,19 +147,14 @@ const toggleLock = (chargePointId: string, currentLockState: boolean) => {
   mqttStore.updateTopic(topic, newLockState);
 };
 
-const setChargeMode = (chargePointId: string, mode: string) => {
+const setChargeMode = (
+  chargePointId: string,
+  mode: string,
+  selectMode: string,
+) => {
   const topic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/config`;
-  const currentConfig = mqttStore.getValue(topic);
-  console.log('Current Config:', currentConfig);
-  console.log('Charge Point Mode:', mode);
-
-  if (currentConfig && typeof currentConfig === 'object') {
-    const updatedConfig = { ...currentConfig, chargemode: mode };
-    mqttStore.updateTopic(topic, updatedConfig);
-    selectedButton.value = mode;
-  } else {
-    console.error('Config not found or is not an object:', currentConfig);
-  }
+  mqttStore.updateTopic(topic, mode, selectMode);
+  selectedButton.value = mode;
 };
 
 // Watch for changes in carouselItems and set initial slide when data becomes available
