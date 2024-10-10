@@ -49,7 +49,7 @@
             color="red"
             size="sm"
             :model-value="selectedButton === 'Sofort'"
-            @click="setSelected('instant_charging')"
+            @click="setChargeMode(item.id, 'instant_charging')"
           />
           <q-btn
             flat
@@ -123,6 +123,8 @@ interface CarouselItem {
   power: number;
 }
 
+const selectedButton = ref<string>('Stop');
+
 // Computed property for carousel items
 const carouselItems = computed<CarouselItem[]>(() => {
   const chargePoints = mqttStore.getChargePointDetails;
@@ -157,13 +159,6 @@ const setChargeMode = (chargePointId: string, mode: string) => {
   } else {
     console.error('Config not found or is not an object:', currentConfig);
   }
-};
-
-// Declare selectedButton as a reactive reference with a type string
-const selectedButton = ref<string>('Stop');
-
-const setSelected = (button: string) => {
-  selectedButton.value = button;
 };
 
 // Watch for changes in carouselItems and set initial slide when data becomes available
