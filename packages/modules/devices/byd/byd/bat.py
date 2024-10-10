@@ -6,6 +6,7 @@ from typing import Dict, List, Union, Tuple
 from dataclass_utils import dataclass_from_dict
 from modules.devices.byd.byd.config import BYDBatSetup
 from modules.common import req
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -15,7 +16,7 @@ from modules.common.store import get_bat_value_store
 log = logging.getLogger(__name__)
 
 
-class BYDBat:
+class BYDBat(AbstractBat):
     def __init__(self,
                  component_config: Union[Dict, BYDBatSetup],
                  device_config) -> None:

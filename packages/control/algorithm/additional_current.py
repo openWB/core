@@ -1,6 +1,7 @@
 import logging
 
 from control.algorithm import common
+from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT
 from control.loadmanagement import LimitingValue, Loadmanagement
 from control.counter import Counter
 from control.chargepoint.chargepoint import Chargepoint
@@ -12,14 +13,13 @@ log = logging.getLogger(__name__)
 
 
 class AdditionalCurrent:
-    CONSIDERED_CHARGE_MODES = common.CHARGEMODES[0:8]
 
     def __init__(self) -> None:
         pass
 
     def set_additional_current(self) -> None:
-        common.reset_current_by_chargemode(self.CONSIDERED_CHARGE_MODES)
-        for mode_tuple, counter in common.mode_and_counter_generator(self.CONSIDERED_CHARGE_MODES):
+        common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)
+        for mode_tuple, counter in common.mode_and_counter_generator(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT):
             preferenced_chargepoints, preferenced_cps_without_set_current = get_preferenced_chargepoint_charging(
                 get_chargepoints_by_mode_and_counter(mode_tuple, f"counter{counter.num}"))
             if preferenced_chargepoints:

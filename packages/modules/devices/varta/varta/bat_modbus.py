@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -9,7 +10,7 @@ from modules.common.store import get_bat_value_store
 from modules.devices.varta.varta.config import VartaBatModbusSetup
 
 
-class VartaBatModbus:
+class VartaBatModbus(AbstractBat):
     def __init__(self, device_id: int,
                  component_config: VartaBatModbusSetup,
                  modbus_id: int) -> None:

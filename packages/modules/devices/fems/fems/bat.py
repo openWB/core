@@ -2,6 +2,7 @@ import logging
 from requests import Session
 from helpermodules.scale_metric import scale_metric
 from modules.devices.fems.fems.config import FemsBatSetup
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -10,7 +11,7 @@ from modules.devices.fems.fems.version import FemsVersion, get_version
 log = logging.getLogger(__name__)
 
 
-class FemsBat:
+class FemsBat(AbstractBat):
     def __init__(self, ip_address: str, component_config: FemsBatSetup, session: Session) -> None:
         self.ip_address = ip_address
         self.component_config = component_config

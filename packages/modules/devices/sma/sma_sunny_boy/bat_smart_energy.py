@@ -2,6 +2,7 @@
 from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,7 +12,7 @@ from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
 
 
-class SunnyBoySmartEnergyBat:
+class SunnyBoySmartEnergyBat(AbstractBat):
     SMA_INT32_NAN = 0xFFFFFFFF  # SMA uses this value to represent NaN
 
     def __init__(self,

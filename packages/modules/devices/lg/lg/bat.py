@@ -2,6 +2,7 @@
 from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -10,7 +11,7 @@ from modules.common.store import get_bat_value_store
 from modules.devices.lg.lg.config import LgBatSetup
 
 
-class LgBat:
+class LgBat(AbstractBat):
     def __init__(self, device_id: int, component_config: Union[Dict, LgBatSetup]) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(LgBatSetup, component_config)
