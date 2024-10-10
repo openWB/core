@@ -3,7 +3,7 @@ from enum import IntEnum
 import logging
 
 from helpermodules import hardware_configuration
-from helpermodules.utils.error_counter import CP_ERROR, ErrorTimerContext
+from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from modules.chargepoints.openwb_dc_adapter.config import OpenWBDcAdapter
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
