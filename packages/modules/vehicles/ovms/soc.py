@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 def fetch(vehicle_update_data: VehicleUpdateData, config: OVMS, vehicle: int) -> CarState:
-    soc, range, soc_ts, kms, vehicle12v = api.fetch_soc(config, vehicle)
+    soc, range, soc_ts = api.fetch_soc(config, vehicle)
     return CarState(soc, range)
 
 
