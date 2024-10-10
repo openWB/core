@@ -206,6 +206,15 @@ class Chargepoint(ChargepointRfidMixin):
     def _process_charge_stop(self) -> None:
         # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
         # werden soll (-1), Daten zurücksetzen.
+        # Ocpp Stop Funktion aufrufen
+        if not self.data.get.plug_state and self.data.set.ocpp_transaction_id is not None:
+            data.data.optional_data.stop_transaction(
+                self.data.config.ocpp_chargebox_id,
+                self.chargepoint_module.fault_state,
+                self.data.get.imported,
+                self.data.set.ocpp_transaction_id,
+                self.data.set.rfid)
+            Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_id", None)
         if self.data.set.charging_ev_prev != -1:
             # Daten zurücksetzen, wenn nicht geladen werden soll.
             self.reset_control_parameter_at_charge_stop()
@@ -712,6 +721,17 @@ class Chargepoint(ChargepointRfidMixin):
                     self._pub_connected_vehicle(ev_list[f"ev{vehicle}"])
                 else:
                     self._pub_configured_ev(ev_list)
+            # OCPP Start Transaction nach Anstecken
+            if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
+                    (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):
+                self.data.set.ocpp_transaction_id = data.data.optional_data.start_transaction(
+                    self.data.config.ocpp_chargebox_id,
+                    self.chargepoint_module.fault_state,
+                    self.num,
+                    self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id,
+                    self.data.get.imported)
+                Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                          "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
             # SoC nach Anstecken aktualisieren
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.get.plug_state is False and self.data.set.plug_state_prev)):

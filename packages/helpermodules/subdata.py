@@ -9,26 +9,20 @@ import re
 import subprocess
 import paho.mqtt.client as mqtt
 
-from control import bat_all, bat, pv_all
+from control import bat_all, bat, counter, counter_all, ev, general, optional, pv, pv_all
 from control.chargepoint import chargepoint
-from control import counter
-from control import counter_all
-from control import ev
-from control import general
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
-from helpermodules import graph
+from control.optional_data import Ocpp
+from helpermodules import graph, system
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
-from control import optional
 from helpermodules.pub import Pub
-from helpermodules import system
-from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
@@ -659,6 +653,8 @@ class SubData:
                     self.set_json_payload_class(var.data.led, msg)
                 elif re.search("/optional/rfid/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.rfid, msg)
+                elif re.search("/optional/ocpp/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.ocpp, msg)
                 elif re.search("/optional/int_display/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.int_display, msg)
                     if re.search("/(standby|active|rotation)$", msg.topic) is not None:
@@ -683,6 +679,9 @@ class SubData:
                             var.et_get_prices()
                     else:
                         self.set_json_payload_class(var.data.et, msg)
+                elif re.search("/optional/ocpp/", msg.topic) is not None:
+                    config_dict = decode_payload(msg.payload)
+                    var.data.ocpp = dataclass_from_dict(Ocpp, config_dict)
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:

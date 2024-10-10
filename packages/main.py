@@ -18,23 +18,16 @@ import traceback
 from threading import Thread
 from control.chargelog.chargelog import calculate_charge_cost
 
+from control import data, prepare, process
+from control.algorithm import algorithm
+from helpermodules import command, setdata, subdata, timecheck, update_config
 from helpermodules.changed_values_handler import ChangedValuesContext
 from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
 from helpermodules.measurement_logging.write_log import LogType, save_log
-from modules import loadvars
-from modules import configuration
-from helpermodules import timecheck, update_config
-from helpermodules import subdata
-from helpermodules import setdata
-from helpermodules import command
 from helpermodules.modbusserver import start_modbus_server
 from helpermodules.pub import Pub
-from control import prepare
-from control import data
-from control import process
-from control.algorithm import algorithm
 from helpermodules.utils import exit_after
-from modules import update_soc
+from modules import configuration, loadvars, update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
@@ -94,6 +87,7 @@ class HandlerAlgorithm:
                 update_pv_monthly_yearly_yields()
                 data.data.general_data.grid_protection()
                 data.data.optional_data.et_get_prices()
+                data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())

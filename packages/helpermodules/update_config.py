@@ -12,6 +12,7 @@ from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
 from control.counter import get_counter_default_config
 from control.general import ChargemodeConfig
+from control.optional_data import Ocpp
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -129,6 +130,8 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/log$",
         "^openWB/chargepoint/[0-9]+/set/phases_to_use$",
         "^openWB/chargepoint/[0-9]+/set/charging_ev_prev$",
+        "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_id$",
+        "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_active$",
 
         "^openWB/command/max_id/autolock_plan$",
         "^openWB/command/max_id/charge_template$",
@@ -254,6 +257,7 @@ class UpdateConfig:
         "^openWB/optional/int_display/only_local_charge_points",
         "^openWB/optional/led/active$",
         "^openWB/optional/rfid/active$",
+        "^openWB/optional/ocpp/config$",
 
         "^openWB/pv/config/configured$",
         "^openWB/pv/get/exported$",
@@ -501,6 +505,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/led/active", False),
+        ("openWB/optional/ocpp/config", dataclass_utils.asdict(Ocpp())),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/backup_cloud/backup_before_update", True),
