@@ -20,11 +20,11 @@ function setup_pnp_network() {
 	echo "my primary interface: $myNetDevice"
 	isSecondary=$(mosquitto_sub -t "openWB/general/extern" -p 1886 -C 1 -W 1 --quiet)
 	if [[ $isSecondary == "true" ]]; then
-		echo "running as secondary, disabling plug'n'play network"
-		sudo ifconfig "${myNetDevice}:0" down
+		echo "running as secondary, disabling plug'n'play network on dev $myNetDevice"
+		sudo ip addr del "$myVirtualIp/24" dev $myNetDevice
 	else
-		echo "running as primary, enabling plug'n'play network"
-		sudo ifconfig "${myNetDevice}:0" "$myVirtualIp" netmask 255.255.255.0 up
+		echo "running as primary, enabling plug'n'play network on dev $myNetDevice"
+		sudo ip addr add "$myVirtualIp/24" dev $myNetDevice
 	fi
 }
 
