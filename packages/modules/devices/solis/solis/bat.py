@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,7 +12,7 @@ from modules.devices.solis.solis.config import SolisBatSetup
 log = logging.getLogger(__name__)
 
 
-class SolisBat:
+class SolisBat(AbstractBat):
     def __init__(self, component_config: SolisBatSetup) -> None:
         self.component_config = dataclass_from_dict(SolisBatSetup, component_config)
         self.store = get_bat_value_store(self.component_config.id)
