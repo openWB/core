@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from typing import Any, Callable
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -9,7 +10,7 @@ from modules.common.store import get_counter_value_store
 from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreCounterSetup
 
 
-class KostalPlenticoreCounter:
+class KostalPlenticoreCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config: KostalPlenticoreCounterSetup) -> None:

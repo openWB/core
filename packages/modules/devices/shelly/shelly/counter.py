@@ -2,6 +2,7 @@
 import logging
 from typing import Optional
 from modules.common import req
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -12,7 +13,7 @@ from modules.devices.shelly.shelly.config import ShellyCounterSetup
 log = logging.getLogger(__name__)
 
 
-class ShellyCounter:
+class ShellyCounter(AbstractCounter):
 
     def __init__(self,
                  device_id: int,

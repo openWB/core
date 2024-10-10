@@ -4,6 +4,7 @@ from pymodbus.constants import Endian
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -12,7 +13,7 @@ from modules.common.store import get_counter_value_store
 from modules.devices.solax.solax.config import SolaxCounterSetup
 
 
-class SolaxCounter:
+class SolaxCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, SolaxCounterSetup],

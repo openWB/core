@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -14,7 +15,7 @@ from modules.devices.smartfox.smartfox.config import SmartfoxCounterSetup
 log = logging.getLogger(__name__)
 
 
-class SmartfoxCounter:
+class SmartfoxCounter(AbstractCounter):
     def __init__(self,
                  device_address: str,
                  component_config: Union[Dict, SmartfoxCounterSetup]) -> None:

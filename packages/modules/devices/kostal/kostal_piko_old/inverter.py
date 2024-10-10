@@ -2,6 +2,7 @@
 import logging
 import re
 
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,7 +12,7 @@ from modules.devices.kostal.kostal_piko_old.config import KostalPikoOldInverterS
 log = logging.getLogger(__name__)
 
 
-class KostalPikoOldInverter:
+class KostalPikoOldInverter(AbstractInverter):
     def __init__(self, component_config: KostalPikoOldInverterSetup) -> None:
         self.component_config = component_config
         self.store = get_inverter_value_store(self.component_config.id)

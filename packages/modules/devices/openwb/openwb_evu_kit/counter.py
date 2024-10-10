@@ -3,13 +3,14 @@ from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_type import ComponentDescriptor
 from modules.devices.openwb.openwb_evu_kit.config import EvuKitCounterSetup
 from modules.devices.openwb.openwb_flex.counter import EvuKitFlex
 from modules.devices.openwb.openwb_flex.config import convert_to_flex_setup
 
 
-class EvuKit(EvuKitFlex):
+class EvuKit(EvuKitFlex, AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config:  Union[Dict, EvuKitCounterSetup],
