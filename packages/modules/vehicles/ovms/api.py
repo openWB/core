@@ -186,4 +186,4 @@ def fetch_soc(conf: OVMS, vehicle: int) -> Union[int, float, str]:
     a = api()
     soc, range, soc_ts = loop.run_until_complete(a._fetch_soc(conf, vehicle))
 
-    return soc, range, soc_ts, kms, vehicle12v
+    return soc, range, soc_ts
