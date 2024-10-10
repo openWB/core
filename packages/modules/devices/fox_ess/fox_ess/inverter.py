@@ -19,8 +19,8 @@ class FoxEssInverter:
     def update(self, client: ModbusTcpClient_) -> None:
         unit = self.component_config.configuration.modbus_id
         # PV1 + PV2 Power
-        power = sum([self.__tcp_client.read_holding_registers(
-            reg, ModbusDataType.INT_16, unit=self.__modbus_id)
+        power = sum([client.read_holding_registers(
+            reg, ModbusDataType.INT_16, unit=unit)
             for reg in [31002, 31005]]) * -1
         # Gesamt Produktion Wechselrichter unsigned integer in kWh * 0,1
         exported = client.read_holding_registers(32000, ModbusDataType.UINT_32, unit=unit) * 100
