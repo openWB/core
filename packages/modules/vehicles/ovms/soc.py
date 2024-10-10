@@ -10,8 +10,6 @@ from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.ovms import api
 from modules.vehicles.ovms.config import OVMS, OVMSConfiguration
-import datetime
-from json import dumps
 
 date_fmt = '%Y-%m-%d %H:%M:%S'
 log = logging.getLogger(__name__)
