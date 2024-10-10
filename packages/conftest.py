@@ -5,6 +5,7 @@ import pytest
 from control import data
 from control.bat import Bat, BatData
 from control.bat import Get as BatGet
+from control.bat import Set as BatSet
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Config, Get, Set
 from control.counter import Counter, CounterData
@@ -130,9 +131,10 @@ def data_() -> None:
                                                          daily_imported=10000, daily_exported=0, imported=62000,
                                                          fault_state=0),
                                                 set=Mock(spec=Set, loadmanagement_available=True)))}
-    data.data.bat_data.update({"bat2": Mock(spec=Bat, data=Mock(spec=BatData, get=Mock(
+    data.data.bat_data.update({"bat2": Mock(spec=Bat, num=2, data=Mock(spec=BatData, get=Mock(
         spec=BatGet, power=-5000, daily_imported=7000, daily_exported=3000, imported=12000, exported=10000,
-        currents=None, fault_state=0)))})
+        currents=None, fault_state=0),
+        set=Mock(spec=BatSet, power_limit=None)))})
     data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(
         spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None,
                               fault_state=0)))})

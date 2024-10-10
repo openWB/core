@@ -2,6 +2,7 @@
 from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -10,7 +11,7 @@ from modules.devices.tesla.tesla.http_client import PowerwallHttpClient
 from modules.devices.tesla.tesla.config import TeslaBatSetup
 
 
-class TeslaBat:
+class TeslaBat(AbstractBat):
     def __init__(self, component_config: Union[Dict, TeslaBatSetup]) -> None:
         self.component_config = dataclass_from_dict(TeslaBatSetup, component_config)
         self.store = get_bat_value_store(self.component_config.id)

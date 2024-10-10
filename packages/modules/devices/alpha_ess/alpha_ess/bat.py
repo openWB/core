@@ -6,6 +6,7 @@ from typing import Dict, Union
 from dataclass_utils import dataclass_from_dict
 from modules.devices.alpha_ess.alpha_ess.config import AlphaEssBatSetup, AlphaEssConfiguration
 from modules.common import modbus
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -16,7 +17,7 @@ from modules.common.store import get_bat_value_store
 log = logging.getLogger(__name__)
 
 
-class AlphaEssBat:
+class AlphaEssBat(AbstractBat):
     def __init__(self, device_id: int,
                  component_config: Union[Dict, AlphaEssBatSetup],
                  tcp_client: modbus.ModbusTcpClient_,

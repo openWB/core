@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from typing import Any, Callable
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.modbus import ModbusDataType
@@ -12,7 +13,7 @@ from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreBatS
 log = logging.getLogger(__name__)
 
 
-class KostalPlenticoreBat:
+class KostalPlenticoreBat(AbstractBat):
     def __init__(self,
                  device_id: int,
                  component_config: KostalPlenticoreBatSetup) -> None:

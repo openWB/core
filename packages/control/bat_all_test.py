@@ -1,13 +1,19 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, Optional
 from unittest.mock import Mock
 import pytest
+from packages.conftest import hierarchy_standard
+from control import bat_all
 from control.bat import Bat
 
-from control.bat_all import BatAll
+from control.bat_all import BatAll, BatPowerLimitMode
 from control import data
+from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_all import AllChargepointData, AllChargepoints, AllGet
 from control.general import General, PvCharging
 from control.pv import Config, Get, Pv, PvData
+from modules.devices.generic.mqtt.bat import MqttBat
+from modules.devices.generic.mqtt.config import MqttBatSetup
 
 
 @pytest.fixture
@@ -77,7 +83,7 @@ def test_limit_bat_power_discharge(required_power, return_max_bat_power_hybrid_s
     assert power == expected_power
 
 
-@ dataclass
+@dataclass
 class Params:
     name: str
     config: PvCharging
@@ -85,6 +91,7 @@ class Params:
     soc: float
     expected_charging_power_left: float
     expected_regulate_up: bool
+    power_limit: Optional[float] = None
 
 
 cases = [
@@ -129,6 +136,10 @@ cases = [
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher voll",
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=500, bat_power_reserve_active=True,
                       min_bat_soc=100), 0, 100, 0, False),
+    Params(("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt mit weniger als Entladeleistung, "
+           "Speicher-Sperre aktiv"),
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           400, 90, 0, False, 600),
 ]
 
 
@@ -138,6 +149,7 @@ def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypat
     b_all = BatAll()
     b_all.data.get.power = params.power
     b_all.data.get.soc = params.soc
+    b_all.data.set.power_limit = params.power_limit
     b = Bat(0)
     b.data.get.power = params.power
     data.data.bat_data["bat0"] = b
@@ -151,3 +163,57 @@ def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypat
     # evaluation
     assert b_all.data.set.charging_power_left == params.expected_charging_power_left
     assert b_all.data.set.regulate_up == params.expected_regulate_up
+
+
+def default_chargepoint_factory() -> List[Chargepoint]:
+    return [Chargepoint(3, None)]
+
+
+@dataclass
+class PowerLimitParams:
+    name: str
+    expected_power_limit_bat: Optional[float]
+    power_limit_mode: str = BatPowerLimitMode.NO_LIMIT.value
+    cps: List[Chargepoint] = field(default_factory=default_chargepoint_factory)
+    power_limit_controlable: bool = True
+    bat_power: float = -10
+    evu_power: float = 200
+
+
+cases = [
+    PowerLimitParams("keine Begrenzung", None),
+    PowerLimitParams("Begrenzung immer, keine LP im Sofortladen", None, cps=[],
+                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+    PowerLimitParams("Begrenzung immer, Speicher nicht regelbar", None, power_limit_controlable=False,
+                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+    PowerLimitParams("Begrenzung immer, Speicher lädt", None, bat_power=100,
+                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+    PowerLimitParams("Begrenzung immer,Einspeisung", None, evu_power=-100,
+                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+    PowerLimitParams("Begrenzung immer", 0, power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+    PowerLimitParams("Begrenzung Hausverbrauch", 456,
+                     power_limit_mode=BatPowerLimitMode.LIMIT_TO_HOME_CONSUMPTION.value),
+]
+
+
+@pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
+def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
+    b_all = BatAll()
+    b_all.data.config.power_limit_mode = params.power_limit_mode
+    b_all.data.get.power_limit_controlable = params.power_limit_controlable
+    b_all.data.get.power = params.bat_power
+    data.data.counter_all_data = hierarchy_standard()
+    data.data.counter_all_data.data.set.home_consumption = 456
+    data.data.counter_data["counter0"].data.get.power = params.evu_power
+    data.data.bat_all_data = b_all
+
+    get_chargepoints_by_chargemodes_mock = Mock(return_value=params.cps)
+    monkeypatch.setattr(bat_all, "get_chargepoints_by_chargemodes", get_chargepoints_by_chargemodes_mock)
+    get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
+    get_controlable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2))])
+    monkeypatch.setattr(bat_all, "get_controlable_bat_components", get_controlable_bat_components_mock)
+
+    data.data.bat_all_data.get_power_limit()
+
+    assert data.data.bat_data["bat2"].data.set.power_limit == params.expected_power_limit_bat

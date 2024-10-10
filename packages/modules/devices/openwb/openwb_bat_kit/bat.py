@@ -2,6 +2,7 @@
 from typing import Union
 
 from modules.common import modbus
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_type import ComponentDescriptor
 from modules.devices.openwb.openwb_bat_kit.config import BatKitBatSetup
 from modules.devices.openwb.openwb_evu_kit.config import EvuKitBatSetup
@@ -9,7 +10,7 @@ from modules.devices.openwb.openwb_flex.bat import BatKitFlex
 from modules.devices.openwb.openwb_flex.config import convert_to_flex_setup
 
 
-class BatKit(BatKitFlex):
+class BatKit(BatKitFlex, AbstractBat):
     def __init__(self,
                  device_id: int,
                  component_config: Union[BatKitBatSetup, EvuKitBatSetup],

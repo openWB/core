@@ -703,6 +703,7 @@ class SetData:
         """
         try:
             if ("openWB/set/bat/config/configured" in msg.topic or
+                "openWB/set/bat/get/power_limit_controlable" in msg.topic or
                     "openWB/set/bat/set/regulate_up" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
@@ -714,11 +715,13 @@ class SetData:
             elif ("openWB/set/bat/get/imported" in msg.topic or
                     "openWB/set/bat/get/exported" in msg.topic or
                     "openWB/set/bat/get/daily_exported" in msg.topic or
-                    "openWB/set/bat/get/daily_imported" in msg.topic):
+                    "openWB/set/bat/get/daily_imported" in msg.topic or
+                    "openWB/set/bat/set/power_limit" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/bat/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
-            elif "openWB/set/bat/get/fault_str" in msg.topic:
+            elif ("openWB/set/bat/get/fault_str" in msg.topic or
+                  "openWB/set/bat/config/power_limit_mode" in msg.topic):
                 self._validate_value(msg, str)
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
@@ -736,6 +739,10 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/get/fault_str" in msg.topic:
                     self._validate_value(msg, str)
+                elif "/set/power_limit_controlable" in msg.topic:
+                    self._validate_value(msg, bool)
+                elif "/set/power_limit" in msg.topic:
+                    self._validate_value(msg, float)
                 else:
                     self.__unknown_topic(msg)
             else:

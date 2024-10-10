@@ -52,10 +52,12 @@ class UpdateConfig:
     DATASTORE_VERSION = 63
     valid_topic = [
         "^openWB/bat/config/configured$",
+        "^openWB/bat/config/power_limit_mode$",
         "^openWB/bat/set/charging_power_left$",
         "^openWB/bat/set/regulate_up$",
         "^openWB/bat/get/fault_state$",
         "^openWB/bat/get/fault_str$",
+        "^openWB/bat/get/power_limit_controlable$",
         "^openWB/bat/get/soc$",
         "^openWB/bat/get/power$",
         "^openWB/bat/get/imported$",
@@ -70,6 +72,8 @@ class UpdateConfig:
         "^openWB/bat/[0-9]+/get/daily_imported$",
         "^openWB/bat/[0-9]+/get/fault_state$",
         "^openWB/bat/[0-9]+/get/fault_str$",
+        "^openWB/bat/[0-9]+/get/power_limit_controlable$",
+        "^openWB/bat/[0-9]+/set/power_limit$",
 
         "^openWB/chargepoint/get/power$",
         "^openWB/chargepoint/get/exported$",
@@ -432,6 +436,7 @@ class UpdateConfig:
     ]
     default_topic = (
         ("openWB/bat/config/configured", False),
+        ("openWB/bat/config/power_limit_mode", "no_limit"),
         ("openWB/bat/get/fault_state", 0),
         ("openWB/bat/get/fault_str", NO_ERROR),
         ("openWB/chargepoint/get/power", 0),
