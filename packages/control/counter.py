@@ -193,14 +193,16 @@ class Counter:
     def update_values_left(self, diffs) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
-            self.data.set.raw_power_left -= sum(diffs) * 230
+            average_voltage = sum(self.data.get.voltages)/len(self.data.get.voltages)
+            self.data.set.raw_power_left -= sum(diffs) * average_voltage
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.raw_power_left}W verbleibende Leistung')
 
     def update_surplus_values_left(self, diffs) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.surplus_power_left:
-            self.data.set.surplus_power_left -= sum(diffs) * 230
+            average_voltage = sum(self.data.get.voltages)/len(self.data.get.voltages)
+            self.data.set.surplus_power_left -= sum(diffs) * average_voltage
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
 
@@ -243,15 +245,8 @@ class Counter:
         control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
         control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
         control_range_center = control_range_high - (control_range_high - control_range_low) / 2
-        control_range_state = self.get_control_range_state(0)
-        if control_range_state == ControlRangeState.BELOW:
-            range_offset = abs(control_range_center)
-        elif control_range_state == ControlRangeState.ABOVE:
-            range_offset = - abs(control_range_center)
-        else:
-            range_offset = 0
-        log.debug(f"Anpassen des Regelbereichs {range_offset}W")
-        return range_offset
+        log.debug(f"Anpassen des Regelbereichs {control_range_center}W")
+        return control_range_center
 
     def get_usable_surplus(self, feed_in_yield: float) -> float:
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
