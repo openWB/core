@@ -176,7 +176,7 @@ class api:
 
 
 # sync function
-def fetch_soc(conf: OVMS, vehicle: int) -> Union[int, float, str, float, float]:
+def fetch_soc(conf: OVMS, vehicle: int) -> Union[int, float, str]:
 
     # prepare and call async method
     loop = asyncio.new_event_loop()
