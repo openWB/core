@@ -172,7 +172,7 @@ class api:
         self.vehicle12v = statusDict['vehicle12v']
         self.soc_ts = statusDict['m_msgtime_s']
 
-        return int(float(self.soc)), float(self.range), self.soc_ts, float(self.kms), float(self.vehicle12v)
+        return int(float(self.soc)), float(self.range), self.soc_ts
 
 
 # sync function
