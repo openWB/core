@@ -19,23 +19,6 @@ log = logging.getLogger(__name__)
 
 def fetch(vehicle_update_data: VehicleUpdateData, config: OVMS, vehicle: int) -> CarState:
     soc, range, soc_ts, kms, vehicle12v = api.fetch_soc(config, vehicle)
-    logs = {}
-    logs['timestamp'] = datetime.datetime.now().strftime(date_fmt)
-    logs['vehicle'] = str(vehicle)
-    logs['module_name'] = config.name
-    logs['module_type'] = config.type
-    logs['soc'] = str(soc)
-    logs['range'] = str(range)
-    logs['km_stand'] = str(kms)
-    logs['car_timestamp'] = soc_ts
-    logs['SoC12V'] = str(vehicle12v)
-    log.info("##LOG" + str(vehicle) + ":" + dumps(logs))
-
-    log.info("\nResult: soc=" + str(soc) +
-             ", range=" + str(range) + "km" +
-             ", car_timestamp=" + soc_ts +
-             ", km-Stand=" + str(kms) + "km" +
-             ", 12V-Batt=" + str(vehicle12v) + "V")
     return CarState(soc, range)
 
 
