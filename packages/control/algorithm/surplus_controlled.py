@@ -5,7 +5,7 @@ from control import data
 from control.algorithm import common
 from control.chargepoint.charging_type import ChargingType
 from control.loadmanagement import LimitingValue, Loadmanagement
-from control.counter import Counter
+from control.counter import ControlRangeState, Counter
 from control.chargepoint.chargepoint import Chargepoint
 from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode, get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging)
@@ -53,7 +53,21 @@ class SurplusControlled:
                                                                                         feed_in_yield)
             cp.data.control_parameter.limit = limit
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
-            current = common.get_current_to_set(cp.data.set.current, available_for_cp, cp.data.set.target_current)
+            if counter.get_control_range_state(feed_in_yield) == ControlRangeState.MIDDLE:
+                pv_charging = data.data.general_data.data.chargemode_config.pv_charging
+                dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.set_current_prev
+                # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
+                # nachregeln, auch wenn der Regelbereich eingehalten wird. Sonst würde zB nicht berücksichtigt werden,
+                # wenn noch ein Fahrzeug dazu kommmt.
+                if (pv_charging.control_range[1] - pv_charging.control_range[0]) / 230 < abs(dif_to_old_current):
+                    current = available_for_cp
+                else:
+                    # Nicht mehr freigeben, wie das Lastmanagement vorgibt
+                    current = min(cp.set_current_prev - cp.data.set.target_current, available_for_cp)
+            else:
+                current = available_for_cp
+
+            current = common.get_current_to_set(cp.data.set.current, current, cp.data.set.target_current)
             self._set_loadmangement_message(current, limit, cp, counter)
             limited_current = self._limit_adjust_current(cp, current)
             limited_current = self._fix_deviating_evse_current(limited_current, cp)
