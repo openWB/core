@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -9,7 +10,7 @@ from modules.common.store import get_bat_value_store
 from modules.devices.sample_request_by_component.config import SampleBatSetup, SampleConfiguration
 
 
-class SampleBat:
+class SampleBat(AbstractBat):
     def __init__(self, device_id: int, component_config: SampleBatSetup, ip_address: str) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(SampleBatSetup, component_config)
