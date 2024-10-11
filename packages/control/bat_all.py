@@ -155,7 +155,7 @@ class BatAll:
             # genutzt werden.
             if parent_data.config.max_ac_out > 0:
                 max_bat_discharge_power = parent_data.config.max_ac_out + \
-                    parent_data.get.power + min(battery.data.get.power, 0)
+                    parent_data.get.power + battery.data.get.power
                 return max_bat_discharge_power, True
             else:
                 battery.data.get.fault_state = FaultStateLevel.ERROR.value
