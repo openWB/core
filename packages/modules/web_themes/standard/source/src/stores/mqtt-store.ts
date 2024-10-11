@@ -7,6 +7,7 @@ import {
   TopicObject,
   TopicList,
   TopicCount,
+  ChargePointDetails,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -417,7 +418,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
-  ///////////////// test functions /////////////////
+  //////////////////////////////// test functions //////////////////////////////////
 
   const getChargePoints = computed(() => {
     return getWildcardValues.value('openWB/chargepoint/+/config');
@@ -428,7 +429,14 @@ export const useMqttStore = defineStore('mqtt', () => {
     return Object.values(chargePoints).map((config) => config?.name);
   });
 
-  const getChargePointDetails = computed(() => {
+  const getChargePointIds = computed(() => {
+    const chargePoints = getWildcardValues.value('openWB/chargepoint/+/config');
+    return Object.keys(chargePoints).map((key) => {
+      return key.split('/')[2];
+    });
+  });
+
+  const getAllChargePointsDetails = computed(() => {
     const chargePointConfigs = getWildcardValues.value(
       'openWB/chargepoint/+/config',
     );
@@ -447,7 +455,6 @@ export const useMqttStore = defineStore('mqtt', () => {
 
     return Object.keys(chargePointConfigs).map((key) => {
       const chargePointId = key.split('/')[2];
-
       return {
         name: chargePointConfigs[key]?.name,
         locked:
@@ -466,11 +473,17 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointState[
             `openWB/chargepoint/${chargePointId}/get/plug_state`
           ] || false,
-      };
+      } as ChargePointDetails;
     });
   });
 
-  ////  Simulated date for initial layout and testing  ///////
+  const getChargePointDetails = (id: string) => {
+    const allPoints = getAllChargePointsDetails.value;
+    return allPoints.find((point) => point.id === id);
+  };
+
+  ///////////////////  Simulated data for initial layout and testing  ///////////////////
+
   // State Charge Mode
   const chargeMode = ref<string>('sofort'); // Default mode is 'stop'
 
@@ -502,8 +515,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     ////// test functions  ///////
     getChargePoints,
     getChargePointNames,
+    getChargePointIds,
     getChargePointDetails,
-    ////// Simulated date for initial layout and testing  ///////
+    getAllChargePointsDetails,
+    ////// Simulated data for initial layout and testing  ///////
     getChargeMode,
     setChargeMode,
   };

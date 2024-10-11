@@ -1,110 +1,61 @@
 <template>
-  <q-carousel
-    v-model="slide"
-    swipeable
-    animated
-    navigation
-    arrows
-    control-color="primary"
-    infinite
-    class="full-height"
-    @mousedown.prevent
-  >
-    <q-carousel-slide
-      v-for="(item, index) in carouselItems"
-      :key="index"
-      :name="item.name"
-      class="column align-center"
+  <div class="charge-point" v-if="chargePoint">
+    <div class="row items-center text-h6" style="font-weight: bold">
+      {{ chargePoint.name }}
+      <q-icon
+        :name="chargePoint.locked ? 'lock' : 'lock_open'"
+        size="sm"
+        :color="chargePoint.locked ? 'red' : 'green'"
+        @click="toggleLock(chargePoint.id, chargePoint.locked)"
+        style="cursor: pointer"
+        class="q-ml-sm"
+      />
+      <q-icon
+        :name="chargePoint.state ? 'power' : 'power_off'"
+        size="sm"
+        :color="chargePoint.state ? 'green' : 'red'"
+      />
+      <q-space />
+      <q-icon name="settings" size="25px" />
+    </div>
+    <div
+      class="row q-mt-md q-pa-sm bg-primary text-white"
+      style="border-radius: 10px"
     >
-      <div class="row items-center text-h6" style="font-weight: bold">
-        {{ item.text }}
-        <q-icon
-          :name="item.locked ? 'lock' : 'lock_open'"
+      {{ chargePoint.message }}
+    </div>
+    <div style="margin-left: auto; margin-right: auto" display="block">
+      <q-btn-group push rounded class="q-mt-md">
+        <q-btn
+          v-for="mode in chargeModes"
+          :key="mode.value"
+          :flat="selectedButton !== mode.value"
+          :outline="selectedButton === mode.value"
+          :glossy="selectedButton === mode.value"
+          :label="mode.label"
+          :color="mode.color"
           size="sm"
-          :color="item.locked ? 'red' : 'green'"
-          @click="toggleLock(item.id, item.locked)"
-          style="cursor: pointer"
-          class="q-ml-sm"
+          @click="setChargeMode(mode.value)"
         />
-        <q-icon
-          :name="item.state ? 'power' : 'power_off'"
-          size="sm"
-          :color="item.state ? 'green' : 'red'"
-        />
-        <q-space />
-        <q-icon name="settings" size="25px" />
-      </div>
-      <div
-        class="row q-mt-md q-pa-sm bg-primary text-white"
-        style="border-radius: 10px"
-      >
-        {{ item.message }}
-      </div>
-      <div style="margin-left: auto; margin-right: auto" display="block">
-        <q-btn-group push rounded class="q-mt-md">
-          <q-btn
-            :flat="selectedButton !== 'sofort'"
-            :outline="selectedButton === 'sofort'"
-            :glossy="selectedButton === 'sofort'"
-            label="Sofort"
-            color="red"
-            size="sm"
-            @click="setChargeMode('sofort')"
-          />
-          <q-btn
-            :flat="selectedButton !== 'pv'"
-            :outline="selectedButton === 'pv'"
-            :glossy="selectedButton === 'pv'"
-            label="PV"
-            color="green"
-            size="sm"
-            @click="setChargeMode('pv')"
-          />
-          <q-btn
-            :flat="selectedButton !== 'scheduled'"
-            :outline="selectedButton === 'scheduled'"
-            :glossy="selectedButton === 'scheduled'"
-            label="Zeil"
-            color="blue"
-            size="sm"
-            @click="setChargeMode('scheduled')"
-          />
-          <q-btn
-            :flat="selectedButton !== 'standby'"
-            :outline="selectedButton === 'standby'"
-            :glossy="selectedButton === 'standby'"
-            label="Standby"
-            color="grey"
-            size="sm"
-            @click="setChargeMode('standby')"
-          />
-          <q-btn
-            :flat="selectedButton !== 'stop'"
-            :outline="selectedButton === 'stop'"
-            :glossy="selectedButton === 'stop'"
-            label="Stop"
-            color="black"
-            size="sm"
-            @click="setChargeMode('stop')"
-          />
-        </q-btn-group>
-      </div>
-      <div class="row q-mt-sm">
-        {{ item.power }}
-      </div>
-      <SliderQuasar class="q-mb-xl"></SliderQuasar>
-    </q-carousel-slide>
-  </q-carousel>
+      </q-btn-group>
+    </div>
+    <div class="row q-mt-sm">
+      {{ chargePoint.power }}
+    </div>
+    <SliderQuasar class="q-mb-xl"></SliderQuasar>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import SliderQuasar from './SliderQuasar.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
-const mqttStore = useMqttStore();
+const props = defineProps<{
+  chargePointId: string;
+}>();
 
-const slide = ref<string | undefined>('');
+const mqttStore = useMqttStore();
 
 const topicsToSubscribe = <string[]>[
   'openWB/chargepoint/+/config',
@@ -117,32 +68,19 @@ const topicsToSubscribe = <string[]>[
   'openWB/vehicle/template/charge_template/0',
 ];
 
-interface CarouselItem {
-  id: string;
-  name: string;
-  icon: string;
-  text: string;
-  message: string;
-  locked: boolean;
-  state: boolean;
-  power: number;
-}
-
+const chargePoint = computed(() =>
+  mqttStore.getChargePointDetails(props.chargePointId),
+);
 const selectedButton = computed(() => mqttStore.getChargeMode);
 
-const carouselItems = computed<CarouselItem[]>(() => {
-  const chargePoints = mqttStore.getChargePointDetails;
-  return chargePoints.map((cp) => ({
-    id: cp.id,
-    name: cp.name,
-    text: cp.name,
-    message: cp.message,
-    locked: cp.locked,
-    state: cp.state,
-    icon: 'ev_station',
-    power: cp.power,
-  }));
-});
+const chargeModes = [
+  { value: 'sofort', label: 'Sofort', color: 'red' },
+  { value: 'pv', label: 'PV', color: 'green' },
+  { value: 'scheduled', label: 'Zeil', color: 'blue' },
+  { value: 'standby', label: 'Standby', color: 'grey' },
+  { value: 'stop', label: 'Stop', color: 'black' },
+];
+
 const toggleLock = (chargePointId: string, currentLockState: boolean) => {
   const topic = `openWB/chargepoint/${chargePointId}/set/manual_lock`;
   const newLockState = !currentLockState;
@@ -153,19 +91,7 @@ const setChargeMode = (mode: string) => {
   mqttStore.setChargeMode(mode);
 };
 
-watch(
-  carouselItems,
-  (newItems) => {
-    if (newItems.length > 0 && !slide.value) {
-      slide.value = newItems[0].name;
-    }
-  },
-  { immediate: true },
-);
-
 onMounted(() => {
   mqttStore.subscribe(topicsToSubscribe);
 });
 </script>
-
-<style scoped></style>
