@@ -20,7 +20,7 @@ class Get:
     fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
     fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
     power: float = field(default=0, metadata={"topic": "get/power"})
-    power_limit_controlable: bool = field(default=False, metadata={"topic": "get/power_limit_controlable"})
+    power_limit_controllable: bool = field(default=False, metadata={"topic": "get/power_limit_controllable"})
 
 
 def get_factory() -> Get:

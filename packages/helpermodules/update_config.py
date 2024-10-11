@@ -57,7 +57,7 @@ class UpdateConfig:
         "^openWB/bat/set/regulate_up$",
         "^openWB/bat/get/fault_state$",
         "^openWB/bat/get/fault_str$",
-        "^openWB/bat/get/power_limit_controlable$",
+        "^openWB/bat/get/power_limit_controllable$",
         "^openWB/bat/get/soc$",
         "^openWB/bat/get/power$",
         "^openWB/bat/get/imported$",
@@ -72,7 +72,7 @@ class UpdateConfig:
         "^openWB/bat/[0-9]+/get/daily_imported$",
         "^openWB/bat/[0-9]+/get/fault_state$",
         "^openWB/bat/[0-9]+/get/fault_str$",
-        "^openWB/bat/[0-9]+/get/power_limit_controlable$",
+        "^openWB/bat/[0-9]+/get/power_limit_controllable$",
         "^openWB/bat/[0-9]+/set/power_limit$",
 
         "^openWB/chargepoint/get/power$",

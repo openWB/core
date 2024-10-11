@@ -703,7 +703,7 @@ class SetData:
         """
         try:
             if ("openWB/set/bat/config/configured" in msg.topic or
-                "openWB/set/bat/get/power_limit_controlable" in msg.topic or
+                "openWB/set/bat/get/power_limit_controllable" in msg.topic or
                     "openWB/set/bat/set/regulate_up" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
@@ -739,7 +739,7 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/get/fault_str" in msg.topic:
                     self._validate_value(msg, str)
-                elif "/set/power_limit_controlable" in msg.topic:
+                elif "/set/power_limit_controllable" in msg.topic:
                     self._validate_value(msg, bool)
                 elif "/set/power_limit" in msg.topic:
                     self._validate_value(msg, float)

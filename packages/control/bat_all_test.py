@@ -175,7 +175,7 @@ class PowerLimitParams:
     expected_power_limit_bat: Optional[float]
     power_limit_mode: str = BatPowerLimitMode.NO_LIMIT.value
     cps: List[Chargepoint] = field(default_factory=default_chargepoint_factory)
-    power_limit_controlable: bool = True
+    power_limit_controllable: bool = True
     bat_power: float = -10
     evu_power: float = 200
 
@@ -184,7 +184,7 @@ cases = [
     PowerLimitParams("keine Begrenzung", None),
     PowerLimitParams("Begrenzung immer, keine LP im Sofortladen", None, cps=[],
                      power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
-    PowerLimitParams("Begrenzung immer, Speicher nicht regelbar", None, power_limit_controlable=False,
+    PowerLimitParams("Begrenzung immer, Speicher nicht regelbar", None, power_limit_controllable=False,
                      power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
     PowerLimitParams("Begrenzung immer, Speicher lädt", None, bat_power=100,
                      power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
@@ -200,7 +200,7 @@ cases = [
 def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
     b_all = BatAll()
     b_all.data.config.power_limit_mode = params.power_limit_mode
-    b_all.data.get.power_limit_controlable = params.power_limit_controlable
+    b_all.data.get.power_limit_controllable = params.power_limit_controllable
     b_all.data.get.power = params.bat_power
     data.data.counter_all_data = hierarchy_standard()
     data.data.counter_all_data.data.set.home_consumption = 456
@@ -211,8 +211,8 @@ def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
     monkeypatch.setattr(bat_all, "get_chargepoints_by_chargemodes", get_chargepoints_by_chargemodes_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
-    get_controlable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2))])
-    monkeypatch.setattr(bat_all, "get_controlable_bat_components", get_controlable_bat_components_mock)
+    get_controllable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2))])
+    monkeypatch.setattr(bat_all, "get_controllable_bat_components", get_controllable_bat_components_mock)
 
     data.data.bat_all_data.get_power_limit()
 
