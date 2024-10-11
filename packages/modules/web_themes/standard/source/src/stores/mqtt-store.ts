@@ -137,7 +137,6 @@ export const useMqttStore = defineStore('mqtt', () => {
         return (acc as TopicObject)[key];
       }, object);
     };
-
     if (topic in topics.value) {
       if (objectPath != undefined) {
         setPath(topics.value[topic], objectPath, payload);
@@ -418,6 +417,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  ///////////////// test functions /////////////////
+
   const getChargePoints = computed(() => {
     return getWildcardValues.value('openWB/chargepoint/+/config');
   });
@@ -445,7 +446,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     );
 
     return Object.keys(chargePointConfigs).map((key) => {
-      const chargePointId = key.split('/')[2]; // Extract the charge point ID (e.g., "2" from 'openWB/chargepoint/2/config')
+      const chargePointId = key.split('/')[2];
 
       return {
         name: chargePointConfigs[key]?.name,
@@ -469,6 +470,19 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   });
 
+  ////  Simulated date for initial layout and testing  ///////
+  // State Charge Mode
+  const chargeMode = ref<string>('sofort'); // Default mode is 'stop'
+
+  // Getter to retrieve the current charge mode
+  const getChargeMode = computed(() => chargeMode.value);
+
+  //Action to set the charge mode
+  function setChargeMode(mode: string) {
+    chargeMode.value = mode;
+    console.log('Charge mode set to:', chargeMode.value, mode);
+  }
+
   // exports
   return {
     topics,
@@ -485,8 +499,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     systemCommit,
     themeConfiguration,
     systemDateTime,
+    ////// test functions  ///////
     getChargePoints,
     getChargePointNames,
     getChargePointDetails,
+    ////// Simulated date for initial layout and testing  ///////
+    getChargeMode,
+    setChargeMode,
   };
 });

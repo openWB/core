@@ -16,12 +16,11 @@
       :name="item.name"
       class="column align-center"
     >
-      <!-- <q-icon :name="item.icon" size="56px" /> -->
       <div class="row items-center text-h6" style="font-weight: bold">
         {{ item.text }}
         <q-icon
           :name="item.locked ? 'lock' : 'lock_open'"
-          size="25px"
+          size="sm"
           :color="item.locked ? 'red' : 'green'"
           @click="toggleLock(item.id, item.locked)"
           style="cursor: pointer"
@@ -29,7 +28,7 @@
         />
         <q-icon
           :name="item.state ? 'power' : 'power_off'"
-          size="25px"
+          size="sm"
           :color="item.state ? 'green' : 'red'"
         />
         <q-space />
@@ -44,64 +43,69 @@
       <div style="margin-left: auto; margin-right: auto" display="block">
         <q-btn-group push rounded class="q-mt-md">
           <q-btn
-            flat
+            :flat="selectedButton !== 'sofort'"
+            :outline="selectedButton === 'sofort'"
+            :glossy="selectedButton === 'sofort'"
             label="Sofort"
             color="red"
             size="sm"
-            :model-value="selectedButton === 'Sofort'"
-            @click="setChargeMode(item.id, 'instant_charging', 'chargemode')"
+            @click="setChargeMode('sofort')"
           />
           <q-btn
-            flat
+            :flat="selectedButton !== 'pv'"
+            :outline="selectedButton === 'pv'"
+            :glossy="selectedButton === 'pv'"
             label="PV"
             color="green"
             size="sm"
-            :model-value="selectedButton === 'PV'"
-            @click="setChargeMode(item.id, 'pv_charging', 'chargemode')"
+            @click="setChargeMode('pv')"
           />
           <q-btn
-            flat
+            :flat="selectedButton !== 'scheduled'"
+            :outline="selectedButton === 'scheduled'"
+            :glossy="selectedButton === 'scheduled'"
             label="Zeil"
             color="blue"
             size="sm"
-            :model-value="selectedButton === 'Zeil'"
-            @click="setChargeMode(item.id, 'scheduled_charging', 'chargemode')"
+            @click="setChargeMode('scheduled')"
           />
           <q-btn
-            flat
+            :flat="selectedButton !== 'standby'"
+            :outline="selectedButton === 'standby'"
+            :glossy="selectedButton === 'standby'"
             label="Standby"
             color="grey"
             size="sm"
-            :model-value="selectedButton === 'Standby'"
-            @click="setChargeMode(item.id, 'standby', 'chargemode')"
+            @click="setChargeMode('standby')"
           />
           <q-btn
-            flat
+            :flat="selectedButton !== 'stop'"
+            :outline="selectedButton === 'stop'"
+            :glossy="selectedButton === 'stop'"
             label="Stop"
             color="black"
             size="sm"
-            :model-value="selectedButton === 'Stop'"
-            @click="setChargeMode(item.id, 'stop', 'chargemode')"
+            @click="setChargeMode('stop')"
           />
         </q-btn-group>
       </div>
       <div class="row q-mt-sm">
         {{ item.power }}
       </div>
-      <SliderQuasar />
+      <SliderQuasar class="q-mb-xl"></SliderQuasar>
     </q-carousel-slide>
   </q-carousel>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-
 import SliderQuasar from './SliderQuasar.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const mqttStore = useMqttStore();
 
-const slide = ref<string>('');
+const slide = ref<string | undefined>('');
+
 const topicsToSubscribe = <string[]>[
   'openWB/chargepoint/+/config',
   'openWB/chargepoint/+/set/manual_lock',
@@ -110,6 +114,7 @@ const topicsToSubscribe = <string[]>[
   'openWB/chargepoint/+/get/plug_state',
   'openWB/chargepoint/+/get/conected_vehicle',
   'openWB/chargepoint/+/get/connected_vehicle/config',
+  'openWB/vehicle/template/charge_template/0',
 ];
 
 interface CarouselItem {
@@ -123,10 +128,8 @@ interface CarouselItem {
   power: number;
 }
 
-const selectedButton = ref<string>('Stop');
-//const selectMode = ref<string>('chargemode');
+const selectedButton = computed(() => mqttStore.getChargeMode);
 
-// Computed property for carousel items
 const carouselItems = computed<CarouselItem[]>(() => {
   const chargePoints = mqttStore.getChargePointDetails;
   return chargePoints.map((cp) => ({
@@ -140,24 +143,16 @@ const carouselItems = computed<CarouselItem[]>(() => {
     power: cp.power,
   }));
 });
-
 const toggleLock = (chargePointId: string, currentLockState: boolean) => {
   const topic = `openWB/chargepoint/${chargePointId}/set/manual_lock`;
   const newLockState = !currentLockState;
   mqttStore.updateTopic(topic, newLockState);
 };
 
-const setChargeMode = (
-  chargePointId: string,
-  mode: string,
-  selectMode: string,
-) => {
-  const topic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/config`;
-  mqttStore.updateTopic(topic, mode, selectMode);
-  selectedButton.value = mode;
+const setChargeMode = (mode: string) => {
+  mqttStore.setChargeMode(mode);
 };
 
-// Watch for changes in carouselItems and set initial slide when data becomes available
 watch(
   carouselItems,
   (newItems) => {
