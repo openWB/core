@@ -58,7 +58,7 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    power_limit_controlable: bool = field(default=False, metadata={"topic": "get/power_limit_controlable"})
+    power_limit_controllable: bool = field(default=False, metadata={"topic": "get/power_limit_controllable"})
     soc: float = field(default=0, metadata={"topic": "get/soc"})
     daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported"})
     daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
@@ -194,7 +194,7 @@ class BatAll:
         try:
             if self.data.config.configured is True:
                 if self.data.get.fault_state == 0:
-                    self.set_power_limit_controlable()
+                    self.set_power_limit_controllable()
                     self.get_power_limit()
                     self._get_charging_power_left()
                     log.info(f"{self.data.set.charging_power_left}W verbleibende Speicher-Leistung")
@@ -293,19 +293,19 @@ class BatAll:
             log.exception("Fehler im Bat-Modul")
             return 0
 
-    def set_power_limit_controlable(self):
-        controlable_bat_components = get_controlable_bat_components()
-        if len(controlable_bat_components) > 0:
-            self.data.get.power_limit_controlable = True
-            for bat in controlable_bat_components:
-                data.data.bat_data[f"bat{bat.component_config.id}"].data.get.power_limit_controlable = True
+    def set_power_limit_controllable(self):
+        controllable_bat_components = get_controllable_bat_components()
+        if len(controllable_bat_components) > 0:
+            self.data.get.power_limit_controllable = True
+            for bat in controllable_bat_components:
+                data.data.bat_data[f"bat{bat.component_config.id}"].data.get.power_limit_controllable = True
         else:
-            self.data.get.power_limit_controlable = False
+            self.data.get.power_limit_controllable = False
 
     def get_power_limit(self):
         if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value
                 and len(get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)) > 0 and
-                self.data.get.power_limit_controlable and
+                self.data.get.power_limit_controllable and
                 # Nur wenn kein Überschuss im System ist, Speicherleistung begrenzen.
                 self.data.get.power <= 0 and
                 data.data.counter_all_data.get_evu_counter().data.get.power >= 0):
@@ -319,7 +319,7 @@ class BatAll:
             if len(get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)) == 0:
                 log.debug("Speicher-Leistung nicht begrenzen, "
                           "da keine Ladepunkte in einem Lademodus mit Netzbezug sind.")
-            elif self.data.get.power_limit_controlable is False:
+            elif self.data.get.power_limit_controllable is False:
                 log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
             elif self.data.get.power > 0:
                 log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")
@@ -328,7 +328,7 @@ class BatAll:
             else:
                 log.debug("Speicher-Leistung nicht begrenzen.")
         remaining_power_limit = self.data.set.power_limit
-        for bat_component in get_controlable_bat_components():
+        for bat_component in get_controllable_bat_components():
             if self.data.set.power_limit is None:
                 power_limit = None
             else:
@@ -340,7 +340,7 @@ class BatAll:
             data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
 
 
-def get_controlable_bat_components() -> List:
+def get_controllable_bat_components() -> List:
     bat_components = []
     for value in data.data.system_data.values():
         if isinstance(value, AbstractDevice):
