@@ -118,7 +118,7 @@ class ControlAlgorithmYc:
 
         # limit this initial difference to the maximum allowed charge current of the charge point
         if self._previous_expected_charge_current + lldiff > data.data.yc_data.data.yc_config.max_evse_current_allowed:
-            log.error("_previous_expected_charge_current + lldiff > yc_config.max_evse_current_allowed "
+            log.info("_previous_expected_charge_current + lldiff > yc_config.max_evse_current_allowed "
                       + f"({self._previous_expected_charge_current} + {lldiff} > "
                       + f"{data.data.yc_data.data.yc_config.max_evse_current_allowed}: Limiting to "
                       + "yc_config.max_evse_current_allowed")
@@ -138,21 +138,21 @@ class ControlAlgorithmYc:
             system_voltage = max(self._internal_cp.data.get.voltages)
             power_diff_as_current = power_diff / system_voltage / float(charging_phase_infos.number_of_charging_phases)
             if power_diff_as_current < lldiff:
-                log.error(f"Difference to power limt of {data.data.yc_data.data.yc_config.allowed_peak_power} W is "
+                log.info(f"Difference to power limt of {data.data.yc_data.data.yc_config.allowed_peak_power} W is "
                           + f"{power_diff} W (@ {system_voltage} V @ "
                           + f"{charging_phase_infos.charging_ev_adjusted_for_this_cp} charging vehicles) --> overriding"
                           + f"lldiff A to power_diff_as_current A on {charging_phase_infos.number_of_charging_phases} "
                           + "phase(s)")
                 lldiff = power_diff_as_current
 
-        log.error("yc_config.allowed_total_current_per_phase="
+        log.info("yc_config.allowed_total_current_per_phase="
                   + f"{data.data.yc_data.data.yc_config.allowed_total_current_per_phase} A, "
                   + f"yc_config.allowed_peak_power={data.data.yc_data.data.yc_config.allowed_peak_power} W, "
                   + f"yc_control.total_power={data.data.yc_data.data.yc_control.total_power} W, lldiff={lldiff} A")
 
         llneu = self._previous_expected_charge_current + lldiff
 
-        log.error("total_current_of_charging_phase_with_maximum_total_current="
+        log.info("total_current_of_charging_phase_with_maximum_total_current="
                   + f"{charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current} A, "
                   + f"charging_ev_adjusted_for_this_cp={charging_phase_infos.charging_ev_adjusted_for_this_cp}, "
                   + f"_previous_expected_charge_current={self._previous_expected_charge_current} A, lldiff={lldiff} A "
@@ -189,7 +189,7 @@ class ControlAlgorithmYc:
                 status_to_use = LmStatus.DownByEv
                 if llneu < data.data.yc_data.data.yc_config.min_evse_current_allowed:
                     status_to_use = LmStatus.DownByLm
-                    log.error("Slow ramping: Not charging: Too few current left to start:"
+                    log.info("Slow ramping: Not charging: Too few current left to start:"
                               + f"llneu ({llneu}) < min_evse_current_allowed ("
                               + f"{data.data.yc_data.data.yc_config.min_evse_current_allowed})")
                     llneu = 0
@@ -198,7 +198,7 @@ class ControlAlgorithmYc:
                     if llneu + charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current \
                             - self._previous_measured_charge_current \
                             > data.data.yc_data.data.yc_config.allowed_total_current_per_phase:
-                        log.error("Slow ramping: Not charging: Cannot start charging: "
+                        log.info("Slow ramping: Not charging: Cannot start charging: "
                                   + f"llneu ({llneu} A) + total_current_of_charging_phase_with_maximum_total_current ("
                                   + str(charging_phase_infos.total_current_of_charging_phase_with_maximum_total_current)
                                   + " A) - self._previous_measured_charge_current ("
@@ -207,10 +207,10 @@ class ControlAlgorithmYc:
                         llneu = 0
                         status_to_use = LmStatus.DownByLm
                     else:
-                        log.error(f"Slow ramping: Not charging: Starting at minimal supported charge current {llneu} A")
+                        log.info(f"Slow ramping: Not charging: Starting at minimal supported charge current {llneu} A")
             else:
                 llneu = self._previous_expected_charge_current + actual_adjustment
-                log.error(f"Slow ramping: Limiting adjustment to {self._previous_expected_charge_current} + "
+                log.info(f"Slow ramping: Limiting adjustment to {self._previous_expected_charge_current} + "
                           + f"{actual_adjustment} --> llneu = {llneu} A")
         else:
             # In "fast" mode the llneu might exceed the AllowedTotalCurrentPerPhase if the EV doesn't actually start
@@ -219,14 +219,14 @@ class ControlAlgorithmYc:
             # The resulting value might get further limited to maximalstromstaerke below.
             if llneu - 1.0 > data.data.yc_data.data.yc_config.allowed_total_current_per_phase:
                 if llneu > self._previous_expected_charge_current:
-                    log.error(f"Slave Mode: Fast ramping: EV seems to consume less than allowed (llneu={llneu} > "
+                    log.info(f"Slave Mode: Fast ramping: EV seems to consume less than allowed (llneu={llneu} > "
                               + "yc_config.allowed_total_current_per_phase="
                               + f"{data.data.yc_data.data.yc_config.allowed_total_current_per_phase} && llneu > "
                               + f"_previous_expected_charge_current={self._previous_expected_charge_current}): "
                               + "Not changing allowed current")
                     llneu = self._previous_expected_charge_current
                 else:
-                    log.error(f"Fast ramping: EV seems to consume less than allowed (llneu={llneu} > "
+                    log.info(f"Fast ramping: EV seems to consume less than allowed (llneu={llneu} > "
                               + "yc_config.allowed_total_current_per_phase="
                               + f"{data.data.yc_data.data.yc_config.allowed_total_current_per_phase} && llneu > "
                               + f"_previous_expected_charge_current={self._previous_expected_charge_current}): "
@@ -234,7 +234,7 @@ class ControlAlgorithmYc:
                               + f"{data.data.yc_data.data.yc_config.allowed_total_current_per_phase}")
                     llneu = data.data.yc_data.data.yc_config.allowed_total_current_per_phase
             else:
-                log.error(f"Fast ramping: Setting llneu={llneu} A")
+                log.info(f"Fast ramping: Setting llneu={llneu} A")
 
         self._call_set_current(charging_phase_infos, llneu, status_to_use)
 
@@ -252,7 +252,7 @@ class ControlAlgorithmYc:
 
         current_load_imbalance = charging_phase_infos.system_load_imbalance
         imbal_array = data.data.yc_data.data.yc_control.imbalance_current_consumption
-        log.error(f"Load Imbalance: Current imbalance L{charging_phase_infos.phase_with_maximum_imbalance_current} - "
+        log.info(f"Load Imbalance: Current imbalance L{charging_phase_infos.phase_with_maximum_imbalance_current} - "
                   + f"L{charging_phase_infos.phase_with_minimum_imbalance_current}: "
                   + f"{imbal_array[charging_phase_infos.phase_with_maximum_imbalance_current]} - "
                   + f"{imbal_array[charging_phase_infos.phase_with_minimum_imbalance_current]} = "
@@ -265,15 +265,15 @@ class ControlAlgorithmYc:
 
         imbalance_available = (data.data.yc_data.data.yc_config.allowed_load_imbalance - current_load_imbalance) \
             / charging_ev_to_use
-        log.error(f"Load Imbalance: Available imbalance {imbalance_available} A ({charging_ev_to_use} charging "
+        log.info(f"Load Imbalance: Available imbalance {imbalance_available} A ({charging_ev_to_use} charging "
                   + f"vehicles), wanted charge current increase {ll_wanted_increase} A")
 
         if imbalance_available - ll_wanted_increase < 0.0:
             # need to reduce for imbalance
             llneu = self._previous_expected_charge_current + imbalance_available
-            log.error(f"Load Imbalance: Adjusted to llneu={llneu} A for imbalance limit")
+            log.info(f"Load Imbalance: Adjusted to llneu={llneu} A for imbalance limit")
         else:
-            log.error(f"Load Imbalance: No adjustment of llneu ({llneu} A) for load imbalance needed")
+            log.info(f"Load Imbalance: No adjustment of llneu ({llneu} A) for load imbalance needed")
 
         return llneu
 
@@ -282,27 +282,27 @@ class ControlAlgorithmYc:
             log.debug("0 or negative energy limit setting: Energy limit disabled")
             return False
 
-        log.error(f"Active energy limit: {data.data.yc_data.data.yc_config.energy_limit} Wh, already charged "
+        log.info(f"Active energy limit: {data.data.yc_data.data.yc_config.energy_limit} Wh, already charged "
                   + f"{self._status_handler.get_energy_charged_since_last_plugin()} kWh")
 
         if self._status_handler.get_energy_charged_since_last_plugin() > data.data.yc_data.data.yc_config.energy_limit:
             log.error("Energy limit reached: Disabling charge")
             return True
 
-        log.debug("Energy limit not reached: Continue to charge")
+        #log.debug("Energy limit not reached: Continue to charge")
         return False
 
     def _call_set_current(self, charging_phase_infos: _AggregatedData, current_to_set: float, status_reason: LmStatus) \
             -> None:
-        log.error(f"callSetCurent {current_to_set} {status_reason.name}")
+        log.info(f"callSetCurent {current_to_set} {status_reason.name}")
         computed_reason = status_reason
         if current_to_set < data.data.yc_data.data.yc_config.min_evse_current_allowed:
-            log.error(f"current_to_set={current_to_set} < yc_config.min_evse_current_allowed="
+            log.info(f"current_to_set={current_to_set} < yc_config.min_evse_current_allowed="
                       + f"{data.data.yc_data.data.yc_config.min_evse_current_allowed} --> setze currentToSet=0")
             computed_reason = LmStatus.DownByLm
             current_to_set = 0
         if current_to_set > data.data.yc_data.data.yc_config.max_evse_current_allowed:
-            log.error(f"current_to_set={current_to_set} > yc_config.max_evse_current_allowed="
+            log.info(f"current_to_set={current_to_set} > yc_config.max_evse_current_allowed="
                       + f"{data.data.yc_data.data.yc_config.max_evse_current_allowed} --> setze currentToSet=yc_config"
                       + f".max_evse_current_allowed={data.data.yc_data.data.yc_config.max_evse_current_allowed}")
             current_to_set = data.data.yc_data.data.yc_config.max_evse_current_allowed
@@ -407,7 +407,7 @@ class ControlAlgorithmYc:
         return charging_phase_infos
 
     def _print_aggregated(self, charging_phase_infos: _AggregatedData) -> None:
-        log.error(f"""
+        log.info(f"""
 YC LM Info:
 ===========
 
@@ -437,7 +437,7 @@ Max. charging EV over all phases   : {charging_phase_infos.max_number_of_chargin
     def set_current(self, justification: str, current: float, status: yourcharge.LmStatus):
         self._status_handler.update_lm_status(status)
         if abs(self._internal_cp.data.set.current - current) > 0.001 or (self._previous_justification != justification):
-            log.error(f"{justification}: Setting CP '{self._internal_cp_key}' charge current to {current} A "
+            log.info(f"{justification}: Setting CP '{self._internal_cp_key}' charge current to {current} A "
                       + f"(status {status.name})")
             self._internal_cp.data.set.current = current
             self._internal_cp.chargepoint_module.set_current(current)

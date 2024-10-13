@@ -108,8 +108,8 @@ class StatemachineYc():
                 self._status_handler.update_energy_charged_since_last_plugin(
                     self._internal_cp.data.get.imported - cp_meter_at_last_plugin)
 
-            log.info(f"---> Entering with load control state {self._current_control_state.name}, last RFID data "
-                     + f"{self._last_rfid_data}, valid standard socket tag {self._valid_standard_socket_tag_found}")
+            log.debug(f"---> Entering with load control state {self._current_control_state.name}, last RFID data "
+                      + f"{self._last_rfid_data}, valid standard socket tag {self._valid_standard_socket_tag_found}")
 
             # globally handle superseded (we have to obey at first - transitions may overwrite it)
             if data.data.yc_data.data.yc_control.fixed_charge_current is not None \
@@ -143,7 +143,7 @@ class StatemachineYc():
                 log.error(f"Unknown state '{self._current_control_state.name}': Resetting to Idle")
                 self._current_control_state = LoadControlState.Idle
 
-            # log.info(f"Leaving with load control state {self._current_control_state.name}")
+            log.debug(f"Leaving with load control state {self._current_control_state.name}")
 
         finally:
             self._execute_set_current()
