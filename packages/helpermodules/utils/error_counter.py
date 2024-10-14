@@ -39,5 +39,5 @@ class ErrorTimerContext:
             return False
 
     def reset_error_counter(self):
-        Pub().pub(self.topic, self.error_timestamp)
         self.error_timestamp = None
+        Pub().pub(self.topic, self.error_timestamp)
