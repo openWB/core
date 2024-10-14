@@ -177,7 +177,7 @@ def create_debug_log(input_data):
             write_to_file(df, lambda: f"## section: configuration and state ##\n{config_and_state()}\n")
             write_to_file(df, lambda: f'## section: system ##\n{run_command(["uptime"])}{run_command(["free"])}\n')
             write_to_file(df, lambda: f"## section: uuids ##\n{get_uuids()}\n")
-            write_to_file(df, lambda: f'## section: network ##\n{run_command(["ifconfig"])}\n')
+            write_to_file(df, lambda: f'## section: network ##\n{run_command(["ip", "-s", "address"])}\n')
             write_to_file(df, lambda: f'## section: storage ##\n{run_command(["df", "-h"])}\n')
             write_to_file(df, lambda: f"## section: broker essentials ##\n{broker.get_broker_essentials()}\n")
             write_to_file(

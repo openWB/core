@@ -69,7 +69,7 @@ Optional
 11. Sichergehen, dass Benutzer aktiviert ist
 sudo smbpasswd -e testsmb
 12. IP-Adresse des Raspberry Pis notieren
-ifconfig -> z.B.: 192.168.43.81
+ip address -> z.B.: 192.168.43.81
 13. Neustart von Samba nach Änderung der Konfiguration
 sudo service smbd restart
 sudo service nmbd restart
