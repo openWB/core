@@ -1,5 +1,5 @@
 <template>
-  <div class="charge-point" v-if="chargePoint">
+  <div class="q-ma-sm q-pa-sm"  v-if="chargePoint" style="max-width: 23em;" >
     <div class="row items-center text-h6" style="font-weight: bold">
       {{ chargePoint.name }}
       <q-icon
@@ -16,7 +16,7 @@
         :color="chargePoint.state ? 'green' : 'red'"
       />
       <q-space />
-      <q-icon name="settings" size="25px" />
+      <q-icon name="settings" size="sm" />
     </div>
     <div
       class="row q-mt-md q-pa-sm bg-primary text-white"
@@ -74,11 +74,11 @@ const chargePoint = computed(() =>
 const selectedButton = computed(() => mqttStore.getChargeMode);
 
 const chargeModes = [
-  { value: 'sofort', label: 'Sofort', color: 'red' },
-  { value: 'pv', label: 'PV', color: 'green' },
-  { value: 'scheduled', label: 'Zeil', color: 'blue' },
-  { value: 'standby', label: 'Standby', color: 'grey' },
-  { value: 'stop', label: 'Stop', color: 'black' },
+  { value: 'sofort', label: 'Sofort', color: 'negative' },
+  { value: 'pv', label: 'PV', color: 'positive' },
+  { value: 'scheduled', label: 'Zeil', color: 'primary' },
+  { value: 'standby', label: 'Standby', color: 'warning' },
+  { value: 'stop', label: 'Stop', color: 'light' },
 ];
 
 const toggleLock = (chargePointId: number, currentLockState: boolean) => {
