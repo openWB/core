@@ -21,18 +21,21 @@ def create_device(device_config: SonnenBatterie):
         return SonnenbatterieBat(device_config.id,
                                  device_config.configuration.ip_address,
                                  device_config.configuration.variant,
+                                 device_config.configuration.api_v2_token,
                                  component_config)
 
     def create_counter_component(component_config: SonnenbatterieCounterSetup):
         return SonnenbatterieCounter(device_config.id,
                                      device_config.configuration.ip_address,
                                      device_config.configuration.variant,
+                                     device_config.configuration.api_v2_token,
                                      component_config)
 
     def create_inverter_component(component_config: SonnenbatterieInverterSetup):
         return SonnenbatterieInverter(device_config.id,
                                       device_config.configuration.ip_address,
                                       device_config.configuration.variant,
+                                      device_config.configuration.api_v2_token,
                                       component_config)
 
     return ConfigurableDevice(

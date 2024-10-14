@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
@@ -19,7 +19,7 @@ class SonnenbatterieInverter(AbstractInverter):
     def __init__(self,
                  device_id: int,
                  device_address: str,
-                 device_variant: int,
+                 device_variant: Optional[int],
                  api_v2_token: str,
                  component_config: Union[Dict, SonnenbatterieInverterSetup]) -> None:
         self.__device_id = device_id
