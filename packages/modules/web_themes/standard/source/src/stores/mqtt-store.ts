@@ -432,7 +432,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const getChargePointIds = computed(() => {
     const chargePoints = getWildcardValues.value('openWB/chargepoint/+/config');
     return Object.keys(chargePoints).map((key) => {
-      return key.split('/')[2];
+      return Number(key.split('/')[2]); 
     });
   });
 
@@ -454,7 +454,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     );
 
     return Object.keys(chargePointConfigs).map((key) => {
-      const chargePointId = key.split('/')[2];
+      const chargePointId = Number(key.split('/')[2]);
       return {
         name: chargePointConfigs[key]?.name,
         locked:
@@ -468,7 +468,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointMessages[
             `openWB/chargepoint/${chargePointId}/get/state_str`
           ] || '',
-        id: chargePointId || '',
+        id: chargePointId || undefined,
         state:
           chargePointState[
             `openWB/chargepoint/${chargePointId}/get/plug_state`
@@ -477,7 +477,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   });
 
-  const getChargePointDetails = (id: string) => {
+  const getChargePointDetails = (id: number) => {
     const allPoints = getAllChargePointsDetails.value;
     return allPoints.find((point) => point.id === id);
   };

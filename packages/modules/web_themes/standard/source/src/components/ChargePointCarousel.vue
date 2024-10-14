@@ -28,7 +28,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import ChargePoint from './ChargePoint.vue';
 
 const mqttStore = useMqttStore();
-const slide = ref<string | undefined>(undefined);
+const slide = ref<number | undefined>(undefined);
 
 const chargePointIds = computed(() => mqttStore.getChargePointIds);
 

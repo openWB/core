@@ -52,7 +52,7 @@ import SliderQuasar from './SliderQuasar.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const props = defineProps<{
-  chargePointId: string;
+  chargePointId: number;
 }>();
 
 const mqttStore = useMqttStore();
@@ -81,7 +81,7 @@ const chargeModes = [
   { value: 'stop', label: 'Stop', color: 'black' },
 ];
 
-const toggleLock = (chargePointId: string, currentLockState: boolean) => {
+const toggleLock = (chargePointId: number, currentLockState: boolean) => {
   const topic = `openWB/chargepoint/${chargePointId}/set/manual_lock`;
   const newLockState = !currentLockState;
   mqttStore.updateTopic(topic, newLockState);

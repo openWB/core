@@ -25,7 +25,7 @@ export interface ChartData {
 }
 
 export interface ChargePointDetails {
-  id: string;
+  id: number;
   name: string;
   icon: string;
   text: string;
