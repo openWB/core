@@ -49,7 +49,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 63
+    DATASTORE_VERSION = 64
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -439,6 +439,7 @@ class UpdateConfig:
         ("openWB/bat/config/power_limit_mode", "no_limit"),
         ("openWB/bat/get/fault_state", 0),
         ("openWB/bat/get/fault_str", NO_ERROR),
+        ("openWB/bat/get/power_limit_controllable", False),
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
@@ -1821,3 +1822,12 @@ class UpdateConfig:
             "Fehlerfall die Ladung gestoppt. Du kannst die maximale Leistung im Fehlerfall für jeden Zähler"
             " unter Einstellungen -> Konfiguration -> Lastmanagement anpassen.", MessageType.WARNING)
         self.__update_topic("openWB/system/datastore_version", 63)
+
+    def upgrade_datastore_63(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/bat/[0-9]+/get/power", topic) is not None:
+                index = get_index(topic)
+                if f"openWB/bat/{index}/get/power_limit_controllable" not in self.all_received_topics.keys():
+                    return {f"openWB/bat/{index}/get/power_limit_controllable": False}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 64)
