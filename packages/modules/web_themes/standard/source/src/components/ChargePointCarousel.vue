@@ -4,10 +4,10 @@
     v-model="slide"
     swipeable
     animated
-    navigation
-    arrows
     control-color="primary"
     infinite
+    :navigation="$q.screen.gt.xs"
+    :arrows="$q.screen.gt.xs"
     class="full-height"
     @mousedown.prevent
   >
@@ -25,9 +25,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
+import { useQuasar } from 'quasar';
 import ChargePoint from './ChargePoint.vue';
 
 const mqttStore = useMqttStore();
+const $q = useQuasar();
 const slide = ref<number | undefined>(undefined);
 
 const chargePointIds = computed(() => mqttStore.getChargePointIds);

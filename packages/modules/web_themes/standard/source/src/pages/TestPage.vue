@@ -7,9 +7,9 @@
         v-model="slideTop"
         v-model:fullscreen="fullscreen"
         swipeable
-        navigation
         control-color="primary"
-        arrows
+        :navigation="$q.screen.gt.xs"
+        :arrows="$q.screen.gt.xs"
         padding
         animated
         infinite
@@ -125,6 +125,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useQuasar } from 'quasar';
 import DIA1 from '/src/assets/Dia_1.png';
 import DIA2 from '/src/assets/Dia_2.png';
 import ChargePointCarousel from 'src/components/ChargePointCarousel.vue';
@@ -142,6 +143,7 @@ interface CarouselItemTop {
   image: string;
 }
 
+const $q = useQuasar();
 const slideTop = ref<string>('DIA1');
 const tab = ref<string>('lp');
 
