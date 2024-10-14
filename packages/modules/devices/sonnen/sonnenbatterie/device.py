@@ -8,8 +8,10 @@ from modules.common.configurable_device import ComponentFactoryByType, Configura
 from modules.devices.sonnen.sonnenbatterie.bat import SonnenbatterieBat
 from modules.devices.sonnen.sonnenbatterie.config import (SonnenBatterie, SonnenbatterieBatSetup,
                                                           SonnenbatterieCounterSetup,
+                                                          SonnenbatterieConsumptionCounterSetup,
                                                           SonnenbatterieInverterSetup)
 from modules.devices.sonnen.sonnenbatterie.counter import SonnenbatterieCounter
+from modules.devices.sonnen.sonnenbatterie.counter_consumption import SonnenbatterieConsumptionCounter
 from modules.devices.sonnen.sonnenbatterie.inverter import SonnenbatterieInverter
 
 
@@ -24,12 +26,18 @@ def create_device(device_config: SonnenBatterie):
                                  device_config.configuration.api_v2_token,
                                  component_config)
 
-    def create_counter_component(component_config: SonnenbatterieCounterSetup):
+    def create_evu_counter_component(component_config: SonnenbatterieCounterSetup):
         return SonnenbatterieCounter(device_config.id,
                                      device_config.configuration.ip_address,
                                      device_config.configuration.variant,
                                      device_config.configuration.api_v2_token,
                                      component_config)
+
+    def create_consumption_counter_component(component_config: SonnenbatterieConsumptionCounterSetup):
+        return SonnenbatterieConsumptionCounter(device_config.configuration.ip_address,
+                                                device_config.configuration.variant,
+                                                device_config.configuration.api_v2_token,
+                                                component_config)
 
     def create_inverter_component(component_config: SonnenbatterieInverterSetup):
         return SonnenbatterieInverter(device_config.id,
@@ -42,7 +50,8 @@ def create_device(device_config: SonnenBatterie):
         device_config=device_config,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
-            counter=create_counter_component,
+            counter=create_evu_counter_component,
+            counter_consumption=create_consumption_counter_component,
             inverter=create_inverter_component,
         ),
         component_updater=IndependentComponentUpdater(lambda component: component.update())

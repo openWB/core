@@ -1,26 +1,25 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
-from modules.devices.sonnenbatterie.config import SonnenbatterieConsumptionCounterSetup
+from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieConsumptionCounterSetup
 
 log = logging.getLogger(__name__)
 
 
-class SonnenbatterieConsumptionCounter:
+class SonnenbatterieConsumptionCounter(AbstractCounter):
     def __init__(self,
-                 device_id: int,
                  device_address: str,
                  device_variant: int,
-                 api_v2_token: str,
+                 api_v2_token: Optional[str],
                  component_config: Union[Dict, SonnenbatterieConsumptionCounterSetup]) -> None:
-        self.__device_id = device_id
         self.__device_address = device_address
         self.__device_variant = device_variant
         self.__api_v2_token = api_v2_token
