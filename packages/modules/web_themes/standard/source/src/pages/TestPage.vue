@@ -59,7 +59,7 @@
     <!-- Tab Panels -->
     <q-tab-panels v-model="tab" animated class="col">
       <q-tab-panel name="lp" class="q-pa-none column">
-        <ChargePoint />
+        <ChargePointCarousel />
       </q-tab-panel>
       <q-tab-panel name="speicher" class="scroll">
         <div class="q-pa-md">
@@ -127,7 +127,7 @@
 import { ref, onMounted } from 'vue';
 import DIA1 from '/src/assets/Dia_1.png';
 import DIA2 from '/src/assets/Dia_2.png';
-import ChargePoint from 'src/components/ChargePoint.vue';
+import ChargePointCarousel from 'src/components/ChargePointCarousel.vue';
 
 // import { useMqttStore } from 'src/stores/mqtt-store';
 
