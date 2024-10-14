@@ -30,7 +30,7 @@ def get_vehicle_default() -> dict:
     return {
         "charge_template": 0,
         "ev_template": 0,
-        "name": "neues Fahrzeug",
+        "name": "Fahrzeug",
         "info": {
             "manufacturer": None,
             "model": None,
@@ -48,7 +48,7 @@ def get_new_charge_template() -> dict:
 
 
 def get_charge_template_default() -> dict:
-    ct_default = asdict(ChargeTemplateData(name="Lade-Profil"))
+    ct_default = asdict(ChargeTemplateData(name="Standard-Lade-Profil"))
     ct_default["chargemode"]["scheduled_charging"].pop("plans")
     ct_default["time_charging"].pop("plans")
     return ct_default
@@ -127,7 +127,7 @@ def et_factory() -> Et:
 
 @dataclass
 class ChargeTemplateData:
-    name: str = "neues Lade-Profil"
+    name: str = "Lade-Profil"
     prio: bool = False
     load_default: bool = False
     et: Et = field(default_factory=et_factory)
@@ -143,7 +143,7 @@ def charge_template_data_factory() -> ChargeTemplateData:
 class EvTemplateData:
     dc_min_current: int = 0
     dc_max_current: int = 0
-    name: str = "neues Fahrzeug-Profil"
+    name: str = "Fahrzeug-Profil"
     max_current_multi_phases: int = 16
     max_phases: int = 3
     phase_switch_pause: int = 2

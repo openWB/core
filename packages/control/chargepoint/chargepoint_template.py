@@ -43,7 +43,7 @@ class CpTemplateData:
     max_current_multi_phases: int = 32
     max_current_single_phase: int = 32
     dc_max_current: float = 435
-    name: str = "neues Ladepunkt-Profil"
+    name: str = "Ladepunkt-Profil"
     disable_after_unplug: bool = False
     valid_tags: List = field(default_factory=empty_list_factory)
 
