@@ -176,13 +176,13 @@ class SurplusControlled:
                     control_parameter.required_currents = [0]*3
 
     def check_switch_on(self) -> None:
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
+        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
             if (cp.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
                     cp.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
                 data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
 
     def set_required_current_to_max(self) -> None:
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
+        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
             charging_ev_data = cp.data.set.charging_ev_data
             required_currents = cp.data.control_parameter.required_currents
             control_parameter = cp.data.control_parameter
