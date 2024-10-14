@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
@@ -20,7 +20,7 @@ class SonnenbatterieCounter(AbstractCounter):
                  device_id: int,
                  device_address: str,
                  device_variant: int,
-                 api_v2_token: str,
+                 api_v2_token: Optional[str],
                  component_config: Union[Dict, SonnenbatterieCounterSetup]) -> None:
         self.__device_id = device_id
         self.__device_address = device_address
