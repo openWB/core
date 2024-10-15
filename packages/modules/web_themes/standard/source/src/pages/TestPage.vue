@@ -1,14 +1,15 @@
 <template>
   <q-page class="column">
     <!-- Top Carousel -->
+
     <div class="row justify-center">
       <q-carousel
         v-model="slideTop"
         v-model:fullscreen="fullscreen"
         swipeable
-        navigation
         control-color="primary"
-        arrows
+        :navigation="$q.screen.gt.xs"
+        :arrows="$q.screen.gt.xs"
         padding
         animated
         infinite
@@ -26,6 +27,7 @@
             style="width: 100%; height: 100%; object-fit: contain"
           />
         </q-carousel-slide>
+
         <template v-slot:control>
           <q-carousel-control position="bottom-right" :offset="[18, 18]">
             <q-btn
@@ -42,7 +44,7 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <q-tabs v-model="tab">
+    <q-tabs v-model="tab" dense align="justify">
       <q-tab name="lp">
         <q-icon name="ev_station" size="25px" color="primary" />
       </q-tab>
@@ -57,7 +59,7 @@
     <!-- Tab Panels -->
     <q-tab-panels v-model="tab" animated class="col">
       <q-tab-panel name="lp" class="q-pa-none column">
-        <ChargePoint />
+        <ChargePointCarousel />
       </q-tab-panel>
       <q-tab-panel name="speicher" class="scroll">
         <div class="q-pa-md">
@@ -123,9 +125,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useQuasar } from 'quasar';
 import DIA1 from '/src/assets/Dia_1.png';
 import DIA2 from '/src/assets/Dia_2.png';
-import ChargePoint from 'src/components/ChargePoint.vue';
+import ChargePointCarousel from 'src/components/ChargePointCarousel.vue';
 
 // import { useMqttStore } from 'src/stores/mqtt-store';
 
@@ -140,8 +143,10 @@ interface CarouselItemTop {
   image: string;
 }
 
+const $q = useQuasar();
 const slideTop = ref<string>('DIA1');
 const tab = ref<string>('lp');
+
 const fullscreen = ref(false);
 
 const carouselItemsTop: CarouselItemTop[] = [
