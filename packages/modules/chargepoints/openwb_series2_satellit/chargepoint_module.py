@@ -4,7 +4,7 @@ import time
 from typing import Optional
 
 from control import data
-from helpermodules.utils.error_counter import CP_ERROR, ErrorTimerContext
+from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from modules.chargepoints.openwb_series2_satellit.config import OpenWBseries2Satellit
 from modules.common import modbus
 from modules.common.abstract_chargepoint import AbstractChargepoint
