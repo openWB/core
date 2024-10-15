@@ -1,18 +1,13 @@
 # !/usr/bin/env python3
 from enum import IntEnum
-from ipparser import ipparser
-from itertools import chain
-from typing import Any, Callable, Iterable, List, Union
+from typing import Any, Callable, Iterable, Union
 from pymodbus.constants import Endian
 import functools
 import logging
 
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_state import InverterState
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
-from modules.common.store import get_counter_value_store
 from modules.devices.kostal.kostal_plenticore.bat import KostalPlenticoreBat
 from modules.devices.kostal.kostal_plenticore.inverter import KostalPlenticoreInverter
 from modules.devices.kostal.kostal_plenticore.config import (KostalPlenticore, KostalPlenticoreBatSetup,
@@ -83,57 +78,6 @@ def create_device(device_config: KostalPlenticore):
 
 def _create_reader(tcp_client: modbus.ModbusTcpClient_, modbus_id: int) -> Callable[[int, modbus.ModbusDataType], Any]:
     return functools.partial(tcp_client.read_holding_registers, unit=modbus_id, wordorder=Endian.Little)
-
-
-def read_legacy_inverter(ip1: str, ip2: str, battery: int, ip3: str) -> InverterState:
-    # in IP3 kann ein aufeinanderfolgende Liste enthalten sein "192.168.0.1-3"
-    log.debug("Kostal Plenticore: WR1: %s, WR2: %s, WR3: %s, Battery: %s", ip1, ip2, ip3, battery)
-    inverter_component = KostalPlenticoreInverter(KostalPlenticoreInverterSetup(id=1))
-
-    def get_hybrid_inverter_state(ip: str) -> InverterState:
-        battery_component = KostalPlenticoreBat(1, KostalPlenticoreBatSetup())
-        with modbus.ModbusTcpClient_(ip, 1502) as client:
-            return update(
-                [inverter_component, battery_component], _create_reader(client, 71), set_inverter_state=False
-            )
-
-    def get_standard_inverter_state(ip: str) -> InverterState:
-        with modbus.ModbusTcpClient_(ip, 1502) as client:
-            return inverter_component.read_state(_create_reader(client, 71))
-
-    def inverter_state_sum(a: InverterState, b: InverterState) -> InverterState:
-        return InverterState(exported=a.exported + b.exported, power=a.power + b.power)
-
-    inverter_state = functools.reduce(
-        inverter_state_sum,
-        map(get_standard_inverter_state, filter("none".__ne__, chain([ip2], ipparser(ip3)))),
-        get_hybrid_inverter_state(ip1) if battery else get_standard_inverter_state(ip1)
-    )
-    inverter_component.update(inverter_state)
-    return inverter_state
-
-
-def read_legacy_counter(ip1: str, ip2: str, battery: int, ip3: str, position: int) -> None:
-    log.debug("Kostal Plenticore: WR1: %s, Position: %s", ip1, position)
-    client = modbus.ModbusTcpClient_(ip1, 1502)
-    reader = _create_reader(client, 71)
-    counter_component = KostalPlenticoreCounter(None, KostalPlenticoreCounterSetup(id=None))
-    if LegacyCounterPosition(position) == LegacyCounterPosition.GRID:
-        with client:
-            counter_component.update(reader)
-    else:
-        with client:
-            counter_state = counter_component.get_values(reader)
-            bat_power = KostalPlenticoreBat(None, KostalPlenticoreBatSetup()).read_state(reader).power
-        inverter_power = read_legacy_inverter(ip1, ip2, battery, ip3).power
-        counter_state.power += inverter_power + bat_power
-        counter_state = counter_component.update_imported_exported(counter_state)
-        get_counter_value_store(None).set(counter_state)
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args({"counter": read_legacy_counter, "inverter": read_legacy_inverter}, argv
-                                  )
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=KostalPlenticore)

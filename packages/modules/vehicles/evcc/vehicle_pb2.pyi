@@ -1,7 +1,9 @@
 # flake8: noqa
-from google.protobuf.internal import containers as _containers
-from google.protobuf import descriptor as _descriptor
-from google.protobuf import message as _message
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    from google.protobuf.internal import containers as _containers
+    from google.protobuf import descriptor as _descriptor
+    from google.protobuf import message as _message
 from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Optional
 
 DESCRIPTOR: _descriptor.FileDescriptor

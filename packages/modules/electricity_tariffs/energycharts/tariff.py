@@ -1,8 +1,11 @@
 from typing import Dict
 from datetime import datetime, timedelta
-from modules.common import req
-import pytz
 
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    import pytz
+
+from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 from modules.electricity_tariffs.energycharts.config import EnergyChartsTariffConfiguration
