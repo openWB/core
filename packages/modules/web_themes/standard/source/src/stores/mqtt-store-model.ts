@@ -23,3 +23,14 @@ export interface TopicCount {
 export interface ChartData {
   [key: string]: number[];
 }
+
+export interface ChargePointDetails {
+  id: number;
+  name: string;
+  icon: string;
+  text: string;
+  message: string;
+  locked: boolean;
+  state: boolean;
+  power: number;
+}

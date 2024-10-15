@@ -15,7 +15,7 @@
     </q-header>
 
     <!-- Page container that takes the remaining height -->
-    <q-page-container class="page-container">
+    <q-page-container class="column flex">
       <router-view />
     </q-page-container>
   </q-layout>
@@ -44,11 +44,3 @@ function toggleColorMode() {
   $q.dark.toggle();
 }
 </script>
-
-<style>
-.page-container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-</style>
