@@ -1,6 +1,6 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+  <q-layout view="lHh Lpr lFf" :class="{'centered-container': $q.screen.gt.md}">
+    <q-header elevated :class="{'centered-container': $q.screen.gt.md}">
       <q-toolbar>
         <q-btn flat round icon="menu" aria-label="Menu" />
         <q-toolbar-title>openWB</q-toolbar-title>
@@ -44,3 +44,11 @@ function toggleColorMode() {
   $q.dark.toggle();
 }
 </script>
+
+<style scoped>
+.centered-container {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
