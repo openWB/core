@@ -1,6 +1,9 @@
 <template>
-  <q-layout view="lHh Lpr lFf" :class="{'centered-container': $q.screen.gt.md}">
-    <q-header elevated :class="{'centered-container': $q.screen.gt.md}">
+  <q-layout
+    view="lHh Lpr lFf"
+    :class="{ 'centered-container': $q.screen.gt.md }"
+  >
+    <q-header elevated :class="{ 'centered-container': $q.screen.gt.md }">
       <q-toolbar>
         <q-btn flat round icon="menu" aria-label="Menu" />
         <q-toolbar-title>openWB</q-toolbar-title>
