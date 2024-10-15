@@ -2,6 +2,7 @@
 from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,7 +12,7 @@ from modules.devices.growatt.growatt.config import GrowattBatSetup
 from modules.devices.growatt.growatt.version import GrowattVersion
 
 
-class GrowattBat:
+class GrowattBat(AbstractBat):
     def __init__(self,
                  component_config: Union[Dict, GrowattBatSetup],
                  modbus_id: int,

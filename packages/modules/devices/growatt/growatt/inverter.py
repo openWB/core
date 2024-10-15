@@ -2,6 +2,7 @@
 from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,7 +12,7 @@ from modules.devices.growatt.growatt.config import GrowattInverterSetup
 from modules.devices.growatt.growatt.version import GrowattVersion
 
 
-class GrowattInverter:
+class GrowattInverter(AbstractInverter):
     def __init__(self,
                  component_config: Union[Dict, GrowattInverterSetup],
                  modbus_id: int,
