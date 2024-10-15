@@ -7,6 +7,7 @@ import {
   TopicObject,
   TopicList,
   TopicCount,
+  ChargePointDetails,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -137,7 +138,6 @@ export const useMqttStore = defineStore('mqtt', () => {
         return (acc as TopicObject)[key];
       }, object);
     };
-
     if (topic in topics.value) {
       if (objectPath != undefined) {
         setPath(topics.value[topic], objectPath, payload);
@@ -418,15 +418,83 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  //////////////////////////////// test functions //////////////////////////////////
+
   const getChargePoints = computed(() => {
     return getWildcardValues.value('openWB/chargepoint/+/config');
   });
 
   const getChargePointNames = computed(() => {
     const chargePoints = getWildcardValues.value('openWB/chargepoint/+/config');
-    // Extract the name from each charge point's config
     return Object.values(chargePoints).map((config) => config?.name);
   });
+
+  const getChargePointIds = computed(() => {
+    const chargePoints = getWildcardValues.value('openWB/chargepoint/+/config');
+    return Object.keys(chargePoints).map((key) => {
+      return Number(key.split('/')[2]); 
+    });
+  });
+
+  const getAllChargePointsDetails = computed(() => {
+    const chargePointConfigs = getWildcardValues.value(
+      'openWB/chargepoint/+/config',
+    );
+    const chargePointLocks = getWildcardValues.value(
+      'openWB/chargepoint/+/set/manual_lock',
+    );
+    const chargePointPowers = getWildcardValues.value(
+      'openWB/chargepoint/+/get/power',
+    );
+    const chargePointMessages = getWildcardValues.value(
+      'openWB/chargepoint/+/get/state_str',
+    );
+    const chargePointState = getWildcardValues.value(
+      'openWB/chargepoint/+/get/plug_state',
+    );
+
+    return Object.keys(chargePointConfigs).map((key) => {
+      const chargePointId = Number(key.split('/')[2]);
+      return {
+        name: chargePointConfigs[key]?.name,
+        locked:
+          chargePointLocks[
+            `openWB/chargepoint/${chargePointId}/set/manual_lock`
+          ] || false,
+        power:
+          chargePointPowers[`openWB/chargepoint/${chargePointId}/get/power`] ||
+          0,
+        message:
+          chargePointMessages[
+            `openWB/chargepoint/${chargePointId}/get/state_str`
+          ] || '',
+        id: chargePointId || undefined,
+        state:
+          chargePointState[
+            `openWB/chargepoint/${chargePointId}/get/plug_state`
+          ] || false,
+      } as ChargePointDetails;
+    });
+  });
+
+  const getChargePointDetails = (id: number) => {
+    const allPoints = getAllChargePointsDetails.value;
+    return allPoints.find((point) => point.id === id);
+  };
+
+  ///////////////////  Simulated data for initial layout and testing  ///////////////////
+
+  // State Charge Mode
+  const chargeMode = ref<string>('sofort'); // Default mode is 'stop'
+
+  // Getter to retrieve the current charge mode
+  const getChargeMode = computed(() => chargeMode.value);
+
+  //Action to set the charge mode
+  function setChargeMode(mode: string) {
+    chargeMode.value = mode;
+    console.log('Charge mode set to:', chargeMode.value, mode);
+  }
 
   // exports
   return {
@@ -444,7 +512,14 @@ export const useMqttStore = defineStore('mqtt', () => {
     systemCommit,
     themeConfiguration,
     systemDateTime,
+    ////// test functions  ///////
     getChargePoints,
     getChargePointNames,
+    getChargePointIds,
+    getChargePointDetails,
+    getAllChargePointsDetails,
+    ////// Simulated data for initial layout and testing  ///////
+    getChargeMode,
+    setChargeMode,
   };
 });
