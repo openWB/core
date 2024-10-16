@@ -97,9 +97,11 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
     "min_soc, min_current, current_soc, expected",
     [
         pytest.param(0, 0, 100, (0, "stop", ChargeTemplate.PV_CHARGING_SOC_REACHED), id="max soc reached"),
-        pytest.param(15, 0, 14, (10, "instant_charging", None), id="min soc not reached"),
+        pytest.param(15, 0, 14, (10, "instant_charging", ChargeTemplate.PV_CHARGING_SOC_CHARGING),
+                     id="min soc not reached"),
         pytest.param(15, 0, None, (6, "pv_charging", None), id="soc not defined"),
-        pytest.param(15, 8, 15, (8, "instant_charging", None), id="min current configured"),
+        pytest.param(15, 8, 15, (8, "instant_charging", ChargeTemplate.PV_CHARGING_MIN_CURRENT_CHARGING),
+                     id="min current configured"),
         pytest.param(15, 0, 15, (6, "pv_charging", None), id="bare pv charging"),
     ])
 def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
