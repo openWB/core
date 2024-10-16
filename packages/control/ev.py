@@ -421,7 +421,7 @@ class Ev:
         return required_current, msg
 
     CURRENT_OUT_OF_NOMINAL_DIFFERENCE = (", da das Fahrzeug nicht mit der vorgegebenen Stromstärke +/- der erlaubten "
-                                         + "Stromabweichung aus dem Fahrzeug-Profil lädt.")
+                                         + "Stromabweichung aus dem Fahrzeug-Profil/Minimalen Dauerstrom lädt.")
     ENOUGH_POWER = ", da ausreichend Überschuss für mehrphasiges Laden zur Verfügung steht."
     NOT_ENOUGH_POWER = ", da nicht ausreichend Überschuss für mehrphasiges Laden zur Verfügung steht."
 
@@ -432,7 +432,8 @@ class Ev:
                                        max_current_cp: int,
                                        limit: LimitingValue) -> Tuple[bool, Optional[str]]:
         # Manche EV laden mit 6.1A bei 6A Soll-Strom
-        min_current = control_parameter.min_current + self.ev_template.data.nominal_difference
+        min_current = (max(control_parameter.min_current, control_parameter.required_current) +
+                       self.ev_template.data.nominal_difference)
         max_current = (min(self.ev_template.data.max_current_single_phase, max_current_cp)
                        - self.ev_template.data.nominal_difference)
         phases_in_use = control_parameter.phases
