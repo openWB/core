@@ -93,8 +93,7 @@ chmod 666 "$LOGFILE"
 		fi
 	) &
 
-	revision=$(grep "Revision" /proc/cpuinfo | awk '{print $3}')
-
+	boot_config_source="${OPENWBBASEDIR}/data/config/boot_config.txt"
 	boot_config_target="/boot/config.txt"
 	echo "checking init in $boot_config_target..."
 	if versionMatch "$boot_config_source" "$boot_config_target"; then
