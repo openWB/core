@@ -693,6 +693,9 @@ class ChargeTemplate:
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     PV_CHARGING_SOC_REACHED = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
+    PV_CHARGING_SOC_CHARGING = ("Ladung evtl. auch ohne PV-Überschuss, da der Mindest-SoC des Fahrzeugs noch nicht "
+                                "erreicht wurde.")
+    PV_CHARGING_MIN_CURRENT_CHARGING = "Ladung evtl. auch ohne PV-Überschuss, da minimaler Dauerstrom aktiv ist."
 
     def pv_charging(self, soc: Optional[float], min_current: int, charging_type: str) -> Tuple[int, str, Optional[str]]:
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
@@ -707,7 +710,7 @@ class ChargeTemplate:
                             current = pv_charging.min_soc_current
                         else:
                             current = pv_charging.dc_min_soc_current
-                        return current, "instant_charging", message
+                        return current, "instant_charging", self.PV_CHARGING_SOC_CHARGING
                 if charging_type == ChargingType.AC.value:
                     pv_min_current = pv_charging.min_current
                 else:
@@ -717,7 +720,7 @@ class ChargeTemplate:
                     return min_current, "pv_charging", message
                 else:
                     # Min PV
-                    return pv_min_current, "instant_charging", message
+                    return pv_min_current, "instant_charging", self.PV_CHARGING_MIN_CURRENT_CHARGING
             else:
                 return 0, "stop", self.PV_CHARGING_SOC_REACHED
         except Exception:
