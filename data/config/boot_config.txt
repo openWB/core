@@ -1,9 +1,15 @@
 # openwb - begin
-# openwb-version:3
+# openwb-version:4
 # Do not edit this section! We need begin/end and version for proper updates!
 [all]
 gpio=4,5,7,11,17,22,23,24,25,26,27=op,dl
 gpio=6,8,9,10,12,13,16,21=ip,pu
+
+[cm4]
+# GPIO 22 is the buzzer on computemodule4
+gpio=22=op,dh
+
+[all]
 # enable uart for modbus port on older addon hat
 # this also requires to disable Bluetooth
 dtoverlay=disable-bt

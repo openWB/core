@@ -122,7 +122,10 @@ def get_modbus_client(local_charge_point_num: int,
             # Don't create two clients for one source!
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("LP1 gleiches Device wie LP0")
-            serial_client = created_client_handler.client
+            if created_client_handler:
+                serial_client = created_client_handler.client
+            else:
+                serial_client = ModbusSerialClient_(resolved_devices[0])
             evse_ids = EVSE_ID_ONE_BUS_CP1
     elif counter > 1:
         with ModifyLoglevelContext(log, logging.DEBUG):
