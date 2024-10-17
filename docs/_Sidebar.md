@@ -7,9 +7,13 @@
 * Zähler
   * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Zaehler)
   * [Lastmanagement und kaskadierte Zähler](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler)
-  * [Hierarchie mit Hausverbrauchs-Zähler](https://github.com/openWB/core/wiki/Hausverbrauchs-Zähler)
+  * [Ermittlung des Hausverbrauchs](https://github.com/openWB/core/wiki/Hausverbrauch)
 * Oberfläche
   * [Anzeige - Steuerung](https://github.com/openWB/core/wiki/Anzeige-Steuerung)
+* Features
+  * [OCPP](https://github.com/openWB/core/wiki/OCPP)
+  * [Strompreisbasiertes Laden](https://github.com/openWB/core/wiki/Strompreisbasiertes_Laden)
+  * [Identifikation](https://github.com/openWB/core/wiki/Identifikation)
 * Szenarien
   * [Typische Anwendungsfälle](https://github.com/openWB/core/wiki/Typische-Anwendungsfaelle)
   * [ID-Tag/Ladung nur nach Freischaltung](https://github.com/openWB/core/wiki/Ladung-nur-nach-Freischaltung)
