@@ -120,8 +120,8 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
                         f"{cp.data.get.power/1000}kW, {cp.data.get.currents}A, {cp.data.get.voltages}V, Lademodus: "
                         f"{cp.data.control_parameter.chargemode}, Submode: "
                         f"{cp.data.control_parameter.submode}, Soll-Strom: "
-                        f"{cp.data.set.current}A, Status: {cp.data.get.state_str}, "
-                        f"Fehlerstatus: {cp.data.get.fault_str}\n")
+                        f"{cp.data.set.current}A, EVSE-Strom: {cp.data.get.evse_current}A, "
+                        f"Status: {cp.data.get.state_str}, Fehlerstatus: {cp.data.get.fault_str}\n")
         if cp.chargepoint_module.config.type == "openwb_pro":
             try:
                 parsed_data += f"{req.get_http_session().get(f'http://{ip}/connect.php', timeout=5).text}\n"

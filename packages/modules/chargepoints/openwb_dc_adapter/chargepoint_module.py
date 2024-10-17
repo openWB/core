@@ -90,6 +90,7 @@ class ChargepointModule(AbstractChargepoint):
                     charging_power=charging_power,
                     charging_voltage=json_rsp["charging_voltage"],
                     currents=json_rsp["currents"],
+                    evse_current=json_rsp["offered_power"]/230/3,
                     exported=exported,
                     imported=imported,
                     phases_in_use=3,
