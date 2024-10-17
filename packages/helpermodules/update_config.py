@@ -49,7 +49,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 65
+    DATASTORE_VERSION = 66
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -1839,3 +1839,12 @@ class UpdateConfig:
             '<a href="https://wb-solution.de/shop/">https://wb-solution.de/shop/</a>',
             MessageType.INFO)
         self.__update_topic("openWB/system/datastore_version", 65)
+
+    def upgrade_datastore_65(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if (re.search("openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+", topic) is not None):
+                payload = decode_payload(payload)
+                payload["id"] = int(get_second_index(topic))
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 66)
