@@ -1,5 +1,3 @@
-# MQTT
-
 ## Grundsätzliches
 
 MQTT bedeutet: Message Queuing Telemetry Transport. Es handelt sich hierbei um ein M2M (Machine to Machine) Protokoll.
