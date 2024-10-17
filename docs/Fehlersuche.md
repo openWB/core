@@ -1,5 +1,3 @@
-# Fehlersuche
-
 Es kann immer mal passieren, dass etwas nicht wie gedacht funktioniert. Das kann an einem Fehler im Programmcode, an einem Hardwaredefekt oder an einer fehlerhaften oder nicht zu den Gegebenheiten passenden Konfiguration liegen.
 
 Wenn nun eine Funktion nicht wie erwartet ausgeführt wird oder plötzlich ein Fehler auftritt, ist die erste Frage:

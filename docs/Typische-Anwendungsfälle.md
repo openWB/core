@@ -1,5 +1,3 @@
-# Typische Anwendungsfälle
-
 ## Privater Haushalt, ein E-Auto und PV-Anlage
 
 In diesem Szenario sind die Ziele meistens, das Auto morgens für den Weg zur Arbeit fahrbereit zu haben, aber bis dahin möglichst viel Energie aus der PV-Anlage zum Laden zu nutzen.
