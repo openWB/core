@@ -363,11 +363,12 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_scheduled_plan + 1
-        charge_template_default = dataclass_utils.asdict(ev.ScheduledChargingPlan())
+        charge_template_default = ev.ScheduledChargingPlan()
+        charge_template_default.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/chargemode/scheduled_charging/plans/{new_id}',
-            charge_template_default)
+            dataclass_utils.asdict(charge_template_default))
         self.max_id_charge_template_scheduled_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
@@ -399,11 +400,12 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_time_charging_plan + 1
-        time_charging_plan_default = dataclass_utils.asdict(ev.TimeChargingPlan())
+        time_charging_plan_default = ev.TimeChargingPlan()
+        time_charging_plan_default.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/time_charging/plans/{new_id}',
-            time_charging_plan_default)
+            dataclass_utils.asdict(time_charging_plan_default))
         self.max_id_charge_template_time_charging_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
