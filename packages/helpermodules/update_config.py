@@ -49,7 +49,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 64
+    DATASTORE_VERSION = 65
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -1832,3 +1832,10 @@ class UpdateConfig:
                     return {f"openWB/bat/{index}/get/power_limit_controllable": False}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 64)
+
+    def upgrade_datastore_64(self) -> None:
+        pub_system_message(
+            {}, 'Garantieverlängerung für die openWB verfügbar -> '
+            '<a href="https://wb-solution.de/shop/">https://wb-solution.de/shop/</a>',
+            MessageType.INFO)
+        self.__update_topic("openWB/system/datastore_version", 65)
