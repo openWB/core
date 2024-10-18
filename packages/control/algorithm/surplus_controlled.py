@@ -37,6 +37,8 @@ class SurplusControlled:
             if preferenced_cps_without_set_current:
                 for cp in preferenced_cps_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
+        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
+            self._fix_deviating_evse_current(cp)
 
     def _set(self,
              chargepoints: List[Chargepoint],
@@ -70,7 +72,6 @@ class SurplusControlled:
             current = common.get_current_to_set(cp.data.set.current, current, cp.data.set.target_current)
             self._set_loadmangement_message(current, limit, cp, counter)
             limited_current = self._limit_adjust_current(cp, current)
-            limited_current = self._fix_deviating_evse_current(limited_current, cp)
             common.set_current_counterdiff(
                 cp.data.control_parameter.min_current,
                 limited_current,
@@ -129,7 +130,7 @@ class SurplusControlled:
                        chargepoint.data.control_parameter.min_current,
                        chargepoint.data.set.target_current)
 
-    def _fix_deviating_evse_current(self, limited_current, chargepoint: Chargepoint) -> float:
+    def _fix_deviating_evse_current(self, chargepoint: Chargepoint) -> float:
         """Wenn Autos nicht die volle Ladeleistung nutzen, wird unnötig eingespeist. Dann kann um den noch nicht
         genutzten Soll-Strom hochgeregelt werden. Wenn Fahrzeuge entgegen der Norm mehr Ladeleistung beziehen, als
         freigegeben, wird entsprechend weniger freigegeben, da sonst uU die untere Grenze für die Abschaltschwelle
@@ -137,13 +138,12 @@ class SurplusControlled:
         evse_current = chargepoint.data.get.evse_current
         if evse_current:
             formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
-            current_with_offset = limited_current + formatted_evse_current - max(chargepoint.data.get.currents)
+            current_with_offset = chargepoint.data.set.current + \
+                formatted_evse_current - max(chargepoint.data.get.currents)
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
-            if current != limited_current:
+            if current != chargepoint.data.set.current:
                 log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
-            return current
-        else:
-            return limited_current
+            chargepoint.data.set.current = current
 
     def check_submode_pv_charging(self) -> None:
         evu_counter = data.data.counter_all_data.get_evu_counter()
