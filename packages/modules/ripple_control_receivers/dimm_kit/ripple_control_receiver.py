@@ -25,7 +25,8 @@ def create_ripple_control_receiver(config: IoLanRcr):
         r1 = State(client.read_coils(0x0000, 1, unit=config.configuration.modbus_id))
         r2 = State(client.read_coils(0x0001, 1, unit=config.configuration.modbus_id))
         log.debug(f"RSE-Kontakt 1: {r1}, RSE-Kontakt 2: {r2}")
-        if r1 == State.OPENED or r2 == State.OPENED:
+        state_ok = State[config.configuration.sw_ok]
+        if r1 is not state_ok or r2 is not state_ok:
             override_value = 0
         else:
             override_value = 100
