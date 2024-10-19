@@ -35,7 +35,8 @@ class Algodue(AbstractCounter):
         serial_string = ""
         for x in serial_chars:
             serial_string += chr(x)
-        log.debug("Algodue serial is " + serial_string)
+        # due to caching this appears rarely - but it's nice to have always have it in main log
+        log.error("Algodue meter serial " + serial_string)
         self.serial_cached = serial_string
         return self.serial_cached
 
@@ -90,6 +91,8 @@ class Algodue(AbstractCounter):
         elif type_id == 0x0b:
             type_string = "NO MID, RESET, Wiring selection"
         meterinfo = "Algodue UEM " + model_string + " (" + type_string + ")"
-        log.error("Algodue model returning: " + meterinfo)
+
+        # due to caching this appears rarely - but it's nice to have always have it in main log
+        log.error("Algodue model: " + meterinfo)
         self.model_cached = meterinfo
         return self.model_cached
