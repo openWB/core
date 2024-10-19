@@ -90,7 +90,7 @@ class Algodue(AbstractCounter):
             type_string = "MID no varh, Wiring selection"
         elif type_id == 0x0b:
             type_string = "NO MID, RESET, Wiring selection"
-        meterinfo = "Algodue UEM " + model_string + " (" + type_string + ")"
+        meterinfo = "Algodue UEM " + model_string + ", " + type_string
 
         # due to caching this appears rarely - but it's nice to have always have it in main log
         log.error("Algodue model: " + meterinfo)
