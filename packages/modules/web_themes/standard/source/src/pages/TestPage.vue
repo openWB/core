@@ -8,11 +8,11 @@
         v-model:fullscreen="fullscreen"
         swipeable
         control-color="primary"
-        :navigation="$q.screen.gt.xs"
-        :arrows="$q.screen.gt.xs"
         padding
         animated
         infinite
+        :navigation="$q.screen.gt.xs"
+        :arrows="$q.screen.gt.xs"
         class="full-height bg-transparent"
       >
         <q-carousel-slide

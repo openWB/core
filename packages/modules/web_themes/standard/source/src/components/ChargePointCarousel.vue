@@ -1,23 +1,28 @@
 <template>
-  <div>
+  <div class="carousel-container">
     <q-carousel
       v-model="slide"
       swipeable
       animated
       control-color="primary"
       infinite
+      padding
       :navigation="$q.screen.gt.xs"
       :arrows="$q.screen.gt.xs"
-      class="full-height"
+      class="full-height q-mt-md"
       @mousedown.prevent
     >
       <q-carousel-slide
         v-for="(group, index) in groupedChargePoints"
         :key="index"
         :name="index"
-        class="row no-wrap justify-center"
+        class="row no-wrap justify-center carousel-slide"
       >
-        <div v-for="chargePointId in group" :key="chargePointId" class="">
+        <div
+          v-for="chargePointId in group"
+          :key="chargePointId"
+          class="charge-point-container"
+        >
           <ChargePoint :charge-point-id="chargePointId" />
         </div>
       </q-carousel-slide>
@@ -35,17 +40,11 @@ const mqttStore = useMqttStore();
 const $q = useQuasar();
 
 const slide = ref<number | undefined>(undefined);
+
 const chargePointIds = computed(() => mqttStore.getChargePointIds);
 
-// Returns an array of arrays, where each inner array contains 1 or 2 or 3 chargePointIds
-// depending on screen size
 const groupedChargePoints = computed(() => {
-  let groupSize = 1;
-  if ($q.screen.width >= 1100) {
-    groupSize = 3;
-  } else if ($q.screen.width >= 800) {
-    groupSize = 2;
-  }
+  const groupSize = $q.screen.width >= 800 ? 2 : 1;
   return chargePointIds.value.reduce((resultArray, item, index) => {
     const chunkIndex = Math.floor(index / groupSize);
     if (!resultArray[chunkIndex]) {
@@ -56,7 +55,6 @@ const groupedChargePoints = computed(() => {
   }, [] as number[][]);
 });
 
-// Set initial slide when data is available
 watch(
   chargePointIds,
   (newValue) => {
@@ -74,31 +72,24 @@ onMounted(() => {
 
 <style scoped>
 .carousel-container {
-  width: 100%;
   max-width: 800px;
   margin: 0 auto;
 }
 
-.custom-carousel {
-  padding: 0 !important;
-}
-
-.custom-carousel-slide {
-  padding: 0 !important;
-}
-
-.custom-charge-point-container {
-  width: 100%;
+.carousel-slide {
   padding: 0;
 }
 
-/* Target the inner content of q-carousel */
-.custom-carousel > .q-carousel__slides {
-  padding: 0 !important;
+.charge-point-container {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-/* Target the slide wrapper */
-.custom-carousel > .q-carousel__slide {
-  padding: 0 !important;
+@media (max-width: 600px) {
+  .charge-point-container {
+    padding: 4px;
+  }
 }
 </style>

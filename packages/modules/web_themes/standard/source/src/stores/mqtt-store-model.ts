@@ -33,4 +33,6 @@ export interface ChargePointDetails {
   locked: boolean;
   state: boolean;
   power: number;
+  priority: boolean;
+  conectedVehicle: string;
 }

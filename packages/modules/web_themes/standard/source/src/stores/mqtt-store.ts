@@ -432,7 +432,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const getChargePointIds = computed(() => {
     const chargePoints = getWildcardValues.value('openWB/chargepoint/+/config');
     return Object.keys(chargePoints).map((key) => {
-      return Number(key.split('/')[2]); 
+      return Number(key.split('/')[2]);
     });
   });
 
@@ -452,9 +452,16 @@ export const useMqttStore = defineStore('mqtt', () => {
     const chargePointState = getWildcardValues.value(
       'openWB/chargepoint/+/get/plug_state',
     );
+    const vehicleConfig = getWildcardValues.value(
+      'openWB/chargepoint/+/get/connected_vehicle/config',
+    );
+    const connectedVehicleInfo = getWildcardValues.value(
+      'openWB/chargepoint/+/get/connected_vehicle/info',
+    );
 
     return Object.keys(chargePointConfigs).map((key) => {
       const chargePointId = Number(key.split('/')[2]);
+
       return {
         name: chargePointConfigs[key]?.name,
         locked:
@@ -473,6 +480,14 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointState[
             `openWB/chargepoint/${chargePointId}/get/plug_state`
           ] || false,
+        priority:
+          vehicleConfig[
+            `openWB/chargepoint/${chargePointId}/get/connected_vehicle/config`
+          ]?.priority || false,
+        conectedVehicle:
+          connectedVehicleInfo[
+            `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`
+          ]?.name,
       } as ChargePointDetails;
     });
   });
