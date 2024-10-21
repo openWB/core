@@ -134,9 +134,12 @@ class SurplusControlled:
         """Wenn Autos nicht die volle Ladeleistung nutzen, wird unnötig eingespeist. Dann kann um den noch nicht
         genutzten Soll-Strom hochgeregelt werden. Wenn Fahrzeuge entgegen der Norm mehr Ladeleistung beziehen, als
         freigegeben, wird entsprechend weniger freigegeben, da sonst uU die untere Grenze für die Abschaltschwelle
-        nicht erreicht wird."""
+        nicht erreicht wird.
+        Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen. Wenn das
+        Auto nur in 1A-Schritten regeln kann, rundet es und lädt immer etwas mehr oder weniger als Soll-Strom. Schlägt
+        man den EVSE-Strom auf, pendelt die Regelung um diesen 1A-Schritt."""
         evse_current = chargepoint.data.get.evse_current
-        if evse_current:
+        if evse_current and chargepoint.data.set.current != chargepoint.set_current_prev:
             formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
             current_with_offset = chargepoint.data.set.current + \
                 formatted_evse_current - max(chargepoint.data.get.currents)
