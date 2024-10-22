@@ -2,10 +2,12 @@ from typing import Optional
 
 
 class IoLanRcrConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: int = 8899, modbus_id: int = 1):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 8899, modbus_id: int = 1,
+                 sw_ok: str = "CLOSED"):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
+        self.sw_ok = sw_ok
 
 
 class IoLanRcr:
