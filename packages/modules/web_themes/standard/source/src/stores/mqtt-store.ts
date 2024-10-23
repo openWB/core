@@ -1,13 +1,18 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import mqtt from 'mqtt';
+import mqtt, { IClientPublishOptions } from 'mqtt';
+import { QoS } from 'mqtt-packet';
 
-import {
+// import all type definitions from the mqtt-store-model
+import type {
   ConnectionOptions,
   TopicObject,
   TopicList,
   TopicCount,
-  ChargePointDetails,
+  Hierarchy,
+  ChargePointConnectedVehicleConfig,
+  ChargeTemplateConfiguration,
+  ValueObject,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -107,15 +112,18 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param topic the mqtt topic to update
    * @param payload the new value to set
    * @param objectPath the path in the object to update (optional)
+   * @param publish flag to indicate if the topic should be published to the broker
    * @returns void
    * @example
    * updateTopic('openWB/system/version', '1.2.3');
-   * updateTopic('openWB/general/web_theme', false, 'official');
+   * updateTopic('openWB/general/web_theme', 'standard', 'official');
+   * updateTopic('openWB/general/web_theme', 'standard', undefined, true);
    */
   function updateTopic(
     topic: string,
     payload: unknown,
     objectPath: string | undefined = undefined,
+    publish: boolean = false,
   ) {
     /**
      * helper function to update nested objects py path
@@ -144,8 +152,11 @@ export const useMqttStore = defineStore('mqtt', () => {
       } else {
         topics.value[topic] = payload;
       }
+      if (publish) {
+        sendTopicToBroker(topic, topics.value[topic]);
+      }
     } else {
-      console.debug('topic not found', topic);
+      console.warn('topic not found', topic);
     }
   }
 
@@ -272,6 +283,72 @@ export const useMqttStore = defineStore('mqtt', () => {
       subscriptions.value[topic],
     );
   }
+
+  /**
+   * publishes the payload to the provided topic
+   * @param topic mqtt topic to send
+   * @param payload data to send, should be a valid JSON string
+   * @param retain send message as retained
+   * @param qos quality of service to use (0, 1, 2)
+   */
+  function doPublish(
+    topic: string,
+    payload: unknown,
+    retain: boolean = true,
+    qos: QoS = 2,
+  ) {
+    console.debug('doPublish', topic, payload);
+    if (!mqttClient) {
+      console.error('mqttClient is not initialized');
+      return;
+    }
+    const options: IClientPublishOptions = {
+      qos: qos,
+      retain: retain,
+    };
+    mqttClient.publish(topic, JSON.stringify(payload), options, (error) => {
+      if (error) {
+        console.error('Publish error', error);
+      }
+    });
+  }
+
+  /**
+   * replaces "openWB/" with "openWB/set/" and publishes this topic
+   * @param topic mqtt topic to send
+   * @param payload payload, should be a valid JSON string
+   */
+  function sendTopicToBroker(topic: string, payload: unknown = undefined) {
+    const setTopic = topic.replace('openWB/', 'openWB/set/');
+    if (payload === undefined) {
+      payload = topics.value[topic];
+    }
+    doPublish(setTopic, payload);
+  }
+
+  /**
+   * Sends a command via broker to the backend
+   * @param event Command object to send
+   */
+  function sendCommand(event: unknown) {
+    doPublish(
+      'openWB/set/command/' + mqttClient?.options.clientId + '/todo',
+      event,
+      false,
+    );
+  }
+
+  /**
+   * prepares a valid command from a system event
+   * @param command command to send
+   * @param data data to send
+   */
+  function sendSystemCommand(command: string, data: unknown = {}) {
+    sendCommand({
+      command: command,
+      data: data,
+    });
+  }
   // General functions and methods for the store - END
 
   // Computed
@@ -312,6 +389,31 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get all object ids of a specific type from the hierarchy
+   * @param type type of object to get the ids from
+   * @returns number[]
+   */
+  const getObjectIds = computed(() => {
+    return (type: string) => {
+      function getId(hierarchy: Hierarchy[]) {
+        let result: number[] = [];
+        if (hierarchy !== undefined) {
+          hierarchy.forEach((element) => {
+            if (element.type == type) {
+              result.push(element.id);
+            }
+            result = [...result, ...getId(element.children)];
+          });
+        }
+        return result;
+      }
+      return getId(
+        getValue.value('openWB/counter/get/hierarchy') as Hierarchy[],
+      );
+    };
+  });
+
+  /**
    * Get the value of a topic or a nested object in the topic
    * @param topic mqtt topic to get the value from
    * @param objectPath path in the object to get the value from
@@ -344,6 +446,68 @@ export const useMqttStore = defineStore('mqtt', () => {
         topicObject = topicObject[path[i]];
       }
       return topicObject;
+    };
+  });
+
+  /**
+   * Get a formatted string for a value
+   * @param value value to format
+   * @param unit unit to use, default is 'W'
+   * @param unitPrefix unit prefix to use, default is ''
+   * @param scale flag to scale the value, default is true
+   * @param inverted flag to invert the value, default is false
+   * @param defaultString default string to use, default is '---'
+   * @returns object
+   */
+  const getValueObject = computed(() => {
+    return (
+      value: number,
+      unit: string = 'W',
+      unitPrefix: string = '',
+      scale: boolean = true,
+      inverted: boolean = false,
+      defaultString: string = '---',
+    ) => {
+      let scaled = false;
+      let scaledValue = value;
+      let textValue = defaultString;
+      if (value === undefined) {
+        console.warn('value is undefined! using default', value, defaultString);
+      } else {
+        if (inverted) {
+          scaledValue = value *= -1;
+        }
+        textValue = value.toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        });
+        while (scale && (scaledValue > 999 || scaledValue < -999)) {
+          scaledValue = scaledValue / 1000;
+          scaled = true;
+          switch (unitPrefix) {
+            case '':
+              unitPrefix = 'k';
+              break;
+            case 'k':
+              unitPrefix = 'M';
+              break;
+            case 'M':
+              unitPrefix = 'G';
+              break;
+          }
+        }
+        textValue = scaledValue.toLocaleString(undefined, {
+          minimumFractionDigits: scaled ? 2 : 0,
+          maximumFractionDigits: scaled ? 2 : 0,
+        });
+      }
+      return {
+        textValue: `${textValue} ${unitPrefix}${unit}`,
+        value: value,
+        unit: unit,
+        scaledValue: scaledValue,
+        scaledUnit: `${unitPrefix}${unit}`,
+      } as ValueObject;
     };
   });
 
@@ -418,93 +582,224 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
-  //////////////////////////////// test functions //////////////////////////////////
-
-  const getChargePoints = computed(() => {
-    return getWildcardValues.value('openWB/chargepoint/+/config');
+  /**
+   * Get the charge point ids
+   * @returns number[]
+   */
+  const chargePointIds = computed(() => {
+    return getObjectIds.value('cp');
   });
 
-  const getChargePointNames = computed(() => {
-    const chargePoints = getWildcardValues.value('openWB/chargepoint/+/config');
-    return Object.values(chargePoints).map((config) => config?.name);
+  /**
+   * Get the charge point name identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns string
+   */
+  const chargePointName = computed(() => {
+    return (chargePointId: number) => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/config`,
+        'name',
+      );
+    };
   });
 
-  const getChargePointIds = computed(() => {
-    const chargePoints = getWildcardValues.value('openWB/chargepoint/+/config');
-    return Object.keys(chargePoints).map((key) => {
-      return Number(key.split('/')[2]); 
+  /**
+   * Get or set the charge point manual lock state identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns boolean
+   */
+  const chargePointManualLock = (chargePointId: number) => {
+    return computed({
+      get() {
+        console.log('get manual lock', chargePointId);
+        return getValue.value(
+          `openWB/chargepoint/${chargePointId}/set/manual_lock`,
+        );
+      },
+      set(newValue: boolean) {
+        console.log('set manual lock', newValue, chargePointId);
+        return updateTopic(
+          `openWB/chargepoint/${chargePointId}/set/manual_lock`,
+          newValue,
+          undefined,
+          true,
+        );
+      },
     });
-  });
-
-  const getAllChargePointsDetails = computed(() => {
-    const chargePointConfigs = getWildcardValues.value(
-      'openWB/chargepoint/+/config',
-    );
-    const chargePointLocks = getWildcardValues.value(
-      'openWB/chargepoint/+/set/manual_lock',
-    );
-    const chargePointPowers = getWildcardValues.value(
-      'openWB/chargepoint/+/get/power',
-    );
-    const chargePointMessages = getWildcardValues.value(
-      'openWB/chargepoint/+/get/state_str',
-    );
-    const chargePointState = getWildcardValues.value(
-      'openWB/chargepoint/+/get/plug_state',
-    );
-
-    return Object.keys(chargePointConfigs).map((key) => {
-      const chargePointId = Number(key.split('/')[2]);
-      return {
-        name: chargePointConfigs[key]?.name,
-        locked:
-          chargePointLocks[
-            `openWB/chargepoint/${chargePointId}/set/manual_lock`
-          ] || false,
-        power:
-          chargePointPowers[`openWB/chargepoint/${chargePointId}/get/power`] ||
-          0,
-        message:
-          chargePointMessages[
-            `openWB/chargepoint/${chargePointId}/get/state_str`
-          ] || '',
-        id: chargePointId || undefined,
-        state:
-          chargePointState[
-            `openWB/chargepoint/${chargePointId}/get/plug_state`
-          ] || false,
-      } as ChargePointDetails;
-    });
-  });
-
-  const getChargePointDetails = (id: number) => {
-    const allPoints = getAllChargePointsDetails.value;
-    return allPoints.find((point) => point.id === id);
   };
 
-  ///////////////////  Simulated data for initial layout and testing  ///////////////////
+  /**
+   * Get the charge point plug state identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns boolean
+   */
+  const chargePointPlugState = computed(() => {
+    return (chargePointId: number) => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/plug_state`,
+      );
+    };
+  });
 
-  // State Charge Mode
-  const chargeMode = ref<string>('sofort'); // Default mode is 'stop'
+  /**
+   * Get the charge point charge state identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns boolean
+   */
+  const chargePointChargeState = computed(() => {
+    return (chargePointId: number) => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/charge_state`,
+      );
+    };
+  });
 
-  // Getter to retrieve the current charge mode
-  const getChargeMode = computed(() => chargeMode.value);
+  /**
+   * Get the charge point power identified by the charge point id
+   * @param chargePointId charge point id
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const chargePointPower = computed(() => {
+    return (chargePointId: number, returnType: string = 'textValue') => {
+      const power = getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/power`,
+      ) as number;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+        return valueObject[returnType];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
 
-  //Action to set the charge mode
-  function setChargeMode(mode: string) {
-    chargeMode.value = mode;
-    console.log('Charge mode set to:', chargeMode.value, mode);
-  }
+  /**
+   * Get the charge point state message identified by the charge point id
+   */
+  const chargePointStateMessage = computed(() => {
+    return (chargePointId: number) => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/state_str`,
+      ) as string;
+    };
+  });
+
+  /**
+   * Get the charge point fault message identified by the charge point id
+   */
+  const chargePointFaultMessage = computed(() => {
+    return (chargePointId: number) => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/fault_str`,
+      ) as string;
+    };
+  });
+
+  /**
+   * Get the charge point fault state identified by the charge point id
+   */
+  const chargePointFaultState = computed(() => {
+    return (chargePointId: number) => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/fault_state`,
+      ) as number;
+    };
+  });
+
+  /**
+   * Get or set the charge point connected vehicle charge mode identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object
+   */
+  const chargePointConnectedVehicleChargeMode = (chargePointId: number) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.selected;
+      },
+      set(newValue: string) {
+        console.log('set charge mode', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.selected',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get the charge point connected vehicle config identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns ChargePointConnectedVehicleConfig
+   */
+  const chargePointConnectedVehicleConfig = (chargePointId: number) => {
+    return computed(() => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/connected_vehicle/config`,
+      ) as ChargePointConnectedVehicleConfig;
+    });
+  };
+
+  /**
+   * Get the charge point connected vehicle charge template index identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number
+   */
+  const chargePointConnectedVehicleChargeTemplateIndex = (
+    chargePointId: number,
+  ): number | undefined => {
+    return computed(() => {
+      return chargePointConnectedVehicleConfig(chargePointId).value
+        ?.charge_template;
+    }).value;
+  };
+
+  /**
+   * Get or set the charge point connected vehicle charge template identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object
+   */
+  const chargePointConnectedVehicleChargeTemplate = (chargePointId: number) => {
+    return computed({
+      get() {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        return getValue.value(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+        ) as ChargeTemplateConfiguration;
+      },
+      set(newValue: ChargeTemplateConfiguration) {
+        console.log('set charge template', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          undefined,
+          true,
+        );
+      },
+    });
+  };
 
   // exports
   return {
     topics,
-    // subscriptions, // do not expose internal data
     initialize,
     updateTopic,
     updateState: updateTopic, // alias for compatibility with older code
     subscribe,
     unsubscribe,
+    sendTopicToBroker,
+    sendSystemCommand,
     getValue,
     systemVersion,
     systemIp,
@@ -512,14 +807,17 @@ export const useMqttStore = defineStore('mqtt', () => {
     systemCommit,
     themeConfiguration,
     systemDateTime,
-    ////// test functions  ///////
-    getChargePoints,
-    getChargePointNames,
-    getChargePointIds,
-    getChargePointDetails,
-    getAllChargePointsDetails,
-    ////// Simulated data for initial layout and testing  ///////
-    getChargeMode,
-    setChargeMode,
+    // charge point data
+    chargePointIds,
+    chargePointName,
+    chargePointManualLock,
+    chargePointPlugState,
+    chargePointChargeState,
+    chargePointPower,
+    chargePointStateMessage,
+    chargePointFaultState,
+    chargePointFaultMessage,
+    chargePointConnectedVehicleChargeMode,
+    chargePointConnectedVehicleChargeTemplate,
   };
 });
