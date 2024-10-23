@@ -9,7 +9,6 @@ import re
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
-
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default

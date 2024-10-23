@@ -11,10 +11,10 @@ import logging
 from typing import List, Optional, Tuple
 
 from control import data
+from control.ev.charge_template import ChargeTemplate
 from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
-from control.ev.charge_template import ChargeTemplate
 from control.ev.ev_template import EvTemplate
 from control.limiting_value import LimitingValue
 from dataclass_utils.factories import empty_list_factory
@@ -88,8 +88,6 @@ class Ev:
             self.ev_template: EvTemplate = EvTemplate()
             self.charge_template: ChargeTemplate = ChargeTemplate()
             self.soc_module: ConfigurableVehicle = None
-            self.chargemode_changed = False
-            self.submode_changed = False
             self.num = index
             self.data = EvData()
         except Exception:
@@ -114,6 +112,7 @@ class Ev:
         return request_soc
 
     def get_required_current(self,
+                             charge_template: ChargeTemplate,
                              control_parameter: ControlParameter,
                              max_phases_hw: int,
                              phase_switch_supported: bool,
@@ -165,7 +164,7 @@ class Ev:
                     control_parameter.current_plan = plan_data.plan.id
                 else:
                     control_parameter.current_plan = None
-                required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
+                required_current, submode, message, phases = charge_template.scheduled_charging_calc_current(
                     plan_data,
                     self.data.get.soc,
                     imported_since_plugged,
@@ -215,18 +214,6 @@ class Ev:
             log.exception("Fehler im ev-Modul "+str(self.num))
             return (False, f"Kein Ladevorgang, da ein Fehler aufgetreten ist: {' '.join(e.args)}", "stop", 0,
                     control_parameter.phases)
-
-    def set_chargemode_changed(self, control_parameter: ControlParameter, submode: str) -> None:
-        if ((submode == "time_charging" and control_parameter.chargemode != "time_charging") or
-                (submode != "time_charging" and
-                 control_parameter.chargemode != self.charge_template.data.chargemode.selected)):
-            self.chargemode_changed = True
-            log.debug("Änderung des Lademodus")
-        else:
-            self.chargemode_changed = False
-
-    def set_submode_changed(self, control_parameter: ControlParameter, submode: str) -> None:
-        self.submode_changed = (submode != control_parameter.submode)
 
     def check_min_max_current(self,
                               control_parameter: ControlParameter,

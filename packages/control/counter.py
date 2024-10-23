@@ -264,7 +264,7 @@ class Counter:
         control_parameter = chargepoint.data.control_parameter
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
 
-        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+        if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
             threshold = pv_config.feed_in_yield
         else:
             threshold = pv_config.switch_on_threshold*control_parameter.phases
@@ -274,7 +274,7 @@ class Counter:
         try:
             message = None
             control_parameter = chargepoint.data.control_parameter
-            feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.\
+            feed_in_limit = chargepoint.data.set.charge_template.data.chargemode.pv_charging.\
                 feed_in_limit
             pv_config = data.data.general_data.data.chargemode_config.pv_charging
             timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
@@ -337,7 +337,7 @@ class Counter:
                 msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
                 control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
-                if charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+                if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
                     feed_in_yield = pv_config.feed_in_yield
                 else:
                     feed_in_yield = 0
@@ -385,7 +385,7 @@ class Counter:
     def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
         control_parameter = chargepoint.data.control_parameter
-        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+        if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
             # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
             # Wnn die Leistung nicht Einspeisegrenze + Einschaltschwelle erreicht, darf die Ladung nicht pulsieren.
             # Abschaltschwelle um Einschaltschwelle reduzieren.

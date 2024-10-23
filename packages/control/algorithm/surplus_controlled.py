@@ -96,9 +96,9 @@ class SurplusControlled:
 
     # tested
     def filter_by_feed_in_limit(self, chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:
-        cp_with_feed_in = list(filter(lambda cp: cp.data.set.charging_ev_data.charge_template.data.chargemode.
+        cp_with_feed_in = list(filter(lambda cp: cp.data.set.charge_template.data.chargemode.
                                       pv_charging.feed_in_limit is True, chargepoints))
-        cp_without_feed_in = list(filter(lambda cp: cp.data.set.charging_ev_data.charge_template.data.chargemode.
+        cp_without_feed_in = list(filter(lambda cp: cp.data.set.charge_template.data.chargemode.
                                          pv_charging.feed_in_limit is False, chargepoints))
         return cp_with_feed_in, cp_without_feed_in
 
@@ -153,7 +153,7 @@ class SurplusControlled:
             def phase_switch_necessary() -> bool:
                 return cp.cp_ev_chargemode_support_phase_switch() and cp.data.get.phases_in_use != 1
             control_parameter = cp.data.control_parameter
-            if cp.data.set.charging_ev_data.chargemode_changed or cp.data.set.charging_ev_data.submode_changed:
+            if cp.chargemode_changed or cp.submode_changed:
                 if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
                     if (cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False and
                             phase_switch_necessary() is False):
