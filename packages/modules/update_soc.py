@@ -5,7 +5,7 @@ import copy
 from threading import Event, Thread
 
 from control import data
-from control.ev import Ev
+from control.ev.ev import Ev
 from helpermodules import subdata
 from helpermodules import timecheck
 from helpermodules.constants import NO_ERROR

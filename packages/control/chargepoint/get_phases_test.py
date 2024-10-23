@@ -5,7 +5,7 @@ import pytest
 
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_template import CpTemplate, get_chargepoint_template_default
-from control.ev import Ev
+from control.ev.ev import Ev
 from control.general import General
 from control import data
 

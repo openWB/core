@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from control.ev import Ev
+from control.ev.ev import Ev
 from helpermodules import timecheck
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.vehicles.mqtt.config import MqttSocSetup

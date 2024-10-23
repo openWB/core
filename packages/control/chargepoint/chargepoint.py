@@ -29,7 +29,7 @@ from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
-from control.ev import Ev
+from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
