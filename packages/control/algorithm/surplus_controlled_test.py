@@ -40,10 +40,8 @@ def test_filter_by_feed_in_limit(feed_in_limit_1: bool,
                                  expected_sorted: int):
     # setup
     def setup_cp(cp: Chargepoint, feed_in_limit: bool) -> Chargepoint:
-        ev = Ev(0)
-        ev.charge_template = ChargeTemplate()
-        ev.charge_template.data.chargemode.pv_charging.feed_in_limit = feed_in_limit
-        cp.data = ChargepointData(set=Set(charging_ev_data=ev))
+        cp.data = ChargepointData()
+        cp.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit = feed_in_limit
         return cp
 
     cp1 = setup_cp(mock_cp1, feed_in_limit_1)
