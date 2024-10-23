@@ -28,7 +28,10 @@ Hagen */
 				<template #item2>
 					<PowerGraph />
 				</template>
-				<template #item3>
+				<template v-if="globalConfig.alternativeEnergy" #item3>
+					<EnergyMeter2 />
+				</template>
+				<template v-else #item3>
 					<EnergyMeter />
 				</template>
 			</CarouselFix>
@@ -260,6 +263,7 @@ import { initConfig } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
 import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
+import EnergyMeter2 from '@/components/energyMeter2/EnergyMeter2.vue'
 import ChargePointList from '@/components/chargePointList/ChargePointList.vue'
 import ButtonBar from '@/components/buttonBar/ButtonBar.vue'
 import BatteryList from '@/components/batteryList/BatteryList.vue'

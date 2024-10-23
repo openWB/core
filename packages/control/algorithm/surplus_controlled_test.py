@@ -119,15 +119,13 @@ def test_add_unused_evse_current(evse_current: float,
     c.data.get.currents = [15]*3
     c.data.get.evse_current = evse_current
     c.data.control_parameter.required_current = required_current
+    c.data.set.current = limited_current
 
     # execution
-    current = SurplusControlled()._fix_deviating_evse_current(limited_current, c)
-
-    # assertion
-    assert current == expected_current
+    SurplusControlled()._fix_deviating_evse_current(c)
 
     # evaluation
-    assert current == expected_current
+    assert c.data.set.current == expected_current
 
 
 @pytest.mark.parametrize(
