@@ -32,7 +32,7 @@ const mqttStore = useMqttStore();
 const $q = useQuasar();
 const slide = ref<number | undefined>(undefined);
 
-const chargePointIds = computed(() => mqttStore.getChargePointIds);
+const chargePointIds = computed(() => mqttStore.chargePointIds);
 
 // Set initial slide when data is available
 watch(
