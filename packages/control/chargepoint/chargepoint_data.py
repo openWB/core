@@ -117,6 +117,10 @@ class Get:
     voltages: List[float] = field(default_factory=voltages_list_factory)
 
 
+def charge_template_factory() -> ChargeTemplate:
+    return ChargeTemplate(None)
+
+
 def ev_factory() -> Ev:
     return Ev(0)
 
@@ -144,6 +148,7 @@ class Set:
     current_prev: float = 0.0
     target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
+    charge_template: ChargeTemplate = field(default_factory=charge_template_factory)
     ocpp_transaction_id: Optional[int] = None
 
 
