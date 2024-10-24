@@ -45,7 +45,7 @@ class KostalPikoOldInverter(AbstractInverter):
             log.info("Inverter power is not a number! Inverter may be offline. Setting power to 0 W.")
             power = 0
 
-        exported = self.sim_counter.sim_count(power)[1]
+        _, exported = self.sim_counter.sim_count(power)
 
         inverter_state = InverterState(
             exported=exported,
