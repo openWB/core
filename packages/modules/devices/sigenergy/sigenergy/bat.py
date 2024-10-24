@@ -24,7 +24,7 @@ class SigenergyBat(AbstractBat):
     def update(self, client: ModbusTcpClient_) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = client.read_holding_registers(30037, ModbusDataType.INT_32, unit=unit) * -1
+        power = client.read_holding_registers(30037, ModbusDataType.INT_32, unit=unit)
         # soc unit 0.1%
         soc = client.read_holding_registers(30014, ModbusDataType.UINT_16, unit=unit) / 10
         imported, exported = self.sim_counter.sim_count(power)
