@@ -38,7 +38,11 @@
 					v-if="chargepoint.isSocConfigured"
 					class="d-flex justify-content-center align-items-center vehiclestatus"
 				>
-					<BatterySymbol class="me-1" :soc="chargepoint.soc" />
+					<BatterySymbol
+						v-if="chargepoint.soc"
+						class="me-1"
+						:soc="chargepoint.soc"
+					/>
 					<i
 						v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
 						type="button"

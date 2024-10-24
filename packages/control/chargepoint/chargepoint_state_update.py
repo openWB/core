@@ -5,6 +5,7 @@ import threading
 from typing import Dict
 
 from control.chargepoint.chargepoint import Chargepoint
+from helpermodules.utils import thread_handler
 
 
 log = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class ChargepointStateUpdate:
         self.ev_data = ev_data
         self.ev_charge_template_data = ev_charge_template_data
         self.ev_template_data = ev_template_data
-        Thread(target=self.update, args=(), name=f"ChargepointStateUpdate cp {index}").start()
+        thread_handler(Thread(target=self.update, args=(), name=f"ChargepointStateUpdate cp {index}"))
 
     def update(self):
         self.event_global_data_initialized.wait()

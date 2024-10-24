@@ -66,7 +66,7 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
         self.__component_factory = component_factory
         self.__component_updater = component_updater
         self.device_config = device_config
-        self.components = {}  # type: Dict[str, T_COMPONENT]
+        self.components: Dict[str, T_COMPONENT] = {}
 
     def add_component(self, component_config: T_COMPONENT_CONFIG) -> None:
         self.components["component" + str(component_config.id)] = self.__component_factory(component_config)

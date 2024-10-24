@@ -9,14 +9,17 @@ import asyncio
 import datetime
 import logging
 from typing import Union
+
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    from bimmer_connected.api.client import MyBMWClientConfiguration
+    from bimmer_connected.api.authentication import MyBMWAuthentication
+    from bimmer_connected.account import MyBMWAccount
+    from bimmer_connected.api.regions import Regions
+    from bimmer_connected.utils import MyBMWJSONEncoder
+
 from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
-from bimmer_connected.api.client import MyBMWClientConfiguration
-from bimmer_connected.api.authentication import MyBMWAuthentication
-from bimmer_connected.account import MyBMWAccount
-from bimmer_connected.api.regions import Regions
-from bimmer_connected.utils import MyBMWJSONEncoder
-
 
 log = logging.getLogger(__name__)
 

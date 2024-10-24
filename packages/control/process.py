@@ -4,11 +4,14 @@ import logging
 import threading
 from typing import List
 
+from control.bat_all import get_controllable_bat_components
 from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
+from helpermodules.utils._thread_handler import joined_thread_handler
+from modules.common.fault_state_level import FaultStateLevel
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +22,7 @@ class Process:
 
     def process_algorithm_results(self) -> None:
         try:
-            modules_threads = []  # type: List[threading.Thread]
+            modules_threads: List[threading.Thread] = []
             log.info("# Ladung starten.")
             for cp in data.data.cp_data.values():
                 try:
@@ -52,23 +55,20 @@ class Process:
                             f"openWB/set/chargepoint/{cp.num}/get/state_str",
                             "Ladevorgang wurde gestartet... (bei Problemen: Prüfe bitte zuerst in den Einstellungen"
                             " 'Ladeeinstellungen' und 'Konfiguration'.)")
+                    if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NO_ERROR:
+                        cp.chargepoint_module.fault_state.store_error()
                     modules_threads.append(self._start_charging(cp))
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
+            for bat_component in get_controllable_bat_components():
+                modules_threads.append(
+                    threading.Thread(
+                        target=bat_component.set_power_limit,
+                        args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
+                        name=f"set power limit {bat_component.component_config.id}"))
 
             if modules_threads:
-                for thread in modules_threads:
-                    thread.start()
-
-                # Wait for all to complete
-                for thread in modules_threads:
-                    thread.join(timeout=3)
-
-                for thread in modules_threads:
-                    if thread.is_alive():
-                        log.error(
-                            thread.name +
-                            " konnte nicht innerhalb des Timeouts die Werte senden.")
+                joined_thread_handler(modules_threads, 3)
         except Exception:
             log.exception("Fehler im Process-Modul")
 
