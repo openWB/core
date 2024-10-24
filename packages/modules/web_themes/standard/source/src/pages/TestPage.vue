@@ -8,11 +8,11 @@
         v-model:fullscreen="fullscreen"
         swipeable
         control-color="primary"
-        :navigation="$q.screen.gt.xs"
-        :arrows="$q.screen.gt.xs"
         padding
         animated
         infinite
+        :navigation="$q.screen.gt.xs"
+        :arrows="$q.screen.gt.xs"
         class="full-height bg-transparent"
       >
         <q-carousel-slide
@@ -146,9 +146,7 @@ interface CarouselItemTop {
 const $q = useQuasar();
 const slideTop = ref<string>('DIA1');
 const tab = ref<string>('lp');
-
 const fullscreen = ref(false);
-
 const carouselItemsTop: CarouselItemTop[] = [
   { name: 'DIA1', image: DIA1 },
   { name: 'DIA2', image: DIA2 },
