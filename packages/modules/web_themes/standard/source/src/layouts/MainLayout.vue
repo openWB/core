@@ -1,5 +1,8 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
+  <q-layout
+    view="lHh Lpr lFf"
+    :class="{ 'centered-container': $q.screen.width >= 1000 }"
+  >
     <q-header elevated>
       <q-toolbar>
         <q-btn flat round icon="menu" aria-label="Menu" />
@@ -44,3 +47,11 @@ function toggleColorMode() {
   $q.dark.toggle();
 }
 </script>
+
+<style scoped>
+.centered-container {
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
