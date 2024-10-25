@@ -1,11 +1,15 @@
 <template>
-  <q-card class="full-height q-ma-sm q-pa-sm" style="max-width: 23em">
+  <q-card class="full-height">
     <q-card-section>
       <div class="row items-center text-h6" style="font-weight: bold">
-        {{ name }}
-        <ChargePointLockIcon :charge-point-id="props.chargePointId" />
+        <div class="col">
+          {{ name }}
+        </div>
+        <ChargePointLock
+          :charge-point-id="props.chargePointId"
+          :readonly="true"
+        />
         <ChargePointStateIcon :charge-point-id="props.chargePointId" />
-        <q-space />
         <q-icon name="settings" size="sm" @click="settings = true" />
       </div>
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
@@ -18,16 +22,18 @@
         </div>
         <div class="q-pa-sm">
           <div class="text-subtitle2">geladen</div>
-          {{ '0' }}
+          {{ charged }}
         </div>
       </div>
       <div class="row items-center q-mt-sm">
         <q-icon name="directions_car" size="sm" />
-        <div class="q-mx-sm">{{ connectedVehicle }}</div>
-        <q-icon
-          :name="priority ? 'star' : 'star_border'"
-          :color="priority ? 'yellow' : 'grey'"
-          size="sm"
+        <ChargePointVehicleSelect
+          :charge-point-id="props.chargePointId"
+          :readonly="true"
+        />
+        <ChargePointPriority
+          :charge-point-id="props.chargePointId"
+          :readonly="true"
         />
       </div>
       <SliderQuasar class="q-mt-sm" :readonly="true" />
@@ -46,33 +52,10 @@
           <div>
             <div class="text-subtitle2 q-mr-sm">Fahrzeug</div>
           </div>
-          <q-btn-dropdown
-            color="dark-page"
-            :label="selectedVehicle"
-            text-color="light"
-            flat
-            size="sm"
-            icon="directions_car"
-            dense
-            outline
-            no-caps
-            style="font-size: 1em; text-align: left"
-          >
-            <q-list>
-              <q-item
-                v-for="(vehicle, index) in vehicles"
-                :key="index"
-                clickable
-                v-close-popup
-                dense
-                @click="selectVehicle(vehicle.value)"
-              >
-                <q-item-section>
-                  <q-item-label>{{ vehicle.value }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
+          <ChargePointVehicleSelect
+            :charge-point-id="props.chargePointId"
+            :readonly="false"
+          />
         </div>
         <div class="row items-center q-ma-none q-pa-none no-wrap">
           <ChargePointModeButtons :charge-point-id="props.chargePointId" />
@@ -80,20 +63,16 @@
         <div class="row items-center q-ma-none q-pa-none no-wrap">
           <div class="text-subtitle2 q-mr-sm">Sperren</div>
           <div>
-            <ChargePointLockIcon :charge-point-id="props.chargePointId" />
+            <ChargePointLock :charge-point-id="props.chargePointId" />
           </div>
         </div>
 
         <div class="row items-center q-ma-none q-pa-none no-wrap">
           <div class="text-subtitle2 q-mr-sm">Priorität</div>
           <div>
-            <q-toggle
-              v-model="priorityToggle"
-              :color="priority ? 'positive' : 'negative'"
-              :keep-color="true"
-              checked-icon="star"
-              unchecked-icon="star_border"
-              size="lg"
+            <ChargePointPriority
+              :charge-point-id="props.chargePointId"
+              :readonly="false"
             />
           </div>
         </div>
@@ -110,11 +89,13 @@
 import { computed, ref } from 'vue';
 import SliderQuasar from './SliderQuasar.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import ChargePointLockIcon from './ChargePointLockIcon.vue';
+import ChargePointLock from './ChargePointLock.vue';
 import ChargePointStateIcon from './ChargePointStateIcon.vue';
+import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import ChargePointStateMessage from './ChargePointStateMessage.vue';
 import ChargePointFaultMessage from './ChargePointFaultMessage.vue';
+import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 
 const props = defineProps<{
   chargePointId: number;
@@ -122,29 +103,13 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-// Begin dummy data
 const settings = ref<boolean>(false);
-const priority = computed(() => {
-  return false;
-});
-const priorityToggle = ref<boolean>(false);
-const connectedVehicle = ref<string>('Standard vehicle');
-const vehicles = [
-  { value: 'Standard vehicle' },
-  { value: 'Tesla model 3' },
-  { value: 'Tesla model Y' },
-  { value: 'MG4' },
-  { value: 'BMW i3' },
-];
-const selectedVehicle = ref<string>('Standard vehicle');
-const selectVehicle = (vehicle: string) => {
-  selectedVehicle.value = vehicle;
-};
-// End dummy data
-
 const name = computed(() => mqttStore.chargePointName(props.chargePointId));
-
 const power = computed(() =>
   mqttStore.chargePointPower(props.chargePointId, 'textValue'),
 );
+
+// Begin dummy data
+const charged = ref<string>('12,3 kWh');
+// End dummy data
 </script>
