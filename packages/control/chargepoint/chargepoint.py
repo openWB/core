@@ -37,7 +37,7 @@ from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler
 from modules.common.abstract_chargepoint import AbstractChargepoint
-from helpermodules.timecheck import create_timestamp
+from helpermodules.timecheck import check_timestamp, create_timestamp
 
 
 def get_chargepoint_config_default() -> dict:
@@ -304,6 +304,7 @@ class Chargepoint(ChargepointRfidMixin):
 
     def remember_previous_values(self):
         self.data.set.plug_state_prev = self.data.get.plug_state
+        self.set_current_prev = self.data.set.current
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
 
     def reset_log_data_chargemode_switch(self) -> None:
@@ -440,7 +441,9 @@ class Chargepoint(ChargepointRfidMixin):
                     self.set_state_and_log(message)
                 return
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
-                if phase_switch.phase_switch_thread_alive(self.num) is False:
+                if (phase_switch.phase_switch_thread_alive(self.num) is False and
+                        check_timestamp(self.data.control_parameter.timestamp_charge_start,
+                                        charging_ev.ev_template.data.keep_charge_active_duration) is False):
                     self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
@@ -613,21 +616,15 @@ class Chargepoint(ChargepointRfidMixin):
                                    "was ggf eine unnötige Reduktion der Ladeleistung zur Folge hat.")
         self.data.set.required_power = sum(control_parameter.required_currents) * 230
 
-    def handle_less_power(self):
-        if self.data.set.current != 0 and self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED:
-            nominal_difference = self.data.set.charging_ev_data.ev_template.data.nominal_difference
-            if self.data.set.current - nominal_difference > max(self.data.get.currents):
-                if self.data.control_parameter.timestamp_charge_start is None:
-                    self.data.control_parameter.timestamp_charge_start = create_timestamp()
-            else:
-                self.data.control_parameter.timestamp_charge_start = None
-        else:
-            # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
+    def set_timestamp_charge_start(self):
+        # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
+        if self.data.control_parameter.timestamp_charge_start is None:
+            if self.set_current_prev == 0 and self.data.set.current != 0:
+                self.data.control_parameter.timestamp_charge_start = create_timestamp()
+        elif self.data.set.current == 0:
             self.data.control_parameter.timestamp_charge_start = None
 
     def update_ev(self, ev_list: Dict[str, Ev]) -> None:
-        # Für Control-Pilot-Unterbrechung set current merken.
-        self.set_current_prev = self.data.set.current
         self._validate_rfid()
         charging_possible = self.is_charging_possible()[0]
         if charging_possible:
@@ -642,8 +639,6 @@ class Chargepoint(ChargepointRfidMixin):
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
-            # Für Control-Pilot-Unterbrechung set current merken.
-            self.set_current_prev = self.data.set.current
             self._validate_rfid()
             charging_possible, message = self.is_charging_possible()
             if self.data.get.rfid is not None and self.data.get.plug_state:
@@ -677,7 +672,7 @@ class Chargepoint(ChargepointRfidMixin):
                     charging_ev.set_submode_changed(self.data.control_parameter, submode)
                     self.set_control_parameter(submode, required_current)
                     self.set_required_currents(required_current)
-                    self.handle_less_power()
+                    self.set_timestamp_charge_start()
                     self.check_phase_switch_completed()
 
                     if charging_ev.chargemode_changed:
