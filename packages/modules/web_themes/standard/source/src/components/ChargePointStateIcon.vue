@@ -2,7 +2,7 @@
   <q-icon
     :name="plugState ? 'power' : 'power_off'"
     size="sm"
-    :color="plugState ? (chargeState ? 'green' : 'yellow') : 'red'"
+    :color="plugState ? (chargeState ? 'positive' : 'warning') : 'negative'"
   />
 </template>
 
