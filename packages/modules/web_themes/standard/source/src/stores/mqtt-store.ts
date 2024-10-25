@@ -13,6 +13,8 @@ import type {
   ChargePointConnectedVehicleConfig,
   ChargeTemplateConfiguration,
   ValueObject,
+  ChargePointConnectedVehicleInfo,
+  Vehicle,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -190,22 +192,25 @@ export const useMqttStore = defineStore('mqtt', () => {
    * subscribe('openWB/general/#');
    * subscribe('openWB/general/+');
    */
-  function subscribe(topics: string[] | string): void {
+  function subscribe(
+    topics: string[] | string,
+    defaultValue: unknown = undefined,
+  ): void {
     if (!Array.isArray(topics)) {
       topics = [topics];
     }
     topics.forEach((topic) => {
-      addSubscription(topic);
-      initTopic(topic);
-    });
-    if (!mqttClient) {
-      console.error('mqttClient is not initialized');
-      return;
-    }
-    mqttClient.subscribe(topics, {}, (error) => {
-      if (error) {
-        console.error('Subscribe to topics error', error);
-        return;
+      if (addSubscription(topic) == 1) {
+        initTopic(topic, defaultValue);
+        if (!mqttClient) {
+          console.error('mqttClient is not initialized');
+        } else {
+          mqttClient.subscribe(topics, {}, (error) => {
+            if (error) {
+              console.error('Subscribe to topics error', error);
+            }
+          });
+        }
       }
     });
   }
@@ -225,16 +230,17 @@ export const useMqttStore = defineStore('mqtt', () => {
       topics = [topics];
     }
     topics.forEach((topic) => {
-      removeSubscription(topic);
-      removeTopic(topic);
-    });
-    if (!mqttClient) {
-      console.error('mqttClient is not initialized');
-      return;
-    }
-    mqttClient.unsubscribe(topics, (error) => {
-      if (error) {
-        console.error('Unsubscribe error', error);
+      if (removeSubscription(topic) <= 0) {
+        removeTopic(topic);
+        if (!mqttClient) {
+          console.error('mqttClient is not initialized');
+        } else {
+          mqttClient.unsubscribe(topic, (error) => {
+            if (error) {
+              console.error('Unsubscribe error', error);
+            }
+          });
+        }
       }
     });
   }
@@ -247,7 +253,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * addSubscription('openWB/general/web_theme');
    * addSubscription('openWB/general/#');
    */
-  function addSubscription(topic: string): void {
+  function addSubscription(topic: string): number {
     // add subscription to list or increment count
     if (topic in subscriptions.value) {
       subscriptions.value[topic] += 1;
@@ -259,6 +265,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       topic,
       subscriptions.value[topic],
     );
+    return subscriptions.value[topic];
   }
 
   /**
@@ -269,10 +276,11 @@ export const useMqttStore = defineStore('mqtt', () => {
    * removeSubscription('openWB/general/web_theme');
    * removeSubscription('openWB/general/#');
    */
-  function removeSubscription(topic: string): void {
+  function removeSubscription(topic: string): number {
+    let count = 0;
     // remove subscription from list or decrement count
     if (topic in subscriptions.value) {
-      subscriptions.value[topic] -= 1;
+      count = subscriptions.value[topic] -= 1;
       if (subscriptions.value[topic] <= 0) {
         delete subscriptions.value[topic];
       }
@@ -282,6 +290,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       topic,
       subscriptions.value[topic],
     );
+    return count;
   }
 
   /**
@@ -352,6 +361,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   // General functions and methods for the store - END
 
   // Computed
+
   /**
    * Get all topics matching a wildcard topic
    * @param baseTopic mqtt topic to match against
@@ -373,6 +383,17 @@ export const useMqttStore = defineStore('mqtt', () => {
             .replaceAll('+', '[^+/]+')
             .replaceAll('#', '[^#/]+') +
           '$';
+        // check if baseTopic is already subscribed
+        if (!Object.keys(subscriptions.value).includes(baseTopic)) {
+          console.warn('auto subscription of wildcard topic', baseTopic);
+          subscribe(baseTopic);
+        }
+      } else {
+        // auto subscription of regex patterns not possible
+        console.warn(
+          'auto subscription of regex topic not possible',
+          baseTopic,
+        );
       }
       // filter and return all topics matching our regex
       return Object.keys(topics.value)
@@ -426,12 +447,11 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (
       topic: string,
       objectPath: string | undefined = undefined,
+      defaultValue: unknown = undefined,
     ): unknown => {
-      if (!(topic in topics.value)) {
-        console.warn('topic not found', topic);
+      if (!(topic in subscriptions.value)) {
         console.warn('auto subscription of topic', topic);
-        subscribe(topic);
-        return undefined;
+        subscribe(topic, defaultValue);
       }
       let topicObject = topics.value[topic];
       if (objectPath == undefined || topicObject == undefined) {
@@ -440,11 +460,12 @@ export const useMqttStore = defineStore('mqtt', () => {
       const path = objectPath.split('.');
       for (let i = 0; i < path.length; i++) {
         if (topicObject[path[i]] == undefined) {
-          console.warn('path not found', topicObject, path[i]);
-          return undefined;
+          console.error('path not found', topicObject, path[i]);
+          return defaultValue;
         }
         topicObject = topicObject[path[i]];
       }
+      console.log('getValue', topic, objectPath, topicObject);
       return topicObject;
     };
   });
@@ -472,7 +493,11 @@ export const useMqttStore = defineStore('mqtt', () => {
       let scaledValue = value;
       let textValue = defaultString;
       if (value === undefined) {
-        console.warn('value is undefined! using default', value, defaultString);
+        console.debug(
+          'value is undefined! using default',
+          value,
+          defaultString,
+        );
       } else {
         if (inverted) {
           scaledValue = value *= -1;
@@ -612,13 +637,11 @@ export const useMqttStore = defineStore('mqtt', () => {
   const chargePointManualLock = (chargePointId: number) => {
     return computed({
       get() {
-        console.log('get manual lock', chargePointId);
         return getValue.value(
           `openWB/chargepoint/${chargePointId}/set/manual_lock`,
         );
       },
       set(newValue: boolean) {
-        console.log('set manual lock', newValue, chargePointId);
         return updateTopic(
           `openWB/chargepoint/${chargePointId}/set/manual_lock`,
           newValue,
@@ -665,6 +688,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (chargePointId: number, returnType: string = 'textValue') => {
       const power = getValue.value(
         `openWB/chargepoint/${chargePointId}/get/power`,
+        undefined,
+        0,
       ) as number;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwnProperty.call(valueObject, returnType)) {
@@ -682,6 +707,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const chargePointStateMessage = computed(() => {
     return (chargePointId: number) => {
+      subscribe(`openWB/chargepoint/${chargePointId}/get/state_str`);
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/get/state_str`,
       ) as string;
@@ -711,6 +737,33 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the charge point connected vehicle info identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns ChargePointConnectedVehicleInfo
+   */
+  const chargePointConnectedVehicleInfo = (chargePointId: number) => {
+    return computed({
+      get() {
+        return getValue.value(
+          `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`,
+        ) as ChargePointConnectedVehicleInfo;
+      },
+      set(newValue: ChargePointConnectedVehicleInfo) {
+        updateTopic(
+          `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`,
+          newValue,
+          undefined,
+          true,
+        );
+        sendTopicToBroker(
+          `openWB/chargepoint/${chargePointId}/config/ev`,
+          newValue.id,
+        );
+      },
+    });
+  };
+
+  /**
    * Get or set the charge point connected vehicle charge mode identified by the charge point id
    * @param chargePointId charge point id
    * @returns object
@@ -729,6 +782,31 @@ export const useMqttStore = defineStore('mqtt', () => {
           `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
           newValue,
           'chargemode.selected',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle charge priority identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns boolean
+   */
+  const chargePointConnectedVehiclePriority = (chargePointId: number) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.prio;
+      },
+      set(newValue: number) {
+        console.log('set charge priority', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'prio',
           true,
         );
       },
@@ -790,9 +868,22 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  const vehicleList = () => {
+    const list = getWildcardValues.value('openWB/vehicle/+/name');
+    // generate an array of objects, containing vehicle index and name
+    return Object.keys(list).map((key) => {
+      const vehicleIndex = parseInt(key.split('/')[2]);
+      return {
+        id: vehicleIndex,
+        name: list[key] as string,
+      } as Vehicle;
+    });
+  };
+
   // exports
   return {
     topics,
+    subscriptions,
     initialize,
     updateTopic,
     updateState: updateTopic, // alias for compatibility with older code
@@ -817,7 +908,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
+    chargePointConnectedVehicleInfo,
     chargePointConnectedVehicleChargeMode,
+    chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleChargeTemplate,
+    vehicleList,
   };
 });
