@@ -1,8 +1,5 @@
 <template>
-  <q-layout
-    view="lHh Lpr lFf"
-    :class="{ 'centered-container': $q.screen.width >= 1000 }"
-  >
+  <q-layout view="lHh Lpr lFf" class="centered-container">
     <q-header elevated>
       <q-toolbar>
         <q-btn flat round icon="menu" aria-label="Menu" />

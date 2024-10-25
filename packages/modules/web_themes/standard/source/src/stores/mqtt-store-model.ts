@@ -39,6 +39,10 @@ export interface ChargePointConnectedVehicleConfig {
   time_charging_in_use: boolean;
 }
 
+export interface ChargePointConnectedVehicleInfo {
+  id: number;
+  name: string;
+}
 export interface ChargeTemplateConfiguration {
   name: string;
   prio: boolean;
@@ -76,4 +80,9 @@ export interface ChargeTemplateConfiguration {
 
 export interface ValueObject {
   [key: string]: string | number;
+}
+
+export interface Vehicle {
+  id: number;
+  name: string;
 }
