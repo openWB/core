@@ -9,6 +9,10 @@
       General getter:
       {{ mqttStore.getValue('openWB/general/web_theme', 'configuration') }}
     </p>
+    <p>
+      Vehicle List:
+      {{ mqttStore.vehicleList() }}
+    </p>
   </div>
 </template>
 
