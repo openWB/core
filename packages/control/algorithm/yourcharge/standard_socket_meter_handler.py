@@ -66,4 +66,4 @@ class SocketMeterHandler:
         if self.data.model is None:
             self.data.model = self._meter.get_model()
 
-        self.data.last_update = f"{datetime.datetime.utcnow().isoformat()}Z"
+        self.data.last_update = f"{datetime.datetime.now(datetime.timezone.utc).isoformat()}Z"

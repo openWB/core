@@ -4,7 +4,6 @@ import logging
 import json
 
 from dataclasses import dataclass
-from helpermodules import timecheck
 
 from typing import Dict, List, Optional
 from control import data, yourcharge
@@ -109,7 +108,7 @@ class YcStatusHandler:
                     and data.data.yc_data.data.yc_control.accounting.meter_at_start is not None:
                 self._accounting_info_cache = data.data.yc_data.data.yc_control.accounting
                 if self._accounting_info_cache.currrent_time is None:
-                    self._accounting_info_cache.currrent_time = f"{datetime.datetime.utcnow().isoformat()}Z"
+                    self._accounting_info_cache.currrent_time = f"{datetime.datetime.now(datetime.timezone.utc).isoformat()}Z"
         return self._accounting_info_cache
 
     def has_changed_rfid_scan(self) -> bool:
@@ -138,7 +137,7 @@ class YcStatusHandler:
         return self._cp_meter_at_last_night_meter_reading_control_topic in self._changed_keys
 
     def update_time(self) -> None:
-        self._update(self._time_topic, timecheck.create_timestamp())
+        self._update(self._time_topic, datetime.datetime.now(datetime.timezone.utc).timestamp())
 
     # energy limit
     def update_energy_limit(self, limit_value: float) -> None:
@@ -231,7 +230,7 @@ class YcStatusHandler:
         return self._socket_approved_topic in self._changed_keys
 
     # RFID scan
-    def update_rfid_scan(self, rfid: str, timestamp: datetime.datetime = datetime.datetime.utcnow()) -> None:
+    def update_rfid_scan(self, rfid: str, timestamp: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)) -> None:
         self._rfid_info_cache = RfidInfo(rfid=rfid, timestamp=f"{timestamp.isoformat()}Z")
         self._update(self._scanned_rfid_topic, dataclasses.asdict(self._rfid_info_cache))
 
