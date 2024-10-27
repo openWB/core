@@ -10,27 +10,21 @@ import subprocess
 import paho.mqtt.client as mqtt
 import traceback
 
-from control import bat_all, bat, pv_all
+from control import bat_all, bat, counter, counter_all, ev, general, optional, pv, pv_all
 from control.chargepoint import chargepoint
-from control import counter
-from control import counter_all
-from control import ev
-from control import general
 from control import yourcharge
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
-from helpermodules import graph
+from control.optional_data import Ocpp
+from helpermodules import graph, system
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
-from control import optional
 from helpermodules.pub import Pub
-from helpermodules import system
-from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
@@ -434,13 +428,24 @@ class SubData:
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
                         if re.search("/chargepoint/[0-9]+/get/connected_vehicle/", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)
-                        elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
-                            if (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
-                                    decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
-                                # Wenn das Auto noch nicht zugeordnet ist, wird der SoC nach der Zuordnung aktualisiert
-                                if var["cp"+index].chargepoint.data.set.charging_ev > -1:
-                                    Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
-                                              '/get/force_soc_update', True)
+                        elif (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
+                              decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
+                            # Wenn das Auto noch nicht zugeordnet ist, wird der SoC nach der Zuordnung aktualisiert
+                            if var["cp"+index].chargepoint.data.set.charging_ev > -1:
+                                Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
+                                          '/get/force_soc_update', True)
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/error_timestamp$", msg.topic) is not None:
+                            var["cp" +
+                                index].chargepoint.chargepoint_module.client_error_context.error_timestamp = (
+                                decode_payload(msg.payload)
+                            )
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/simulation$", msg.topic) is not None:
+                            var["cp"+index].chargepoint.chargepoint_module.sim_counter.data = dataclass_from_dict(
+                                SimCounterState,
+                                decode_payload(msg.payload))
+                        else:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                     elif re.search("/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         self.process_chargepoint_config_topic(var, msg)
@@ -591,7 +596,7 @@ class SubData:
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                         var.data.ripple_control_receiver.module = config_dict
                         var.ripple_control_receiver = ConfigurableRcr(
-                            config=config, component_initialiser=mod.create_ripple_control_receiver)
+                            config=config, component_initializer=mod.create_ripple_control_receiver)
                 elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
                 elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
@@ -693,6 +698,8 @@ class SubData:
                     self.set_json_payload_class(var.data.led, msg)
                 elif re.search("/optional/rfid/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.rfid, msg)
+                elif re.search("/optional/ocpp/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.ocpp, msg)
                 elif re.search("/optional/int_display/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.int_display, msg)
                     if re.search("/(standby|active|rotation)$", msg.topic) is not None:
@@ -717,6 +724,9 @@ class SubData:
                             var.et_get_prices()
                     else:
                         self.set_json_payload_class(var.data.et, msg)
+                elif re.search("/optional/ocpp/", msg.topic) is not None:
+                    config_dict = decode_payload(msg.payload)
+                    var.data.ocpp = dataclass_from_dict(Ocpp, config_dict)
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
@@ -782,7 +792,8 @@ class SubData:
                                   str(index)+" gefunden werden.")
                 else:
                     device_config = decode_payload(msg.payload)
-                    dev = importlib.import_module(".devices."+device_config["type"]+".device", "modules")
+                    dev = importlib.import_module(f".devices.{device_config['vendor']}.{device_config['type']}.device",
+                                                  "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, device_config)
                     var["device"+index] = (dev.Device if hasattr(dev, "Device") else dev.create_device)(config)
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
@@ -813,8 +824,10 @@ class SubData:
                     # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
                     # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     component_config = decode_payload(msg.payload)
-                    component = importlib.import_module(
-                        f'.devices.{var["device"+index].device_config.type}.{component_config["type"]}', "modules")
+                    component = importlib.import_module(f'.devices.{var["device"+index].device_config.vendor}'
+                                                        f'.{var["device"+index].device_config.type}'
+                                                        f'.{component_config["type"]}',
+                                                        "modules")
                     config = dataclass_from_dict(component.component_descriptor.configuration_factory, component_config)
                     var["device"+index].add_component(config)
                     client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation", 2)

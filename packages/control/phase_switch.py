@@ -3,13 +3,12 @@
 import logging
 import threading
 import time
-from typing import Dict
 
 from control.ev import Ev
+from helpermodules.utils._thread_handler import is_thread_alive, thread_handler
 from modules.common.abstract_chargepoint import AbstractChargepoint
 
 log = logging.getLogger(__name__)
-phase_switch_threads: Dict[str, threading.Thread] = {}
 
 
 def thread_phase_switch(cp) -> None:
@@ -17,23 +16,13 @@ def thread_phase_switch(cp) -> None:
     Phasenumschaltung erfolgt in Threads, da diese länger als ein Zyklus dauert.
     """
     try:
-        global phase_switch_threads
-        # fertige Threads aus der Liste löschen:
-        phase_switch_threads = {
-            t: phase_switch_threads[t] for t in phase_switch_threads if phase_switch_threads[t].is_alive()}
-
-        # prüfen, ob Thread in der Liste ist. Dann ist noch eine Phasenumschaltung aktiv und es darf keine neue
-        # gestartet werden.
-        if "thread_cp"+str(cp.num) not in phase_switch_threads:
-            # Thread zur Phasenumschaltung erstellen, starten und der Liste hinzufügen.
-            phase_switch_threads["thread_cp"+str(cp.num)] = threading.Thread(
+        if thread_handler(threading.Thread(
                 target=_perform_phase_switch,
                 args=(cp.chargepoint_module,
                       cp.data.control_parameter.phases,
                       cp.data.set.charging_ev_data,
                       cp.data.get.charge_state),
-                name=f"phase switch cp{cp.chargepoint_module.config.id}")
-            phase_switch_threads["thread_cp"+str(cp.num)].start()
+                name=f"phase switch cp{cp.chargepoint_module.config.id}")):
             log.debug("Thread zur Phasenumschaltung an LP"+str(cp.num)+" gestartet.")
     except Exception:
         log.exception("Fehler im Phasenumschaltungs-Modul")
@@ -56,7 +45,4 @@ def _perform_phase_switch(chargepoint_module: AbstractChargepoint, phases: int, 
 
 
 def phase_switch_thread_alive(cp_num):
-    if f"thread_cp{cp_num}" in phase_switch_threads:
-        return phase_switch_threads[f"thread_cp{cp_num}"].is_alive()
-    else:
-        return False
+    return is_thread_alive(f"phase switch cp{cp_num}")

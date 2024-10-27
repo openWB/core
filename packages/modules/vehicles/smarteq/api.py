@@ -4,18 +4,22 @@ import logging
 from typing import Union
 import asyncio
 import json
-from modules.common.component_state import CarState
-from modules.common.store import RAMDISK_PATH
-from modules.vehicles.smarteq.config import SmartEQ
-# import requests
-from modules.common import req
-import bs4
-import pkce
 import os
 import time
 import datetime
 import pickle
 import copy
+
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    import bs4
+with ImportErrorContext():
+    import pkce
+
+from modules.common import req
+from modules.common.component_state import CarState
+from modules.common.store import RAMDISK_PATH
+from modules.vehicles.smarteq.config import SmartEQ
 
 date_fmt = '%Y-%m-%d %H:%M:%S'
 # refreshToken_exp_days = 7    # 7 days before refreshToken expires a new refreshToken shall be stored

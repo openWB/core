@@ -4,7 +4,8 @@
 # flake8: noqa: F402
 import logging
 from helpermodules import logger
-# als erstes logging initalisieren, damit auch ImportError geloggt werden
+from helpermodules.utils import thread_handler
+# als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
 
@@ -17,24 +18,17 @@ import traceback
 from threading import Thread
 from control.chargelog.chargelog import calculate_charge_cost
 
+from control import data, prepare, process
+from control.algorithm import algorithm
+from helpermodules import command, setdata, subdata, timecheck, update_config
 from helpermodules.changed_values_handler import ChangedValuesContext
 from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
 from helpermodules.measurement_logging.write_log import LogType, save_log
-from modules import loadvars
-from modules import configuration
-from helpermodules import timecheck, update_config
-from helpermodules import subdata
-from helpermodules import setdata
-from helpermodules import command
 from helpermodules.modbusserver import start_modbus_server
 from helpermodules.pub import Pub
-from control import prepare
-from control import data
-from control import process
-from control.algorithm import algorithm
 from control.algorithm.yourcharge import statmachine_yc
 from helpermodules.utils import exit_after
-from modules import update_soc
+from modules import configuration, loadvars, update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
@@ -71,6 +65,43 @@ class HandlerAlgorithm:
                         control.calc_current()
                         proc.process_algorithm_results()
                         data.data.graph_data.pub_graph_data()
+                    self.interval_counter = 1
+                else:
+                    self.interval_counter = self.interval_counter + 1
+            log.info("# ***Start*** ")
+            log.debug(f"Threads: {threading.enumerate()}")
+            Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
+            handler_with_control_interval()
+        except KeyboardInterrupt:
+            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
+        except Exception:
+            log.exception("Fehler im Main-Modul")
+
+    # enable time guarding after completing integration (it makes debugging much harder)
+    def handler5Sec_yc(self):
+        """ führt den YourCharge Algorithmus durch.
+        """
+        try:
+            @exit_after(5)
+            def handler_with_control_interval():
+                if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
+                    data.data.copy_data()
+                    loadvars_.get_values()
+                    wait_for_module_update_completed(loadvars_.event_module_update_completed,
+                                                     "openWB/set/system/device/module_update_completed")
+                    data.data.copy_data()
+                    with ChangedValuesContext(loadvars_.event_module_update_completed):
+                        self.heartbeat = True
+                        if data.data.system_data["system"].data["perform_update"]:
+                            data.data.system_data["system"].perform_update()
+                            return
+                        elif data.data.system_data["system"].data["update_in_progress"]:
+                            log.info("Regelung pausiert, da ein Update durchgeführt wird.")
+                        event_global_data_initialized.set()
+                        if self.control_yc is None:
+                            # we need lazy instantiation here so general_internal_chargepoint_handler is safely assigned
+                            self.control_yc = statmachine_yc.StatemachineYc(general_internal_chargepoint_handler)
+                        self.control_yc.perform_load_control()
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -130,6 +161,7 @@ class HandlerAlgorithm:
                 update_pv_monthly_yearly_yields()
                 data.data.general_data.grid_protection()
                 data.data.optional_data.et_get_prices()
+                data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
@@ -146,14 +178,14 @@ class HandlerAlgorithm:
             if not sub.heartbeat:
                 log.error("Heartbeat für Subdata nicht zurückgesetzt.")
                 sub.disconnect()
-                Thread(target=sub.sub_topics, args=(), name="Subdata").start()
+                thread_handler(Thread(target=sub.sub_topics, args=(), name="Subdata"))
             else:
                 sub.heartbeat = False
 
             if not set.heartbeat:
                 log.error("Heartbeat für Setdata nicht zurückgesetzt.")
                 set.disconnect()
-                Thread(target=set.set_data, args=(), name="Setdata").start()
+                thread_handler(Thread(target=set.set_data, args=(), name="Setdata"))
             else:
                 set.heartbeat = False
 

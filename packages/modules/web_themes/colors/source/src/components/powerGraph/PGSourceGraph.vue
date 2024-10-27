@@ -1,7 +1,10 @@
 <template>
 	<g
-id="pgSourceGraph" :origin="draw" :origin2="autozoom"
-		:transform="'translate(' + margin.left + ',' + margin.top + ')'" />
+		id="pgSourceGraph"
+		:origin="draw"
+		:origin2="autozoom"
+		:transform="'translate(' + margin.left + ',' + margin.top + ')'"
+	/>
 </template>
 
 <script setup lang="ts">
@@ -106,7 +109,9 @@ const keysToUse = computed(() => {
 						list.push(element)
 					}
 					return list
-				}, [])
+				},
+				[],
+			)
 		}
 	}
 	switch (graphData.graphMode) {
@@ -117,11 +122,13 @@ const keysToUse = computed(() => {
 				return ['selfUsage', 'evuOut', 'batOut', 'evuIn']
 			}
 		case 'today':
-		case 'day':			
+		case 'day':
 			additionalKeys.forEach((key, i) => {
 				colors[key] = 'var(--color-pv' + (i + 1) + ')'
 			})
-			return (globalConfig.showInverters) ? [...additionalKeys, ...k] : ['selfUsage', 'evuOut', 'batOut', 'evuIn']
+			return globalConfig.showInverters
+				? [...additionalKeys, ...k]
+				: ['selfUsage', 'evuOut', 'batOut', 'evuIn']
 		default:
 			return ['evuIn', 'batOut', 'selfUsage', 'evuOut']
 	}

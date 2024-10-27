@@ -4,9 +4,12 @@ from socketserver import TCPServer
 from collections import defaultdict
 import struct
 from typing import Optional
-from umodbus import conf
-from umodbus.server.tcp import RequestHandler, get_server
-from umodbus.utils import log_to_stream
+
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    from umodbus import conf
+    from umodbus.server.tcp import RequestHandler, get_server
+    from umodbus.utils import log_to_stream
 
 from helpermodules import timecheck
 from helpermodules.hardware_configuration import get_serial_number
@@ -23,7 +26,7 @@ try:
     TCPServer.allow_reuse_address = True
     app = get_server(TCPServer, ('0.0.0.0', 1502), RequestHandler)
 
-    serial_number = get_serial_number().replace("snnumber=", "")
+    serial_number = get_serial_number()
 except (Exception, OSError):
     log.exception("Fehler im Modbus-Server")
 

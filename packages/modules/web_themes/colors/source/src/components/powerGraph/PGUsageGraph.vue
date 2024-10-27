@@ -29,6 +29,7 @@ import {
 	xScale,
 	zoomedRange,
 } from './model'
+import { chargePoints } from '../chargePointList/model'
 const props = defineProps<{
 	width: number
 	height: number
@@ -37,18 +38,20 @@ const props = defineProps<{
 }>()
 
 //state
-const keys = computed (() => {
+const keys = computed(() => {
 	if (globalConfig.showInverters) {
 		return [
-	['house', 'charging', 'devices', 'batIn'],
-	['charging', 'devices', 'house', 'batIn'],
-	['devices', 'charging', 'house', 'batIn'],
-	]
+			['house', 'charging', 'devices', 'batIn'],
+			['charging', 'devices', 'batIn', 'house'],
+			['devices', 'batIn', 'charging', 'house'],
+			['batIn', 'charging', 'house', 'devices'],
+		]
 	} else {
 		return [
-		['house', 'charging', 'devices', 'batIn', 'evuOut'],
-		['charging', 'devices', 'house', 'batIn', 'evuOut'],
-		['devices', 'charging', 'house', 'batIn', 'evuOut'],
+			['house', 'charging', 'devices', 'batIn', 'evuOut'],
+			['charging', 'devices', 'batIn', 'house', 'evuOut'],
+			['devices', 'batIn', 'charging', 'house', 'evuOut'],
+			['batIn', 'charging', 'house', 'devices', 'evuOut'],
 		]
 	}
 })
@@ -123,7 +126,11 @@ const yScale = computed(() => {
 })
 
 const keysToUse = computed(() => {
-	if (graphData.graphMode != 'today' && graphData.graphMode != 'day') {
+	if (
+		graphData.graphMode != 'today' &&
+		graphData.graphMode != 'day' &&
+		graphData.graphMode != 'live'
+	) {
 		return keys.value[props.stackOrder]
 	} else {
 		const k = keys.value[props.stackOrder].slice()
@@ -144,7 +151,7 @@ const keysToUse = computed(() => {
 		}
 		additionalKeys.forEach((key, i) => {
 			k.splice(idx + i, 0, key)
-			colors[key] = 'var(--color-cp' + i + ')'
+			colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
 		})
 		if (globalConfig.showInverters) {
 			k.push('evuOut')

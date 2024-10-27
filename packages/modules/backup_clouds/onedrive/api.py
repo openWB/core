@@ -2,8 +2,11 @@ import logging
 import pickle
 import json
 import paho.mqtt.publish as publish
-import msal
 import base64
+
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    import msal
 
 from helpermodules.messaging import MessageType
 from modules.backup_clouds.onedrive.config import OneDriveBackupCloud, OneDriveBackupCloudConfiguration
@@ -87,7 +90,7 @@ def generateMSALAuthCode(cloudbackup: OneDriveBackupCloud) -> dict:
     app = msal.PublicClientApplication(
         client_id=cloudbackup.configuration.clientID,
         authority=cloudbackup.configuration.authority
-        )
+    )
 
     # create device flow to obtain auth code
     flow = app.initiate_device_flow(cloudbackup.configuration.scope)
@@ -105,10 +108,10 @@ def generateMSALAuthCode(cloudbackup: OneDriveBackupCloud) -> dict:
 
     publish.single(
         "openWB/set/system/backup_cloud/config", cloudbackupconfig_to_mqtt, retain=True, hostname="localhost"
-        )
+    )
 
-    result["message"] = """Authorisierung gestartet, bitte den Link öffen, Code eingeben,
-        und Zugang authorisieren. Anschließend Zugangsberechtigung abrufen."""
+    result["message"] = """Autorisierung gestartet, bitte den Link öffnen, Code eingeben,
+        und Zugang autorisieren. Anschließend Zugangsberechtigung abrufen."""
     result["MessageType"] = MessageType.SUCCESS
 
     return result
@@ -134,7 +137,7 @@ def retrieveMSALTokens(cloudbackup: OneDriveBackupCloud) -> dict:
     f = cloudbackup.configuration.flow
     if f is None:
         result["message"] = """Es ist wurde kein Auth-Code erstellt.
-                            Bitte zunächst Auth-Code erstellen und den Authorisierungsprozess beenden.<br />"""
+                            Bitte zunächst Auth-Code erstellen und den Autorisierungsprozess beenden.<br />"""
         result["MessageType"] = MessageType.WARNING
         return result
     flow = pickle.loads(bytes(f, encoding='latin1'))

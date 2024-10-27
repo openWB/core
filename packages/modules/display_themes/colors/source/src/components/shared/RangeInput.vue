@@ -1,6 +1,8 @@
 <template>
-	<span class="d-flex flex-column">
-		<span class="d-flex flex-fill justify-content-between align-items-center">
+	<span class="rangewidget d-flex flex-column">
+		<span
+			class="rangeslider d-flex flex-fill justify-content-between align-items-center"
+		>
 			<span type="button" class="minusButton" @click="stepDown">
 				<i class="fa fa-xl fa-minus-square me-2" />
 			</span>
@@ -55,6 +57,8 @@ function stepDown() {
 	}
 }
 function stepUp() {
+	console.log('stepup')
+	console.log(v.value)
 	if (v.value < props.max) {
 		v.value =
 			Math.round((v.value + props.step) * Math.pow(10, dec)) / Math.pow(10, dec)
@@ -63,23 +67,34 @@ function stepUp() {
 </script>
 
 <style scoped>
+.rangewidget {
+	width: 100%;
+}
+.rangeslider {
+	width: 100%;
+}
 .minlabel {
 	color: var(--color-menu);
+	font-size: var(--font-settings);
 }
 
 .maxlabel {
 	color: var(--color-menu);
+	font-size: var(--font-settings);
 }
 
 .valuelabel {
 	color: var(--color-fg);
+	font-size: var(--font-settings);
 }
 
 .minusButton {
 	color: var(--color-menu);
+	font-size: var(--font-extralarge);
 }
 
 .plusButton {
 	color: var(--color-menu);
+	font-size: var(--font-extralarge);
 }
 </style>
