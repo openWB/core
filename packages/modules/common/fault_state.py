@@ -53,7 +53,7 @@ class FaultState(Exception):
             topic = component_type.type_to_topic_mapping(self.component_info.type)
             if self.component_info.type == component_type.ComponentType.ELECTRICITY_TARIFF.value:
                 topic_prefix = f"openWB/set/{topic}"
-            elif self.component_info.type == component_type.ComponentType.RIPPLE_CONTROL_RECEIVER.value:
+            elif self.component_info.type == component_type.ComponentType.IO.value:
                 topic_prefix = f"openWB/set/general/{topic}"
             else:
                 topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"

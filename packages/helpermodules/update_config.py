@@ -39,7 +39,6 @@ from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
-from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 from modules.devices.good_we.good_we.version import GoodWeVersion
 
@@ -243,6 +242,12 @@ class UpdateConfig:
         "^openWB/internal_chargepoint/[0-1]/data/phases_to_use$",
         "^openWB/internal_chargepoint/[0-1]/data/parent_cp$",
 
+        "^openWB/io/states/[0-9]+/get/digital_input$",
+        "^openWB/io/states/[0-9]+/get/digital_output$",
+        "^openWB/io/states/[0-9]+/get/analog_input$",
+        "^openWB/io/states/[0-9]+/get/analog_output$",
+        "^openWB/io/action/[0-9]+/config$",
+
         "^openWB/set/log/request",
         "^openWB/set/log/data",
 
@@ -424,6 +429,7 @@ class UpdateConfig:
         "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
         "^openWB/system/device/[0-9]+/config$",
         "^openWB/system/device/module_update_completed$",
+        "^openWB/system/io/[0-9]+/config$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
@@ -1316,11 +1322,11 @@ class UpdateConfig:
             convert_file(file)
         self.__update_topic("openWB/system/datastore_version", 36)
 
-    def upgrade_datastore_36(self) -> None:
-        if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured", False):
-            Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
-        hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
-        self.__update_topic("openWB/system/datastore_version", 37)
+    # def upgrade_datastore_36(self) -> None:
+    #     if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured", False):
+    #         Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
+    #     hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
+    #     self.__update_topic("openWB/system/datastore_version", 37)
 
     def upgrade_datastore_37(self) -> None:
         def collect_names(topic: str, payload) -> None:

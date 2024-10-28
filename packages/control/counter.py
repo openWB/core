@@ -73,6 +73,7 @@ def get_factory() -> Get:
 @dataclass
 class Set:
     error_timer: Optional[float] = field(default=None, metadata={"topic": "set/error_timer"})
+    dimming_power_left: float = field(default=0, metadata={"topic": "set/dimming_power_left"})
     reserved_surplus: float = field(default=0, metadata={"topic": "set/reserved_surplus"})
     released_surplus: float = field(default=0, metadata={"topic": "set/released_surplus"})
     raw_power_left: float = 0
@@ -107,6 +108,7 @@ class Counter:
             loadmanagement_available = self._get_loadmanagement_state()
             self._set_current_left(loadmanagement_available)
             self._set_power_left(loadmanagement_available)
+            self._set_dimming_power_left()
             if loadmanagement_available is False:
                 self.data.get.power = 0
                 return
@@ -190,12 +192,27 @@ class Counter:
         else:
             self.data.set.raw_power_left = None
 
-    def update_values_left(self, diffs) -> None:
+    def _set_dimming_power_left(self) -> None:
+        if self.num == data.data.counter_all_data.get_evu_counter():
+            if data.data.general_data.data.dimming.get.active:
+                self.data.set.dimming_power_left = data.data.general_data.data.dimming.set.max_import_power
+        else:
+            self.data.set.dimming_power_left = None
+
+    def update_values_left(self, diffs, cp) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
             self.data.set.raw_power_left -= sum(diffs) * 230
-        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
-                  f'{self.data.set.raw_power_left}W verbleibende Leistung')
+        dimming_power_left = None
+        for io in data.data.io_device.values():
+            dimming_power_left = io.dimming_set_import_power_left(sum(diffs)*230, cp.num)
+        if dimming_power_left is not None:
+            log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
+                      f'{self.data.set.raw_power_left}W verbleibende Leistung, '
+                      f'{self.data.set.dimming_power_left}W verbleibende Dimmleistung')
+        else:
+            log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
+                      f'{self.data.set.raw_power_left}W verbleibende Leistung')
 
     def update_surplus_values_left(self, diffs) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))

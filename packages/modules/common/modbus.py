@@ -188,6 +188,9 @@ class ModbusClient:
     def write_registers(self, address: int, value: Any, **kwargs):
         self._delegate.write_registers(address, value, **kwargs)
 
+    def write_single_coil(self, address: int, value: Any, **kwargs):
+        self._delegate.write_coil(address, value, **kwargs)
+
 
 class ModbusTcpClient_(ModbusClient):
     def __init__(self,

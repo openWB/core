@@ -8,6 +8,7 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 """
 from dataclasses import asdict, dataclass, field
 import logging
+import re
 import traceback
 from typing import List, Dict, Optional, Tuple
 
@@ -445,8 +446,11 @@ class Ev:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
+        unblanced_load_limit_reached = (
+            limit is not None and
+            re.search(re.escape(LimitingValue.UNBALANCED_LOAD.value).replace(r'\{\}', r'.+'), limit))
         condition_1_to_3 = (((max(get_currents) > max_current and
-                            all_surplus > required_surplus) or limit == LimitingValue.UNBALANCED_LOAD.value) and
+                            all_surplus > required_surplus) or unblanced_load_limit_reached) and
                             phases_in_use == 1)
         condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
         if condition_1_to_3 or condition_3_to_1:
