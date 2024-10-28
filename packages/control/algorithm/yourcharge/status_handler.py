@@ -230,7 +230,7 @@ class YcStatusHandler:
         return self._socket_approved_topic in self._changed_keys
 
     # RFID scan
-    def update_rfid_scan(self, rfid: str, timestamp: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)) -> None:
+    def update_rfid_scan(self, rfid: str, timestamp: datetime.datetime) -> None:
         self._rfid_info_cache = RfidInfo(rfid=rfid, timestamp=f"{timestamp.isoformat()}")
         self._update(self._scanned_rfid_topic, dataclasses.asdict(self._rfid_info_cache))
 

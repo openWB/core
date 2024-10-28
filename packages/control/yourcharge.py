@@ -17,6 +17,7 @@ yc_config_topic = yc_root_topic + '/config'
 yc_socket_activated_topic = yc_control_topic + '/socket_activated'
 yc_socket_requested_topic = yc_control_topic + '/socket_request'
 yc_accounting_control_topic = yc_control_topic + '/accounting'
+yc_display_unlock_topic = yc_control_topic + '/display_locked'
 
 
 # load management states that we can be in

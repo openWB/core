@@ -83,9 +83,13 @@ class StatemachineYc():
             self._last_rfid_data = SubData.internal_chargepoint_data["rfid_data"]
             if self._last_rfid_data is not None and self._last_rfid_data.last_tag != "":
                 self._rfiddata_for_ev_activation = self._last_rfid_data
-                self._status_handler.update_rfid_scan(rfid=self._last_rfid_data.last_tag)
+                self._status_handler.update_rfid_scan(rfid=self._last_rfid_data.last_tag, timestamp=now_it_is)
                 self._valid_standard_socket_tag_found = \
                     self._standard_socket_handler.valid_socket_rfid_scanned(self._last_rfid_data)
+                if (self._valid_standard_socket_tag_found):
+                    self._unlock_display()
+                else:
+                    self._valid_ev_rfid_scanned(self._last_rfid_data)
             else:
                 self._valid_standard_socket_tag_found = False
 
@@ -291,7 +295,7 @@ class StatemachineYc():
                                LoadControlState.Idle)
 
     def _check_startup_transitions(self) -> None:
-        self._status_handler.update_rfid_scan(None)
+        self._status_handler.update_rfid_scan(None, datetime.datetime.now(datetime.timezone.utc))
         self._standard_socket_handler.restore_previous()
         self._state_change("Startup", self._derive_state())
         self._set_current("Startup", 0.0, yourcharge.LmStatus.InLoop)
@@ -347,10 +351,15 @@ class StatemachineYc():
             log.error(f"Detected RFID scan: {rfid_data.last_tag}: Still need to check if it's a valid EV tag ...")
             if rfid_data.last_tag in data.data.yc_data.data.yc_config.allowed_rfid_ev:
                 log.error(f"!!! Detected RFID scan: {rfid_data.last_tag}: VALID EV TAG !!!")
+                self._unlock_display()
                 return True
             else:
                 log.error(f"Detected RFID scan: {rfid_data.last_tag}: Is not a valid EV RFID tag")
         return False
+
+    def _unlock_display(self) -> None:
+        log.error("Unlocking display")
+        Pub().pub(yourcharge.yc_display_unlock_topic, False)
 
     def _get_state_from_plugstate(self) -> LoadControlState:
         if self._internal_cp.data.get.plug_state:
