@@ -73,11 +73,17 @@ class SetData:
             if "openWB/set/vehicle/" in msg.topic:
                 if "openWB/set/vehicle/template/ev_template/" in msg.topic:
                     self.event_ev_template.wait(5)
+                    self.process_vehicle_ev_template_topic(msg)
                 elif "openWB/set/vehicle/template/charge_template/" in msg.topic:
                     self.event_charge_template.wait(5)
-                self.process_vehicle_topic(msg)
+                    self.process_vehicle_charge_template_topic(msg)
+                else:
+                    self.process_vehicle_topic(msg)
             elif "openWB/set/chargepoint/" in msg.topic:
-                self.process_chargepoint_topic(msg)
+                if "openWB/set/chargepoint/set/charge_template" in msg.topic:
+                    self.process_vehicle_charge_template_topic(msg)
+                else:
+                    self.process_vehicle_topic(msg)
             elif "openWB/set/pv/" in msg.topic:
                 self.process_pv_topic(msg)
             elif "openWB/set/bat/" in msg.topic:
@@ -402,8 +408,6 @@ class SetData:
                 self._validate_value(msg, str)
             elif "/info" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "openWB/set/vehicle/template" in msg.topic:
-                self._subprocess_vehicle_chargemode_topic(msg)
             elif "openWB/set/vehicle/set/vehicle_update_completed" in msg.topic:
                 self._validate_value(msg, bool)
             elif "/set/soc_error_counter" in msg.topic:
@@ -437,7 +441,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def _subprocess_vehicle_chargemode_topic(self, msg: mqtt.MQTTMessage):
+    def process_vehicle_charge_template_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Lade-Profil-Topics
         Parameters
         ----------
@@ -508,6 +512,15 @@ class SetData:
                 else:
                     self._validate_value(msg, "json")
             elif "ev_template" in msg.topic:
+                self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_vehicle_ev_template_topic(self, msg: mqtt.MQTTMessage):
+        try:
+            if "ev_template" in msg.topic:
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)

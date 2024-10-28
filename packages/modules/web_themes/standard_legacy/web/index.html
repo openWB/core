@@ -500,7 +500,7 @@
 								</div>
 								<div class="col-md-8 btn-group btn-group-toggle charge-point-charge-mode"
 									data-toggle="buttons" data-name="chargemode"
-									data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/selected">
+									data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/selected">
 									<label class="btn btn-outline-danger btn-toggle">
 										<input type="radio" name="chargemode" data-option="instant_charging">Sofort
 									</label>
@@ -526,7 +526,7 @@
 								</div>
 								<div class="col-md-8 text-right">
 									<input class="charge-point-vehicle-priority" type="checkbox" data-toggle="toggle"
-										data-topic="openWB/set/vehicle/template/charge_template/<ct>/prio" data-on="Ja"
+										data-topic="openWB/set/chargepoint/<cp>/set/charge_template/prio" data-on="Ja"
 										data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm"
 										data-style="w-100">
 								</div>
@@ -601,7 +601,7 @@
 													<input type="range"
 														class="charge-point-instant-charge-current form-control-range rangeInput"
 														id="currentInstantChargeCpT"
-														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/current"
+														data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/instant_charging/current"
 														min="6" max="32" step="1">
 												</div>
 												<label for="currentInstantChargeCpT"
@@ -623,7 +623,7 @@
 															class="charge-point-instant-charge-dc-current form-control-range rangeInput"
 															id="dcCurrentInstantChargeCpT"
 															data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/dc_current"
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/instant_charging/dc_current"
 															min="4" max="300" step="1">
 													</div>
 													<label for="dcCurrentInstantChargeCpT"
@@ -700,7 +700,7 @@
 															class="charge-point-instant-charge-limit-amount form-control-range rangeInput"
 															id="amountLimitInstantCpT" min="1" max="50" step="1"
 															data-transformation='{ "in": "<v>/1000", "out": "<v>*1000" }'
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/instant_charging/limit/amount">
 													</div>
 													<label for="amountLimitInstantCpT"
 														class="col-2 col-form-label valueLabel text-right"
@@ -723,7 +723,7 @@
 													<input type="range"
 														class="charge-point-pv-charge-min-current form-control-range rangeInput"
 														id="minCurrentPvCpT"
-														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current"
+														data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/min_current"
 														min="0" max="11" step="1"
 														data-list='[[0,"Aus"],6,7,8,9,10,11,12,13,14,15,16]'>
 												</div>
@@ -745,7 +745,7 @@
 															class="charge-point-pv-charge-dc-min-current form-control-range rangeInput"
 															id="minDcCurrentPvCpT"
 															data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/dc_min_current"
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/dc_min_current"
 															min="0" max="300" step="1">
 													</div>
 													<label for="minDcCurrentPvCpT"
@@ -843,7 +843,7 @@
 													<input type="range"
 														class="charge-point-pv-charge-min-soc form-control-range rangeInput"
 														id="minSocPvCpT"
-														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc"
+														data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/min_soc"
 														min="0" max="19" step="1"
 														data-list='[[0,"Aus"],5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95]'>
 												</div>
@@ -863,7 +863,7 @@
 													<input type="range"
 														class="charge-point-pv-charge-min-soc-current form-control-range rangeInput"
 														id="minSocCurrentPvCpT"
-														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current"
+														data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/min_soc_current"
 														min="6" max="32" step="1">
 												</div>
 												<label for="minSocCurrentPvCpT"
@@ -884,7 +884,7 @@
 															class="charge-point-pv-charge-dc-min-soc-current form-control-range rangeInput"
 															id="minSocDcCurrentPvCpT"
 															data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/dc_min_soc_current"
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/dc_min_soc_current"
 															min="4" max="300" step="1">
 													</div>
 													<label for="minSocDcCurrentPvCpT"
@@ -918,7 +918,7 @@
 										<div class="col-md-8 text-right">
 											<input class="charge-point-pv-charge-feed-in-limit" type="checkbox"
 												data-toggle="toggle"
-												data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/feed_in_limit"
+												data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/feed_in_limit"
 												data-on="Ja" data-off="Nein" data-onstyle="success"
 												data-offstyle="danger" data-size="sm" data-style="w-100">
 										</div>
@@ -1273,7 +1273,7 @@
 				}
 
 				function submitPriceForm() {
-					var chargeTemplate = $('#maxPriceModal').data('charge-template');
+					var chargePoint = $('#maxPriceModal').data('charge-point');
 					var maxPrice = parseFloat(($("#maxPriceBox").val() / 100000).toFixed(7));
 					publish(maxPrice, "openWB/set/vehicle/template/charge_template/" + chargeTemplate + "/chargemode/eco_charging/max_price");
 				};
