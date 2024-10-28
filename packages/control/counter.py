@@ -192,27 +192,17 @@ class Counter:
         else:
             self.data.set.raw_power_left = None
 
-    def _set_dimming_power_left(self) -> None:
-        if self.num == data.data.counter_all_data.get_evu_counter():
-            if data.data.general_data.data.dimming.get.active:
-                self.data.set.dimming_power_left = data.data.general_data.data.dimming.set.max_import_power
-        else:
-            self.data.set.dimming_power_left = None
-
-    def update_values_left(self, diffs, cp) -> None:
+    def update_values_left(self, diffs, cp: Chargepoint) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
             self.data.set.raw_power_left -= sum(diffs) * 230
-        dimming_power_left = None
-        for io in data.data.io_device.values():
-            dimming_power_left = io.dimming_set_import_power_left(sum(diffs)*230, cp.num)
+        dimming_power_left = data.data.io_actions.dimming_set_import_power_left(cp.num, sum(diffs)*230)
         if dimming_power_left is not None:
-            log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
-                      f'{self.data.set.raw_power_left}W verbleibende Leistung, '
-                      f'{self.data.set.dimming_power_left}W verbleibende Dimmleistung')
+            msg = f', {dimming_power_left}W verbleibende Dimmleistung'
         else:
-            log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
-                      f'{self.data.set.raw_power_left}W verbleibende Leistung')
+            msg = ""
+        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
+                  f'{self.data.set.raw_power_left}W verbleibende Leistung{msg}')
 
     def update_surplus_values_left(self, diffs) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
