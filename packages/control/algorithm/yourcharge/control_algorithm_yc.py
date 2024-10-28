@@ -36,7 +36,7 @@ class _AggregatedData:
 @dataclass
 class _ExpectedChange:
     current: float = -1.0
-    requested_at: datetime = datetime.datetime.utcnow
+    requested_at: datetime = datetime.datetime.now(datetime.timezone.utc)
 
 
 class ControlAlgorithmYc:
@@ -74,7 +74,7 @@ class ControlAlgorithmYc:
             return
 
         # check if control interval is actuall due
-        now_it_is = datetime.datetime.utcnow()
+        now_it_is = datetime.datetime.now(datetime.timezone.utc)
         if (now_it_is - self._last_control_run).total_seconds() + 2.5 \
                 < data.data.yc_data.data.yc_config.minimum_adjustment_interval:
             log.debug("Control loop not yet due")
@@ -97,7 +97,7 @@ class ControlAlgorithmYc:
     def _compute_current(self, charging_phase_infos: _AggregatedData) -> None:
         # check if the car has done the adjustment that it has last been asked for
         if self._expected_change.current >= 0.0:
-            since_change: datetime.timedelta = datetime.datetime.utcnow() - self._expected_change.requested_at
+            since_change: datetime.timedelta = datetime.datetime.now(datetime.timezone.utc) - self._expected_change.requested_at
             if since_change.total_seconds < data.data.yc_data.data.yc_config.minimum_adjustment_interval:
                 log.error(f"Time after adjustment to {self._expected_change.current} A is {since_change} "
                           + f"< {data.data.yc_data.data.yc_config.minimum_adjustment_interval} seconds: Skipping "

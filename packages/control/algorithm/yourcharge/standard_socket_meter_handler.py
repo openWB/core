@@ -1,9 +1,9 @@
 import logging
 import time
-import datetime
 
 from dataclasses import dataclass
 
+from control import yourcharge
 from modules.common import modbus
 from modules.common.sdm import Sdm120
 
@@ -66,4 +66,4 @@ class SocketMeterHandler:
         if self.data.model is None:
             self.data.model = self._meter.get_model()
 
-        self.data.last_update = f"{datetime.datetime.utcnow().isoformat()}Z"
+        self.data.last_update = yourcharge.current_timestamp_factory()

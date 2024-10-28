@@ -23,7 +23,8 @@ class Loadmanagement:
             limit = limit_power
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
             available_currents, limit_unbalanced_load = self._limit_by_unbalanced_load(
-                counter, available_currents, raw_currents_left)
+                counter, available_currents, raw_currents_left,
+                len([value for value in missing_currents if value != 0]))
             if limit_unbalanced_load is not None:
                 limit = limit_unbalanced_load
         return available_currents, limit
@@ -40,7 +41,8 @@ class Loadmanagement:
             limit = limit_power
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
             available_currents, limit_unbalanced_load = self._limit_by_unbalanced_load(
-                counter, available_currents, raw_currents_left)
+                counter, available_currents, raw_currents_left,
+                len([value for value in missing_currents if value != 0]))
             if limit_unbalanced_load is not None:
                 limit = limit_unbalanced_load
         return available_currents, limit
@@ -48,14 +50,18 @@ class Loadmanagement:
     def _limit_by_unbalanced_load(self,
                                   counter: Counter,
                                   available_currents: List[float],
-                                  raw_currents_left: List[float]) -> Tuple[List[float], Optional[LimitingValue]]:
+                                  raw_currents_left: List[float],
+                                  phases_to_use: int) -> Tuple[List[float], Optional[LimitingValue]]:
         raw_currents_left_charging = list(map(operator.sub, raw_currents_left, available_currents))
         max_exceeding = counter.get_unbalanced_load_exceeding(raw_currents_left_charging)
         limit = None
         if max(max_exceeding) > 0:
-            available_currents = list(map(operator.sub, available_currents, max_exceeding))
-            log.debug(f"Schieflast {max_exceeding}A korrigieren: {available_currents}")
-            limit = LimitingValue.UNBALANCED_LOAD
+            if phases_to_use < 3 and phases_to_use > 0:
+                available_currents = list(map(operator.sub, available_currents, max_exceeding))
+                log.debug(f"Schieflast {max_exceeding}A korrigieren: {available_currents}")
+                limit = LimitingValue.UNBALANCED_LOAD
+            elif phases_to_use == 3:
+                log.debug("Schieflastkorrektur nicht möglich, da alle Phasen genutzt werden.")
         return available_currents, limit
 
     # tested

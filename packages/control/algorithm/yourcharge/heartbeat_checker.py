@@ -1,13 +1,13 @@
 import logging
+import datetime
 
-from datetime import datetime, timedelta
 from control import data
 
 log = logging.getLogger(__name__)
 
 
 class HeartbeatChecker:
-    def __init__(self, timeout: timedelta = timedelta(seconds=30)) -> None:
+    def __init__(self, timeout: datetime.timedelta = datetime.timedelta(seconds=30)) -> None:
         self.heartbeat_timeout = timeout
         self._timeout_detection_time = None
         self._previous_lcs_publish = -1
@@ -15,7 +15,7 @@ class HeartbeatChecker:
 
     def is_heartbeat_ok(self) -> bool:
 
-        now_it_is = datetime.utcnow()
+        now_it_is = datetime.datetime.now(datetime.timezone.utc)
 
         log.debug(f"LCS heartbeat ENTER: now it is {now_it_is}, last_controller_publish="
                   + f"{data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish="
@@ -25,7 +25,7 @@ class HeartbeatChecker:
             # very first run: just store the last_controller_publish
             log.debug(f"LCS heartbeat initialized to: {data.data.yc_data.data.last_controller_publish}")
             self._previous_lcs_publish = data.data.yc_data.data.last_controller_publish
-            self._timeout_detection_time = datetime.utcnow() - self.heartbeat_timeout
+            self._timeout_detection_time = now_it_is - self.heartbeat_timeout
             return False
 
         if self._previous_lcs_publish == data.data.yc_data.data.last_controller_publish:

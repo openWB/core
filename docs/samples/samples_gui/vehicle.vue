@@ -1,27 +1,19 @@
 <template>
-	<div class="vehicle-soc-sample">
-		<openwb-base-heading>
-			Einstellungen für Sample SoC
-			<span class="small">(Modul: {{ $options.name }})</span>
-		</openwb-base-heading>
-	</div>
+  <div class="vehicle-soc-sample">
+    <openwb-base-heading>
+      Einstellungen für Sample SoC
+    </openwb-base-heading>
+  </div>
 </template>
 
 <script>
+import VehicleConfigMixin from "../VehicleConfigMixin.vue";
+
 export default {
-	name: "VehicleSocSample",
-	emits: ["update:configuration"],
-	props: {
-		configuration: { type: Object, required: true },
-		vehicleId: { required: true },
-	},
-	data() {
-		return {};
-	},
-	methods: {
-		updateConfiguration(event, path = undefined) {
-			this.$emit("update:configuration", { value: event, object: path });
-		},
-	},
+  name: "VehicleSocSample",
+  mixins: [VehicleConfigMixin],
+  data() {
+    return {};
+  },
 };
 </script>

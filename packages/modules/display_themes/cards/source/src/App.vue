@@ -5,6 +5,7 @@ import mqtt from "mqtt";
 import DateTime from "@/components/DateTime.vue";
 import NavBar from "@/components/NavBar.vue";
 import LockNavItem from "@/components/LockNavItem.vue";
+import TouchBlocker from "@/components/TouchBlocker.vue";
 
 import { useMqttStore } from "@/stores/mqtt.js";
 
@@ -15,6 +16,7 @@ export default {
     DateTime,
     NavBar,
     LockNavItem,
+    TouchBlocker,
   },
   data() {
     return {
@@ -88,7 +90,11 @@ export default {
         let data = JSON.parse(params.get("data"));
         Object.entries(data).forEach(([key, value]) => {
           console.log("updateSetting", key, value);
-          this.mqttStore.updateSetting(key, value);
+          if (key.startsWith("parentChargePoint")) {
+            this.mqttStore.updateSetting(key, parseInt(value));
+          } else {
+            this.mqttStore.updateSetting(key, value);
+          }
         });
       }
     }
@@ -242,6 +248,7 @@ export default {
       </i-container>
       <LockNavItem />
       <NavBar :changes-locked="changesLocked" />
+      <TouchBlocker />
     </i-layout-aside>
 
     <i-layout-content>

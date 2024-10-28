@@ -51,7 +51,7 @@ class StatemachineYc():
         self._control_algorithm = ControlAlgorithmYc(key, self._status_handler)
         self._previous_plug_state = None
         self._previous_justification = None
-        self._last_data_update_timestamp = datetime.datetime.min
+        self._last_data_update_timestamp = datetime.datetime(1, 1, 2, 0, 0, 0, tzinfo=datetime.timezone.utc)
         self._data_update_interval = timedelta(seconds=30)
         self._justification = ""
         self._current = 0.0
@@ -64,7 +64,7 @@ class StatemachineYc():
             # (key, value) = next(((key, value) for i, (key, value) in enumerate(data.data.cp_data.items())
             # if value.chargepoint_module.config.type == 'internal_openwb'), None)
             self._internal_cp = data.data.cp_data[self._internal_cp_key]
-            now_it_is = datetime.datetime.utcnow()
+            now_it_is = datetime.datetime.now(datetime.timezone.utc)
             # log.error(f"Internal CP now '{id(self._internal_cp)}'")
 
             # check heartbeat and super-early exit in case of controller not being seen anymore, charge current --> 0
@@ -175,7 +175,7 @@ class StatemachineYc():
                     meter_value_to_use = self._status_handler.get_cp_meter_at_last_plugin()
                     if meter_value_to_use is None:
                         meter_value_to_use = self._internal_cp.data.get.imported
-                    self._status_handler.new_accounting(datetime.datetime.utcnow(),
+                    self._status_handler.new_accounting(datetime.datetime.now(datetime.timezone.utc),
                                                         meter_value_to_use,
                                                         self._internal_cp.data.get.charge_state,
                                                         self._internal_cp.data.get.plug_state,
@@ -204,7 +204,7 @@ class StatemachineYc():
         if self._internal_cp.data.get.plug_state:
             self._wait_for_plugin_entered = None
             if self._rfiddata_for_ev_activation is not None:
-                self._status_handler.new_accounting(datetime.datetime.utcnow(),
+                self._status_handler.new_accounting(datetime.datetime.now(datetime.timezone.utc),
                                                     self._status_handler.get_cp_meter_at_last_plugin(),
                                                     self._internal_cp.data.get.charge_state,
                                                     self._internal_cp.data.get.plug_state,
@@ -216,9 +216,9 @@ class StatemachineYc():
 
         # then check for expired wait time
         if self._wait_for_plugin_entered is None:
-            self._wait_for_plugin_entered = datetime.datetime.utcnow()
+            self._wait_for_plugin_entered = datetime.datetime.now(datetime.timezone.utc)
         else:
-            elapsed = datetime.datetime.utcnow() - self._wait_for_plugin_entered
+            elapsed = datetime.datetime.now(datetime.timezone.utc) - self._wait_for_plugin_entered
             if elapsed.total_seconds() >= data.data.yc_data.data.yc_config.max_plugin_wait_time_s:
                 self._wait_for_plugin_entered = None
                 self._status_handler.update_cp_enabled(False)
@@ -267,7 +267,7 @@ class StatemachineYc():
 
         if not self._internal_cp.data.get.plug_state:
             self._status_handler.update_cp_enabled(False)
-            self._status_handler.end_accounting(datetime.datetime.utcnow(), self._internal_cp.data.get.imported)
+            self._status_handler.end_accounting(datetime.datetime.now(datetime.timezone.utc), self._internal_cp.data.get.imported)
             self._set_current("Detected unplug while in EV charge", 0.0, yourcharge.LmStatus.DownByDisable)
             self._state_change("Detected unplug while in EV charge", LoadControlState.Idle)
             return

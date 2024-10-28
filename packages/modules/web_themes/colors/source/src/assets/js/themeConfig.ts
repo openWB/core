@@ -6,11 +6,14 @@
 
 import { computed, reactive } from 'vue'
 import { select } from 'd3'
-import type { ChargeModeInfo } from './types'
+import { ChargeMode, type ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
-import { ChargeMode, vehicles } from '@/components/chargePointList/model'
 import { sourceSummary } from './model'
-import { sourceGraphIsNotInitialized, usageGraphIsNotInitialized } from '@/components/powerGraph/model'
+import {
+	sourceGraphIsNotInitialized,
+	usageGraphIsNotInitialized,
+} from '@/components/powerGraph/model'
+import { updateServer } from './sendMessages'
 export class Config {
 	private _showRelativeArcs = false
 	showTodayGraph = true
@@ -34,6 +37,7 @@ export class Config {
 	private _showStandardVehicle = true
 	private _showPrices = false
 	private _showInverters = false
+	private _alternativeEnergy = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -241,7 +245,6 @@ export class Config {
 	}
 	set showStandardVehicle(show: boolean) {
 		this._showStandardVehicle = show
-		vehicles[0].visible = show
 		savePrefs()
 	}
 	setShowStandardVehicle(show: boolean) {
@@ -269,7 +272,20 @@ export class Config {
 	setShowInverters(show: boolean) {
 		this._showInverters = show
 	}
+	get alternativeEnergy() {
+		return this._alternativeEnergy
+	}
+	set alternativeEnergy(show: boolean) {
+		this._alternativeEnergy = show
+		sourceGraphIsNotInitialized()
+		usageGraphIsNotInitialized()
+		savePrefs()
+	}
+	setAlternativeEnergy(show: boolean) {
+		this._alternativeEnergy = show
+	}
 }
+
 export const globalConfig = reactive(new Config())
 export function initConfig() {
 	readCookie()
@@ -303,17 +319,11 @@ export const widescreen = computed(() => {
 	return screensize.x >= breakpoint
 })
 export const chargemodes: { [key: string]: ChargeModeInfo } = {
-	stop: {
-		mode: ChargeMode.stop,
-		name: 'Stop',
-		color: 'var(--color-fg)',
-		icon: 'fa-power-off',
-	},
-	standby: {
-		mode: ChargeMode.standby,
-		name: 'Standby',
-		color: 'var(--color-axis',
-		icon: 'fa-pause',
+	instant_charging: {
+		mode: ChargeMode.instant_charging,
+		name: 'Sofort',
+		color: 'var(--color-charging)',
+		icon: 'fa-bolt',
 	},
 	pv_charging: {
 		mode: ChargeMode.pv_charging,
@@ -327,13 +337,43 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 		color: 'var(--color-battery)',
 		icon: 'fa-bullseye',
 	},
-	instant_charging: {
-		mode: ChargeMode.instant_charging,
-		name: 'Sofort',
-		color: 'var(--color-charging)',
-		icon: 'fa-bolt',
+	standby: {
+		mode: ChargeMode.standby,
+		name: 'Standby',
+		color: 'var(--color-axis',
+		icon: 'fa-pause',
+	},
+	stop: {
+		mode: ChargeMode.stop,
+		name: 'Stop',
+		color: 'var(--color-fg)',
+		icon: 'fa-power-off',
 	},
 }
+export class GlobalData {
+	batterySoc = 0
+	isBatteryConfigured = true
+	chargeMode = '0'
+	private _pvBatteryPriority = 'ev_mode' // 'ev_mode' | 'bat_mode' | 'min_soc_bat_mode'
+	displayLiveGraph = true
+	isEtEnabled = true
+	etMaxPrice = 0
+	etCurrentPrice = 0
+	cpDailyExported = 0
+	evuId = 0
+	etProvider = ''
+	get pvBatteryPriority() {
+		return this._pvBatteryPriority
+	}
+	set pvBatteryPriority(prio: string) {
+		this._pvBatteryPriority = prio
+		updateServer('pvBatteryPriority', prio)
+	}
+	updatePvBatteryPriority(prio: string) {
+		this._pvBatteryPriority = prio
+	}
+}
+
 // methods
 export function savePrefs() {
 	writeCookie()
@@ -416,6 +456,7 @@ interface Preferences {
 	showStandardV?: boolean
 	showPrices?: boolean
 	showInv?: boolean
+	altEngy?: boolean
 	debug?: boolean
 }
 
@@ -445,6 +486,7 @@ function writeCookie() {
 	prefs.showStandardV = globalConfig.showStandardVehicle
 	prefs.showPrices = globalConfig.showPrices
 	prefs.showInv = globalConfig.showInverters
+	prefs.altEngy = globalConfig.alternativeEnergy
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
@@ -530,6 +572,9 @@ function readCookie() {
 		}
 		if (prefs.showInv !== undefined) {
 			globalConfig.setShowInverters(prefs.showInv)
+		}
+		if (prefs.altEngy !== undefined) {
+			globalConfig.setAlternativeEnergy(prefs.altEngy)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)

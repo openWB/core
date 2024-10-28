@@ -4,7 +4,6 @@ import logging
 import json
 
 from dataclasses import dataclass
-from helpermodules import timecheck
 
 from typing import Dict, List, Optional
 from control import data, yourcharge
@@ -59,8 +58,8 @@ class YcStatusHandler:
     def new_accounting(self, start_timestamp: datetime.datetime, meter_reading: float, charging: bool,
                        plugged: bool, rfid_tag: str) -> None:
         self._accounting_info_cache = AccountingInfo(
-            charge_start=f"{start_timestamp.isoformat()}Z",
-            currrent_time=f"{start_timestamp.isoformat()}Z",
+            charge_start=f"{start_timestamp.isoformat()}",
+            currrent_time=f"{start_timestamp.isoformat()}",
             meter_at_start=meter_reading,
             current_meter=meter_reading,
             charging=charging,
@@ -89,7 +88,7 @@ class YcStatusHandler:
                         or self._accounting_info_cache.meter_at_start is None):
             log.error("Detected corrupteda accounting data set while being plugged-in: Initializing charge start "
                       + "timestamp and meter value")
-            self._accounting_info_cache.charge_start = f"{update_timestamp.isoformat()}Z"
+            self._accounting_info_cache.charge_start = f"{update_timestamp.isoformat()}"
             if data.data.yc_data.data.yc_control.cp_meter_at_last_plugin is not None:
                 self._accounting_info_cache.meter_at_start = data.data.yc_data.data.yc_control.cp_meter_at_last_plugin
             else:
@@ -97,7 +96,7 @@ class YcStatusHandler:
 
         self._accounting_info_cache.charging = charging
         self._accounting_info_cache.plugged_in = plugged
-        self._accounting_info_cache.currrent_time = f"{update_timestamp.isoformat()}Z"
+        self._accounting_info_cache.currrent_time = f"{update_timestamp.isoformat()}"
         self._accounting_info_cache.current_meter = current_meter
         self._update(yourcharge.yc_accounting_control_topic, dataclasses.asdict(self._accounting_info_cache))
         if self._accounting_info_cache.starting_rfid is not None and self._accounting_info_cache.starting_rfid != "":
@@ -109,7 +108,7 @@ class YcStatusHandler:
                     and data.data.yc_data.data.yc_control.accounting.meter_at_start is not None:
                 self._accounting_info_cache = data.data.yc_data.data.yc_control.accounting
                 if self._accounting_info_cache.currrent_time is None:
-                    self._accounting_info_cache.currrent_time = f"{datetime.datetime.utcnow().isoformat()}Z"
+                    self._accounting_info_cache.currrent_time = yourcharge.current_timestamp_factory()
         return self._accounting_info_cache
 
     def has_changed_rfid_scan(self) -> bool:
@@ -117,7 +116,7 @@ class YcStatusHandler:
 
     # nightly meter reading
     def update_nightly_meter_reading(self, update_timestamp: datetime.datetime, current_meter: float) -> None:
-        self._nightly_meter_reading_cache = MeterValueMark(timestamp=f"{update_timestamp.isoformat()}Z",
+        self._nightly_meter_reading_cache = MeterValueMark(timestamp=f"{update_timestamp.isoformat()}",
                                                            meter_reading=current_meter, day=update_timestamp.day)
         self._update(
             self._cp_meter_at_last_night_meter_reading_control_topic,
@@ -138,7 +137,7 @@ class YcStatusHandler:
         return self._cp_meter_at_last_night_meter_reading_control_topic in self._changed_keys
 
     def update_time(self) -> None:
-        self._update(self._time_topic, timecheck.create_timestamp())
+        self._update(self._time_topic, datetime.datetime.now(datetime.timezone.utc).timestamp())
 
     # energy limit
     def update_energy_limit(self, limit_value: float) -> None:
@@ -231,8 +230,8 @@ class YcStatusHandler:
         return self._socket_approved_topic in self._changed_keys
 
     # RFID scan
-    def update_rfid_scan(self, rfid: str, timestamp: datetime.datetime = datetime.datetime.utcnow()) -> None:
-        self._rfid_info_cache = RfidInfo(rfid=rfid, timestamp=f"{timestamp.isoformat()}Z")
+    def update_rfid_scan(self, rfid: str, timestamp: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)) -> None:
+        self._rfid_info_cache = RfidInfo(rfid=rfid, timestamp=f"{timestamp.isoformat()}")
         self._update(self._scanned_rfid_topic, dataclasses.asdict(self._rfid_info_cache))
 
     def get_rfid_scan(self) -> RfidInfo:

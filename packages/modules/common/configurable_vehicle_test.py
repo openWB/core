@@ -5,7 +5,7 @@ from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleCo
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle, SocSource
 from modules.common import store
-from modules.devices.tesla.config import Tesla
+from modules.devices.tesla.tesla.config import Tesla
 from modules.vehicles.common.calc_soc import calc_soc
 from modules.vehicles.manual.config import ManualSoc
 from modules.vehicles.mqtt.config import MqttSocSetup
@@ -87,7 +87,7 @@ def conf_vehicle_mqtt():
 
 
 @pytest.mark.parametrize(
-    "conf_vehicle, use_soc_from_cp, vehicle_update_data, calclulated_soc_state, expected_source",
+    "conf_vehicle, use_soc_from_cp, vehicle_update_data, calculated_soc_state, expected_source",
     [
         pytest.param(conf_vehicle_manual(), False, VehicleUpdateData(), CalculatedSocState(
             manual_soc=34), SocSource.MANUAL, id="Manuell, neuer Start-SoC"),
@@ -125,11 +125,11 @@ def conf_vehicle_mqtt():
 def test_get_carstate_source(conf_vehicle: ConfigurableVehicle,
                              use_soc_from_cp,
                              vehicle_update_data,
-                             calclulated_soc_state,
+                             calculated_soc_state,
                              expected_source):
     # setup
     conf_vehicle.general_config.use_soc_from_cp = use_soc_from_cp
-    conf_vehicle.calculated_soc_state = calclulated_soc_state
+    conf_vehicle.calculated_soc_state = calculated_soc_state
     # execution
     source = conf_vehicle._get_carstate_source(vehicle_update_data)
 

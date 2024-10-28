@@ -12,12 +12,12 @@ T_RCR_CONFIG = TypeVar("T_RCR_CONFIG")
 class ConfigurableRcr(Generic[T_RCR_CONFIG]):
     def __init__(self,
                  config: T_RCR_CONFIG,
-                 component_initialiser: Callable[[], float]) -> None:
+                 component_initializer: Callable[[], float]) -> None:
         self.config = config
         self.fault_state = FaultState(ComponentInfo(None, self.config.name,
                                       ComponentType.RIPPLE_CONTROL_RECEIVER.value))
         with SingleComponentUpdateContext(self.fault_state):
-            self._component_updater = component_initialiser(config)
+            self._component_updater = component_initializer(config)
         self.store = store.get_ripple_control_receiver_value_store()
 
     def update(self):

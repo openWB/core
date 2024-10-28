@@ -2,8 +2,11 @@
 import datetime
 import logging
 from typing import Dict
-import pytz
 from requests.exceptions import HTTPError
+
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    import pytz
 
 from dataclass_utils import asdict
 from helpermodules import timecheck

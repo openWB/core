@@ -156,13 +156,13 @@ class StandardSocketHandler:
         yc_control = data.data.yc_data.data.yc_control
         if yc_control.standard_socket_action == StandardSocketActions.Approve:
             log.error("Controller approved socket request after "
-                      + f"{datetime.datetime.utcnow() - self._last_socket_request_time}: Turning on socket")
+                      + f"{datetime.datetime.now(datetime.timezone.utc) - self._last_socket_request_time}: Turning on socket")
             self._transit_to_socket_on()
         elif yc_control.standard_socket_action == StandardSocketActions.Decline:
             log.error(f"Controller explicitly DECLINED: Changing to {StandardSocketControlState.Idle} w/o turning on "
                       + "socket")
             self._transit_to_idle()
-        elif datetime.datetime.utcnow() - self._last_socket_request_time >= self.socket_approval_max_wait_time:
+        elif datetime.datetime.now(datetime.timezone.utc) - self._last_socket_request_time >= self.socket_approval_max_wait_time:
             log.critical(f"No controller response after {self.socket_approval_max_wait_time} on standard socket "
                          + f"activation request at {self._last_socket_request_time}: No longer waiting, reverting to "
                          + f"{StandardSocketControlState.Idle}")
@@ -173,9 +173,9 @@ class StandardSocketHandler:
         yc_control = data.data.yc_data.data.yc_control
         if yc_control.standard_socket_action != StandardSocketActions.Approve:
             log.error("Controller disapproved socket request after "
-                      + f"{datetime.datetime.utcnow() - self._last_socket_request_time}: Turning off socket")
+                      + f"{datetime.datetime.now(datetime.timezone.utc) - self._last_socket_request_time}: Turning off socket")
             self._transit_to_idle()
-        elif datetime.datetime.utcnow() - self._last_socket_request_time >= self.socket_approval_max_wait_time:
+        elif datetime.datetime.now(datetime.timezone.utc) - self._last_socket_request_time >= self.socket_approval_max_wait_time:
             log.critical(f"No controller response after {self.socket_approval_max_wait_time} on standard socket "
                          + f"activation request at {self._last_socket_request_time}: No longer waiting, reverting to "
                          + f"{StandardSocketControlState.Idle}")
@@ -205,7 +205,8 @@ class StandardSocketHandler:
             log.error("EV still charging while waiting for charge end. Waiting started at "
                       + f"{self._ev_deactivation_start}")
             if self._ev_deactivation_start is not None \
-                    and (datetime.datetime.utcnow() - self._ev_deactivation_start) > self.ev_charge_end_max_wait_time:
+                    and (datetime.datetime.now(datetime.timezone.utc) - self._ev_deactivation_start) \
+                    > self.ev_charge_end_max_wait_time:
                 log.error("Timeout waiting for EV charge end: Switching to idle. Waiting started at "
                           + f"{self._ev_deactivation_start}, waiting for "
                           + f"{datetime.datetime.now(datetime.UTC) - self._ev_deactivation_start}")
@@ -242,7 +243,7 @@ class StandardSocketHandler:
 
     # transition action when waiting for EV charge end
     def _transit_to_wait_for_ev_charge_end(self) -> None:
-        self._ev_deactivation_start = datetime.datetime.utcnow()
+        self._ev_deactivation_start = datetime.datetime.now(datetime.timezone.utc)
         self._current_control_state = StandardSocketControlState.WaitForEvChargeEnd
         log.error(f"Socket requested by EV still charging: Waiting for EV charge end at {self._ev_deactivation_start}")
 
@@ -251,7 +252,7 @@ class StandardSocketHandler:
         if self._current_control_state == StandardSocketControlState.ActivationRequested:
             return
         self._current_control_state = StandardSocketControlState.ActivationRequested
-        self._last_socket_request_time = datetime.datetime.utcnow()
+        self._last_socket_request_time = datetime.datetime.now(datetime.timezone.utc)
         log.error(f"Requesting activation of standard socket at {self._last_socket_request_time} by sending "
                   + f"{yourcharge.SocketRequestStates.OnRequested}")
         Pub().pub(yourcharge.yc_socket_requested_topic, yourcharge.SocketRequestStates.OnRequested)
@@ -261,7 +262,7 @@ class StandardSocketHandler:
         if self._current_control_state == StandardSocketControlState.DeactivationRequested:
             return
         self._current_control_state = StandardSocketControlState.DeactivationRequested
-        self._last_socket_request_time = datetime.datetime.utcnow()
+        self._last_socket_request_time = datetime.datetime.now(datetime.timezone.utc)
         self._ev_deactivation_start = None
         log.error(f"Requesting deactivation of standard socket at {self._last_socket_request_time} by sending "
                   + f"{yourcharge.SocketRequestStates.OffRequested}")

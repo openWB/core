@@ -92,7 +92,7 @@ class AccountingInfo:
 
 
 def current_timestamp_factory() -> str:
-    return f"{datetime.datetime.now().isoformat()}Z"
+    return f"{datetime.datetime.now().isoformat()}"
 
 
 def current_day_factory() -> int:

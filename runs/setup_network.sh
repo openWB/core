@@ -20,11 +20,20 @@ function setup_pnp_network() {
 	echo "my primary interface: $myNetDevice"
 	isSecondary=$(mosquitto_sub -t "openWB/general/extern" -p 1886 -C 1 -W 1 --quiet)
 	if [[ $isSecondary == "true" ]]; then
-		echo "running as secondary, disabling plug'n'play network"
-		sudo ifconfig "${myNetDevice}:0" down
+		echo "running as secondary, disabling plug'n'play network on dev $myNetDevice"
+		sudo ip addr del "$myVirtualIp/24" dev $myNetDevice
 	else
-		echo "running as primary, enabling plug'n'play network"
-		sudo ifconfig "${myNetDevice}:0" "$myVirtualIp" netmask 255.255.255.0 up
+		echo "running as primary, enabling plug'n'play network on dev $myNetDevice"
+		sudo ip addr add "$myVirtualIp/24" dev $myNetDevice
+	fi
+}
+
+function check_internet_connection() {
+	if ping -c1 "www.openwb.de" &>/dev/null; then
+		echo "Internet connection is up"
+	else
+		echo "ERROR: no internet connection!"
+		exit 1
 	fi
 }
 
@@ -37,13 +46,17 @@ while [[ ! $(ip route get 1) ]] && ((connectCounter < 30)); do
 	sleep 1
 done
 echo ""
-if ((connectCounter <30)); then
-	# image restricted to LAN only
-	# get local ip
-	ip="$(get_ip)"
-	echo "my primary IP: $ip"
-	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "\"$ip\""
-	setup_pnp_network
-else
+if ((connectCounter >= 30)); then
 	echo "ERROR: network not up after $connectCounter seconds!"
+	exit 1
+fi
+
+# image restricted to LAN only
+# get local ip
+ip="$(get_ip)"
+echo "my primary IP: $ip"
+mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "\"$ip\""
+setup_pnp_network
+if ! check_internet_connection; then
+	exit 1
 fi
