@@ -9,7 +9,7 @@ import re
 import subprocess
 import paho.mqtt.client as mqtt
 
-from control import bat_all, bat, counter, counter_all, general, optional, pv, pv_all
+from control import bat_all, bat, counter, counter_all, general, io_device, optional, pv, pv_all
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
@@ -29,7 +29,6 @@ from helpermodules.pub import Pub
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
@@ -64,6 +63,8 @@ class SubData:
         "cp1": InternalChargepoint(),
         "global_data": GlobalHandlerData(),
         "rfid_data": RfidData()}
+    io_actions = io_device.IoActions()
+    io_states: Dict[str, io_device.IoStates] = {}
     optional_data = optional.Optional()
     system_data = {"system": system.System()}
     graph_data = graph.Graph()
@@ -129,6 +130,7 @@ class SubData:
             ("openWB/bat/#", 2),
             ("openWB/general/#", 2),
             ("openWB/graph/#", 2),
+            ("openWB/io/#", 2),
             ("openWB/optional/#", 2),
             ("openWB/counter/#", 2),
             ("openWB/command/command_completed", 2),
@@ -142,6 +144,7 @@ class SubData:
             ("openWB/system/backup_cloud/#", 2),
             ("openWB/system/device/module_update_completed", 2),
             ("openWB/system/device/+/config", 2),
+            ("openWB/system/io/#", 2),
             ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
         ])
         Pub().pub("openWB/system/subdata_initialized", True)
@@ -171,6 +174,10 @@ class SubData:
             self.process_general_topic(self.general_data, msg)
         elif "openWB/graph/" in msg.topic:
             self.process_graph_topic(self.graph_data, msg)
+        elif "openWB/io/action" in msg.topic:
+            self.process_io_topic(self.io_actions, msg)
+        elif "openWB/io/states" in msg.topic:
+            self.process_io_topic(self.io_states, msg)
         elif "openWB/internal_chargepoint/" in msg.topic:
             self.process_internal_chargepoint_topic(client, self.internal_chargepoint_data, msg)
         elif "openWB/optional/" in msg.topic:
@@ -240,6 +247,9 @@ class SubData:
                         log.error("Elemente können nur aus Dictionaries entfernt werden, nicht aus Klassen.")
             else:
                 raise Exception(f"Key konnte nicht aus Topic {msg.topic} ermittelt werden.")
+        except AttributeError:
+            pass
+            # manche Topics werden nicht in einem Attribut gespeichert
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -579,23 +589,7 @@ class SubData:
         """
         try:
             if re.search("/general/", msg.topic) is not None:
-                if re.search("/general/ripple_control_receiver/module", msg.topic) is not None:
-                    config_dict = decode_payload(msg.payload)
-                    if config_dict["type"] is None:
-                        var.data.ripple_control_receiver.module = None
-                        var.ripple_control_receiver = None
-                    else:
-                        mod = importlib.import_module(".ripple_control_receivers." +
-                                                      config_dict["type"]+".ripple_control_receiver", "modules")
-                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                        var.data.ripple_control_receiver.module = config_dict
-                        var.ripple_control_receiver = ConfigurableRcr(
-                            config=config, component_initializer=mod.create_ripple_control_receiver)
-                elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
-                    self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
-                elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
-                    return
-                elif re.search("/general/prices/", msg.topic) is not None:
+                if re.search("/general/prices/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.prices, msg)
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
                     if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
@@ -637,6 +631,46 @@ class SubData:
                     self.set_json_payload_class(var.data, msg)
                 else:
                     self.set_json_payload_class(var.data, msg)
+        except Exception:
+            log.exception("Fehler im subdata-Modul")
+
+    def process_io_topic(self, var: Dict[str, Union[io_device.IoActions, io_device.IoStates]], msg: mqtt.MQTTMessage):
+        """ Handler für die Graph-Topics
+
+        Parameter
+        ----------
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
+            enthält Topic und Payload
+        """
+        try:
+            if re.search("/io/states/", msg.topic) is not None:
+                index = get_index(msg.topic)
+                payload = decode_payload(msg.payload)
+                if payload == "":
+                    if "io_states"+index in var:
+                        var.pop("io_states"+index)
+                else:
+                    if "io_states"+index not in var:
+                        var["io_states"+index] = io_device.IoStates(int(index))
+                if re.search("/io/states/[0-9]+/get", msg.topic) is not None:
+                    # Sonst werden Dicts als Payload verwendet, aber es wird alles in ein eigenes Attribut gespeichert
+                    # Typ ist hier auch kein typing.Dict, sondern ein generisches Dict[int, bool]
+                    setattr(var["io_states"+index].data.get, msg.topic.split("/")[-1], payload)
+                else:
+                    self.set_json_payload_class(var["io_states"+index].data, msg)
+            elif re.search("/io/action/[0-9]+/config", msg.topic) is not None:
+                index = get_index(msg.topic)
+                payload = decode_payload(msg.payload)
+                if payload == "":
+                    if index in var.actions:
+                        var.actions.pop(index)
+                else:
+                    if index not in var.actions:
+                        mod = importlib.import_module(f".io_actions.{payload['type']}.api", "modules")
+                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
+                        var.actions[f"io_action{index}"] = mod.create_action(config)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -847,6 +881,20 @@ class SubData:
                 Pub().pub("openWB/set/command/removeCloudBridge/todo", {
                     "command": "removeCloudBridge"
                 })
+            elif re.search("^.+/io/[0-9]+/config$", msg.topic) is not None:
+                index = get_index(msg.topic)
+                if decode_payload(msg.payload) == "":
+                    if "io"+index in var:
+                        var.pop("io"+index)
+                    else:
+                        log.error("Es konnte kein IO-Device mit der ID " +
+                                  str(index)+" gefunden werden.")
+                else:
+                    io_config = decode_payload(msg.payload)
+                    dev = importlib.import_module(f".io_devices.{io_config['type']}.api",
+                                                  "modules")
+                    config = dataclass_from_dict(dev.device_descriptor.configuration_factory, io_config)
+                    var["io"+index] = dev.create_io(config)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
