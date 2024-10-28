@@ -199,6 +199,12 @@ class TariffState:
 
 
 @auto_str
-class RcrState:
-    def __init__(self, override_value: float) -> None:
-        self.override_value = override_value
+class IoState:
+    def __init__(self, analog_input: Dict[int, float] = None,
+                 digital_input: Dict[int, bool] = None,
+                 analog_output: Dict[int, float] = None,
+                 digital_output: Dict[int, bool] = None) -> None:
+        self.analog_input = analog_input
+        self.digital_input = digital_input
+        self.analog_output = analog_output
+        self.digital_output = digital_output

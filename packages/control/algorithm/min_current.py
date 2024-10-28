@@ -24,7 +24,8 @@ class MinCurrent:
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_min_current(cp)
                     if max(missing_currents) > 0:
-                        available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
+                        available_currents, limit = Loadmanagement().get_available_currents(
+                            missing_currents, counter, cp)
                         cp.data.control_parameter.limit = limit
                         available_for_cp = common.available_current_for_cp(
                             cp, counts, available_currents, missing_currents)

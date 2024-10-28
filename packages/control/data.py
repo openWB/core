@@ -22,8 +22,10 @@ from control.counter import Counter
 from control.counter_all import CounterAll
 from control.ev import ChargeTemplate, Ev, EvTemplate
 from control.general import General
+from control.io_device import IoActions, IoStates
 from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
+from modules.common.abstract_io import AbstractIo
 
 log = logging.getLogger(__name__)
 bat_data_lock = threading.Lock()
@@ -38,6 +40,8 @@ ev_charge_template_data_lock = threading.Lock()
 ev_data_lock = threading.Lock()
 ev_template_data_lock = threading.Lock()
 general_data_lock = threading.Lock()
+io_actions_lock = threading.Lock()
+io_states_lock = threading.Lock()
 optional_data_lock = threading.Lock()
 pv_data_lock = threading.Lock()
 pv_all_data_lock = threading.Lock()
@@ -73,6 +77,8 @@ class Data:
         self._ev_template_data: Dict[str, EvTemplate] = {}
         self._general_data = General()
         self._graph_data = Graph()
+        self._io_actions: IoActions = {}
+        self._io_states: Dict[str, IoStates] = {}
         self._optional_data = Optional()
         self._pv_data: Dict[str, Pv] = {}
         self._pv_all_data = PvAll()
@@ -196,6 +202,24 @@ class Data:
         self._general_data = value
 
     @property
+    def io_actions(self) -> IoActions:
+        return self._io_actions
+
+    @io_actions.setter
+    @locked(io_actions_lock)
+    def io_actions(self, value):
+        self._io_actions = value
+
+    @property
+    def io_states(self) -> Dict[str, IoStates]:
+        return self._io_states
+
+    @io_states.setter
+    @locked(io_states_lock)
+    def io_states(self, value):
+        self._io_states = value
+
+    @property
     def optional_data(self) -> Optional:
         return self._optional_data
 
@@ -245,11 +269,14 @@ class Data:
         log.info(f"general_data\n{self._general_data.data}")
         log.info(f"general_data-display\n{self._general_data.data.extern_display_mode}")
         log.info(f"graph_data\n{self._graph_data.data}")
+        self._print_io_actions(self._io_actions)
+        self._print_dictionaries(self._io_states)
         log.info(f"optional_data\n{self._optional_data.data}")
         self._print_dictionaries(self._pv_data)
         log.info(f"pv_all_data\n{self._pv_all_data.data}")
         self._print_dictionaries(self._system_data)
         self._print_device_config(self._system_data)
+        self._print_io_device_config(self._system_data)
         log.info("\n")
 
     def _print_dictionaries(self, data):
@@ -282,6 +309,21 @@ class Data:
             except Exception:
                 log.exception("Fehler im Data-Modul")
 
+    def _print_io_device_config(self, data: Dict[str, AbstractIo]):
+        for key, value in data.items():
+            try:
+                if isinstance(value, AbstractIo):
+                    log.info(f"{key}\n{dataclass_utils.asdict(value.config)}")
+            except Exception:
+                log.exception("Fehler im Data-Modul")
+
+    def _print_io_actions(self, data: IoActions):
+        for key, value in data.actions.items():
+            try:
+                log.info(f"{key}\n{dataclass_utils.asdict(value.config)}")
+            except Exception:
+                log.exception("Fehler im Data-Modul")
+
     def copy_system_data(self) -> None:
         with ModuleDataReceivedContext(self.event_module_update_completed):
             self.__copy_system_data()
@@ -296,7 +338,8 @@ class Data:
             # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
             self.system_data = {
                 "system": copy.deepcopy(SubData.system_data["system"])} | {
-                k: SubData.system_data[k] for k in SubData.system_data if "device" in k}
+                k: SubData.system_data[k] for k in SubData.system_data if "device" in k} | {
+                k: SubData.system_data[k] for k in SubData.system_data if "io" in k}
             self.general_data = copy.deepcopy(SubData.general_data)
             self.__copy_cp_data()
         except Exception:
@@ -392,6 +435,8 @@ class Data:
         with ModuleDataReceivedContext(self.event_module_update_completed):
             try:
                 self.general_data = copy.deepcopy(SubData.general_data)
+                self.io_actions = copy.deepcopy(SubData.io_actions)
+                self.io_states = copy.deepcopy(SubData.io_states)
                 self.optional_data = copy.deepcopy(SubData.optional_data)
                 self.__copy_ev_data()
                 self.__copy_cp_data()

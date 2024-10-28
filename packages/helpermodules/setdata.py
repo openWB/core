@@ -84,6 +84,8 @@ class SetData:
                 self.process_bat_topic(msg)
             elif "openWB/set/general/" in msg.topic:
                 self.process_general_topic(msg)
+            elif "openWB/set/io/" in msg.topic:
+                self.process_io_topic(msg)
             elif "openWB/set/optional/" in msg.topic:
                 self.process_optional_topic(msg)
             elif "openWB/set/counter/" in msg.topic:
@@ -617,7 +619,8 @@ class SetData:
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
         elif ("/get/charge_state" in msg.topic or
-                "/get/plug_state" in msg.topic):
+                "/get/plug_state" in msg.topic or
+                "/ge/dimming_via_direct_control" in msg.topic):
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
@@ -835,6 +838,28 @@ class SetData:
                   "openWB/set/general/ripple_control_receiver/module" in msg.topic):
                 self._validate_value(msg, "json")
             elif ("openWB/set/general/charge_log_data_config" in msg.topic):
+                self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_io_topic(self, msg: mqtt.MQTTMessage):
+        """ Handler für die Allgemeinen-Topics
+
+         Parameters
+        ----------
+
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if "config" in msg.topic:
+                self._validate_value(msg, "json")
+            elif ("get/digital_input" in msg.topic or
+                  "get/digital_output" in msg.topic or
+                  "get/analog_input" in msg.topic or
+                  "get/analog_output" in msg.topic):
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
@@ -1068,6 +1093,9 @@ class SetData:
                     self._validate_value(msg, bool)
                 else:
                     self.__unknown_topic(msg)
+            elif "io" in msg.topic:
+                if "/config" in msg.topic:
+                    self._validate_value(msg, "json")
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 # log.error("Unbekanntes set-Topic: "+str(msg.topic)+", "+

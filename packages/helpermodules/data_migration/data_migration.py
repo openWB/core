@@ -20,7 +20,6 @@ from typing import Callable, Dict, List, Optional, Union
 
 from control import data, ev
 from dataclass_utils import dataclass_from_dict
-import dataclass_utils
 from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.hardware_configuration import update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals, string_to_float, string_to_int
@@ -29,7 +28,6 @@ from helpermodules.timecheck import convert_timedelta_to_time_string, get_differ
 from helpermodules.utils import joined_thread_handler
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
-from modules.ripple_control_receivers.gpio.config import GpioRcr
 import re
 
 log = logging.getLogger("data_migration")
@@ -567,8 +565,9 @@ class MigrateData:
                       {"command": "connectCloud", "data": {"username": cloud_user, "password": cloud_pw, "partner": 0}})
 
     def _move_rse(self) -> None:
-        if bool(self._get_openwb_conf_value("rseenabled", "0")):
-            Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
+        pass
+        # if bool(self._get_openwb_conf_value("rseenabled", "0")):
+        #     Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
 
     def _move_max_c_socket(self):
         try:
