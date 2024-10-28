@@ -38,7 +38,8 @@ class SurplusControlled:
                 for cp in preferenced_cps_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
-            self._fix_deviating_evse_current(cp)
+            if cp.data.control_parameter.state in CHARGING_STATES:
+                self._fix_deviating_evse_current(cp)
 
     def _set(self,
              chargepoints: List[Chargepoint],
