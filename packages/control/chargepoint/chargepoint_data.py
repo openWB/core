@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Protocol
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
+from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
 from helpermodules.constants import NO_ERROR

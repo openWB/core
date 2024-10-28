@@ -322,41 +322,48 @@ class SubData:
                     var.pop("ct"+index)
             else:
                 if "ct"+index not in var:
-                    var["ct"+index] = ChargeTemplate()
-                if re.search("/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
-                             msg.topic) is not None:
-                    index_second = get_second_index(msg.topic)
-                    if decode_payload(msg.payload) == "":
-                        try:
-                            var["ct"+index].data.chargemode.scheduled_charging.plans.pop(index_second)
-                        except KeyError:
-                            log.error("Es konnte kein Zielladen-Plan mit der ID " +
-                                      str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
-                    else:
-                        var["ct"+index].data.chargemode.scheduled_charging.plans[
-                            index_second] = dataclass_from_dict(ScheduledChargingPlan, decode_payload(msg.payload))
+                    var["ct"+index] = ev.ChargeTemplate()
+                self.process_charge_template_topic(var["ct"+index])
+                if re.search("/chargemode/scheduled_charging/plans/[0-9]+$", msg.topic) is not None:
                     self.event_scheduled_charging_plan.set()
-                elif re.search("/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
-                               msg.topic) is not None:
-                    index_second = get_second_index(msg.topic)
-                    if decode_payload(msg.payload) == "":
-                        try:
-                            var["ct"+index].data.time_charging.plans.pop(index_second)
-                        except KeyError:
-                            log.error("Es konnte kein Zeitladen-Plan mit der ID " +
-                                      str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
-                    else:
-                        var["ct"+index].data.time_charging.plans[
-                            index_second] = dataclass_from_dict(TimeChargingPlan, decode_payload(msg.payload))
+                elif re.search("/time_charging/plans/[0-9]+$", msg.topic) is not None:
                     self.event_time_charging_plan.set()
                 else:
-                    # Pläne unverändert übernehmen
-                    scheduled_charging_plans = var["ct" + index].data.chargemode.scheduled_charging.plans
-                    time_charging_plans = var["ct" + index].data.time_charging.plans
-                    var["ct" + index].data = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
-                    var["ct"+index].data.time_charging.plans = time_charging_plans
-                    var["ct"+index].data.chargemode.scheduled_charging.plans = scheduled_charging_plans
                     self.event_charge_template.set()
+        except Exception:
+            log.exception("Fehler im subdata-Modul")
+
+    def process_charge_template_topic(self, var: ChargeTemplate, msg: mqtt.MQTTMessage):
+        try:
+            if re.search("/chargemode/scheduled_charging/plans/[0-9]+$", msg.topic) is not None:
+                index_second = get_second_index(msg.topic)
+                if decode_payload(msg.payload) == "":
+                    try:
+                        var.data.chargemode.scheduled_charging.plans.pop(index_second)
+                    except KeyError:
+                        log.error(f"Es konnte kein Zielladen-Plan mit der ID {index_second} "
+                                  "in dem Lade-Profil gefunden werden.")
+                else:
+                    var.data.chargemode.scheduled_charging.plans[
+                        index_second] = dataclass_from_dict(ScheduledChargingPlan, decode_payload(msg.payload))
+            elif re.search("/time_charging/plans/[0-9]+$", msg.topic) is not None:
+                index_second = get_second_index(msg.topic)
+                if decode_payload(msg.payload) == "":
+                    try:
+                        var.data.time_charging.plans.pop(index_second)
+                    except KeyError:
+                        log.error("Es konnte kein Zeitladen-Plan mit der ID " +
+                                  str(index_second)+" in dem Lade-Profil gefunden werden.")
+                else:
+                    var.data.time_charging.plans[
+                        index_second] = dataclass_from_dict(TimeChargingPlan, decode_payload(msg.payload))
+            else:
+                # Pläne unverändert übernehmen
+                scheduled_charging_plans = var.data.chargemode.scheduled_charging.plans
+                time_charging_plans = var.data.time_charging.plans
+                var.data = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
+                var.data.time_charging.plans = time_charging_plans
+                var.data.chargemode.scheduled_charging.plans = scheduled_charging_plans
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
