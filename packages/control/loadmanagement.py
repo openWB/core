@@ -13,17 +13,22 @@ log = logging.getLogger(__name__)
 
 
 class Loadmanagement:
+    def get_currents_controllable_consumers(self,
+                                            missing_currents: List[float],
+                                            cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
+        available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
+        available_currents, limit = self._limit_by_dimming(available_currents, cp)
+        available_currents, limit = self._limit_by_ripple_control_receiver(available_currents, cp)
+        return available_currents, limit
+
     def get_available_currents(self,
                                missing_currents: List[float],
                                counter: Counter,
                                cp: Chargepoint,
-                               feed_in: int = 0,
-                               surplus: bool = False) -> Tuple[List[float], Optional[str]]:
+                               feed_in: int = 0) -> Tuple[List[float], Optional[str]]:
         raw_currents_left = counter.data.set.raw_currents_left
-        available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
-        available_currents, limit = self._limit_by_dimming(available_currents, surplus, counter, cp)
-        available_currents, limit = self._limit_by_ripple_control_receiver(available_currents, cp)
-        available_currents, limit = self._limit_by_current(counter, available_currents, raw_currents_left)
+
+        available_currents, limit = self._limit_by_current(counter, missing_currents, raw_currents_left)
         available_currents, limit_power = self._limit_by_power(
             counter, available_currents, counter.data.set.raw_power_left, feed_in)
         if limit_power is not None:
@@ -122,12 +127,9 @@ class Loadmanagement:
 
     def _limit_by_dimming(self,
                           available_currents: List[float],
-                          surplus: bool,
-                          counter: Counter,
                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
         dimming_power_left = data.data.io_actions.dimming_get_import_power_left(cp.num)
-        if (counter.data.set.dimming_power_left is not None and
-                surplus is False):
+        if dimming_power_left:
             if sum(available_currents)*230 > dimming_power_left:
                 phases = 3-available_currents.count(0)
                 overload_per_phase = (sum(available_currents) - dimming_power_left/230)/phases
