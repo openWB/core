@@ -40,6 +40,15 @@ def mode_and_counter_generator(chargemodes: List) -> Iterable[Tuple[Tuple[Option
                     counter = data.data.counter_data[f"counter{element['id']}"]
                     yield mode_tuple, counter
 
+
+def counter_generator() -> Iterable[Counter]:
+    levels = data.data.counter_all_data.get_list_of_elements_per_level()
+    for level in reversed(levels):
+        for element in level:
+            if element["type"] == ComponentType.COUNTER.value:
+                counter = data.data.counter_data[f"counter{element['id']}"]
+                yield counter
+
 # tested
 
 

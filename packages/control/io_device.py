@@ -32,6 +32,11 @@ class IoActions:
     def __init__(self):
         self.actions: Dict[int, Union[Dimming, DimmingDirectControl, RippleControlReceiver]] = {}
 
+    def setup(self):
+        for action in self.actions.values():
+            if isinstance(action, Dimming):
+                action.setup()
+
     def dimming_get_import_power_left(self, cp_num: int) -> float:
         for action in self.actions.values():
             if isinstance(action, Dimming):
