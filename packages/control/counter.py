@@ -108,7 +108,6 @@ class Counter:
             loadmanagement_available = self._get_loadmanagement_state()
             self._set_current_left(loadmanagement_available)
             self._set_power_left(loadmanagement_available)
-            self._set_dimming_power_left()
             if loadmanagement_available is False:
                 self.data.get.power = 0
                 return
@@ -196,13 +195,8 @@ class Counter:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
             self.data.set.raw_power_left -= sum(diffs) * 230
-        dimming_power_left = data.data.io_actions.dimming_set_import_power_left(cp.num, sum(diffs)*230)
-        if dimming_power_left is not None:
-            msg = f', {dimming_power_left}W verbleibende Dimmleistung'
-        else:
-            msg = ""
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
-                  f'{self.data.set.raw_power_left}W verbleibende Leistung{msg}')
+                  f'{self.data.set.raw_power_left}W verbleibende Leistung')
 
     def update_surplus_values_left(self, diffs) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
