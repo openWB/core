@@ -18,6 +18,24 @@ VALID_VERSIONS = ["openWB DimmModul"]
 
 def create_io(config: IoLan):
     def read():
+        nonlocal version
+        if version is False:
+            try:
+                parsed_answer = get_version_by_telnet(VALID_VERSIONS[0], config.configuration.ip_address)
+                for version in VALID_VERSIONS:
+                    if version in parsed_answer:
+                        version = True
+                        log.debug("Firmware des openWB Dimm-& Control-Kit ist mit openWB software2 kompatibel.")
+                    else:
+                        version = False
+                        raise ValueError
+            except (ConnectionRefusedError, ValueError):
+                log.exception("Dimm-Kit")
+                raise Exception("Firmware des openWB Dimm-& Control-Kit ist nicht mit openWB software2 kompatibel. "
+                                "Bitte den Support kontaktieren.")
+            except socket.timeout:
+                log.exception("Dimm-Kit")
+                raise Exception("Die IP-Adresse ist nicht erreichbar. Bitte den Support kontaktieren.")
         return IoState(
             # 1-4th channel test 0-5V voltage, 5-8th channel test 0-25mA current value
             analog_input={i: client.read_input_registers(
@@ -31,23 +49,6 @@ def create_io(config: IoLan):
 
     version = False
     client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-    if config.configuration.ip_address:
-        try:
-            parsed_answer = get_version_by_telnet(VALID_VERSIONS[0], config.configuration.ip_address)
-            for version in VALID_VERSIONS:
-                if version in parsed_answer:
-                    version = True
-                    log.debug("Firmware des openWB Dimm-& Control-Kit ist mit openWB software2 kompatibel.")
-                else:
-                    version = False
-                    raise ValueError
-        except (ConnectionRefusedError, ValueError):
-            log.exception("Dimm-Kit")
-            raise Exception("Firmware des openWB Dimm-& Control-Kit ist nicht mit openWB software2 kompatibel. "
-                            "Bitte den Support kontaktieren.")
-        except socket.timeout:
-            log.exception("Dimm-Kit")
-            raise Exception("Die IP-Adresse ist nicht erreichbar. Bitte den Support kontaktieren.")
     return ConfigurableIo(config=config, component_reader=read, component_writer=write)
 
 

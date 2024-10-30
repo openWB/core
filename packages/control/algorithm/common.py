@@ -41,14 +41,6 @@ def mode_and_counter_generator(chargemodes: List) -> Iterable[Tuple[Tuple[Option
                     yield mode_tuple, counter
 
 
-def counter_generator() -> Iterable[Counter]:
-    levels = data.data.counter_all_data.get_list_of_elements_per_level()
-    for level in reversed(levels):
-        for element in level:
-            if element["type"] == ComponentType.COUNTER.value:
-                counter = data.data.counter_data[f"counter{element['id']}"]
-                yield counter
-
 # tested
 
 
@@ -83,7 +75,7 @@ def set_current_counterdiff(diff_curent: float,
             if surplus:
                 data.data.counter_data[counter].update_surplus_values_left(diffs)
             else:
-                data.data.counter_data[counter].update_values_left(diffs, chargepoint)
+                data.data.counter_data[counter].update_values_left(diffs)
         data.data.io_actions.dimming_set_import_power_left(chargepoint.num, sum(diffs)*230)
 
     chargepoint.data.set.current = current
@@ -151,7 +143,7 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
             if surplus:
                 data.data.counter_data[counter].update_surplus_values_left(diffs)
             else:
-                data.data.counter_data[counter].update_values_left(diffs, chargepoint)
+                data.data.counter_data[counter].update_values_left(diffs)
         data.data.io_actions.dimming_set_import_power_left(chargepoint.num, sum(diffs)*230)
 
 

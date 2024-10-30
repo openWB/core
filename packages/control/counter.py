@@ -73,7 +73,6 @@ def get_factory() -> Get:
 @dataclass
 class Set:
     error_timer: Optional[float] = field(default=None, metadata={"topic": "set/error_timer"})
-    dimming_power_left: float = field(default=0, metadata={"topic": "set/dimming_power_left"})
     reserved_surplus: float = field(default=0, metadata={"topic": "set/reserved_surplus"})
     released_surplus: float = field(default=0, metadata={"topic": "set/released_surplus"})
     raw_power_left: float = 0
@@ -191,7 +190,7 @@ class Counter:
         else:
             self.data.set.raw_power_left = None
 
-    def update_values_left(self, diffs, cp: Chargepoint) -> None:
+    def update_values_left(self, diffs) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
             self.data.set.raw_power_left -= sum(diffs) * 230
