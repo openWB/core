@@ -54,7 +54,7 @@ class FaultState(Exception):
             if self.component_info.type == component_type.ComponentType.ELECTRICITY_TARIFF.value:
                 topic_prefix = f"openWB/set/{topic}"
             elif self.component_info.type == component_type.ComponentType.IO.value:
-                topic_prefix = f"openWB/set/general/{topic}"
+                topic_prefix = f"openWB/set/io/{topic}"
             else:
                 topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
             pub.Pub().pub(f"{topic_prefix}/get/fault_str", self.fault_str)
