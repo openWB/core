@@ -199,6 +199,7 @@ class InternalChargepointHandler:
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
                 log.debug(data)
                 log.setLevel(SubData.system_data["system"].data["debug_level"])
+                heartbeat_cp0, heartbeat_cp1 = None, None
                 if self.cp0:
                     heartbeat_cp0 = self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
                 if self.cp1:
