@@ -20,19 +20,25 @@ class Loadmanagement:
                                feed_in: int = 0) -> Tuple[List[float], Optional[str]]:
         raw_currents_left = counter.data.set.raw_currents_left
         available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
-        available_currents, limit = self._limit_by_dimming(available_currents, cp)
-        available_currents, limit = self._limit_by_ripple_control_receiver(available_currents, cp)
-        available_currents, limit = self._limit_by_current(counter, available_currents, raw_currents_left)
-        available_currents, limit_power = self._limit_by_power(
+
+        available_currents, new_limit = self._limit_by_dimming(available_currents, cp)
+        limit = new_limit if new_limit is not None else limit
+
+        available_currents, new_limit = self._limit_by_ripple_control_receiver(available_currents, cp)
+        limit = new_limit if new_limit is not None else limit
+
+        available_currents, new_limit = self._limit_by_current(counter, available_currents, raw_currents_left)
+        limit = new_limit if new_limit is not None else limit
+
+        available_currents, new_limit = self._limit_by_power(
             counter, available_currents, counter.data.set.raw_power_left, feed_in)
-        if limit_power is not None:
-            limit = limit_power
+        limit = new_limit if new_limit is not None else limit
+
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
-            available_currents, limit_unbalanced_load = self._limit_by_unbalanced_load(
+            available_currents, new_limit = self._limit_by_unbalanced_load(
                 counter, available_currents, raw_currents_left,
                 len([value for value in missing_currents if value != 0]))
-            if limit_unbalanced_load is not None:
-                limit = limit_unbalanced_load
+            limit = new_limit if new_limit is not None else limit
         return available_currents, limit
 
     def get_available_currents_surplus(self,
@@ -42,18 +48,22 @@ class Loadmanagement:
                                        feed_in: int = 0) -> Tuple[List[float], Optional[str]]:
         raw_currents_left = counter.data.set.raw_currents_left
         available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
-        available_currents, limit = self._limit_by_ripple_control_receiver(available_currents, cp)
-        available_currents, limit = self._limit_by_current(available_currents, raw_currents_left)
-        available_currents, limit_power = self._limit_by_power(
-            available_currents, counter.data.set.surplus_power_left, feed_in)
-        if limit_power is not None:
-            limit = limit_power
+
+        available_currents, new_limit = self._limit_by_ripple_control_receiver(available_currents, cp)
+        limit = new_limit if new_limit is not None else limit
+
+        available_currents, new_limit = self._limit_by_current(counter, available_currents, raw_currents_left)
+        limit = new_limit if new_limit is not None else limit
+
+        available_currents, new_limit = self._limit_by_power(
+            counter, available_currents, counter.data.set.surplus_power_left, feed_in)
+        limit = new_limit if new_limit is not None else limit
+
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
-            available_currents, limit_unbalanced_load = self._limit_by_unbalanced_load(
+            available_currents, new_limit = self._limit_by_unbalanced_load(
                 counter, available_currents, raw_currents_left,
                 len([value for value in missing_currents if value != 0]))
-            if limit_unbalanced_load is not None:
-                limit = limit_unbalanced_load
+            limit = new_limit if new_limit is not None else limit
         return available_currents, limit
 
     def _limit_by_unbalanced_load(self,

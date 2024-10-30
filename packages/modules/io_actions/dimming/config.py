@@ -7,7 +7,7 @@ from modules.io_actions.groups import ActionGroup
 @dataclass
 class DimmingConfig:
     io_device: int = 0
-    digital_input: int = 0
+    digital_input: str = "0"
     cp_ids: List[int] = field(default_factory=empty_list_factory)
     max_import_power: int = 0
 

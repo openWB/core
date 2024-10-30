@@ -21,13 +21,13 @@ except ImportError:
 def create_io(config: AddOn):
     def read() -> Tuple[bool, bool]:
         if has_gpio:
-            return IoState(digital_input={21: GPIO.input(21) == GPIO.LOW,
-                                          24: GPIO.input(24) == GPIO.LOW,
-                                          31: GPIO.input(31) == GPIO.LOW,
-                                          32: GPIO.input(32) == GPIO.LOW,
-                                          33: GPIO.input(33) == GPIO.LOW,
-                                          36: GPIO.input(36) == GPIO.LOW,
-                                          40: GPIO.input(40) == GPIO.LOW})
+            return IoState(digital_input={"21": GPIO.input(21) == GPIO.LOW,
+                                          "24": GPIO.input(24) == GPIO.LOW,
+                                          "31": GPIO.input(31) == GPIO.LOW,
+                                          "32": GPIO.input(32) == GPIO.LOW,
+                                          "33": GPIO.input(33) == GPIO.LOW,
+                                          "36": GPIO.input(36) == GPIO.LOW,
+                                          "40": GPIO.input(40) == GPIO.LOW})
         else:
             return IoState()
 
