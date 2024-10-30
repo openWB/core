@@ -128,6 +128,7 @@ class Loadmanagement:
                 phases = 3-available_currents.count(0)
                 overload_per_phase = (sum(available_currents) - dimming_power_left/230)/phases
                 available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]
+                log.debug(f"Reduzierung der Ströme durch die Dimmung: {available_currents}A")
                 return available_currents, LimitingValue.DIMMING.value
         return available_currents, None
 
