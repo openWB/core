@@ -28,6 +28,7 @@ class Dimming:
     def dimming_set_import_power_left(self, cp_num: int, used_power: float) -> None:
         if cp_num in self.config.config.cp_ids:
             self.import_power_left -= used_power
+            log.debug(f"verbleibende Dimm-Leistung: {self.import_power_left}W inkl Überschuss")
             return self.import_power_left
         else:
             return None
