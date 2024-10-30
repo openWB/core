@@ -10,6 +10,7 @@ from control.chargepoint.chargepoint import Chargepoint
 from control.counter_all import CounterAll
 from control.counter import Counter
 from control.ev import Ev
+from control.io_device import IoActions
 from control.pv import Pv
 from control.chargepoint.chargepoint_state import ChargepointState
 from test_utils.default_hierarchies import NESTED_HIERARCHY
@@ -48,6 +49,7 @@ def data_() -> None:
     data.data.counter_all_data = CounterAll()
     data.data.counter_all_data.data.get.hierarchy = NESTED_HIERARCHY
     data.data.counter_all_data.data.config.consider_less_charging = True
+    data.data.io_actions = IoActions()
 
 
 @dataclass

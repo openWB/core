@@ -12,15 +12,15 @@ from control.loadmanagement import LimitingValue
     "set_current, limit, expected_msg",
     [pytest.param(7, None, None, id="unverändert"),
      pytest.param(
-        6, LimitingValue.CURRENT,
+        6, LimitingValue.CURRENT.value.format('Garage'),
         f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden{LimitingValue.CURRENT.value.format('Garage')}",
          id="begrenzt durch Strom"),
      pytest.param(
-        6, LimitingValue.POWER,
+        6, LimitingValue.POWER.value.format('Garage'),
         f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden{LimitingValue.POWER.value.format('Garage')}",
          id="begrenzt durch Leistung"),
      pytest.param(
-        6, LimitingValue.UNBALANCED_LOAD,
+        6, LimitingValue.UNBALANCED_LOAD.value.format('Garage'),
         f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
         f"{LimitingValue.UNBALANCED_LOAD.value.format('Garage')}",
         id="begrenzt durch Schieflast"),
