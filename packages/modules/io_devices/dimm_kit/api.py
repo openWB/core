@@ -38,10 +38,11 @@ def create_io(config: IoLan):
                 raise Exception("Die IP-Adresse ist nicht erreichbar. Bitte den Support kontaktieren.")
         return IoState(
             # 1-4th channel test 0-5V voltage, 5-8th channel test 0-25mA current value
-            analog_input={i: client.read_input_registers(
+            analog_input={str(i): client.read_input_registers(
                 i-1, ModbusDataType.UINT_8, unit=config.configuration.modbus_id)/1024 for i in range(1, 9)},
-            digital_input={i: client.read_coils(i-1, 1, unit=config.configuration.modbus_id) for i in range(1, 9)},
-            digital_output={i: client.read_coils(i-1, 1, unit=config.configuration.modbus_id) for i in range(16, 24)})
+            digital_input={str(i): client.read_coils(i-1, 1, unit=config.configuration.modbus_id) for i in range(1, 9)},
+            digital_output={str(i): client.read_coils(i-1, 1,
+                                                      unit=config.configuration.modbus_id) for i in range(16, 24)})
 
     def write(digital_output: Dict[int, int]) -> None:
         for i, value in digital_output.items():
