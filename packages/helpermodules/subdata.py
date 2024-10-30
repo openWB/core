@@ -664,10 +664,9 @@ class SubData:
                     if index in var.actions:
                         var.actions.pop(index)
                 else:
-                    if index not in var.actions:
-                        mod = importlib.import_module(f".io_actions.{payload['type']}.api", "modules")
-                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
-                        var.actions[f"io_action{index}"] = mod.create_action(config)
+                    mod = importlib.import_module(f".io_actions.{payload['type']}.api", "modules")
+                    config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
+                    var.actions[f"io_action{index}"] = mod.create_action(config)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

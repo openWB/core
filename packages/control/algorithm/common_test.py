@@ -9,12 +9,14 @@ from control.chargepoint.chargepoint import Chargepoint
 from control.ev import Ev
 from control.counter import Counter
 from control.counter_all import CounterAll
+from control.io_device import IoActions
 
 
 @pytest.fixture(autouse=True)
 def cp() -> None:
     data.data_init(Mock())
     data.data.cp_data = {"cp0": Chargepoint(0, None)}
+    data.data.io_actions = IoActions()
 
 
 @pytest.mark.parametrize("set_current, expected_current",
