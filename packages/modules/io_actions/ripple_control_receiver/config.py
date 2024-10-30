@@ -9,6 +9,7 @@ class RippleControlReceiverConfig:
     io_device: int = 0
     digital_input: str = "0"
     cp_ids: List[int] = field(default_factory=empty_list_factory)
+    blocking_state: bool = False
 
 
 class RippleControlReceiverSetup:
