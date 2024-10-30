@@ -193,7 +193,8 @@ class Command:
         else:
             pub_user_message(
                 payload, connection_id,
-                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_io_action}\'.',
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_io_action}\'.',
                 MessageType.ERROR)
 
     def addIoDevice(self, connection_id: str, payload: dict) -> None:
@@ -222,7 +223,8 @@ class Command:
         else:
             pub_user_message(
                 payload, connection_id,
-                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_io_device}\'.',
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_io_device}\'.',
                 MessageType.ERROR)
 
     def addChargepoint(self, connection_id: str, payload: dict) -> None:
