@@ -200,10 +200,12 @@ class TariffState:
 
 @auto_str
 class IoState:
-    def __init__(self, analog_input: Dict[int, float] = None,
-                 digital_input: Dict[int, bool] = None,
-                 analog_output: Dict[int, float] = None,
-                 digital_output: Dict[int, bool] = None) -> None:
+    """JSON erlaubt nur Zeichenketten als Schlüssel für Objekte"""
+
+    def __init__(self, analog_input: Dict[str, float] = None,
+                 digital_input: Dict[str, bool] = None,
+                 analog_output: Dict[str, float] = None,
+                 digital_output: Dict[str, bool] = None) -> None:
         self.analog_input = analog_input
         self.digital_input = digital_input
         self.analog_output = analog_output
