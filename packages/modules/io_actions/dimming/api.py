@@ -18,7 +18,8 @@ class Dimming:
 
     def dimming_get_import_power_left(self, cp_num: int) -> None:
         if cp_num in self.config.config.cp_ids:
-            if data.data.io_states[self.config.config.io_device].get.digital_input[self.config.config.digital_input]:
+            if data.data.io_states[f"io_states{self.config.config.io_device}"].data.get.digital_input[
+                    self.config.config.digital_input]:
                 return self.import_power_left
             else:
                 return None

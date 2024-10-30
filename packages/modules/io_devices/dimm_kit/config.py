@@ -12,15 +12,15 @@ class IoLanConfiguration:
 
 
 def analog_input_init():
-    return {i: 0 for i in range(1, 9)}
+    return {str(i): 0 for i in range(1, 9)}
 
 
 def digital_input_init():
-    return {i: False for i in range(1, 9)}
+    return {str(i): False for i in range(1, 9)}
 
 
 def digital_output_init():
-    return {i: False for i in range(16, 24)}
+    return {str(i): False for i in range(16, 24)}
 
 
 @auto_str
