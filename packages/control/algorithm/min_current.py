@@ -34,7 +34,7 @@ class MinCurrent:
                             common.set_current_counterdiff(-(cp.data.set.current or 0), 0, cp)
                             if limit:
                                 cp.set_state_and_log(
-                                    "Ladung kann nicht gestartet werden"f"{limit.value}")
+                                    f"Ladung kann nicht gestartet werden{limit}")
                         else:
                             common.set_current_counterdiff(
                                 cp.data.set.target_current,

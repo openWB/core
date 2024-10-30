@@ -70,8 +70,7 @@ class SurplusControlled:
             else:
                 current = available_for_cp
 
-            current = common.get_current_to_set(cp.data.set.current, current,
-                                                available_for_cp, cp.data.set.target_current)
+            current = common.get_current_to_set(cp.data.set.current, current, cp.data.set.target_current)
             self._set_loadmangement_message(current, limit, cp)
             limited_current = self._limit_adjust_current(cp, current)
             common.set_current_counterdiff(

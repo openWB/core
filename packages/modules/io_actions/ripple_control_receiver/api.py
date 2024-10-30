@@ -9,7 +9,8 @@ class RippleControlReceiver:
 
     def ripple_control_receiver(self, cp_num: int) -> None:
         if cp_num in self.config.config.cp_ids:
-            if data.data.io_states[self.config.config.io_device].get.digital_input[self.config.config.digital_input]:
+            if data.data.io_states[f"io_states{self.config.config.io_device}"].data.get.digital_input[
+                    self.config.config.digital_input]:
                 return 0
             else:
                 return None

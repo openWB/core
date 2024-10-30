@@ -5,7 +5,7 @@ from modules.io_actions.groups import ActionGroup
 @dataclass
 class DimmingDirectControlConfig:
     io_device: int = 0
-    digital_input: int = 0
+    digital_input: str = "0"
     cp_id: int = None
 
 
