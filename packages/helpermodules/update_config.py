@@ -1,6 +1,7 @@
 from dataclasses import asdict
 import datetime
 import glob
+import importlib
 import json
 import logging
 from pathlib import Path
@@ -39,6 +40,7 @@ from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.io_actions.controllable_consumers.ripple_control_receiver.config import RippleControlReceiverSetup
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 from modules.devices.good_we.good_we.version import GoodWeVersion
 
@@ -48,7 +50,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 65
+    DATASTORE_VERSION = 66
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -1846,3 +1848,30 @@ class UpdateConfig:
             '<a href="https://wb-solution.de/shop/">https://wb-solution.de/shop/</a>',
             MessageType.INFO)
         self.__update_topic("openWB/system/datastore_version", 65)
+
+    def upgrade_datastore_65(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/ripple_control_receiver/module" == topic:
+                payload = decode_payload(payload)
+                if payload["value"] is not None:
+                    dev = importlib.import_module(".io_devices."+payload["data"]["type"]+".api", "modules")
+                    io_device = dev.device_descriptor.configuration_factory()
+
+                    action = RippleControlReceiverSetup()
+                    for cp_topic in self.all_received_topics.keys():
+                        if re.search("openWB/chargepoint/[0-9]+/config", cp_topic) is not None:
+                            action.config.cp_ids.append(get_index(cp_topic))
+                    action.config.io_device = 0
+
+                    if payload["value"] == "dimm_kit":
+                        io_device.config.ip_address = payload["configuration"]["ip_address"]
+                        io_device.config.port = payload["configuration"]["port"]
+                        io_device.config.modbus_id = payload["configuration"]["modbus_id"]
+                        action.config.digital_input = 0  # ToDo beide Pins
+                    elif payload["value"] == "gpio":
+                        action.config.digital_input = 24  # ToDo beide Pins
+
+                    return {'openWB/system/io/0/config': dataclass_utils.asdict(io_device),
+                            'openWB/io/action/0/config': dataclass_utils.asdict(action)}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 66)
