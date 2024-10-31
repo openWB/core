@@ -1,5 +1,5 @@
 <template>
-  <q-card class="full-height">
+  <q-card class="full-height" style="max-width: 24em">
     <q-card-section>
       <div class="row items-center text-h6" style="font-weight: bold">
         <div class="col">
