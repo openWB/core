@@ -9,6 +9,8 @@
     :navigation="groupedChargePoints.length > 1"
     :arrows="groupedChargePoints && $q.screen.gt.xs"
     class="full-width full-height q-mt-md"
+    transition-next="slide-left"
+    transition-prev="slide-right"
     @mousedown.prevent
   >
     <q-carousel-slide
@@ -38,7 +40,17 @@ const mqttStore = useMqttStore();
 const $q = useQuasar();
 const slide = ref<number | undefined>(undefined);
 
-const chargePointIds = ref<number[]>(mqttStore.chargePointIds);
+const chargePointIds = ref<number[]>([]);
+watch(
+  () => mqttStore.chargePointIds,
+  (newIds) => {
+    chargePointIds.value = newIds;
+    if (newIds.length > 0 && slide.value === undefined) {
+      slide.value = 0;
+    }
+  },
+  { immediate: true }
+);
 
 const groupedChargePoints = computed(() => {
   const groupSize = $q.screen.width > 800 ? 2 : 1;
@@ -51,16 +63,6 @@ const groupedChargePoints = computed(() => {
     return resultArray;
   }, [] as number[][]);
 });
-
-watch(
-  chargePointIds,
-  (newValue) => {
-    if (newValue.length > 0 && slide.value === undefined) {
-      slide.value = 0;
-    }
-  },
-  { immediate: true },
-);
 </script>
 
 <style scoped>
