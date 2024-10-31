@@ -19,4 +19,4 @@ class DimmingDirectControlSetup:
         self.type = type
         self.id = id
         self.config = config or DimmingDirectControlConfig()
-        self.group = ActionGroup.CONTROLLABLE_CONSUMERS_ACTIONS.value
+        self.group = ActionGroup.CONTROLLABLE_CONSUMERS.value

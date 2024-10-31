@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Dict, Union
-from modules.io_actions.dimming.api import Dimming
-from modules.io_actions.dimming_direct_control.api import DimmingDirectControl
-from modules.io_actions.ripple_control_receiver.api import RippleControlReceiver
+from modules.io_actions.controllable_consumers.dimming.api import Dimming
+from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
+from modules.io_actions.controllable_consumers.ripple_control_receiver.api import RippleControlReceiver
 
 
 @dataclass

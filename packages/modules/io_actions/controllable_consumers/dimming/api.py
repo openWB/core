@@ -1,7 +1,7 @@
 import logging
 from control import data
 from modules.common.abstract_device import DeviceDescriptor
-from modules.io_actions.dimming.config import DimmingSetup
+from modules.io_actions.controllable_consumers.dimming.config import DimmingSetup
 
 log = logging.getLogger(__name__)
 
