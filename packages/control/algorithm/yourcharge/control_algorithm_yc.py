@@ -41,7 +41,7 @@ class _ExpectedChange:
 
 class ControlAlgorithmYc:
     def __init__(self, cp_key: str, status_handler: YcStatusHandler) -> None:
-        self._last_control_run = datetime.datetime(1, 1, 1, 0, 0, 0)
+        self._last_control_run = datetime.datetime(1, 1, 2, 0, 0, 0, tzinfo=datetime.timezone.utc)
         self._internal_cp_key: str = cp_key
         self._internal_cp: Chargepoint = data.data.cp_data[self._internal_cp_key]
         self._previous_expected_charge_current: float = 0.0
