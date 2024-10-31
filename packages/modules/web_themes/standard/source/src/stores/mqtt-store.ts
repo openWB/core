@@ -385,7 +385,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           '$';
         // check if baseTopic is already subscribed
         if (!Object.keys(subscriptions.value).includes(baseTopic)) {
-          console.warn('auto subscription of wildcard topic', baseTopic);
+          console.debug('auto subscription of wildcard topic', baseTopic);
           subscribe(baseTopic);
         }
       } else {
@@ -450,7 +450,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       defaultValue: unknown = undefined,
     ): unknown => {
       if (!(topic in subscriptions.value)) {
-        console.warn('auto subscription of topic', topic);
+        console.debug('auto subscription of topic', topic);
         subscribe(topic, defaultValue);
       }
       let topicObject = topics.value[topic];
@@ -465,7 +465,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         }
         topicObject = topicObject[path[i]];
       }
-      console.log('getValue', topic, objectPath, topicObject);
+      console.debug('getValue', topic, objectPath, topicObject);
       return topicObject;
     };
   });
@@ -775,7 +775,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           ?.chargemode?.selected;
       },
       set(newValue: string) {
-        console.log('set charge mode', newValue, chargePointId);
+        console.debug('set charge mode', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         return updateTopic(
@@ -800,7 +800,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           ?.prio;
       },
       set(newValue: number) {
-        console.log('set charge priority', newValue, chargePointId);
+        console.debug('set charge priority', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         return updateTopic(
@@ -855,7 +855,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         ) as ChargeTemplateConfiguration;
       },
       set(newValue: ChargeTemplateConfiguration) {
-        console.log('set charge template', newValue, chargePointId);
+        console.debug('set charge template', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         return updateTopic(
@@ -868,6 +868,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  /**
+   * Get a list of all vehicles
+   * @returns Vehicle[]
+   */
   const vehicleList = () => {
     const list = getWildcardValues.value('openWB/vehicle/+/name');
     // generate an array of objects, containing vehicle index and name
