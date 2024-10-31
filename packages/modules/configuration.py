@@ -5,6 +5,7 @@ from typing import Dict, List
 
 import dataclass_utils
 from helpermodules.pub import Pub
+from modules.io_actions.groups import READBALE_GROUP_NAME, ActionGroup
 log = logging.getLogger(__name__)
 
 
@@ -18,7 +19,8 @@ def pub_configurable():
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
     _pub_configurable_chargepoints()
-    _pub_configurable_ripple_control_receivers()
+    _pub_configurable_io_devices()
+    _pub_configurable_io_actions()
 
 
 def _pub_configurable_backup_clouds() -> None:
@@ -301,37 +303,53 @@ def _pub_configurable_chargepoints() -> None:
         log.exception("Fehler im configuration-Modul")
 
 
-def _pub_configurable_ripple_control_receivers() -> None:
+def _pub_configurable_io_devices() -> None:
     try:
-        ripple_control_receivers = []
-        path_list = Path(_get_packages_path()/"modules"/"ripple_control_receivers").glob('**/config.py')
+        io_devices = []
+        path_list = Path(_get_packages_path()/"modules"/"io_devices").glob('**/config.py')
         for path in path_list:
             try:
                 if path.name.endswith("_test.py"):
                     # Tests überspringen
                     continue
                 dev_defaults = importlib.import_module(
-                    f".ripple_control_receivers.{path.parts[-2]}.ripple_control_receiver",
-                    "modules").device_descriptor.configuration_factory()
-                ripple_control_receivers.append({
+                    f".io_devices.{path.parts[-2]}.api", "modules").device_descriptor.configuration_factory()
+                io_devices.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
                     "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
-        ripple_control_receivers = sorted(ripple_control_receivers, key=lambda d: d['text'].upper())
-        # "leeren" Eintrag an erster Stelle einfügen
-        ripple_control_receivers.insert(0,
-                                        {
-                                            "value": None,
-                                            "text": "- kein RSE Modul -",
-                                            "defaults": {
-                                                "type": None,
-                                                "configuration": {}
-                                            }
-                                        })
-        Pub().pub("openWB/set/system/configurable/ripple_control_receivers", ripple_control_receivers)
+        io_devices = sorted(io_devices, key=lambda d: d['text'].upper())
+        Pub().pub("openWB/set/system/configurable/io_devices", io_devices)
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
+
+
+def _pub_configurable_io_actions() -> None:
+    try:
+        action_groups = {}
+        for group in ActionGroup:
+            action_groups[group.value] = {"group_name": READBALE_GROUP_NAME[group], "actions": []}
+            path_list = Path(_get_packages_path()/"modules"/"io_actions"/group.value).glob('**/api.py')
+            for path in path_list:
+                try:
+                    if path.name.endswith("_test.py"):
+                        # Tests überspringen
+                        continue
+                    action_defaults = importlib.import_module(f".io_actions.{group.value}.{path.parts[-2]}.api",
+                                                              "modules").device_descriptor.configuration_factory()
+                    action_groups[group.value]["actions"].append({
+                        "value": action_defaults.type,
+                        "text": action_defaults.name,
+                        "defaults": dataclass_utils.asdict(action_defaults)
+                    })
+                except Exception:
+                    log.exception(f"Fehler im configuration-Modul: groups: {path}")
+            action_groups[group.value]["actions"] = sorted(
+                action_groups[group.value]["actions"], key=lambda d: d['text'].upper())
+        Pub().pub("openWB/set/system/configurable/io_actions", action_groups)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 
