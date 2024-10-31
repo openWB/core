@@ -1,10 +1,11 @@
 <template>
   <div
     v-if="state !== undefined && state !== 0"
-    class="row q-mt-md q-pa-sm text-white"
+    class="row q-mt-md q-pa-sm text-white no-wrap"
     :class="messageClass"
     style="border-radius: 10px"
   >
+    <q-icon :name="iconName" size="sm" class="q-mr-xs" />
     {{ message }}
   </div>
 </template>
@@ -34,6 +35,17 @@ const messageClass = computed(() => {
       return 'bg-negative';
     default:
       return 'bg-primary';
+  }
+});
+
+const iconName = computed(() => {
+  switch (state.value) {
+    case 1:
+      return 'warning';
+    case 2:
+      return 'error';
+    default:
+      return 'info';
   }
 });
 </script>
