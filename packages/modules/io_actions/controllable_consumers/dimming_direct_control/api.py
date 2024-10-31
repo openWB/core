@@ -1,6 +1,6 @@
 from control import data
 from modules.common.abstract_device import DeviceDescriptor
-from modules.io_actions.dimming_direct_control.config import DimmingDirectControlSetup
+from modules.io_actions.controllable_consumers.dimming_direct_control.config import DimmingDirectControlSetup
 
 
 class DimmingDirectControl:
