@@ -800,7 +800,6 @@ export const useMqttStore = defineStore('mqtt', () => {
           ?.prio;
       },
       set(newValue: boolean) {
-        debugger;
         console.debug('set charge priority', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
