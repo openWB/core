@@ -1,6 +1,6 @@
 from control import data
 from modules.common.abstract_device import DeviceDescriptor
-from modules.io_actions.ripple_control_receiver.config import RippleControlReceiverSetup
+from modules.io_actions.controllable_consumers.ripple_control_receiver.config import RippleControlReceiverSetup
 
 
 class RippleControlReceiver:
