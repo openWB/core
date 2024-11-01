@@ -1856,7 +1856,7 @@ class UpdateConfig:
                     action = RippleControlReceiverSetup()
                     for cp_topic in self.all_received_topics.keys():
                         if re.search("openWB/chargepoint/[0-9]+/config", cp_topic) is not None:
-                            action.configuration.cp_ids.append(get_index(cp_topic))
+                            action.configuration.cp_ids.append(int(get_index(cp_topic)))
                     action.configuration.io_device = 0
 
                     if payload["type"] == "dimm_kit":

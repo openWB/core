@@ -3,6 +3,7 @@ from typing import Any, List, Optional
 
 from control import data
 from modules.common.abstract_device import AbstractDevice
+from modules.common.abstract_io import AbstractIo
 from modules.common.component_type import type_to_topic_mapping
 log = logging.getLogger(__name__)
 
@@ -13,6 +14,15 @@ def get_component_name_by_id(id: int):
             for comp in item.components.values():
                 if comp.component_config.id == id:
                     return comp.component_config.name
+    else:
+        raise ValueError(f"Element {id} konnte keinem Gerät zugeordnet werden.")
+
+
+def get_io_name_by_id(id: int):
+    for item in data.data.system_data.values():
+        if isinstance(item, AbstractIo):
+            if item.config.id == id:
+                return item.config.name
     else:
         raise ValueError(f"Element {id} konnte keinem Gerät zugeordnet werden.")
 
