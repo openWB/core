@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from typing import Dict, Union
-from pymodbus.constants import Endian
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
