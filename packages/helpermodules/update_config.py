@@ -1854,7 +1854,10 @@ class UpdateConfig:
             if "openWB/general/ripple_control_receiver/module" == topic:
                 payload = decode_payload(payload)
                 if payload["type"] is not None:
-                    dev = importlib.import_module(".io_devices."+payload["data"]["type"]+".api", "modules")
+                    if payload["type"] == "gpio":
+                        dev = importlib.import_module(".io_devices.add_on.api", "modules")
+                    else:
+                        dev = importlib.import_module(".io_devices."+payload["type"], "modules")
                     io_device = dev.device_descriptor.configuration_factory()
 
                     action = RippleControlReceiverSetup()
@@ -1863,7 +1866,7 @@ class UpdateConfig:
                             action.config.cp_ids.append(get_index(cp_topic))
                     action.config.io_device = 0
 
-                    if payload["value"] == "dimm_kit":
+                    if payload["type"] == "dimm_kit":
                         io_device.config.ip_address = payload["configuration"]["ip_address"]
                         io_device.config.port = payload["configuration"]["port"]
                         io_device.config.modbus_id = payload["configuration"]["modbus_id"]
@@ -1873,7 +1876,7 @@ class UpdateConfig:
                                                        {"value": 0, "input_matrix": {"0": False, "1": True}},
                                                        {"value": 0, "input_matrix": {"0": True, "1": False}},
                                                        {"value": 1, "input_matrix": {"0": True, "1": True}}]
-                    elif payload["value"] == "gpio":
+                    elif payload["type"] == "gpio":
                         # Wenn mindestens ein Kontakt geschlossen ist, wird die Ladung gesperrt. Wenn beide Kontakt
                         # offen sind, darf geladen werden.
                         action.config.input_pattern = [{"value": 1, "input_matrix": {"21": False, "24": False}},
