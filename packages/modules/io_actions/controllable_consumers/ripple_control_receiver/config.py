@@ -17,9 +17,9 @@ class RippleControlReceiverSetup:
                  name: str = "RSE-Kontakt",
                  type: str = "ripple_control_receiver",
                  id: int = 0,
-                 config: RippleControlReceiverConfig = None):
+                 configuration: RippleControlReceiverConfig = None):
         self.name = name
         self.id = id
-        self.config = config or RippleControlReceiverConfig()
+        self.configuration = configuration or RippleControlReceiverConfig()
         self.type = type
         self.group = ActionGroup.CONTROLLABLE_CONSUMERS.value

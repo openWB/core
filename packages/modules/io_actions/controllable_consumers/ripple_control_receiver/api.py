@@ -8,10 +8,10 @@ class RippleControlReceiver:
         self.config = config
 
     def ripple_control_receiver(self, cp_num: int) -> float:
-        if cp_num in self.config.config.cp_ids:
-            for pattern in self.config.config.input_pattern:
+        if cp_num in self.config.configuration.cp_ids:
+            for pattern in self.config.configuration.input_pattern:
                 for digital_input, value in pattern["input_matrix"].items():
-                    if data.data.io_states[f"io_states{self.config.config.io_device}"].data.get.digital_input[
+                    if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                             digital_input] != value:
                         break
                 else:
