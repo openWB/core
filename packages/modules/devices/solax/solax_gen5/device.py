@@ -7,7 +7,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.solax.solax_gen5.bat import SolaxGen5Bat
-from modules.devices.solax.solax_gen5.config import SolaxGen5, SolaxGen5BatSetup, SolaxGen5CounterSetup, SolaxGen5InverterSetup
+from modules.devices.solax.solax_gen5.config import SolaxGen5, SolaxGen5BatSetup, SolaxGen5CounterSetup
+from modules.devices.solax.solax_gen5.config import SolaxGen5InverterSetup
 from modules.devices.solax.solax_gen5.counter import SolaxGen5Counter
 from modules.devices.solax.solax_gen5.inverter import SolaxGen5Inverter
 
