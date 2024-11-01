@@ -9,7 +9,7 @@ class ComponentType(Enum):
     COUNTER = "counter"
     ELECTRICITY_TARIFF = "electricity_tariff"
     INVERTER = "inverter"
-    IO = "ripple_control_receiver"
+    IO = "io"
 
 
 def special_to_general_type_mapping(component_type: str) -> ComponentType:
@@ -34,6 +34,8 @@ def type_to_topic_mapping(component_type: str) -> str:
         return "pv"
     elif ComponentType.ELECTRICITY_TARIFF.value in component_type:
         return "optional/et"
+    elif ComponentType.IO.value in component_type:
+        return "io/states"
     else:
         return component_type
 
