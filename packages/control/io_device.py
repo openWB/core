@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 from modules.io_actions.controllable_consumers.dimming.api import Dimming
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 from modules.io_actions.controllable_consumers.ripple_control_receiver.api import RippleControlReceiver
@@ -37,13 +37,15 @@ class IoActions:
             if isinstance(action, Dimming):
                 action.setup()
 
-    def dimming_get_import_power_left(self, cp_num: int) -> float:
+    def dimming_get_import_power_left(self, cp_num: int) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
                 if cp_num in action.config.config.cp_ids:
                     return action.dimming_get_import_power_left(cp_num)
+        else:
+            return None
 
-    def dimming_set_import_power_left(self, cp_num: int, used_power: float) -> float:
+    def dimming_set_import_power_left(self, cp_num: int, used_power: float) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
                 if cp_num in action.config.config.cp_ids:
@@ -54,9 +56,13 @@ class IoActions:
             if isinstance(action, DimmingDirectControl):
                 if cp_num == action.config.config.cp_id:
                     return action.dimming_via_direct_control(cp_num)
+        else:
+            return None
 
     def ripple_control_receiver(self, cp_num: int) -> float:
         for action in self.actions.values():
             if isinstance(action, RippleControlReceiver):
                 if cp_num in action.config.config.cp_ids:
                     return action.ripple_control_receiver(cp_num)
+        else:
+            return 1
