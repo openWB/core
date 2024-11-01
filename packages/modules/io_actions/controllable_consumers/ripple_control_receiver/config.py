@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import Dict, List
 from dataclass_utils.factories import empty_list_factory
 from modules.io_actions.groups import ActionGroup
 
@@ -7,9 +7,9 @@ from modules.io_actions.groups import ActionGroup
 @dataclass
 class RippleControlReceiverConfig:
     io_device: int = 0
-    digital_input: str = "0"
+    # [{"value": 0.5, "input_matrix": {"1": False, "2": True}}]
+    input_pattern: List[Dict] = field(default_factory=empty_list_factory)
     cp_ids: List[int] = field(default_factory=empty_list_factory)
-    blocking_state: bool = False
 
 
 class RippleControlReceiverSetup:

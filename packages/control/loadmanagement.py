@@ -143,10 +143,17 @@ class Loadmanagement:
         return available_currents, None
 
     def _limit_by_ripple_control_receiver(self,
-                                          missing_currents: List[float],
+                                          available_currents: List[float],
                                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        if data.data.io_actions.ripple_control_receiver(cp.num):
-            log.debug("Abschaltung per RSE-Kontakt")
-            return [0]*3, LimitingValue.RIPPLE_CONTROL_RECEIVER.value
+        value = data.data.io_actions.ripple_control_receiver(cp.num)
+        if value != 1:
+            phases = 3-available_currents.count(0)
+            if phases > 1:
+                max_current = cp.template.data.max_current_single_phase
+            else:
+                max_current = cp.template.data.max_current_multi_phases
+            available_currents = [min(max_current*value, c) if c > 0 else 0 for c in available_currents]
+            log.debug(f"Reduzierung durch RSE-Kontakt auf {value*100}%, maximal {max_current*value}A")
+            return available_currents, LimitingValue.RIPPLE_CONTROL_RECEIVER.value.format(value*100)
         else:
-            return missing_currents, None
+            return available_currents, None

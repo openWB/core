@@ -1971,7 +1971,7 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if "openWB/general/ripple_control_receiver/module" == topic:
                 payload = decode_payload(payload)
-                if payload["value"] is not None:
+                if payload["type"] is not None:
                     dev = importlib.import_module(".io_devices."+payload["data"]["type"]+".api", "modules")
                     io_device = dev.device_descriptor.configuration_factory()
 
@@ -1985,9 +1985,19 @@ class UpdateConfig:
                         io_device.config.ip_address = payload["configuration"]["ip_address"]
                         io_device.config.port = payload["configuration"]["port"]
                         io_device.config.modbus_id = payload["configuration"]["modbus_id"]
-                        action.config.digital_input = 0  # ToDo beide Pins
+                        # Wenn mindestens ein Kontakt offen ist, wird die Ladung gesperrt. Wenn beide Kontakte
+                        # geschlossen sind, darf geladen werden.
+                        action.config.input_pattern = [{"value": 0, "input_matrix": {"0": False, "1": False}},
+                                                       {"value": 0, "input_matrix": {"0": False, "1": True}},
+                                                       {"value": 0, "input_matrix": {"0": True, "1": False}},
+                                                       {"value": 1, "input_matrix": {"0": True, "1": True}}]
                     elif payload["value"] == "gpio":
-                        action.config.digital_input = 24  # ToDo beide Pins
+                        # Wenn mindestens ein Kontakt geschlossen ist, wird die Ladung gesperrt. Wenn beide Kontakt
+                        # offen sind, darf geladen werden.
+                        action.config.input_pattern = [{"value": 1, "input_matrix": {"21": False, "24": False}},
+                                                       {"value": 0, "input_matrix": {"21": False, "24": True}},
+                                                       {"value": 0, "input_matrix": {"21": True, "24": False}},
+                                                       {"value": 0, "input_matrix": {"21": True, "24": True}}]
 
                     return {'openWB/system/io/0/config': dataclass_utils.asdict(io_device),
                             'openWB/io/action/0/config': dataclass_utils.asdict(action)}
