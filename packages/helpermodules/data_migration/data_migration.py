@@ -15,20 +15,27 @@ import os
 import pathlib
 import shutil
 import tarfile
+from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from threading import Thread
 from typing import Callable, Dict, List, Optional, Union
 
 from control import data, ev
 from dataclass_utils import dataclass_from_dict
+import dataclass_utils
+from helpermodules.broker import InternalBrokerClient
 from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.hardware_configuration import update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals, string_to_float, string_to_int
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, get_names
 from helpermodules.timecheck import convert_timedelta_to_time_string, get_difference
 from helpermodules.utils import joined_thread_handler
+from helpermodules.utils.topic_parser import get_index
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
+from modules.io_actions.controllable_consumers.ripple_control_receiver.config import RippleControlReceiverSetup
+from modules.io_devices.add_on.config import AddOn
 import re
+
 
 log = logging.getLogger("data_migration")
 
@@ -565,9 +572,20 @@ class MigrateData:
                       {"command": "connectCloud", "data": {"username": cloud_user, "password": cloud_pw, "partner": 0}})
 
     def _move_rse(self) -> None:
-        pass
-        # if bool(self._get_openwb_conf_value("rseenabled", "0")):
-        #     Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
+        if bool(self._get_openwb_conf_value("rseenabled", "0")):
+            action = RippleControlReceiverSetup()
+            for cp_topic in self.all_received_topics.keys():
+                if re.search("openWB/chargepoint/[0-9]+/config", cp_topic) is not None:
+                    action.configuration.cp_ids.append(get_index(cp_topic))
+            action.configuration.io_device = 0
+            # Wenn mindestens ein Kontakt geschlossen ist, wird die Ladung gesperrt. Wenn beide Kontakt
+            # offen sind, darf geladen werden.
+            action.configuration.input_pattern = [{"value": 1, "input_matrix": {"21": False, "24": False}},
+                                                  {"value": 0, "input_matrix": {"21": False, "24": True}},
+                                                  {"value": 0, "input_matrix": {"21": True, "24": False}},
+                                                  {"value": 0, "input_matrix": {"21": True, "24": True}}]
+            Pub().pub('openWB/system/io/0/config', dataclass_utils.asdict(AddOn()))
+            Pub().pub('openWB/io/action/0/config', dataclass_utils.asdict(action))
 
     def _move_max_c_socket(self):
         try:
@@ -619,3 +637,21 @@ class MigrateData:
             reduce(self._merge_records_by(key), records)
             for _, records in groupby(sorted(lst, key=key_prop), key_prop)
         ]
+
+
+class BrokerCphargepoints:
+    def get_configured_cp_ids(self) -> List:
+        self.all_received_topics = {}
+        InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
+        cp_ids = []
+        for topic, payload in self.all_received_topics.items():
+            cp_ids.append(get_index(topic))
+        return cp_ids
+
+    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
+        """ connect to broker and subscribe to set topics
+        """
+        client.subscribe("openWB/chargepoint/+/config", 2)
+
+    def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
+        self.all_received_topics.update({msg.topic: msg.payload})

@@ -35,7 +35,7 @@ def create_io(config: IoLan):
                                 "Bitte den Support kontaktieren.")
             except socket.timeout:
                 log.exception("Dimm-Kit")
-                raise Exception("Die IP-Adresse ist nicht erreichbar. Bitte den Support kontaktieren.")
+                raise Exception("Die IP-Adresse ist nicht erreichbar. Bitte überprüfe die Einstellungen.")
         return IoState(
             # 1-4th channel test 0-5V voltage, 5-8th channel test 0-25mA current value
             analog_input={str(i): client.read_input_registers(

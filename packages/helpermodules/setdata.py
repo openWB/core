@@ -822,19 +822,9 @@ class SetData:
                   "openWB/set/general/prices/grid" in msg.topic or
                   "openWB/set/general/prices/pv" in msg.topic):
                 self._validate_value(msg, float, [(0, 99.99)])
-            elif ("openWB/set/general/range_unit" in msg.topic or
-                  "openWB/set/general/ripple_control_receiver/override_reference" in msg.topic):
+            elif "openWB/set/general/range_unit" in msg.topic:
                 self._validate_value(msg, str)
-            elif "openWB/set/general/ripple_control_receiver/configured" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/general/ripple_control_receiver/get/override_value" in msg.topic:
-                self._validate_value(msg, float)
-            elif "openWB/set/general/ripple_control_receiver/get/fault_state" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
-            elif "openWB/set/general/ripple_control_receiver/get/fault_str" in msg.topic:
-                self._validate_value(msg, str)
-            elif ("openWB/set/general/web_theme" in msg.topic or
-                  "openWB/set/general/ripple_control_receiver/module" in msg.topic):
+            elif "openWB/set/general/web_theme" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("openWB/set/general/charge_log_data_config" in msg.topic):
                 self._validate_value(msg, "json")
@@ -860,6 +850,10 @@ class SetData:
                   "get/analog_input" in msg.topic or
                   "get/analog_output" in msg.topic):
                 self._validate_value(msg, "json")
+            elif "get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
             else:
                 self.__unknown_topic(msg)
         except Exception:
