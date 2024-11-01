@@ -17,7 +17,7 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIo):
                  component_reader: Callable[[], IoState],
                  component_writer: Callable[[Dict[int, Union[float, int]]], Optional[IoState]]) -> None:
         self.config = config
-        self.fault_state = FaultState(ComponentInfo(None, self.config.name,
+        self.fault_state = FaultState(ComponentInfo(self.config.id, self.config.name,
                                       ComponentType.IO.value))
         self.store = store.get_io_value_store(self.config.id)
         with SingleComponentUpdateContext(self.fault_state):
