@@ -152,7 +152,10 @@ class Loadmanagement:
                 max_current = cp.template.data.max_current_single_phase
             else:
                 max_current = cp.template.data.max_current_multi_phases
-            available_currents = [min(max_current*value, c) if c > 0 else 0 for c in available_currents]
+            # target_current ist das Ergebnis der letzten Iteration. Die Differenz der begrenzten Anschlussleistung und
+            # der Sollstrom der letzten Iteration dürfen daher nicht größer sein als der aktuell fehlende Strom.
+            available_currents = [min(max_current*value - cp.data.set.target_current, c)
+                                  if c > 0 else 0 for c in available_currents]
             log.debug(f"Reduzierung durch RSE-Kontakt auf {value*100}%, maximal {max_current*value}A")
             return available_currents, LimitingValue.RIPPLE_CONTROL_RECEIVER.value.format(value*100)
         else:
