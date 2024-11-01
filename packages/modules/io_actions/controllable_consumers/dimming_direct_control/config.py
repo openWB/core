@@ -14,9 +14,9 @@ class DimmingDirectControlSetup:
                  name: str = "Dimmen per Direktsteuerung",
                  type: str = "dimming_direct_control",
                  id: int = 0,
-                 config: DimmingDirectControlConfig = None):
+                 configuration: DimmingDirectControlConfig = None):
         self.name = name
         self.type = type
         self.id = id
-        self.config = config or DimmingDirectControlConfig()
+        self.configuration = configuration or DimmingDirectControlConfig()
         self.group = ActionGroup.CONTROLLABLE_CONSUMERS.value
