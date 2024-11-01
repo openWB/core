@@ -22,11 +22,11 @@ class SolisBat(AbstractBat):
         unit = self.component_config.configuration.modbus_id
 
         power = client.read_holding_registers(33149, ModbusDataType.INT_32, unit=unit) * -1
-        soc = client.read_holding_registers(31038, ModbusDataType.UINT_16, unit=unit)
+        soc = client.read_holding_registers(33139, ModbusDataType.UINT_16, unit=unit)
         # Geladen in kWh
         imported = client.read_holding_registers(33161, ModbusDataType.UINT_32, unit=unit) * 1000
-        # Entladen in kWh * 0,1
-        exported = client.read_holding_registers(33165, ModbusDataType.UINT_32, unit=unit) * 100
+        # Entladen in kWh
+        exported = client.read_holding_registers(33165, ModbusDataType.UINT_32, unit=unit) * 1000
 
         bat_state = BatState(
             power=power,
