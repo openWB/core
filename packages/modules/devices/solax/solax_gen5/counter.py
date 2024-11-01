@@ -28,27 +28,28 @@ class SolaxGen5Counter(AbstractCounter):
 
     def update(self):
         with self.__tcp_client:
-            power = self.__tcp_client.read_input_registers(70, ModbusDataType.INT_32, wordorder=Endian.Little, unit=self.__modbus_id) * -1
+            power = self.__tcp_client.read_input_registers(70, ModbusDataType.INT_32, wordorder=Endian.Little, 
+                                                           unit=self.__modbus_id) * -1
             frequency = self.__tcp_client.read_input_registers(7, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
             voltages = [value / 10
                         for value in self.__tcp_client.read_input_registers(
                             202, [ModbusDataType.UINT_16] * 3, unit=self.__modbus_id
-                        )]
+                       )]
 
             currents = [(65535 - value) / 10
                         for value in self.__tcp_client.read_input_registers(
                             206, [ModbusDataType.UINT_16] * 3, unit=self.__modbus_id
-                        )]
+                       )]
 
             power_factors = [value / 100
-                             for value in self.__tcp_client.read_input_registers(
-                                 197, [ModbusDataType.UINT_16] * 3, unit=self.__modbus_id
+                            for value in self.__tcp_client.read_input_registers(
+                                197, [ModbusDataType.UINT_16] * 3, unit=self.__modbus_id
                             )]
 
             powers = [-value for value in self.__tcp_client.read_input_registers(
-                      130, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id
+                        130, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id
                      )]
-                     
+            
             exported, imported = [value * 10
                                   for value in self.__tcp_client.read_input_registers(
                                       72, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=self.__modbus_id
