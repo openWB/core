@@ -40,7 +40,7 @@ class IoActions:
     def dimming_get_import_power_left(self, cp_num: int) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
-                if cp_num in action.config.config.cp_ids:
+                if cp_num in action.config.configuration.cp_ids:
                     return action.dimming_get_import_power_left(cp_num)
         else:
             return None
@@ -48,13 +48,13 @@ class IoActions:
     def dimming_set_import_power_left(self, cp_num: int, used_power: float) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
-                if cp_num in action.config.config.cp_ids:
+                if cp_num in action.config.configuration.cp_ids:
                     return action.dimming_set_import_power_left(cp_num, used_power)
 
     def dimming_via_direct_control(self, cp_num: int) -> float:
         for action in self.actions.values():
             if isinstance(action, DimmingDirectControl):
-                if cp_num == action.config.config.cp_id:
+                if cp_num == action.config.configuration.cp_id:
                     return action.dimming_via_direct_control(cp_num)
         else:
             return None
@@ -62,7 +62,7 @@ class IoActions:
     def ripple_control_receiver(self, cp_num: int) -> float:
         for action in self.actions.values():
             if isinstance(action, RippleControlReceiver):
-                if cp_num in action.config.config.cp_ids:
+                if cp_num in action.config.configuration.cp_ids:
                     return action.ripple_control_receiver(cp_num)
         else:
             return 1

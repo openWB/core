@@ -17,9 +17,9 @@ class DimmingSetup:
                  name: str = "Dimmen",
                  type: str = "dimming",
                  id: int = 0,
-                 config: DimmingConfig = None):
+                 configuration: DimmingConfig = None):
         self.name = name
         self.id = id
-        self.config = config or DimmingConfig()
+        self.configuration = configuration or DimmingConfig()
         self.type = type
         self.group = ActionGroup.CONTROLLABLE_CONSUMERS.value
