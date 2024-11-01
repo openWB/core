@@ -19,13 +19,17 @@ class Loadmanagement:
                                cp: Chargepoint,
                                feed_in: int = 0) -> Tuple[List[float], Optional[str]]:
         raw_currents_left = counter.data.set.raw_currents_left
-        available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
+        try:
+            available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
 
-        available_currents, new_limit = self._limit_by_dimming(available_currents, cp)
-        limit = new_limit if new_limit is not None else limit
+            available_currents, new_limit = self._limit_by_dimming(available_currents, cp)
+            limit = new_limit if new_limit is not None else limit
 
-        available_currents, new_limit = self._limit_by_ripple_control_receiver(available_currents, cp)
-        limit = new_limit if new_limit is not None else limit
+            available_currents, new_limit = self._limit_by_ripple_control_receiver(available_currents, cp)
+            limit = new_limit if new_limit is not None else limit
+        except ValueError as e:
+            available_currents = [0]*3
+            limit = e.args[0]
 
         available_currents, new_limit = self._limit_by_current(counter, available_currents, raw_currents_left)
         limit = new_limit if new_limit is not None else limit
