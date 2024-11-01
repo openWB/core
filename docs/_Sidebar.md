@@ -12,9 +12,11 @@
 * Oberfläche
   * [Anzeige - Steuerung](https://github.com/openWB/core/wiki/Anzeige-Steuerung)
 * Features
+  * [Identifikation](https://github.com/openWB/core/wiki/Identifikation)
+  * [IO-Geräte & -Aktionen](https://github.com/openWB/core/wiki/IO-Geräte-&--Aktionen)
   * [OCPP](https://github.com/openWB/core/wiki/OCPP)
   * [Strompreisbasiertes Laden](https://github.com/openWB/core/wiki/Strompreisbasiertes-Laden)
-  * [Identifikation](https://github.com/openWB/core/wiki/Identifikation)
+  * [Steuerbare Verbrauchseinrichtungen](https://github.com/openWB/core/wiki/Steuerbare-Verbrauchseinrichtungen-nach-§14a)
 * Szenarien
   * [Typische Anwendungsfälle](https://github.com/openWB/core/wiki/Typische-Anwendungsfälle)
   * [Hybrid-System aus Wechselrichter und Speicher](https://github.com/openWB/core/wiki/Hybrid-System-aus-Wechselrichter-und-Speicher)
