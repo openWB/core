@@ -505,7 +505,7 @@ class UpdateConfig:
         ("openWB/general/prices/grid", Prices().grid),
         ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
-        ("openWB/general/ripple_control_receiver/module", NO_MODULE),
+        ("openWB/general/ripple_control_receiver/module", NO_MODULE),  # obsolet
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
@@ -1857,32 +1857,32 @@ class UpdateConfig:
                     if payload["type"] == "gpio":
                         dev = importlib.import_module(".io_devices.add_on.api", "modules")
                     else:
-                        dev = importlib.import_module(".io_devices."+payload["type"], "modules")
+                        dev = importlib.import_module(".io_devices."+payload["type"]+".api", "modules")
                     io_device = dev.device_descriptor.configuration_factory()
 
                     action = RippleControlReceiverSetup()
                     for cp_topic in self.all_received_topics.keys():
                         if re.search("openWB/chargepoint/[0-9]+/config", cp_topic) is not None:
-                            action.config.cp_ids.append(get_index(cp_topic))
-                    action.config.io_device = 0
+                            action.configuration.cp_ids.append(get_index(cp_topic))
+                    action.configuration.io_device = 0
 
                     if payload["type"] == "dimm_kit":
-                        io_device.config.ip_address = payload["configuration"]["ip_address"]
-                        io_device.config.port = payload["configuration"]["port"]
-                        io_device.config.modbus_id = payload["configuration"]["modbus_id"]
+                        io_device.configuration.ip_address = payload["configuration"]["ip_address"]
+                        io_device.configuration.port = payload["configuration"]["port"]
+                        io_device.configuration.modbus_id = payload["configuration"]["modbus_id"]
                         # Wenn mindestens ein Kontakt offen ist, wird die Ladung gesperrt. Wenn beide Kontakte
                         # geschlossen sind, darf geladen werden.
-                        action.config.input_pattern = [{"value": 0, "input_matrix": {"0": False, "1": False}},
-                                                       {"value": 0, "input_matrix": {"0": False, "1": True}},
-                                                       {"value": 0, "input_matrix": {"0": True, "1": False}},
-                                                       {"value": 1, "input_matrix": {"0": True, "1": True}}]
+                        action.configuration.input_pattern = [{"value": 0, "input_matrix": {"0": False, "1": False}},
+                                                              {"value": 0, "input_matrix": {"0": False, "1": True}},
+                                                              {"value": 0, "input_matrix": {"0": True, "1": False}},
+                                                              {"value": 1, "input_matrix": {"0": True, "1": True}}]
                     elif payload["type"] == "gpio":
                         # Wenn mindestens ein Kontakt geschlossen ist, wird die Ladung gesperrt. Wenn beide Kontakt
                         # offen sind, darf geladen werden.
-                        action.config.input_pattern = [{"value": 1, "input_matrix": {"21": False, "24": False}},
-                                                       {"value": 0, "input_matrix": {"21": False, "24": True}},
-                                                       {"value": 0, "input_matrix": {"21": True, "24": False}},
-                                                       {"value": 0, "input_matrix": {"21": True, "24": True}}]
+                        action.configuration.input_pattern = [{"value": 1, "input_matrix": {"21": False, "24": False}},
+                                                              {"value": 0, "input_matrix": {"21": False, "24": True}},
+                                                              {"value": 0, "input_matrix": {"21": True, "24": False}},
+                                                              {"value": 0, "input_matrix": {"21": True, "24": True}}]
 
                     return {'openWB/system/io/0/config': dataclass_utils.asdict(io_device),
                             'openWB/io/action/0/config': dataclass_utils.asdict(action)}
