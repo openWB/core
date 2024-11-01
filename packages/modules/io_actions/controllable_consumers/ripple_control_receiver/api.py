@@ -7,15 +7,21 @@ class RippleControlReceiver:
     def __init__(self, config: RippleControlReceiverSetup):
         self.config = config
 
-    def ripple_control_receiver(self, cp_num: int) -> None:
+    def ripple_control_receiver(self, cp_num: int) -> float:
         if cp_num in self.config.config.cp_ids:
-            if data.data.io_states[f"io_states{self.config.config.io_device}"].data.get.digital_input[
-                    self.config.config.digital_input] == self.config.config.blocking_state:
-                return True
+            for pattern in self.config.config.input_pattern:
+                for digital_input, value in pattern["input_matrix"].items():
+                    if data.data.io_states[f"io_states{self.config.config.io_device}"].data.get.digital_input[
+                            digital_input] != value:
+                        break
+                else:
+                    # Alle digitalen Eingänge entsprechen dem Pattern
+                    return pattern["value"]
             else:
-                return False
+                # Zustand entpsricht keinem Pattern
+                return 0
         else:
-            return False
+            return 1
 
 
 def create_action(config: RippleControlReceiverSetup):
