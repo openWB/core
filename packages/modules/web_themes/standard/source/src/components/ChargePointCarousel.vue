@@ -49,7 +49,7 @@ watch(
       slide.value = 0;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const groupedChargePoints = computed(() => {
