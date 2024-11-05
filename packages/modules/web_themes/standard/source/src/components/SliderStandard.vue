@@ -9,14 +9,15 @@
         @update:model-value="emitValue"
         :min="props.min"
         :max="props.max"
+        :step="props.step"
         color="primary"
+        style="width: 75%"
         inner-track-color="blue-grey-2"
         track-size="0.5em"
         thumb-size="1.7em"
         @touchstart.stop
         @touchmove.stop
         @touchend.stop
-        style="width: 75%"
       />
       <div class="q-ml-md q-mt-xs items-center no-wrap">
         {{ props.value }} {{ props.units }}
@@ -26,8 +27,6 @@
 </template>
 
 <script setup lang="ts">
-//import { ref } from 'vue';
-
 defineOptions({
   name: 'SliderQuasar',
 });
@@ -48,6 +47,10 @@ const props = defineProps({
   min: {
     type: Number,
     default: 0,
+  },
+  step: {
+    type: Number,
+    default: 1,
   },
   units: {
     type: String,
