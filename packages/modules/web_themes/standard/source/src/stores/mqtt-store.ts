@@ -905,6 +905,137 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get or set the charge point connected vehicle pv min current identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object
+   */
+  const chargePointConnectedVehiclePVChargeMinCurrent = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.pv_charging?.min_current;
+      },
+      set(newValue: number) {
+        console.debug('set pv min current', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.pv_charging.min_current',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle pv min SoC identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object
+   */
+  const chargePointConnectedVehiclePVChargeMinSoc = (chargePointId: number) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.pv_charging?.min_soc;
+      },
+      set(newValue: number) {
+        console.debug('set pv min SoC', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.pv_charging.min_soc',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle pv min SoC Current identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object
+   */
+  const chargePointConnectedVehiclePVChargeMinSocCurrent = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.pv_charging?.min_soc_current;
+      },
+      set(newValue: number) {
+        console.debug('set pv min SoC Current', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.pv_charging.min_soc_current',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle pv max SoC limit identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object
+   */
+  const chargePointConnectedVehiclePVChargeMaxSoc = (chargePointId: number) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.pv_charging?.max_soc;
+      },
+      set(newValue: number) {
+        console.debug('set pv max SoC limit', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.pv_charging.max_soc',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle pv feed in limit active identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object
+   */
+  const chargePointConnectedVehiclePVChargeFeedInLimit = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.pv_charging?.feed_in_limit;
+      },
+      set(newValue: boolean) {
+        console.debug('set pv feed in limit active', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.pv_charging.feed_in_limit',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
    * Get or set the charge point connected vehicle charge priority identified by the charge point id
    * @param chargePointId charge point id
    * @returns boolean
@@ -1034,6 +1165,11 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleInstantChargeLimit,
     chargePointConnectedVehicleInstantChargeLimitSoC,
     chargePointConnectedVehicleInstantChargeEnergieLimit,
+    chargePointConnectedVehiclePVChargeMinCurrent,
+    chargePointConnectedVehiclePVChargeMinSoc,
+    chargePointConnectedVehiclePVChargeMinSocCurrent,
+    chargePointConnectedVehiclePVChargeMaxSoc,
+    chargePointConnectedVehiclePVChargeFeedInLimit,
     chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleChargeTemplate,
     vehicleList,
