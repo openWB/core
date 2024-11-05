@@ -41,6 +41,7 @@
   </q-card>
 
   <!-- //////////////////////  Settings popup dialog  //////////////////// -->
+
   <q-dialog v-model="settings" :backdrop-filter="'blur(4px)'">
     <q-card>
       <q-card-section>
@@ -76,6 +77,9 @@
             />
           </div>
         </div>
+
+        <!-- ///////////////// Instant charge settings /////////////////// -->
+
         <SliderStandard
           v-if="chargeMode === 'instant_charging'"
           :title="'Stromstärke'"
@@ -104,6 +108,7 @@
           :title="'SoC-Limit für das Fahrzeug'"
           :min="5"
           :max="100"
+          :step="5"
           :units="'%'"
           :value="instantSoC"
           @update:value="updateInstantSoC"
@@ -119,6 +124,67 @@
           @update:value="updateInstantEnergy"
           class="q-mt-md"
         />
+
+        <!-- ///////////////// PV charge settings /////////////////// -->
+
+        <SliderStandard
+          v-if="chargeMode === 'pv_charging'"
+          :title="'Minimaler Dauerstrom'"
+          :min="0"
+          :max="16"
+          :units="'A'"
+          :value="pvMinCurrent"
+          @update:value="updatePvMinCurrent"
+          class="q-mt-md"
+        />
+
+        <SliderStandard
+          v-if="chargeMode === 'pv_charging'"
+          :title="'Mindest-SoC für das Fahrzeug'"
+          :min="0"
+          :max="95"
+          :step="5"
+          :units="'%'"
+          :value="pvMinSoc"
+          @update:value="updatePvMinSoc"
+          class="q-mt-md"
+        />
+
+        <SliderStandard
+          v-if="chargeMode === 'pv_charging'"
+          :title="'Mindest-SoC-Strom'"
+          :min="6"
+          :max="32"
+          :units="'A'"
+          :value="pvMinSocCurrent"
+          @update:value="updatePvMinSocCurrent"
+          class="q-mt-md"
+        />
+
+        <SliderStandard
+          v-if="chargeMode === 'pv_charging'"
+          :title="'SoC-Limit für das Fahrzeug'"
+          :min="0"
+          :max="100"
+          :step="5"
+          :units="'%'"
+          :value="pvMaxSocLimit"
+          @update:value="updatePvMaxSocLimit"
+          class="q-mt-md"
+        />
+
+        <div
+          v-if="chargeMode === 'pv_charging'"
+          class="row items-center q-ma-none q-pa-none no-wrap"
+        >
+          <div class="text-subtitle2 q-mr-sm">Einspeisegrenze beachten</div>
+          <div>
+            <ToggleStandard
+              :value="feedInlimit"
+              @update:value="updateFeedInLimit"
+            />
+          </div>
+        </div>
       </q-card-section>
       <q-card-actions align="right">
         <q-btn flat label="OK" color="primary" v-close-popup />
@@ -133,6 +199,7 @@ import SliderQuasar from './SliderQuasar.vue';
 import SliderStandard from './SliderStandard.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import ChargePointLock from './ChargePointLock.vue';
+import ToggleStandard from './ToggleStandard.vue';
 import ChargePointStateIcon from './ChargePointStateIcon.vue';
 import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
@@ -198,6 +265,68 @@ const instantEnergy = computed(
 
 const updateInstantEnergy = (newValue: number) => {
   mqttStore.chargePointConnectedVehicleInstantChargeEnergieLimit(
+    props.chargePointId,
+  ).value = newValue;
+};
+
+const pvMinCurrent = computed(
+  () =>
+    mqttStore.chargePointConnectedVehiclePVChargeMinCurrent(props.chargePointId)
+      ?.value,
+);
+
+const updatePvMinCurrent = (newValue: number) => {
+  mqttStore.chargePointConnectedVehiclePVChargeMinCurrent(
+    props.chargePointId,
+  ).value = newValue;
+};
+
+const pvMinSoc = computed(
+  () =>
+    mqttStore.chargePointConnectedVehiclePVChargeMinSoc(props.chargePointId)
+      ?.value,
+);
+
+const updatePvMinSoc = (newValue: number) => {
+  mqttStore.chargePointConnectedVehiclePVChargeMinSoc(
+    props.chargePointId,
+  ).value = newValue;
+};
+
+const pvMinSocCurrent = computed(
+  () =>
+    mqttStore.chargePointConnectedVehiclePVChargeMinSocCurrent(
+      props.chargePointId,
+    )?.value,
+);
+
+const updatePvMinSocCurrent = (newValue: number) => {
+  mqttStore.chargePointConnectedVehiclePVChargeMinSocCurrent(
+    props.chargePointId,
+  ).value = newValue;
+};
+
+const pvMaxSocLimit = computed(
+  () =>
+    mqttStore.chargePointConnectedVehiclePVChargeMaxSoc(props.chargePointId)
+      ?.value,
+);
+
+const updatePvMaxSocLimit = (newValue: number) => {
+  mqttStore.chargePointConnectedVehiclePVChargeMaxSoc(
+    props.chargePointId,
+  ).value = newValue;
+};
+
+const feedInlimit = computed(
+  () =>
+    mqttStore.chargePointConnectedVehiclePVChargeFeedInLimit(
+      props.chargePointId,
+    )?.value,
+);
+
+const updateFeedInLimit = (newValue: boolean) => {
+  mqttStore.chargePointConnectedVehiclePVChargeFeedInLimit(
     props.chargePointId,
   ).value = newValue;
 };
