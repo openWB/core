@@ -129,6 +129,7 @@ class api:
                          conf: OVMS,
                          vehicle: int) -> Union[int, float, str, float, float]:
         self.config_topic = "openWB/set/vehicle/" + vehicle + "/soc_module/config"
+        self.server_url = conf.configuration.server_url
         self.user_id = conf.configuration.user_id
         self.password = conf.configuration.password
         self.vehicleId = conf.configuration.vehicleId
