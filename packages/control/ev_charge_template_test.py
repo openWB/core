@@ -133,7 +133,7 @@ cases = [
            search_plan=None, phases=1, max_phases=3, expected_max_current=32, expected_phases=1),
     Params(name="no phase switch, multi phase", phase_switch_supported=False, chargemode_phases=0,
            search_plan=None, phases=3, max_phases=3, expected_max_current=16, expected_phases=3),
-    Params(name="no automatic mode, multi phase", phase_switch_supported=True, chargemode_phases=1,
+    Params(name="no automatic mode, multi phase", phase_switch_supported=True, chargemode_phases=2,
            search_plan=None, phases=2, max_phases=2, expected_max_current=16, expected_phases=2),
     Params(name="select phases, not enough time", phase_switch_supported=True, chargemode_phases=0, search_plan=Mock(
         spec=SelectedPlan, remaining_time=300), phases=1, max_phases=3, expected_max_current=16, expected_phases=3),
