@@ -1,7 +1,7 @@
 from typing import Dict, Optional, TypeVar, Generic, Callable, Union
 
 from modules.common import store
-from modules.common.abstract_io import AbstractIo
+from modules.common.abstract_io import AbstractIoDevice
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import IoState
 from modules.common.component_type import ComponentType
@@ -11,7 +11,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 T_IO_CONFIG = TypeVar("T_IO_CONFIG")
 
 
-class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIo):
+class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
     def __init__(self,
                  config: T_IO_CONFIG,
                  component_reader: Callable[[], IoState],
