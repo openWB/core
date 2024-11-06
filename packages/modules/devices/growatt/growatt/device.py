@@ -10,6 +10,7 @@ from modules.devices.growatt.growatt.bat import GrowattBat
 from modules.devices.growatt.growatt.config import Growatt, GrowattBatSetup, GrowattCounterSetup, GrowattInverterSetup
 from modules.devices.growatt.growatt.counter import GrowattCounter
 from modules.devices.growatt.growatt.inverter import GrowattInverter
+from modules.devices.growatt.growatt.version import GrowattVersion
 
 log = logging.getLogger(__name__)
 
@@ -18,17 +19,17 @@ def create_device(device_config: Growatt):
     def create_bat_component(component_config: GrowattBatSetup):
         return GrowattBat(component_config,
                           device_config.configuration.modbus_id,
-                          device_config.configuration.version)
+                          GrowattVersion(device_config.configuration.version))
 
     def create_counter_component(component_config: GrowattCounterSetup):
         return GrowattCounter(component_config,
                               device_config.configuration.modbus_id,
-                              device_config.configuration.version)
+                              GrowattVersion(device_config.configuration.version))
 
     def create_inverter_component(component_config: GrowattInverterSetup):
         return GrowattInverter(component_config,
                                device_config.configuration.modbus_id,
-                               device_config.configuration.version)
+                               GrowattVersion(device_config.configuration.version))
 
     def update_components(components: Iterable[Union[GrowattBat, GrowattCounter, GrowattInverter]]):
         with client as c:
