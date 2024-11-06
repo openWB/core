@@ -25,7 +25,7 @@ from control.general import General
 from control.io_device import IoActions, IoStates
 from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
-from modules.common.abstract_io import AbstractIo
+from modules.common.abstract_io import AbstractIoDevice
 
 log = logging.getLogger(__name__)
 bat_data_lock = threading.Lock()
@@ -309,10 +309,10 @@ class Data:
             except Exception:
                 log.exception("Fehler im Data-Modul")
 
-    def _print_io_device_config(self, data: Dict[str, AbstractIo]):
+    def _print_io_device_config(self, data: Dict[str, AbstractIoDevice]):
         for key, value in data.items():
             try:
-                if isinstance(value, AbstractIo):
+                if isinstance(value, AbstractIoDevice):
                     log.info(f"{key}\n{dataclass_utils.asdict(value.config)}")
             except Exception:
                 log.exception("Fehler im Data-Modul")

@@ -106,6 +106,7 @@ class Get:
     phases_in_use: int = 0
     plug_state: bool = False
     power: float = 0
+    powers: List[float] = field(default_factory=currents_list_factory)
     rfid_timestamp: Optional[float] = None
     rfid: Optional[int] = None
     serial_number: Optional[str] = None

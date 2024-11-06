@@ -657,16 +657,21 @@ class SubData:
                     setattr(var["io_states"+index].data.get, msg.topic.split("/")[-1], payload)
                 else:
                     self.set_json_payload_class(var["io_states"+index].data, msg)
-            elif re.search("/io/action/[0-9]+/config", msg.topic) is not None:
-                index = get_index(msg.topic)
-                payload = decode_payload(msg.payload)
-                if payload == "":
-                    if index in var.actions:
-                        var.actions.pop(index)
-                else:
-                    mod = importlib.import_module(f".io_actions.{payload['group']}.{payload['type']}.api", "modules")
-                    config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
-                    var.actions[f"io_action{index}"] = mod.create_action(config)
+            elif "io/action" in msg.topic:
+                if re.search("/io/action/[0-9]+/config", msg.topic) is not None:
+                    index = get_index(msg.topic)
+                    payload = decode_payload(msg.payload)
+                    if payload == "":
+                        if index in var.actions:
+                            var.actions.pop(index)
+                    else:
+                        mod = importlib.import_module(
+                            f".io_actions.{payload['group']}.{payload['type']}.api", "modules")
+                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
+                        var.actions[f"io_action{index}"] = mod.create_action(config)
+                elif re.search("/io/action/[0-9]+/timestamp", msg.topic) is not None:
+                    index = get_index(msg.topic)
+                    self.set_json_payload_class(var.actions[f"io_action{index}"], msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

@@ -55,6 +55,13 @@ def setup_logging() -> None:
     mqtt_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     mqtt_log.addHandler(mqtt_file_handler)
 
+    steuve_control_command_log = logging.getLogger("steuve_control_command")
+    steuve_control_command_log.propagate = False
+    steuve_control_command_file_handler = RotatingFileHandler(
+        PERSISTENT_LOG_PATH + 'steuve_control_command.log', maxBytes=mb_to_bytes(80), backupCount=1)
+    steuve_control_command_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+    steuve_control_command_log.addHandler(steuve_control_command_file_handler)
+
     smarthome_log_handler = RotatingFileHandler(RAMDISK_PATH + 'smarthome.log', maxBytes=mb_to_bytes(1), backupCount=1)
     smarthome_log_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     smarthome_log_handler.addFilter(functools.partial(filter_pos, "smarthome"))
