@@ -1,8 +1,8 @@
 <template>
   <q-carousel
-    v-model="slide"
+    v-model="currentSlide"
     swipeable
-    animated
+    :animated="animated"
     control-color="primary"
     infinite
     padding
@@ -31,30 +31,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import ChargePoint from './ChargePoint.vue';
 
 const mqttStore = useMqttStore();
 const $q = useQuasar();
-const slide = ref<number | undefined>(undefined);
+const currentSlide = ref<number>(0);
+const animated = ref<boolean>(true);
 
-const chargePointIds = ref<number[]>([]);
-watch(
-  () => mqttStore.chargePointIds,
-  (newIds) => {
-    chargePointIds.value = newIds;
-    if (newIds.length > 0 && slide.value === undefined) {
-      slide.value = 0;
-    }
-  },
-  { immediate: true },
-);
-
+/**
+ * Group the charge points in chunks of 2 for large screens and 1 for small screens.
+ */
 const groupedChargePoints = computed(() => {
   const groupSize = $q.screen.width > 800 ? 2 : 1;
-  return chargePointIds.value.reduce((resultArray, item, index) => {
+  return mqttStore.chargePointIds.reduce((resultArray, item, index) => {
     const chunkIndex = Math.floor(index / groupSize);
     if (!resultArray[chunkIndex]) {
       resultArray[chunkIndex] = [];
@@ -63,6 +55,31 @@ const groupedChargePoints = computed(() => {
     return resultArray;
   }, [] as number[][]);
 });
+
+/**
+ * Update the current slide when the grouped charge points change.
+ * This may happen when the charge points are sorted or filtered or when the screen size changes.
+ * We try to keep the same charge point in view when the slide changes.
+ */
+watch(
+  () => groupedChargePoints.value,
+  async (newValue, oldValue) => {
+    const findSlide = (chargePointId: number) => {
+      return newValue.findIndex((group) => {
+        return group.includes(chargePointId);
+      });
+    };
+    if (oldValue === undefined || oldValue.length === 0) {
+      currentSlide.value = 0;
+      return;
+    }
+    // Prevent animation when the current slide is modified
+    animated.value = false;
+    currentSlide.value = Math.max(findSlide(oldValue[currentSlide.value][0]), 0);
+    await nextTick();
+    animated.value = true;
+  },
+);
 </script>
 
 <style scoped>
