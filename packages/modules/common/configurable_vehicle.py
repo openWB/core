@@ -73,7 +73,11 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 self.calculated_soc_state.soc_start = car_state.soc
                 Pub().pub(f"openWB/set/vehicle/{self.vehicle}/soc_module/calculated_soc_state",
                           asdict(self.calculated_soc_state))
-            self.store.set(car_state)
+            if vehicle_update_data.soc_timestamp is None or vehicle_update_data.soc_timestamp < car_state.soc_timestamp:
+                # Nur wenn der SoC neuer ist als der bisherige, diesen setzen.
+                self.store.set(car_state)
+            else:
+                log.debug("Not updating SoC, because timestamp is older.")
 
     def _get_carstate_source(self, vehicle_update_data: VehicleUpdateData) -> SocSource:
         if isinstance(self.vehicle_config, MqttSocSetup):

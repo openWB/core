@@ -101,8 +101,6 @@ class UpdateSoc:
                 plug_state = cp.data.get.plug_state
                 charge_state = cp.data.get.charge_state
                 imported = cp.data.get.imported
-                battery_capacity = ev_template.data.battery_capacity
-                efficiency = ev_template.data.efficiency
                 if ev.soc_module.general_config.use_soc_from_cp:
                     soc_from_cp = cp.data.get.soc
                     timestamp_soc_from_cp = cp.data.get.soc_timestamp
@@ -114,17 +112,19 @@ class UpdateSoc:
             plug_state = False
             charge_state = False
             imported = None
-            battery_capacity = ev_template.data.battery_capacity
-            efficiency = ev_template.data.efficiency
             soc_from_cp = None
             timestamp_soc_from_cp = None
+        battery_capacity = ev_template.data.battery_capacity
+        efficiency = ev_template.data.efficiency
+        soc_timestamp = ev.data.get.soc_timestamp
         return VehicleUpdateData(plug_state=plug_state,
                                  charge_state=charge_state,
                                  efficiency=efficiency,
                                  imported=imported,
                                  battery_capacity=battery_capacity,
                                  soc_from_cp=soc_from_cp,
-                                 timestamp_soc_from_cp=timestamp_soc_from_cp)
+                                 timestamp_soc_from_cp=timestamp_soc_from_cp,
+                                 soc_timestamp=soc_timestamp)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)
