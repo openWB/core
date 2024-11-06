@@ -10,17 +10,17 @@
           :readonly="true"
         />
         <ChargePointStateIcon :charge-point-id="props.chargePointId" />
-        <q-icon name="settings" size="sm" @click="settings = true" />
+        <q-icon name="settings" size="sm" @click="settingsVisible = true" />
       </div>
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
       <ChargePointStateMessage :charge-point-id="props.chargePointId" />
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
       <div class="row q-mt-sm">
-        <div class="q-pa-sm">
+        <div class="col q-pa-sm">
           <div class="text-subtitle2">Leistung</div>
           {{ power }}
         </div>
-        <div class="q-pa-sm">
+        <div class="col q-pa-sm">
           <div class="text-subtitle2">geladen</div>
           {{ charged }}
         </div>
@@ -42,7 +42,7 @@
 
   <!-- //////////////////////  Settings popup dialog  //////////////////// -->
 
-  <q-dialog v-model="settings" :backdrop-filter="'blur(4px)'">
+  <q-dialog v-model="settingsVisible" :maximized="$q.screen.width < 385" :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'">
     <q-card>
       <q-card-section>
         <div class="text-h6">Einstellungen {{ name }}</div>
@@ -180,7 +180,7 @@
           <div class="text-subtitle2 q-mr-sm">Einspeisegrenze beachten</div>
           <div>
             <ToggleStandard
-              :value="feedInlimit"
+              :value="feedInLimit"
               @update:value="updateFeedInLimit"
             />
           </div>
@@ -195,6 +195,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useQuasar } from 'quasar';
 import SliderQuasar from './SliderQuasar.vue';
 import SliderStandard from './SliderStandard.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
@@ -213,8 +214,9 @@ const props = defineProps<{
 }>();
 
 const mqttStore = useMqttStore();
+const $q = useQuasar();
 
-const settings = ref<boolean>(false);
+const settingsVisible = ref<boolean>(false);
 const name = computed(() => mqttStore.chargePointName(props.chargePointId));
 const power = computed(() =>
   mqttStore.chargePointPower(props.chargePointId, 'textValue'),
@@ -318,7 +320,7 @@ const updatePvMaxSocLimit = (newValue: number) => {
   ).value = newValue;
 };
 
-const feedInlimit = computed(
+const feedInLimit = computed(
   () =>
     mqttStore.chargePointConnectedVehiclePVChargeFeedInLimit(
       props.chargePointId,
