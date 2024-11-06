@@ -193,6 +193,8 @@ class Get:
     soc: Optional[int] = field(default=None, metadata={"topic": "get/soc"})
     soc_timestamp: Optional[float] = field(
         default=None, metadata={"topic": "get/soc_timestamp"})
+    soc_request_timestamp: Optional[float] = field(
+        default=None, metadata={"topic": "get/soc_request_timestamp"})
     force_soc_update: bool = field(default=False, metadata={
                                    "topic": "get/force_soc_update"})
     range: Optional[float] = field(default=None, metadata={"topic": "get/range"})
@@ -233,7 +235,7 @@ class Ev:
 
     def soc_interval_expired(self, vehicle_update_data: VehicleUpdateData) -> bool:
         request_soc = False
-        if self.data.get.soc_timestamp is None:
+        if self.data.get.soc_request_timestamp is None:
             # Initiale Abfrage
             request_soc = True
         else:
@@ -244,7 +246,7 @@ class Ev:
                 else:
                     interval = self.soc_module.general_config.request_interval_not_charging
                 # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-                if timecheck.check_timestamp(self.data.get.soc_timestamp, interval-5) is False:
+                if timecheck.check_timestamp(self.data.get.soc_request_timestamp, interval-5) is False:
                     # Zeit ist abgelaufen
                     request_soc = True
         return request_soc

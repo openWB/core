@@ -105,7 +105,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 # Wenn SoC vom LP nicht mehr aktuell, dann berechnen.
                 return SocSource.CALCULATION
 
-    def _get_carstate_by_source(self, vehicle_update_data, source):
+    def _get_carstate_by_source(self, vehicle_update_data: VehicleUpdateData, source: SocSource) -> CarState:
         if source == SocSource.API:
             return self.__component_updater(vehicle_update_data)
         elif source == SocSource.CALCULATION:
@@ -116,7 +116,8 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 self.calculated_soc_state.soc_start,
                 vehicle_update_data.battery_capacity))
         elif source == SocSource.CP:
-            return CarState(vehicle_update_data.soc_from_cp)
+            return CarState(soc=vehicle_update_data.soc_from_cp,
+                            soc_timestamp=vehicle_update_data.timestamp_soc_from_cp)
         elif source == SocSource.MANUAL:
             soc = self.calculated_soc_state.manual_soc or self.calculated_soc_state.soc_start
             self.calculated_soc_state.manual_soc = None

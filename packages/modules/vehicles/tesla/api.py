@@ -39,15 +39,16 @@ def post_wake_up_command(vehicle: int, token: TeslaSocToken) -> str:
     return response["response"]["state"]
 
 
-def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float]:
+def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float, float]:
     vehicle_id = __get_vehicle_id(vehicle, token)
     data_part = "vehicles/"+str(vehicle_id)+"/vehicle_data"
     response = __request_data(data_part, token)
     response = json.loads(response)
-    soc = response["response"]["charge_state"]["battery_level"]
+    soc = float(response["response"]["charge_state"]["battery_level"])
     # convert miles to km
     range = float(response["response"]["charge_state"]["battery_range"]) * 1.60934
-    return float(soc), range
+    soc_timestamp = float(response["response"]["charge_state"]["timestamp"])
+    return soc, range, soc_timestamp
 
 
 def validate_token(token: TeslaSocToken) -> TeslaSocToken:

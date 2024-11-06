@@ -62,7 +62,8 @@ class UpdateSoc:
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", 0)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
-                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", timecheck.create_timestamp())
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp",
+                                  timecheck.create_timestamp())
                         threads_update.append(Thread(target=ev.soc_module.update,
                                                      args=(vehicle_update_data,), name=f"fetch soc_ev{ev.num}"))
                         if hasattr(ev.soc_module, "store"):
@@ -78,6 +79,8 @@ class UpdateSoc:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", None)
                     if ev.data.get.soc_timestamp is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", None)
+                    if ev.data.get.soc_request_timestamp is not None:
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp", None)
                     if ev.data.get.range is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
             except Exception:
