@@ -30,7 +30,8 @@ class Dimming(AbstractIoAction):
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     control_command_log.info("Dimmen aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
 
-                msg = f"EVU-Zähler: {data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W"
+                msg = (f"EVU-Zähler: "
+                       f"{data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W")
                 for cp in self.config.configuration.cp_ids:
                     msg += f", LP {cp}: {data.data.cp_data[cp].data.get.powers}W"
                 control_command_log.info(msg)

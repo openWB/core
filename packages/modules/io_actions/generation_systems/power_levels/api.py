@@ -25,13 +25,14 @@ class PowerLevels(AbstractIoAction):
         if isinstance(comp, AbstractInverter) is False:
             raise Exception(f"Komponente mit ID {self.config.configuration.component_id} ist kein Wechselrichter.")
         if "set_power_limit" not in type(comp).__dict__:
-            raise Exception(
-                f"Wechselrichter {comp.config.name} mit ID {self.config.configuration.component_id} kann von openWB nicht gesteuert werden.")
+            raise Exception(f"Wechselrichter {comp.config.name} mit ID {self.config.configuration.component_id} kann "
+                            "von openWB nicht gesteuert werden.")
         super().__init__()
 
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-            io_device_input = data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input
+            io_device_input = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                  ].data.get.digital_input
             s1 = io_device_input[self.config.configuration.digital_input[0]]
             s2 = io_device_input[self.config.configuration.digital_input[1]]
             w3 = io_device_input[self.config.configuration.digital_input[2]]
@@ -44,7 +45,8 @@ class PowerLevels(AbstractIoAction):
                             f"Erzeugungsanlage (EZA) {comp.config.name} mit ID {self.config.configuration.component_id}"
                             f" auf {value*100}% begrenzt. Leistungswerte vor Ausführung des Steuerbefehls:")
 
-                    msg = (f"EVU-Zähler: {data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W"
+                    evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
+                    msg = (f"EVU-Zähler: {evu_counter.data.get.powers}W"
                            f"EZA: {data.data.pv_data[f'pv{self.config.configuration.component_id}'].data.get.power}W")
                     control_command_log.info(msg)
             else:
