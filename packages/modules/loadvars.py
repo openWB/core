@@ -3,7 +3,7 @@ import threading
 from typing import List
 
 from control import data
-from modules.common.abstract_io import AbstractIo
+from modules.common.abstract_io import AbstractIoDevice
 from modules.utils import wait_for_module_update_completed
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
@@ -90,7 +90,7 @@ class Loadvars:
         try:
             for io_device in data.data.system_data.values():
                 try:
-                    if isinstance(io_device, AbstractIo):
+                    if isinstance(io_device, AbstractIoDevice):
                         threads.append(
                             threading.Thread(target=io_device.read,
                                              args=(), name="get io state"))
@@ -106,7 +106,7 @@ class Loadvars:
         try:
             for io_device in data.data.system_data.values():
                 try:
-                    if isinstance(io_device, AbstractIo):
+                    if isinstance(io_device, AbstractIoDevice):
                         threads.append(threading.Thread(target=update_values,
                                                         args=(io_device,),
                                                         name="publish io state"))

@@ -50,6 +50,11 @@ class AbstractInverter:
     def update(self, *kwargs) -> None:
         pass
 
+    @abstractmethod
+    def set_power_limit(self, power_limit: int) -> None:
+        # power_limit in Werten zwischen 0 und 1
+        pass
+
 
 class DeviceDescriptor:
     def __init__(self, configuration_factory: Type):
