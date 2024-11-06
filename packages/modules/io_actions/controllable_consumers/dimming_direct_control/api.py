@@ -22,11 +22,13 @@ class DimmingDirectControl(AbstractIoAction):
                     self.config.configuration.digital_input]:
                 if self.timestamp:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                    control_command_log.info(
-                        f"Direktsteuerung an LP {self.config.configuration.cp_id} aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
+                    control_command_log.info(f"Direktsteuerung an LP {self.config.configuration.cp_id} aktiviert. "
+                                             "Leistungswerte vor Ausführung des Steuerbefehls:")
 
-                msg = f"EVU-Zähler: {data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W"
-                msg += f", LP {self.config.configuration.cp_id}: {data.data.cp_data[f"cp{self.config.configuration.cp_id}"].data.get.powers}W"
+                msg = (f"EVU-Zähler: "
+                       f"{data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W")
+                msg += (f", LP {self.config.configuration.cp_id}: "
+                        f"{data.data.cp_data[f'cp{self.config.configuration.cp_id}'].data.get.powers}W")
                 control_command_log.info(msg)
             elif self.timestamp:
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
