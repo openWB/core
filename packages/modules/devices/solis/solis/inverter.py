@@ -22,16 +22,12 @@ class SolisInverter:
     def update(self, client: ModbusTcpClient_) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        powerreg = 33057
-        exportedreg = 33029
-
         if self.version == SolisVersion.inverter:
-            powerreg = 3004
-            exportedreg = 3008
-
-        power = client.read_input_registers(powerreg, ModbusDataType.UINT_32, unit=unit) * -1
-        # Unit 1kWh
-        exported = client.read_input_registers(exportedreg, ModbusDataType.UINT_32, unit=unit) * 1000
+            power = client.read_input_registers(3004, ModbusDataType.UINT_32, unit=unit) * -1
+            exported = client.read_input_registers(3008, ModbusDataType.UINT_32, unit=unit) * 1000
+        elif self.version == SolisVersion.hybrid:
+            power = client.read_input_registers(33057, ModbusDataType.UINT_32, unit=unit) * -1
+            exported = client.read_input_registers(33029, ModbusDataType.UINT_32, unit=unit) * 1000
 
         inverter_state = InverterState(
             power=power,
