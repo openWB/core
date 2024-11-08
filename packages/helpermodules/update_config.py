@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 67
+    DATASTORE_VERSION = 68
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -93,8 +93,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/limit$",
         "^openWB/chargepoint/[0-9]+/control_parameter/prio$",
         "^openWB/chargepoint/[0-9]+/control_parameter/required_current$",
-        "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_auto_phase_switch$",
-        "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_perform_phase_switch$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_last_phase_switch$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_switch_on_off$",
         "^openWB/chargepoint/[0-9]+/control_parameter/used_amount_instant_charging$",
         "^openWB/chargepoint/[0-9]+/control_parameter/phases$",
@@ -1867,3 +1866,11 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 67)
+
+    def upgrade_datastore_67(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/chargemode_config/phase_switch_delay" == topic:
+                if decode_payload(payload) < 5:
+                    return {"openWB/general/chargemode_config/phase_switch_delay": 5}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 68)

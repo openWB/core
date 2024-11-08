@@ -412,17 +412,16 @@ class Chargepoint(ChargepointRfidMixin):
                 # Umschaltung abgeschlossen
                 try:
                     timestamp_not_expired = timecheck.check_timestamp(
-                        self.data.control_parameter.timestamp_perform_phase_switch,
+                        self.data.control_parameter.timestamp_last_phase_switch,
                         6 + phase_switch_pause - 1)
                 except TypeError:
                     # so wird in jedem Fall die erforderliche Zeit abgewartet
-                    self.data.control_parameter.timestamp_perform_phase_switch = create_timestamp()
+                    self.data.control_parameter.timestamp_last_phase_switch = create_timestamp()
                     timestamp_not_expired = timecheck.check_timestamp(
-                        self.data.control_parameter.timestamp_perform_phase_switch,
+                        self.data.control_parameter.timestamp_last_phase_switch,
                         6 + phase_switch_pause - 1)
                 if not timestamp_not_expired:
                     log.debug("phase switch running")
-                    self.data.control_parameter.timestamp_perform_phase_switch = None
                     # Aktuelle Ladeleistung und Differenz wieder freigeben.
                     if self.data.set.phases_to_use == 1:
                         evu_counter.data.set.reserved_surplus -= charging_ev.ev_template. \
@@ -488,7 +487,7 @@ class Chargepoint(ChargepointRfidMixin):
                                 evu_counter.data.set.reserved_surplus += charging_ev. \
                                     ev_template.data.max_current_single_phase * 3 * 230
                             # Timestamp für die Durchführungsdauer
-                            self.data.control_parameter.timestamp_perform_phase_switch = create_timestamp()
+                            self.data.control_parameter.timestamp_last_phase_switch = create_timestamp()
                             self.set_state_and_log(message)
                             if self.data.set.phases_to_use != self.data.control_parameter.phases:
                                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",

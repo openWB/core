@@ -580,9 +580,8 @@ class SetData:
                         "/control_parameter/imported_at_plan_start" in msg.topic or
                         "/control_parameter/min_current" in msg.topic or
                         "/control_parameter/timestamp_switch_on_off" in msg.topic or
-                        "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
                         "/control_parameter/timestamp_charge_start" in msg.topic or
-                        "/control_parameter/timestamp_perform_phase_switch" in msg.topic):
+                        "/control_parameter/timestamp_last_phase_switch" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
                     self._validate_value(msg, int, [(0, 7)])
@@ -784,7 +783,7 @@ class SetData:
             elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/general/chargemode_config/phase_switch_delay" in msg.topic:
-                self._validate_value(msg, int, [(1, 15)])
+                self._validate_value(msg, int, [(5, 20)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
             elif (("openWB/set/general/chargemode_config/pv_charging/phases_to_use" in msg.topic or
