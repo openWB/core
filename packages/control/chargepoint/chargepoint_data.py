@@ -133,6 +133,7 @@ def log_factory() -> Log:
 class Set:
     charging_ev: int = -1
     charging_ev_prev: int = -1
+    charge_template: ChargeTemplate = field(default_factory=charge_template_factory)
     current: float = 0
     energy_to_charge: float = 0
     loadmanagement_available: bool = True
@@ -145,7 +146,6 @@ class Set:
     rfid: Optional[str] = None
     target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
-    charge_template: ChargeTemplate = field(default_factory=charge_template_factory)
     ocpp_transaction_id: Optional[int] = None
 
 
