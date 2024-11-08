@@ -33,6 +33,7 @@ from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
+from helpermodules.broker import InternalBrokerClient
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -240,7 +241,7 @@ class Chargepoint(ChargepointRfidMixin):
                     log.debug("/set/manual_lock True")
                 # Ev wurde noch nicht aktualisiert.
                 # Ladeprofil aus den Einstellungen laden.
-                self.data.set.charge_template = copy.deepcopy(self.data.set.charging_ev_data.charge_template)
+                self._update_charge_template(self.data.set.charging_ev_data)
                 chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
                 self.data.set.charging_ev_prev = -1
                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev",
@@ -660,7 +661,10 @@ class Chargepoint(ChargepointRfidMixin):
                 try:
                     charging_ev=self._get_charging_ev(vehicle, ev_list)
                     max_phase_hw=self.get_max_phase_hw()
+                    self.data.control_parameter.phases=min(
+                        self.get_phases_by_selected_chargemode(), max_phase_hw)
                     state, message_ev, submode, required_current, phases=charging_ev.get_required_current(
+                        self.data.set.charge_template,
                         self.data.control_parameter,
                         max_phase_hw,
                         self.cp_ev_support_phase_switch(),
@@ -675,8 +679,8 @@ class Chargepoint(ChargepointRfidMixin):
                     required_current=self.check_min_max_current(
                         required_current, self.data.control_parameter.phases)
                     required_current=self.chargepoint_module.add_conversion_loss_to_current(required_current)
-                    self.set_chargemode_changed(self.data.control_parameter, submode)
-                    self.set_submode_changed(self.data.control_parameter, submode)
+                    self.set_chargemode_changed(submode)
+                    self.set_submode_changed(submode)
                     self.set_control_parameter(submode, required_current)
                     self.set_required_currents(required_current)
                     self.check_phase_switch_completed()
@@ -770,13 +774,30 @@ class Chargepoint(ChargepointRfidMixin):
         if self.data.set.charging_ev != vehicle and self.data.set.charging_ev_prev != vehicle:
             Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
             log.debug("SoC nach EV-Wechsel")
-            self.data.set.charge_template=copy.deepcopy(charging_ev.charge_template)
+            self._update_charge_template(charging_ev)
         self.data.set.charging_ev_data=charging_ev
         self.data.set.charging_ev=vehicle
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", vehicle)
         self.data.set.charging_ev_prev=vehicle
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", vehicle)
         return charging_ev
+
+    def _update_charge_template(self, charging_ev_data: Ev) -> None:
+        def on_connect(client, userdata, flags, rc):
+            client.subscribe(f'openWB/chargepoint/{self.num}/set/charge_temlate/#', 2)
+
+        def __get_payload(client, userdata, msg):
+            Pub().pub(msg.topic, "")
+        InternalBrokerClient("processBrokerBranch", on_connect, __get_payload).start_finite_loop()
+        self.data.set.charge_template=copy.deepcopy(charging_ev_data.charge_template)
+        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
+                  dataclasses.asdict(self.data.set.charge_template))
+        for id, plan in self.data.set.charge_template.data.time_charging.plans.items():
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template/time_charging/plans/{id}",
+                      dataclasses.asdict(plan))
+        for id, plan in self.data.set.charge_template.data.chargemode.scheduled_charging.plans.items():
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template/scheduled_charging/plans/{id}",
+                      dataclasses.asdict(plan))
 
     def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.
