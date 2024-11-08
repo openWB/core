@@ -323,7 +323,7 @@ class SubData:
             else:
                 if "ct"+index not in var:
                     var["ct"+index] = ev.ChargeTemplate()
-                self.process_charge_template_topic(var["ct"+index])
+                self.process_charge_template_topic(var["ct"+index], msg)
                 if re.search("/chargemode/scheduled_charging/plans/[0-9]+$", msg.topic) is not None:
                     self.event_scheduled_charging_plan.set()
                 elif re.search("/time_charging/plans/[0-9]+$", msg.topic) is not None:

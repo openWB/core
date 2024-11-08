@@ -83,7 +83,7 @@ class SetData:
                 if "openWB/set/chargepoint/set/charge_template" in msg.topic:
                     self.process_vehicle_charge_template_topic(msg)
                 else:
-                    self.process_vehicle_topic(msg)
+                    self.process_chargepoint_topic(msg)
             elif "openWB/set/pv/" in msg.topic:
                 self.process_pv_topic(msg)
             elif "openWB/set/bat/" in msg.topic:
