@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from modules.common.store import RAMDISK_PATH
 
 log = logging.getLogger(__name__)
-
+AUTH_CLIENT_ID = "l3oopkc_10"
 
 class PolestarAuth:
     """ base class for Polestar authentication"""
@@ -133,7 +133,7 @@ class PolestarAuth:
             return None
 
         params = {
-            'client_id': 'l3oopkc_10'
+            'client_id': AUTH_CLIENT_ID
         }
         data = {
             'pf.username': self.username,
@@ -187,7 +187,7 @@ class PolestarAuth:
         # Get Resume Path
         params = {
             "response_type": "code",
-            "client_id": "l3oopkc_10",
+            "client_id": AUTH_CLIENT_ID,
             "redirect_uri": "https://www.polestar.com/sign-in-callback"
         }
         log.info("_get_auth_resumePath:attempting to get resumePath")
