@@ -9,6 +9,7 @@ from modules.common.store import RAMDISK_PATH
 log = logging.getLogger(__name__)
 AUTH_CLIENT_ID = "l3oopkc_10"
 
+
 class PolestarAuth:
     """ base class for Polestar authentication"""
 
