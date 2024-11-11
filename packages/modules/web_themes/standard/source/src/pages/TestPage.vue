@@ -46,6 +46,3 @@ defineOptions({
 
 const tab = ref<string>('charge-points');
 </script>
-
-<style scoped>
-</style>
