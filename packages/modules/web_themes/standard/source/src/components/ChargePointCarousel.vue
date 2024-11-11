@@ -75,7 +75,10 @@ watch(
     }
     // Prevent animation when the current slide is modified
     animated.value = false;
-    currentSlide.value = Math.max(findSlide(oldValue[currentSlide.value][0]), 0);
+    currentSlide.value = Math.max(
+      findSlide(oldValue[currentSlide.value][0]),
+      0,
+    );
     await nextTick();
     animated.value = true;
   },
