@@ -11,16 +11,14 @@ class IoLanConfiguration:
         self.modbus_id = modbus_id
 
 
-def analog_input_init():
-    return {str(i): 0 for i in range(1, 9)}
+def init_input():
+    return {"analog": {str(i): None for i in range(1, 9)},
+            "digital": {str(i): None for i in range(1, 9)}}
 
 
-def digital_input_init():
-    return {str(i): False for i in range(1, 9)}
-
-
-def digital_output_init():
-    return {str(i): False for i in range(16, 24)}
+def init_output():
+    return {"analog": {},
+            "digital": {str(i): False for i in range(16, 24)}}
 
 
 @auto_str
@@ -30,14 +28,10 @@ class IoLan(IoDeviceSetup[IoLanConfiguration]):
                  type: str = "dimm_kit",
                  id: int = 0,
                  configuration: IoLanConfiguration = None,
-                 analog_input: Dict[int, float] = None,
-                 digital_input: Dict[int, bool] = None,
-                 digital_output: Dict[int, bool] = None) -> None:
-        if analog_input is None:
-            analog_input = analog_input_init()
-        if digital_input is None:
-            digital_input = digital_input_init()
-        if digital_output is None:
-            digital_output = digital_output_init()
-        super().__init__(name, type, id, configuration or IoLanConfiguration(), analog_input=analog_input,
-                         digital_input=digital_input, digital_output=digital_output)
+                 input: Dict[str, Dict[int, float]] = None,
+                 output: Dict[str, Dict[int, float]] = None) -> None:
+        if input is None:
+            input = init_input()
+        if output is None:
+            output = init_output()
+        super().__init__(name, type, id, configuration or IoLanConfiguration(), input=input, output=output)

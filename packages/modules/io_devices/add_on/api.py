@@ -46,9 +46,9 @@ def create_io(config: AddOn):
         GPIO.setup(33, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Taster 4 Stop
         GPIO.setup(36, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Taster 2 Min+PV
         GPIO.setup(40, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # TAster 5 Standby
-        GPIO.setup(7, GPIO.OUT, pull_up_down=GPIO.PUD_UP if config.digital_output[7] else GPIO.PUD_DOWN)    # LED 3
-        GPIO.setup(16, GPIO.OUT, pull_up_down=GPIO.PUD_UP if config.digital_output[16] else GPIO.PUD_DOWN)  # LED 2
-        GPIO.setup(18, GPIO.OUT, pull_up_down=GPIO.PUD_UP if config.digital_output[18] else GPIO.PUD_DOWN)  # LED 1
+        GPIO.setup(7, GPIO.OUT, pull_up_down=GPIO.PUD_UP if config.output["digital"]["7"] else GPIO.PUD_DOWN)    # LED 3
+        GPIO.setup(16, GPIO.OUT, pull_up_down=GPIO.PUD_UP if config.output["digital"]["16"] else GPIO.PUD_DOWN)  # LED 2
+        GPIO.setup(18, GPIO.OUT, pull_up_down=GPIO.PUD_UP if config.output["digital"]["18"] else GPIO.PUD_DOWN)  # LED 1
 
     return ConfigurableIo(config=config, component_reader=read, component_writer=write)
 
