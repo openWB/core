@@ -48,12 +48,6 @@ defineOptions({
 
 const $q = useQuasar();
 const fullscreen = ref(false);
-const chartCarouselItems = [
-  EnergyFlowChart,
-  HistoryChart,
-];
+const chartCarouselItems = [EnergyFlowChart, HistoryChart];
 const currentSlide = ref<string>(EnergyFlowChart.__name ?? '');
 </script>
-
-<style scoped>
-</style>
