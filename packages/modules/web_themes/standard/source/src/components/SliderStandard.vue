@@ -5,8 +5,7 @@
     </div>
     <div class="row">
       <q-slider
-        :model-value="props.value"
-        @update:model-value="emitValue"
+        v-model="value"
         :min="props.min"
         :max="props.max"
         :step="props.step"
@@ -18,17 +17,20 @@
         @touchstart.stop
         @touchmove.stop
         @touchend.stop
+        @change="updateValue"
       />
-      <div class="q-ml-md q-mt-xs items-center no-wrap">
-        {{ props.value }} {{ props.units }}
+      <div class="q-ml-md q-mt-xs items-center no-wrap" :class="myClass">
+        {{ value }} {{ props.unit }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+
 defineOptions({
-  name: 'SliderQuasar',
+  name: 'SliderStandard',
 });
 
 const props = defineProps({
@@ -36,35 +38,70 @@ const props = defineProps({
     type: String,
     default: 'title',
   },
-  value: {
+  modelValue: {
     type: Number,
-    default: 10,
   },
   max: {
     type: Number,
-    default: 100,
+    required: true,
   },
   min: {
     type: Number,
-    default: 0,
+    required: true,
   },
   step: {
     type: Number,
     default: 1,
   },
-  units: {
+  unit: {
     type: String,
     default: '',
   },
 });
 
 const emit = defineEmits<{
-  'update:value': [value: number];
+  'update:model-value': [value: number];
 }>();
 
-const emitValue = (newValue: number | null) => {
-  if (newValue !== null) {
-    emit('update:value', newValue);
+const tempValue = ref<number | undefined>(props.modelValue);
+const updateTimeout = ref<NodeJS.Timeout | null>(null);
+
+const updatePending = computed(() => {
+  return tempValue.value !== props.modelValue;
+});
+
+const value = computed({
+  get: () => tempValue.value,
+  set: (newValue: number) => {
+    if (updateTimeout.value) {
+      clearTimeout(updateTimeout.value);
+    }
+    tempValue.value = newValue;
+  },
+});
+
+const updateValue = (newValue: number) => {
+  if (updatePending.value) {
+    updateTimeout.value = setTimeout(() => {
+      emit('update:model-value', newValue);
+    }, 2000);
   }
 };
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    tempValue.value = newValue;
+  },
+);
+
+const myClass = computed(() => {
+  return updatePending.value ? 'pending' : '';
+});
 </script>
+
+<style lang="scss" scoped>
+.pending {
+  color: $red;
+}
+</style>
