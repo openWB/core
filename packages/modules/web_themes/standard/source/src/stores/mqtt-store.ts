@@ -703,11 +703,34 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the charge point energy charged identified by the charge point id
+   * @param chargePointId charge point id
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const chargePointEnergyCharged = computed(() => {
+    return (chargePointId: number, returnType: string = 'textValue') => {
+      const energyCharged = getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/energy_charged`,
+        undefined,
+        0,
+      ) as number;
+      const valueObject = getValueObject.value(energyCharged, 'Wh');
+      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+        return valueObject[returnType];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, energyCharged);
+    };
+  });
+
+  /**
    * Get the charge point state message identified by the charge point id
    */
   const chargePointStateMessage = computed(() => {
     return (chargePointId: number) => {
-      subscribe(`openWB/chargepoint/${chargePointId}/get/state_str`);
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/get/state_str`,
       ) as string;
@@ -1211,6 +1234,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointPlugState,
     chargePointChargeState,
     chargePointPower,
+    chargePointEnergyCharged,
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
