@@ -778,7 +778,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set charge mode', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -809,7 +809,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set instant charging current', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -840,7 +840,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set instant charging limit', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -871,7 +871,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set instant SoC limit', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -913,7 +913,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set instant energy limit', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -944,7 +944,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set pv min current', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -973,7 +973,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set pv min SoC', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -1004,7 +1004,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set pv min SoC Current', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -1033,7 +1033,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set pv max SoC limit', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -1064,7 +1064,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set pv feed in limit active', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -1093,7 +1093,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set charge priority', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
@@ -1144,7 +1144,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.debug('chargeTemplateId is undefined');
           return;
         }
@@ -1156,7 +1156,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('set charge template', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if(chargeTemplateId === undefined) {
+        if (chargeTemplateId === undefined) {
           console.error('chargeTemplateId is undefined');
           return;
         }
