@@ -1,7 +1,7 @@
 <template>
-  <q-card class="full-height" style="max-width: 24em">
+  <q-card class="full-height card-width">
     <q-card-section>
-      <div class="row items-center text-h6" style="font-weight: bold">
+      <div class="row items-center text-h6 text-bold">
         <div class="col">
           {{ name }}
         </div>
@@ -75,3 +75,9 @@ const energyCharged = computed(() =>
   mqttStore.chargePointEnergyCharged(props.chargePointId, 'textValue'),
 );
 </script>
+
+<style lang="scss" scoped>
+.card-width {
+  max-width: 24em;
+}
+</style>
