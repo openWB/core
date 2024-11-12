@@ -1,9 +1,17 @@
 <template>
   <q-card class="full-height" style="min-width: 24em">
     <q-card-section>
-      <div class="row text-h6 items-center" style="font-weight: bold">
-        <q-icon name="battery_full" size="xs" class="q-mr-sm" color="warning" />
-        {{ batteryName }}
+      <div class="row justify-between">
+        <div class="row text-h6 items-center" style="font-weight: bold">
+          <q-icon
+            name="battery_full"
+            size="sm"
+            class="q-mr-sm"
+            color="warning"
+          />
+          Speicher Übersicht
+        </div>
+        <q-icon name="settings" size="sm" @click="settingsVisible = true" />
       </div>
       <div class="row q-mt-sm text-subtitle2 justify-between no-wrap">
         <div class="row">
@@ -30,19 +38,17 @@
             class="rotate90Clockwise q-mr-sm"
           />
           <div>SoC:</div>
-          <div class="q-ml-sm">
-            {{ soc === undefined || soc === null ? '___%' : soc + '%' }}
-          </div>
+          <div class="q-ml-sm">{{ soc }}%</div>
         </div>
         <div class="row">
-          <div>Leistung:</div>
-          <div class="q-ml-sm" :class="powerClass">
+          <div>Leistung (gesamt):</div>
+          <div class="q-ml-sm" :class="totalPowerClass">
             {{
-              power < 0
-                ? '>> ' + powerAbsolute
-                : power > 0
-                  ? '<< ' + powerAbsolute
-                  : powerAbsolute
+              totalPower < 0
+                ? '>> ' + totalPowerAbsolute
+                : totalPower > 0
+                  ? '<< ' + totalPowerAbsolute
+                  : totalPowerAbsolute
             }}
           </div>
         </div>
@@ -62,55 +68,70 @@
       </div>
     </q-card-section>
   </q-card>
+
+  <q-dialog
+    v-model="settingsVisible"
+    :maximized="$q.screen.width < 385"
+    :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
+  >
+    <q-card style="min-width: 24em">
+      <q-card-section>
+        <div class="text-h6">Battery Einstellungen</div>
+        <div class="text-subtitle2 q-mt-sm">Laden mit Überschuss Modus:</div>
+        <BatteryModeButtons />
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat label="OK" color="primary" v-close-popup />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
+import { useQuasar } from 'quasar';
+import BatteryModeButtons from './BatteryModeButtons.vue';
 
-const props = defineProps<{
-  batteryId: number;
-}>();
+const settingsVisible = ref<boolean>(false);
 
 const mqttStore = useMqttStore();
+const $q = useQuasar();
 
-const batteryName = computed(() => mqttStore.batteryName(props.batteryId));
+const soc = computed(() => mqttStore.batterySocTotal);
 
-const soc = computed(() => mqttStore.batterySoc(props.batteryId));
+const dailyImportedEnergy = computed(() =>
+  mqttStore.batteryDailyImportedTotal('textValue'),
+);
 
-//const power = computed(() => mqttStore.batteryPower(props.batteryId));
+const dailyExportedEnergy = computed(() =>
+  mqttStore.batteryDailyExportedTotal('textValue'),
+);
 
-const power = computed(() => {
-  const power = mqttStore.batteryPower(props.batteryId, 'value');
+const totalPower = computed(() => {
+  const power = mqttStore.batteryTotalPower('value');
   return typeof power === 'number' ? power : 0;
 });
 
-const powerAbsolute = computed(() =>
-  mqttStore.batteryPower(props.batteryId, 'absoluteTextValue'),
+const totalPowerAbsolute = computed(() =>
+  mqttStore.batteryTotalPower('absoluteTextValue'),
 );
 
-const powerClass = computed(() => {
-  const value = power.value;
+const totalPowerClass = computed(() => {
+  const value = totalPower.value;
   return value < 0
     ? 'text-negative'
     : value > 0
       ? 'text-positive'
       : 'text-neutral';
 });
-
-const dailyImportedEnergy = computed(() =>
-  mqttStore.batteryDailyImported(props.batteryId),
-);
-
-const dailyExportedEnergy = computed(() =>
-  mqttStore.batteryDailyExported(props.batteryId),
-);
 </script>
 
 <style lang="scss" scoped>
 .rotate90Clockwise {
   transform: rotate(90deg);
 }
+
 .text-negative {
   color: $red;
 }
