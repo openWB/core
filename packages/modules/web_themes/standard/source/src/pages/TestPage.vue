@@ -24,7 +24,7 @@
         <ChargePointCarousel />
       </q-tab-panel>
       <q-tab-panel name="batteries" class="">
-        <BatteryInformation />
+        <BatteryCarousel />
       </q-tab-panel>
       <q-tab-panel name="smartHome" class="">
         <SmartHomeInformation />
@@ -37,8 +37,8 @@
 import { ref } from 'vue';
 import ChartCarousel from 'src/components/ChartCarousel.vue';
 import ChargePointCarousel from 'src/components/ChargePointCarousel.vue';
-import BatteryInformation from 'src/components/BatteryInformation.vue';
 import SmartHomeInformation from 'src/components/SmartHomeInformation.vue';
+import BatteryCarousel from 'src/components/BatteryCarousel.vue';
 
 defineOptions({
   name: 'IndexPage',
