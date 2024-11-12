@@ -98,7 +98,3 @@ watch(
   padding: 0.25em;
 }
 </style>
-
-
-
-

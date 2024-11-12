@@ -1,7 +1,7 @@
 <template>
-  <q-card class="full-height" style="min-width: 24em">
+  <q-card class="full-height card-width">
     <q-card-section>
-      <div class="row text-h6 items-center" style="font-weight: bold">
+      <div class="row text-h6 items-center text-bold">
         <q-icon name="battery_full" size="xs" class="q-mr-sm" color="warning" />
         {{ batteryName }}
       </div>
@@ -121,5 +121,8 @@ const dailyExportedEnergy = computed(() =>
 
 .text-neutral {
   color: $orange;
+}
+.card-width {
+  min-width: 24em;
 }
 </style>
