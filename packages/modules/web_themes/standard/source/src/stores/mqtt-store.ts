@@ -1193,6 +1193,218 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  ////////////////////////////// Battery individual ////////////////////////////////
+
+  /**
+   * Get the SoC, for each individual battery
+   * @returns number
+   */
+  const batterySoc = computed(() => {
+    return (batteryId: number): number | undefined => {
+      const soc = getValue.value(`openWB/bat/${batteryId}/get/soc`);
+      if (soc === undefined) {
+        return undefined;
+      }
+      return soc as number;
+    };
+  });
+
+  /**
+   * Get the battery power identified by the charge point id
+   * @param batteryId charge point id
+   * @param returnType type of return value, 'textValue', 'absoluteTextValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const batteryPower = computed(() => {
+    return (batteryId: number, returnType: string = 'textValue') => {
+      const power = getValue.value(
+        `openWB/bat/${batteryId}/get/power`,
+        undefined,
+        0,
+      ) as number;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+        return valueObject[returnType];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      if (returnType === 'absoluteTextValue') {
+        const absValue = Math.abs(power);
+        const valueObject = getValueObject.value(absValue, 'W', '', true);
+        return valueObject.textValue as string;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get the battery daily imported energy of a given battery id
+   * @param batteryId charge point id
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const batteryDailyImported = computed(() => {
+    return (batteryId: number, returnType: string = 'textValue') => {
+      const energy = getValue.value(
+        `openWB/bat/${batteryId}/get/daily_imported`,
+        undefined,
+        0,
+      ) as number;
+      const valueObject = getValueObject.value(energy, 'Wh', '', true);
+      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+        return valueObject[returnType];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get the battery daily exported energy of a given battery id
+   * @param batteryId charge point id
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const batteryDailyExported = computed(() => {
+    return (batteryId: number, returnType: string = 'textValue') => {
+      const energy = getValue.value(
+        `openWB/bat/${batteryId}/get/daily_exported`,
+        undefined,
+        0,
+      ) as number;
+      const valueObject = getValueObject.value(energy, 'Wh', '', true);
+      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+        return valueObject[returnType];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  ////////////////////////////// Battery totals ////////////////////////////////
+
+  /**
+   * Get the battery ids
+   * @returns number[]
+   */
+  const batteryIds = computed(() => {
+    return getObjectIds.value('bat') as number[];
+  });
+
+  /**
+   * Get the battery name identified by the battery ID
+   * @param batteryId battery ID
+   * @returns string
+   */
+  const batteryName = computed(() => {
+    return (batteryId: number): string => {
+      const index = batteryIds.value.indexOf(batteryId);
+      return `Speicher ${index + 1}` as string; // Returns sequential name based on id index
+    };
+  });
+
+  /**
+   * Get the total power of all batteries
+   * @param returnType type of return value, 'textValue', 'absoluteTextValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns number | string | ValueObject
+   */
+  const batteryTotalPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const totalPower = batteryIds.value.reduce((sum, batteryId) => {
+        const power = batteryPower.value(batteryId, 'value');
+        return sum + (typeof power === 'number' ? power : 0);
+      }, 0);
+      if (returnType === 'absoluteTextValue') {
+        const absValue = Math.abs(totalPower);
+        const valueObject = getValueObject.value(absValue, 'W', '', true);
+        return valueObject.textValue as string;
+      }
+      if (returnType === 'textValue') {
+        const valueObject = getValueObject.value(totalPower, 'W', '', true);
+        return valueObject.textValue as string;
+      }
+      return totalPower as string | number;
+    };
+  });
+
+  /**
+   * Get the SoC, averaged over all batteries
+   * @returns number
+   */
+  const batterySocTotal = computed(() => {
+    return getValue.value('openWB/bat/get/soc') as number;
+  });
+
+  /**
+   * Get the battery daily imported energy total of all batteries
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const batteryDailyImportedTotal = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const importedEnergy = getValue.value(
+        'openWB/bat/get/daily_imported',
+      ) as number;
+      const valueObject = getValueObject.value(importedEnergy, 'Wh', '', true);
+      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+        return valueObject[returnType];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, importedEnergy);
+    };
+  });
+
+  /**
+   * Get the battery daily exported energy total of all batteries
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const batteryDailyExportedTotal = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const exportedEnergy = getValue.value(
+        'openWB/bat/get/daily_exported',
+      ) as number;
+      const valueObject = getValueObject.value(exportedEnergy, 'Wh', '', true);
+      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+        return valueObject[returnType];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, exportedEnergy);
+    };
+  });
+
+  /**
+   * Get or set the PV battery charging mode
+   * @param
+   * @returns string
+   */
+  const batteryMode = () => {
+    return computed({
+      get() {
+        return getValue.value(
+          'openWB/general/chargemode_config/pv_charging/bat_mode',
+        ) as string;
+      },
+      set(newValue: string) {
+        return updateTopic(
+          'openWB/general/chargemode_config/pv_charging/bat_mode',
+          newValue,
+          undefined,
+          true,
+        );
+      },
+    });
+  };
+
   /**
    * Get a list of all vehicles
    * @returns Vehicle[]
@@ -1252,5 +1464,17 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleChargeTemplate,
     vehicleList,
+    // Battery data
+    batteryIds,
+    batteryName,
+    batterySoc,
+    batteryPower,
+    batteryDailyImported,
+    batteryDailyExported,
+    batterySocTotal,
+    batteryDailyImportedTotal,
+    batteryDailyExportedTotal,
+    batteryTotalPower,
+    batteryMode,
   };
 });
