@@ -7,7 +7,8 @@ from control import counter as counter_module
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter, CounterData, Get
-from control.ev import ChargeTemplate, Ev
+from control.ev.ev import Ev
+from control.ev.charge_template import ChargeTemplate
 from control.general import General
 from control.chargepoint.chargepoint_state import ChargepointState
 from modules.common.fault_state import FaultStateLevel

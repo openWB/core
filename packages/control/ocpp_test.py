@@ -5,7 +5,7 @@ from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.counter import Counter
-from control.ev import Ev
+from control.ev.ev import Ev
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.chargepoints.mqtt.config import Mqtt
 
