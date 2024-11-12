@@ -1,6 +1,7 @@
 <template>
   <div
     class="row q-mt-md q-pa-sm bg-primary text-white no-wrap"
+    color="primary"
     style="border-radius: 10px"
   >
     <q-icon name="info" size="sm" class="q-mr-xs" />
