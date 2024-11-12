@@ -1,8 +1,8 @@
 <template>
-  <q-card class="full-height" style="min-width: 24em">
+  <q-card class="full-height card-width">
     <q-card-section>
       <div class="row justify-between">
-        <div class="row text-h6 items-center" style="font-weight: bold">
+        <div class="row text-h6 items-center text-bold">
           <q-icon
             name="battery_full"
             size="sm"
@@ -131,16 +131,16 @@ const totalPowerClass = computed(() => {
 .rotate90Clockwise {
   transform: rotate(90deg);
 }
-
 .text-negative {
   color: $red;
 }
-
 .text-positive {
   color: $green;
 }
-
 .text-neutral {
   color: $orange;
+}
+.card-width {
+  min-width: 24em;
 }
 </style>
