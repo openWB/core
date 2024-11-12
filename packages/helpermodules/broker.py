@@ -1,5 +1,5 @@
+import datetime
 import logging
-import os
 import paho.mqtt.client as mqtt
 import time
 from typing import Callable
@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 class InternalBrokerClient:
     def __init__(self, name: str, on_connect: Callable, on_message: Callable) -> None:
         try:
-            self.name = f"openWB-{name}-{self._get_serial()}"
+            self.name = f"openWB-{name}-{datetime.datetime.today().timestamp()}"
             self.client = mqtt.Client(self.name)
             self.client.on_connect = on_connect
             self.client.on_message = on_message
@@ -43,7 +43,7 @@ class InternalBrokerClient:
 class InternalBrokerPublisher:
     def __init__(self) -> None:
         try:
-            self.client = mqtt.Client(f"openWB-python-bulkpublisher-{os.getpid()}")
+            self.client = mqtt.Client(f"openWB-python-bulkpublisher-{datetime.datetime.today().timestamp()}")
             self.client.connect("localhost", 1886)
         except Exception:
             log.exception("Fehler beim Verbindungsaufbau zum Bulkpublisher")

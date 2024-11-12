@@ -9,6 +9,8 @@ from typing import Optional
 import paho.mqtt.client as mqtt
 import platform
 
+from helpermodules.timecheck import create_timestamp
+
 API_VERSION = "1"
 BASE_PATH = Path(__file__).resolve().parents[2]
 RAMDISK_PATH = BASE_PATH / "ramdisk"
@@ -208,7 +210,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
 
 
 lt_executable = get_lt_executable()
-client = mqtt.Client("openWB-remote-" + get_serial())
+client = mqtt.Client(f"openWB-remote-{get_serial()}-{create_timestamp()}")
 client.on_connect = on_connect
 client.on_message = on_message
 client.will_set(STATE_TOPIC, json.dumps("offline"), qos=2, retain=True)
