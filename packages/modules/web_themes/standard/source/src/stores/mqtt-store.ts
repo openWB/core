@@ -727,6 +727,51 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the charge point energy charged since plugged in identified by the charge point id
+   * @param chargePointId charge point id
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const chargePointEnergyChargedPlugged = computed(() => {
+    return (chargePointId: number, returnType: string = 'textValue') => {
+      const energyCharged = getValue.value(
+        `openWB/chargepoint/${chargePointId}/set/log`,
+        'imported_since_plugged',
+      ) as number;
+      const valueObject = getValueObject.value(energyCharged, 'Wh');
+      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+        return valueObject[returnType];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, energyCharged);
+    };
+  });
+
+  /**
+   * Get the charge point number of phases in use identified by the charge point id
+   */
+  const chargePointPhaseNumber = computed(() => {
+    return (chargePointId: number) => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/phases_in_use`,
+      ) as number;
+    };
+  });
+
+  /**
+   * Get the charge point charging current identified by the charge point id
+   */
+  const chargePointChargingCurrent = computed(() => {
+    return (chargePointId: number) => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/set/current`,
+      ) as number;
+    };
+  });
+
+  /**
    * Get the charge point state message identified by the charge point id
    */
   const chargePointStateMessage = computed(() => {
@@ -1447,6 +1492,9 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointChargeState,
     chargePointPower,
     chargePointEnergyCharged,
+    chargePointEnergyChargedPlugged,
+    chargePointPhaseNumber,
+    chargePointChargingCurrent,
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
