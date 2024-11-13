@@ -19,7 +19,9 @@
         <div class="col q-pa-sm">
           <div class="text-subtitle2">Leistung</div>
           {{ power }}
-          <q-badge rounded color="primary" :label="phaseNumber" />
+          <q-badge rounded color="primary" :label="phaseNumber">
+            <q-tooltip class="bg-primary">Phasenanzahl</q-tooltip>
+          </q-badge>
           {{ ChargingCurrent + ' A' }}
         </div>
         <div class="col q-pa-sm">
