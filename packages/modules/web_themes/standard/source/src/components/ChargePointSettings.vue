@@ -8,7 +8,6 @@
       <q-card-section>
         <div class="text-h6">Einstellungen {{ name }}</div>
       </q-card-section>
-
       <q-card-section class="q-pt-none">
         <div class="row items-center q-ma-none q-pa-none">
           <div>
@@ -20,15 +19,11 @@
           />
         </div>
         <div class="row items-center q-ma-none q-pa-none no-wrap">
-          <ChargePointModeButtons :charge-point-id="props.chargePointId" />
-        </div>
-        <div class="row items-center q-ma-none q-pa-none no-wrap">
           <div class="text-subtitle2 q-mr-sm">Sperren</div>
           <div>
             <ChargePointLock :charge-point-id="props.chargePointId" />
           </div>
         </div>
-
         <div class="row items-center q-ma-none q-pa-none no-wrap">
           <div class="text-subtitle2 q-mr-sm">Priorität</div>
           <div>
@@ -37,6 +32,9 @@
               :readonly="false"
             />
           </div>
+        </div>
+        <div class="row items-center q-ma-none q-pa-none no-wrap">
+          <ChargePointModeButtons :charge-point-id="props.chargePointId" />
         </div>
 
         <!-- ///////////////// Instant charge settings /////////////////// -->
