@@ -192,8 +192,8 @@ class ChargepointState:
         self.soc = soc
         self.soc_timestamp = soc_timestamp
         self.evse_current = evse_current
-        self.vehicle_id = vehicle_id
         self.max_evse_current = max_evse_current
+        self.vehicle_id = vehicle_id
 
 
 @auto_str
