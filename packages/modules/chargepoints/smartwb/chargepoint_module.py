@@ -75,6 +75,8 @@ class ChargepointModule(AbstractChargepoint):
                 else:
                     tag = None
 
+                max_evse_current = json_rsp["maxCurrent"]
+
                 resp = self.session.get('http://'+ip_address+'/evseHost', timeout=timeout)
                 mac = resp.json()["list"][0]["mac"]
 
@@ -87,7 +89,8 @@ class ChargepointModule(AbstractChargepoint):
                     phases_in_use=self.phases_in_use,
                     voltages=voltages,
                     rfid=tag,
-                    serial_number=mac
+                    serial_number=mac,
+                    max_evse_current=max_evse_current
                 )
 
                 self.store.set(chargepoint_state)
