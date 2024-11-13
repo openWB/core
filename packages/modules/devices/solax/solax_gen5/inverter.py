@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from typing import Dict, Union
+from pymodbus.constants import Endian
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
@@ -31,7 +32,8 @@ class SolaxGen5Inverter(AbstractInverter):
             power_pv3 = self.__tcp_client.read_input_registers(292, ModbusDataType.UINT_16, unit=self.__modbus_id) * -1
             power_temp = (power_pv1, power_pv2, power_pv3)
             power = sum(power_temp)
-            exported = self.__tcp_client.read_input_registers(80, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+            exported = self.__tcp_client.read_input_registers(82, ModbusDataType.UINT_32, wordorder=Endian.Little,
+                                                              unit=self.__modbus_id) * 100
 
         inverter_state = InverterState(
             power=power,
