@@ -1,15 +1,15 @@
 <template>
-  <q-card class="full-height" style="max-width: 24em">
+  <q-card class="full-height card-width">
     <q-card-section>
-      <div class="row items-center text-h6" style="font-weight: bold">
+      <div class="row items-center text-h6 text-bold">
         <div class="col">
           {{ name }}
+          <ChargePointLock
+            :charge-point-id="props.chargePointId"
+            :readonly="true"
+          />
+          <ChargePointStateIcon :charge-point-id="props.chargePointId" />
         </div>
-        <ChargePointLock
-          :charge-point-id="props.chargePointId"
-          :readonly="true"
-        />
-        <ChargePointStateIcon :charge-point-id="props.chargePointId" />
         <q-icon name="settings" size="sm" @click="settingsVisible = true" />
       </div>
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
@@ -19,10 +19,15 @@
         <div class="col q-pa-sm">
           <div class="text-subtitle2">Leistung</div>
           {{ power }}
+          <q-badge rounded color="primary" :label="phaseNumber">
+            <q-tooltip class="bg-primary">Phasenanzahl</q-tooltip>
+          </q-badge>
+          {{ ChargingCurrent + ' A' }}
         </div>
         <div class="col q-pa-sm">
           <div class="text-subtitle2">geladen</div>
-          {{ energyCharged }}
+          <!-- {{ energyCharged }} -->
+          {{ EnergyChargedPlugged }}
         </div>
       </div>
       <div class="row items-center q-mt-sm">
@@ -71,7 +76,22 @@ const name = computed(() => mqttStore.chargePointName(props.chargePointId));
 const power = computed(() =>
   mqttStore.chargePointPower(props.chargePointId, 'textValue'),
 );
-const energyCharged = computed(() =>
-  mqttStore.chargePointEnergyCharged(props.chargePointId, 'textValue'),
+// const energyCharged = computed(() =>
+//   mqttStore.chargePointEnergyCharged(props.chargePointId, 'textValue'),
+// );
+const EnergyChargedPlugged = computed(() =>
+  mqttStore.chargePointEnergyChargedPlugged(props.chargePointId, 'textValue'),
+);
+const phaseNumber = computed(() =>
+  mqttStore.chargePointPhaseNumber(props.chargePointId),
+);
+const ChargingCurrent = computed(() =>
+  mqttStore.chargePointChargingCurrent(props.chargePointId),
 );
 </script>
+
+<style lang="scss" scoped>
+.card-width {
+  max-width: 24em;
+}
+</style>
