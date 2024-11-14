@@ -17,14 +17,24 @@
         <q-icon name="home" size="md" color="accent" />
       </q-tab>
     </q-tabs>
-
     <!-- Tab Panels -->
     <q-tab-panels v-model="tab" animated class="col">
       <q-tab-panel name="charge-points" class="q-pa-none column">
-        <ChargePointCarousel />
+        <BaseCarousel :items="chargePointIds">
+          <template #item="{ item }">
+            <ChargePoint :charge-point-id="item" />
+          </template>
+        </BaseCarousel>
       </q-tab-panel>
       <q-tab-panel name="batteries" class="">
-        <BatteryCarousel />
+        <div class="row justify-center">
+          <BatteryOverview />
+        </div>
+        <BaseCarousel :items="batteryIds">
+          <template #item="{ item }">
+            <BatteryInformation :battery-id="item" />
+          </template>
+        </BaseCarousel>
       </q-tab-panel>
       <q-tab-panel name="smartHome" class="">
         <SmartHomeInformation />
@@ -34,15 +44,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useMqttStore } from 'src/stores/mqtt-store';
 import ChartCarousel from 'src/components/ChartCarousel.vue';
-import ChargePointCarousel from 'src/components/ChargePointCarousel.vue';
+import BaseCarousel from 'src/components/BaseCarousel.vue';
+import ChargePoint from 'src/components/ChargePoint.vue';
+import BatteryInformation from 'src/components/BatteryInformation.vue';
+import BatteryOverview from 'src/components/BatteryOverview.vue';
 import SmartHomeInformation from 'src/components/SmartHomeInformation.vue';
-import BatteryCarousel from 'src/components/BatteryCarousel.vue';
 
 defineOptions({
   name: 'IndexPage',
 });
 
 const tab = ref<string>('charge-points');
+
+const mqttStore = useMqttStore();
+const chargePointIds = computed(() => mqttStore.chargePointIds);
+const batteryIds = computed(() => mqttStore.batteryIds);
 </script>
