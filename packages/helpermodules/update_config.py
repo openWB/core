@@ -8,11 +8,7 @@ import re
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
-from control.bat_all import BatConsiderationMode
-from control.chargepoint.charging_type import ChargingType
-from control.counter import get_counter_default_config
-from control.general import ChargemodeConfig
-from control.optional_data import Ocpp
+
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -33,8 +29,14 @@ from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
-from control import ev
-from control.general import Prices
+from control.bat_all import BatConsiderationMode
+from control.chargepoint.charging_type import ChargingType
+from control.counter import get_counter_default_config
+from control.ev.charge_template import get_charge_template_default
+from control.ev import ev
+from control.ev.ev_template import EvTemplateData
+from control.general import ChargemodeConfig, Prices
+from control.optional_data import Ocpp
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow.version import Version
@@ -453,9 +455,9 @@ class UpdateConfig:
         ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
-        ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData(name="Standard-Fahrzeug-Profil",
-                                                                           min_current=10))),
-        ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
+        ("openWB/vehicle/template/ev_template/0", asdict(EvTemplateData(name="Standard-Fahrzeug-Profil",
+                                                                        min_current=10))),
+        ("openWB/vehicle/template/charge_template/0", get_charge_template_default()),
         ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 3),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
