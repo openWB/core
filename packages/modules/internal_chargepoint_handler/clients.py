@@ -73,7 +73,7 @@ class ClientHandler(SeriesHardwareCheckMixin):
                 try:
                     if meter_client.get_voltages()[0] > 200:
                         with ModifyLoglevelContext(log, logging.DEBUG):
-                            log.error("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
+                            log.debug("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
                         return meter_client
                 except Exception:
                     log.debug(client)
