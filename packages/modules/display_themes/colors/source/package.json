@@ -20,26 +20,26 @@
     "vue": "^3.5.10"
   },
   "devDependencies": {
-    "@babel/types": "^7.25.6",
+    "@babel/types": "^7.25.8",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@rushstack/eslint-patch": "^1.10.4",
     "@tsconfig/node20": "^20.1.4",
     "@types/bootstrap": "^5.2.10",
     "@types/d3": "^7.4.3",
-    "@types/node": "^20.16.10",
+    "@types/node": "^20.16.13",
     "@vitejs/plugin-vue": "^5.1.4",
     "@vue/eslint-config-prettier": "^8.0.0",
     "@vue/eslint-config-typescript": "^12.0.0",
     "@vue/tsconfig": "^0.5.1",
     "esbuild": "^0.20.2",
     "eslint": "^8.57.1",
-    "eslint-plugin-vue": "^9.28.0",
-    "npm-run-all2": "^6.2.3",
+    "eslint-plugin-vue": "^9.29.1",
+    "npm-run-all2": "^6.2.4",
     "prettier": "^3.3.3",
     "rollup": "^4.24.0",
     "typescript": "~5.4.5",
-    "vite": "^5.4.8",
+    "vite": "^5.4.9",
     "vue-tsc": "^2.1.6"
   }
 }

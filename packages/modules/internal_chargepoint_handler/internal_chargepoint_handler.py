@@ -193,17 +193,18 @@ class InternalChargepointHandler:
     def loop(self) -> None:
         def _loop():
             while True:
-                self.heartbeat = True
                 if self.event_stop.is_set():
                     break
                 log.debug("***Start***")
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
                 log.debug(data)
                 log.setLevel(SubData.system_data["system"].data["debug_level"])
+                heartbeat_cp0, heartbeat_cp1 = True, True
                 if self.cp0:
-                    self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
+                    heartbeat_cp0 = self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
                 if self.cp1:
-                    self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
+                    heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
+                self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 else False
                 time.sleep(1.1)
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
             # Allgemeine Fehlermeldungen an LP 1
@@ -250,7 +251,7 @@ class HandlerChargepoint:
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
 
-    def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> None:
+    def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> bool:
         def __thread_active(thread: Optional[threading.Thread]) -> bool:
             if thread:
                 return thread.is_alive()
@@ -267,6 +268,8 @@ class HandlerChargepoint:
             if global_data.parent_ip is not None:
                 self.update_values.update_values(state, heartbeat_expired)
             self.update_state.update_state(data, heartbeat_expired)
+            return True
+        return False
 
     def _check_heartbeat_expired(self, heartbeat) -> bool:
         if heartbeat+80 < timecheck.create_timestamp():
