@@ -28,16 +28,15 @@ class Algodue(AbstractCounter):
 
     def get_serial_number(self) -> Optional[str]:
         # serial will never change - at least until power cycle
-        if self.serial_cached is not None:
-            return self.serial_cached
-
-        serial_chars = self.client.read_holding_registers(0x500, [ModbusDataType.UINT_8]*10, unit=self.id)
-        serial_string = ""
-        for x in serial_chars:
-            serial_string += chr(x)
-        # due to caching this appears rarely - but it's nice to have always have it in main log
-        log.error("Algodue meter serial " + serial_string)
-        self.serial_cached = serial_string
+        if self.serial_cached is None:
+            serial_chars = self.client.read_holding_registers(0x500, [ModbusDataType.UINT_8]*10, unit=self.id)
+            serial_string = ""
+            for x in serial_chars:
+                serial_string += chr(x)
+            # due to caching this appears rarely - but it's nice to have always have it in main log
+            with ModifyLoglevelContext(log, logging.DEBUG):
+                log.debug("Algodue meter serial " + serial_string)
+            self.serial_cached = serial_string
         return self.serial_cached
 
     def get_currents(self) -> List[float]:
