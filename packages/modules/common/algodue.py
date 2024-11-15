@@ -2,6 +2,8 @@
 import logging
 from typing import List, Tuple, Optional
 
+from helpermodules.logger import ModifyLoglevelContext
+
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
 from modules.common.modbus import ModbusDataType
@@ -28,16 +30,15 @@ class Algodue(AbstractCounter):
 
     def get_serial_number(self) -> Optional[str]:
         # serial will never change - at least until power cycle
-        if self.serial_cached is not None:
-            return self.serial_cached
-
-        serial_chars = self.client.read_holding_registers(0x500, [ModbusDataType.UINT_8]*10, unit=self.id)
-        serial_string = ""
-        for x in serial_chars:
-            serial_string += chr(x)
-        # due to caching this appears rarely - but it's nice to have always have it in main log
-        log.error("Algodue meter serial " + serial_string)
-        self.serial_cached = serial_string
+        if self.serial_cached is None:
+            serial_chars = self.client.read_holding_registers(0x500, [ModbusDataType.UINT_8]*10, unit=self.id)
+            serial_string = ""
+            for x in serial_chars:
+                serial_string += chr(x)
+            # due to caching this appears rarely - but it's nice to have always have it in main log
+            with ModifyLoglevelContext(log, logging.DEBUG):
+                log.debug("Algodue meter serial " + serial_string)
+            self.serial_cached = serial_string
         return self.serial_cached
 
     def get_currents(self) -> List[float]:
@@ -56,43 +57,42 @@ class Algodue(AbstractCounter):
 
     def get_model(self) -> Optional[str]:
         # model will never change - at least until power cycle
-        if self.model_cached is not None:
-            return self.model_cached
+        if self.model_cached is None:
+            model_id = self.client.read_holding_registers(0x505, ModbusDataType.UINT_16, unit=self.id)
+            model_string = "unknown"
+            if model_id == 0x03:
+                model_string = "6 A, 3 phases, 4 wires"
+            elif model_id == 0x08:
+                model_string = "80 A, 3 phases, 4 wires"
+            elif model_id == 0x0c:
+                model_string = "80 A, 1 phase, 2 wires"
+            elif model_id == 0x10:
+                model_string = "40 A, 1 phase, 2 wires"
+            elif model_id == 0x12:
+                model_string = "63 A, 3 phases, 4 wires"
 
-        model_id = self.client.read_holding_registers(0x505, ModbusDataType.UINT_16, unit=self.id)
-        model_string = "unknown"
-        if model_id == 0x03:
-            model_string = "6 A, 3 phases, 4 wires"
-        elif model_id == 0x08:
-            model_string = "80 A, 3 phases, 4 wires"
-        elif model_id == 0x0c:
-            model_string = "80 A, 1 phase, 2 wires"
-        elif model_id == 0x10:
-            model_string = "40 A, 1 phase, 2 wires"
-        elif model_id == 0x12:
-            model_string = "63 A, 3 phases, 4 wires"
+            type_id = self.client.read_holding_registers(0x506, ModbusDataType.UINT_16, unit=self.id)
+            type_string = "unknown"
+            if type_id == 0x00:
+                type_string = "NO MID, RESET"
+            elif type_id == 0x01:
+                type_string = "MID"
+            elif type_id == 0x02:
+                type_string = "NO MID"
+            elif type_id == 0x03:
+                type_string = "NO MID, Wiring selection"
+            elif type_id == 0x05:
+                type_string = "MID no varh"
+            elif type_id == 0x09:
+                type_string = "MID Wiring selection"
+            elif type_id == 0x0a:
+                type_string = "MID no varh, Wiring selection"
+            elif type_id == 0x0b:
+                type_string = "NO MID, RESET, Wiring selection"
+            meterinfo = "Algodue UEM " + model_string + ", " + type_string
 
-        type_id = self.client.read_holding_registers(0x506, ModbusDataType.UINT_16, unit=self.id)
-        type_string = "unknown"
-        if type_id == 0x00:
-            type_string = "NO MID, RESET"
-        elif type_id == 0x01:
-            type_string = "MID"
-        elif type_id == 0x02:
-            type_string = "NO MID"
-        elif type_id == 0x03:
-            type_string = "NO MID, Wiring selection"
-        elif type_id == 0x05:
-            type_string = "MID no varh"
-        elif type_id == 0x09:
-            type_string = "MID Wiring selection"
-        elif type_id == 0x0a:
-            type_string = "MID no varh, Wiring selection"
-        elif type_id == 0x0b:
-            type_string = "NO MID, RESET, Wiring selection"
-        meterinfo = "Algodue UEM " + model_string + ", " + type_string
-
-        # due to caching this appears rarely - but it's nice to have always have it in main log
-        log.error("Algodue model: " + meterinfo)
-        self.model_cached = meterinfo
+            # due to caching this appears rarely - but it's nice to have always have it in main log
+            with ModifyLoglevelContext(log, logging.DEBUG):
+                log.debug("Algodue model: " + meterinfo)
+            self.model_cached = meterinfo
         return self.model_cached
