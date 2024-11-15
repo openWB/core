@@ -2,6 +2,8 @@
 import logging
 from typing import List, Tuple, Optional
 
+from helpermodules.logger import ModifyLoglevelContext
+
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
 from modules.common.modbus import ModbusDataType
