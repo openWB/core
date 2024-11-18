@@ -28,7 +28,7 @@ class Set:
 
 
 def set_factory():
-    return set()
+    return Set()
 
 
 @dataclass
