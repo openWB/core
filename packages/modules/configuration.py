@@ -5,7 +5,7 @@ from typing import Dict, List
 
 import dataclass_utils
 from helpermodules.pub import Pub
-from modules.io_actions.groups import READBALE_GROUP_NAME, ActionGroup
+from modules.io_actions.groups import READABLE_GROUP_NAME, ActionGroup
 log = logging.getLogger(__name__)
 
 
@@ -331,7 +331,7 @@ def _pub_configurable_io_actions() -> None:
     try:
         action_groups = {}
         for group in ActionGroup:
-            action_groups[group.value] = {"group_name": READBALE_GROUP_NAME[group], "actions": []}
+            action_groups[group.value] = {"group_name": READABLE_GROUP_NAME[group], "actions": []}
             path_list = Path(_get_packages_path()/"modules"/"io_actions"/group.value).glob('**/api.py')
             for path in path_list:
                 try:

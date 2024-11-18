@@ -632,7 +632,7 @@ class SubData:
             log.exception("Fehler im subdata-Modul")
 
     def process_io_topic(self, var: Dict[str, Union[io_device.IoActions, io_device.IoStates]], msg: mqtt.MQTTMessage):
-        """ Handler für die Graph-Topics
+        """ Handler für die IO-Topics
 
         Parameter
         ----------
