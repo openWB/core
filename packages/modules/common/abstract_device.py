@@ -51,7 +51,7 @@ class AbstractInverter:
         pass
 
     @abstractmethod
-    def set_power_limit(self, power_limit: int) -> None:
+    def set_power_limit(self, power_limit: float) -> None:
         # power_limit in Werten zwischen 0 und 1
         pass
 
