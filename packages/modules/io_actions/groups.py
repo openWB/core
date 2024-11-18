@@ -6,7 +6,7 @@ class ActionGroup(Enum):
     GENERATOR_SYSTEMS = "generator_systems"
 
 
-READBALE_GROUP_NAME = {
+READABLE_GROUP_NAME = {
     ActionGroup.CONTROLLABLE_CONSUMERS: "Steuerbare Verbrauchseinrichtungen (§14a)",
     ActionGroup.GENERATOR_SYSTEMS: "Erzeugungsanlagen",
 }
