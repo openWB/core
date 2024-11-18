@@ -13,8 +13,6 @@ from modules.io_actions.controllable_consumers.ripple_control_receiver.api impor
 class Get:
     analog_input: Dict[int, float] = None
     digital_input: Dict[int, bool] = None
-    analog_output: Dict[int, float] = None
-    digital_output: Dict[int, bool] = None
     fault_str: str = NO_ERROR
     fault_state: int = 0
 
@@ -24,8 +22,19 @@ def get_factory():
 
 
 @dataclass
+class Set:
+    analog_output: Dict[int, float] = None
+    digital_output: Dict[int, bool] = None
+
+
+def set_factory():
+    return set()
+
+
+@dataclass
 class IoDeviceData:
     get: Get = field(default_factory=get_factory)
+    set: Set = field(default_factory=set_factory)
 
 
 class IoStates:
