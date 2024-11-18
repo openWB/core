@@ -51,7 +51,7 @@ def create_io(config: IoLan):
     version = False
     client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
     for i, value in config.output["digital"].items():
-        client.write_single_coil(i-1, value, unit=config.configuration.modbus_id)
+        client.write_single_coil(int(i)-1, value, unit=config.configuration.modbus_id)
     return ConfigurableIo(config=config, component_reader=read, component_writer=write)
 
 
