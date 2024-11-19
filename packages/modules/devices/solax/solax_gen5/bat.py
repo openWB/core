@@ -38,8 +38,10 @@ class SolaxGen5Bat(AbstractBat):
                 soc = self.__tcp_client.read_input_registers(28, ModbusDataType.UINT_16, unit=self.__modbus_id)
 
             try:
-                imported = self.__tcp_client.read_input_registers(35, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
-                exported = self.__tcp_client.read_input_registers(32, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+                imported = self.__tcp_client.read_input_registers(35,
+                                                                  ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+                exported = self.__tcp_client.read_input_registers(32,
+                                                                  ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
             except Exception:
                 imported, exported = self.sim_counter.sim_count(power)
 
@@ -51,5 +53,5 @@ class SolaxGen5Bat(AbstractBat):
         )
         self.store.set(bat_state)
 
-component_descriptor = ComponentDescriptor(configuration_factory=SolaxGen5BatSetup)
 
+component_descriptor = ComponentDescriptor(configuration_factory=SolaxGen5BatSetup)
