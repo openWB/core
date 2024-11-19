@@ -52,6 +52,7 @@ class Socket(ChargepointModule):
                  parent_cp: int,
                  hierarchy_id: int) -> None:
         self.socket_max_current = get_hardware_configuration_setting("max_c_socket")
+        self.chargepoint_state.max_evse_current = self.socket_max_current
         log.debug(f"Konfiguration als Buchse mit maximal {self.socket_max_current}A Ladestrom je Phase.")
         super().__init__(local_charge_point_num, client_handler, parent_hostname, parent_cp, hierarchy_id)
 
