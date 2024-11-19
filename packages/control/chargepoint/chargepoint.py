@@ -734,7 +734,9 @@ class Chargepoint(ChargepointRfidMixin):
                           "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
             # SoC nach Anstecken aktualisieren
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
-                    (self.data.get.plug_state is False and self.data.set.plug_state_prev)):
+                    (self.data.get.plug_state is False and self.data.set.plug_state_prev) or
+                    (self.data.get.soc_timestamp and self.data.set.charging_ev_data.data.get.soc_timestamp and
+                        self.data.get.soc_timestamp > self.data.set.charging_ev_data.data.get.soc_timestamp)):
                 Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
                 log.debug("SoC nach Anstecken")
             self.set_state_and_log(message)

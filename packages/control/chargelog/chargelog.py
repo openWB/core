@@ -313,13 +313,13 @@ def get_log_data(request: Dict):
                     )
                     continue
                 if (
-                    "rfid" in request["filter"]["vehicle"] and
-                    len(request["filter"]["vehicle"]["rfid"]) > 0 and
-                    entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["rfid"]
+                    "tag" in request["filter"]["vehicle"] and
+                    len(request["filter"]["vehicle"]["tag"]) > 0 and
+                    entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["tag"]
                 ):
                     log.debug(
                         "Verwerfe Eintrag wegen ID Tag: %s != %s" %
-                        (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["rfid"]))
+                        (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["tag"]))
                     )
                     continue
                 if (

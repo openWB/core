@@ -175,7 +175,7 @@ class SimCounterStoreRamdisk(SimCounterStore):
 class SimCounterStoreBroker(SimCounterStore):
     def initialize(self, prefix: str, topic: str, power: float, timestamp: float) -> SimCounterState:
         state = SimCounterState(timestamp, power, imported=restore_last_energy(
-            topic, "imported"), exported=restore_last_energy(topic, "exported"))
+            topic, "imported") if "pv" not in prefix else 0, exported=restore_last_energy(topic, "exported"))
         self.save(prefix, topic, state)
         return state
 

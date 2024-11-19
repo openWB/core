@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from modules.common.store import RAMDISK_PATH
 
 log = logging.getLogger(__name__)
+AUTH_CLIENT_ID = "l3oopkc_10"
 
 
 class PolestarAuth:
@@ -133,7 +134,7 @@ class PolestarAuth:
             return None
 
         params = {
-            'client_id': 'polmystar'
+            'client_id': AUTH_CLIENT_ID
         }
         data = {
             'pf.username': self.username,
@@ -162,8 +163,23 @@ class PolestarAuth:
             code = m.group(1)
             log.info("_get_auth_code:got code %s", code)
         else:
-            code = None
-            log.info("_get_auth_code:error getting auth code")
+            # try to accept terms and conditions in order to get code
+            m = re.search(r"uid=(.+)", result.request.path_url)
+            if m is not None:
+                uid = m.group(1)
+                log.info("_get_auth_code:accept terms and conditions for uid %s", uid)
+                data = {"pf.submit": True, "subject": uid}
+                result = self.client_session.post(
+                    f"https://polestarid.eu.polestar.com/as/{self.resume_path}/resume/as/authorization.ping",
+                    data=data,
+                )
+            m = re.search(r"code=(.+)", result.request.path_url)
+            if m is not None:
+                code = m.group(1)
+                log.info("_get_auth_code:got code %s", code)
+            else:
+                code = None
+                log.info("_get_auth_code:error getting auth code")
 
         return code
 
@@ -172,7 +188,7 @@ class PolestarAuth:
         # Get Resume Path
         params = {
             "response_type": "code",
-            "client_id": "polmystar",
+            "client_id": AUTH_CLIENT_ID,
             "redirect_uri": "https://www.polestar.com/sign-in-callback"
         }
         log.info("_get_auth_resumePath:attempting to get resumePath")
