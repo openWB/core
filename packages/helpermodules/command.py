@@ -55,7 +55,7 @@ class Command:
                ("ev_template", "vehicle/template/ev_template", 0),
                ("vehicle", "vehicle", 0),
                ("io_action", "io/action", -1),
-               ("io_device", "io/device", -1),
+               ("io_device", "system/io", -1),
                ]
 
     def __init__(self, event_command_completed: threading.Event):
@@ -185,7 +185,7 @@ class Command:
 
     def removeIoAction(self, connection_id: str, payload: dict) -> None:
         if self.max_id_io_action >= payload["data"]["id"]:
-            ProcessBrokerBranch(f'io/{payload["data"]["id"]}/').remove_topics()
+            ProcessBrokerBranch(f'io/action/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
@@ -215,7 +215,7 @@ class Command:
         """ löscht ein Io-Device.
         """
         if self.max_id_io_device >= payload["data"]["id"]:
-            ProcessBrokerBranch(f'io/{payload["data"]["id"]}/').remove_topics()
+            ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:

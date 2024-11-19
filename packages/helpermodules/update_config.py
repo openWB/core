@@ -146,6 +146,8 @@ class UpdateConfig:
         "^openWB/command/max_id/device$",
         "^openWB/command/max_id/ev_template$",
         "^openWB/command/max_id/hierarchy$",
+        "^openWB/command/max_id/io_action$",
+        "^openWB/command/max_id/io_device$",
         "^openWB/command/max_id/mqtt_bridge$",
         "^openWB/command/max_id/vehicle$",
         "^openWB/command/[A-Za-z0-9_]+/error$",
