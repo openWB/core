@@ -5,6 +5,7 @@
 import logging
 from helpermodules import logger
 from helpermodules.utils import thread_handler
+from modules.internal_chargepoint_handler.gpio import InternalGpioHandler
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
@@ -190,6 +191,7 @@ try:
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
     rfid = RfidReader()
+    gpio = InternalGpioHandler()
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
@@ -237,8 +239,11 @@ try:
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
     if rfid.keyboards_detected:
-        t_rfid = Thread(target=rfid.run, args=(), name="Internal Chargepoint")
+        t_rfid = Thread(target=rfid.run, args=(), name="Internal RFID")
         t_rfid.start()
+
+    t_gpio = Thread(target=gpio.loop, args=(), name="Internal GPIO")
+    t_gpio.start()
 
     t_sub.start()
     t_set.start()

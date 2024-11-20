@@ -12,7 +12,9 @@ from modules.io_actions.controllable_consumers.ripple_control_receiver.api impor
 @dataclass
 class Get:
     analog_input: Dict[int, float] = None
+    analog_output: Dict[int, float] = None
     digital_input: Dict[int, bool] = None
+    digital_output: Dict[int, bool] = None
     fault_str: str = NO_ERROR
     fault_state: int = 0
 
