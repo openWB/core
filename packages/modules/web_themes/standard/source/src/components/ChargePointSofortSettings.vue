@@ -1,4 +1,14 @@
 <template>
+  <SliderStandard
+    title="Stromstärke"
+    :min="6"
+    :max="32"
+    unit="A"
+    v-model="instantChargeCurrent.value"
+    class="q-mt-sm"
+  />
+  <!-- <SliderQuasar class="q-mt-sm" :readonly="false" /> -->
+  <div class="text-subtitle2 q-mr-sm">Begrenzung</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group push rounded class="q-mt-md col">
       <q-btn
@@ -52,6 +62,12 @@ const limitModes = [
   { value: 'soc', label: 'EV-SoC', color: 'secondary' },
   { value: 'amount', label: 'Energiemenge', color: 'secondary' },
 ];
+
+const instantChargeCurrent = computed(() =>
+  mqttStore.chargePointConnectedVehicleInstantChargeCurrent(
+    props.chargePointId,
+  ),
+);
 
 const limitMode = computed(() =>
   mqttStore.chargePointConnectedVehicleInstantChargeLimit(props.chargePointId),

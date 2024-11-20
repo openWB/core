@@ -39,65 +39,50 @@
 
         <!-- ///////////////// Instant charge settings /////////////////// -->
         <div v-if="chargeMode.value === 'instant_charging'">
-          <SliderStandard
-            title="Stromstärke"
-            :min="6"
-            :max="32"
-            unit="A"
-            v-model="instantChargeCurrent.value"
-            class="q-mt-sm"
-          />
-          <!-- <SliderQuasar class="q-mt-sm" :readonly="false" /> -->
-          <div class="text-subtitle2 q-mr-sm">Begrenzung</div>
-          <ChargePointLimitSettings :charge-point-id="props.chargePointId" />
+          <ChargePointSofortSettings :charge-point-id="props.chargePointId" />
         </div>
 
         <!-- ///////////////// PV charge settings /////////////////// -->
         <div v-if="chargeMode.value === 'pv_charging'">
-          <SliderStandard
-            title="Minimaler Dauerstrom"
-            :min="0"
-            :max="16"
-            unit="A"
-            v-model="pvMinCurrent.value"
-            class="q-mt-md"
-          />
+          <ChargePointPVSettings :charge-point-id="props.chargePointId" />
+        </div>
+        <!-- /////////////////  scheduled charging settings /////////////////// -->
 
-          <SliderStandard
-            title="Mindest-SoC für das Fahrzeug"
-            :min="0"
-            :max="95"
-            :step="5"
-            unit="%"
-            v-model="pvMinSoc.value"
-            class="q-mt-md"
-          />
-
-          <SliderStandard
-            title="Mindest-SoC-Strom"
-            :min="6"
-            :max="32"
-            unit="A"
-            v-model="pvMinSocCurrent.value"
-            class="q-mt-md"
-          />
-
-          <SliderStandard
-            title="SoC-Limit für das Fahrzeug"
-            :min="0"
-            :max="100"
-            :step="5"
-            unit="%"
-            v-model="pvMaxSocLimit.value"
-            class="q-mt-md"
-          />
-
-          <div class="row items-center q-ma-none q-pa-none no-wrap">
-            <div class="text-subtitle2 q-mr-sm">Einspeisegrenze beachten</div>
-            <div>
-              <ToggleStandard v-model="feedInLimit.value" />
-            </div>
+        <div v-if="chargeMode.value === 'scheduled_charging'">
+          <div class="row justify-between items-center">
+            <div class="text-subtitle2 q-mr-sm q-mt-md">Termine:</div>
+            <q-btn
+              icon="add"
+              color="positive"
+              round
+              size="sm"
+              class="q-mt-md"
+              @click="
+                mqttStore.vehicleAddScheduledChargingPlan(props.chargePointId)
+              "
+            />
           </div>
+          <q-expansion-item
+            v-for="(plan, index) in plans.value"
+            :key="index"
+            expand-icon-toggle
+            :default-opened="false"
+            class="q-mt-md bg-primary rounded-borders-md"
+            :class="plan.active ? 'active-border' : 'inactive-border'"
+            :header-class="'cursor-pointer'"
+            dense
+          >
+            <template v-slot:header>
+              <ChargePointScheduledHeader
+                :charge-point-id="props.chargePointId"
+                :plan="plan"
+              />
+            </template>
+            <ChargePointScheduledSettings
+              :charge-point-id="props.chargePointId"
+              :plan="plan"
+            />
+          </q-expansion-item>
         </div>
       </q-card-section>
       <q-card-actions align="right">
@@ -111,9 +96,10 @@
 import { useQuasar } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { computed, ref, watch } from 'vue';
-import ToggleStandard from './ToggleStandard.vue';
-import ChargePointLimitSettings from './ChargePointLimitSettings.vue';
-import SliderStandard from './SliderStandard.vue';
+import ChargePointSofortSettings from './ChargePointSofortSettings.vue';
+import ChargePointPVSettings from './ChargePointPVSettings.vue';
+import ChargePointScheduledSettings from './ChargePointScheduledSettings.vue';
+import ChargePointScheduledHeader from './ChargePointScheduledHeader.vue';
 import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointLock from './ChargePointLock.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
@@ -154,31 +140,23 @@ const chargeMode = computed(() =>
   mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId),
 );
 
-const instantChargeCurrent = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeCurrent(
-    props.chargePointId,
-  ),
-);
-
-const pvMinCurrent = computed(() =>
-  mqttStore.chargePointConnectedVehiclePVChargeMinCurrent(props.chargePointId),
-);
-
-const pvMinSoc = computed(() =>
-  mqttStore.chargePointConnectedVehiclePVChargeMinSoc(props.chargePointId),
-);
-
-const pvMinSocCurrent = computed(() =>
-  mqttStore.chargePointConnectedVehiclePVChargeMinSocCurrent(
-    props.chargePointId,
-  ),
-);
-
-const pvMaxSocLimit = computed(() =>
-  mqttStore.chargePointConnectedVehiclePVChargeMaxSoc(props.chargePointId),
-);
-
-const feedInLimit = computed(() =>
-  mqttStore.chargePointConnectedVehiclePVChargeFeedInLimit(props.chargePointId),
+const plans = computed(() =>
+  mqttStore.vehicleScheduledChargingPlans(props.chargePointId),
 );
 </script>
+
+<style scoped>
+.rounded-borders-md {
+  border-radius: 10px;
+}
+.active-border {
+  border: 2px solid var(--q-positive);
+}
+.inactive-border {
+  border: 2px solid var(--q-negative);
+}
+
+:deep(.q-expansion-item__container) .q-item {
+  padding: 1px 3px; /* Reduce from default 8px 16px to 4px 8px */
+}
+</style>
