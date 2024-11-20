@@ -15,6 +15,7 @@ import type {
   ValueObject,
   ChargePointConnectedVehicleInfo,
   Vehicle,
+  ScheduledChargingPlan,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -1450,6 +1451,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  ////////////////////////////// vehicle data ////////////////////////////////
+
   /**
    * Get a list of all vehicles
    * @returns Vehicle[]
@@ -1463,6 +1466,373 @@ export const useMqttStore = defineStore('mqtt', () => {
         id: vehicleIndex,
         name: list[key] as string,
       } as Vehicle;
+    });
+  };
+
+  /**
+   * Add a scheduled charging plan to currently selected vehicle of the current charge point
+   * @param chargePointId charge point id
+   */
+  const vehicleAddScheduledChargingPlan = (chargePointId: number) => {
+    const chargeTemplateId =
+      chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+    if (chargeTemplateId === undefined) return;
+    sendCommand({
+      command: 'addChargeTemplateSchedulePlan',
+      data: { template: chargeTemplateId },
+    });
+  };
+
+  /**
+   * Delete scheduled charging plan from currently selected vehicle of the current charge point
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   */
+  const vehicleDeleteScheduledChargingPlan = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    const chargeTemplateId =
+      chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+    if (chargeTemplateId === undefined) return;
+    sendCommand({
+      command: 'removeChargeTemplateSchedulePlan',
+      data: {
+        template: parseInt(chargeTemplateId.toString()),
+        plan: parseInt(planId),
+      },
+    });
+  };
+
+  /**
+   * Get charging plan/s data identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object | undefined
+   */
+  const vehicleScheduledChargingPlans = (chargePointId: number) => {
+    return computed(() => {
+      const chargeTemplateId =
+        chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+      // if (chargeTemplateId === undefined) {
+      //   console.error('chargeTemplateId is undefined');
+      //   return;
+      // }
+
+      const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans`;
+      const plans = getWildcardValues.value(`${baseTopic}/+`) as Record<
+        string,
+        Omit<ScheduledChargingPlan, 'id' | 'frequency.selected_days'>
+      >;
+      return Object.keys(plans).map((planKey) => {
+        const plan = plans[planKey];
+        const planId = planKey.split('/').pop() || '';
+        return {
+          ...plan,
+          id: planId,
+          frequency: {
+            ...plan.frequency,
+            selected_days: getSelectedDays(plan.frequency.weekly),
+          },
+        } as ScheduledChargingPlan;
+      });
+    });
+  };
+
+  /**
+   * Helper function to convert a boolean array to a string array of selected days
+   * @param weekly boolean array of selected days
+   * @returns string[] string array of selected days
+   */
+  const getSelectedDays = (weekly: boolean[] | undefined): string[] => {
+    const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+    return weekly
+      ? (weekly
+          .map((isSelected, index) => (isSelected ? weekDays[index] : null))
+          .filter(Boolean) as string[]) // Filter out null values
+      : [];
+  };
+
+  const vehicleToggleScheduledChargingPlanActive = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    const chargeTemplateId =
+      chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+    if (chargeTemplateId === undefined) return;
+    const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+    const currentPlan = getValue.value(baseTopic) as ScheduledChargingPlan;
+
+    updateTopic(baseTopic, !currentPlan.active, 'active', true);
+  };
+
+  /**
+   * Get or set the current for scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns number | undefined
+   */
+  const vehicleScheduledChargingPlanCurrent = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.current as number;
+      },
+      set(newValue: number) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'current', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge limit for scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns string | undefined
+   */
+  const vehicleScheduledChargingPlanLimitSelected = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.limit.selected;
+      },
+      set(newValue: string) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'limit.selected', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the energy limit for scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns number | undefined
+   */
+  const vehicleScheduledChargingPlanEnergyAmount = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        const amount = plan?.limit.amount;
+        if (amount === undefined) {
+          return;
+        }
+        const valueObject = getValueObject.value(
+          amount,
+          'Wh',
+          '',
+          true,
+        ) as ValueObject;
+        return valueObject.scaledValue as string;
+      },
+      set(newValue: number) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue * 1000, 'limit.amount', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the plan name for scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns string | undefined
+   */
+  const vehicleScheduledChargingPlanName = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.name;
+      },
+      set(newValue: string) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'name', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the end time for scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns string | undefined
+   */
+  const vehicleScheduledChargingPlanTime = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.time;
+      },
+      set(newValue: string) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'time', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the plan frequency for scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns string | undefined
+   */
+  const vehicleScheduledChargingPlanFrequencySelected = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.frequency.selected;
+      },
+      set(newValue: 'once' | 'daily' | 'weekly') {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'frequency.selected', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the date for one off scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns string[] | undefined
+   */
+  const vehicleScheduledChargingPlanOnceDate = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.frequency.once?.[0];
+      },
+      set(newValue: string) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, [newValue], 'frequency.once', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the day of the week for weekly scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns boolean[] | undefined
+   */
+  const vehicleScheduledChargingPlanWeeklyDays = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.frequency.weekly;
+      },
+      set(newValue: boolean[]) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'frequency.weekly', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the SoC when excess PV energy is available at scheduled end time for scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns number | undefined
+   */
+  const vehicleScheduledChargingPlanSocLimit = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.limit.soc_limit;
+      },
+      set(newValue: number) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'limit.soc_limit', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the SoC at scheduled end time for scheduled charge plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns number | undefined
+   */
+  const vehicleScheduledChargingPlanSocScheduled = (
+    chargePointId: number,
+    planId: string,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.limit.soc_scheduled;
+      },
+      set(newValue: number) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'limit.soc_scheduled', true);
+      },
     });
   };
 
@@ -1511,7 +1881,22 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehiclePVChargeFeedInLimit,
     chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleChargeTemplate,
+    // vehicle data
     vehicleList,
+    vehicleAddScheduledChargingPlan,
+    vehicleDeleteScheduledChargingPlan,
+    vehicleScheduledChargingPlans,
+    vehicleToggleScheduledChargingPlanActive,
+    vehicleScheduledChargingPlanCurrent,
+    vehicleScheduledChargingPlanLimitSelected,
+    vehicleScheduledChargingPlanEnergyAmount,
+    vehicleScheduledChargingPlanName,
+    vehicleScheduledChargingPlanTime,
+    vehicleScheduledChargingPlanFrequencySelected,
+    vehicleScheduledChargingPlanOnceDate,
+    vehicleScheduledChargingPlanWeeklyDays,
+    vehicleScheduledChargingPlanSocLimit,
+    vehicleScheduledChargingPlanSocScheduled,
     // Battery data
     batteryIds,
     batteryName,

@@ -3,7 +3,7 @@
     :model-value="props.value"
     @update:model-value="emitValue"
     :color="props.value ? 'positive' : 'negative'"
-    size="lg"
+    :size="props.size"
   />
 </template>
 
@@ -12,6 +12,10 @@ const props = defineProps({
   value: {
     type: Boolean,
     default: false,
+  },
+  size: {
+    type: String,
+    default: 'lg',
   },
 });
 
