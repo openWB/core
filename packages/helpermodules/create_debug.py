@@ -10,7 +10,7 @@ from control import data
 from control.chargepoint.chargepoint import Chargepoint
 import dataclass_utils
 from helpermodules import subdata
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload
@@ -217,7 +217,7 @@ class BrokerContent:
         self.content = ""
 
     def get_broker(self):
-        InternalBrokerClient("processBrokerBranch", self.__on_connect_broker, self.__get_content).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.__on_connect_broker, self.__get_content).start_finite_loop()
         return self.content
 
     def __on_connect_broker(self, client, userdata, flags, rc):
@@ -227,8 +227,8 @@ class BrokerContent:
         self.content += f"{msg.topic} {decode_payload(msg.payload)}\n"
 
     def get_broker_essentials(self):
-        InternalBrokerClient("processBrokerBranch", self.__on_connect_broker_essentials,
-                             self.__get_content).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.__on_connect_broker_essentials,
+                     self.__get_content).start_finite_loop()
         return self.content
 
     def __on_connect_broker_essentials(self, client, userdata, flags, rc):
@@ -247,7 +247,7 @@ class BrokerContent:
         client.subscribe("openWB/optional/et/provider", 2)
 
     def get_bridges(self):
-        InternalBrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_bridges).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_bridges).start_finite_loop()
         return self.content
 
     def __on_connect_bridges(self, client, userdata, flags, rc):

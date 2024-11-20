@@ -20,7 +20,7 @@ from helpermodules import pub
 from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
@@ -104,7 +104,7 @@ class Command:
             # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained
             # Topics empfangen, was zu doppelten Meldungen im Protokoll führt.
             time.sleep(1)
-            self.internal_broker_client = InternalBrokerClient("command", self.on_connect, self.on_message)
+            self.internal_broker_client = BrokerClient("command", self.on_connect, self.on_message)
             self.internal_broker_client.start_infinite_loop()
         except Exception:
             log.exception("Fehler im Command-Modul")
@@ -849,18 +849,18 @@ class ProcessBrokerBranch:
 
     def get_payload(self):
         self.payload: str
-        InternalBrokerClient("processBrokerBranch", self.on_connect, self.__get_payload).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.on_connect, self.__get_payload).start_finite_loop()
         return json.loads(self.payload)
 
     def remove_topics(self):
         """ löscht einen Topic-Zweig auf dem Broker. Payload "" löscht nur ein einzelnes Topic.
         """
-        InternalBrokerClient("processBrokerBranch", self.on_connect, self.__on_message_rm).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_rm).start_finite_loop()
 
     def get_max_id(self) -> List[str]:
         try:
             self.received_topics = []
-            InternalBrokerClient("processBrokerBranch", self.on_connect, self.__on_message_max_id).start_finite_loop()
+            BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_max_id).start_finite_loop()
             return self.received_topics
         except Exception:
             log.exception("Fehler im Command-Modul")
@@ -870,8 +870,8 @@ class ProcessBrokerBranch:
         try:
             self.name = name
             self.mqtt_bridge_exists = False
-            InternalBrokerClient("processBrokerBranch", self.on_connect,
-                                 self.__on_message_mqtt_bridge_exists).start_finite_loop()
+            BrokerClient("processBrokerBranch", self.on_connect,
+                         self.__on_message_mqtt_bridge_exists).start_finite_loop()
             return self.mqtt_bridge_exists
         except Exception:
             log.exception("Fehler im Command-Modul")

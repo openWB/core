@@ -18,7 +18,7 @@ from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from control.optional_data import Ocpp
 from helpermodules import graph, system
 from helpermodules.abstract_plans import AutolockPlan
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
@@ -106,7 +106,7 @@ class SubData:
         self.heartbeat = False
 
     def sub_topics(self):
-        self.internal_broker_client = InternalBrokerClient("mqttsub", self.on_connect, self.on_message)
+        self.internal_broker_client = BrokerClient("mqttsub", self.on_connect, self.on_message)
         self.internal_broker_client.start_infinite_loop()
 
     def disconnect(self) -> None:

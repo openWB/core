@@ -9,7 +9,7 @@ from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from typing import Dict, Optional
 
 from control import data
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules import timecheck
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.topic_parser import decode_payload, get_index
@@ -98,7 +98,7 @@ class LegacySmartHomeLogData:
         self.sh_dict: Dict = {}
         self.sh_names: Dict = {}
         try:
-            InternalBrokerClient("smart-home-logging", self.on_connect, self.on_message).start_finite_loop()
+            BrokerClient("smart-home-logging", self.on_connect, self.on_message).start_finite_loop()
             for topic, payload in self.all_received_topics.items():
                 if re.search("openWB/LegacySmartHome/config/get/Devices/[1-9]/device_configured", topic) is not None:
                     if decode_payload(payload) == 1:

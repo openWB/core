@@ -19,7 +19,7 @@ import dataclass_utils
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
 from helpermodules import hardware_configuration
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.constants import NO_ERROR
 from helpermodules.hardware_configuration import (
     get_hardware_configuration_setting,
@@ -552,7 +552,7 @@ class UpdateConfig:
 
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
-        InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
+        BrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
         try:
             # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
             self.__solve_breaking_changes()

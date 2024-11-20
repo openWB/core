@@ -11,7 +11,7 @@ import paho.mqtt.client as mqtt
 
 import logging
 from helpermodules import hardware_configuration, subdata
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub, pub_single
 from helpermodules.utils.topic_parser import (decode_payload, get_index, get_index_position, get_second_index,
                                               get_second_index_position)
@@ -41,7 +41,7 @@ class SetData:
         self.heartbeat = False
 
     def set_data(self):
-        self.internal_broker_client = InternalBrokerClient("mqttset", self.on_connect, self.on_message)
+        self.internal_broker_client = BrokerClient("mqttset", self.on_connect, self.on_message)
         self.event_subdata_initialized.wait()
         log.debug("Subdata initialization completed. Starting setdata loop to broker.")
         self.internal_broker_client.start_infinite_loop()
@@ -847,6 +847,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif ("get/digital_input" in msg.topic or
                   "get/analog_input" in msg.topic or
+                  "get/digital_output" in msg.topic or
+                  "get/analog_output" in msg.topic or
                   "set/digital_output" in msg.topic or
                   "set/analog_output" in msg.topic):
                 self._validate_value(msg, "json")
