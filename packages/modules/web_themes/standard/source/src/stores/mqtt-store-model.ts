@@ -86,3 +86,23 @@ export interface Vehicle {
   id: number;
   name: string;
 }
+
+export interface ScheduledChargingPlan {
+  id: string;
+  active: boolean;
+  frequency: {
+    selected: string;
+    once?: string[];
+    weekly?: boolean[];
+    selected_days?: string[];
+  };
+  current: number;
+  time: string;
+  limit: {
+    selected: string;
+    amount?: number;
+    soc_limit?: number;
+    soc_scheduled?: number;
+  };
+  name: string;
+}
