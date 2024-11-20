@@ -5,7 +5,6 @@
 import logging
 from helpermodules import logger
 from helpermodules.utils import thread_handler
-from modules.internal_chargepoint_handler.gpio import InternalGpioHandler
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
@@ -30,6 +29,7 @@ from helpermodules.pub import Pub
 from helpermodules.utils import exit_after
 from modules import configuration, loadvars, update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
+from modules.internal_chargepoint_handler.gpio import InternalGpioHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
