@@ -8,7 +8,7 @@
           class="col"
         />
       </div>
-      <div class="row items-center q-mb-md">
+      <div class="row items-center">
         <div class="text-subtitle2 q-mr-sm">Aktiv</div>
         <ToggleStandard
           :model-value="plan.active"
@@ -20,6 +20,7 @@
       <div class="row items-center q-mb-md">
         <q-input
           v-model="planTime(plan.id).value"
+          type="time"
           label="Ziel-Uhrzeit"
           class="col"
         />
@@ -231,3 +232,4 @@ const planSocScheduled = (planId: string) =>
     planId,
   );
 </script>
+
