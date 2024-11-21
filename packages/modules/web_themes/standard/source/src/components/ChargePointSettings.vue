@@ -157,6 +157,6 @@ const plans = computed(() =>
 }
 
 :deep(.q-expansion-item__container) .q-item {
-  padding: 1px 3px; /* Reduce from default 8px 16px to 4px 8px */
+  padding: 1px 3px;
 }
 </style>
