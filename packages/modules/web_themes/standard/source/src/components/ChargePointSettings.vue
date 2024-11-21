@@ -39,7 +39,7 @@
 
         <!-- ///////////////// Instant charge settings /////////////////// -->
         <div v-if="chargeMode.value === 'instant_charging'">
-          <ChargePointSofortSettings :charge-point-id="props.chargePointId" />
+          <ChargePointInstantSettings :charge-point-id="props.chargePointId" />
         </div>
 
         <!-- ///////////////// PV charge settings /////////////////// -->
@@ -96,7 +96,7 @@
 import { useQuasar } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { computed, ref, watch } from 'vue';
-import ChargePointSofortSettings from './ChargePointSofortSettings.vue';
+import ChargePointInstantSettings from './ChargePointInstantSettings.vue';
 import ChargePointPVSettings from './ChargePointPVSettings.vue';
 import ChargePointScheduledSettings from './ChargePointScheduledSettings.vue';
 import ChargePointScheduledHeader from './ChargePointScheduledHeader.vue';
