@@ -7,7 +7,7 @@ from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import IoState
 from modules.common.configurable_io import ConfigurableIo
-from modules.internal_chargepoint_handler.add_on.config import AddOn
+from modules.io_devices.add_on.config import AddOn
 
 log = logging.getLogger(__name__)
 has_gpio = True
@@ -22,7 +22,7 @@ except ImportError:
 
 def create_io(config: AddOn):
     def read() -> Tuple[bool, bool]:
-        return LocalIo().get(config.configuration.host)
+        return IoStateManager().get(config.configuration.host)
 
     def write(digital_output: Dict[int, int]):
         if has_gpio:
@@ -42,12 +42,11 @@ def create_io(config: AddOn):
 device_descriptor = DeviceDescriptor(configuration_factory=AddOn)
 
 
-class LocalIo:
+class IoStateManager:
     def __init__(self) -> None:
         self.io_state = IoState()
 
-    def get(self, host: str):
-        self.payload: str
+    def get(self, host: str) -> IoState:
         BrokerClient("processBrokerBranch", self.on_connect, self.on_message, host,
                      1886 if host == "localhost" else 1883).start_finite_loop()
         return self.io_state

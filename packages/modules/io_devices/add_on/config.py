@@ -3,8 +3,8 @@ from modules.common.io_setup import IoDeviceSetup
 
 
 class AddOnConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, host: str = "localhost") -> None:
+        self.host = host
 
 
 def init_input():
