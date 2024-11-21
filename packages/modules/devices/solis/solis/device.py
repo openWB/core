@@ -10,6 +10,7 @@ from modules.devices.solis.solis.bat import SolisBat
 from modules.devices.solis.solis.counter import SolisCounter
 from modules.devices.solis.solis.inverter import SolisInverter
 from modules.devices.solis.solis.config import Solis, SolisBatSetup, SolisCounterSetup, SolisInverterSetup
+from modules.devices.solis.solis.version import SolisVersion
 
 log = logging.getLogger(__name__)
 
@@ -19,10 +20,10 @@ def create_device(device_config: Solis):
         return SolisBat(component_config)
 
     def create_counter_component(component_config: SolisCounterSetup):
-        return SolisCounter(component_config, device_config.configuration.version)
+        return SolisCounter(component_config, SolisVersion(device_config.configuration.version))
 
     def create_inverter_component(component_config: SolisInverterSetup):
-        return SolisInverter(component_config, device_config.configuration.version)
+        return SolisInverter(component_config, SolisVersion(device_config.configuration.version))
 
     def update_components(components: Iterable[Union[SolisBat, SolisCounter, SolisInverter]]):
         with client as c:

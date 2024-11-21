@@ -10,6 +10,7 @@ from modules.devices.good_we.good_we import bat
 from modules.devices.good_we.good_we import counter
 from modules.devices.good_we.good_we import inverter
 from modules.devices.good_we.good_we.config import GoodWe, GoodWeBatSetup, GoodWeCounterSetup, GoodWeInverterSetup
+from modules.devices.good_we.good_we.version import GoodWeVersion
 
 log = logging.getLogger(__name__)
 
@@ -19,17 +20,20 @@ good_we_component_classes = Union[bat.GoodWeBat, counter.GoodWeCounter, inverter
 def create_device(device_config: GoodWe):
     def create_bat_component(component_config: GoodWeBatSetup):
         return bat.GoodWeBat(device_config.configuration.modbus_id,
-                             device_config.configuration.version, device_config.configuration.firmware,
+                             GoodWeVersion(device_config.configuration.version),
+                             device_config.configuration.firmware,
                              component_config, client)
 
     def create_counter_component(component_config: GoodWeCounterSetup):
         return counter.GoodWeCounter(device_config.id, device_config.configuration.modbus_id,
-                                     device_config.configuration.version, device_config.configuration.firmware,
+                                     GoodWeVersion(device_config.configuration.version),
+                                     device_config.configuration.firmware,
                                      component_config, client)
 
     def create_inverter_component(component_config: GoodWeInverterSetup):
         return inverter.GoodWeInverter(device_config.configuration.modbus_id,
-                                       device_config.configuration.version, device_config.configuration.firmware,
+                                       GoodWeVersion(device_config.configuration.version),
+                                       device_config.configuration.firmware,
                                        component_config, client)
 
     def update_components(components: Iterable[good_we_component_classes]):

@@ -5,6 +5,8 @@ import Vue from "@vitejs/plugin-vue";
 
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import rollupNodePolyfills from "rollup-plugin-polyfill-node";
+import terser from '@rollup/plugin-terser';
+
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -19,7 +21,7 @@ export default defineConfig(({ command, mode }) => {
   };
   if (command === "serve") {
     if (mode === "test") {
-      myConfiguration["test"] = {
+      myConfiguration.test = {
         globals: true,
         environment: "jsdom",
       };
@@ -48,7 +50,15 @@ export default defineConfig(({ command, mode }) => {
     );
     myConfiguration.build = {
       rollupOptions: {
-        plugins: [rollupNodePolyfills()],
+        plugins: [
+          rollupNodePolyfills(),
+          mode === "production" ? terser({
+            compress: {
+              drop_console: true,
+              pure_funcs: ['console.debug', 'console.info', 'console.log'],
+            },
+          }) : null,
+        ],
         output: {
           manualChunks(id) {
             if (id.includes("node_modules")) {
