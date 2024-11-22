@@ -835,7 +835,7 @@ class ProcessBrokerBranch:
             return self.ids
         except Exception:
             log.exception("Fehler im Command-Modul")
-            # return []
+            return []
 
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
