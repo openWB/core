@@ -39,6 +39,16 @@ export interface ChargePointConnectedVehicleConfig {
   time_charging_in_use: boolean;
 }
 
+export interface ChargePointConnectedVehicleSoc {
+  fault_str: string;
+  fault_state: string;
+  range_charged: number;
+  range_unit: string;
+  range?: number;
+  soc: number;
+  time_stamp: Date;
+}
+
 export interface ChargePointConnectedVehicleInfo {
   id: number;
   name: string;
