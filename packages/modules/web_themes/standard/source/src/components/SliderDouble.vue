@@ -17,7 +17,7 @@
       />
       <q-slider
         v-model="targetCharge"
-        :min="currentCharge"
+        :min="0"
         :max="100"
         color="light-green-5"
         inner-track-color="blue-grey-2"
@@ -35,23 +35,23 @@
       <div class="col">
         <div>Ladestand</div>
         <div>{{ currentCharge }}%</div>
-        <div>100km</div>
+        <div>--- km</div>
       </div>
       <div class="col text-center">
         <div>Zielzeit</div>
-        <div>keine</div>
+        <div>{{ targetTime }}</div>
       </div>
       <div class="col text-right">
         <div>Ladeziel</div>
         <div>{{ targetCharge }}%</div>
-        <div>360km</div>
+        <div>--- km</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed } from 'vue';
 
 defineOptions({
   name: 'SliderQuasar',
@@ -62,11 +62,24 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  connectedVehicleSoc: {
+    type: Number,
+    default: 0,
+  },
+  targetSoc: {
+    type: Number,
+    default: 0,
+  },
+  targetTime: {
+    type: String,
+    default: 'keine',
+  },
 });
 
-const currentCharge = ref<number>(35);
-const targetCharge = ref<number>(80);
+const currentCharge = computed(() => props.connectedVehicleSoc);
+const targetCharge = computed(() => props.targetSoc);
 </script>
+import { ref } from 'vue';
 
 <style scoped>
 .my-card {
