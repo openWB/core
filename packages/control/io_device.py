@@ -40,7 +40,7 @@ class IoDeviceData:
 
 
 class IoStates:
-    def __init__(self, num: int):
+    def __init__(self, num: Union[int, str]):
         self.num = num
         self.data = IoDeviceData()
 

@@ -650,7 +650,7 @@ class SubData:
                         var.pop("io_states"+index)
                 else:
                     if "io_states"+index not in var:
-                        var["io_states"+index] = io_device.IoStates(int(index))
+                        var["io_states"+index] = io_device.IoStates(index)
                 if re.search("/io/states/[0-9]+/get", msg.topic) is not None:
                     # Sonst werden Dicts als Payload verwendet, aber es wird alles in ein eigenes Attribut gespeichert
                     # Typ ist hier auch kein typing.Dict, sondern ein generisches Dict[int, bool]
