@@ -2,6 +2,7 @@
 import logging
 from typing import Dict, Tuple
 
+from control import data
 from helpermodules.broker import BrokerClient
 from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_device import DeviceDescriptor
@@ -22,7 +23,7 @@ except ImportError:
 
 def create_io(config: AddOn):
     def read() -> Tuple[bool, bool]:
-        return IoStateManager().get(config.configuration.host)
+        return IoStateManager().get(data.data.cp_data[f"cp{config.configuration.cp_num}"].chargepoint_module.config.configuration.ip_address)
 
     def write(digital_output: Dict[int, int]):
         if has_gpio:
