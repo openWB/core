@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, ComputedRef } from 'vue';
 import mqtt, { IClientPublishOptions } from 'mqtt';
 import { QoS } from 'mqtt-packet';
 
@@ -16,6 +16,7 @@ import type {
   ChargePointConnectedVehicleInfo,
   Vehicle,
   ScheduledChargingPlan,
+  ChargePointConnectedVehicleSoc,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -1190,6 +1191,19 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get the charge point connected vehicle SoC data identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns ChargePointConnectedVehicleSoc
+   */
+  const chargePointConnectedVehicleSoc = (chargePointId: number) => {
+    return computed(() => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`,
+      ) as ChargePointConnectedVehicleSoc;
+    });
+  };
+
+  /**
    * Get the charge point connected vehicle charge template index identified by the charge point id
    * @param chargePointId charge point id
    * @returns number
@@ -1513,28 +1527,28 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed(() => {
       const chargeTemplateId =
         chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-      // if (chargeTemplateId === undefined) {
-      //   console.error('chargeTemplateId is undefined');
-      //   return;
-      // }
+      if (chargeTemplateId === undefined) return [];
 
       const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans`;
       const plans = getWildcardValues.value(`${baseTopic}/+`) as Record<
         string,
         Omit<ScheduledChargingPlan, 'id' | 'frequency.selected_days'>
       >;
-      return Object.keys(plans).map((planKey) => {
-        const plan = plans[planKey];
-        const planId = planKey.split('/').pop() || '';
-        return {
-          ...plan,
-          id: planId,
-          frequency: {
-            ...plan.frequency,
-            selected_days: getSelectedDays(plan.frequency.weekly),
-          },
-        } as ScheduledChargingPlan;
-      });
+      //filter used here to prevent undefined values in the plans object due to mqtt topic loading time
+      return Object.keys(plans)
+        .filter((planKey) => plans[planKey] && plans[planKey].frequency)
+        .map((planKey) => {
+          const plan = plans[planKey];
+          const planId = planKey.split('/').pop() || '';
+          return {
+            ...plan,
+            id: planId,
+            frequency: {
+              ...plan.frequency,
+              selected_days: getSelectedDays(plan.frequency.weekly),
+            },
+          } as ScheduledChargingPlan;
+        });
     });
   };
 
@@ -1553,17 +1567,68 @@ export const useMqttStore = defineStore('mqtt', () => {
       : [];
   };
 
+  /**
+   * Toggle the active state of the scheduled charging plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns boolean | undefined
+   */
   const vehicleToggleScheduledChargingPlanActive = (
     chargePointId: number,
     planId: string,
   ) => {
-    const chargeTemplateId =
-      chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-    if (chargeTemplateId === undefined) return;
-    const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
-    const currentPlan = getValue.value(baseTopic) as ScheduledChargingPlan;
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.active;
+      },
+      set(newValue: boolean) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'active', true);
+      },
+    });
+  };
 
-    updateTopic(baseTopic, !currentPlan.active, 'active', true);
+  /**
+   * Get the next scheduled charging plan target (scheduled SoC and time) for the current active scheduled charging plans identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object
+   */
+  const vehicleScheduledChargingTarget = (
+    chargePointId: number,
+  ): ComputedRef<{ soc: number; time: string }> => {
+    return computed(() => {
+      const plans = vehicleScheduledChargingPlans(chargePointId)
+        .value as ScheduledChargingPlan[];
+      const activePlans = plans.filter((plan) => plan.active);
+      if (activePlans.length === 0) return { soc: 0, time: 'keine' };
+      // Get current time
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes(); // Convert current time to minutes
+      // Sort plans considering current time
+      const sortedPlans = activePlans.sort((a, b) => {
+        const [hoursA, minutesA] = a.time.split(':').map(Number);
+        const [hoursB, minutesB] = b.time.split(':').map(Number);
+        const timeA = hoursA * 60 + minutesA; // Convert plan time to minutes
+        const timeB = hoursB * 60 + minutesB;
+        // Adjust times if they're earlier than current time (add 24 hours worth of minutes)
+        const adjustedTimeA = timeA <= currentTime ? timeA + 24 * 60 : timeA;
+        const adjustedTimeB = timeB <= currentTime ? timeB + 24 * 60 : timeB;
+        return adjustedTimeA - adjustedTimeB;
+      });
+      const soonestPlan = sortedPlans[0];
+      return {
+        soc:
+          soonestPlan.limit.selected === 'soc'
+            ? (soonestPlan.limit.soc_scheduled as number)
+            : 0,
+        time: soonestPlan.time,
+      };
+    });
   };
 
   /**
@@ -1883,10 +1948,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleChargeTemplate,
     // vehicle data
     vehicleList,
+    chargePointConnectedVehicleSoc,
     vehicleAddScheduledChargingPlan,
     vehicleDeleteScheduledChargingPlan,
     vehicleScheduledChargingPlans,
     vehicleToggleScheduledChargingPlanActive,
+    vehicleScheduledChargingTarget,
     vehicleScheduledChargingPlanCurrent,
     vehicleScheduledChargingPlanLimitSelected,
     vehicleScheduledChargingPlanEnergyAmount,

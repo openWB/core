@@ -22,12 +22,12 @@
           <q-badge rounded color="primary" :label="phaseNumber">
             <q-tooltip class="bg-primary">Phasenanzahl</q-tooltip>
           </q-badge>
-          {{ ChargingCurrent + ' A' }}
+          {{ chargingCurrent + ' A' }}
         </div>
         <div class="col q-pa-sm">
           <div class="text-subtitle2">geladen</div>
           <!-- {{ energyCharged }} -->
-          {{ EnergyChargedPlugged }}
+          {{ energyChargedPlugged }}
         </div>
       </div>
       <div class="row items-center q-mt-sm">
@@ -41,11 +41,17 @@
           :readonly="true"
         />
       </div>
-      <SliderQuasar class="q-mt-sm" :readonly="true" />
+      <SliderDouble
+        class="q-mt-sm"
+        :readonly="true"
+        :connected-vehicle-soc="connectedVehicleSoc"
+        :target-soc="targetSoc"
+        :target-time="targeTime"
+      />
     </q-card-section>
   </q-card>
 
-  <!-- //////////////////////  Settings popup dialog  //////////////////// -->
+  <!-- //////////////////////  Settings popup dialog   //////////////////// -->
   <ChargePointSettings
     :chargePointId="props.chargePointId"
     v-model="settingsVisible"
@@ -55,7 +61,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import SliderQuasar from './SliderQuasar.vue';
+import SliderDouble from './SliderDouble.vue';
 import ChargePointLock from './ChargePointLock.vue';
 import ChargePointStateIcon from './ChargePointStateIcon.vue';
 import ChargePointPriority from './ChargePointPriority.vue';
@@ -76,18 +82,38 @@ const name = computed(() => mqttStore.chargePointName(props.chargePointId));
 const power = computed(() =>
   mqttStore.chargePointPower(props.chargePointId, 'textValue'),
 );
-// const energyCharged = computed(() =>
-//   mqttStore.chargePointEnergyCharged(props.chargePointId, 'textValue'),
-// );
-const EnergyChargedPlugged = computed(() =>
+
+const energyChargedPlugged = computed(() =>
   mqttStore.chargePointEnergyChargedPlugged(props.chargePointId, 'textValue'),
 );
 const phaseNumber = computed(() =>
   mqttStore.chargePointPhaseNumber(props.chargePointId),
 );
-const ChargingCurrent = computed(() =>
+const chargingCurrent = computed(() =>
   mqttStore.chargePointChargingCurrent(props.chargePointId),
 );
+
+const connectedVehicleSoc = computed(() =>
+  Math.round(
+    mqttStore.chargePointConnectedVehicleSoc(props.chargePointId).value?.soc ??
+      0,
+  ),
+);
+
+const targetSoc = computed(
+  () =>
+    mqttStore.vehicleScheduledChargingTarget(props.chargePointId).value?.soc,
+);
+
+const targeTime = computed(() => {
+  const target = mqttStore.vehicleScheduledChargingTarget(
+    props.chargePointId,
+  ).value;
+  if (!target || !target.time) {
+    return 'keine';
+  }
+  return target.time;
+});
 </script>
 
 <style lang="scss" scoped>
