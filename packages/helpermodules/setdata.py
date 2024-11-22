@@ -621,7 +621,8 @@ class SetData:
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
-        elif "/get/evse_current" in msg.topic:
+        elif ("/get/evse_current" in msg.topic or
+              "/get/max_evse_current"):
             self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
