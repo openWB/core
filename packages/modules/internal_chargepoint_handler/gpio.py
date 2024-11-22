@@ -36,4 +36,5 @@ class InternalGpioHandler:
         if has_gpio:
             while True:
                 self.io.read()
+                self.io.store.update()
                 time.sleep(3)
