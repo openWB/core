@@ -825,6 +825,11 @@ class SubData:
                     var["system"].backup_cloud = ConfigurableBackupCloud(config, mod.create_backup_cloud)
             elif "openWB/system/backup_cloud/backup_before_update" in msg.topic:
                 self.set_json_payload(var["system"].data["backup_cloud"], msg)
+            elif ("openWB/system/dataprotection_acknowledged" == msg.topic and
+                    decode_payload(msg.payload) is False):
+                Pub().pub("openWB/set/command/removeCloudBridge/todo", {
+                    "command": "removeCloudBridge"
+                })
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
@@ -843,6 +848,7 @@ class SubData:
                 elif "openWB/system/debug_level" == msg.topic:
                     logging.getLogger().setLevel(decode_payload(msg.payload))
                 self.set_json_payload(var["system"].data, msg)
+
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

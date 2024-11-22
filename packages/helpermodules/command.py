@@ -742,6 +742,16 @@ class Command:
         migrate_data.migrate()
         pub_user_message(payload, connection_id, "Datenübernahme abgeschlossen.", MessageType.SUCCESS)
 
+    def removeCloudBridge(self, connection_id: str, payload: dict):
+        received_id = ProcessBrokerBranch("system/mqtt/bridge/").get_cloud_id()
+        if received_id:
+            Pub().pub("openWB/set/command/removeMqttBridge/todo", {
+                "command": "removeMqttBridge",
+                "data": {
+                    "bridge": int(received_id[0])
+                }
+            })
+
 
 class ErrorHandlingContext:
     def __init__(self, payload: dict, connection_id: str):
@@ -818,6 +828,15 @@ class ProcessBrokerBranch:
             log.exception("Fehler im Command-Modul")
             return self.mqtt_bridge_exists
 
+    def get_cloud_id(self):
+        try:
+            self.ids = []
+            InternalBrokerClient("processBrokerBranch", self.on_connect, self.__on_message_cloud_id).start_finite_loop()
+            return self.ids
+        except Exception:
+            log.exception("Fehler im Command-Modul")
+            # return []
+
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
         """
@@ -873,5 +892,13 @@ class ProcessBrokerBranch:
         try:
             if decode_payload(msg.payload)["name"] == self.name:
                 self.mqtt_bridge_exists = True
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
+
+    def __on_message_cloud_id(self, client, userdata, msg):
+        try:
+            if decode_payload(msg.payload)['remote']['is_openwb_cloud']:
+                id = msg.topic.replace("openWB/"+self.topic_str, "")
+                self.ids.append(id)
         except Exception:
             log.exception("Fehler in ProcessBrokerBranch")
