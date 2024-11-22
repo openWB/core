@@ -1,9 +1,8 @@
 <template>
   <div
     class="row items-center justify-between text-subtitle2 full-width no-wrap"
-    @click.stop
   >
-    <div class="row" @click="togglePlanActive(plan.id)">
+    <div class="row" @click="togglePlanActive = !togglePlanActive">
       <q-icon
         :name="
           plan.frequency.selected === 'daily'
@@ -40,23 +39,11 @@
         {{ plan.limit.amount ? plan.limit.amount / 1000 : '' }}kWh
       </div>
     </div>
-    <q-btn
-      icon="delete"
-      flat
-      round
-      size="md"
-      color="white"
-      @click="
-        mqttStore.vehicleDeleteScheduledChargingPlan(
-          props.chargePointId,
-          plan.id,
-        )
-      "
-    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
 
@@ -67,9 +54,22 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-const togglePlanActive = (planId: string) =>
-  mqttStore.vehicleToggleScheduledChargingPlanActive(
-    props.chargePointId,
-    planId,
-  );
+const togglePlanActive = computed({
+  get() {
+    return mqttStore.vehicleToggleScheduledChargingPlanActive(
+      props.chargePointId,
+      props.plan.id,
+    ).value;
+  },
+  set() {
+    const currentValue = mqttStore.vehicleToggleScheduledChargingPlanActive(
+      props.chargePointId,
+      props.plan.id,
+    ).value;
+    mqttStore.vehicleToggleScheduledChargingPlanActive(
+      props.chargePointId,
+      props.plan.id,
+    ).value = !currentValue;
+  },
+});
 </script>
