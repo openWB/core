@@ -118,6 +118,7 @@ class HandlerAlgorithm:
             if sub.internal_chargepoint_data["global_data"].configured:
                 if not general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat:
                     log.error("Heartbeat für Internen Ladepunkt nicht zurückgesetzt.")
+                    general_internal_chargepoint_handler.event_stop.set()
                     general_internal_chargepoint_handler.event_start.set()
                 else:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
