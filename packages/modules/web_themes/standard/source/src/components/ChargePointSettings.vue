@@ -49,40 +49,9 @@
         <!-- /////////////////  scheduled charging settings /////////////////// -->
 
         <div v-if="chargeMode.value === 'scheduled_charging'">
-          <div class="row justify-between items-center">
-            <div class="text-subtitle2 q-mr-sm q-mt-md">Termine:</div>
-            <q-btn
-              icon="add"
-              color="positive"
-              round
-              size="sm"
-              class="q-mt-md"
-              @click="
-                mqttStore.vehicleAddScheduledChargingPlan(props.chargePointId)
-              "
-            />
-          </div>
-          <q-expansion-item
-            v-for="(plan, index) in plans.value"
-            :key="index"
-            expand-icon-toggle
-            :default-opened="false"
-            class="q-mt-md bg-primary rounded-borders-md"
-            :class="plan.active ? 'active-border' : 'inactive-border'"
-            :header-class="'cursor-pointer'"
-            dense
-          >
-            <template v-slot:header>
-              <ChargePointScheduledHeader
-                :charge-point-id="props.chargePointId"
-                :plan="plan"
-              />
-            </template>
-            <ChargePointScheduledSettings
-              :charge-point-id="props.chargePointId"
-              :plan="plan"
-            />
-          </q-expansion-item>
+          <ChargePointScheduledSettings
+            :charge-point-id="props.chargePointId"
+          />
         </div>
       </q-card-section>
       <q-card-actions align="right">
@@ -99,7 +68,6 @@ import { computed, ref, watch } from 'vue';
 import ChargePointInstantSettings from './ChargePointInstantSettings.vue';
 import ChargePointPVSettings from './ChargePointPVSettings.vue';
 import ChargePointScheduledSettings from './ChargePointScheduledSettings.vue';
-import ChargePointScheduledHeader from './ChargePointScheduledHeader.vue';
 import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointLock from './ChargePointLock.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
@@ -139,24 +107,4 @@ const name = computed(() => mqttStore.chargePointName(props.chargePointId));
 const chargeMode = computed(() =>
   mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId),
 );
-
-const plans = computed(() =>
-  mqttStore.vehicleScheduledChargingPlans(props.chargePointId),
-);
 </script>
-
-<style scoped>
-.rounded-borders-md {
-  border-radius: 10px;
-}
-.active-border {
-  border: 2px solid var(--q-positive);
-}
-.inactive-border {
-  border: 2px solid var(--q-negative);
-}
-
-:deep(.q-expansion-item__container) .q-item {
-  padding: 1px 3px;
-}
-</style>
