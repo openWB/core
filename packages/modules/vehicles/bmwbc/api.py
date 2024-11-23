@@ -22,7 +22,7 @@ from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
 from pathlib import Path
 
-dataPath = "/var/www/html/openWB/data/bmwbc"
+DATA_PATH = "data/bmwbc"
 
 log = logging.getLogger(__name__)
 
@@ -40,13 +40,6 @@ def init_store():
 # load store from file, if no store file exists initialize store structure
 def load_store():
     global storeFile
-    try:
-        Path(dataPath).mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        log.error("init: dataPath creation failed, dataPath: " +
-                  dataPath + ", error=" + str(e))
-        store = init_store()
-        return store
     try:
         with open(storeFile, 'r', encoding='utf-8') as tf:
             store = json.load(tf)
@@ -80,6 +73,16 @@ def dump_json(data: dict, fout: str):
 # ---------------fetch Function called by core ------------------------------------
 async def _fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, vnum: int) -> Union[int, float]:
     global storeFile
+    try:
+        openwbpath = str(Path(__file__).resolve().parents[4])
+        dataPath = openwbpath + '/' + DATA_PATH
+        log.debug("dataPath=" + dataPath)
+        Path(dataPath).mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        log.error("init: dataPath creation failed, dataPath: " +
+                  dataPath + ", error=" + str(e))
+        store = init_store()
+        return store
     storeFile = str(dataPath) + '/soc_bmwbc_vh_' + str(vnum) + '.json'
 
     try:
