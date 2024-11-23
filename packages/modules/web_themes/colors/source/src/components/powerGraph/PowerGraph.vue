@@ -29,18 +29,18 @@
 		<figure v-show="graphData.data.length > 0" id="powergraph" class="p-0 m-0">
 			<svg id="powergraph" :viewBox="'0 0 ' + width + ' ' + height">
 				<!-- Draw the source graph -->
-				<PGSourceGraph
+				<PgSourceGraph
 					:width="width - margin.left - 2 * margin.right"
 					:height="(height - margin.top - margin.bottom) / 2"
 					:margin="margin"
 				/>
-				<PGUsageGraph
+				<PgUsageGraph
 					:width="width - margin.left - 2 * margin.right"
 					:height="(height - margin.top - margin.bottom) / 2"
 					:margin="margin"
 					:stack-order="globalConfig.usageStackOrder"
 				/>
-				<PGXAxis
+				<PgXAxis
 					:width="width - margin.left - 2 * margin.right"
 					:height="height - margin.top - margin.bottom"
 					:margin="margin"
@@ -101,7 +101,7 @@
 					:margin="margin"
 					:data="graphData.data"
 				></PgToolTips>
-				<g id="button" @click="changeStackOrder">
+				<g id="button" type="button" @click="changeStackOrder">
 					<text
 						:x="width - 10"
 						:y="height - 10"
@@ -120,9 +120,9 @@
 
 <script setup lang="ts">
 import WBWidget from '../shared/WBWidget.vue'
-import PGSourceGraph from './PGSourceGraph.vue'
-import PGUsageGraph from './PGUsageGraph.vue'
-import PGXAxis from './PGXAxis.vue'
+import PgSourceGraph from './PgSourceGraph.vue'
+import PgUsageGraph from './PgUsageGraph.vue'
+import PgXAxis from './PgXAxis.vue'
 import { globalData } from '@/assets/js/model'
 import {
 	graphData,
