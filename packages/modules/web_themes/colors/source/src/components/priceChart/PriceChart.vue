@@ -25,6 +25,14 @@
 			unit="ct"
 		/>
 	</div>
+	<div class="d-flex justify-content-between px-3 pb-2 pt-0 mt-0">
+		<button type="button" class="btn btn-sm jumpbutton" @click="priceDown">
+			<span class="fas fa-arrow-left"></span>
+		</button>
+		<button type="button" class="btn btn-sm jumpbutton" @click="priceUp">
+			<span class="fas fa-arrow-right"></span>
+		</button>
+	</div>
 	<div v-if="chargepoint != undefined" class="d-flex justify-content-end">
 		<span class="me-3 pt-0" @click="setMaxPrice">
 			<button
@@ -251,6 +259,36 @@ const chartId = computed(() => {
 		return 'priceChartCanvasGlobal'
 	}
 })
+const prices = computed(() => {
+	let result: number[] = []
+	etData.etPriceList.forEach((p) => {
+		result.push(p)
+	})
+	return result.sort((a, b) => a - b)
+})
+function priceDown() {
+	let lastValue = prices.value[0]
+	for (let p of prices.value) {
+		if (p >= maxPrice.value) {
+			break
+		} else {
+			lastValue = p
+		}
+	}
+	maxPrice.value = lastValue
+}
+function priceUp() {
+	let result = prices.value[0]
+	for (let p of prices.value) {
+		if (p > maxPrice.value) {
+			result = p
+			break
+		} else {
+			result = p
+		}
+	}
+	maxPrice.value = result
+}
 onMounted(() => {
 	needsUpdate.value = !needsUpdate.value
 })
@@ -274,5 +312,10 @@ onMounted(() => {
 .providername {
 	color: var(--color-axis);
 	font-size: 16px;
+}
+.jumpbutton {
+	background-color: var(--color-menu);
+	color: var(--color-bg);
+	border: 0;
 }
 </style>
