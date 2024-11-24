@@ -123,7 +123,6 @@ const plotdata = computed(() => {
 		default:
 		case 'live':
 		case 'today':
-			//result = sources
 			result = addSourceDetails(sources).concat(usage)
 			break
 		case 'day':

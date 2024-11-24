@@ -56,8 +56,8 @@
 		<!-- Car information-->
 		<template #footer>
 			<div v-if="!configmode">
-				<div class="row" >
-					<div class="col" >
+				<div class="row">
+					<div class="col">
 						<div
 							class="carTitleLine d-flex justify-content-between align-items-center"
 						>

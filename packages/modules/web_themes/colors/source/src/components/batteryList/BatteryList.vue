@@ -68,11 +68,11 @@ const statusbg = computed(() => {
 			? 'var(--color-battery)'
 			: 'var(--color-menu)'
 })
-const importedSum = computed (() => {
-	let sum=0
-	batteries.value.forEach(bat => {
+const importedSum = computed(() => {
+	let sum = 0
+	batteries.value.forEach((bat) => {
 		sum += bat.dailyYieldImport
-	})   
+	})
 	return sum
 })
 </script>

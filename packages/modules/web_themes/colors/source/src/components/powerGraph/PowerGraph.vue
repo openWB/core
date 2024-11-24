@@ -52,7 +52,7 @@
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today' ||
 								graphData.graphMode == 'live') &&
-							Object.values(chargePoints).length > 0
+							Object.values(vehicles).filter((v) => v.visible).length > 0
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -64,7 +64,7 @@
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today' ||
 								graphData.graphMode == 'live') &&
-							Object.values(chargePoints).length > 1
+							Object.values(vehicles).filter((v) => v.visible).length > 1
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -139,7 +139,7 @@ import {
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
-import { chargePoints } from '../chargePointList/model'
+import { vehicles } from '../chargePointList/model'
 import PgSelector from './PgSelector.vue'
 import { zoom, type D3ZoomEvent, type Selection, select } from 'd3'
 import { onMounted } from 'vue'
