@@ -54,6 +54,7 @@ import {
 } from 'd3'
 import RangeInput from '../shared/RangeInput.vue'
 import { chargePoints, type ChargePoint } from '../chargePointList/model'
+import { globalConfig } from '@/assets/js/themeConfig'
 const props = defineProps<{
 	chargepoint?: ChargePoint
 	globalview?: boolean
@@ -143,6 +144,23 @@ const linePath = computed(() => {
 	]
 	return generator(points as [number, number][])
 })
+const lowerPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(globalConfig.lowerPriceBound)],
+		[width - margin.right, yScale.value(globalConfig.lowerPriceBound)],
+	]
+	return generator(points as [number, number][])
+})
+const upperPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(globalConfig.upperPriceBound)],
+		[width - margin.right, yScale.value(globalConfig.upperPriceBound)],
+	]
+	return generator(points as [number, number][])
+})
+
 const zeroPath = computed(() => {
 	const generator = line()
 	const points = [
@@ -218,9 +236,12 @@ const draw = computed(() => {
 			.attr('d', zeroPath.value)
 			.attr('stroke', 'var(--color-fg)')
 	}
+	// Line for lower bound
+	svg.append('path').attr('d', lowerPath.value).attr('stroke', 'green')
+	// Line for upper bound
+	svg.append('path').attr('d', upperPath.value).attr('stroke', 'red')
 	// Line for max price
 	svg.append('path').attr('d', linePath.value).attr('stroke', 'yellow')
-
 	return 'PriceChart.vue'
 })
 const chartId = computed(() => {
