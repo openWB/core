@@ -56,12 +56,12 @@
 		<!-- Car information-->
 		<template #footer>
 			<div v-if="!configmode">
-				<div class="row" @click="configmode = !configmode">
-					<div class="col">
+				<div class="row" >
+					<div class="col" >
 						<div
 							class="carTitleLine d-flex justify-content-between align-items-center"
 						>
-							<h3>
+							<h3 @click="configmode = !configmode">
 								<i class="fa-solid fa-sm fa-car me-2" />
 								{{ chargepoint.vehicleName }}
 								<span
