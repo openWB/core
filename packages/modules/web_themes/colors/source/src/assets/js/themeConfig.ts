@@ -305,7 +305,7 @@ export class Config {
 		savePrefs()
 	}
 	setUpperPriceBound(val: number) {
-		this._lowerPriceBound = val
+		this._upperPriceBound = val
 	}
 }
 
