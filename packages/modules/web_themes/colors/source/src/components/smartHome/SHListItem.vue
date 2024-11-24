@@ -2,8 +2,8 @@
 	<WbSubwidget :titlecolor="device.color" :fullwidth="true">
 		<template #title>
 			<span class="devicename">
-			{{ device.name }}
-		</span>
+				{{ device.name }}
+			</span>
 		</template>
 		<template #buttons>
 			<span v-for="(temp, idx) in device.temp" :key="idx">

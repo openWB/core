@@ -186,6 +186,7 @@ function filter(event: PointerEvent | WheelEvent) {
 }
 
 function zoomGraph() {
+	globalConfig.zoomedWidget = 1
 	globalConfig.zoomGraph = !globalConfig.zoomGraph
 }
 

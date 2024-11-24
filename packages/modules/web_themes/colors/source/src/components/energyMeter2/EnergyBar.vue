@@ -14,7 +14,7 @@
 		<!-- Pv fraction bar -->
 		<rect
 			class="bar"
-			:y="(props.yScale(props.id) as number) - props.itemHeight / 2 + 11"
+			:y="(props.yScale(props.id) as number) + props.itemHeight / 2 + 10"
 			x="0"
 			rx="3"
 			ry="3"
@@ -26,7 +26,7 @@
 		<!-- Battery fraction bar  -->
 		<rect
 			class="bar"
-			:y="(props.yScale(props.id) as number) - props.itemHeight / 2 + 11"
+			:y="(props.yScale(props.id) as number) + props.itemHeight / 2 + 10"
 			:x="pvBarheight"
 			rx="3"
 			ry="3"

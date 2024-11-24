@@ -47,6 +47,7 @@ export class Config {
 	animationDuration = 300
 	animationDelay = 100
 	zoomGraph = false
+	zoomedWidget = 1
 	constructor() {}
 	get showRelativeArcs() {
 		return this._showRelativeArcs
