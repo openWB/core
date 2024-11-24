@@ -16,16 +16,14 @@
 			/>
 		</template>
 		<figure id="energymeter" class="p-0 m-0">
-			<svg :viewBox="'0 0 500 ' + Math.abs(height - 50)">
+			<svg :viewBox="'0 0 500 ' + height">
 				<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
 					<!--  Bar Graph -->
 					<BarGraph
 						:plotdata="plotdata"
 						:xscale="xScale"
 						:yscale="yScale"
-						:height="height"
-						:width="width"
-						:margin="margin"
+						:item-height="itemHeight"
 					/>
 					<!-- Y Axis -->
 					<!-- 		<EMYAxis
@@ -44,12 +42,10 @@
 					</text>
 					<EnergyLabels
 						:plotdata="plotdata"
-						:xscale="xScale"
 						:yscale="yScale"
-						:height="height"
 						:width="width"
+						:item-height="itemHeight"
 						:margin="margin"
-						:config="globalConfig"
 					/>
 				</g>
 			</svg>
@@ -88,16 +84,17 @@ import { batteries } from '../batteryList/model'
 
 //state
 const width = 500
-const height = computed(() => {
-	return plotdata.value.length * 65
-	//return 600
-})
+const itemHeight = 60
 const margin = {
-	top: 10,
+	top: 0,
 	bottom: 30,
 	left: 0,
 	right: 0,
 }
+const height = computed(() => {
+	return plotdata.value.length * itemHeight + margin.top + margin.bottom
+	//return 600
+})
 const axisFontsize = 12
 // computed
 const plotdata = computed(() => {
@@ -116,6 +113,7 @@ const plotdata = computed(() => {
 		default:
 		case 'live':
 		case 'today':
+			//result = sources
 			result = addSourceDetails(sources).concat(usage)
 			break
 		case 'day':
@@ -158,9 +156,9 @@ const xScale = computed(() => {
 })
 const yScale = computed(() => {
 	return scaleBand()
-		.range([height.value - margin.top - margin.bottom, 0])
-		.domain(plotdata.value.map((d) => d.name))
-		.padding(0.4)
+		.range([margin.top, height.value - margin.bottom])
+		.domain(plotdata.value.map((d, i) => i.toString()))
+		.padding(0.1)
 })
 const heading = 'Energie'
 
