@@ -69,36 +69,26 @@
 
 					<!-- Show the SoC for the first two cars -->
 					<PMLabel
-						v-if="
-							chargepoints.length > 0 &&
-							vehicles[chargepoints[0].connectedVehicle]
-						"
+						v-if="vehicle1"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
-							trimName(vehicles[chargepoints[0].connectedVehicle].name) +
-							': ' +
-							soc(0) +
-							'%'
+							trimName(vehicle1.name) + ': ' + Math.round(vehicle1.soc) + '%'
 						"
 						:labelcolor="chargepoints[0].color"
 						:anchor="'start'"
 						:config="globalConfig"
 					/>
 					<PMLabel
-						v-if="
-							chargepoints.length > 1 &&
-							vehicles[chargepoints[1].connectedVehicle]
-						"
+						v-if="vehicle2"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
-							trimName(vehicles[chargepoints[1].connectedVehicle].name) +
-							': ' +
-							soc(1) +
-							'%'
+							trimName(vehicle2.name) + ': ' + Math.round(vehicle2.soc) + '%'
 						"
-						:labelcolor="chargepoints[1].color"
+						:labelcolor="
+							chargepoints[1] ? chargepoints[1].color : 'var(--color-charging)'
+						"
 						:anchor="'end'"
 						:config="globalConfig"
 					/>
@@ -251,16 +241,41 @@ function labelCoordinates(item: number) {
 	return labelPositions[scheme.value[item]]
 }
 
-// methods
+const vehicle1 = computed(() => {
+	if (
+		chargepoints.value.length >= 1 &&
+		chargepoints.value[0].connectedVehicle != undefined &&
+		vehicles[chargepoints.value[0].connectedVehicle]
+	) {
+		return vehicles[chargepoints.value[0].connectedVehicle]
+	} else {
+		return undefined
+	}
+})
+const vehicle2 = computed(() => {
+	if (chargepoints.value.length < 1) {
+		return undefined
+	} else if (chargepoints.value.length == 1) {
+		if (Object.values(vehicles).filter((v) => v.visible).length > 1) {
+			const cars = Object.values(vehicles).filter((v) => v.visible)
+			if (cars[0].id == chargepoints.value[0].connectedVehicle) {
+				return cars[1]
+			} else {
+				return cars[0]
+			}
+		} else {
+			return undefined
+		}
+	} else {
+		return vehicles[chargepoints.value[1].connectedVehicle] ?? undefined
+	}
+})
 
-function soc(i: number) {
-	return Math.round(chargepoints.value[i].soc)
-}
+// methods
 function trimName(name: string) {
 	const maxlen = 12
 	return name.length > maxlen ? name.slice(0, maxlen - 1) + '.' : name
 }
-
 const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return Math.round(p * 10) / 10

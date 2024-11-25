@@ -3,6 +3,7 @@ from typing import List, Optional
 from unittest.mock import Mock
 import pytest
 
+from control import counter as counter_module
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter, CounterData, Get
@@ -19,8 +20,8 @@ def general_data_fixture() -> None:
 
 
 @pytest.mark.parametrize("fault_state, expected_loadmanagement_available",
-                         [pytest.param(FaultStateLevel.ERROR, False),
-                          pytest.param(FaultStateLevel.NO_ERROR, True)])
+                         [pytest.param(FaultStateLevel.ERROR, 1652683252),
+                          pytest.param(FaultStateLevel.NO_ERROR, None)])
 def test_set_loadmanagement_state(fault_state: FaultStateLevel,
                                   expected_loadmanagement_available: bool,
                                   monkeypatch,
@@ -28,16 +29,18 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
     # setup
     connected_cps_mock = Mock(return_value=["cp3", "cp4"])
     monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", connected_cps_mock)
+    id_mock = Mock(return_value=0)
+    monkeypatch.setattr(data.data.counter_all_data, "get_id_evu_counter", id_mock)
+    name_mock = Mock(return_value="Test")
+    monkeypatch.setattr(counter_module, "get_component_name_by_id", name_mock)
     counter = Counter(0)
     counter.data.get.fault_state = fault_state
-    counter.data.set.error_counter = 2
 
     # execution
-    counter._set_loadmanagement_state()
+    counter._get_loadmanagement_state()
 
     # evaluation
-    assert data.data.cp_data["cp3"].data.set.loadmanagement_available == expected_loadmanagement_available
-    assert data.data.cp_data["cp4"].data.set.loadmanagement_available == expected_loadmanagement_available
+    assert counter.data.set.error_timer == expected_loadmanagement_available
 
 
 @pytest.mark.parametrize("raw_currents_left, expected_max_exceeding",
@@ -65,10 +68,12 @@ def test_get_unbalanced_load_exceeding(raw_currents_left: List[float],
     assert max_exceeding == expected_max_exceeding
 
 
-@pytest.mark.parametrize("max_currents, expected_raw_currents_left",
-                         [pytest.param([40]*3, [40, 0, 10], id="Überbelastung"),
-                          ([60]*3, [60, 15, 30])])
-def test_set_current_left(max_currents: List[float],
+@pytest.mark.parametrize("loadmanagement_available, max_currents, expected_raw_currents_left",
+                         [pytest.param(True, [40]*3, [40, 0, 10], id="Überbelastung"),
+                          pytest.param(True, [60]*3, [60, 15, 30]),
+                          pytest.param(False, [40]*3, [10.1449275362318853]*3, id="Kein Lastmanagement")])
+def test_set_current_left(loadmanagement_available: bool,
+                          max_currents: List[float],
                           expected_raw_currents_left: List[float],
                           monkeypatch,
                           data_):
@@ -77,10 +82,12 @@ def test_set_current_left(max_currents: List[float],
     monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", get_chargepoints_of_counter_mock)
     counter = Counter(0)
     counter.data.config.max_currents = max_currents
+    counter.data.config.max_total_power = sum(max_currents)*230
+    counter.data.config.max_power_errorcase = 7000
     counter.data.get.currents = [55]*3
 
     # execution
-    counter._set_current_left()
+    counter._set_current_left(loadmanagement_available)
 
     # evaluation
     assert counter.data.set.raw_currents_left == expected_raw_currents_left
@@ -149,12 +156,12 @@ def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixtur
 
 
 @pytest.mark.parametrize("control_range, evu_power, expected_range_offset",
-                         [pytest.param([0, 230], 200, 0, id="Bezug, im Regelbereich"),
-                          pytest.param([0, 230], 290, -115, id="Bezug, über Regelbereich"),
+                         [pytest.param([0, 230], 200, 115, id="Bezug, im Regelbereich"),
+                          pytest.param([0, 230], 290, 115, id="Bezug, über Regelbereich"),
                           pytest.param([0, 230], -100, 115, id="Bezug, unter Regelbereich"),
-                          pytest.param([-230, 0], -104, 0, id="Einspeisung, im Regelbereich"),
+                          pytest.param([-230, 0], -104, -115, id="Einspeisung, im Regelbereich"),
                           pytest.param([-230, 0], 80, -115, id="Einspeisung, über Regelbereich"),
-                          pytest.param([-230, 0], -300, 115, id="Einspeisung, unter Regelbereich"),
+                          pytest.param([-230, 0], -300, -115, id="Einspeisung, unter Regelbereich"),
                           ],
                          )
 def test_control_range(control_range, evu_power, expected_range_offset, general_data_fixture, monkeypatch):

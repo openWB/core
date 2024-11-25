@@ -15,13 +15,13 @@ log = logging.getLogger(__name__)
 
 BUS_SOURCES = ("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/serial0")
 
-METERS = Union[mpm3pm.Mpm3pm, sdm.Sdm630, b23.B23]
+METERS = Union[mpm3pm.Mpm3pm, sdm.Sdm630_72, b23.B23]
 meter_config = NamedTuple("meter_config", [('type', METERS), ('modbus_id', int)])
 CP0_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=5),
-              meter_config(sdm.Sdm630, modbus_id=105),
+              meter_config(sdm.Sdm630_72, modbus_id=105),
               meter_config(b23.B23, modbus_id=201)]
 
-CP1_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=6), meter_config(sdm.Sdm630, modbus_id=106)]
+CP1_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=6), meter_config(sdm.Sdm630_72, modbus_id=106)]
 
 EVSE_ID_CP0 = [1]
 EVSE_ID_TWO_BUSSES_CP1 = [1, 2]
@@ -122,7 +122,10 @@ def get_modbus_client(local_charge_point_num: int,
             # Don't create two clients for one source!
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("LP1 gleiches Device wie LP0")
-            serial_client = created_client_handler.client
+            if created_client_handler:
+                serial_client = created_client_handler.client
+            else:
+                serial_client = ModbusSerialClient_(resolved_devices[0])
             evse_ids = EVSE_ID_ONE_BUS_CP1
     elif counter > 1:
         with ModifyLoglevelContext(log, logging.DEBUG):

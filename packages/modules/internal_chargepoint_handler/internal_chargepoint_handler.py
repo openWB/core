@@ -145,24 +145,34 @@ class InternalChargepointHandler:
         self.event_start = event_start
         self.event_stop = event_stop
         self.heartbeat = False
-        fault_state_info_cp0 = FaultState(
+        self.fault_state_info_cp0 = FaultState(
             ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
                           parent_hostname=global_data.parent_ip))
         fault_state_info_cp1 = FaultState(
             ComponentInfo(hierarchy_id_cp1, "Interner Ladepunkt 1", "chargepoint", parent_id=parent_cp1,
                           parent_hostname=global_data.parent_ip))
-        with SingleComponentUpdateContext(fault_state_info_cp0):
-            # Allgemeine Fehlermeldungen an LP 1:
-            self.cp0_client_handler = client_factory(0, fault_state_info_cp0)
-            self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode, global_data, parent_cp0, hierarchy_id_cp0)
+        with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
             self.init_gpio()
-        if mode == InternalChargepointMode.DUO.value:
-            with SingleComponentUpdateContext(fault_state_info_cp1):
-                log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
-                self.cp1_client_handler = client_factory(1, fault_state_info_cp1, self.cp0_client_handler)
-                self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
-                                              global_data, parent_cp1, hierarchy_id_cp1)
-        else:
+        try:
+            with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
+                # Allgemeine Fehlermeldungen an LP 1:
+                self.cp0_client_handler = client_factory(0, self.fault_state_info_cp0)
+                self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
+                                              global_data, parent_cp0, hierarchy_id_cp0)
+        except Exception:
+            self.cp0_client_handler = None
+            self.cp0 = None
+        try:
+            if mode == InternalChargepointMode.DUO.value:
+                with SingleComponentUpdateContext(fault_state_info_cp1, reraise=True):
+                    log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
+                    self.cp1_client_handler = client_factory(1, fault_state_info_cp1, self.cp0_client_handler)
+                    self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
+                                                  global_data, parent_cp1, hierarchy_id_cp1)
+            else:
+                self.cp1 = None
+                self.cp1_client_handler = None
+        except Exception:
             self.cp1 = None
             self.cp1_client_handler = None
 
@@ -183,29 +193,38 @@ class InternalChargepointHandler:
     def loop(self) -> None:
         def _loop():
             while True:
-                self.heartbeat = True
                 if self.event_stop.is_set():
                     break
                 log.debug("***Start***")
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
                 log.debug(data)
                 log.setLevel(SubData.system_data["system"].data["debug_level"])
-                self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
+                heartbeat_cp0, heartbeat_cp1 = True, True
+                if self.cp0:
+                    heartbeat_cp0 = self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
                 if self.cp1:
-                    self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
+                    heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
+                self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 else False
                 time.sleep(1.1)
-        with SingleComponentUpdateContext(self.cp0.module.fault_state):
-            # Allgemeine Fehlermeldungen an LP 1:
-            if self.cp1_client_handler is None:
+        with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
+            # Allgemeine Fehlermeldungen an LP 1
+            if self.cp0_client_handler is None and self.cp1_client_handler is None:
+                log.error("Kein ClientHandler vorhanden. Beende.")
+            elif self.cp0_client_handler is not None and self.cp1_client_handler is None:
                 with self.cp0_client_handler.client:
+                    _loop()
+            elif self.cp0_client_handler is None and self.cp1_client_handler is not None:
+                with self.cp1_client_handler.client:
                     _loop()
             elif self.cp0_client_handler.client == self.cp1_client_handler.client:
                 with self.cp0_client_handler.client:
                     _loop()
-            else:
+            elif self.cp0_client_handler is not None and self.cp1_client_handler is not None:
                 with self.cp0_client_handler.client:
                     with self.cp1_client_handler.client:
                         _loop()
+            else:
+                log.error("Kein ClientHandler vorhanden. Beende.")
 
 
 class HandlerChargepoint:
@@ -232,7 +251,7 @@ class HandlerChargepoint:
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
 
-    def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> None:
+    def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> bool:
         def __thread_active(thread: Optional[threading.Thread]) -> bool:
             if thread:
                 return thread.is_alive()
@@ -249,6 +268,8 @@ class HandlerChargepoint:
             if global_data.parent_ip is not None:
                 self.update_values.update_values(state, heartbeat_expired)
             self.update_state.update_state(data, heartbeat_expired)
+            return True
+        return False
 
     def _check_heartbeat_expired(self, heartbeat) -> bool:
         if heartbeat+80 < timecheck.create_timestamp():
