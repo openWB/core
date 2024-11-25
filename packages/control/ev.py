@@ -833,7 +833,7 @@ class ChargeTemplate:
                            charging_type: str,
                            ev_template: EvTemplate) -> Tuple[float, float]:
         if plan.limit.selected == "soc":
-            if soc:
+            if soc is not None:
                 missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
             else:
                 raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren.")
