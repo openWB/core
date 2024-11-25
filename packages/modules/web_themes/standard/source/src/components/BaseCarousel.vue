@@ -8,7 +8,7 @@
     padding
     :navigation="groupedItems.length > 1"
     :arrows="groupedItems && $q.screen.gt.xs"
-    class="full-width full-height q-mt-md"
+    class="full-width carousel-height q-mt-md"
     transition-next="slide-left"
     transition-prev="slide-right"
     @mousedown.prevent
@@ -86,5 +86,8 @@ watch(
 }
 .item-container {
   padding: 0.25em;
+}
+.carousel-height{
+  min-height: fit-content;
 }
 </style>
