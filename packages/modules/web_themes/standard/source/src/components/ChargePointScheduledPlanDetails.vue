@@ -152,7 +152,7 @@
             size="sm"
             icon="delete"
             :color="'primary'"
-            label="Delete"
+            label="Löschen"
             @click="deletePlan(props.chargePointId, props.plan.id)"
           />
         </div>
