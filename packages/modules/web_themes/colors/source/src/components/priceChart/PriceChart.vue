@@ -14,7 +14,7 @@
 		</figure>
 	</div>
 	<div v-if="chargepoint != undefined" class="p-3">
-		<RangeInput
+		<!-- <RangeInput
 			v-if="chargepoint.etActive"
 			id="foo"
 			v-model="maxPrice"
@@ -22,15 +22,31 @@
 			:max="95"
 			:step="0.1"
 			:decimals="1"
+			:show-subrange="true"
+			:subrange-min="prices[0]"
+			:subrange-max="prices[prices.length -1]"
+			unit="ct"
+		/> -->
+		<RangeInput
+			v-if="chargepoint.etActive"
+			id="foo"
+			v-model="maxPrice"
+			:min="Math.floor(prices[0] - 1)"
+			:max="Math.ceil(prices[prices.length - 1] + 1)"
+			:step="0.1"
+			:decimals="1"
+			:show-subrange="true"
+			:subrange-min="prices[0]"
+			:subrange-max="prices[prices.length - 1]"
 			unit="ct"
 		/>
 	</div>
 	<div class="d-flex justify-content-between px-3 pb-2 pt-0 mt-0">
 		<button type="button" class="btn btn-sm jumpbutton" @click="priceDown">
-			<span class="fas fa-arrow-left"></span>
+			<i class="fa fa-sm fa-arrow-left" />
 		</button>
 		<button type="button" class="btn btn-sm jumpbutton" @click="priceUp">
-			<span class="fas fa-arrow-right"></span>
+			<i class="fa fa-sm fa-arrow-right" />
 		</button>
 	</div>
 	<div v-if="chargepoint != undefined" class="d-flex justify-content-end">
