@@ -17,6 +17,7 @@ export default configure((/* ctx */) => {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: ['app.scss'],
+    cssAddon: true,
 
     // https://github.com/quasarframework/quasar/tree/dev/extras
     extras: [

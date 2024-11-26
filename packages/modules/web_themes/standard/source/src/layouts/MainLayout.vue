@@ -1,16 +1,23 @@
 <template>
   <q-layout view="lHh Lpr lFf" class="centered-container">
-    <q-header elevated>
+    <q-header elevated class="centered-container">
       <q-toolbar>
         <q-btn flat round icon="menu" aria-label="Menu" />
         <q-toolbar-title>openWB</q-toolbar-title>
-        <q-btn
-          flat
-          round
-          :icon="colorModeIcon"
-          @click="toggleColorMode()"
-          aria-label="Color-Mode"
-        />
+        <q-btn-dropdown label="Display" dense unelevated no-caps>
+          <q-list>
+            <q-item
+              v-for="theme in ['light', 'dark', 'custom']"
+              :key="theme"
+              clickable
+              @click="setTheme(theme)"
+              :active="currentTheme === theme"
+              dense
+            >
+              <q-item-section>{{ theme }}</q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
       </q-toolbar>
     </q-header>
 
@@ -22,27 +29,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useQuasar } from 'quasar';
-const $q = useQuasar();
+import { useThemeManager } from 'src/composables/useThemeManager.ts';
 
 defineOptions({
   name: 'MainLayout',
 });
 
-/**
- * Computed property that returns the icon name for the color mode button.
- */
-const colorModeIcon = computed(() => {
-  return $q.dark.isActive ? 'dark_mode' : 'light_mode';
-});
-
-/**
- * Toggles the color mode of the application.
- */
-function toggleColorMode() {
-  $q.dark.toggle();
-}
+const { currentTheme, setTheme } = useThemeManager();
 </script>
 
 <style scoped>
