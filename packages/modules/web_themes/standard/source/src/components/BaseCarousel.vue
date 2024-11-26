@@ -87,7 +87,7 @@ watch(
 .item-container {
   padding: 0.25em;
 }
-.carousel-height{
+.carousel-height {
   min-height: fit-content;
 }
 </style>

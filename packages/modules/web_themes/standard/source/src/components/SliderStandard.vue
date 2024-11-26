@@ -11,7 +11,6 @@
         :step="props.step"
         color="primary"
         style="width: 75%"
-        inner-track-color="blue-grey-2"
         track-size="0.5em"
         thumb-size="1.7em"
         @touchstart.stop

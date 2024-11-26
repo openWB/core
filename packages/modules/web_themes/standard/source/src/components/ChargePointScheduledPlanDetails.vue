@@ -34,12 +34,14 @@
           :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'soc'"
           label="SoC"
+          text-color="$custom1-brown-text"
         />
         <q-btn
           size="sm"
           :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'amount'"
           label="Amount"
+          text-color="$custom1-brown-text"
         />
       </q-btn-group>
       <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
@@ -75,18 +77,21 @@
             :color="planFrequency.value === 'once' ? 'primary' : 'grey'"
             @click="planFrequency.value = 'once'"
             label="Einmalig"
+            text-color="$custom1-brown-text"
           />
           <q-btn
             size="sm"
             :color="planFrequency.value === 'daily' ? 'primary' : 'grey'"
             @click="planFrequency.value = 'daily'"
             label="Täglich"
+            text-color="$custom1-brown-text"
           />
           <q-btn
             size="sm"
             :color="planFrequency.value === 'weekly' ? 'primary' : 'grey'"
             @click="planFrequency.value = 'weekly'"
             label="Wöchentlich"
+            text-color="$custom1-brown-text"
           />
         </q-btn-group>
 
@@ -152,6 +157,7 @@
             size="sm"
             icon="delete"
             :color="'primary'"
+            text-color="$custom1-brown-text"
             label="Löschen"
             @click="deletePlan(props.chargePointId, props.plan.id)"
           />

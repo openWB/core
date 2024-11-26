@@ -3,7 +3,7 @@
     <div class="text-subtitle2 q-mr-sm q-mt-md">Termine:</div>
     <q-btn
       icon="add"
-      color="positive"
+      color="primary"
       round
       size="sm"
       class="q-mt-md"
@@ -58,7 +58,7 @@ const plans = computed(() =>
   border: 2px solid var(--q-positive);
 }
 .inactive-border {
-  border: 2px solid var(--q-negative);
+  border: 2px solid var(--q-primary);
 }
 :deep(.q-expansion-item__container) .q-item {
   padding: 6px 6px;
