@@ -12,7 +12,7 @@
       size="sm"
       @click="batMode.value = mode.value"
     >
-      <q-tooltip class="bg-secondary">{{ mode.tooltip }}</q-tooltip>
+      <q-tooltip class="bg-primary">{{ mode.tooltip }}</q-tooltip>
     </q-btn>
   </q-btn-group>
 </template>
@@ -27,21 +27,21 @@ const batModes = [
   {
     value: 'ev_mode',
     label: 'Auto',
-    color: 'secondary',
+    color: 'primary',
     icon: 'directions_car',
     tooltip: 'Auto ',
   },
   {
     value: 'bat_mode',
     label: 'Speicher',
-    color: 'secondary',
+    color: 'primary',
     icon: 'battery_charging_full',
     tooltip: 'Speicher',
   },
   {
     value: 'min_soc_bat_mode',
     label: 'SoC',
-    color: 'secondary',
+    color: 'primary',
     icon: 'battery_charging_full',
     tooltip: 'Minimum Speicher SoC',
   },

@@ -12,6 +12,8 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
+// Default colors
+
 $primary: #1976d2;
 $secondary: #26a69a;
 $accent: #9c27b0;
@@ -23,3 +25,85 @@ $positive: #21ba45;
 $negative: #c10015;
 $info: #31ccec;
 $warning: #f2c037;
+
+//////////////////////////// Custom Theme ////////////////////////////
+
+// Define variables for your custom theme
+$custom1-background-grey: #f3f3f7;
+$custom1-background-grey-2: #eeeef3;
+$custom1-primary: #5c93d1;
+$custom1-secondary: #d2d2d7;
+
+$custom1-positive: #66bd7a;
+$custom1-negative: #db4f5f;
+$custom1-info: #7dc5d4;
+$custom1-warning: #f7b267;
+
+$custom1-accent: #b691bd;
+
+$custom1-brown-text: #524f57;
+$custom1-white: #ffffff;
+
+:root {
+  --custom1-background-grey: #{$custom1-background-grey};
+  --custom1-background-grey-2: #{$custom1-background-grey-2};
+  --custom1-primary: #{$custom1-primary};
+  --custom1-secondary: #{$custom1-secondary};
+  --custom1-positive: #{$custom1-positive};
+  --custom1-negative: #{$custom1-negative};
+  --custom1-info: #{$custom1-info};
+  --custom1-warning: #{$custom1-warning};
+  --custom1-accent: #{$custom1-accent};
+  --custom1-brown-text: #{$custom1-brown-text};
+  --custom1-white: #{$custom1-white};
+}
+
+// Custom Theme
+
+.q-theme--custom {
+  --q-primary: var(--custom1-primary);
+  --q-secondary: var(--custom1-secondary);
+  --q-accent: var(--custom1-accent);
+  --q-positive: var(--custom1-positive);
+  --q-negative: var(--custom1-negative);
+  --q-info: var(--custom1-info);
+  --q-warning: var(--custom1-warning);
+  --q-white: var(--custom1-white);
+  background-color: var(--custom1-background-grey);
+
+  .q-header {
+    background-color: var(--custom1-background-grey-2);
+    color: var(--custom1-brown-text);
+  }
+
+  color: var(--custom1-brown-text); // text color
+
+  .q-tab-panels {
+    background-color: var(--custom1-background-grey-2);
+  }
+  .q-tab {
+    background-color: var(--custom1-background-grey-2);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border: 1px solid var(--custom1-secondary);
+  }
+  .q-tab--active {
+    background-color: darken($custom1-secondary, 2%);
+  }
+  .q-carousel__slide {
+    background-color: var(--custom1-background-grey-2);
+  }
+
+  .q-card {
+    background-color: var(--custom1-secondary);
+  }
+  .q-list {
+    background-color: var(--custom1-background-grey-2);
+  }
+  .q-toggle__thumb:after {
+    background: #e0e0e0;
+  }
+  .q-toggle__inner--truthy .q-toggle__thumb:after {
+    background-color: currentColor;
+  }
+}

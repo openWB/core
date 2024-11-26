@@ -58,9 +58,9 @@ const props = defineProps<{
 const mqttStore = useMqttStore();
 
 const limitModes = [
-  { value: 'none', label: 'keine', color: 'secondary' },
-  { value: 'soc', label: 'EV-SoC', color: 'secondary' },
-  { value: 'amount', label: 'Energiemenge', color: 'secondary' },
+  { value: 'none', label: 'keine', color: 'primary' },
+  { value: 'soc', label: 'EV-SoC', color: 'primary' },
+  { value: 'amount', label: 'Energiemenge', color: 'primary' },
 ];
 
 const instantChargeCurrent = computed(() =>
