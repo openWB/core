@@ -77,21 +77,21 @@
 									class="me-0 fa-solid fa-xs fa-clock ps-1"
 								/>
 							</h3>
-							<WbBadge v-if="soc != null" :bgcolor="batcolor">
+							<WbBadge v-if="chargepoint.isSocConfigured" :bgcolor="batcolor">
 								<BatterySymbol
-									:soc="soc"
+									:soc="soc ?? 0"
 									color="var(--color-bg)"
 									class="me-2"
 								/>
 								<i
-									v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
+									v-if="chargepoint.isSocManual"
 									class="fa-solid fa-sm fas fa-edit"
-									:style="{ color: 'var(--color-menu)' }"
+									:style="{ color: 'var(--color-bg)' }"
 									@click="editSoc = !editSoc"
 								/>
 
 								<i
-									v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual"
+									v-if="!chargepoint.isSocManual"
 									type="button"
 									class="fa-solid fa-sm"
 									:class="
@@ -474,10 +474,6 @@ const editPrice = ref(false)
 
 .fa-coins {
 	color: var(--color-battery);
-}
-
-.fa-edit {
-	color: var(--color-menu);
 }
 
 .socEditor {

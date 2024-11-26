@@ -14,22 +14,9 @@
 		</figure>
 	</div>
 	<div v-if="chargepoint != undefined" class="p-3">
-		<!-- <RangeInput
-			v-if="chargepoint.etActive"
-			id="foo"
-			v-model="maxPrice"
-			:min="-25"
-			:max="95"
-			:step="0.1"
-			:decimals="1"
-			:show-subrange="true"
-			:subrange-min="prices[0]"
-			:subrange-max="prices[prices.length -1]"
-			unit="ct"
-		/> -->
 		<RangeInput
 			v-if="chargepoint.etActive"
-			id="foo"
+			id="pricechart_local"
 			v-model="maxPrice"
 			:min="Math.floor(prices[0] - 1)"
 			:max="Math.ceil(prices[prices.length - 1] + 1)"
