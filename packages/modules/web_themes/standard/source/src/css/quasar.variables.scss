@@ -58,6 +58,8 @@ $negative: #c10015;
 $info: #31ccec;
 $warning: #f2c037;
 
+
+
 // Custom Theme 1 (existing)
 $custom1-background-grey: #eeeef3;
 $custom1-background-grey-2: #eeeef3;
@@ -70,6 +72,9 @@ $custom1-warning: #f7b267;
 $custom1-accent: #b691bd;
 $custom1-brown-text: #524f57;
 $custom1-white: #ffffff;
+$custom1-tab-icon: #5c93d1;
+$custom1-carousel-control: #5c93d1;
+
 
 // Custom Theme 2 (Slate Grey)
 $custom2-background-grey: #f7f8f9;
@@ -83,6 +88,8 @@ $custom2-warning: #b87d43;
 $custom2-accent: #6e788c;
 $custom2-brown-text: #2b3541;
 $custom2-white: #ffffff;
+$custom2-tab-icon: #445975;
+$custom2-carousel-control: #445975;
 
 // Custom Theme 3 (Steel Blue)
 $custom3-background-grey: #f8f9fb;
@@ -96,6 +103,8 @@ $custom3-warning: #e89d4b;
 $custom3-accent: #8c7daf;
 $custom3-brown-text: #2d3748;
 $custom3-white: #ffffff;
+$custom3-tab-icon: #4878b7;
+$custom3-carousel-control: #4878b7;
 
 // Custom Theme 4 (Modern Grey)
 $custom4-background-grey: #f5f6f8;
@@ -109,6 +118,8 @@ $custom4-warning: #d98e44;
 $custom4-accent: #7a7a9c;
 $custom4-brown-text: #2c3645;
 $custom4-white: #ffffff;
+$custom4-tab-icon: #556785;
+$custom4-carousel-control: #556785;
 
 // Custom Theme 5 (Modern Grey)
 $custom5-background-grey: #010322;
@@ -122,6 +133,8 @@ $custom5-warning: #d98e44;
 $custom5-accent: #7a7a9c;
 $custom5-brown-text: #2c3645;
 $custom5-white: #ffffff;
+$custom5-tab-icon: #ffffff;
+$custom5-carousel-control: #FFFFFF;
 
 :root {
   // Custom Theme 1
@@ -136,6 +149,8 @@ $custom5-white: #ffffff;
   --custom1-accent: #{$custom1-accent};
   --custom1-brown-text: #{$custom1-brown-text};
   --custom1-white: #{$custom1-white};
+  --custom1-tab-icon: #{$custom1-tab-icon};
+  --custom1-carousel-control: #{$custom1-carousel-control};
 
   // Custom Theme 2
   --custom2-background-grey: #{$custom2-background-grey};
@@ -149,6 +164,8 @@ $custom5-white: #ffffff;
   --custom2-accent: #{$custom2-accent};
   --custom2-brown-text: #{$custom2-brown-text};
   --custom2-white: #{$custom2-white};
+  --custom2-tab-icon: #{$custom2-tab-icon};
+  --custom2-carousel-control: #{$custom2-carousel-control};
 
   // Custom Theme 3
   --custom3-background-grey: #{$custom3-background-grey};
@@ -162,6 +179,8 @@ $custom5-white: #ffffff;
   --custom3-accent: #{$custom3-accent};
   --custom3-brown-text: #{$custom3-brown-text};
   --custom3-white: #{$custom3-white};
+  --custom3-tab-icon: #{$custom3-tab-icon};
+  --custom3-carousel-control: #{$custom3-carousel-control};
 
   // Custom Theme 4
   --custom4-background-grey: #{$custom4-background-grey};
@@ -175,6 +194,8 @@ $custom5-white: #ffffff;
   --custom4-accent: #{$custom4-accent};
   --custom4-brown-text: #{$custom4-brown-text};
   --custom4-white: #{$custom4-white};
+  --custom4-tab-icon: #{$custom4-tab-icon};
+  --custom4-carousel-control: #{$custom4-carousel-control};
 
   // Custom Theme 5
   --custom5-background-grey: #{$custom5-background-grey};
@@ -188,6 +209,8 @@ $custom5-white: #ffffff;
   --custom5-accent: #{$custom5-accent};
   --custom5-brown-text: #{$custom5-brown-text};
   --custom5-white: #{$custom5-white};
+  --custom5-tab-icon: #{$custom5-tab-icon};
+  --custom5-carousel-control: #{$custom5-carousel-control};
 }
 
 // Theme Classes
@@ -200,6 +223,8 @@ $custom5-white: #ffffff;
   --q-info: var(--custom1-info);
   --q-warning: var(--custom1-warning);
   --q-white: var(--custom1-white);
+  --q-tab-icon: var(--custom1-tab-icon);
+  --q-color-carousel-control: var(--custom1-carousel-control);
   background-color: var(--custom1-background-grey);
   color: var(--custom1-brown-text);
 
@@ -211,11 +236,15 @@ $custom5-white: #ffffff;
   .q-tab-panels {
     background-color: var(--custom1-background-grey-2);
   }
+
   .q-tab {
     background-color: var(--custom1-background-grey-2);
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
     border: 1px solid var(--custom1-secondary);
+  }
+  .q-tab-icon{
+    color: var(--custom1-tab-icon);
   }
   .q-tab--active {
     background-color: darken($custom1-secondary, 2%);
@@ -224,6 +253,15 @@ $custom5-white: #ffffff;
   //   border-left: 1px solid var(--custom1-secondary);
   //   border-right: 1px solid var(--custom1-secondary);
   // }
+  .q-carousel {
+    &__navigation-icon,
+    &__arrow {
+      .q-btn,
+      .q-icon {
+        color: var(--custom1-carousel-control);
+      }
+    }
+  }
   .q-carousel__slide {
     background-color: var(--custom1-background-grey-2);
   }
@@ -251,6 +289,8 @@ $custom5-white: #ffffff;
   --q-info: var(--custom2-info);
   --q-warning: var(--custom2-warning);
   --q-white: var(--custom2-white);
+  --q-tab-icon: var(--custom2-tab-icon);
+  --q-carousel-control: var(--custom2-carousel-control);
   background-color: var(--custom2-background-grey);
   color: var(--custom2-brown-text);
 
@@ -270,6 +310,15 @@ $custom5-white: #ffffff;
   }
   .q-tab--active {
     background-color: darken($custom2-secondary, 2%);
+  }
+  .q-carousel {
+    &__navigation-icon,
+    &__arrow {
+      .q-btn,
+      .q-icon {
+        color: var(--custom2-carousel-control);
+      }
+    }
   }
   .q-carousel__slide {
     background-color: var(--custom2-background-grey-2);
@@ -297,6 +346,8 @@ $custom5-white: #ffffff;
   --q-info: var(--custom3-info);
   --q-warning: var(--custom3-warning);
   --q-white: var(--custom3-white);
+  --q-tab-icon: var(--custom3-tab-icon);
+  --q-carousel-control: var(--custom3-carousel-control);
   background-color: var(--custom3-background-grey);
   color: var(--custom3-brown-text);
 
@@ -316,6 +367,15 @@ $custom5-white: #ffffff;
   }
   .q-tab--active {
     background-color: darken($custom3-secondary, 2%);
+  }
+  .q-carousel {
+    &__navigation-icon,
+    &__arrow {
+      .q-btn,
+      .q-icon {
+        color: var(--custom3-carousel-control);
+      }
+    }
   }
   .q-carousel__slide {
     background-color: var(--custom3-background-grey-2);
@@ -343,6 +403,8 @@ $custom5-white: #ffffff;
   --q-info: var(--custom4-info);
   --q-warning: var(--custom4-warning);
   --q-white: var(--custom4-white);
+  --q-tab-icon: var(--custom4-tab-icon);
+  --q-carousel-control: var(--custom4-carousel-control);
   background-color: var(--custom4-background-grey);
   color: var(--custom4-brown-text);
 
@@ -362,6 +424,15 @@ $custom5-white: #ffffff;
   }
   .q-tab--active {
     background-color: darken($custom4-secondary, 2%);
+  }
+  .q-carousel {
+    &__navigation-icon,
+    &__arrow {
+      .q-btn,
+      .q-icon {
+        color: var(--custom4-carousel-control);
+      }
+    }
   }
   .q-carousel__slide {
     background-color: var(--custom4-background-grey-2);
@@ -389,12 +460,21 @@ $custom5-white: #ffffff;
   --q-info: var(--custom5-info);
   --q-warning: var(--custom5-warning);
   --q-white: var(--custom5-white);
+  --q-tab-icon: var(--custom5-tab-icon);
+  --q-carousel-control: var(--custom5-carousel-control);
   background-color: var(--custom5-background-grey);
   color: var(--custom5-brown-text);
 
   .q-header {
     background-color: var(--custom5-background-grey-2);
-    color: var(--custom5-brown-text);
+
+  }
+  html body.q-theme--custom5 {
+    color: var(--custom5-white);
+  }
+
+  .q-theme--custom5 .q-layout {
+    background-color: var(--custom5-white);
   }
 
   .q-tab-panels {
@@ -409,11 +489,39 @@ $custom5-white: #ffffff;
   .q-tab--active {
     background-color: darken($custom5-secondary, 10%);
   }
+  .q-carousel {
+    &__navigation-icon,
+    &__arrow {
+      .q-btn,
+      .q-icon {
+        color: var(--custom5-carousel-control);
+      }
+    }
+  }
   .q-carousel__slide {
     background-color: var(--custom5-background-grey-2);
+    color: var(--custom5-white) ;
   }
   .q-card {
     background-color: var(--custom5-secondary);
+    color: var(--custom5-white) ;
+  }
+
+  .q-expansion-item__toggle-icon {
+    color: var(--custom5-white);
+  }
+  .q-field__label {
+    color: var(--custom5-white);
+  }
+  input {
+    color: var(--custom5-white);
+  }
+
+  .q-placeholder {
+    color: var(--custom5-white);
+  }
+  .q-material-icons {
+    color: var(--custom5-white);
   }
   .q-list {
     background-color: var(--custom5-background-grey-2);
@@ -425,3 +533,4 @@ $custom5-white: #ffffff;
     background-color: currentColor;
   }
 }
+

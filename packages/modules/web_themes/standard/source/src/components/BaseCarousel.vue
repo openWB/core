@@ -3,7 +3,7 @@
     v-model="currentSlide"
     swipeable
     :animated="animated"
-    control-color="primary"
+     control-color="primary"
     infinite
     padding
     :navigation="groupedItems.length > 1"
