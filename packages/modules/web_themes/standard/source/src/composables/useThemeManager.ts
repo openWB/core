@@ -19,7 +19,7 @@ export function useThemeManager() {
     );
     document.body.classList.add(`q-theme--${theme}`);
 
-    if (theme === 'dark' || theme === 'custom5') {
+    if (theme === 'dark' ) {
       $q.dark.set(true);
     } else {
       $q.dark.set(false);
