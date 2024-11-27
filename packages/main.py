@@ -191,7 +191,6 @@ try:
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
     rfid = RfidReader()
-    gpio = InternalGpioHandler()
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
@@ -215,6 +214,8 @@ try:
     event_jobs_running = threading.Event()
     event_jobs_running.set()
     event_update_soc = threading.Event()
+    event_restart_gpio = threading.Event()
+    gpio = InternalGpioHandler(event_restart_gpio)
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc(event_update_soc)
     set = setdata.SetData(event_ev_template, event_charge_template,
@@ -230,7 +231,7 @@ try:
                           event_update_config_completed,
                           event_update_soc,
                           event_soc,
-                          event_jobs_running, event_modbus_server)
+                          event_jobs_running, event_modbus_server, event_restart_gpio)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
