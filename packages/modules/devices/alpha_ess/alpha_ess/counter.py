@@ -17,20 +17,17 @@ class AlphaEssCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, AlphaEssCounterSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
                  device_config: AlphaEssConfiguration,
                  modbus_id: int) -> None:
         self.component_config = dataclass_from_dict(AlphaEssCounterSetup, component_config)
-        self.__tcp_client = tcp_client
         self.__device_config = device_config
         self.__modbus_id = modbus_id
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self):
+    def update(self, client: modbus.ModbusTcpClient_):
         time.sleep(0.1)
-        factory_method = self.__get_values_factory()
-        counter_state = factory_method(self.__modbus_id)
+        counter_state = self.__get_values_factory(client)
         self.store.set(counter_state)
 
     def __get_values_factory(self) -> Callable[[int], CounterState]:
@@ -39,13 +36,13 @@ class AlphaEssCounter(AbstractCounter):
         else:
             return self.__get_values_since_v123
 
-    def __get_values_before_v123(self, unit: int) -> CounterState:
-        power, exported, imported = self.__tcp_client.read_holding_registers(
-            0x6, [modbus.ModbusDataType.INT_32] * 3, unit=unit)
+    def __get_values_before_v123(self, client: modbus.ModbusTcpClient_) -> CounterState:
+        power, exported, imported = client.read_holding_registers(
+            0x6, [modbus.ModbusDataType.INT_32] * 3, unit=self.__modbus_id)
         exported *= 10
         imported *= 10
-        currents = [val / 230 for val in self.__tcp_client.read_holding_registers(
-            0x0000, [ModbusDataType.INT_32]*3, unit=unit)]
+        currents = [val / 230 for val in client.read_holding_registers(
+            0x0000, [ModbusDataType.INT_32]*3, unit=self.__modbus_id)]
 
         counter_state = CounterState(
             currents=currents,
@@ -55,13 +52,14 @@ class AlphaEssCounter(AbstractCounter):
         )
         return counter_state
 
-    def __get_values_since_v123(self, unit: int) -> CounterState:
-        power = self.__tcp_client.read_holding_registers(0x0021, ModbusDataType.INT_32, unit=unit)
+    def __get_values_since_v123(self, client: modbus.ModbusTcpClient_) -> CounterState:
+        power = client.read_holding_registers(0x0021, ModbusDataType.INT_32, unit=self.__modbus_id)
         exported, imported = [
-            val * 10 for val in self.__tcp_client.read_holding_registers(
-                0x0010, [ModbusDataType.INT_32] * 2, unit=unit)]
-        currents = [val / 1000 for val in self.__tcp_client.read_holding_registers(
-            0x0017, [ModbusDataType.INT_16]*3, unit=unit)]
+            val * 10 for val in client.read_holding_registers(
+                0x0010, [ModbusDataType.INT_32] * 2, unit=self.__modbus_id
+            )]
+        currents = [val / 1000 for val in client.read_holding_registers(
+            0x0017, [ModbusDataType.INT_16]*3, unit=self.__modbus_id)]
 
         counter_state = CounterState(
             currents=currents,
