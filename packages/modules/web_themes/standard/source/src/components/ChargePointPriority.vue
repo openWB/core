@@ -8,7 +8,7 @@
   <q-toggle
     v-else
     v-model="priority"
-    :color="priority ? 'warning' : ''"
+    :color="priority ? 'primary' : ''"
     :checked-icon="icon.on"
     :unchecked-icon="icon.off"
     size="lg"

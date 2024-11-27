@@ -2,7 +2,7 @@
   <q-card class="full-height card-width">
     <q-card-section>
       <div class="row text-h6 items-center text-bold">
-        <q-icon name="battery_full" size="xs" class="q-mr-sm" color="warning" />
+        <q-icon name="battery_full" size="xs" class="q-mr-sm" color="primary" />
         {{ batteryName }}
       </div>
       <div class="row q-mt-sm text-subtitle2 justify-between no-wrap">
@@ -26,7 +26,7 @@
                             : 'battery_full'
             "
             size="sm"
-            color="warning"
+            color="primary"
             class="rotate90Clockwise q-mr-sm"
           />
           <div>SoC:</div>

@@ -11,11 +11,15 @@ export function useThemeManager() {
     document.body.classList.remove(
       'q-theme--light',
       'q-theme--dark',
-      'q-theme--custom',
+      'q-theme--custom1',
+      'q-theme--custom2',
+      'q-theme--custom3',
+      'q-theme--custom4',
+      'q-theme--custom5',
     );
     document.body.classList.add(`q-theme--${theme}`);
 
-    if (theme === 'dark') {
+    if (theme === 'dark' || theme === 'custom5') {
       $q.dark.set(true);
     } else {
       $q.dark.set(false);
