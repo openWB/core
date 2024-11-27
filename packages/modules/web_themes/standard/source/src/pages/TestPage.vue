@@ -8,13 +8,13 @@
     <!-- Navigation Tabs -->
     <q-tabs v-model="tab" dense class="q-tabs__content--align-justify">
       <q-tab name="charge-points" title="Ladepunkte">
-        <q-icon name="ev_station" size="md" color="primary" />
+        <q-icon name="ev_station" size="md" color="primary"/>
       </q-tab>
       <q-tab name="batteries" title="Speicher">
         <q-icon name="battery_full" size="md" color="primary" />
       </q-tab>
       <q-tab name="smartHome" title="SmartHome">
-        <q-icon name="home" size="md" color="primary" />
+        <q-icon name="home" size="md" color="primary"/>
       </q-tab>
     </q-tabs>
     <!-- Tab Panels -->
