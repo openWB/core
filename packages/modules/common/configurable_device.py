@@ -28,9 +28,9 @@ class MultiComponentUpdater:
     def __init__(self, updater: Callable[[List[T_COMPONENT]], None]):
         self.__updater = updater
 
-    def __call__(self, components: Iterable[T_COMPONENT]) -> None:
+    def __call__(self, components: Iterable[T_COMPONENT], error_handler: Callable) -> None:
         components_list = list(components)
-        with MultiComponentUpdateContext(components_list):
+        with MultiComponentUpdateContext(components_list, error_handler):
             if not components:
                 raise FaultState.warning("Keine Komponenten konfiguriert")
             self.__updater(components_list)
@@ -61,15 +61,19 @@ class ComponentFactoryByType(Generic[T_COMPONENT, T_COMPONENT_CONFIG]):
 class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFIG], AbstractDevice):
     def __init__(self,
                  device_config: T_DEVICE_CONFIG,
+                 initialiser: Callable,
                  component_factory: ComponentFactory[Any, T_COMPONENT],
                  component_updater: ComponentUpdater[T_COMPONENT]) -> None:
+        self.__initialiser = initialiser
         self.__component_factory = component_factory
         self.__component_updater = component_updater
         self.device_config = device_config
         self.components: Dict[str, T_COMPONENT] = {}
 
+        self.__initialiser()
+
     def add_component(self, component_config: T_COMPONENT_CONFIG) -> None:
         self.components["component" + str(component_config.id)] = self.__component_factory(component_config)
 
     def update(self):
-        self.__component_updater(self.components.values())
+        self.__component_updater(self.components.values(), self.__initialiser)

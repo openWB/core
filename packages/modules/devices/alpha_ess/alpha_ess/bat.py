@@ -20,24 +20,22 @@ log = logging.getLogger(__name__)
 class AlphaEssBat(AbstractBat):
     def __init__(self, device_id: int,
                  component_config: Union[Dict, AlphaEssBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
                  device_config: AlphaEssConfiguration,
                  modbus_id: int) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(AlphaEssBatSetup, component_config)
-        self.__tcp_client = tcp_client
         self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self) -> None:
+    def update(self, client: modbus.ModbusTcpClient_) -> None:
         # keine Unterschiede zwischen den Versionen
 
         time.sleep(0.1)
-        voltage = self.__tcp_client.read_holding_registers(0x0100, ModbusDataType.INT_16, unit=self.__modbus_id)
+        voltage = client.read_holding_registers(0x0100, ModbusDataType.INT_16, unit=self.__modbus_id)
         time.sleep(0.1)
-        current = self.__tcp_client.read_holding_registers(0x0101, ModbusDataType.INT_16, unit=self.__modbus_id)
+        current = client.read_holding_registers(0x0101, ModbusDataType.INT_16, unit=self.__modbus_id)
 
         power = voltage * current * -1 / 100
         log.debug(
@@ -45,7 +43,7 @@ class AlphaEssBat(AbstractBat):
             (power, voltage, current)
         )
         time.sleep(0.1)
-        soc_reg = self.__tcp_client.read_holding_registers(0x0102, ModbusDataType.INT_16, unit=self.__modbus_id)
+        soc_reg = client.read_holding_registers(0x0102, ModbusDataType.INT_16, unit=self.__modbus_id)
         soc = int(soc_reg * 0.1)
 
         imported, exported = self.sim_counter.sim_count(power)
