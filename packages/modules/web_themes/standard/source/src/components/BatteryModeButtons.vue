@@ -6,7 +6,6 @@
       :color="batMode.value === mode.value ? 'primary' : 'grey'"
       :label="mode.label"
       :icon="mode.icon"
-
       size="sm"
       @click="batMode.value = mode.value"
     >
