@@ -26,25 +26,105 @@ $negative: #c10015;
 $info: #31ccec;
 $warning: #f2c037;
 
-//////////////////////////// Custom Theme ////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
 
 // Define variables for your custom theme
-$custom1-background-grey: #f3f3f7;
+// $custom1-background-grey: #f3f3f7;
+// $custom1-background-grey-2: #eeeef3;
+// $custom1-primary: #5c93d1;
+// $custom1-secondary: #d2d2d7;
+
+// $custom1-positive: #66bd7a;
+// $custom1-negative: #db4f5f;
+// $custom1-info: #7dc5d4;
+// $custom1-warning: #f7b267;
+
+// $custom1-accent: #b691bd;
+
+// $custom1-brown-text: #524f57;
+// $custom1-white: #ffffff;
+
+
+// Default Quasar variables remain unchanged at the top
+
+$primary: #1976d2;
+$secondary: #26a69a;
+$accent: #9c27b0;
+$dark: #1d1d1d;
+$dark-page: #121212;
+$positive: #21ba45;
+$negative: #c10015;
+$info: #31ccec;
+$warning: #f2c037;
+
+// Custom Theme 1 (existing)
+$custom1-background-grey: #eeeef3;
 $custom1-background-grey-2: #eeeef3;
 $custom1-primary: #5c93d1;
 $custom1-secondary: #d2d2d7;
-
 $custom1-positive: #66bd7a;
 $custom1-negative: #db4f5f;
 $custom1-info: #7dc5d4;
 $custom1-warning: #f7b267;
-
 $custom1-accent: #b691bd;
-
 $custom1-brown-text: #524f57;
 $custom1-white: #ffffff;
 
+// Custom Theme 2 (Slate Grey)
+$custom2-background-grey: #f7f8f9;
+$custom2-background-grey-2: #ebeef1;
+$custom2-primary: #445975;
+$custom2-secondary: #d5dae0;
+$custom2-positive: #427a5b;
+$custom2-negative: #a94955;
+$custom2-info: #4a7a98;
+$custom2-warning: #b87d43;
+$custom2-accent: #6e788c;
+$custom2-brown-text: #2b3541;
+$custom2-white: #ffffff;
+
+// Custom Theme 3 (Steel Blue)
+$custom3-background-grey: #f8f9fb;
+$custom3-background-grey-2: #edf0f5;
+$custom3-primary: #4878b7;
+$custom3-secondary: #d8dde6;
+$custom3-positive: #50a567;
+$custom3-negative: #d1495b;
+$custom3-info: #3d8cb5;
+$custom3-warning: #e89d4b;
+$custom3-accent: #8c7daf;
+$custom3-brown-text: #2d3748;
+$custom3-white: #ffffff;
+
+// Custom Theme 4 (Modern Grey)
+$custom4-background-grey: #f5f6f8;
+$custom4-background-grey-2: #e8eaef;
+$custom4-primary: #556785;
+$custom4-secondary: #cfd5de;
+$custom4-positive: #3e8f5e;
+$custom4-negative: #c54d57;
+$custom4-info: #4b89aa;
+$custom4-warning: #d98e44;
+$custom4-accent: #7a7a9c;
+$custom4-brown-text: #2c3645;
+$custom4-white: #ffffff;
+
+// Custom Theme 5 (Modern Grey)
+$custom5-background-grey: #010322;
+$custom5-background-grey-2: #010322;
+$custom5-primary: #3874db;
+$custom5-secondary: #28293D;
+$custom5-positive: #3e8f5e;
+$custom5-negative: #c54d57;
+$custom5-info: #4b89aa;
+$custom5-warning: #d98e44;
+$custom5-accent: #7a7a9c;
+$custom5-brown-text: #2c3645;
+$custom5-white: #ffffff;
+
 :root {
+  // Custom Theme 1
   --custom1-background-grey: #{$custom1-background-grey};
   --custom1-background-grey-2: #{$custom1-background-grey-2};
   --custom1-primary: #{$custom1-primary};
@@ -56,11 +136,62 @@ $custom1-white: #ffffff;
   --custom1-accent: #{$custom1-accent};
   --custom1-brown-text: #{$custom1-brown-text};
   --custom1-white: #{$custom1-white};
+
+  // Custom Theme 2
+  --custom2-background-grey: #{$custom2-background-grey};
+  --custom2-background-grey-2: #{$custom2-background-grey-2};
+  --custom2-primary: #{$custom2-primary};
+  --custom2-secondary: #{$custom2-secondary};
+  --custom2-positive: #{$custom2-positive};
+  --custom2-negative: #{$custom2-negative};
+  --custom2-info: #{$custom2-info};
+  --custom2-warning: #{$custom2-warning};
+  --custom2-accent: #{$custom2-accent};
+  --custom2-brown-text: #{$custom2-brown-text};
+  --custom2-white: #{$custom2-white};
+
+  // Custom Theme 3
+  --custom3-background-grey: #{$custom3-background-grey};
+  --custom3-background-grey-2: #{$custom3-background-grey-2};
+  --custom3-primary: #{$custom3-primary};
+  --custom3-secondary: #{$custom3-secondary};
+  --custom3-positive: #{$custom3-positive};
+  --custom3-negative: #{$custom3-negative};
+  --custom3-info: #{$custom3-info};
+  --custom3-warning: #{$custom3-warning};
+  --custom3-accent: #{$custom3-accent};
+  --custom3-brown-text: #{$custom3-brown-text};
+  --custom3-white: #{$custom3-white};
+
+  // Custom Theme 4
+  --custom4-background-grey: #{$custom4-background-grey};
+  --custom4-background-grey-2: #{$custom4-background-grey-2};
+  --custom4-primary: #{$custom4-primary};
+  --custom4-secondary: #{$custom4-secondary};
+  --custom4-positive: #{$custom4-positive};
+  --custom4-negative: #{$custom4-negative};
+  --custom4-info: #{$custom4-info};
+  --custom4-warning: #{$custom4-warning};
+  --custom4-accent: #{$custom4-accent};
+  --custom4-brown-text: #{$custom4-brown-text};
+  --custom4-white: #{$custom4-white};
+
+  // Custom Theme 5
+  --custom5-background-grey: #{$custom5-background-grey};
+  --custom5-background-grey-2: #{$custom5-background-grey-2};
+  --custom5-primary: #{$custom5-primary};
+  --custom5-secondary: #{$custom5-secondary};
+  --custom5-positive: #{$custom5-positive};
+  --custom5-negative: #{$custom5-negative};
+  --custom5-info: #{$custom5-info};
+  --custom5-warning: #{$custom5-warning};
+  --custom5-accent: #{$custom5-accent};
+  --custom5-brown-text: #{$custom5-brown-text};
+  --custom5-white: #{$custom5-white};
 }
 
-// Custom Theme
-
-.q-theme--custom {
+// Theme Classes
+.q-theme--custom1 {
   --q-primary: var(--custom1-primary);
   --q-secondary: var(--custom1-secondary);
   --q-accent: var(--custom1-accent);
@@ -70,13 +201,12 @@ $custom1-white: #ffffff;
   --q-warning: var(--custom1-warning);
   --q-white: var(--custom1-white);
   background-color: var(--custom1-background-grey);
+  color: var(--custom1-brown-text);
 
   .q-header {
     background-color: var(--custom1-background-grey-2);
     color: var(--custom1-brown-text);
   }
-
-  color: var(--custom1-brown-text); // text color
 
   .q-tab-panels {
     background-color: var(--custom1-background-grey-2);
@@ -90,15 +220,203 @@ $custom1-white: #ffffff;
   .q-tab--active {
     background-color: darken($custom1-secondary, 2%);
   }
+  // .q-tab-panels {
+  //   border-left: 1px solid var(--custom1-secondary);
+  //   border-right: 1px solid var(--custom1-secondary);
+  // }
   .q-carousel__slide {
     background-color: var(--custom1-background-grey-2);
   }
-
   .q-card {
     background-color: var(--custom1-secondary);
   }
   .q-list {
     background-color: var(--custom1-background-grey-2);
+  }
+  .q-toggle__thumb:after {
+    background: #e0e0e0;
+  }
+  .q-toggle__inner--truthy .q-toggle__thumb:after {
+    background-color: currentColor;
+  }
+
+}
+
+.q-theme--custom2 {
+  --q-primary: var(--custom2-primary);
+  --q-secondary: var(--custom2-secondary);
+  --q-accent: var(--custom2-accent);
+  --q-positive: var(--custom2-positive);
+  --q-negative: var(--custom2-negative);
+  --q-info: var(--custom2-info);
+  --q-warning: var(--custom2-warning);
+  --q-white: var(--custom2-white);
+  background-color: var(--custom2-background-grey);
+  color: var(--custom2-brown-text);
+
+  .q-header {
+    background-color: var(--custom2-background-grey-2);
+    color: var(--custom2-brown-text);
+  }
+
+  .q-tab-panels {
+    background-color: var(--custom2-background-grey-2);
+  }
+  .q-tab {
+    background-color: var(--custom2-background-grey-2);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border: 1px solid var(--custom2-secondary);
+  }
+  .q-tab--active {
+    background-color: darken($custom2-secondary, 2%);
+  }
+  .q-carousel__slide {
+    background-color: var(--custom2-background-grey-2);
+  }
+  .q-card {
+    background-color: var(--custom2-secondary);
+  }
+  .q-list {
+    background-color: var(--custom2-background-grey-2);
+  }
+  .q-toggle__thumb:after {
+    background: #e0e0e0;
+  }
+  .q-toggle__inner--truthy .q-toggle__thumb:after {
+    background-color: currentColor;
+  }
+}
+
+.q-theme--custom3 {
+  --q-primary: var(--custom3-primary);
+  --q-secondary: var(--custom3-secondary);
+  --q-accent: var(--custom3-accent);
+  --q-positive: var(--custom3-positive);
+  --q-negative: var(--custom3-negative);
+  --q-info: var(--custom3-info);
+  --q-warning: var(--custom3-warning);
+  --q-white: var(--custom3-white);
+  background-color: var(--custom3-background-grey);
+  color: var(--custom3-brown-text);
+
+  .q-header {
+    background-color: var(--custom3-background-grey-2);
+    color: var(--custom3-brown-text);
+  }
+
+  .q-tab-panels {
+    background-color: var(--custom3-background-grey-2);
+  }
+  .q-tab {
+    background-color: var(--custom3-background-grey-2);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border: 1px solid var(--custom3-secondary);
+  }
+  .q-tab--active {
+    background-color: darken($custom3-secondary, 2%);
+  }
+  .q-carousel__slide {
+    background-color: var(--custom3-background-grey-2);
+  }
+  .q-card {
+    background-color: var(--custom3-secondary);
+  }
+  .q-list {
+    background-color: var(--custom3-background-grey-2);
+  }
+  .q-toggle__thumb:after {
+    background: #e0e0e0;
+  }
+  .q-toggle__inner--truthy .q-toggle__thumb:after {
+    background-color: currentColor;
+  }
+}
+
+.q-theme--custom4 {
+  --q-primary: var(--custom4-primary);
+  --q-secondary: var(--custom4-secondary);
+  --q-accent: var(--custom4-accent);
+  --q-positive: var(--custom4-positive);
+  --q-negative: var(--custom4-negative);
+  --q-info: var(--custom4-info);
+  --q-warning: var(--custom4-warning);
+  --q-white: var(--custom4-white);
+  background-color: var(--custom4-background-grey);
+  color: var(--custom4-brown-text);
+
+  .q-header {
+    background-color: var(--custom4-background-grey-2);
+    color: var(--custom4-brown-text);
+  }
+
+  .q-tab-panels {
+    background-color: var(--custom4-background-grey-2);
+  }
+  .q-tab {
+    background-color: var(--custom4-background-grey-2);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border: 1px solid var(--custom4-secondary);
+  }
+  .q-tab--active {
+    background-color: darken($custom4-secondary, 2%);
+  }
+  .q-carousel__slide {
+    background-color: var(--custom4-background-grey-2);
+  }
+  .q-card {
+    background-color: var(--custom4-secondary);
+  }
+  .q-list {
+    background-color: var(--custom4-background-grey-2);
+  }
+  .q-toggle__thumb:after {
+    background: #e0e0e0;
+  }
+  .q-toggle__inner--truthy .q-toggle__thumb:after {
+    background-color: currentColor;
+  }
+}
+
+.q-theme--custom5 {
+  --q-primary: var(--custom5-primary);
+  --q-secondary: var(--custom5-secondary);
+  --q-accent: var(--custom5-accent);
+  --q-positive: var(--custom5-positive);
+  --q-negative: var(--custom5-negative);
+  --q-info: var(--custom5-info);
+  --q-warning: var(--custom5-warning);
+  --q-white: var(--custom5-white);
+  background-color: var(--custom5-background-grey);
+  color: var(--custom5-brown-text);
+
+  .q-header {
+    background-color: var(--custom5-background-grey-2);
+    color: var(--custom5-brown-text);
+  }
+
+  .q-tab-panels {
+    background-color: var(--custom5-background-grey-2);
+  }
+  .q-tab {
+    background-color: var(--custom5-background-grey-2);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border: 1px solid var(--custom5-secondary);
+  }
+  .q-tab--active {
+    background-color: darken($custom5-secondary, 10%);
+  }
+  .q-carousel__slide {
+    background-color: var(--custom5-background-grey-2);
+  }
+  .q-card {
+    background-color: var(--custom5-secondary);
+  }
+  .q-list {
+    background-color: var(--custom5-background-grey-2);
   }
   .q-toggle__thumb:after {
     background: #e0e0e0;

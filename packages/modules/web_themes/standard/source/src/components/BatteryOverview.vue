@@ -7,7 +7,7 @@
             name="battery_full"
             size="sm"
             class="q-mr-sm"
-            color="warning"
+            color="primary"
           />
           Speicher Übersicht
         </div>
@@ -34,7 +34,7 @@
                             : 'battery_full'
             "
             size="sm"
-            color="warning"
+            color="primary"
             class="rotate90Clockwise q-mr-sm"
           />
           <div>SoC:</div>
