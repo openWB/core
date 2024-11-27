@@ -6,7 +6,7 @@
         :min="0"
         :max="100"
         color="green-7"
-        track-size="1em"
+        track-size="1.5em"
         thumb-size="0px"
         readonly
         no-focus
@@ -21,7 +21,7 @@
         :max="100"
         color="light-green-5"
         inner-track-color="blue-grey-2"
-        track-size="1em"
+        track-size="1.5em"
         :thumb-size="props.readonly ? '0' : '2em'"
         :readonly="props.readonly"
         @touchstart.stop
