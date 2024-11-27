@@ -3,12 +3,7 @@
     <q-header elevated class="centered-container">
       <q-toolbar>
         <q-toolbar-title>openWB</q-toolbar-title>
-        <q-btn
-          dense
-          flat
-          round
-          icon="menu"
-        >
+        <q-btn dense flat round icon="menu">
           <q-menu>
             <q-list dense>
               <q-item clickable v-close-popup>
@@ -20,7 +15,15 @@
                 <q-menu anchor="top end" self="top start">
                   <q-list dense>
                     <q-item
-                      v-for="theme in ['light', 'dark', 'custom1', 'custom2', 'custom3', 'custom4', 'custom5']"
+                      v-for="theme in [
+                        'light',
+                        'dark',
+                        'custom1',
+                        'custom2',
+                        'custom3',
+                        'custom4',
+                        'custom5',
+                      ]"
                       :key="theme"
                       clickable
                       @click="setTheme(theme)"
