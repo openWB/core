@@ -26,41 +26,9 @@ $negative: #c10015;
 $info: #31ccec;
 $warning: #f2c037;
 
-
 /////////////////////////////////////////////////////////////////////
 
-// Define variables for your custom theme
-// $custom1-background-grey: #f3f3f7;
-// $custom1-background-grey-2: #eeeef3;
-// $custom1-primary: #5c93d1;
-// $custom1-secondary: #d2d2d7;
-
-// $custom1-positive: #66bd7a;
-// $custom1-negative: #db4f5f;
-// $custom1-info: #7dc5d4;
-// $custom1-warning: #f7b267;
-
-// $custom1-accent: #b691bd;
-
-// $custom1-brown-text: #524f57;
-// $custom1-white: #ffffff;
-
-
-// Default Quasar variables remain unchanged at the top
-
-$primary: #1976d2;
-$secondary: #26a69a;
-$accent: #9c27b0;
-$dark: #1d1d1d;
-$dark-page: #121212;
-$positive: #21ba45;
-$negative: #c10015;
-$info: #31ccec;
-$warning: #f2c037;
-
-
-
-// Custom Theme 1 (existing)
+// Custom Theme 1 (light)
 $custom1-background-grey: #eeeef3;
 $custom1-background-grey-2: #eeeef3;
 $custom1-primary: #5c93d1;
@@ -75,8 +43,7 @@ $custom1-white: #ffffff;
 $custom1-tab-icon: #5c93d1;
 $custom1-carousel-control: #5c93d1;
 
-
-// Custom Theme 2 (Slate Grey)
+// Custom Theme 2
 $custom2-background-grey: #f7f8f9;
 $custom2-background-grey-2: #ebeef1;
 $custom2-primary: #445975;
@@ -91,7 +58,7 @@ $custom2-white: #ffffff;
 $custom2-tab-icon: #445975;
 $custom2-carousel-control: #445975;
 
-// Custom Theme 3 (Steel Blue)
+// Custom Theme 3
 $custom3-background-grey: #f8f9fb;
 $custom3-background-grey-2: #edf0f5;
 $custom3-primary: #4878b7;
@@ -106,7 +73,7 @@ $custom3-white: #ffffff;
 $custom3-tab-icon: #4878b7;
 $custom3-carousel-control: #4878b7;
 
-// Custom Theme 4 (Modern Grey)
+// Custom Theme 4
 $custom4-background-grey: #f5f6f8;
 $custom4-background-grey-2: #e8eaef;
 $custom4-primary: #556785;
@@ -121,11 +88,11 @@ $custom4-white: #ffffff;
 $custom4-tab-icon: #556785;
 $custom4-carousel-control: #556785;
 
-// Custom Theme 5 (Modern Grey)
+// Custom Theme 5 (dark)
 $custom5-background-grey: #010322;
 $custom5-background-grey-2: #010322;
 $custom5-primary: #3874db;
-$custom5-secondary: #28293D;
+$custom5-secondary: #28293d;
 $custom5-positive: #3e8f5e;
 $custom5-negative: #c54d57;
 $custom5-info: #4b89aa;
@@ -134,7 +101,7 @@ $custom5-accent: #7a7a9c;
 $custom5-brown-text: #2c3645;
 $custom5-white: #ffffff;
 $custom5-tab-icon: #ffffff;
-$custom5-carousel-control: #FFFFFF;
+$custom5-carousel-control: #8b8f9f;
 
 :root {
   // Custom Theme 1
@@ -243,7 +210,7 @@ $custom5-carousel-control: #FFFFFF;
     border-top-right-radius: 10px;
     border: 1px solid var(--custom1-secondary);
   }
-  .q-tab-icon{
+  .q-tab-icon {
     color: var(--custom1-tab-icon);
   }
   .q-tab--active {
@@ -277,7 +244,6 @@ $custom5-carousel-control: #FFFFFF;
   .q-toggle__inner--truthy .q-toggle__thumb:after {
     background-color: currentColor;
   }
-
 }
 
 .q-theme--custom2 {
@@ -467,7 +433,6 @@ $custom5-carousel-control: #FFFFFF;
 
   .q-header {
     background-color: var(--custom5-background-grey-2);
-
   }
   html body.q-theme--custom5 {
     color: var(--custom5-white);
@@ -500,11 +465,11 @@ $custom5-carousel-control: #FFFFFF;
   }
   .q-carousel__slide {
     background-color: var(--custom5-background-grey-2);
-    color: var(--custom5-white) ;
+    color: var(--custom5-white);
   }
   .q-card {
     background-color: var(--custom5-secondary);
-    color: var(--custom5-white) ;
+    color: var(--custom5-white);
   }
 
   .q-expansion-item__toggle-icon {
@@ -533,4 +498,3 @@ $custom5-carousel-control: #FFFFFF;
     background-color: currentColor;
   }
 }
-
