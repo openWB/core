@@ -87,7 +87,8 @@ class SubData:
                  event_update_soc: threading.Event,
                  event_soc: threading.Event,
                  event_jobs_running: threading.Event,
-                 event_modbus_server: threading.Event,):
+                 event_modbus_server: threading.Event,
+                 event_restart_gpio: threading.Event,):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
@@ -106,6 +107,7 @@ class SubData:
         self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
         self.event_modbus_server = event_modbus_server
+        self.event_restart_gpio = event_restart_gpio
         self.heartbeat = False
 
     def sub_topics(self):
@@ -899,8 +901,13 @@ class SubData:
                                   str(index)+" gefunden werden.")
                 else:
                     io_config = decode_payload(msg.payload)
-                    dev = importlib.import_module(f".io_devices.{io_config['type']}.api",
-                                                  "modules")
+                    if "/io/local/config" in msg.topic:
+                        self.event_restart_gpio.set()
+                        dev = importlib.import_module(f".internal_chargepoint_handler.{io_config['type']}.api",
+                                                      "modules")
+                    else:
+                        dev = importlib.import_module(f".io_devices.{io_config['type']}.api",
+                                                      "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, io_config)
                     var["io"+index] = dev.create_io(config)
             else:
