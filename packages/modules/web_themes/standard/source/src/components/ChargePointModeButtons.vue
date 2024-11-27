@@ -1,16 +1,18 @@
 <template>
-  <q-btn-group push rounded class="q-mt-md">
+  <q-btn-group  class="q-mt-md">
     <q-btn
       v-for="mode in chargeModes"
       :key="mode.value"
-      :flat="chargeMode.value !== mode.value"
-      :outline="chargeMode.value === mode.value"
-      :glossy="chargeMode.value === mode.value"
+
+      :color="chargeMode.value === mode.value ? 'primary' : 'grey'"
+
       :label="mode.label"
-      :color="mode.color"
+
       size="sm"
       @click="chargeMode.value = mode.value"
     />
+
+
   </q-btn-group>
 </template>
 

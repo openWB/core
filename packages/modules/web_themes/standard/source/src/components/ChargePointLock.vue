@@ -8,7 +8,7 @@
   <q-toggle
     v-else
     v-model="locked"
-    :color="locked ? 'negative' : 'positive'"
+    :color="locked ? 'primary' : 'positive'"
     checked-icon="lock"
     unchecked-icon="lock_open"
     size="lg"

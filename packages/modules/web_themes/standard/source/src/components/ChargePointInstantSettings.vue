@@ -10,15 +10,12 @@
   <!-- <SliderQuasar class="q-mt-sm" :readonly="false" /> -->
   <div class="text-subtitle2 q-mr-sm">Begrenzung</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-    <q-btn-group push rounded class="q-mt-md col">
+    <q-btn-group class="q-mt-md col">
       <q-btn
         v-for="mode in limitModes"
         :key="mode.value"
-        :flat="limitMode.value !== mode.value"
-        :outline="limitMode.value === mode.value"
-        :glossy="limitMode.value === mode.value"
+        :color="limitMode.value === mode.value ? 'primary' : 'grey'"
         :label="mode.label"
-        :color="mode.color"
         size="sm"
         class="col"
         @click="limitMode.value = mode.value"
