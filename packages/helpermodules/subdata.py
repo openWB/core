@@ -687,7 +687,7 @@ class SubData:
                     mod = importlib.import_module(".zabbix.zabbix", "modules")
                     config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
                     # var.zabbix_module = mod.create_config_files(config)
-                    mod.create_config_files(config)
+                    mod.create_config(config)
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
