@@ -535,7 +535,7 @@ class Ev:
                         phases_to_use = new_phase
                         current = new_current
                         log.debug("Phasenumschaltung kann nun durchgeführt werden.")
-                        control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY_EXPIRED
+                        control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
                 else:
                     timestamp_auto_phase_switch = None
                     data.data.counter_all_data.get_evu_counter(

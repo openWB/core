@@ -359,21 +359,20 @@ class Chargepoint(ChargepointRfidMixin):
         phase_switch_required = False
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
         # nicht zwischendurch eine neue Umschaltung getriggert werden.
-        if (self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED or
-                self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY_EXPIRED or
-                self.data.control_parameter.state == ChargepointState.SWITCH_OFF_DELAY):
+        if (((self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED or
+                self.data.control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
             # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
-            if ((self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
+             self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use)) or
                 # Vorgegebene Phasenzahl hat sich geändert
-                 self.check_deviating_contactor_states(self.data.set.phases_to_use,
-                                                       self.data.control_parameter.phases)) and
+            self.check_deviating_contactor_states(self.data.set.phases_to_use,
+                                                  self.data.control_parameter.phases) and
                 # Wenn ein Soll-Strom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
-                    ((self.data.set.current != 0 and self.data.get.charge_state) or
-                     (self.data.set.current != 0 and self.set_current_prev == 0) or
-                     self.data.set.current == 0)):
-                phase_switch_required = True
+            ((self.data.set.current != 0 and self.data.get.charge_state) or
+             (self.data.set.current != 0 and self.set_current_prev == 0) or
+             self.data.set.current == 0)):
+            phase_switch_required = True
         if (self.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
             (self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
                 # Vorgegebene Phasenzahl hat sich geändert
@@ -444,7 +443,9 @@ class Chargepoint(ChargepointRfidMixin):
                 if (phase_switch.phase_switch_thread_alive(self.num) is False and
                         check_timestamp(self.data.control_parameter.timestamp_charge_start,
                                         charging_ev.ev_template.data.keep_charge_active_duration) is False):
-                    self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                    self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
+                    if self._is_phase_switch_required() is False:
+                        self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
@@ -497,7 +498,7 @@ class Chargepoint(ChargepointRfidMixin):
                         else:
                             log.error("Phasenumschaltung an Ladepunkt" + str(self.num) +
                                       " nicht möglich, da gerade eine Umschaltung im Gange ist.")
-                    elif self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY_EXPIRED:
+                    elif self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED:
                         # Wenn keine Phasenumschaltung durchgeführt wird, Status auf CHARGING_ALLOWED setzen, sonst
                         # bleibt PHASE_SWITCH_DELAY_EXPIRED stehen.
                         self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
