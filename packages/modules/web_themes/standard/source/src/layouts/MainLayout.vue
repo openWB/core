@@ -4,7 +4,7 @@
       <q-toolbar>
         <q-toolbar-title>openWB</q-toolbar-title>
         <q-btn dense flat round icon="menu">
-          <q-menu>
+          <q-menu anchor="bottom right" self="top right">
             <q-list dense>
               <q-item clickable v-close-popup>
                 <q-item-section>Konfiguration</q-item-section>
@@ -12,7 +12,7 @@
 
               <q-item clickable>
                 <q-item-section>Darstellung</q-item-section>
-                <q-menu anchor="top end" self="top start">
+                <q-menu anchor="top left" self="top right">
                   <q-list dense>
                     <q-item
                       v-for="theme in [
@@ -35,7 +35,6 @@
                   </q-list>
                 </q-menu>
               </q-item>
-
               <q-item clickable v-close-popup>
                 <q-item-section>Hilfe</q-item-section>
               </q-item>
@@ -44,7 +43,6 @@
         </q-btn>
       </q-toolbar>
     </q-header>
-
     <q-page-container class="column flex">
       <router-view />
     </q-page-container>
@@ -66,5 +64,9 @@ const { currentTheme, setTheme } = useThemeManager();
   max-width: 1000px;
   margin-left: auto;
   margin-right: auto;
+  position: relative;
+}
+.q-page-container {
+  padding-top: 0 !important;
 }
 </style>
