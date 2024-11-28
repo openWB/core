@@ -57,7 +57,7 @@ class ChargepointModule(AbstractChargepoint):
     def _validate_version(self):
         try:
             parsed_answer = get_version_by_telnet(
-                f'{self.VALID_MODELS["type"]}{self.VALID_MODELS["versions"][0]}', self.config.configuration.ip_address)
+                f'{self.VALID_MODELS["type"]} {self.VALID_MODELS["versions"][0]}', self.config.configuration.ip_address)
             for version in self.VALID_MODELS["versions"]:
                 if version in parsed_answer:
                     self.version = True
@@ -79,9 +79,7 @@ class ChargepointModule(AbstractChargepoint):
                         with self._client.client:
                             self._client.check_hardware(self.fault_state)
                             if self.version is False:
-                                raise ValueError(
-                                    "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
-                                    "Bitte den Support kontaktieren.")
+                                self._validate_version()
                             currents = self._client.meter_client.get_currents()
                             phases_in_use = sum(1 for current in currents if current > 3)
                             plug_state, charge_state, _ = self._client.evse_client.get_plug_charge_state()
