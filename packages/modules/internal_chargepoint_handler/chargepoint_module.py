@@ -4,6 +4,7 @@ import time
 from typing import Tuple
 from helpermodules.logger import ModifyLoglevelContext
 
+from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
@@ -36,6 +37,8 @@ class ChargepointModule(AbstractChargepoint):
             parent_hostname=parent_hostname))
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
         self.store = get_chargepoint_value_store(hierarchy_id)
+        self.client_error_context = ErrorTimerContext(
+            f"openWB/set/internal_chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         self.old_plug_state = False
         self.old_phases_in_use = 0
         self.old_chargepoint_state = ChargepointState()
@@ -62,7 +65,10 @@ class ChargepointModule(AbstractChargepoint):
             self.store.update()
             self.store_internal.set(chargepoint_state)
             self.store_internal.update()
-        try:
+        with self.client_error_context:
+            chargepoint_state = self.old_chargepoint_state
+            self.set_current_evse = chargepoint_state.evse_current
+
             self._client.check_hardware(self.fault_state)
             powers, power = self._client.meter_client.get_power()
             if power < self.PLUG_STANDBY_POWER_THRESHOLD:
@@ -81,7 +87,7 @@ class ChargepointModule(AbstractChargepoint):
 
             time.sleep(0.1)
             plug_state, charge_state, self.set_current_evse = self._client.evse_client.get_plug_charge_state()
-            self._client.read_error = 0
+            self.client_error_context.reset_error_counter()
 
             if phase_switch_cp_active:
                 # Während des Threads wird die CP-Leitung unterbrochen, das EV soll aber als angesteckt betrachtet
@@ -109,27 +115,15 @@ class ChargepointModule(AbstractChargepoint):
                 evse_current=self.set_current_evse,
                 serial_number=serial_number
             )
-        except Exception as e:
-            self._client.read_error += 1
-            if self._client.read_error > 10:
-                msg = ("Anhaltender Fehler beim Auslesen von EVSE und/oder Zähler. " +
-                       "Lade- und Stecker-Status werden zurückgesetzt.")
-                chargepoint_state = ChargepointState()
-                chargepoint_state.plug_state = False
-                chargepoint_state.charge_state = False
-                chargepoint_state.imported = self.old_chargepoint_state.imported
-                chargepoint_state.exported = self.old_chargepoint_state.exported
-                store_state(chargepoint_state)
-                e.args += (msg,)
-                raise e
-            else:
-                chargepoint_state = self.old_chargepoint_state
-                self.set_current_evse = chargepoint_state.evse_current
-                # don't log as exception due to sporadic read errors
-                log.debug(__name__ + " " + str(type(e)) + " " + str(e))
+            self.old_chargepoint_state = chargepoint_state
+        if self.client_error_context.error_counter_exceeded():
+            chargepoint_state = ChargepointState()
+            chargepoint_state.plug_state = False
+            chargepoint_state.charge_state = False
+            chargepoint_state.imported = self.old_chargepoint_state.imported
+            chargepoint_state.exported = self.old_chargepoint_state.exported
 
         store_state(chargepoint_state)
-        self.old_chargepoint_state = chargepoint_state
         return chargepoint_state, self.set_current_evse
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:
