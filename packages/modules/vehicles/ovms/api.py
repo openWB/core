@@ -136,8 +136,17 @@ class api:
         self.vehicle = vehicle
         self.ovms_appl_value = OVMS_APPL_VALUE + str(self.vehicle)
         self.config = deepcopy(conf)
+        self.confDict = self.config.__dict__
+        self.confDict["configuration"] = self.config.configuration.__dict__
+        log.debug("self.confDict2=" + dumps(self.confDict, indent=4))
 
-        tokenstr = self.config.configuration.token
+        if 'token' in self.confDict['configuration']:
+            tokenstr = self.confDict['configuration']['token']
+            log.debug("read tokenstr (" + str(tokenstr) + ") from configuration")
+        else:
+            tokenstr = ""
+            log.debug("init tokenstr to (" + str(tokenstr) + ")")
+        log.debug("tokenstr=" + str(tokenstr))
 
         if tokenstr is None or tokenstr == "":
             self.token = self.create_token()
@@ -151,9 +160,6 @@ class api:
             self.token = self.create_token()
         else:
             log.debug("_fetch_soc using token=" + self.token)
-
-        self.confDict = self.config.__dict__
-        self.confDict["configuration"] = self.config.configuration.__dict__
 
         self.cleanup_token()
 
