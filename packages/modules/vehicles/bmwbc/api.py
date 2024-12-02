@@ -22,7 +22,7 @@ from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
 from pathlib import Path
 
-DATA_PATH = "data/bmwbc"
+DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "bmwbc"
 
 log = logging.getLogger(__name__)
 
@@ -74,16 +74,14 @@ def dump_json(data: dict, fout: str):
 async def _fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, vnum: int) -> Union[int, float]:
     global storeFile
     try:
-        openwbpath = str(Path(__file__).resolve().parents[4])
-        dataPath = openwbpath + '/' + DATA_PATH
-        log.debug("dataPath=" + dataPath)
-        Path(dataPath).mkdir(parents=True, exist_ok=True)
+        log.debug("dataPath=" + str(DATA_PATH))
+        DATA_PATH.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         log.error("init: dataPath creation failed, dataPath: " +
-                  dataPath + ", error=" + str(e))
+                  str(DATA_PATH) + ", error=" + str(e))
         store = init_store()
         return store
-    storeFile = str(dataPath) + '/soc_bmwbc_vh_' + str(vnum) + '.json'
+    storeFile = str(DATA_PATH) + '/soc_bmwbc_vh_' + str(vnum) + '.json'
 
     try:
         # set loggin in httpx to WARNING to prevent unwanted messages
