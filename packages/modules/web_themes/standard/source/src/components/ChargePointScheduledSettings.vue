@@ -55,10 +55,10 @@ const plans = computed(() =>
   border-radius: 10px;
 }
 .active-border {
-  border: 2px solid var(--q-positive);
+  border: 4px solid var(--q-positive);
 }
 .inactive-border {
-  border: 2px solid var(--q-primary);
+  border: 4px solid var(--q-negative);
 }
 :deep(.q-expansion-item__container) .q-item {
   padding: 6px 6px;
