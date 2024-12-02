@@ -13,8 +13,9 @@
         "
         size="sm"
         class="q-mr-xs"
+        color="white"
       />
-      <div class="q-mr-xs">
+      <div class="q-mr-xs" style="color: #ffffff;">
         {{
           plan.frequency.selected === 'daily'
             ? 'täglich'
@@ -25,17 +26,18 @@
               : 'einmalig'
         }}
       </div>
-      <q-icon name="schedule" size="sm" class="q-mr-xs" />
-      <div class="q-mr-xs">{{ plan.time }}</div>
+      <q-icon name="schedule" size="sm" class="q-mr-xs" color="white"/>
+      <div class="q-mr-xs" style="color: #ffffff;">{{ plan.time }}</div>
       <q-icon
         :name="plan.limit.selected === 'soc' ? 'battery_full' : 'bolt'"
         size="sm"
         class="q-mr-xs"
+        color="white"
       />
-      <div v-if="plan.limit.selected === 'soc'" class="q-mr-xs">
+      <div v-if="plan.limit.selected === 'soc'" class="q-mr-xs" style="color: #ffffff;">
         {{ plan.limit.soc_scheduled }}%
       </div>
-      <div v-if="plan.limit.selected === 'amount'" class="q-mr-xs">
+      <div v-if="plan.limit.selected === 'amount'" class="q-mr-xs" style="color: #ffffff;">
         {{ plan.limit.amount ? plan.limit.amount / 1000 : '' }}kWh
       </div>
     </div>
