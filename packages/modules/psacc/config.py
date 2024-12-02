@@ -1,5 +1,6 @@
 from typing import Optional
 
+
 class PSACCVehicleSocConfiguration:
     def __init__(self,
                  psacc_server_or_ip: Optional[str] = None,
