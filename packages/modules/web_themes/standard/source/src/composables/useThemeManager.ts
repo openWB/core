@@ -3,7 +3,7 @@ import { useQuasar } from 'quasar';
 
 export function useThemeManager() {
   const $q = useQuasar();
-  const currentTheme = ref('custom'); // Default theme
+  const currentTheme = ref('custom1'); // Default theme
 
   const setTheme = (theme: string) => {
     currentTheme.value = theme;
