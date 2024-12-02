@@ -29,7 +29,7 @@ $warning: #f2c037;
 /////////////////////////////////////////////////////////////////////
 
 // Custom Theme 1 (light)
-$custom1-background-grey: #eeeef3;
+$custom1-background-grey: #e3e3ec;
 $custom1-background-grey-2: #eeeef3;
 $custom1-primary: #5c93d1;
 $custom1-secondary: #d2d2d7;
@@ -89,7 +89,7 @@ $custom4-tab-icon: #556785;
 $custom4-carousel-control: #556785;
 
 // Custom Theme 5 (dark)
-$custom5-background-grey: #010322;
+$custom5-background-grey: #030627;
 $custom5-background-grey-2: #010322;
 $custom5-primary: #3874db;
 $custom5-secondary: #28293d;
@@ -102,6 +102,7 @@ $custom5-brown-text: #2c3645;
 $custom5-white: #ffffff;
 $custom5-tab-icon: #ffffff;
 $custom5-carousel-control: #8b8f9f;
+$custom5-list: #3c3e5c;
 
 :root {
   // Custom Theme 1
@@ -178,6 +179,7 @@ $custom5-carousel-control: #8b8f9f;
   --custom5-white: #{$custom5-white};
   --custom5-tab-icon: #{$custom5-tab-icon};
   --custom5-carousel-control: #{$custom5-carousel-control};
+  --custom5-list: #{$custom5-list};
 }
 
 // Theme Classes
@@ -229,12 +231,31 @@ $custom5-carousel-control: #8b8f9f;
       }
     }
   }
+  .q-carousel__control {
+    .q-btn {
+      &:before {
+        box-shadow: none;
+      }
+      .q-icon {
+        color: var(--custom1-carousel-control);
+
+        &:before {
+          color: var(--custom1-carousel-control);
+          box-shadow: none;
+        }
+      }
+    }
+  }
   .q-carousel__slide {
     background-color: var(--custom1-background-grey-2);
   }
   .q-card {
     background-color: var(--custom1-secondary);
   }
+  .q-expansion-item__toggle-icon {
+    color: var(--custom1-white);
+  }
+
   .q-list {
     background-color: var(--custom1-background-grey-2);
   }
@@ -283,6 +304,21 @@ $custom5-carousel-control: #8b8f9f;
       .q-btn,
       .q-icon {
         color: var(--custom2-carousel-control);
+      }
+    }
+  }
+  .q-carousel__control {
+    .q-btn {
+      &:before {
+        box-shadow: none;
+      }
+      .q-icon {
+        color: var(--custom2-carousel-control);
+
+        &:before {
+          color: var(--custom2-carousel-control);
+          box-shadow: none;
+        }
       }
     }
   }
@@ -343,6 +379,21 @@ $custom5-carousel-control: #8b8f9f;
       }
     }
   }
+  .q-carousel__control {
+    .q-btn {
+      &:before {
+        box-shadow: none;
+      }
+      .q-icon {
+        color: var(--custom3-carousel-control);
+
+        &:before {
+          color: var(--custom3-carousel-control);
+          box-shadow: none;
+        }
+      }
+    }
+  }
   .q-carousel__slide {
     background-color: var(--custom3-background-grey-2);
   }
@@ -400,6 +451,21 @@ $custom5-carousel-control: #8b8f9f;
       }
     }
   }
+  .q-carousel__control {
+    .q-btn {
+      &:before {
+        box-shadow: none;
+      }
+      .q-icon {
+        color: var(--custom4-carousel-control);
+
+        &:before {
+          color: var(--custom4-carousel-control);
+          box-shadow: none;
+        }
+      }
+    }
+  }
   .q-carousel__slide {
     background-color: var(--custom4-background-grey-2);
   }
@@ -434,13 +500,13 @@ $custom5-carousel-control: #8b8f9f;
   .q-header {
     background-color: var(--custom5-background-grey-2);
   }
-  html body.q-theme--custom5 {
-    color: var(--custom5-white);
-  }
+  // html body.q-theme--custom5 {
+  //   color: var(--custom5-white);
+  // }
 
-  .q-theme--custom5 .q-layout {
-    background-color: var(--custom5-white);
-  }
+  // .q-theme--custom5 .q-layout {
+  //   background-color: var(--custom5-white);
+  // }
 
   .q-tab-panels {
     background-color: var(--custom5-background-grey-2);
@@ -452,7 +518,7 @@ $custom5-carousel-control: #8b8f9f;
     border: 1px solid var(--custom5-secondary);
   }
   .q-tab--active {
-    background-color: darken($custom5-secondary, 10%);
+    background-color: lighten($custom5-secondary, 10%);
   }
   .q-carousel {
     &__navigation-icon,
@@ -460,6 +526,21 @@ $custom5-carousel-control: #8b8f9f;
       .q-btn,
       .q-icon {
         color: var(--custom5-carousel-control);
+      }
+    }
+  }
+  .q-carousel__control {
+    .q-btn {
+      &:before {
+        box-shadow: none;
+      }
+      .q-icon {
+        color: var(--custom5-carousel-control);
+
+        &:before {
+          color: var(--custom5-carousel-control);
+          box-shadow: none;
+        }
       }
     }
   }
@@ -471,6 +552,11 @@ $custom5-carousel-control: #8b8f9f;
     background-color: var(--custom5-secondary);
     color: var(--custom5-white);
   }
+  .q-menu {
+    .q-item__section {
+      color: var(--custom5-white) !important;
+    }
+  }
 
   .q-expansion-item__toggle-icon {
     color: var(--custom5-white);
@@ -478,6 +564,12 @@ $custom5-carousel-control: #8b8f9f;
   .q-field__label {
     color: var(--custom5-white);
   }
+  .q-field__control {
+    .q-field__native::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+  }
+
   input {
     color: var(--custom5-white);
   }
@@ -489,7 +581,7 @@ $custom5-carousel-control: #8b8f9f;
     color: var(--custom5-white);
   }
   .q-list {
-    background-color: var(--custom5-background-grey-2);
+    background-color: var(--custom5-list);
   }
   .q-toggle__thumb:after {
     background: #e0e0e0;
