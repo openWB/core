@@ -174,6 +174,7 @@ class Chargepoint(ChargepointRfidMixin):
         else:
             charging_possible = False
             message = "Keine Ladung, da der Ladepunkt gesperrt ist."
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", True)
         return charging_possible, message
 
     def _is_ev_plugged(self) -> Tuple[bool, Optional[str]]:
@@ -231,6 +232,7 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.template.data.disable_after_unplug:
                     self.data.set.manual_lock = True
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
+                    log.debug("/set/manual_lock True")
                 # Ev wurde noch nicht aktualisiert.
                 chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
                 self.data.set.charging_ev_prev = -1
