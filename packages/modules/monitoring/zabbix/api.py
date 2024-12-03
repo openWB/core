@@ -2,7 +2,7 @@
 import re
 from helpermodules.utils.run_command import run_command
 from modules.common.abstract_device import DeviceDescriptor
-from modules.zabbix.config import Zabbix
+from modules.monitoring.zabbix.config import Zabbix
 
 
 key_path = "/etc/zabbix/encrypt.psk"

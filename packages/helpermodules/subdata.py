@@ -682,16 +682,15 @@ class SubData:
                 elif re.search("/optional/ocpp/", msg.topic) is not None:
                     config_dict = decode_payload(msg.payload)
                     var.data.ocpp = dataclass_from_dict(Ocpp, config_dict)
-                elif re.search("/optional/zabbix/", msg.topic) is not None:
-                    # do not reconfigure zabbix if topic is received on startup
+                elif re.search("/optional/monitoring/", msg.topic) is not None:
+                    # do not reconfigure monitoring if topic is received on startup
                     if self.event_subdata_initialized.is_set():
                         config = decode_payload(msg.payload)
-                        mod = importlib.import_module(".zabbix.zabbix", "modules")
+                        mod = importlib.import_module(f".monitoring.{config['type']}.api", "modules")
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
-                        # var.zabbix_module = mod.create_config_files(config)
                         mod.create_config(config)
                     else:
-                        log.debug("skipping zabbix message on startup")
+                        log.debug("skipping monitoring config on startup")
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
