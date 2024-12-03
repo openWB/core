@@ -423,7 +423,8 @@ class SetData:
             elif ("/charge_template" in msg.topic or
                     "/ev_template" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
-            elif "/get/soc_timestamp" in msg.topic:
+            elif ("/get/soc_request_timestamp" in msg.topic or
+                  "/get/soc_timestamp" in msg.topic):
                 self._validate_value(msg, float)
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
