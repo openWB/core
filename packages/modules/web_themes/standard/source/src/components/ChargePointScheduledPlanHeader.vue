@@ -2,7 +2,7 @@
   <div
     class="row items-center justify-between text-subtitle2 full-width no-wrap"
   >
-    <div class="row" @click="togglePlanActive = !togglePlanActive">
+    <div class="row" @click="planActive = !planActive">
       <q-icon
         :name="
           plan.frequency.selected === 'daily'
@@ -15,7 +15,7 @@
         class="q-mr-xs"
         color="white"
       />
-      <div class="q-mr-xs" style="color: #ffffff;">
+      <div class="q-mr-xs" style="color: #ffffff">
         {{
           plan.frequency.selected === 'daily'
             ? 'täglich'
@@ -26,18 +26,26 @@
               : 'einmalig'
         }}
       </div>
-      <q-icon name="schedule" size="sm" class="q-mr-xs" color="white"/>
-      <div class="q-mr-xs" style="color: #ffffff;">{{ plan.time }}</div>
+      <q-icon name="schedule" size="sm" class="q-mr-xs" color="white" />
+      <div class="q-mr-xs" style="color: #ffffff">{{ plan.time }}</div>
       <q-icon
         :name="plan.limit.selected === 'soc' ? 'battery_full' : 'bolt'"
         size="sm"
         class="q-mr-xs"
         color="white"
       />
-      <div v-if="plan.limit.selected === 'soc'" class="q-mr-xs" style="color: #ffffff;">
+      <div
+        v-if="plan.limit.selected === 'soc'"
+        class="q-mr-xs"
+        style="color: #ffffff"
+      >
         {{ plan.limit.soc_scheduled }}%
       </div>
-      <div v-if="plan.limit.selected === 'amount'" class="q-mr-xs" style="color: #ffffff;">
+      <div
+        v-if="plan.limit.selected === 'amount'"
+        class="q-mr-xs"
+        style="color: #ffffff"
+      >
         {{ plan.limit.amount ? plan.limit.amount / 1000 : '' }}kWh
       </div>
     </div>
@@ -56,19 +64,19 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-const togglePlanActive = computed({
+const planActive = computed({
   get() {
-    return mqttStore.vehicleToggleScheduledChargingPlanActive(
+    return mqttStore.vehicleScheduledChargingPlanActive(
       props.chargePointId,
       props.plan.id,
     ).value;
   },
   set() {
-    const currentValue = mqttStore.vehicleToggleScheduledChargingPlanActive(
+    const currentValue = mqttStore.vehicleScheduledChargingPlanActive(
       props.chargePointId,
       props.plan.id,
     ).value;
-    mqttStore.vehicleToggleScheduledChargingPlanActive(
+    mqttStore.vehicleScheduledChargingPlanActive(
       props.chargePointId,
       props.plan.id,
     ).value = !currentValue;
