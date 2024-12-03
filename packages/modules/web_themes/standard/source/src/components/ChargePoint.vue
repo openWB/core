@@ -46,7 +46,7 @@
         :readonly="true"
         :connected-vehicle-soc="connectedVehicleSoc"
         :target-soc="targetSoc"
-        :target-time="targeTime"
+        :target-time="targetTime"
       />
     </q-card-section>
   </q-card>
@@ -105,7 +105,7 @@ const targetSoc = computed(
     mqttStore.vehicleScheduledChargingTarget(props.chargePointId).value?.soc,
 );
 
-const targeTime = computed(() => {
+const targetTime = computed(() => {
   const target = mqttStore.vehicleScheduledChargingTarget(
     props.chargePointId,
   ).value;
