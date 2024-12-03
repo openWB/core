@@ -79,7 +79,6 @@ const props = defineProps({
 const currentCharge = computed(() => props.connectedVehicleSoc);
 const targetCharge = computed(() => props.targetSoc);
 </script>
-import { ref } from 'vue';
 
 <style scoped>
 .my-card {
