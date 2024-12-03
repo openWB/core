@@ -12,6 +12,9 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
+// Import SASS color module
+@use 'sass:color' as color;
+
 // Default colors
 
 $primary: #1976d2;
@@ -230,7 +233,7 @@ $custom5-list: #3c3e5c;
   }
   // Tab active background color
   .q-tab--active {
-    background-color: darken($custom1-secondary, 2%);
+    background-color: color.scale($custom1-secondary, $lightness: -2%);
   }
 
   // Carousel control arrows and buttons
@@ -307,7 +310,7 @@ $custom5-list: #3c3e5c;
   }
   // Tab active background color
   .q-tab--active {
-    background-color: darken($custom2-secondary, 2%);
+    background-color: color.scale($custom2-secondary, $lightness: -2%);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {
@@ -379,7 +382,7 @@ $custom5-list: #3c3e5c;
   }
   // Tab active background color
   .q-tab--active {
-    background-color: darken($custom3-secondary, 2%);
+    background-color: color.scale($custom3-secondary, $lightness: -2%);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {
@@ -451,7 +454,7 @@ $custom5-list: #3c3e5c;
   }
   // Tab active background color
   .q-tab--active {
-    background-color: darken($custom4-secondary, 2%);
+    background-color: color.scale($custom4-secondary, $lightness: -2%);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {
@@ -521,7 +524,7 @@ $custom5-list: #3c3e5c;
     border: 1px solid var(--custom5-secondary);
   }
   .q-tab--active {
-    background-color: lighten($custom5-secondary, 10%);
+    background-color: color.scale($custom5-secondary, $lightness: 10%);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {
