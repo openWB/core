@@ -2,7 +2,7 @@
   <div
     class="row items-center justify-between text-subtitle2 full-width no-wrap"
   >
-    <div class="row" @click="togglePlanActive = !togglePlanActive">
+    <div class="row" @click="planActive = !planActive">
       <q-icon
         :name="
           plan.frequency.selected === 'daily'
@@ -54,22 +54,18 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-const togglePlanActive = computed({
+const planActive = computed({
   get() {
-    return mqttStore.vehicleToggleScheduledChargingPlanActive(
+    return mqttStore.vehicleScheduledChargingPlanActive(
       props.chargePointId,
       props.plan.id,
     ).value;
   },
-  set() {
-    const currentValue = mqttStore.vehicleToggleScheduledChargingPlanActive(
+  set(newValue: boolean) {
+    mqttStore.vehicleScheduledChargingPlanActive(
       props.chargePointId,
       props.plan.id,
-    ).value;
-    mqttStore.vehicleToggleScheduledChargingPlanActive(
-      props.chargePointId,
-      props.plan.id,
-    ).value = !currentValue;
+    ).value = newValue;
   },
 });
 </script>

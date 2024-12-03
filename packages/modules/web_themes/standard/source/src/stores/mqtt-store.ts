@@ -1568,12 +1568,12 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Toggle the active state of the scheduled charging plan identified by the scheduled charge plan id
+   * Get or set the active state of the scheduled charging plan identified by the scheduled charge plan id
    * @param chargePointId charge point id
    * @param planId scheduled plan id
    * @returns boolean | undefined
    */
-  const vehicleToggleScheduledChargingPlanActive = (
+  const vehicleScheduledChargingPlanActive = (
     chargePointId: number,
     planId: string,
   ) => {
@@ -1952,7 +1952,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleAddScheduledChargingPlan,
     vehicleDeleteScheduledChargingPlan,
     vehicleScheduledChargingPlans,
-    vehicleToggleScheduledChargingPlanActive,
+    vehicleScheduledChargingPlanActive,
     vehicleScheduledChargingTarget,
     vehicleScheduledChargingPlanCurrent,
     vehicleScheduledChargingPlanLimitSelected,

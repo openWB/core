@@ -6,11 +6,7 @@
       </div>
       <div class="row items-center">
         <div class="text-subtitle2 q-mr-sm">Aktiv</div>
-        <ToggleStandard
-          v-model="togglePlanActive"
-          :size="'sm'"
-          color="positive"
-        />
+        <ToggleStandard v-model="planActive" :size="'sm'" color="positive" />
       </div>
       <div class="row items-center q-mb-md">
         <q-input
@@ -183,22 +179,18 @@ const mqttStore = useMqttStore();
 
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-const togglePlanActive = computed({
+const planActive = computed({
   get() {
-    return mqttStore.vehicleToggleScheduledChargingPlanActive(
+    return mqttStore.vehicleScheduledChargingPlanActive(
       props.chargePointId,
       props.plan.id,
     ).value;
   },
-  set() {
-    const currentValue = mqttStore.vehicleToggleScheduledChargingPlanActive(
+  set(newValue: boolean) {
+    mqttStore.vehicleScheduledChargingPlanActive(
       props.chargePointId,
       props.plan.id,
-    ).value;
-    mqttStore.vehicleToggleScheduledChargingPlanActive(
-      props.chargePointId,
-      props.plan.id,
-    ).value = !currentValue;
+    ).value = newValue;
   },
 });
 
