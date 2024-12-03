@@ -71,15 +71,11 @@ const planActive = computed({
       props.plan.id,
     ).value;
   },
-  set() {
-    const currentValue = mqttStore.vehicleScheduledChargingPlanActive(
-      props.chargePointId,
-      props.plan.id,
-    ).value;
+  set(newValue: boolean) {
     mqttStore.vehicleScheduledChargingPlanActive(
       props.chargePointId,
       props.plan.id,
-    ).value = !currentValue;
+    ).value = newValue;
   },
 });
 </script>
