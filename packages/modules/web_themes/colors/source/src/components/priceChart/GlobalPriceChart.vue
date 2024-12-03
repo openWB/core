@@ -41,7 +41,9 @@ import {
 	timeFormat,
 	axisLeft,
 	select,
+	line,
 } from 'd3'
+import { globalConfig } from '@/assets/js/themeConfig'
 
 const props = defineProps<{
 	id: string
@@ -90,6 +92,31 @@ const yScale = computed(() => {
 	return scaleLinear()
 		.range([height - margin.bottom, 0])
 		.domain(yDomain.value)
+})
+const lowerPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(globalConfig.lowerPriceBound)],
+		[width - margin.right, yScale.value(globalConfig.lowerPriceBound)],
+	]
+	return generator(points as [number, number][])
+})
+const upperPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(globalConfig.upperPriceBound)],
+		[width - margin.right, yScale.value(globalConfig.upperPriceBound)],
+	]
+	return generator(points as [number, number][])
+})
+
+const zeroPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(0)],
+		[width - margin.right, yScale.value(0)],
+	]
+	return generator(points as [number, number][])
 })
 
 const xAxisGenerator = computed(() => {
@@ -157,6 +184,16 @@ const draw = computed(() => {
 		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+	if (yDomain.value[0] < 0) {
+		svg
+			.append('path')
+			.attr('d', zeroPath.value)
+			.attr('stroke', 'var(--color-fg)')
+	}
+	// Line for lower bound
+	svg.append('path').attr('d', lowerPath.value).attr('stroke', 'green')
+	// Line for upper bound
+	svg.append('path').attr('d', upperPath.value).attr('stroke', 'red')
 
 	// Tooltips
 	const ttips = svg
