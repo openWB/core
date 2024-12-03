@@ -17,7 +17,6 @@ export default configure((/* ctx */) => {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: ['app.scss'],
-    cssAddon: true,
 
     // https://github.com/quasarframework/quasar/tree/dev/extras
     extras: [
@@ -79,9 +78,10 @@ export default configure((/* ctx */) => {
     devServer: {
       // https: true
       open: true, // opens browser window automatically
+      host: '0.0.0.0', // Allow external access
       proxy: {
         '/ws': {
-          target: 'ws://localhost:9001',
+          target: 'ws://0.0.0.0:9001', // Changed from localhost
           ws: true,
         },
       },
