@@ -35,7 +35,7 @@ class Process:
                         cp.initiate_control_pilot_interruption()
                         cp.initiate_phase_switch()
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
-                            control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                            control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
                         self._update_state(cp)
                     else:
                         # LP, an denen nicht geladen werden darf
