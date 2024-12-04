@@ -78,11 +78,9 @@ export default configure((/* ctx */) => {
     devServer: {
       // https: true
       open: true, // opens browser window automatically
-      host: '0.0.0.0', // Allow external access
       proxy: {
         '/ws': {
-          //target: 'ws://localhost:9000',
-          target: 'ws://0.0.0.0:9001', // Changed from localhost
+          target: 'ws://localhost:9001',
           ws: true,
         },
       },
