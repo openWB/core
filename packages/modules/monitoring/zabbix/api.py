@@ -1,43 +1,41 @@
 #!/usr/bin/env python3
-import re
+import os
 from helpermodules.utils.run_command import run_command
 from modules.common.abstract_device import DeviceDescriptor
 from modules.monitoring.zabbix.config import Zabbix
 
 
-key_path = "/etc/zabbix/encrypt.psk"
-config_path = "/etc/zabbix/zabbix_agent2.conf"
+KEY_PATH = "/etc/zabbix/encrypt.psk"
+CONFIG_PATH = "/etc/zabbix/zabbix_agent2.conf"
 
 
-def add_value(path, key, value):
-    file = open(path, "r+")
-    config = file.read()
-    pattern = "\n"+key+"=.*"
-    line = "\n"+key + "="+value
-    splitted = re.split(pattern, config)
-
-    if splitted.len() == 1:
-        splitted.push(line)
-        file.writelines(splitted)
-        file.close()
-    else:
-        modified_config = line.join(splitted)
-        file.write(modified_config)
-        file.close()
+def set_value(path, key, value):
+    with open(path, "r+") as file:
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if line.startswith(key):
+                lines[i] = f"{key}={value}\n"
+                break
+        else:
+            lines.append(f"{key}={value}\n")
+        file.seek(0)
+        file.writelines(lines)
+        file.truncate()
 
 
 def create_config(config: Zabbix):
-    key_file = open(key_path, "w")
-    key_file.write(config.configuration.psk_key)
-    key_file.close()
-    add_value(config_path, "ServerActive", config.configuration.destination_host)
-    add_value(config_path, "Hostname", config.configuration.hostname)
-    add_value(config_path, "TLSConnect", "psk")
-    add_value(config_path, "TLSAccept", "psk")
-    add_value(config_path, "TLSPSKFile", key_path)
-    add_value(config_path, "TLSPSKIdentity", config.configuration.psk_identifier)
-    # restart service
-    run_command(["sudo systemctl restart zabbix-agent2"], process_exception=True)
+    os.system(f"sudo touch {KEY_PATH}")
+    os.system(f"sudo chmod 666 {KEY_PATH}")
+    os.system(f"sudo chmod 666 {CONFIG_PATH}")
+    with open(KEY_PATH, "w") as key_file:
+        key_file.write(config.configuration.psk_key)
+    set_value(CONFIG_PATH, "ServerActive", config.configuration.destination_host)
+    set_value(CONFIG_PATH, "Hostname", config.configuration.hostname)
+    set_value(CONFIG_PATH, "TLSConnect", "psk")
+    set_value(CONFIG_PATH, "TLSAccept", "psk")
+    set_value(CONFIG_PATH, "TLSPSKFile", KEY_PATH)
+    set_value(CONFIG_PATH, "TLSPSKIdentity", config.configuration.psk_identifier)
+    run_command(["sudo", "systemctl", "restart", "zabbix-agent2"], process_exception=True)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Zabbix)
