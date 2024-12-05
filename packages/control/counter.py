@@ -492,6 +492,7 @@ class Counter:
                 else:
                     evu_counter.data.set.released_surplus -= (pv_config.switch_on_threshold
                                                               * chargepoint.data.control_parameter.phases)
+                chargepoint.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 

@@ -571,6 +571,7 @@ class Ev:
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
                     str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
+            control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..
