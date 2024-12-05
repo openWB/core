@@ -12,6 +12,9 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
+// Import SASS color module
+@use "sass:color" as color;
+
 // Default colors
 
 $primary: #1976d2;
@@ -88,7 +91,7 @@ $custom1-white: #ffffff;
     border: 1px solid var(--custom1-secondary);
   }
   .q-tab--active {
-    background-color: darken($custom1-secondary, 2%);
+    background-color: color.scale($custom1-secondary, $lightness: -2%);
   }
   .q-carousel__slide {
     background-color: var(--custom1-background-grey-2);
