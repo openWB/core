@@ -164,21 +164,16 @@ class Chargepoint(ChargepointRfidMixin):
         return state, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
-        # Die Pro schickt je nach Timing auch nach Abstecken noch ein paar Zyklen den Tag. Dann darf der Ladepunkt
-        # nicht wieder entsperrt werden.
-        if (self.data.get.rfid or
-            self.data.get.vehicle_id or
-                self.data.set.rfid) in self.template.data.valid_tags:
+        if (self.data.set.manual_lock is False or
+                (self.data.get.rfid or
+                 self.data.get.vehicle_id or
+                 self.data.set.rfid) in self.template.data.valid_tags):
             Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
-        elif self.template.data.disable_after_unplug and self.data.get.plug_state is False:
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", True)
-
-        if self.data.set.manual_lock:
-            charging_possible = False
-            message = "Keine Ladung, da der Ladepunkt gesperrt ist."
-        else:
             charging_possible = True
             message = None
+        else:
+            charging_possible = False
+            message = "Keine Ladung, da der Ladepunkt gesperrt ist."
         return charging_possible, message
 
     def _is_ev_plugged(self) -> Tuple[bool, Optional[str]]:
@@ -236,7 +231,6 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.template.data.disable_after_unplug:
                     self.data.set.manual_lock = True
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
-                    log.debug("/set/manual_lock True")
                 # Ev wurde noch nicht aktualisiert.
                 chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
                 self.data.set.charging_ev_prev = -1
