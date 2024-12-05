@@ -63,7 +63,7 @@ def test_filter_by_feed_in_limit(feed_in_limit_1: bool,
 def test_limit_adjust_current(new_current: float, expected_current: float, monkeypatch):
     # setup
     cp = Chargepoint(0, None)
-    cp.data = ChargepointData(get=Get(currents=[15]*3))
+    cp.data = ChargepointData(get=Get(charge_state=True, currents=[15]*3))
     cp.template = CpTemplate()
     monkeypatch.setattr(Chargepoint, "set_state_and_log", Mock())
 
