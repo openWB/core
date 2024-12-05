@@ -20,6 +20,6 @@ pysmb==1.2.9.1
 pytz==2023.3.post1
 grpcio==1.60.1
 protobuf==4.25.3
-bimmer_connected==0.16.1
+bimmer_connected==0.17.2
 ocpp==1.0.0
 websockets==12.0
