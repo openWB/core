@@ -471,7 +471,7 @@ class Chargepoint(ChargepointRfidMixin):
                             phase_switch.thread_phase_switch(self)
                             log.debug("start phase switch phases_to_use " +
                                       str(self.data.set.phases_to_use) +
-                                      "control_parameter phases " +
+                                      " control_parameter phases " +
                                       str(self.data.control_parameter.phases))
                             if self.data.control_parameter.phases == 1:
                                 message = f"Umschaltung von {self.get_max_phase_hw()} auf 1 Phase{self.STOP_CHARGING}"

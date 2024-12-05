@@ -917,8 +917,7 @@ class ChargeTemplate:
             message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(round(current, 2))
             submode = "instant_charging"
         else:
-            # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
-            # ist.
+            # Wenn dynamische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden ist.
             if self.data.et.active and data.data.optional_data.et_provider_available():
                 hour_list = data.data.optional_data.et_get_loading_hours(plan_data.duration, plan_data.remaining_time)
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
