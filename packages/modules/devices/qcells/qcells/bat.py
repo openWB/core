@@ -14,18 +14,20 @@ from modules.devices.qcells.qcells.config import QCellsBatSetup
 class QCellsBat(AbstractBat):
     def __init__(self,
                  component_config: Union[Dict, QCellsBatSetup],
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: ModbusTcpClient_) -> None:
         self.__modbus_id = modbus_id
         self.component_config = dataclass_from_dict(QCellsBatSetup, component_config)
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
-        power = client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=self.__modbus_id)
-        soc = client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=self.__modbus_id)
-        imported = client.read_input_registers(
+    def update(self) -> None:
+        power = self.client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=self.__modbus_id)
+        soc = self.client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=self.__modbus_id)
+        imported = self.client.read_input_registers(
             0x0021, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
-        exported = client.read_input_registers(
+        exported = self.client.read_input_registers(
             0x001D, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
 
         bat_state = BatState(

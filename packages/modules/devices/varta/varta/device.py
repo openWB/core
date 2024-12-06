@@ -21,35 +21,42 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Varta):
+    client = None
+
     def create_bat_api_component(component_config: VartaBatApiSetup):
         return VartaBatApi(device_config.id, component_config, device_config.configuration.ip_address)
 
     def create_bat_modbus_component(component_config: VartaBatModbusSetup):
-        return VartaBatModbus(device_config.id, component_config, device_config.configuration.modbus_id)
+        nonlocal client
+        return VartaBatModbus(device_config.id, component_config, device_config.configuration.modbus_id, client)
 
     def create_counter_component(component_config: VartaCounterSetup):
-        return VartaCounter(device_config.id, component_config, device_config.configuration.modbus_id)
+        nonlocal client
+        return VartaCounter(device_config.id, component_config, device_config.configuration.modbus_id, client)
 
     def create_inverter_component(component_config: VartaInverterSetup):
-        return VartaInverter(device_config.id, component_config, device_config.configuration.modbus_id)
+        nonlocal client
+        return VartaInverter(device_config.id, component_config, device_config.configuration.modbus_id, client)
 
     def update_components(components: Iterable[Union[VartaBatApi, VartaBatModbus, VartaCounter, VartaInverter]]):
-        with client as c:
+        nonlocal client
+        with client:
             for component in components:
                 if isinstance(component, (VartaBatModbus, VartaCounter, VartaInverter)):
                     with SingleComponentUpdateContext(component.fault_state):
-                        component.update(c)
+                        component.update()
         for component in components:
             if isinstance(component, (VartaBatApi)):
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    try:
+    def initialiser():
+        nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             bat_api=create_bat_api_component,
             bat_modbus=create_bat_modbus_component,
