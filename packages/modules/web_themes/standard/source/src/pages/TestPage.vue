@@ -30,7 +30,7 @@
         <div class="row justify-center">
           <BatteryOverview />
         </div>
-        <BaseCarousel :items="batteryIds">
+        <BaseCarousel :items="batteryIds" v-if="showBatteryCarousel">
           <template #item="{ item }">
             <BatteryInformation :battery-id="item" />
           </template>
@@ -58,6 +58,10 @@ defineOptions({
 });
 
 const tab = ref<string>('charge-points');
+
+const showBatteryCarousel = computed(() => {
+  return mqttStore.batteryIds.length > 1
+})
 
 const mqttStore = useMqttStore();
 const chargePointIds = computed(() => mqttStore.chargePointIds);
