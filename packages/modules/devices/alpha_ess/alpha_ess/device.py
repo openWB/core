@@ -22,29 +22,35 @@ def create_device(device_config: AlphaEss):
     client = None
 
     def create_bat_component(component_config: AlphaEssBatSetup):
+        nonlocal client
         return bat.AlphaEssBat(device_config.id,
                                component_config,
+                               client,
                                device_config.configuration,
                                device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: AlphaEssCounterSetup):
+        nonlocal client
         return counter.AlphaEssCounter(device_config.id,
                                        component_config,
+                                       client,
                                        device_config.configuration,
                                        device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: AlphaEssInverterSetup):
+        nonlocal client
         return inverter.AlphaEssInverter(device_config.id,
                                          component_config,
+                                         client,
                                          device_config.configuration,
                                          device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[alpha_ess_component_classes]]):
         nonlocal client
-        with client as c:
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(c)
+                    component.update()
 
     def initialiser():
         nonlocal client
