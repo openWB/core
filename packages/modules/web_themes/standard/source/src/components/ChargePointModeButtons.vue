@@ -70,7 +70,7 @@ const chargeMode = computed(() =>
 
 const currentModeLabel = computed(
   () =>
-    chargeModes.find((mode) => mode.value === chargeMode.value.value)?.label
+    chargeModes.find((mode) => mode.value === chargeMode.value.value)?.label,
 );
 </script>
 

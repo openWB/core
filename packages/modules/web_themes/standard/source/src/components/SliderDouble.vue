@@ -35,7 +35,6 @@
       <div class="col">
         <div>Ladestand</div>
         <div>{{ currentCharge }}%</div>
-        <div>--- km</div>
       </div>
       <div class="col text-center">
         <div>Zielzeit</div>
@@ -44,7 +43,6 @@
       <div class="col text-right">
         <div>Ladeziel</div>
         <div>{{ targetCharge }}%</div>
-        <div>--- km</div>
       </div>
     </div>
   </div>
