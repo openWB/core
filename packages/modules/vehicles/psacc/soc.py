@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 def fetch(vehicle_config: PSACCVehicleSoc, vehicle_update_data: VehicleUpdateData) -> CarState:
     c = vehicle_config.configuration
     url = f'http://{c.psacc_server_or_ip}:{c.psacc_port}/get_vehicleinfo/{c.vehicle_vin}'
-    response = req.get_http_session().get(url, timeout=5).json()
+    response = req.get_http_session().get(url, timeout=10).json()
     energy = response['energy'][0]
     return CarState(soc=energy['level'], range=energy['autonomy'])
 
