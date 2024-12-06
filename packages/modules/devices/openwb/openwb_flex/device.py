@@ -20,16 +20,22 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Flex):
+    client = None
+
     def create_bat_component(component_config: BatKitFlexSetup):
+        nonlocal client
         return BatKitFlex(device_config.id, component_config, client)
 
     def create_counter_component(component_config: EvuKitFlexSetup):
+        nonlocal client
         return EvuKitFlex(device_config.id, component_config, client)
 
     def create_consumption_counter_component(component_config: ConsumptionCounterFlexSetup):
+        nonlocal client
         return ConsumptionCounterFlex(device_config.id, component_config, client)
 
     def create_inverter_component(component_config: PvKitFlexSetup):
+        nonlocal client
         return PvKitFlex(device_config.id, component_config, client)
 
     def update_components(components: Iterable[Union[BatKitFlex, ConsumptionCounterFlex, EvuKitFlex, PvKitFlex]]):
@@ -37,12 +43,13 @@ def create_device(device_config: Flex):
             with SingleComponentUpdateContext(component.fault_state):
                 component.update()
 
-    try:
+    def initialiser():
+        nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             consumption_counter=create_consumption_counter_component,

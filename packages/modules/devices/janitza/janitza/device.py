@@ -13,22 +13,27 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Janitza):
+    client = None
+
     def create_counter_component(component_config: JanitzaCounterSetup):
+        nonlocal client
         return counter.JanitzaCounter(device_config.id, component_config, client,
                                       device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[counter.JanitzaCounter]):
+        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    try:
+    def initialiser():
+        nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             counter=create_counter_component,
         ),

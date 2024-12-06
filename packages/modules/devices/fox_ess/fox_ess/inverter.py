@@ -12,19 +12,20 @@ from modules.devices.fox_ess.fox_ess.config import FoxEssInverterSetup
 
 
 class FoxEssInverter(AbstractInverter):
-    def __init__(self, component_config: Union[Dict, FoxEssInverterSetup]) -> None:
+    def __init__(self, component_config: Union[Dict, FoxEssInverterSetup], client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(FoxEssInverterSetup, component_config)
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
         # PV1 + PV2 Power
-        power = sum([client.read_holding_registers(
+        power = sum([self.client.read_holding_registers(
             reg, ModbusDataType.INT_16, unit=unit)
             for reg in [31002, 31005]]) * -1
         # Gesamt Produktion Wechselrichter unsigned integer in kWh * 0,1
-        exported = client.read_holding_registers(32000, ModbusDataType.UINT_32, unit=unit) * 100
+        exported = self.client.read_holding_registers(32000, ModbusDataType.UINT_32, unit=unit) * 100
 
         inverter_state = InverterState(
             power=power,
