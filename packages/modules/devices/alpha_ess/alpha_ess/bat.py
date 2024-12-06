@@ -49,6 +49,13 @@ class AlphaEssBat(AbstractBat):
         soc = int(soc_reg * 0.1)
 
         imported, exported = self.sim_counter.sim_count(power)
+        bat_state = BatState(
+            power=power,
+            soc=soc,
+            imported=imported,
+            exported=exported
+        )
+        self.store.set(bat_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=AlphaEssBatSetup)
