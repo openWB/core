@@ -16,19 +16,21 @@ from modules.common.store import get_inverter_value_store
 class AlphaEssInverter(AbstractInverter):
     def __init__(self, device_id: int,
                  component_config: Union[Dict, AlphaEssInverterSetup],
+                 tcp_client: modbus.ModbusTcpClient_,
                  device_config: AlphaEssConfiguration,
                  modbus_id: int) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(AlphaEssInverterSetup, component_config)
+        self.__tcp_client = tcp_client
         self.__device_config = device_config
         self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, client: modbus.ModbusTcpClient_) -> None:
+    def update(self) -> None:
         reg_p = self.__version_factory()
-        power = self.__get_power(client, reg_p)
+        power = self.__get_power(reg_p)
 
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
@@ -43,9 +45,9 @@ class AlphaEssInverter(AbstractInverter):
         else:
             return 0x00A1
 
-    def __get_power(self, client: modbus.ModbusTcpClient_, reg_p: int) -> Number:
+    def __get_power(self, reg_p: int) -> Number:
         powers = [
-            client.read_holding_registers(address, ModbusDataType.INT_32, unit=self.__modbus_id)
+            self.__tcp_client.read_holding_registers(address, ModbusDataType.INT_32, unit=self.__modbus_id)
             for address in [reg_p, 0x041F, 0x0423, 0x0427]
         ]
         powers[0] = abs(powers[0])
