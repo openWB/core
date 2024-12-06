@@ -260,6 +260,7 @@ class UpdateConfig:
         "^openWB/optional/int_display/theme$",
         "^openWB/optional/int_display/only_local_charge_points",
         "^openWB/optional/led/active$",
+        "^openWB/optional/monitoring/config$",
         "^openWB/optional/rfid/active$",
         "^openWB/optional/ocpp/config$",
 
@@ -405,6 +406,7 @@ class UpdateConfig:
         "^openWB/system/configurable/devices_components$",
         "^openWB/system/configurable/electricity_tariffs$",
         "^openWB/system/configurable/display_themes$",
+        "^openWB/system/configurable/monitoring$",
         "^openWB/system/configurable/ripple_control_receivers$",
         "^openWB/system/configurable/soc_modules$",
         "^openWB/system/configurable/web_themes$",
@@ -512,6 +514,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/led/active", False),
+        ("openWB/optional/monitoring/config", NO_MODULE),
         ("openWB/optional/ocpp/config", dataclass_utils.asdict(Ocpp())),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),

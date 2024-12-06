@@ -862,6 +862,8 @@ class SetData:
             elif ("openWB/set/optional/et/provider" in msg.topic or
                   "openWB/set/optional/ocpp/config" in msg.topic):
                 self._validate_value(msg, "json")
+            elif "openWB/set/optional/monitoring" in msg.topic:
+                self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/rotation" in msg.topic:
