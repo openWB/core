@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import logging
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
@@ -15,9 +14,7 @@ log = logging.getLogger(__name__)
 
 
 class DeyeBat(AbstractBat):
-    def __init__(self, device_id: int,
-                 component_config: DeyeBatSetup,
-                 client: ModbusTcpClient_) -> None:
+    def __init__(self, device_id: int, component_config: DeyeBatSetup, client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(DeyeBatSetup, component_config)
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
