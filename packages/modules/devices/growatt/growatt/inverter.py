@@ -16,23 +16,25 @@ class GrowattInverter(AbstractInverter):
     def __init__(self,
                  component_config: Union[Dict, GrowattInverterSetup],
                  modbus_id: int,
-                 version: GrowattVersion) -> None:
+                 version: GrowattVersion,
+                 client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(GrowattInverterSetup, component_config)
         self.__modbus_id = modbus_id
         self.version = version
+        self.client = client
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         if self.version == GrowattVersion.max_series:
-            power = client.read_input_registers(
+            power = self.client.read_input_registers(
                 1, ModbusDataType.UINT_32, unit=self.__modbus_id) / -10
-            exported = client.read_input_registers(
+            exported = self.client.read_input_registers(
                 91, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
         else:
-            power = client.read_input_registers(
+            power = self.client.read_input_registers(
                 3001, ModbusDataType.UINT_32, unit=self.__modbus_id) / -10
-            exported = client.read_input_registers(
+            exported = self.client.read_input_registers(
                 3053, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
 
         inverter_state = InverterState(

@@ -61,9 +61,9 @@ class ComponentFactoryByType(Generic[T_COMPONENT, T_COMPONENT_CONFIG]):
 class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFIG], AbstractDevice):
     def __init__(self,
                  device_config: T_DEVICE_CONFIG,
-                 initialiser: Callable,
                  component_factory: ComponentFactory[Any, T_COMPONENT],
-                 component_updater: ComponentUpdater[T_COMPONENT]) -> None:
+                 component_updater: ComponentUpdater[T_COMPONENT],
+                 initialiser: Callable = lambda: None) -> None:
         self.__initialiser = initialiser
         self.__component_factory = component_factory
         self.__component_updater = component_updater

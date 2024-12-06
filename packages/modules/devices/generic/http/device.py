@@ -19,6 +19,8 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: HTTP):
+    session = None
+
     def create_bat_component(component_config: HttpBatSetup):
         return HttpBat(device_config.id, component_config, device_config.configuration.url)
 
@@ -28,9 +30,13 @@ def create_device(device_config: HTTP):
     def create_inverter_component(component_config: HttpInverterSetup):
         return HttpInverter(device_config.id, component_config, device_config.configuration.url)
 
-    session = req.get_http_session()
+    def initialiser():
+        nonlocal session
+        session = req.get_http_session()
+
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
