@@ -82,3 +82,24 @@ const instantEnergy = computed(() =>
   ),
 );
 </script>
+
+<style lang="scss" scoped>
+body.desktop {
+  .q-btn-group {
+    .q-btn {
+      min-width: 100px !important;
+    }
+  }
+}
+
+body.mobile {
+  .q-btn-group {
+    .q-btn {
+      padding: 4px 8px;
+      font-size: 12px !important;
+      min-height: 30px;
+      min-width: 100px !important;
+    }
+  }
+}
+</style>
