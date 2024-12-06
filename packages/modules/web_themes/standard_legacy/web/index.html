@@ -526,39 +526,6 @@
 										data-style="w-100">
 								</div>
 							</div>
-							<div class="et et-configured hide">
-								<div class="charge-point-charge-mode-options mb-0 hide">
-									<div
-										class="chargemode-options chargemode-option-instant_charging chargemode-option-scheduled_charging">
-										<div class="form-row mb-1">
-											<div class="col">
-												<i class="fas fa-coins"></i>
-												Strompreisbasiert Laden
-											</div>
-											<div class="col-md-8 text-right">
-												<div class="form-row">
-													<div class="col">
-														<input class="charge-point-price-charging-active"
-															type="checkbox" data-toggle="toggle"
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/et/active"
-															data-on="Ja" data-off="Nein" data-onstyle="success"
-															data-offstyle="danger" data-size="sm" data-style="w-100">
-													</div>
-													<div class="col-3">
-														<button type="button"
-															class="charge-point-max-price-button btn btn-sm btn-secondary btn-block"
-															data-max-price="">
-															<span class="charge-point-price-charging-max_price">
-																--
-															</span>&nbsp;ct/kWh
-														</button>
-													</div>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
 							<div class="form-row mb-1">
 								<div class="col">
 									<i class="far fa-clock"></i>
@@ -657,65 +624,6 @@
 														class="col-2 col-form-label valueLabel text-right" data-suffix="kW">
 														-- kW
 													</label>
-												</div>
-											</div>
-										</div>
-									</div>
-									<div class="form-row vaRow">
-										<div class="col">
-											<label class="col-form-label">Begrenzung</label>
-										</div>
-										<div class="col-md-8 btn-group btn-group-toggle charge-point-instant-charge-limit-selected"
-											id="limitInstantChargeCpT" data-name="limitCp" data-toggle="buttons"
-											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/selected">
-											<label class="btn btn-outline-info btn-toggle">
-												<input type="radio" name="limitCp" data-option="none"> keine
-											</label>
-											<label class="btn btn-outline-info btn-toggle">
-												<input type="radio" name="limitCp" data-option="soc"> EV-SoC
-											</label>
-											<label class="btn btn-outline-info btn-toggle">
-												<input type="radio" name="limitCp" data-option="amount"> Energiemenge
-											</label>
-										</div>
-									</div>
-									<div class="chargemode-limit-options">
-										<div
-											class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-soc">
-											<div class="col">
-												SoC-Limit für das Fahrzeug
-											</div>
-											<div class="col-md-8">
-												<div class="form-row form-group mb-1 vaRow">
-													<div class="col">
-														<input type="range"
-															class="charge-point-instant-charge-limit-soc form-control-range rangeInput"
-															id="soclimitCpT" min="5" max="100" step="5"
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
-													</div>
-													<label for="soclimitCpT"
-														class="col-2 col-form-label valueLabel text-right"
-														data-suffix="%">-- %</label>
-												</div>
-											</div>
-										</div>
-										<div
-											class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-amount">
-											<div class="col">
-												Energie-Limit
-											</div>
-											<div class="col-md-8">
-												<div class="form-row form-group mb-1 vaRow">
-													<div class="col">
-														<input type="range"
-															class="charge-point-instant-charge-limit-amount form-control-range rangeInput"
-															id="amountlimitCpT" min="1" max="50" step="1"
-															data-transformation='{ "in": "<v>/1000", "out": "<v>*1000" }'
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
-													</div>
-													<label for="amountlimitCpT"
-														class="col-2 col-form-label valueLabel text-right"
-														data-suffix="kWh">-- kWh</label>
 												</div>
 											</div>
 										</div>
