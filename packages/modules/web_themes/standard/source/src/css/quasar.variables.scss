@@ -17,236 +17,85 @@
 
 // Default colors
 
-$primary: #1976d2;
-$secondary: #26a69a;
-$accent: #9c27b0;
-
-$dark: #1d1d1d;
-$dark-page: #121212;
-
-$positive: #21ba45;
-$negative: #c10015;
-$info: #31ccec;
-$warning: #f2c037;
+// $primary: #1976d2;
+// $secondary: #26a69a;
+// $accent: #9c27b0;
+// $dark: #1d1d1d;
+// $dark-page: #121212;
+// $positive: #21ba45;
+// $negative: #c10015;
+// $info: #31ccec;
+// $warning: #f2c037;
 
 /////////////////////////////////////////////////////////////////////
 
-// Custom Theme 1 (light)
-$custom1-background-1: #e3e3ec;
-$custom1-background-2: #eeeef3;
-$custom1-primary: #5c93d1;
-$custom1-secondary: #d2d2d7;
-$custom1-positive: #66bd7a;
-$custom1-negative: #db4f5f;
-$custom1-info: #7dc5d4;
-$custom1-warning: #f7b267;
-$custom1-accent: #b691bd;
-$custom1-brown-text: #524f57;
-$custom1-white: #ffffff;
-$custom1-tab-icon: #5c93d1;
-$custom1-carousel-control: #5c93d1;
-$custom1-toggle-off-position: #e0e0e0;
+// Default Light Theme Base Colors
+$primary: #5c93d1;
+$secondary: #d2d2d7;
+$accent: #b691bd;
+$positive: #66bd7a;
+$negative: #db4f5f;
+$info: #7dc5d4;
+$warning: #f7b267;
+$background-1: #e3e3ec;
+$background-2: #eeeef3;
+$brown-text: #524f57;
+$white: #ffffff;
+$toggle-off: #e0e0e0;
 
-// Custom Theme 2
-$custom2-background-1: #f7f8f9;
-$custom2-background-2: #ebeef1;
-$custom2-primary: #445975;
-$custom2-secondary: #d5dae0;
-$custom2-positive: #427a5b;
-$custom2-negative: #a94955;
-$custom2-info: #4a7a98;
-$custom2-warning: #b87d43;
-$custom2-accent: #6e788c;
-$custom2-brown-text: #2b3541;
-$custom2-white: #ffffff;
-$custom2-tab-icon: #445975;
-$custom2-carousel-control: #445975;
-$custom2-toggle-off-position: #e0e0e0;
-
-// Custom Theme 3
-$custom3-background-1: #f8f9fb;
-$custom3-background-2: #edf0f5;
-$custom3-primary: #4878b7;
-$custom3-secondary: #d8dde6;
-$custom3-positive: #50a567;
-$custom3-negative: #d1495b;
-$custom3-info: #3d8cb5;
-$custom3-warning: #e89d4b;
-$custom3-accent: #8c7daf;
-$custom3-brown-text: #2d3748;
-$custom3-white: #ffffff;
-$custom3-tab-icon: #4878b7;
-$custom3-carousel-control: #4878b7;
-$custom3-toggle-off-position: #e0e0e0;
-
-// Custom Theme 4
-$custom4-background-1: #f5f6f8;
-$custom4-background-2: #e8eaef;
-$custom4-primary: #556785;
-$custom4-secondary: #cfd5de;
-$custom4-positive: #3e8f5e;
-$custom4-negative: #c54d57;
-$custom4-info: #4b89aa;
-$custom4-warning: #d98e44;
-$custom4-accent: #7a7a9c;
-$custom4-brown-text: #2c3645;
-$custom4-white: #ffffff;
-$custom4-tab-icon: #556785;
-$custom4-carousel-control: #556785;
-$custom4-toggle-off-position: #e0e0e0;
-
-// Custom Theme 5 (dark)
-$custom5-background-1: #030627;
-$custom5-background-2: #010322;
-$custom5-primary: #3874db;
-$custom5-secondary: #28293d;
-$custom5-positive: #3e8f5e;
-$custom5-negative: #c54d57;
-$custom5-info: #4b89aa;
-$custom5-warning: #d98e44;
-$custom5-accent: #7a7a9c;
-$custom5-brown-text: #2c3645;
-$custom5-white: #ffffff;
-$custom5-tab-icon: #ffffff;
-$custom5-carousel-control: #8b8f9f;
-$custom5-toggle-off-position: #e0e0e0;
-$custom5-list: #3c3e5c;
-
+// Light theme (default)
 :root {
-  // Custom Theme 1
-  --custom1-background-1: #{$custom1-background-1};
-  --custom1-background-2: #{$custom1-background-2};
-  --custom1-primary: #{$custom1-primary};
-  --custom1-secondary: #{$custom1-secondary};
-  --custom1-positive: #{$custom1-positive};
-  --custom1-negative: #{$custom1-negative};
-  --custom1-info: #{$custom1-info};
-  --custom1-warning: #{$custom1-warning};
-  --custom1-accent: #{$custom1-accent};
-  --custom1-brown-text: #{$custom1-brown-text};
-  --custom1-white: #{$custom1-white};
-  --custom1-tab-icon: #{$custom1-tab-icon};
-  --custom1-carousel-control: #{$custom1-carousel-control};
-  --custom1-toggle-off-position: #{$custom1-toggle-off-position};
+  --q-primary: #{$primary};
+  --q-secondary: #{$secondary};
+  --q-accent: #{$accent};
+  --q-positive: #{$positive};
+  --q-negative: #{$negative};
+  --q-info: #{$info};
+  --q-warning: #{$warning};
+  --q-background-1: #{$background-1};
+  --q-background-2: #{$background-2};
+  --q-brown-text: #{$brown-text};
+  --q-white: #{$white};
+  --q-toggle-off: #{$toggle-off};
 
-  // Custom Theme 2
-  --custom2-background-1: #{$custom2-background-1};
-  --custom2-background-2: #{$custom2-background-2};
-  --custom2-primary: #{$custom2-primary};
-  --custom2-secondary: #{$custom2-secondary};
-  --custom2-positive: #{$custom2-positive};
-  --custom2-negative: #{$custom2-negative};
-  --custom2-info: #{$custom2-info};
-  --custom2-warning: #{$custom2-warning};
-  --custom2-accent: #{$custom2-accent};
-  --custom2-brown-text: #{$custom2-brown-text};
-  --custom2-white: #{$custom2-white};
-  --custom2-tab-icon: #{$custom2-tab-icon};
-  --custom2-carousel-control: #{$custom2-carousel-control};
-  --custom2-toggle-off-position: #{$custom2-toggle-off-position};
-
-  // Custom Theme 3
-  --custom3-background-1: #{$custom3-background-1};
-  --custom3-background-2: #{$custom3-background-2};
-  --custom3-primary: #{$custom3-primary};
-  --custom3-secondary: #{$custom3-secondary};
-  --custom3-positive: #{$custom3-positive};
-  --custom3-negative: #{$custom3-negative};
-  --custom3-info: #{$custom3-info};
-  --custom3-warning: #{$custom3-warning};
-  --custom3-accent: #{$custom3-accent};
-  --custom3-brown-text: #{$custom3-brown-text};
-  --custom3-white: #{$custom3-white};
-  --custom3-tab-icon: #{$custom3-tab-icon};
-  --custom3-carousel-control: #{$custom3-carousel-control};
-  --custom3-toggle-off-position: #{$custom3-toggle-off-position};
-
-  // Custom Theme 4
-  --custom4-background-1: #{$custom4-background-1};
-  --custom4-background-2: #{$custom4-background-2};
-  --custom4-primary: #{$custom4-primary};
-  --custom4-secondary: #{$custom4-secondary};
-  --custom4-positive: #{$custom4-positive};
-  --custom4-negative: #{$custom4-negative};
-  --custom4-info: #{$custom4-info};
-  --custom4-warning: #{$custom4-warning};
-  --custom4-accent: #{$custom4-accent};
-  --custom4-brown-text: #{$custom4-brown-text};
-  --custom4-white: #{$custom4-white};
-  --custom4-tab-icon: #{$custom4-tab-icon};
-  --custom4-carousel-control: #{$custom4-carousel-control};
-  --custom4-toggle-off-position: #{$custom4-toggle-off-position};
-
-  // Custom Theme 5
-  --custom5-background-1: #{$custom5-background-1};
-  --custom5-background-2: #{$custom5-background-2};
-  --custom5-primary: #{$custom5-primary};
-  --custom5-secondary: #{$custom5-secondary};
-  --custom5-positive: #{$custom5-positive};
-  --custom5-negative: #{$custom5-negative};
-  --custom5-info: #{$custom5-info};
-  --custom5-warning: #{$custom5-warning};
-  --custom5-accent: #{$custom5-accent};
-  --custom5-brown-text: #{$custom5-brown-text};
-  --custom5-white: #{$custom5-white};
-  --custom5-tab-icon: #{$custom5-tab-icon};
-  --custom5-carousel-control: #{$custom5-carousel-control};
-  --custom5-list: #{$custom5-list};
-  --custom5-toggle-off-position: #{$custom5-toggle-off-position};
-}
-
-// Theme Classes
-.q-theme--custom1 {
-  --q-primary: var(--custom1-primary);
-  --q-secondary: var(--custom1-secondary);
-  --q-accent: var(--custom1-accent);
-  --q-positive: var(--custom1-positive);
-  --q-negative: var(--custom1-negative);
-  --q-info: var(--custom1-info);
-  --q-warning: var(--custom1-warning);
-  --q-white: var(--custom1-white);
-  --q-tab-icon: var(--custom1-tab-icon);
-  --q-color-carousel-control: var(--custom1-carousel-control);
-  background-color: var(--custom1-background-1);
-  // text color
-  color: var(--custom1-brown-text);
-
-  //header colors
+  // Main background
+  background-color: var(--q-background-1);
+  // Text color
+  color: var(--q-brown-text);
+  // Header colors
   .q-header {
-    background-color: var(--custom1-background-2);
-    color: var(--custom1-brown-text);
+    background-color: var(--q-background-2);
+    color: var(--q-brown-text);
   }
-  //Tab panel background
+  // Tab panel background
   .q-tab-panels {
-    background-color: var(--custom1-background-2);
+    background-color: var(--q-background-2);
   }
-  //Tab CSS
+  // Tab CSS
   .q-tab {
-    background-color: var(--custom1-background-2);
+    background-color: var(--q-background-2);
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
-    border: 1px solid var(--custom1-secondary);
+    border: 1px solid var(--q-secondary);
   }
   // Tab icon color
   .q-tab-icon {
-    color: var(--custom1-tab-icon);
+    color: var(--q-primary);
   }
   // Tab active background color
   .q-tab--active {
-    background-color: color.scale($custom1-secondary, $lightness: -2%);
+    background-color: color.scale($secondary, $lightness: -2%);
   }
-
   // Carousel control arrows and buttons
   .q-carousel__control {
     .q-btn {
       &:before {
-        box-shadow: none; // Full screen button remove shadow
+        box-shadow: none;
       }
       .q-icon {
-        color: var(--custom1-carousel-control);
-
+        color: var(--q-primary);
         &:before {
-          color: var(--custom1-carousel-control); // Full screen button color
+          color: var(--q-primary);
           box-shadow: none;
         }
       }
@@ -254,147 +103,106 @@ $custom5-list: #3c3e5c;
   }
   // Slide container background
   .q-carousel__slide {
-    background-color: var(--custom1-background-2);
+    background-color: var(--q-background-2);
   }
-  //Slide background
+  // Slide background
   .q-card {
-    background-color: var(--custom1-secondary);
+    background-color: var(--q-secondary);
   }
-  //Expansion item (expand arrow)
+  // Expansion item (expand arrow)
   .q-expansion-item__toggle-icon {
-    color: var(--custom1-white);
+    color: var(--q-white);
   }
-  //List background color, for menus etc...
+  // List background color, for menus etc
   .q-list {
-    background-color: var(--custom1-background-2);
+    background-color: var(--q-background-2);
   }
-  //Toggle button color in off position
+  // Toggle button color in off position
   .q-toggle__thumb:after {
-    background: var(--custom1-toggle-off-position);
+    background: var(--q-toggle-off);
   }
-  //Toggle button color in on position
-  .q-toggle__inner--truthy .q-toggle__thumb:after {
-    background-color: currentColor; // current primary color
-  }
-}
-
-.q-theme--custom2 {
-  --q-primary: var(--custom2-primary);
-  --q-secondary: var(--custom2-secondary);
-  --q-accent: var(--custom2-accent);
-  --q-positive: var(--custom2-positive);
-  --q-negative: var(--custom2-negative);
-  --q-info: var(--custom2-info);
-  --q-warning: var(--custom2-warning);
-  --q-white: var(--custom2-white);
-  --q-tab-icon: var(--custom2-tab-icon);
-  --q-carousel-control: var(--custom2-carousel-control);
-  background-color: var(--custom2-background-1);
-  // text color
-  color: var(--custom2-brown-text);
-  //header colors
-  .q-header {
-    background-color: var(--custom2-background-2);
-    color: var(--custom2-brown-text);
-  }
-  //Tab panel background
-  .q-tab-panels {
-    background-color: var(--custom2-background-2);
-  }
-  //Tab CSS
-  .q-tab {
-    background-color: var(--custom2-background-2);
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border: 1px solid var(--custom2-secondary);
-  }
-  // Tab active background color
-  .q-tab--active {
-    background-color: color.scale($custom2-secondary, $lightness: -2%);
-  }
-  // Carousel control arrows and buttons
-  .q-carousel__control {
-    .q-btn {
-      &:before {
-        box-shadow: none; // Full screen button remove shadow
-      }
-      .q-icon {
-        color: var(--custom2-carousel-control);
-
-        &:before {
-          color: var(--custom2-carousel-control); // Full screen button color
-          box-shadow: none;
-        }
-      }
-    }
-  }
-  // Slide container background
-  .q-carousel__slide {
-    background-color: var(--custom2-background-2);
-  }
-  //Slide background
-  .q-card {
-    background-color: var(--custom2-secondary);
-  }
-  //List background color, for menus etc...
-  .q-list {
-    background-color: var(--custom2-background-2);
-  }
-  //Toggle button color in off position
-  .q-toggle__thumb:after {
-    background: var(--custom2-toggle-off-position);
-  }
-  //Toggle button color in on position
+  // Toggle button color in on position
   .q-toggle__inner--truthy .q-toggle__thumb:after {
     background-color: currentColor;
   }
 }
 
-.q-theme--custom3 {
-  --q-primary: var(--custom3-primary);
-  --q-secondary: var(--custom3-secondary);
-  --q-accent: var(--custom3-accent);
-  --q-positive: var(--custom3-positive);
-  --q-negative: var(--custom3-negative);
-  --q-info: var(--custom3-info);
-  --q-warning: var(--custom3-warning);
-  --q-white: var(--custom3-white);
-  --q-tab-icon: var(--custom3-tab-icon);
-  --q-carousel-control: var(--custom3-carousel-control);
-  background-color: var(--custom3-background-1);
-  // text color
-  color: var(--custom3-brown-text);
-  //header colors
+// Dark Theme Base Colors
+$dark-page: #030627; // This overrides Quasar's default dark page color
+$dark-primary: #3874db;
+$dark-secondary: #28293d;
+$dark-accent: #7a7a9c;
+$dark-positive: #3e8f5e;
+$dark-negative: #c54d57;
+$dark-info: #4b89aa;
+$dark-warning: #d98e44;
+$dark-background-1: #030627;
+$dark-background-2: #010322;
+$dark-list: #3c3e5c;
+$dark-carousel: #8b8f9f;
+$dark-tab-icon: #d7d9e0;
+
+// Dark theme
+.body--dark {
+  --q-primary: #{$dark-primary};
+  --q-secondary: #{$dark-secondary};
+  --q-accent: #{$dark-accent};
+  --q-positive: #{$dark-positive};
+  --q-negative: #{$dark-negative};
+  --q-info: #{$dark-info};
+  --q-warning: #{$dark-warning};
+  --q-background-1: #{$dark-background-1};
+  --q-background-2: #{$dark-background-2};
+  --q-white: #{$white};
+  --q-carousel-control: #{$dark-carousel};
+  --q-toggle-off: #{$toggle-off};
+  --q-list: #{$dark-list};
+  --q-tab-icon: #{$dark-tab-icon};
+  // Main background
+  background-color: var($dark-page);
+  // Text color
+  color: var(--q-white);
+
+  // Override default dark theme background
+  body.body--dark {
+    background: var($dark-page) !important;
+  }
+  // Header colors
   .q-header {
-    background-color: var(--custom3-background-2);
-    color: var(--custom3-brown-text); //text
+    background-color: var(--q-background-2);
+    color: var(--q-white);
   }
-  //Tab panel background
-  .q-tab-panels {
-    background-color: var(--custom3-background-2);
-  }
-  //Tab CSS
+  // Tab icon color
   .q-tab {
-    background-color: var(--custom3-background-2);
+    .q-icon {
+      color: var(--q-tab-icon) !important;
+    }
+  }
+  // Tab panel background
+  .q-tab-panels {
+    background-color: var(--q-background-2);
+  }
+  // Tab CSS
+  .q-tab {
+    background-color: var(--q-background-2);
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
-    border: 1px solid var(--custom3-secondary);
+    border: 1px solid var(--q-secondary);
   }
   // Tab active background color
   .q-tab--active {
-    background-color: color.scale($custom3-secondary, $lightness: -2%);
+    background-color: color.scale($dark-secondary, $lightness: 10%);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {
     .q-btn {
       &:before {
-        box-shadow: none; // Full screen button remove shadow
+        box-shadow: none;
       }
       .q-icon {
-        color: var(--custom3-carousel-control);
-
+        color: var(--q-carousel-control);
         &:before {
-          color: var(--custom3-carousel-control); // Full screen button color
+          color: var(--q-carousel-control);
           box-shadow: none;
         }
       }
@@ -402,189 +210,43 @@ $custom5-list: #3c3e5c;
   }
   // Slide container background
   .q-carousel__slide {
-    background-color: var(--custom3-background-2);
+    background-color: var(--q-background-2);
+    color: var(--q-white);
   }
-  //Slide background
+  // Slide background
   .q-card {
-    background-color: var(--custom3-secondary);
+    background-color: var(--q-secondary);
+    color: var(--q-white);
   }
-  //List background color, for menus etc...
-  .q-list {
-    background-color: var(--custom3-background-2);
-  }
-  //Toggle button color in off position
-  .q-toggle__thumb:after {
-    background: var(--custom3-toggle-off-position);
-  }
-  //Toggle button color in on position
-  .q-toggle__inner--truthy .q-toggle__thumb:after {
-    background-color: currentColor;
-  }
-}
-
-.q-theme--custom4 {
-  --q-primary: var(--custom4-primary);
-  --q-secondary: var(--custom4-secondary);
-  --q-accent: var(--custom4-accent);
-  --q-positive: var(--custom4-positive);
-  --q-negative: var(--custom4-negative);
-  --q-info: var(--custom4-info);
-  --q-warning: var(--custom4-warning);
-  --q-white: var(--custom4-white);
-  --q-tab-icon: var(--custom4-tab-icon);
-  --q-carousel-control: var(--custom4-carousel-control);
-  background-color: var(--custom4-background-1);
-  // text color
-  color: var(--custom4-brown-text);
-  //header colors
-  .q-header {
-    background-color: var(--custom4-background-2);
-    color: var(--custom4-brown-text);
-  }
-  //Tab panel background
-  .q-tab-panels {
-    background-color: var(--custom4-background-2);
-  }
-  //Tab CSS
-  .q-tab {
-    background-color: var(--custom4-background-2);
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border: 1px solid var(--custom4-secondary);
-  }
-  // Tab active background color
-  .q-tab--active {
-    background-color: color.scale($custom4-secondary, $lightness: -2%);
-  }
-  // Carousel control arrows and buttons
-  .q-carousel__control {
-    .q-btn {
-      &:before {
-        box-shadow: none; // Full screen button remove shadow
-      }
-      .q-icon {
-        color: var(--custom4-carousel-control);
-
-        &:before {
-          color: var(--custom4-carousel-control); // Full screen button color
-          box-shadow: none;
-        }
-      }
-    }
-  }
-  // Slide container background
-  .q-carousel__slide {
-    background-color: var(--custom4-background-2);
-  }
-  //Slide background
-  .q-card {
-    background-color: var(--custom4-secondary);
-  }
-  //List background color, for menus etc...
-  .q-list {
-    background-color: var(--custom4-background-2);
-  }
-  //Toggle button color in off position
-  .q-toggle__thumb:after {
-    background: var(--custom4-toggle-off-position);
-  }
-  //Toggle button color in on position
-  .q-toggle__inner--truthy .q-toggle__thumb:after {
-    background-color: currentColor;
-  }
-}
-
-.q-theme--custom5 {
-  --q-primary: var(--custom5-primary);
-  --q-secondary: var(--custom5-secondary);
-  --q-accent: var(--custom5-accent);
-  --q-positive: var(--custom5-positive);
-  --q-negative: var(--custom5-negative);
-  --q-info: var(--custom5-info);
-  --q-warning: var(--custom5-warning);
-  --q-white: var(--custom5-white);
-  --q-tab-icon: var(--custom5-tab-icon);
-  --q-carousel-control: var(--custom5-carousel-control);
-  background-color: var(--custom5-background-1);
-  //Text color
-  color: var(--custom5-brown-text);
-  //Header background color
-  .q-header {
-    background-color: var(--custom5-background-2);
-  }
-  //Tab panel background
-  .q-tab-panels {
-    background-color: var(--custom5-background-2);
-  }
-  //Tab CSS
-  .q-tab {
-    background-color: var(--custom5-background-2);
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border: 1px solid var(--custom5-secondary);
-  }
-  .q-tab--active {
-    background-color: color.scale($custom5-secondary, $lightness: 10%);
-  }
-  // Carousel control arrows and buttons
-  .q-carousel__control {
-    .q-btn {
-      &:before {
-        box-shadow: none; // Full screen button remove shadow
-      }
-      .q-icon {
-        color: var(--custom5-carousel-control);
-
-        &:before {
-          color: var(--custom5-carousel-control); // Full screen button color
-          box-shadow: none;
-        }
-      }
-    }
-  }
-  // Slide container background
-  .q-carousel__slide {
-    background-color: var(--custom5-background-2);
-    color: var(--custom5-white);
-  }
-  //Slide background
-  .q-card {
-    background-color: var(--custom5-secondary);
-    color: var(--custom5-white);
-  }
-  //Expansion item (expand arrow)
-  .q-expansion-item__toggle-icon {
-    color: var(--custom5-white);
-  }
-  //Input field text label color
+  // Input field text label color
   .q-field__label {
-    color: var(--custom5-white);
+    color: var(--q-white);
   }
-  //Input field icon color
+  // Input field icon color
   .q-field__control {
     .q-field__native::-webkit-calendar-picker-indicator {
       filter: invert(1);
     }
   }
-  //Input field placeholder text color
+  // Input field placeholder text color
   .q-placeholder {
-    color: var(--custom5-white);
+    color: var(--q-white);
   }
-  //List background color, for menus etc...
+  // List background color, for menus etc
   .q-list {
-    background-color: var(--custom5-list);
+    background-color: var(--q-list);
   }
-  //Menu text color
+  // Menu text color
   .q-menu {
     .q-item__section {
-      color: var(--custom5-white) !important;
+      color: var(--q-white) !important;
     }
   }
-  //Toggle button color in off position
+  // Toggle button color in off position
   .q-toggle__thumb:after {
-    background: var(--custom5-toggle-off-position);
+    background: var(--q-toggle-off);
   }
-  //Toggle button color in on position
+  // Toggle button color in on position
   .q-toggle__inner--truthy .q-toggle__thumb:after {
     background-color: currentColor;
   }
