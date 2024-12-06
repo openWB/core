@@ -1,48 +1,19 @@
 <template>
   <q-layout view="lHh Lpr lFf" class="centered-container">
-    <q-header elevated class="centered-container">
+    <q-header elevated>
       <q-toolbar>
         <q-toolbar-title>openWB</q-toolbar-title>
-        <q-btn dense flat round icon="menu">
-          <q-menu anchor="bottom right" self="top right">
-            <q-list dense>
-              <q-item clickable v-close-popup>
-                <q-item-section>Konfiguration</q-item-section>
-              </q-item>
-
-              <q-item clickable>
-                <q-item-section>Darstellung</q-item-section>
-                <q-menu anchor="top left" self="top right">
-                  <q-list dense>
-                    <q-item
-                      v-for="theme in [
-                        'light',
-                        'dark',
-                        'custom1',
-                        'custom2',
-                        'custom3',
-                        'custom4',
-                        'custom5',
-                      ]"
-                      :key="theme"
-                      clickable
-                      @click="setTheme(theme)"
-                      :active="currentTheme === theme"
-                      dense
-                    >
-                      <q-item-section>{{ theme }}</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-item>
-              <q-item clickable v-close-popup>
-                <q-item-section>Hilfe</q-item-section>
-              </q-item>
-            </q-list>
-          </q-menu>
-        </q-btn>
+        <q-btn
+          flat
+          round
+          :icon="colorModeIcon"
+          @click="toggleColorMode()"
+          aria-label="Color-Mode"
+        />
       </q-toolbar>
     </q-header>
+
+    <!-- Page container that takes the remaining height -->
     <q-page-container class="column flex">
       <router-view />
     </q-page-container>
@@ -50,13 +21,24 @@
 </template>
 
 <script setup lang="ts">
-import { useThemeManager } from 'src/composables/useThemeManager.ts';
-
+import { computed } from 'vue';
+import { useQuasar } from 'quasar';
+const $q = useQuasar();
 defineOptions({
   name: 'MainLayout',
 });
-
-const { currentTheme, setTheme } = useThemeManager();
+/**
+ * Computed property that returns the icon name for the color mode button.
+ */
+const colorModeIcon = computed(() => {
+  return $q.dark.isActive ? 'dark_mode' : 'light_mode';
+});
+/**
+ * Toggles the color mode of the application.
+ */
+function toggleColorMode() {
+  $q.dark.toggle();
+}
 </script>
 
 <style scoped>
@@ -64,9 +46,5 @@ const { currentTheme, setTheme } = useThemeManager();
   max-width: 1000px;
   margin-left: auto;
   margin-right: auto;
-  position: relative;
-}
-.q-page-container {
-  padding-top: 0 !important;
 }
 </style>
