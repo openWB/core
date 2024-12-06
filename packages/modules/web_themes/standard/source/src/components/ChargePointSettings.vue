@@ -1,12 +1,16 @@
 <template>
   <q-dialog
     v-model="visible"
-    :maximized="$q.screen.width < 385"
+    :maximized="$q.platform.is.mobile"
     :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
   >
-    <q-card>
+    <q-card @scroll.capture="handleScroll">
       <q-card-section>
-        <div class="text-h6">Einstellungen {{ name }}</div>
+        <div class="row">
+          <div class="text-h6">Einstellungen {{ name }}</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </div>
       </q-card-section>
       <q-card-section class="q-pt-none">
         <div class="row items-center q-ma-none q-pa-none">
@@ -36,18 +40,15 @@
         <div class="row items-center q-ma-none q-pa-none no-wrap">
           <ChargePointModeButtons :charge-point-id="props.chargePointId" />
         </div>
-
         <!-- ///////////////// Instant charge settings /////////////////// -->
         <div v-if="chargeMode.value === 'instant_charging'">
           <ChargePointInstantSettings :charge-point-id="props.chargePointId" />
         </div>
-
         <!-- ///////////////// PV charge settings /////////////////// -->
         <div v-if="chargeMode.value === 'pv_charging'">
           <ChargePointPVSettings :charge-point-id="props.chargePointId" />
         </div>
         <!-- /////////////////  scheduled charging settings /////////////////// -->
-
         <div v-if="chargeMode.value === 'scheduled_charging'">
           <ChargePointScheduledSettings
             :charge-point-id="props.chargePointId"
@@ -62,9 +63,9 @@
 </template>
 
 <script setup lang="ts">
-import { useQuasar } from 'quasar';
+import { useQuasar, QDialog } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, provide } from 'vue';
 import ChargePointInstantSettings from './ChargePointInstantSettings.vue';
 import ChargePointPVSettings from './ChargePointPVSettings.vue';
 import ChargePointScheduledSettings from './ChargePointScheduledSettings.vue';
@@ -80,6 +81,15 @@ const props = defineProps<{
   chargePointId: number;
   modelValue: boolean;
 }>();
+
+const isDialogScrolled = ref(false);
+
+const handleScroll = () => {
+  isDialogScrolled.value = true;
+  console.log('Dialog scrolled');
+};
+
+provide('isDialogScrolled', isDialogScrolled);
 
 const emit = defineEmits<{
   'update:model-value': [value: boolean];
