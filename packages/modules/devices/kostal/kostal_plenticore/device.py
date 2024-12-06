@@ -48,28 +48,36 @@ def update(
 
 
 def create_device(device_config: KostalPlenticore):
+    client = None
+    reader = None
+
     def create_bat_component(component_config: KostalPlenticoreBatSetup):
-        return KostalPlenticoreBat(device_config.id, component_config)
+        nonlocal client
+        return KostalPlenticoreBat(device_config.id, component_config, client)
 
     def create_counter_component(component_config: KostalPlenticoreCounterSetup):
-        return KostalPlenticoreCounter(device_config.id, component_config)
+        nonlocal client
+        return KostalPlenticoreCounter(device_config.id, component_config, client)
 
     def create_inverter_component(component_config: KostalPlenticoreInverterSetup):
-        return KostalPlenticoreInverter(component_config)
+        nonlocal client
+        return KostalPlenticoreInverter(component_config, client)
 
     def update_components(
         components: Iterable[Union[KostalPlenticoreBat, KostalPlenticoreCounter, KostalPlenticoreInverter]]
     ):
-        with tcp_client:
+        nonlocal client, reader
+        with client:
             update(components, reader)
 
-    try:
-        tcp_client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-        reader = _create_reader(tcp_client, device_config.configuration.modbus_id)
-    except Exception:
-        log.exception("Fehler in create_device")
+    def initialiser():
+        nonlocal client, reader
+        client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
+        reader = _create_reader(client, device_config.configuration.modbus_id)
+
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component, counter=create_counter_component, inverter=create_inverter_component),
         component_updater=MultiComponentUpdater(update_components),
