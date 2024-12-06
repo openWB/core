@@ -17,13 +17,18 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Sample):
+    client = None
+
     def create_bat_component(component_config: SampleBatSetup):
+        nonlocal client
         return SampleBat(device_config.id, component_config, device_config.configuration.ip_address, client)
 
     def create_counter_component(component_config: SampleCounterSetup):
+        nonlocal client
         return SampleCounter(device_config.id, component_config, device_config.configuration.ip_address, client)
 
     def create_inverter_component(component_config: SampleInverterSetup):
+        nonlocal client
         return SampleInverter(device_config.id, component_config, device_config.configuration.ip_address, client)
 
     def update_components(components: Iterable[Union[SampleBat, SampleCounter, SampleInverter]]):
@@ -32,12 +37,13 @@ def create_device(device_config: Sample):
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    try:
+    def initialiser():
+        nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
