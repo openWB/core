@@ -32,6 +32,7 @@ def create_device(device_config: Deye):
         return DeyeInverter(device_config.id, component_config, client)
 
     def update_components(components: Iterable[Union[DeyeBat, DeyeCounter, DeyeInverter]]):
+        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

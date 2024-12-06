@@ -30,6 +30,7 @@ def create_device(device_config: ZCS):
         return ZCSInverter(component_config, device_config.configuration.modbus_id, client)
 
     def update_components(components: Iterable[Union[ZCSBat, ZCSCounter, ZCSInverter]]):
+        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
