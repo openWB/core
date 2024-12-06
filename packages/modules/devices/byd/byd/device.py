@@ -15,6 +15,7 @@ def create_device(device_config: BYD):
 
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=lambda: None,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component
         ),

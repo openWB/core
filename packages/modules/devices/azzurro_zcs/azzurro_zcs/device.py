@@ -15,27 +15,33 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: ZCS):
+    client = None
+
     def create_bat_component(component_config: ZCSBatSetup):
-        return ZCSBat(component_config, device_config.configuration.modbus_id)
+        nonlocal client
+        return ZCSBat(component_config, device_config.configuration.modbus_id, client)
 
     def create_counter_component(component_config: ZCSCounterSetup):
-        return ZCSCounter(component_config, device_config.configuration.modbus_id)
+        nonlocal client
+        return ZCSCounter(component_config, device_config.configuration.modbus_id, client)
 
     def create_inverter_component(component_config: ZCSInverterSetup):
-        return ZCSInverter(component_config, device_config.configuration.modbus_id)
+        nonlocal client
+        return ZCSInverter(component_config, device_config.configuration.modbus_id, client)
 
     def update_components(components: Iterable[Union[ZCSBat, ZCSCounter, ZCSInverter]]):
-        with client as c:
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(c)
+                    component.update()
 
-    try:
+    def initialiser():
+        nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
