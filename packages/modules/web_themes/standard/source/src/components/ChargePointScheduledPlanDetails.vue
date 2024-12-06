@@ -193,17 +193,21 @@ const weekDays = [
 ];
 
 const getSelectedWeekdaysText = computed(() => {
-  return weekDays
-    .slice(0, 5)
-    .filter((_, index) => selectedWeekDays.value[index])
-    .join(', ') || 'Keine Werktage ausgewählt';
+  return (
+    weekDays
+      .slice(0, 5)
+      .filter((_, index) => selectedWeekDays.value[index])
+      .join(', ') || 'Keine Werktage ausgewählt'
+  );
 });
 
 const getSelectedWeekendText = computed(() => {
-  return weekDays
-    .slice(5)
-    .filter((_, index) => selectedWeekDays.value[index + 5])
-    .join(', ') || 'Keine Wochenendtag ausgewählt';
+  return (
+    weekDays
+      .slice(5)
+      .filter((_, index) => selectedWeekDays.value[index + 5])
+      .join(', ') || 'Keine Wochenendtag ausgewählt'
+  );
 });
 
 const showWeeklyMenu = (event: Event) => {
