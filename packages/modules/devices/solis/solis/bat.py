@@ -13,20 +13,21 @@ log = logging.getLogger(__name__)
 
 
 class SolisBat(AbstractBat):
-    def __init__(self, component_config: SolisBatSetup) -> None:
+    def __init__(self, component_config: SolisBatSetup, client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(SolisBatSetup, component_config)
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = client.read_input_registers(33149, ModbusDataType.INT_32, unit=unit) * -1
-        soc = client.read_input_registers(33139, ModbusDataType.UINT_16, unit=unit)
+        power = self.client.read_input_registers(33149, ModbusDataType.INT_32, unit=unit) * -1
+        soc = self.client.read_input_registers(33139, ModbusDataType.UINT_16, unit=unit)
         # Geladen in kWh
-        imported = client.read_input_registers(33161, ModbusDataType.UINT_32, unit=unit) * 1000
+        imported = self.client.read_input_registers(33161, ModbusDataType.UINT_32, unit=unit) * 1000
         # Entladen in kWh
-        exported = client.read_input_registers(33165, ModbusDataType.UINT_32, unit=unit) * 1000
+        exported = self.client.read_input_registers(33165, ModbusDataType.UINT_32, unit=unit) * 1000
 
         bat_state = BatState(
             power=power,

@@ -15,29 +15,31 @@ from modules.devices.qcells.qcells.config import QCellsCounterSetup
 class QCellsCounter(AbstractCounter):
     def __init__(self,
                  component_config: Union[Dict, QCellsCounterSetup],
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(QCellsCounterSetup, component_config)
         self.__modbus_id = modbus_id
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_):
-        power = client.read_input_registers(0x0046, ModbusDataType.INT_32, wordorder=Endian.Little,
-                                            unit=self.__modbus_id) * -1
-        frequency = client.read_input_registers(
+    def update(self) -> None:
+        power = self.client.read_input_registers(0x0046, ModbusDataType.INT_32, wordorder=Endian.Little,
+                                                 unit=self.__modbus_id) * -1
+        frequency = self.client.read_input_registers(
             0x0007, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
         try:
-            powers = [-value for value in client.read_input_registers(
+            powers = [-value for value in self.client.read_input_registers(
                 0x0082, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id
             )]
         except Exception:
             powers = None
         try:
-            voltages = [client.read_input_registers(
+            voltages = [self.client.read_input_registers(
                 0x006A, ModbusDataType.UINT_16, unit=self.__modbus_id
-            ) / 10, client.read_input_registers(
+            ) / 10, self.client.read_input_registers(
                 0x006E, ModbusDataType.UINT_16, unit=self.__modbus_id
-            ) / 10, client.read_input_registers(
+            ) / 10, self.client.read_input_registers(
                 0x0072, ModbusDataType.UINT_16, unit=self.__modbus_id
             ) / 10]
             if voltages[0] < 1:
@@ -49,7 +51,7 @@ class QCellsCounter(AbstractCounter):
         except Exception:
             voltages = [230, 230, 230]
         exported, imported = [value * 10
-                              for value in client.read_input_registers(
+                              for value in self.client.read_input_registers(
                                   0x0048, [ModbusDataType.UINT_32] * 2,
                                   wordorder=Endian.Little, unit=self.__modbus_id
                               )]
