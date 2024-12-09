@@ -1,14 +1,11 @@
 <template>
-  <q-btn-group push rounded class="q-mt-md">
+  <q-btn-group class="q-mt-md">
     <q-btn
       v-for="mode in batModes"
       :key="mode.value"
-      :flat="batMode.value !== mode.value"
-      :outline="batMode.value === mode.value"
-      :glossy="batMode.value === mode.value"
+      :color="batMode.value === mode.value ? 'primary' : 'grey'"
       :label="mode.label"
       :icon="mode.icon"
-      :color="mode.color"
       size="sm"
       @click="batMode.value = mode.value"
     >

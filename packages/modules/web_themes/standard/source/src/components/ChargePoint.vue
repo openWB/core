@@ -100,10 +100,25 @@ const connectedVehicleSoc = computed(() =>
   ),
 );
 
-const targetSoc = computed(
-  () =>
-    mqttStore.vehicleScheduledChargingTarget(props.chargePointId).value?.soc,
-);
+const targetSoc = computed<number | undefined>(() => {
+  const chargeMode = mqttStore.chargePointConnectedVehicleChargeMode(
+    props.chargePointId,
+  ).value;
+  const instantLimitMode =
+    mqttStore.chargePointConnectedVehicleInstantChargeLimit(
+      props.chargePointId,
+    ).value;
+  if (chargeMode === 'scheduled_charging') {
+    return mqttStore.vehicleScheduledChargingTarget(props.chargePointId).value
+      ?.soc;
+  } else if (chargeMode === 'instant_charging' && instantLimitMode === 'soc') {
+    return mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
+      props.chargePointId,
+    )?.value;
+  } else {
+    return undefined;
+  }
+});
 
 const targetTime = computed(() => {
   const target = mqttStore.vehicleScheduledChargingTarget(

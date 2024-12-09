@@ -11,10 +11,10 @@
         <q-icon name="ev_station" size="md" color="primary" />
       </q-tab>
       <q-tab name="batteries" title="Speicher">
-        <q-icon name="battery_full" size="md" color="warning" />
+        <q-icon name="battery_full" size="md" color="primary" />
       </q-tab>
       <q-tab name="smartHome" title="SmartHome">
-        <q-icon name="home" size="md" color="accent" />
+        <q-icon name="home" size="md" color="primary" />
       </q-tab>
     </q-tabs>
     <!-- Tab Panels -->
@@ -30,7 +30,7 @@
         <div class="row justify-center">
           <BatteryOverview />
         </div>
-        <BaseCarousel :items="batteryIds">
+        <BaseCarousel :items="batteryIds" v-if="showBatteryCarousel">
           <template #item="{ item }">
             <BatteryInformation :battery-id="item" />
           </template>
@@ -58,6 +58,10 @@ defineOptions({
 });
 
 const tab = ref<string>('charge-points');
+
+const showBatteryCarousel = computed(() => {
+  return mqttStore.batteryIds.length > 1;
+});
 
 const mqttStore = useMqttStore();
 const chargePointIds = computed(() => mqttStore.chargePointIds);

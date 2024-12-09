@@ -30,14 +30,12 @@
           :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'soc'"
           label="SoC"
-          text-color="$custom1-brown-text"
         />
         <q-btn
           size="sm"
           :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'amount'"
           label="Amount"
-          text-color="$custom1-brown-text"
         />
       </q-btn-group>
       <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
@@ -65,99 +63,90 @@
         label="Ziel-Energy (kWh)"
         class="col"
       />
-      <div class="q-mb-md">
-        <div class="text-subtitle2 q-mb-sm q-mt-md">Wiederholungen</div>
+
+      <div class="q-mb-md q-mt-md">
         <q-btn-group spread>
           <q-btn
             size="sm"
             :color="planFrequency.value === 'once' ? 'primary' : 'grey'"
             @click="planFrequency.value = 'once'"
             label="Einmalig"
-            text-color="$custom1-brown-text"
           />
           <q-btn
             size="sm"
             :color="planFrequency.value === 'daily' ? 'primary' : 'grey'"
             @click="planFrequency.value = 'daily'"
             label="Täglich"
-            text-color="$custom1-brown-text"
           />
-          <q-btn
-            size="sm"
-            :color="planFrequency.value === 'weekly' ? 'primary' : 'grey'"
-            @click="planFrequency.value = 'weekly'"
-            label="Wöchentlich"
-            text-color="$custom1-brown-text"
-          />
+          <div>
+            <q-btn
+              size="sm"
+              :color="planFrequency.value === 'weekly' ? 'primary' : 'grey'"
+              @click="(e: Event) => showWeeklyMenu(e)"
+              label="Wöchentlich"
+              :model-value="weeklyMenuOpen && !isDialogScrolled"
+            />
+            <q-menu
+              v-model="weeklyMenuOpen"
+              anchor="bottom left"
+              transition-show="scale"
+              transition-hide="scale"
+              fit
+            >
+              <q-list>
+                <template v-for="(day, index) in weekDays" :key="day">
+                  <q-item
+                    clickable
+                    :active="selectedWeekDays[index]"
+                    active-class="bg-primary text-white"
+                    @click="selectDay(index)"
+                  >
+                    <q-item-section class="text-center">{{
+                      day
+                    }}</q-item-section>
+                  </q-item>
+                  <q-separator v-if="index < weekDays.length - 1" />
+                </template>
+              </q-list>
+            </q-menu>
+          </div>
         </q-btn-group>
 
-        <div v-if="planFrequency.value === 'once'" class="q-mt-sm">
-          <q-input
-            v-model="planOnceDate.value"
-            type="date"
-            label="Datum"
-            :min="new Date().toISOString().split('T')[0]"
-          />
-        </div>
-
-        <!-- Weekly toggles -->
-        <div v-if="planFrequency.value === 'weekly'" class="q-mt-sm">
-          <!-- First row: Monday-Friday -->
-          <div class="row items-center q-gutter-sm q-mb-sm">
-            <div
-              v-for="(day, index) in weekDays.slice(0, 5)"
-              :key="day"
-              class="column items-center"
-            >
-              <div class="text-caption">{{ day }}</div>
-              <ToggleStandard
-                :model-value="selectedWeekDays[index]"
-                @update:model-value="
-                  (val: boolean) => {
-                    const newArray = [...selectedWeekDays];
-                    newArray[index] = val;
-                    selectedWeekDays = newArray;
-                  }
-                "
-                color="positive"
-                :size="'sm'"
-              />
-            </div>
+        <div v-if="planFrequency.value === 'weekly'" class="q-mt-md">
+          <div class="row items-center">
+            <q-icon name="calendar_month" class="q-mr-sm" size="sm" />
+            <div class="text-bold">Werktage:</div>
           </div>
-
-          <!-- Second row: Saturday-Sunday -->
-          <div class="row items-center q-gutter-sm">
-            <div
-              v-for="(day, index) in weekDays.slice(5)"
-              :key="day"
-              class="column items-center"
-            >
-              <div class="text-caption">{{ day }}</div>
-              <ToggleStandard
-                :model-value="selectedWeekDays[index + 5]"
-                @update:model-value="
-                  (val: boolean) => {
-                    const newArray = [...selectedWeekDays];
-                    newArray[index + 5] = val;
-                    selectedWeekDays = newArray;
-                  }
-                "
-                color="positive"
-                :size="'sm'"
-              />
-            </div>
+          <div class="row q-mt-xs">
+            <div class="text-subtitle2">{{ getSelectedWeekdaysText }}</div>
+          </div>
+          <div class="row items-center q-mt-md">
+            <q-icon name="calendar_month" class="q-mr-sm" size="sm" />
+            <div class="text-bold">Wochenendtag:</div>
+          </div>
+          <div class="row q-mt-xs">
+            <div class="text-subtitle2">{{ getSelectedWeekendText }}</div>
           </div>
         </div>
-        <div class="q-mt-lg row justify-end">
-          <q-btn
-            size="sm"
-            icon="delete"
-            :color="'primary'"
-            text-color="$custom1-brown-text"
-            label="Löschen"
-            @click="deletePlan(props.chargePointId, props.plan.id)"
-          />
-        </div>
+      </div>
+
+      <div v-if="planFrequency.value === 'once'" class="q-mt-sm">
+        <q-input
+          v-model="planOnceDate.value"
+          type="date"
+          label="Datum"
+          :min="new Date().toISOString().split('T')[0]"
+        />
+      </div>
+
+      <div class="q-mt-lg row justify-end">
+        <q-btn
+          size="sm"
+          icon="delete"
+          :color="'primary'"
+          label="Löschen"
+          @click="deletePlan(props.chargePointId, props.plan.id)"
+        />
       </div>
     </q-card-section>
   </q-card>
@@ -167,7 +156,7 @@
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
-import { computed } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
 
 const props = defineProps<{
@@ -177,7 +166,62 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const weeklyMenuOpen = ref<boolean>(false);
+
+// Inject boolean value from the parent component
+const isDialogScrolled = inject('isDialogScrolled', ref(false));
+
+watch(
+  isDialogScrolled,
+  () => {
+    weeklyMenuOpen.value = false;
+  },
+  {
+    immediate: true,
+    flush: 'sync',
+  },
+);
+
+const weekDays = [
+  'Montag',
+  'Dienstag',
+  'Mittwoch',
+  'Donnerstag',
+  'Freitag',
+  'Samstag',
+  'Sonntag',
+];
+
+const getSelectedWeekdaysText = computed(() => {
+  return (
+    weekDays
+      .slice(0, 5)
+      .filter((_, index) => selectedWeekDays.value[index])
+      .join(', ') || 'Keine Werktage ausgewählt'
+  );
+});
+
+const getSelectedWeekendText = computed(() => {
+  return (
+    weekDays
+      .slice(5)
+      .filter((_, index) => selectedWeekDays.value[index + 5])
+      .join(', ') || 'Keine Wochenendtag ausgewählt'
+  );
+});
+
+const showWeeklyMenu = (event: Event) => {
+  isDialogScrolled.value = false;
+  planFrequency.value.value = 'weekly';
+  weeklyMenuOpen.value = !weeklyMenuOpen.value;
+  event.stopPropagation();
+};
+
+const selectDay = (index: number) => {
+  const newArray = [...selectedWeekDays.value];
+  newArray[index] = !newArray[index];
+  selectedWeekDays.value = newArray;
+};
 
 const planActive = computed({
   get() {
@@ -243,7 +287,7 @@ const planOnceDate = computed(() =>
   ),
 );
 
-const selectedWeekDays = computed({
+const selectedWeekDays = computed<boolean[]>({
   get() {
     return (
       mqttStore.vehicleScheduledChargingPlanWeeklyDays(
@@ -277,3 +321,35 @@ const planSocScheduled = computed(() =>
 const deletePlan = (chargePointId: number, planId: string) =>
   mqttStore.vehicleDeleteScheduledChargingPlan(props.chargePointId, planId);
 </script>
+
+<style lang="scss" scoped>
+.q-btn-group > div > .q-btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+body.desktop {
+  .q-btn-group {
+    .q-btn {
+      min-width: 100px !important;
+    }
+  }
+}
+
+body.mobile {
+  .q-btn {
+    padding: 4px 8px;
+    font-size: 12px !important;
+    min-height: 30px;
+    min-width: 100px !important;
+  }
+  .q-btn-group {
+    .q-btn {
+      padding: 4px 8px;
+      font-size: 12px !important;
+      min-height: 30px;
+      min-width: 100px !important;
+    }
+  }
+}
+</style>
