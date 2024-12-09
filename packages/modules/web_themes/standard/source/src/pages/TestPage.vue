@@ -60,8 +60,8 @@ defineOptions({
 const tab = ref<string>('charge-points');
 
 const showBatteryCarousel = computed(() => {
-  return mqttStore.batteryIds.length > 1
-})
+  return mqttStore.batteryIds.length > 1;
+});
 
 const mqttStore = useMqttStore();
 const chargePointIds = computed(() => mqttStore.chargePointIds);
