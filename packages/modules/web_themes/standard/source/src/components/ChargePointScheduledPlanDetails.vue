@@ -99,7 +99,7 @@
                     clickable
                     :active="selectedWeekDays[index]"
                     active-class="bg-primary text-white"
-                    @click="toggleDay(index)"
+                    @click="selectDay(index)"
                   >
                     <q-item-section class="text-center">{{
                       day
@@ -217,7 +217,7 @@ const showWeeklyMenu = (event: Event) => {
   event.stopPropagation();
 };
 
-const toggleDay = (index: number) => {
+const selectDay = (index: number) => {
   const newArray = [...selectedWeekDays.value];
   newArray[index] = !newArray[index];
   selectedWeekDays.value = newArray;
