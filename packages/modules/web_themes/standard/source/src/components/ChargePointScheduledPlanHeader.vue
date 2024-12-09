@@ -1,6 +1,6 @@
 <template>
   <div
-    class="row items-center justify-between text-subtitle2 full-width no-wrap"
+    class="row items-center justify-between text-subtitle2 full-width no-wrap height"
   >
     <div class="row" @click="planActive = !planActive">
       <q-icon
@@ -83,3 +83,11 @@ const planActive = computed({
   },
 });
 </script>
+
+<style lang="scss" scoped>
+body.mobile {
+  .height {
+    height: 2.5em;
+  }
+}
+</style>
