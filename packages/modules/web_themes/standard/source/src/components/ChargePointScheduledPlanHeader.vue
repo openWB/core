@@ -12,10 +12,9 @@
               : 'event'
         "
         size="sm"
-        class="q-mr-xs"
-        color="white"
+        class="q-mr-xs white-icon"
       />
-      <div class="q-mr-xs" style="color: #ffffff">
+      <div class="q-mr-xs white-text">
         {{
           plan.frequency.selected === 'daily'
             ? 'täglich'
@@ -26,26 +25,17 @@
               : 'einmalig'
         }}
       </div>
-      <q-icon name="schedule" size="sm" class="q-mr-xs" color="white" />
-      <div class="q-mr-xs" style="color: #ffffff">{{ plan.time }}</div>
+      <q-icon name="schedule" size="sm" class="q-mr-xs white-icon" />
+      <div class="q-mr-xs white-text">{{ plan.time }}</div>
       <q-icon
         :name="plan.limit.selected === 'soc' ? 'battery_full' : 'bolt'"
         size="sm"
-        class="q-mr-xs"
-        color="white"
+        class="q-mr-xs white-icon"
       />
-      <div
-        v-if="plan.limit.selected === 'soc'"
-        class="q-mr-xs"
-        style="color: #ffffff"
-      >
+      <div v-if="plan.limit.selected === 'soc'" class="q-mr-xs white-text">
         {{ plan.limit.soc_scheduled }}%
       </div>
-      <div
-        v-if="plan.limit.selected === 'amount'"
-        class="q-mr-xs"
-        style="color: #ffffff"
-      >
+      <div v-if="plan.limit.selected === 'amount'" class="q-mr-xs white-text">
         {{ plan.limit.amount ? plan.limit.amount / 1000 : '' }}kWh
       </div>
     </div>
@@ -80,10 +70,14 @@ const planActive = computed({
 });
 </script>
 
-<style lang="scss" scoped>
-body.mobile {
-  .height {
-    height: 2.5em;
-  }
+<style scoped>
+body.mobile .height {
+  height: 2.5em;
+}
+.white-text {
+  color: var(--q-white);
+}
+.white-icon {
+  color: var(--q-white);
 }
 </style>
