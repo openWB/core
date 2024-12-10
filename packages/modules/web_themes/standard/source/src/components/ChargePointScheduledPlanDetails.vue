@@ -41,7 +41,7 @@
       <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
         <SliderStandard
           title="Fahrzeug-SoC zum Zielzeitpunkt"
-          :min="0"
+          :min="5"
           :max="100"
           :step="5"
           unit="%"
@@ -50,7 +50,7 @@
         />
         <SliderStandard
           title="Fahrzeug-SoC mit Überschuss"
-          :min="0"
+          :min="5"
           :max="100"
           :step="5"
           unit="%"
