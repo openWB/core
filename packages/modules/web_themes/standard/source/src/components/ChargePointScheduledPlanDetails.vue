@@ -322,7 +322,7 @@ const deletePlan = (chargePointId: number, planId: string) =>
   mqttStore.vehicleDeleteScheduledChargingPlan(props.chargePointId, planId);
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .q-btn-group > div > .q-btn {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
