@@ -5,7 +5,7 @@ from typing import Dict, Tuple
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import IoState
 from modules.common.configurable_io import ConfigurableIo
-from modules.io_devices.add_on.config import AddOn
+from modules.io_devices.add_on.config import AddOn, DigitalInputMapping, DigitalOutputMapping
 
 log = logging.getLogger(__name__)
 has_gpio = True
@@ -21,16 +21,9 @@ except ImportError:
 def create_io(config: AddOn):
     def read() -> Tuple[bool, bool]:
         if has_gpio:
-            return IoState(digital_input={"21": GPIO.input(21) == GPIO.LOW,
-                                          "24": GPIO.input(24) == GPIO.LOW,
-                                          "31": GPIO.input(31) == GPIO.LOW,
-                                          "32": GPIO.input(32) == GPIO.LOW,
-                                          "33": GPIO.input(33) == GPIO.LOW,
-                                          "36": GPIO.input(36) == GPIO.LOW,
-                                          "40": GPIO.input(40) == GPIO.LOW},
-                            digital_output={"7": GPIO.input(7) == GPIO.LOW,
-                                          "16": GPIO.input(16) == GPIO.LOW,
-                                          "18": GPIO.input(18) == GPIO.LOW})
+            return IoState(
+                digital_input={input.name: GPIO.input(input.value) == GPIO.LOW for input in DigitalInputMapping},
+                digital_output={output.name: GPIO.input(output.value) == GPIO.LOW for output in DigitalOutputMapping})
         else:
             return IoState()
 
