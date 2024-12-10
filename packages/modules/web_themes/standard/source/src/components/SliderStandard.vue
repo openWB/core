@@ -6,8 +6,10 @@
     <div class="row">
       <q-slider
         v-model="value"
-        :min="props.min"
-        :max="props.max"
+        :min="props.discreteValues ? 0 : props.min"
+        :max="
+          props.discreteValues ? props.discreteValues.length - 1 : props.max
+        "
         :step="props.step"
         color="primary"
         style="width: 75%"
@@ -19,7 +21,7 @@
         @change="updateValue"
       />
       <div class="q-ml-md q-mt-xs items-center no-wrap" :class="myClass">
-        {{ value }} {{ props.unit }}
+        {{ displayValue }} {{ displayUnit }}
       </div>
     </div>
   </div>
@@ -56,6 +58,18 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  offValueRight: {
+    type: Number,
+    default: 105,
+  },
+  offValueLeft: {
+    type: Number,
+    default: -1,
+  },
+  discreteValues: {
+    type: Array as () => number[],
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -68,24 +82,71 @@ const updateTimeout = ref<NodeJS.Timeout | null>(null);
 const updatePending = computed(() => {
   return tempValue.value !== props.modelValue;
 });
-
 const value = computed({
-  get: () => tempValue.value,
+  get: () => {
+    if (props.discreteValues) {
+      const index = props.discreteValues.indexOf(
+        tempValue.value ?? props.discreteValues[0],
+      );
+      return index >= 0 ? index : 0;
+    }
+    return tempValue.value;
+  },
   set: (newValue: number) => {
     if (updateTimeout.value) {
       clearTimeout(updateTimeout.value);
     }
-    tempValue.value = newValue;
+    if (props.discreteValues) {
+      tempValue.value = props.discreteValues[newValue];
+    } else {
+      tempValue.value = newValue;
+    }
   },
 });
 
 const updateValue = (newValue: number) => {
   if (updatePending.value) {
+    if (updateTimeout.value) {
+      clearTimeout(updateTimeout.value);
+    }
     updateTimeout.value = setTimeout(() => {
-      emit('update:model-value', newValue);
+      emit(
+        'update:model-value',
+        props.discreteValues ? props.discreteValues[newValue] : newValue,
+      );
     }, 2000);
   }
 };
+
+const displayValue = computed(() => {
+  const currentValue =
+    props.discreteValues && value.value !== undefined
+      ? props.discreteValues[value.value]
+      : value.value;
+
+  if (
+    currentValue === props.offValueLeft ||
+    currentValue === props.offValueRight
+  ) {
+    return 'Aus';
+  }
+  return currentValue;
+});
+
+const displayUnit = computed(() => {
+  const currentValue =
+    props.discreteValues && value.value !== undefined
+      ? props.discreteValues[value.value]
+      : value.value;
+
+  if (
+    currentValue === props.offValueLeft ||
+    currentValue === props.offValueRight
+  ) {
+    return '';
+  }
+  return props.unit;
+});
 
 watch(
   () => props.modelValue,
