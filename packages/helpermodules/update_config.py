@@ -1867,17 +1867,19 @@ class UpdateConfig:
                         io_device.configuration.modbus_id = payload["configuration"]["modbus_id"]
                         # Wenn mindestens ein Kontakt offen ist, wird die Ladung gesperrt. Wenn beide Kontakte
                         # geschlossen sind, darf geladen werden.
-                        action.configuration.input_pattern = [{"value": 0, "input_matrix": {"0": False, "1": False}},
-                                                              {"value": 0, "input_matrix": {"0": False, "1": True}},
-                                                              {"value": 0, "input_matrix": {"0": True, "1": False}},
-                                                              {"value": 1, "input_matrix": {"0": True, "1": True}}]
+                        action.configuration.input_pattern = [
+                            {"value": 0, "input_matrix": {"DI0": False, "DI1": False}},
+                            {"value": 0, "input_matrix": {"DI0": False, "DI1": True}},
+                            {"value": 0, "input_matrix": {"DI0": True, "DI1": False}},
+                            {"value": 1, "input_matrix": {"DI0": True, "DI1": True}}]
                     elif payload["type"] == "gpio":
                         # Wenn mindestens ein Kontakt geschlossen ist, wird die Ladung gesperrt. Wenn beide Kontakt
                         # offen sind, darf geladen werden.
-                        action.configuration.input_pattern = [{"value": 1, "input_matrix": {"21": False, "24": False}},
-                                                              {"value": 0, "input_matrix": {"21": False, "24": True}},
-                                                              {"value": 0, "input_matrix": {"21": True, "24": False}},
-                                                              {"value": 0, "input_matrix": {"21": True, "24": True}}]
+                        action.configuration.input_pattern = [
+                            {"value": 1, "input_matrix": {"RSE1": False, "RSE2": False}},
+                            {"value": 0, "input_matrix": {"RSE1": False, "RSE2": True}},
+                            {"value": 0, "input_matrix": {"RSE1": True, "RSE2": False}},
+                            {"value": 0, "input_matrix": {"RSE1": True, "RSE2": True}}]
 
                     return {'openWB/system/io/0/config': dataclass_utils.asdict(io_device),
                             'openWB/io/action/0/config': dataclass_utils.asdict(action)}

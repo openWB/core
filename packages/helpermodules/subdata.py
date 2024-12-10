@@ -882,10 +882,10 @@ class SubData:
                     if "/io/local/config" in msg.topic:
                         self.event_restart_gpio.set()
                         dev = importlib.import_module(f".internal_chargepoint_handler.{io_config['type']}.api",
-                                                    "modules")
+                                                      "modules")
                     else:
                         dev = importlib.import_module(f".io_devices.{io_config['type']}.api",
-                                                    "modules")
+                                                      "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, io_config)
                     var["io"+index] = dev.create_io(config)
             else:

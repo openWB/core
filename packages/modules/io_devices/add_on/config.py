@@ -1,35 +1,42 @@
-from typing import Dict, Union
+from enum import Enum
+from typing import Dict, Optional, Union
 from modules.common.io_setup import IoDeviceSetup
 
 
+class DigitalInputMapping(Enum):
+    RSE1 = 24
+    RSE2 = 21
+    nurPV = 31
+    SofortLa = 32
+    Stop = 33
+    MinPV = 36
+    Standby = 40
+
+
+class DigitalOutputMapping(Enum):
+    LED1 = 18
+    LED2 = 16
+    LED3 = 7
+
+
 class AddOnConfiguration:
-    def __init__(self, cp_num: int = None) -> None:
-        self.cp_num = cp_num
+    def __init__(self, host: Optional[str] = None) -> None:
+        self.host = host
 
 
 def init_input():
     return {"analog": {},
-            "digital": {"21": None,
-                        "24": None,
-                        "31": None,
-                        "32": None,
-                        "33": None,
-                        "36": None,
-                        "40": None}
-            }
+            "digital": {pin.name: False for pin in DigitalInputMapping}}
 
 
 def init_output():
     return {"analog": {},
-            "digital": {"7": False,
-                        "16": False,
-                        "18": False}
-            }
+            "digital": {pin.name: False for pin in DigitalOutputMapping}}
 
 
 class AddOn(IoDeviceSetup[AddOnConfiguration]):
     def __init__(self,
-                 name: str = "GPIOs auf der AddOn-Platine",
+                 name: str = "Kontakte der AddOn-Platine",
                  type: str = "add_on",
                  id: Union[int, str] = 0,
                  configuration: AddOnConfiguration = None,
