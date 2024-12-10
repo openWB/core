@@ -1,14 +1,4 @@
 <template>
-  <q-btn-group class="q-mt-md" v-if="isDesktop">
-    <q-btn
-      v-for="mode in chargeModes"
-      :key="mode.value"
-      :color="chargeMode.value === mode.value ? 'primary' : 'grey'"
-      :label="mode.label"
-      size="sm"
-      @click="chargeMode.value = mode.value"
-    />
-  </q-btn-group>
   <div class="q-pt-md full-width" v-if="isMobile">
     <q-btn-dropdown
       transition-show="scale"
@@ -40,6 +30,16 @@
       </q-list>
     </q-btn-dropdown>
   </div>
+  <q-btn-group class="q-mt-md" v-else>
+    <q-btn
+      v-for="mode in chargeModes"
+      :key="mode.value"
+      :color="chargeMode.value === mode.value ? 'primary' : 'grey'"
+      :label="mode.label"
+      size="sm"
+      @click="chargeMode.value = mode.value"
+    />
+  </q-btn-group>
 </template>
 
 <script setup lang="ts">
@@ -51,7 +51,6 @@ const props = defineProps<{
   chargePointId: number;
 }>();
 
-const isDesktop = computed(() => Platform.is.desktop);
 const isMobile = computed(() => Platform.is.mobile);
 
 const mqttStore = useMqttStore();
@@ -74,7 +73,7 @@ const currentModeLabel = computed(
 );
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 :deep(.q-btn-dropdown__arrow-container) {
   width: 0;
   padding: 0;
