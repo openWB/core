@@ -121,10 +121,13 @@ const targetSoc = computed<number | undefined>(() => {
 });
 
 const targetTime = computed(() => {
+  const chargeMode = mqttStore.chargePointConnectedVehicleChargeMode(
+    props.chargePointId,
+  ).value;
   const target = mqttStore.vehicleScheduledChargingTarget(
     props.chargePointId,
   ).value;
-  if (!target || !target.time) {
+  if (!target || !target.time || chargeMode !== 'scheduled_charging') {
     return 'keine';
   }
   return target.time;
