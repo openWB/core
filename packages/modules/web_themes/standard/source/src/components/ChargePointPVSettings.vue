@@ -34,11 +34,14 @@
   <SliderStandard
     title="SoC-Limit für das Fahrzeug"
     :min="0"
-    :max="105"
-    :step="5"
+    :max="101"
+    :step="1"
     unit="%"
-    :show-off-value-right="true"
-    :off-value-right="105"
+    :discrete-values="[
+      0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
+      95, 100, 101,
+    ]"
+    :off-value-right="101"
     v-model="pvMaxSocLimit.value"
     class="q-mt-md q-ml-sm"
   />
