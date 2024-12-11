@@ -115,6 +115,10 @@ const targetSoc = computed<number | undefined>(() => {
     return mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
       props.chargePointId,
     )?.value;
+  } else if (chargeMode === 'pv_charging') {
+    return mqttStore.chargePointConnectedVehiclePVChargeMaxSoc(
+      props.chargePointId,
+    ).value;
   } else {
     return undefined;
   }
