@@ -98,6 +98,56 @@ else
 	disableSite http-api-ssl
 fi
 
+# check for pro+
+echo "Pro+ setup..."
+ports_conf_source="${OPENWBBASEDIR}/data/config/apache/ports.conf"
+ports_conf_target="/etc/apache2/ports.conf"
+if lsusb | grep -q 'RTL8153'; then
+	echo "second network for pro plus detected"
+	# enable pro+ specific configurations
+	enableModule proxy_http
+	enableModule proxy_fcgi
+	enableModule proxy_ajp
+	enableSite apache-proplus
+	# update ports.conf
+	echo "ports.conf..."
+	if version_match "$ports_conf_source" "$ports_conf_target"; then
+		echo "no changes required"
+	else
+		echo "openwb section not found or outdated"
+		# delete old settings with version tag
+		pattern_begin=$(grep -m 1 '#' "$ports_conf_source")
+		pattern_end=$(grep '#' "$ports_conf_source" | tail -n 1)
+		sudo sed -i "/$pattern_begin/,/$pattern_end/d" "$ports_conf_target"
+		# add new settings
+		echo "adding dhcpcd settings to $ports_conf_target..."
+		sudo tee -a "$ports_conf_target" <"$ports_conf_source" >/dev/null
+		echo "done"
+		echo "restarting dhcpcd"
+		sudo systemctl restart dhcpcd
+	fi
+else
+	echo "no second network for pro plus detected"
+	# disable all pro+ specific configurations
+	disableModule proxy_http
+	disableModule proxy_fcgi
+	disableModule proxy_ajp
+	disableSite apache-proplus
+	# reset ports.conf
+	echo "checking dhcpcd.conf..."
+	if version_match "$ports_conf_source" "$ports_conf_target"; then
+		echo "openwb section found, deleting..."
+		# delete old settings with version tag
+		pattern_begin=$(grep -m 1 '#' "$ports_conf_source")
+		pattern_end=$(grep '#' "$ports_conf_source" | tail -n 1)
+		sudo sed -i "/$pattern_begin/,/$pattern_end/d" "$ports_conf_target"
+		echo "restarting dhcpcd"
+		sudo systemctl restart dhcpcd
+	else
+		echo "no changes required"
+	fi
+fi
+
 # restart apache if required
 if ((restartService == 1)); then
 	echo -n "restarting apache..."

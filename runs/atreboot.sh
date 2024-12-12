@@ -397,60 +397,6 @@ chmod 666 "$LOGFILE"
 		echo "no internet connection, skipping version update"
 	fi
 
-	# check for pro plus
-	echo "ProPlus..."
-	if lsusb | grep -q 'RTL8153'; then
-		echo "second network for pro plus detected"
-		if sudo a2query -m proxy_http; then
-			echo "proxy_http already enabled"
-		else
-			echo "proxy_http currently disabled; enabling module"
-			sudo a2enmod proxy_http
-			restartService=1
-		fi
-		if sudo a2query -m proxy_fcgi; then
-			echo "proxy_fcgi already enabled"
-		else
-			echo "proxy_fcgi currently disabled; enabling module"
-			sudo a2enmod proxy_fcgi
-			restartService=1
-		fi
-		if sudo a2query -m proxy_ajp; then
-			echo "proxy_ajp already enabled"
-		else
-			echo "proxy_ajp currently disabled; enabling module"
-			sudo a2enmod proxy_ajp
-			restartService=1
-		fi
-		if ! versionMatch "${OPENWBBASEDIR}/data/config/proplus-apache.conf" "/etc/apache2/sites-available/proplus-apache.conf"; then
-			echo "installing proplus site configuration"
-			sudo cp "${OPENWBBASEDIR}/data/config/proplus-apache.conf" "/etc/apache2/sites-available/"
-			sudo a2ensite proplus-apache
-			restartService=1
-		fi
-		if ! versionMatch "${OPENWBBASEDIR}/data/config/ports.conf" "/etc/apache2/ports.conf"; then
-			echo "installing proplus ports configuration"
-			sudo cp "${OPENWBBASEDIR}/data/config/ports.conf" "/etc/apache2/ports.conf"
-			restartService=1
-		fi
-		if ((restartService == 1)); then
-			echo -n "restarting apache..."
-			sudo systemctl restart apache2
-			echo "done"
-		fi
-		if ! versionMatch "${OPENWBBASEDIR}/data/config/dnsmasq.conf" "/etc/dnsmasq.conf"; then
-			echo "installing proplus dnsmasq.conf configuration"
-			sudo cp "${OPENWBBASEDIR}/data/config/dnsmasq.conf" "/etc/dnsmasq.conf"
-		fi
-		if ! versionMatch "${OPENWBBASEDIR}/data/config/dhcpcd.conf" "/etc/dhcpcd.conf"; then
-			echo "installing proplus dhcpcd.conf configuration"
-			sudo cp "${OPENWBBASEDIR}/data/config/dhcpcd.conf" "/etc/dhcpcd.conf"
-			sudo systemctl restart dhcpcd
-		fi
-		sudo dnsmasq -i eth1
-		sudo sysctl net.ipv4.ip_forward=1
-		sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-	fi
 	# set restore dir permissions to allow file upload for apache
 	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
 	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
