@@ -22,7 +22,7 @@ from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
 from pathlib import Path
 
-DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "bmwbc"
+DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "modules" / "bmwbc"
 
 log = logging.getLogger(__name__)
 
