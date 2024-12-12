@@ -39,6 +39,8 @@ export class Config {
 	private _showInverters = false
 	private _alternativeEnergy = false
 	private _debug: boolean = false
+	private _lowerPriceBound = 0
+	private _upperPriceBound = 0
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
 	showRightButton = true
@@ -47,6 +49,7 @@ export class Config {
 	animationDuration = 300
 	animationDelay = 100
 	zoomGraph = false
+	zoomedWidget = 1
 	constructor() {}
 	get showRelativeArcs() {
 		return this._showRelativeArcs
@@ -284,6 +287,26 @@ export class Config {
 	setAlternativeEnergy(show: boolean) {
 		this._alternativeEnergy = show
 	}
+	get lowerPriceBound() {
+		return this._lowerPriceBound
+	}
+	set lowerPriceBound(val: number) {
+		this._lowerPriceBound = val
+		savePrefs()
+	}
+	setLowerPriceBound(val: number) {
+		this._lowerPriceBound = val
+	}
+	get upperPriceBound() {
+		return this._upperPriceBound
+	}
+	set upperPriceBound(val: number) {
+		this._upperPriceBound = val
+		savePrefs()
+	}
+	setUpperPriceBound(val: number) {
+		this._upperPriceBound = val
+	}
 }
 
 export const globalConfig = reactive(new Config())
@@ -457,6 +480,8 @@ interface Preferences {
 	showPrices?: boolean
 	showInv?: boolean
 	altEngy?: boolean
+	lowerP?: number
+	upperP?: number
 	debug?: boolean
 }
 
@@ -487,6 +512,8 @@ function writeCookie() {
 	prefs.showPrices = globalConfig.showPrices
 	prefs.showInv = globalConfig.showInverters
 	prefs.altEngy = globalConfig.alternativeEnergy
+	prefs.lowerP = globalConfig.lowerPriceBound
+	prefs.upperP = globalConfig.upperPriceBound
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
@@ -575,6 +602,12 @@ function readCookie() {
 		}
 		if (prefs.altEngy !== undefined) {
 			globalConfig.setAlternativeEnergy(prefs.altEngy)
+		}
+		if (prefs.lowerP !== undefined) {
+			globalConfig.setLowerPriceBound(prefs.lowerP)
+		}
+		if (prefs.upperP !== undefined) {
+			globalConfig.setUpperPriceBound(prefs.upperP)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)
