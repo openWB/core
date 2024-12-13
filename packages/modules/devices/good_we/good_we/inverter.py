@@ -3,6 +3,7 @@ from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -12,7 +13,7 @@ from modules.devices.good_we.good_we.config import GoodWeInverterSetup
 from modules.devices.good_we.good_we.version import GoodWeVersion
 
 
-class GoodWeInverter:
+class GoodWeInverter(AbstractInverter):
     def __init__(self,
                  modbus_id: int,
                  version: GoodWeVersion,

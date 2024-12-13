@@ -164,16 +164,21 @@ class Chargepoint(ChargepointRfidMixin):
         return state, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
-        if (self.data.set.manual_lock is False or
-                (self.data.get.rfid or
-                 self.data.get.vehicle_id or
-                 self.data.set.rfid) in self.template.data.valid_tags):
+        # Die Pro schickt je nach Timing auch nach Abstecken noch ein paar Zyklen den Tag. Dann darf der Ladepunkt
+        # nicht wieder entsperrt werden.
+        if (self.data.get.rfid or
+            self.data.get.vehicle_id or
+                self.data.set.rfid) in self.template.data.valid_tags:
             Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
-            charging_possible = True
-            message = None
-        else:
+        elif self.template.data.disable_after_unplug and self.data.get.plug_state is False:
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", True)
+
+        if self.data.set.manual_lock:
             charging_possible = False
             message = "Keine Ladung, da der Ladepunkt gesperrt ist."
+        else:
+            charging_possible = True
+            message = None
         return charging_possible, message
 
     def _is_ev_plugged(self) -> Tuple[bool, Optional[str]]:
@@ -206,6 +211,15 @@ class Chargepoint(ChargepointRfidMixin):
     def _process_charge_stop(self) -> None:
         # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
         # werden soll (-1), Daten zurücksetzen.
+        # Ocpp Stop Funktion aufrufen
+        if not self.data.get.plug_state and self.data.set.ocpp_transaction_id is not None:
+            data.data.optional_data.stop_transaction(
+                self.data.config.ocpp_chargebox_id,
+                self.chargepoint_module.fault_state,
+                self.data.get.imported,
+                self.data.set.ocpp_transaction_id,
+                self.data.set.rfid)
+            Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_id", None)
         if self.data.set.charging_ev_prev != -1:
             # Daten zurücksetzen, wenn nicht geladen werden soll.
             self.reset_control_parameter_at_charge_stop()
@@ -222,6 +236,7 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.template.data.disable_after_unplug:
                     self.data.set.manual_lock = True
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
+                    log.debug("/set/manual_lock True")
                 # Ev wurde noch nicht aktualisiert.
                 chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
                 self.data.set.charging_ev_prev = -1
@@ -456,7 +471,7 @@ class Chargepoint(ChargepointRfidMixin):
                             phase_switch.thread_phase_switch(self)
                             log.debug("start phase switch phases_to_use " +
                                       str(self.data.set.phases_to_use) +
-                                      "control_parameter phases " +
+                                      " control_parameter phases " +
                                       str(self.data.control_parameter.phases))
                             if self.data.control_parameter.phases == 1:
                                 message = f"Umschaltung von {self.get_max_phase_hw()} auf 1 Phase{self.STOP_CHARGING}"
@@ -712,9 +727,22 @@ class Chargepoint(ChargepointRfidMixin):
                     self._pub_connected_vehicle(ev_list[f"ev{vehicle}"])
                 else:
                     self._pub_configured_ev(ev_list)
+            # OCPP Start Transaction nach Anstecken
+            if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
+                    (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):
+                self.data.set.ocpp_transaction_id = data.data.optional_data.start_transaction(
+                    self.data.config.ocpp_chargebox_id,
+                    self.chargepoint_module.fault_state,
+                    self.num,
+                    self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id,
+                    self.data.get.imported)
+                Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                          "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
             # SoC nach Anstecken aktualisieren
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
-                    (self.data.get.plug_state is False and self.data.set.plug_state_prev)):
+                    (self.data.get.plug_state is False and self.data.set.plug_state_prev) or
+                    (self.data.get.soc_timestamp and self.data.set.charging_ev_data.data.get.soc_timestamp and
+                        self.data.get.soc_timestamp > self.data.set.charging_ev_data.data.get.soc_timestamp)):
                 Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
                 log.debug("SoC nach Anstecken")
             self.set_state_and_log(message)

@@ -3,7 +3,7 @@ from enum import IntEnum
 import logging
 
 from helpermodules import hardware_configuration
-from helpermodules.utils.error_counter import CP_ERROR, ErrorTimerContext
+from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from modules.chargepoints.openwb_dc_adapter.config import OpenWBDcAdapter
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
@@ -90,6 +90,7 @@ class ChargepointModule(AbstractChargepoint):
                     charging_power=charging_power,
                     charging_voltage=json_rsp["charging_voltage"],
                     currents=json_rsp["currents"],
+                    evse_current=json_rsp["offered_power"]/230/3,
                     exported=exported,
                     imported=imported,
                     phases_in_use=3,

@@ -10,7 +10,9 @@ from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
+from control.counter import get_counter_default_config
 from control.general import ChargemodeConfig
+from control.optional_data import Ocpp
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -47,13 +49,15 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 61
+    DATASTORE_VERSION = 65
     valid_topic = [
         "^openWB/bat/config/configured$",
+        "^openWB/bat/config/power_limit_mode$",
         "^openWB/bat/set/charging_power_left$",
         "^openWB/bat/set/regulate_up$",
         "^openWB/bat/get/fault_state$",
         "^openWB/bat/get/fault_str$",
+        "^openWB/bat/get/power_limit_controllable$",
         "^openWB/bat/get/soc$",
         "^openWB/bat/get/power$",
         "^openWB/bat/get/imported$",
@@ -68,6 +72,8 @@ class UpdateConfig:
         "^openWB/bat/[0-9]+/get/daily_imported$",
         "^openWB/bat/[0-9]+/get/fault_state$",
         "^openWB/bat/[0-9]+/get/fault_str$",
+        "^openWB/bat/[0-9]+/get/power_limit_controllable$",
+        "^openWB/bat/[0-9]+/set/power_limit$",
 
         "^openWB/chargepoint/get/power$",
         "^openWB/chargepoint/get/exported$",
@@ -128,6 +134,8 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/log$",
         "^openWB/chargepoint/[0-9]+/set/phases_to_use$",
         "^openWB/chargepoint/[0-9]+/set/charging_ev_prev$",
+        "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_id$",
+        "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_active$",
 
         "^openWB/command/max_id/autolock_plan$",
         "^openWB/command/max_id/charge_template$",
@@ -164,9 +172,10 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/get/imported$",
         "^openWB/counter/[0-9]+/get/exported$",
         "^openWB/counter/[0-9]+/set/consumption_left$",
-        "^openWB/counter/[0-9]+/set/error_counter$",
+        "^openWB/counter/[0-9]+/set/error_timer$",
         "^openWB/counter/[0-9]+/set/released_surplus$",
         "^openWB/counter/[0-9]+/set/reserved_surplus$",
+        "^openWB/counter/[0-9]+/config/max_power_errorcase$",
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
 
@@ -252,6 +261,7 @@ class UpdateConfig:
         "^openWB/optional/int_display/only_local_charge_points",
         "^openWB/optional/led/active$",
         "^openWB/optional/rfid/active$",
+        "^openWB/optional/ocpp/config$",
 
         "^openWB/pv/config/configured$",
         "^openWB/pv/get/exported$",
@@ -426,8 +436,10 @@ class UpdateConfig:
     ]
     default_topic = (
         ("openWB/bat/config/configured", False),
+        ("openWB/bat/config/power_limit_mode", "no_limit"),
         ("openWB/bat/get/fault_state", 0),
         ("openWB/bat/get/fault_str", NO_ERROR),
+        ("openWB/bat/get/power_limit_controllable", False),
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
@@ -441,7 +453,8 @@ class UpdateConfig:
         ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
-        ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData(name="Fahrzeug-Profil", min_current=10))),
+        ("openWB/vehicle/template/ev_template/0", asdict(ev.EvTemplateData(name="Standard-Fahrzeug-Profil",
+                                                                           min_current=10))),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
         ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 3),
@@ -499,6 +512,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/led/active", False),
+        ("openWB/optional/ocpp/config", dataclass_utils.asdict(Ocpp())),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/backup_cloud/backup_before_update", True),
@@ -544,7 +558,7 @@ class UpdateConfig:
             self.__update_version()
         except Exception:
             log.exception("Fehler bei der Aktualisierung des Brokers.")
-            pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration im Brokers.", MessageType.ERROR)
+            pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
         finally:
             self.__update_topic("openWB/system/update_config_completed", True)
 
@@ -1792,3 +1806,36 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 61)
+
+    def upgrade_datastore_61(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/counter/[0-9]+/config/max_total_power", topic) is not None:
+                index = get_index(topic)
+                if f"openWB/counter/{index}/config/max_power_errorcase" not in self.all_received_topics.keys():
+                    max_power_errorcase = get_counter_default_config()["max_power_errorcase"]
+                    return {f"openWB/counter/{index}/config/max_power_errorcase": max_power_errorcase}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 62)
+
+    def upgrade_datastore_62(self) -> None:
+        pub_system_message(
+            {}, "Bei einem Zählerausfall werden nun 7kW für diesen Zähler freigegeben. Bisher wurde im "
+            "Fehlerfall die Ladung gestoppt. Du kannst die maximale Leistung im Fehlerfall für jeden Zähler"
+            " unter Einstellungen -> Konfiguration -> Lastmanagement anpassen.", MessageType.WARNING)
+        self.__update_topic("openWB/system/datastore_version", 63)
+
+    def upgrade_datastore_63(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/bat/[0-9]+/get/power", topic) is not None:
+                index = get_index(topic)
+                if f"openWB/bat/{index}/get/power_limit_controllable" not in self.all_received_topics.keys():
+                    return {f"openWB/bat/{index}/get/power_limit_controllable": False}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 64)
+
+    def upgrade_datastore_64(self) -> None:
+        pub_system_message(
+            {}, 'Garantieverlängerung für die openWB verfügbar -> '
+            '<a href="https://wb-solution.de/shop/">https://wb-solution.de/shop/</a>',
+            MessageType.INFO)
+        self.__update_topic("openWB/system/datastore_version", 65)

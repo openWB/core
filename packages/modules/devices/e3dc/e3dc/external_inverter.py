@@ -2,6 +2,7 @@
 import logging
 
 from modules.common import modbus
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.modbus import ModbusDataType, Endian
@@ -21,7 +22,7 @@ def read_external_inverter(client: modbus.ModbusTcpClient_, modbus_id: int) -> i
     return pv_external
 
 
-class E3dcExternalInverter:
+class E3dcExternalInverter(AbstractInverter):
     def __init__(self,
                  device_id: int,
                  component_config: E3dcExternalInverterSetup,

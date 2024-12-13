@@ -3,6 +3,7 @@ from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.devices.batterx.batterx.config import BatterXExternalInverterSetup
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -10,7 +11,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 
 
-class BatterXExternalInverter:
+class BatterXExternalInverter(AbstractInverter):
     def __init__(self, device_id: int, component_config: Union[Dict, BatterXExternalInverterSetup]) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(BatterXExternalInverterSetup, component_config)

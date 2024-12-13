@@ -4,6 +4,7 @@ import logging
 
 from dataclass_utils import dataclass_from_dict
 from modules.devices.tasmota.tasmota.config import TasmotaCounterSetup
+from modules.common.abstract_device import AbstractCounter
 from modules.common.tasmota import Tasmota
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -12,7 +13,7 @@ from modules.common.store import get_counter_value_store
 log = logging.getLogger(__name__)
 
 
-class TasmotaCounter:
+class TasmotaCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, TasmotaCounterSetup],

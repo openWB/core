@@ -3,6 +3,7 @@ from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,7 +12,7 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.studer.studer.config import StuderInverterSetup
 
 
-class StuderInverter:
+class StuderInverter(AbstractInverter):
     def __init__(self,
                  component_config: Union[Dict, StuderInverterSetup],
                  tcp_client: modbus.ModbusTcpClient_) -> None:

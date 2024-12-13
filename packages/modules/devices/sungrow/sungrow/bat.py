@@ -3,6 +3,7 @@ from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -13,7 +14,7 @@ from modules.devices.sungrow.sungrow.config import SungrowBatSetup, Sungrow
 from modules.devices.sungrow.sungrow.version import Version
 
 
-class SungrowBat:
+class SungrowBat(AbstractBat):
     def __init__(self,
                  device_config: Union[Dict, Sungrow],
                  component_config: Union[Dict, SungrowBatSetup],

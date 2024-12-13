@@ -33,12 +33,12 @@ def test_set_component_registers_assigns_effective_meter_ids(monkeypatch, params
         device, "SolaredgeMeterRegisters", Mock(side_effect=lambda internal_meter_id, _: internal_meter_id)
     )
     components_list = [
-        Mock(spec=SolaredgeCounter, component_config=Mock(configuration=Mock(meter_id=meter_id)))
+        Mock(spec=SolaredgeCounter, component_config=Mock(configuration=Mock(meter_id=meter_id, modbus_id=1)))
         for meter_id in params.configured_meter_ids
     ]
 
     # execution
-    device.Device.set_component_registers(components_list, synergy_units=1)
+    device.set_component_registers(components_list, synergy_units=1, modbus_id=1)
 
     # evaluation
     assert [component.registers for component in components_list] == params.effective_meter_ids
@@ -55,10 +55,10 @@ def test_set_component_registers_ignores_wrong_types(monkeypatch, type: Type, sh
     monkeypatch.setattr(
         device, "SolaredgeMeterRegisters", Mock(side_effect=lambda *args: True)
     )
-    components = [Mock(spec=type, component_config=Mock(configuration=Mock(meter_id=1)))
+    components = [Mock(spec=type, component_config=Mock(configuration=Mock(meter_id=1, modbus_id=1)))
                   ]
     # execution
-    device.Device.set_component_registers(components, synergy_units=1)
+    device.set_component_registers(components, synergy_units=1, modbus_id=1)
 
     # evaluation
     assert hasattr(components[0], "registers") == should_use

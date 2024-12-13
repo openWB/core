@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from modules.common import modbus
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -8,7 +9,7 @@ from modules.common.store import get_counter_value_store
 from modules.devices.kostal.kostal_sem.config import KostalSemCounterSetup
 
 
-class KostalSemCounter:
+class KostalSemCounter(AbstractCounter):
     def __init__(self,
                  component_config: KostalSemCounterSetup,
                  tcp_client: modbus.ModbusTcpClient_,

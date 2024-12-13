@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -8,7 +9,7 @@ from modules.devices.rct.rct.config import RctInverterSetup
 from modules.devices.rct.rct.rct_lib import RCT
 
 
-class RctInverter:
+class RctInverter(AbstractInverter):
     def __init__(self, component_config: RctInverterSetup) -> None:
         self.component_config = dataclass_from_dict(RctInverterSetup, component_config)
         self.store = get_inverter_value_store(self.component_config.id)

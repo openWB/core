@@ -3,6 +3,7 @@ from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,7 +12,7 @@ from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_island.config import SmaSunnyIslandBatSetup
 
 
-class SunnyIslandBat:
+class SunnyIslandBat(AbstractBat):
     def __init__(self,
                  component_config: Union[Dict, SmaSunnyIslandBatSetup],
                  tcp_client: modbus.ModbusTcpClient_) -> None:

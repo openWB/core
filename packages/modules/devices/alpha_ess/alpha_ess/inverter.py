@@ -4,6 +4,7 @@ from typing import Dict, Union
 from dataclass_utils import dataclass_from_dict
 from modules.devices.alpha_ess.alpha_ess.config import AlphaEssConfiguration, AlphaEssInverterSetup
 from modules.common import modbus
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -12,7 +13,7 @@ from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import get_inverter_value_store
 
 
-class AlphaEssInverter:
+class AlphaEssInverter(AbstractInverter):
     def __init__(self, device_id: int,
                  component_config: Union[Dict, AlphaEssInverterSetup],
                  tcp_client: modbus.ModbusTcpClient_,

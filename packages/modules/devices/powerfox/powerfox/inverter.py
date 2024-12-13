@@ -5,6 +5,7 @@ from requests import Session
 
 
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -14,7 +15,7 @@ from modules.devices.powerfox.powerfox.config import PowerfoxInverterSetup
 log = logging.getLogger(__name__)
 
 
-class PowerfoxInverter:
+class PowerfoxInverter(AbstractInverter):
     def __init__(self,
                  component_config: Union[Dict, PowerfoxInverterSetup]) -> None:
         self.component_config = dataclass_from_dict(PowerfoxInverterSetup, component_config)

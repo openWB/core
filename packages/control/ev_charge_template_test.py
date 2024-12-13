@@ -97,9 +97,11 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
     "min_soc, min_current, current_soc, expected",
     [
         pytest.param(0, 0, 100, (0, "stop", ChargeTemplate.PV_CHARGING_SOC_REACHED), id="max soc reached"),
-        pytest.param(15, 0, 14, (10, "instant_charging", None), id="min soc not reached"),
+        pytest.param(15, 0, 14, (10, "instant_charging", ChargeTemplate.PV_CHARGING_SOC_CHARGING),
+                     id="min soc not reached"),
         pytest.param(15, 0, None, (6, "pv_charging", None), id="soc not defined"),
-        pytest.param(15, 8, 15, (8, "instant_charging", None), id="min current configured"),
+        pytest.param(15, 8, 15, (8, "instant_charging", ChargeTemplate.PV_CHARGING_MIN_CURRENT_CHARGING),
+                     id="min current configured"),
         pytest.param(15, 0, 15, (6, "pv_charging", None), id="bare pv charging"),
     ])
 def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
@@ -131,7 +133,7 @@ cases = [
            search_plan=None, phases=1, max_phases=3, expected_max_current=32, expected_phases=1),
     Params(name="no phase switch, multi phase", phase_switch_supported=False, chargemode_phases=0,
            search_plan=None, phases=3, max_phases=3, expected_max_current=16, expected_phases=3),
-    Params(name="no automatic mode, multi phase", phase_switch_supported=True, chargemode_phases=1,
+    Params(name="no automatic mode, multi phase", phase_switch_supported=True, chargemode_phases=2,
            search_plan=None, phases=2, max_phases=2, expected_max_current=16, expected_phases=2),
     Params(name="select phases, not enough time", phase_switch_supported=True, chargemode_phases=0, search_plan=Mock(
         spec=SelectedPlan, remaining_time=300), phases=1, max_phases=3, expected_max_current=16, expected_phases=3),

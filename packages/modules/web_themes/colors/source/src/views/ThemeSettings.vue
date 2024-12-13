@@ -179,11 +179,51 @@
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
+					title="Untere Markierung in der Preistabelle"
+					icon="fa-car"
+					infotext="Position der unteren Markierung festlegen"
+				>
+					<RangeInput
+						id="lowerPriceBound"
+						v-model="globalConfig.lowerPriceBound"
+						:min="-25"
+						:max="95"
+						:step="0.1"
+						:decimals="1"
+						unit="ct"
+					/>
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Obere Markierung in der Preistabelle"
+					icon="fa-car"
+					infotext="Position der oberen Markierung festlegen"
+				>
+					<RangeInput
+						id="upperPriceBound"
+						v-model="globalConfig.upperPriceBound"
+						:min="-25"
+						:max="95"
+						:step="0.1"
+						:decimals="1"
+						unit="ct"
+					/>
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
 					title="Wechselrichter-Details anzeigen"
 					icon="fa-solar-panel"
 					infotext="Zeige Details zu den einzelnen Wechselrichtern"
 				>
 					<SwitchInput v-model="globalConfig.showInverters" />
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Alternatives Energie-Widget"
+					icon="fa-chart-area"
+					infotext="Horizontale Darstellung der Energie-Werte"
+				>
+					<SwitchInput v-model="globalConfig.alternativeEnergy" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -214,6 +254,7 @@ import ConfigItem from '@/components/shared/ConfigItem.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
 import WbWidgetFlex from '@/components/shared/WbWidgetFlex.vue'
+import RangeInput from '@/components/shared/RangeInput.vue'
 const emit = defineEmits(['reset-arcs'])
 const colorschemes: [string, string][] = [
 	['Dunkel', 'dark'],

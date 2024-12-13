@@ -81,6 +81,7 @@ def setup_logging() -> None:
 
     logging.getLogger("pymodbus").setLevel(logging.WARNING)
     logging.getLogger("uModbus").setLevel(logging.WARNING)
+    logging.getLogger("websockets").setLevel(logging.WARNING)
 
     def threading_excepthook(args):
         logging.getLogger(__name__).error("Uncaught exception in threading.excepthook:", exc_info=(

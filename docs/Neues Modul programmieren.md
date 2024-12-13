@@ -33,6 +33,9 @@ Wenn von der Komponente die Zählerstände für Import und Export gelesen werden
 
 Bei Hybrid-Systemen erfolgt die Verrechnung von Speicher-und PV-Leistung automatisiert, wenn Speicher und Wechselrichter in der Hierarchie wie [hier](https://github.com/openWB/core/wiki/Hybrid-System-aus-Wechselrichter-und-Speicher) beschrieben angeordnet sind. Wenn noch weitere spezifische Berechnungen erforderlich sind, müsst Ihr die Komponenten wie unter sample_request_per_device abfragen. Die update-Methode der Komponenten wird dann in eine get- und set-Methode aufgeteilt. Die get-Methode liefert den Component-State zurück, dieser wird in der update_components-Methode des Geräts verrechnet und dann die set-Methode der Komponente aufgerufen, die die store-Methode der Komponente aufruft.
 
+#### Schnittstelle für die Speicher-Steuerung
+Bei Speichern, die eine aktive Steuerung unterstützen, kann mit der Methode `set_power_limit` die Speicherleistung gesetzt werden. Die Speicher erben von der Klasse `AbstractBat`, die die abstrakte Methode `set_power_limit` beinhaltet. Bei der Implementierung des Speichers kannst Du diese Methode überschreiben. Die Regelung prüft am Ende, ob die Methode für den jeweiligen Speicher implementiert ist und ruft diese auf. Als Variable wird die Speicherleistung in Watt oder `None` übergeben, dann wird der Speicher nicht mehr aktiv von der openWB gesteuert und soll selbst anhand des EVU-Punktes regeln.
+
 ### Neues Fahrzeug programmieren
 
 Beim Aufruf der _updater_-Funktion wird die Variable _vehicle_update_data_ übergeben. Darin sind aktuelle Daten aus der Regelung, wie zB Stecker-Status oder die geladene Energie seit Anstecken, enthalten, um Besonderheiten wie zB das Aufwecken des Fahrzeugs oder eine manuelle Berechnung während des Ladevorgangs umsetzen zu können.

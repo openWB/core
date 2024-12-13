@@ -9,11 +9,10 @@ from helpermodules.pub import Pub
 from modules.common import req
 from copy import deepcopy
 
-OVMS_SERVER = "https://ovms.dexters-web.de:6869"
 TOKEN_CMD = "/api/token"
 STATUS_CMD = "/api/status"
 OVMS_APPL_LABEL = "application"
-OVMS_APPL_VALUE = "owb-ovms"
+OVMS_APPL_VALUE = "owb-ovms-2.x-vh"
 OVMS_PURPOSE_LABEL = "purpose"
 OVMS_PURPOSE_VALUE = "get soc"
 
@@ -36,13 +35,13 @@ class api:
 
     # create a new token and store it in the soc_module configuration
     def create_token(self) -> str:
-        token_url = f"{OVMS_SERVER}{TOKEN_CMD}"
+        token_url = f"{self.server_url}{TOKEN_CMD}"
         data = {
             "username": self.user_id,
             "password": self.password
         }
         form_data = {
-            OVMS_APPL_LABEL: OVMS_APPL_VALUE,
+            OVMS_APPL_LABEL: self.ovms_appl_value,
             OVMS_PURPOSE_LABEL: OVMS_PURPOSE_VALUE
         }
         try:
@@ -64,7 +63,7 @@ class api:
     # check list of token on OVMS server for unused token created by the soc mudule
     # if any obsolete token are found these are deleted.
     def cleanup_token(self):
-        tokenlist_url = f"{OVMS_SERVER}{TOKEN_CMD}?username={self.user_id}&password={self.token}"
+        tokenlist_url = f"{self.server_url}{TOKEN_CMD}?username={self.user_id}&password={self.token}"
 
         try:
             resp = self.session.get(tokenlist_url)
@@ -83,14 +82,15 @@ class api:
                       str(status_code) + ", full_tokenlist=\n" +
                       dumps(full_tokenlist, indent=4))
             obsolete_tokenlist = list(filter(lambda token:
-                                             token[OVMS_APPL_LABEL] == OVMS_APPL_VALUE and token["token"] != self.token,
+                                             token[OVMS_APPL_LABEL] == self.ovms_appl_value
+                                             and token["token"] != self.token,
                                              full_tokenlist))
             if len(obsolete_tokenlist) > 0:
                 log.debug("cleanup_token obsolete_tokenlist=\n" + dumps(obsolete_tokenlist, indent=4))
                 for tok in obsolete_tokenlist:
                     token_to_delete = tok["token"]
                     log.debug("cleanup_token: token_to_delete=" + dumps(tok, indent=4))
-                    token_del_url = f"{OVMS_SERVER}{TOKEN_CMD}/{token_to_delete}"
+                    token_del_url = f"{self.server_url}{TOKEN_CMD}/{token_to_delete}"
                     token_del_url = f"{token_del_url}?username={self.user_id}&password={self.token}"
                     try:
                         resp = self.session.delete(token_del_url)
@@ -106,7 +106,7 @@ class api:
 
     # get status for vehicleId
     def get_status(self) -> Union[int, dict]:
-        status_url = f"{OVMS_SERVER}{STATUS_CMD}/{self.vehicleId}?username={self.user_id}&password={self.token}"
+        status_url = f"{self.server_url}{STATUS_CMD}/{self.vehicleId}?username={self.user_id}&password={self.token}"
 
         log.debug("status-url=" + status_url)
         try:
@@ -127,15 +127,26 @@ class api:
     # async function to fetch soc, range, soc_ts
     async def _fetch_soc(self,
                          conf: OVMS,
-                         vehicle: int) -> Union[int, float, str]:
+                         vehicle: int) -> Union[int, float, str, float, float]:
         self.config_topic = "openWB/set/vehicle/" + vehicle + "/soc_module/config"
+        self.server_url = conf.configuration.server_url
         self.user_id = conf.configuration.user_id
         self.password = conf.configuration.password
         self.vehicleId = conf.configuration.vehicleId
         self.vehicle = vehicle
+        self.ovms_appl_value = OVMS_APPL_VALUE + str(self.vehicle)
         self.config = deepcopy(conf)
+        self.confDict = self.config.__dict__
+        self.confDict["configuration"] = self.config.configuration.__dict__
+        log.debug("self.confDict2=" + dumps(self.confDict, indent=4))
 
-        tokenstr = self.config.configuration.token
+        if 'token' in self.confDict['configuration']:
+            tokenstr = self.confDict['configuration']['token']
+            log.debug("read tokenstr (" + str(tokenstr) + ") from configuration")
+        else:
+            tokenstr = ""
+            log.debug("init tokenstr to (" + str(tokenstr) + ")")
+        log.debug("tokenstr=" + str(tokenstr))
 
         if tokenstr is None or tokenstr == "":
             self.token = self.create_token()
@@ -149,9 +160,6 @@ class api:
             self.token = self.create_token()
         else:
             log.debug("_fetch_soc using token=" + self.token)
-
-        self.confDict = self.config.__dict__
-        self.confDict["configuration"] = self.config.configuration.__dict__
 
         self.cleanup_token()
 
@@ -169,8 +177,9 @@ class api:
         if float(self.range) > 1000.0:
             self.range = str(float(self.range) / 10)
 
+        self.kms = float(statusDict['odometer']) / 10
+        self.vehicle12v = statusDict['vehicle12v']
         self.soc_ts = statusDict['m_msgtime_s']
-        log.debug("soc=" + str(self.soc) + ", range=" + str(self.range) + ", soc_ts=" + str(self.soc_ts))
 
         return int(float(self.soc)), float(self.range), self.soc_ts
 

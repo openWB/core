@@ -3,7 +3,6 @@ from typing import Iterable, List, Optional, Tuple
 
 from control import data
 from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
-from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from helpermodules.timecheck import check_timestamp
@@ -11,24 +10,6 @@ from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
-# Lademodi in absteigender Priorität
-# Tupel-Inhalt:(eingestellter Modus, tatsächlich genutzter Modus, Priorität)
-CHARGEMODES = ((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, True),
-               (Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, False),
-               (None, Chargemode.TIME_CHARGING, True),
-               (None, Chargemode.TIME_CHARGING, False),
-               (Chargemode.INSTANT_CHARGING, Chargemode.INSTANT_CHARGING, True),
-               (Chargemode.INSTANT_CHARGING, Chargemode.INSTANT_CHARGING, False),
-               (Chargemode.PV_CHARGING, Chargemode.INSTANT_CHARGING, True),
-               (Chargemode.PV_CHARGING, Chargemode.INSTANT_CHARGING, False),
-               (Chargemode.SCHEDULED_CHARGING, Chargemode.PV_CHARGING, True),
-               (Chargemode.SCHEDULED_CHARGING, Chargemode.PV_CHARGING, False),
-               (Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, True),
-               (Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, False),
-               (None, Chargemode.STANDBY, True),
-               (None, Chargemode.STANDBY, False),
-               (None, Chargemode.STOP, True),
-               (None, Chargemode.STOP, False))
 
 LESS_CHARGING_TIMEOUT = 60
 
