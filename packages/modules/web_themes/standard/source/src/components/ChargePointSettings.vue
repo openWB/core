@@ -86,7 +86,6 @@ const isDialogScrolled = ref(false);
 
 const handleScroll = () => {
   isDialogScrolled.value = true;
-  console.log('Dialog scrolled');
 };
 
 provide('isDialogScrolled', isDialogScrolled);
