@@ -13,7 +13,7 @@ class JsonSocConfiguration:
 @auto_str
 class JsonSocSetup():
     def __init__(self,
-                 name: str = "Json SOC Module",
+                 name: str = "JSON",
                  type: str = "json",
                  configuration: JsonSocConfiguration = None) -> None:
         self.name = name
