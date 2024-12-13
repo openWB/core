@@ -1,4 +1,5 @@
 #!/bin/bash
+OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 dhcpcd_config_source="${OPENWBBASEDIR}/data/config/dhcpcd.conf"
 dhcpcd_config_target="/etc/dhcpcd.conf"
@@ -6,7 +7,7 @@ dhcpcd_config_target="/etc/dhcpcd.conf"
 dnsmasq_config_source="${OPENWBBASEDIR}/data/config/dnsmasq.conf"
 dnsmasq_config_target="/etc/dnsmasq.conf"
 
-function version_match() {
+function versionMatch() {
 	file=$1
 	target=$2
 	currentVersion=$(grep -o "openwb-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
@@ -82,7 +83,7 @@ function disable_dnsmasq() {
 
 function setup_dhcpcd_proplus() {
 	echo "checking dhcpcd.conf..."
-	if version_match "$dhcpcd_config_source" "$dhcpcd_config_target"; then
+	if versionMatch "$dhcpcd_config_source" "$dhcpcd_config_target"; then
 		echo "no changes required"
 	else
 		echo "openwb section not found or outdated"
@@ -101,7 +102,7 @@ function setup_dhcpcd_proplus() {
 
 function disable_dhcpcd_proplus() {
 	echo "checking dhcpcd.conf..."
-	if version_match "$dhcpcd_config_source" "$dhcpcd_config_target"; then
+	if versionMatch "$dhcpcd_config_source" "$dhcpcd_config_target"; then
 		echo "openwb section found, deleting..."
 		# delete old settings with version tag
 		pattern_begin=$(grep -m 1 '#' "$dhcpcd_config_source")
