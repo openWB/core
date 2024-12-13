@@ -83,6 +83,9 @@ updateFile "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/ap
 # http api site (https only)
 echo "apache http api ssl site..."
 updateFile "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/http-api-ssl.conf"
+# proplus site 
+echo "apache pro plus site..."
+updateFile "${OPENWBBASEDIR}/data/config/apache/apache-proplus.conf" "/etc/apache2/sites-available/apache-proplus.conf"
 
 # disable apache default ssl site
 disableSite default-ssl
