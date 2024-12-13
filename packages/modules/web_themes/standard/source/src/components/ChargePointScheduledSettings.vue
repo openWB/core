@@ -52,13 +52,13 @@ const plans = computed(() =>
 
 <style scoped>
 .rounded-borders-md {
-  border-radius: 10px;
+  border-radius: 8px;
 }
 .active-border {
-  border: 4px solid var(--q-positive);
+  box-shadow: 0 0 0 4px var(--q-positive);
 }
 .inactive-border {
-  border: 4px solid var(--q-negative);
+  box-shadow: 0 0 0 4px var(--q-negative);
 }
 :deep(.q-expansion-item__container) .q-item {
   padding: 6px 6px;
