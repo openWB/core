@@ -42,6 +42,7 @@
         />
       </div>
       <SliderDouble
+        v-if="showSocTargetSlider"
         class="q-mt-sm"
         :readonly="true"
         :connected-vehicle-soc="connectedVehicleSoc"
@@ -100,22 +101,27 @@ const connectedVehicleSoc = computed(() =>
   ),
 );
 
+const chargeMode = computed(
+  () =>
+    mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value,
+);
+
 const targetSoc = computed<number | undefined>(() => {
-  const chargeMode = mqttStore.chargePointConnectedVehicleChargeMode(
-    props.chargePointId,
-  ).value;
   const instantLimitMode =
     mqttStore.chargePointConnectedVehicleInstantChargeLimit(
       props.chargePointId,
     ).value;
-  if (chargeMode === 'scheduled_charging') {
+  if (chargeMode.value === 'scheduled_charging') {
     return mqttStore.vehicleScheduledChargingTarget(props.chargePointId).value
       ?.soc;
-  } else if (chargeMode === 'instant_charging' && instantLimitMode === 'soc') {
+  } else if (
+    chargeMode.value === 'instant_charging' &&
+    instantLimitMode === 'soc'
+  ) {
     return mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
       props.chargePointId,
     )?.value;
-  } else if (chargeMode === 'pv_charging') {
+  } else if (chargeMode.value === 'pv_charging') {
     return mqttStore.chargePointConnectedVehiclePVChargeMaxSoc(
       props.chargePointId,
     ).value;
@@ -124,14 +130,17 @@ const targetSoc = computed<number | undefined>(() => {
   }
 });
 
+const showSocTargetSlider = computed(() => {
+  return chargeMode.value === 'stop' || chargeMode.value === 'standby'
+    ? false
+    : true;
+});
+
 const targetTime = computed(() => {
-  const chargeMode = mqttStore.chargePointConnectedVehicleChargeMode(
-    props.chargePointId,
-  ).value;
   const target = mqttStore.vehicleScheduledChargingTarget(
     props.chargePointId,
   ).value;
-  if (!target || !target.time || chargeMode !== 'scheduled_charging') {
+  if (!target || !target.time || chargeMode.value !== 'scheduled_charging') {
     return 'keine';
   }
   return target.time;
