@@ -36,7 +36,7 @@
         <div>Ladestand</div>
         <div>{{ currentCharge }}%</div>
       </div>
-      <div class="col text-center">
+      <div v-if="showTargetTime" class="col text-center">
         <div>Zielzeit</div>
         <div>{{ targetTime }}</div>
       </div>
@@ -60,6 +60,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  chargeMode: {
+    type: String,
+    default: '',
+  },
   connectedVehicleSoc: {
     type: Number,
     default: 0,
@@ -74,6 +78,9 @@ const props = defineProps({
   },
 });
 
+const showTargetTime = computed(
+  () => props.chargeMode === 'scheduled_charging',
+);
 const currentCharge = computed(() => props.connectedVehicleSoc);
 const targetCharge = computed(() => props.targetSoc);
 </script>
