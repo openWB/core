@@ -32,8 +32,8 @@ function update_file() {
 }
 
 function get_primary_interface() {
-	myNetDevice=$(ip route get 1 | awk '{print $5;exit}')
-	echo "$myNetDevice"
+	myPrimaryNetDevice=$(ip route get 1 | awk '{print $5;exit}')
+	echo "$myPrimaryNetDevice"
 }
 
 function get_ip() {
@@ -47,15 +47,13 @@ function get_ip() {
 function setup_pnp_network() {
 	# ToDo: make ip configurable
 	myVirtualIp="192.168.193.250"
-	myNetDevice=$(get_primary_interface)
-	echo "my primary interface: $myNetDevice"
 	isSecondary=$(mosquitto_sub -t "openWB/general/extern" -p 1886 -C 1 -W 1 --quiet)
 	if [[ $isSecondary == "true" ]]; then
-		echo "running as secondary, disabling plug'n'play network on dev $myNetDevice"
-		sudo ip addr del "$myVirtualIp/24" dev $myNetDevice
+		echo "running as secondary, disabling plug'n'play network on dev $myPrimaryNetDevice"
+		sudo ip addr del "$myVirtualIp/24" dev "$myPrimaryNetDevice"
 	else
-		echo "running as primary, enabling plug'n'play network on dev $myNetDevice"
-		sudo ip addr add "$myVirtualIp/24" dev $myNetDevice
+		echo "running as primary, enabling plug'n'play network on dev $myPrimaryNetDevice"
+		sudo ip addr add "$myVirtualIp/24" dev "$myPrimaryNetDevice"
 	fi
 }
 
@@ -134,6 +132,8 @@ fi
 ip="$(get_ip)"
 echo "my primary IP: $ip"
 mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "\"$ip\""
+myPrimaryNetDevice=$(get_primary_interface)
+echo "my primary interface: $myPrimaryNetDevice"
 setup_pnp_network
 if ! check_internet_connection; then
 	exit 1
@@ -146,12 +146,12 @@ if lsusb | grep -q 'RTL8153'; then
 	setup_dnsmasq
 	setup_dhcpcd_proplus
 	sudo sysctl net.ipv4.ip_forward=1
-	sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+	sudo iptables -t nat -A POSTROUTING -o "$myPrimaryNetDevice" -j MASQUERADE
 
 else
 	echo "no second network for pro plus detected"
 	disable_dnsmasq
 	disable_dhcpcd_proplus
-	sudo iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+	sudo iptables -t nat -D POSTROUTING -o "$myPrimaryNetDevice" -j MASQUERADE
 	sudo sysctl net.ipv4.ip_forward=0
 fi
