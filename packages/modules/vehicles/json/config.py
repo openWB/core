@@ -4,7 +4,13 @@ from helpermodules.auto_str import auto_str
 @auto_str
 class JsonSocConfiguration:
     def __init__(
-            self, soc_url=None, range_url=None, soc_pattern=None, range_pattern=None, timeout=None, calculate_soc=False
+            self,
+            soc_url: str = None,
+            range_url: str = None,
+            soc_pattern: str = None,
+            range_pattern: str = None,
+            timeout: int = None,
+            calculate_soc: bool = False
             ):
         self.soc_url = soc_url
         self.soc_pattern = soc_pattern
