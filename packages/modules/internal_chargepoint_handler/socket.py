@@ -2,7 +2,7 @@ from enum import IntEnum
 import functools
 import logging
 import time
-from typing import Callable, Tuple
+from typing import Callable
 from helpermodules.hardware_configuration import get_hardware_configuration_setting
 
 from modules.common.component_context import SingleComponentUpdateContext
@@ -70,14 +70,14 @@ class Socket(ChargepointModule):
                 current = 0
             super().set_current(min(current, self.socket_max_current))
 
-    def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> Tuple[ChargepointState, float]:
+    def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
         try:
             actor = ActorState(GPIO.input(19))
         except Exception:
             log.error("Error getting actor status! Using default 'opened'.")
             actor = ActorState.OPENED
         log.debug("Actor: "+str(actor))
-        self.chargepoint_state, self.set_current_evse = super().get_values(phase_switch_cp_active, last_tag)
+        self.chargepoint_state = super().get_values(phase_switch_cp_active, last_tag)
         if phase_switch_cp_active:
             log.debug("Keine Actor-Bewegung, da CP-Unterbrechung oder Phasenumschaltung aktiv.")
         else:
@@ -85,7 +85,7 @@ class Socket(ChargepointModule):
                 self.__close_actor()
             if self.chargepoint_state.plug_state is False and actor == ActorState.CLOSED:
                 self.__open_actor()
-        return self.chargepoint_state, self.set_current_evse
+        return self.chargepoint_state
 
     def __open_actor(self):
         self.__set_actor(open=True)

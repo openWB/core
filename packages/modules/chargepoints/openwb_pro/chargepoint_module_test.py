@@ -134,6 +134,7 @@ def sample_wrong_charge_state():
     sample_wrong_charge_state = sample()
     sample_wrong_charge_state.update({'charge_state': False,
                                       'currents': [0, 2, 0],
+                                      'power_all': 0,
                                       'date': '2023:01:30-18:48:31',
                                       'evse_signaling': 'fake'})
     return sample_wrong_charge_state
@@ -160,9 +161,10 @@ def sample_chargepoint_state_resetted():
         pytest.param(sample(), 1652683242, None, None, sample_chargepoint_state(),
                      id="Timestamp gesetzt, kein Fehler aufgetreten"),
         pytest.param(sample_wrong_charge_state(), None, None, 1652683252,
-                     None, id="kein Timestamp gesetzt, Fehler aufgetreten"),
+                     sample_wrong_charge_state_chargepoint_state(), id="kein Timestamp gesetzt, Fehler aufgetreten"),
         pytest.param(sample_wrong_charge_state(), 1652683242, None, 1652683242,
-                     None, id="Timestamp gesetzt, Fehler aufgetreten, Timestamp nicht abgelaufen"),
+                     sample_wrong_charge_state_chargepoint_state(),
+                     id="Timestamp gesetzt, Fehler aufgetreten, Timestamp nicht abgelaufen"),
         pytest.param(sample_wrong_charge_state(), 1652683182, ValueError, 1652683182,
                      sample_chargepoint_state_resetted(),
                      id="Timestamp gesetzt, Fehler aufgetreten, Timestamp abgelaufen"),
