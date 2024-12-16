@@ -8,11 +8,12 @@ import base64
 import hashlib
 from modules.common.store import RAMDISK_PATH
 
-AUTH_CLIENT_ID='l3oopkc_10'
-BASE_URL='https://polestarid.eu.polestar.com'
-REDIRECT_URI='https://www.polestar.com/sign-in-callback'
+AUTH_CLIENT_ID = 'l3oopkc_10'
+BASE_URL = 'https://polestarid.eu.polestar.com'
+REDIRECT_URI = 'https://www.polestar.com/sign-in-callback'
 
 log = logging.getLogger(__name__)
+
 
 def b64urlencode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).decode().rstrip("=")
@@ -126,7 +127,7 @@ class PolestarAuth:
         # get token
         try:
             result = self.client_session.post(self.oidc_configuration["token_endpoint"],
-                                             data=params)
+                data=params)
 
         except requests.RequestException as e:
             log.error("get_auth_token:http error:%s", e)
