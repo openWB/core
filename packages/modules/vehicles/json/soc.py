@@ -15,24 +15,44 @@ from modules.vehicles.json.config import JsonSocSetup, JsonSocConfiguration
 log = logging.getLogger(__name__)
 
 
+def fetch_data(url, timeout=5):
+    if url is None or url == "none":
+        return None
+    raw_data = req.get_http_session().get(url, timeout=timeout).json()
+    return raw_data
+
+
+def parse_data(data, pattern):
+    if pattern is None:
+        return data
+    return jq.compile(pattern).input(data).first()
+
+
 def fetch_soc(config: JsonSocSetup) -> CarState:
     soc_url = config.configuration.soc_url
     soc_pattern = config.configuration.soc_pattern
     range_url = config.configuration.range_url
     range_pattern = config.configuration.range_pattern
+    timeout = config.configuration.timeout if isinstance(config.configuration.timeout, int) else None
 
-    if soc_url is None or soc_url == "none":
-        log.warning("http_soc: soc_url not defined - set soc to 0")
+    soc_data = fetch_data(soc_url, timeout)
+    if soc_data is None:
+        log.warning("soc_url not defined, set soc to 0")
         soc = 0
     else:
-        raw_soc = req.get_http_session().get(soc_url, timeout=5).json()
-        soc = float(jq.compile(soc_pattern).input(raw_soc).first())
-    if range_url is None or range_url == "none":
-        log.warning("http_soc: range_url not defined - set range to null")
+        soc = float(parse_data(soc_data, soc_pattern))
+
+    if range_url is None or range_url == "none" or range_url == "":
+        log.warning("range_url not defined, set range to null")
         range = 0
     else:
-        raw_range = req.get_http_session().get(range_url, timeout=5).json()
-        range = int(jq.compile(range_pattern).input(raw_range).first())
+        if range_url == soc_url:  # avoid duplicate http requests if range_url is the same as soc_url
+            log.debug('range_url "{}" is same as soc_url "{}", reusing existing data.'.format(range_url, soc_url))
+            range_data = soc_data
+        else:
+            range_data = fetch_data(range_url, timeout)
+        range = int(parse_data(range_data, range_pattern))
+
     return CarState(soc, range)
 
 

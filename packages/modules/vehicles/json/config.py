@@ -3,11 +3,12 @@ from helpermodules.auto_str import auto_str
 
 @auto_str
 class JsonSocConfiguration:
-    def __init__(self, soc_url=None, range_url=None, soc_pattern=None, range_pattern=None):
+    def __init__(self, soc_url=None, range_url=None, soc_pattern=None, range_pattern=None, timeout=None):
         self.soc_url = soc_url
         self.soc_pattern = soc_pattern
         self.range_url = range_url
         self.range_pattern = range_pattern
+        self.timeout = timeout
 
 
 @auto_str
