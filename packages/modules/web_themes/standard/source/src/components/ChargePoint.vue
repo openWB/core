@@ -45,6 +45,7 @@
         v-if="showSocTargetSlider"
         class="q-mt-sm"
         :readonly="true"
+        :charge-mode="chargeMode"
         :connected-vehicle-soc="connectedVehicleSoc"
         :target-soc="targetSoc"
         :target-time="targetTime"
