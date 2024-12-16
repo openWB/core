@@ -16,6 +16,7 @@ from modules.common.store._util import get_rounding_function_by_digits
 from modules.common.component_state import ChargepointState
 from modules.internal_chargepoint_handler import chargepoint_module
 from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory
+from modules.internal_chargepoint_handler.pro_plus import ProPlus
 from modules.internal_chargepoint_handler.socket import Socket
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, InternalChargepointData, RfidData)
@@ -211,7 +212,9 @@ class InternalChargepointHandler:
                 time.sleep(1.1)
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
             # Allgemeine Fehlermeldungen an LP 1
-            if self.cp0_client_handler is None and self.cp1_client_handler is None:
+            if self.cp0.mode == InternalChargepointMode.PRO_PLUS.value:
+                _loop()
+            elif self.cp0_client_handler is None and self.cp1_client_handler is None:
                 log.error("Kein ClientHandler vorhanden. Beende.")
             elif self.cp0_client_handler is not None and self.cp1_client_handler is None:
                 with self.cp0_client_handler.client:
@@ -239,6 +242,7 @@ class HandlerChargepoint:
                  parent_cp: str,
                  hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
+        self.mode = mode
         if local_charge_point_num == 0:
             if mode == InternalChargepointMode.SOCKET.value:
                 self.module = Socket(local_charge_point_num, client_handler,
