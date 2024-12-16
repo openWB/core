@@ -27,7 +27,7 @@ class ProPlus(ChargepointModule):
 
         try:
             chargepoint_state = super().request_values()
-        except requests.exceptions.ConnectTimeout:
+        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
             raise Exception("Interner Ladepunkt ist nicht erreichbar.")
 
         store_state(chargepoint_state)
