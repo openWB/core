@@ -44,6 +44,11 @@ function get_ip() {
 	echo "$ip"
 }
 
+function get_mac() {
+	mac=$(ip addr show "$(get_primary_interface)" | grep "ether" | cut -d " " -f 6)
+	echo "$mac"
+}
+
 function setup_pnp_network() {
 	# ToDo: make ip configurable
 	myVirtualIp="192.168.193.250"
@@ -126,6 +131,10 @@ if ((connectCounter >= 30)); then
 	echo "ERROR: network not up after $connectCounter seconds!"
 	exit 1
 fi
+
+# publish mac address
+mac="$(get_mac)"
+mosquitto_pub -t "openWB/system/mac_address" -p 1886 -r -m "\"$mac\""
 
 # image restricted to LAN only
 # get local ip
