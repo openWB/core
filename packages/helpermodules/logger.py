@@ -12,7 +12,7 @@ FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
 RAMDISK_PATH = str(Path(__file__).resolve().parents[2]) + '/ramdisk/'
 PERSISTENT_LOG_PATH = str(Path(__file__).resolve().parents[2]) + '/data/log/'
 
-KNOWN_SENSITIVE_FIELDS = ['password', 'secret', 'token', 'apikey']
+KNOWN_SENSITIVE_FIELDS = ['password', 'secret', 'token', 'apikey', 'access_token', 'refresh_token']
 REDACTION_PATTERNS = [
     (r'({field})[=:]([^\s&]+)', r'\1=***REDACTED***'),  # Matches field=value, i.e. for URL query parameters
     (r'"{field}":\s*"([^"]+)"', r'"{field}": "***REDACTED***"')  # Matches "field": "value", JSON formatted data
