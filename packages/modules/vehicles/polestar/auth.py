@@ -127,7 +127,7 @@ class PolestarAuth:
         # get token
         try:
             result = self.client_session.post(self.oidc_configuration["token_endpoint"],
-                data=params)
+                                              data=params)
 
         except requests.RequestException as e:
             log.error("get_auth_token:http error:%s", e)
