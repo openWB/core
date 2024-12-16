@@ -1,6 +1,6 @@
 <?php
 $valid_commands = array(
-  "update"
+  "update_pro_plus"
 );
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   print("invalid request");
@@ -17,36 +17,12 @@ if (!in_array($_REQUEST["command"], $valid_commands)) {
   http_response_code(400);
   exit(1);
 }
-if (!isset($_REQUEST["data"])) {
-  print("missing data");
-  http_response_code(400);
-  exit(1);
-}
-$request_data = json_decode($_REQUEST["data"], true);
-if (is_null($request_data)) {
-  print("invalid data");
-  http_response_code(400);
-  exit(1);
-}
-if (!array_key_exists("ip_address", $request_data)) {
-  print("incomplete data");
-  http_response_code(400);
-  exit(1);
-}
-if (!filter_var($request_data["ip_address"], FILTER_VALIDATE_IP)) {
-  # "ip_address" may contain a hostname! try to resolve and validate
-  if (!filter_var(gethostbyname($request_data["ip_address"]), FILTER_VALIDATE_IP)) {
-    print("invalid ip or hostname");
-    http_response_code(400);
-    exit(1);
-  }
-}
 
-print("executing command '" . $_REQUEST["command"] . "' with ip '" . $request_data["ip_address"] . "'\n");
+print("executing command '" . $_REQUEST["command"] . "'\n");
 switch ($_REQUEST["command"]) {
-  case 'update':
+  case 'update_pro_plus':
     $post_data = array("update" => 1);
-    $url = "http://" . $request_data["ip_address"] . "/connect.php";
+    $url = "http://192.168.192.50/connect.php";
     $options = array(
       "http" => array(
         "header" =>  "Content-type: application/x-www-form-urlencoded",
