@@ -1,7 +1,6 @@
 import logging
 
 import time
-from typing import Tuple
 from helpermodules.logger import ModifyLoglevelContext
 
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -56,7 +55,7 @@ class ChargepointModule(AbstractChargepoint):
             if self.set_current_evse != formatted_current:
                 self._client.evse_client.set_current(formatted_current)
 
-    def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> Tuple[ChargepointState, float]:
+    def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:
             self.store.set(chargepoint_state)
             self.store.update()
@@ -130,7 +129,7 @@ class ChargepointModule(AbstractChargepoint):
 
         store_state(chargepoint_state)
         self.old_chargepoint_state = chargepoint_state
-        return chargepoint_state, self.set_current_evse
+        return chargepoint_state
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:
         gpio_cp, gpio_relay = self._client.get_pins_phase_switch(phases_to_use)

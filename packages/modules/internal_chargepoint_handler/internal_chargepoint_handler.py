@@ -156,7 +156,10 @@ class InternalChargepointHandler:
         try:
             with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
                 # Allgemeine Fehlermeldungen an LP 1:
-                self.cp0_client_handler = client_factory(0, self.fault_state_info_cp0)
+                if mode == InternalChargepointMode.PRO_PLUS.value:
+                    self.cp0_client_handler = None
+                else:
+                    self.cp0_client_handler = client_factory(0, self.fault_state_info_cp0)
                 self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
                                               global_data, parent_cp0, hierarchy_id_cp0)
         except Exception:
@@ -229,7 +232,7 @@ class InternalChargepointHandler:
 
 class HandlerChargepoint:
     def __init__(self,
-                 client_handler: ClientHandler,
+                 client_handler: Optional[ClientHandler],
                  local_charge_point_num: int,
                  mode: InternalChargepointMode,
                  global_data: GlobalHandlerData,
@@ -240,6 +243,8 @@ class HandlerChargepoint:
             if mode == InternalChargepointMode.SOCKET.value:
                 self.module = Socket(local_charge_point_num, client_handler,
                                      global_data.parent_ip, parent_cp, hierarchy_id)
+            elif mode == InternalChargepointMode.PRO_PLUS.value:
+                self.module = ProPlus(local_charge_point_num, global_data.parent_ip, parent_cp, hierarchy_id)
             else:
                 self.module = chargepoint_module.ChargepointModule(
                     local_charge_point_num, client_handler, global_data.parent_ip, parent_cp, hierarchy_id)
@@ -262,7 +267,7 @@ class HandlerChargepoint:
                 time.sleep(0.1)
             phase_switch_cp_active = __thread_active(self.update_state.cp_interruption_thread) or __thread_active(
                 self.update_state.phase_switch_thread)
-            state = self.module.get_values(phase_switch_cp_active, rfid_data.last_tag)[0]
+            state = self.module.get_values(phase_switch_cp_active, rfid_data.last_tag)
             log.debug("Published plug state "+str(state.plug_state))
             heartbeat_expired = self._check_heartbeat_expired(global_data.heartbeat)
             if global_data.parent_ip is not None:

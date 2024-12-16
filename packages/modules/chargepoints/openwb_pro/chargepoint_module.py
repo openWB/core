@@ -46,6 +46,10 @@ class ChargepointModule(AbstractChargepoint):
                 self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': current})
 
     def get_values(self) -> None:
+        chargepoint_state = self.request_values()
+        self.store.set(chargepoint_state)
+
+    def request_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
@@ -82,7 +86,6 @@ class ChargepointModule(AbstractChargepoint):
                     chargepoint_state.rfid_timestamp = json_rsp["rfid_timestamp"]
 
                 self.validate_values(chargepoint_state)
-                self.store.set(chargepoint_state)
                 self.old_chargepoint_state = chargepoint_state
                 self.client_error_context.reset_error_counter()
             if self.client_error_context.error_counter_exceeded():
@@ -91,7 +94,7 @@ class ChargepointModule(AbstractChargepoint):
                 chargepoint_state.charge_state = False
                 chargepoint_state.imported = self.old_chargepoint_state.imported
                 chargepoint_state.exported = self.old_chargepoint_state.exported
-                self.store.set(chargepoint_state)
+            return chargepoint_state
 
     def validate_values(self, chargepoint_state: ChargepointState) -> None:
         if chargepoint_state.charge_state is False and max(chargepoint_state.currents) > 1:
