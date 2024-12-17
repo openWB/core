@@ -676,7 +676,7 @@ class Chargepoint(ChargepointRfidMixin):
                     self.set_timestamp_charge_start()
                     self.check_phase_switch_completed()
 
-                    if charging_ev.chargemode_changed:
+                    if charging_ev.chargemode_changed or charging_ev.submode_changed:
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                             self, charging_ev)
                         charging_ev.reset_phase_switch(self.data.control_parameter)
