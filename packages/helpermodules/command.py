@@ -175,22 +175,23 @@ class Command:
 
     def addIoAction(self, connection_id: str, payload: dict) -> None:
         new_id = self.max_id_io_action + 1
-        dev = importlib.import_module(".io_actions."+payload["data"]["type"]+".api", "modules")
-        descritpor = dev.device_descriptor.configuration_factory()
-        device_default = dataclass_utils.asdict(descritpor)
+        dev = importlib.import_module(f".io_actions.{'.'.join(payload['data']['type'])}.api",
+                                      "modules")
+        descriptor = dev.device_descriptor.configuration_factory()
+        device_default = dataclass_utils.asdict(descriptor)
         device_default["id"] = new_id
         Pub().pub(f'openWB/set/io/action/{new_id}/config', device_default)
         self.max_id_io_action = new_id
         Pub().pub("openWB/set/command/max_id/io_action", self.max_id_io_action)
         pub_user_message(
             payload, connection_id,
-            f'Neues IO-Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
+            f'Neue IO-Aktion vom Typ \'{" / ".join(payload["data"]["type"])}\' mit ID \'{new_id}\' hinzugefügt.',
             MessageType.SUCCESS)
 
     def removeIoAction(self, connection_id: str, payload: dict) -> None:
         if self.max_id_io_action >= payload["data"]["id"]:
             ProcessBrokerBranch(f'io/action/{payload["data"]["id"]}/').remove_topics()
-            pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
+            pub_user_message(payload, connection_id, f'IO-Aktion mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
             pub_user_message(
@@ -204,8 +205,8 @@ class Command:
         """
         new_id = self.max_id_io_device + 1
         dev = importlib.import_module(".io_devices."+payload["data"]["type"]+".api", "modules")
-        descritpor = dev.device_descriptor.configuration_factory()
-        device_default = dataclass_utils.asdict(descritpor)
+        descriptor = dev.device_descriptor.configuration_factory()
+        device_default = dataclass_utils.asdict(descriptor)
         device_default["id"] = new_id
         Pub().pub(f'openWB/set/system/io/{new_id}/config', device_default)
         self.max_id_io_device = new_id
@@ -314,7 +315,7 @@ class Command:
             return None
 
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
-        """ löscht ein Chargepoint.
+        """ löscht ein Ladepunkt.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
             pub_user_message(
@@ -770,26 +771,26 @@ class Command:
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
         ''' fordert einen Authentifizierungscode für MSAL (Microsoft Authentication Library)
         an um Onedrive Backup zu ermöglichen'''
-        cloudbackupconfig = SubData.system_data["system"].backup_cloud
-        if cloudbackupconfig is None:
+        cloud_backup_config = SubData.system_data["system"].backup_cloud
+        if cloud_backup_config is None:
             pub_user_message(payload, connection_id,
                              "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
                              "und erneut versuchen.<br />", MessageType.WARNING)
             return
-        result = generateMSALAuthCode(cloudbackupconfig.config)
+        result = generateMSALAuthCode(cloud_backup_config.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
 
     # ToDo: move to module commands if implemented
     def retrieveMSALTokens(self, connection_id: str, payload: dict) -> None:
         """ holt die Tokens für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
         """
-        cloudbackupconfig = SubData.system_data["system"].backup_cloud
-        if cloudbackupconfig is None:
+        cloud_backup_config = SubData.system_data["system"].backup_cloud
+        if cloud_backup_config is None:
             pub_user_message(payload, connection_id,
                              "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
                              "und erneut versuchen.<br />", MessageType.WARNING)
             return
-        result = retrieveMSALTokens(cloudbackupconfig.config)
+        result = retrieveMSALTokens(cloud_backup_config.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
 
     def factoryReset(self, connection_id: str, payload: dict) -> None:
