@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onBeforeUnmount } from 'vue';
 
 defineOptions({
   name: 'SliderStandard',
@@ -154,6 +154,17 @@ watch(
     tempValue.value = newValue;
   },
 );
+
+onBeforeUnmount(() => {
+  if (updateTimeout.value) {
+    clearTimeout(updateTimeout.value);
+    const currentValue = value.value !== undefined ? value.value : 0;
+    emit(
+      'update:model-value',
+      props.discreteValues ? props.discreteValues[currentValue] : currentValue,
+    );
+  }
+});
 
 const myClass = computed(() => {
   return updatePending.value ? 'pending' : '';
