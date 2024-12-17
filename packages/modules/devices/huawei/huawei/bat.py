@@ -29,10 +29,10 @@ class HuaweiBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, client: ModbusTcpClient_) -> None:
-        if type == HuaweiType.SDongle:
+        if self.type == HuaweiType.SDongle:
             time.sleep(1)
         power = client.read_holding_registers(37765, ModbusDataType.INT_32, unit=self.modbus_id)
-        if type == HuaweiType.SDongle:
+        if self.type == HuaweiType.SDongle:
             time.sleep(1)
         soc = client.read_holding_registers(37760, ModbusDataType.INT_16, unit=self.modbus_id) / 10
 

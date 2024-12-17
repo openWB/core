@@ -29,11 +29,11 @@ class HuaweiCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, client: ModbusTcpClient_):
-        if type == HuaweiType.SDongle:
+        if self.type == HuaweiType.SDongle:
             time.sleep(1)
         currents = client.read_holding_registers(37107, [ModbusDataType.INT_32]*3, unit=self.modbus_id)
         currents = [val / -100 for val in currents]
-        if type == HuaweiType.SDongle:
+        if self.type == HuaweiType.SDongle:
             time.sleep(1)
         power = client.read_holding_registers(37113, ModbusDataType.INT_32, unit=self.modbus_id) * -1
 

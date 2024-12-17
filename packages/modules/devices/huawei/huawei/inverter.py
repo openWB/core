@@ -29,7 +29,7 @@ class HuaweiInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, client: ModbusTcpClient_) -> None:
-        if type == HuaweiType.SDongle:
+        if self.type == HuaweiType.SDongle:
             time.sleep(1)
         power = client.read_holding_registers(32064, ModbusDataType.INT_32, unit=self.modbus_id) * -1
 
