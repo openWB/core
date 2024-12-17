@@ -18,7 +18,7 @@
       </q-tab>
     </q-tabs>
     <!-- Tab Panels -->
-    <q-tab-panels v-model="tab" animated class="col">
+    <q-tab-panels v-model="tab" class="col">
       <q-tab-panel name="charge-points" class="q-pa-none column">
         <BaseCarousel :items="chargePointIds">
           <template #item="{ item }">
