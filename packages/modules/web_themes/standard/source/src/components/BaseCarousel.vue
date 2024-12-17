@@ -90,29 +90,4 @@ watch(
 .carousel-height {
   min-height: fit-content;
 }
-
-/* firefox */
-@-moz-document url-prefix() {
-  .carousel-height {
-    min-height: 0;
-    height: fit-content;
-  }
-  .carousel-slide {
-    padding: 0;
-  }
-}
-
-/* Safari */
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-  _::-webkit-full-page-media,
-  _:future,
-  :root .carousel-height {
-    height: fit-content;
-  }
-  _::-webkit-full-page-media,
-  _:future,
-  :root .carousel-slide {
-    height: fit-content;
-  }
-}
 </style>
