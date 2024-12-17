@@ -7,7 +7,7 @@
     infinite
     padding
     :navigation="groupedItems.length > 1"
-    :arrows="groupedItems && $q.screen.gt.xs"
+    :arrows="groupedItems.length > 1 && $q.screen.gt.xs"
     class="carousel-height q-mt-md"
     transition-next="slide-left"
     transition-prev="slide-right"

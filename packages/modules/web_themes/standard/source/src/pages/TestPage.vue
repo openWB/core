@@ -27,10 +27,10 @@
         </BaseCarousel>
       </q-tab-panel>
       <q-tab-panel name="batteries" class="">
-        <div class="row justify-center">
+        <div v-if="showBatteryOverview" class="row justify-center">
           <BatteryOverview />
         </div>
-        <BaseCarousel :items="batteryIds" v-if="showBatteryCarousel">
+        <BaseCarousel :items="batteryIds">
           <template #item="{ item }">
             <BatteryInformation :battery-id="item" />
           </template>
@@ -59,7 +59,7 @@ defineOptions({
 
 const tab = ref<string>('charge-points');
 
-const showBatteryCarousel = computed(() => {
+const showBatteryOverview = computed(() => {
   return mqttStore.batteryIds.length > 1;
 });
 
