@@ -1,14 +1,15 @@
 from helpermodules.auto_str import auto_str
+from typing import Optional
 
 
 @auto_str
 class JsonSocConfiguration:
     def __init__(
             self,
-            url: str = None,
-            soc_pattern: str = None,
-            range_pattern: str = None,
-            timeout: int = None,
+            url: Optional[str] = None,
+            soc_pattern: Optional[str] = None,
+            range_pattern: Optional[str] = None,
+            timeout: Optional[int] = None,
             calculate_soc: bool = False
             ):
         self.url = url
