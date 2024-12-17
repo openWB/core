@@ -7,7 +7,7 @@
     infinite
     padding
     :navigation="groupedItems.length > 1"
-    :arrows="groupedItems && $q.screen.gt.xs"
+    :arrows="groupedItems.length > 1 && $q.screen.gt.xs"
     class="carousel-height q-mt-md"
     transition-next="slide-left"
     transition-prev="slide-right"
@@ -89,30 +89,5 @@ watch(
 }
 .carousel-height {
   min-height: fit-content;
-}
-
-/* firefox */
-@-moz-document url-prefix() {
-  .carousel-height {
-    min-height: 0;
-    height: fit-content;
-  }
-  .carousel-slide {
-    padding: 0;
-  }
-}
-
-/* Safari */
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-  _::-webkit-full-page-media,
-  _:future,
-  :root .carousel-height {
-    height: fit-content;
-  }
-  _::-webkit-full-page-media,
-  _:future,
-  :root .carousel-slide {
-    height: fit-content;
-  }
 }
 </style>
