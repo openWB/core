@@ -33,7 +33,7 @@ class SampleBat(AbstractBat):
         self.store.set(bat_state)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        # # Methode entfernen, falls die Batterie keine Steuerung der Ladeleistung unterstützt
+        # Methode entfernen, falls die Batterie keine Steuerung der Ladeleistung unterstützt
         self.client.write_registers(reg, power_limit)
 
 
