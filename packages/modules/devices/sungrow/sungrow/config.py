@@ -12,7 +12,7 @@ class SungrowConfiguration:
                  port: int = 502,
                  modbus_id: int = 1,
                  version: Version = Version.SG,
-                 firmware: Version = Firmware.v111):
+                 firmware: Firmware = Firmware.v111):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
