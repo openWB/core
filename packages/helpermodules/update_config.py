@@ -301,6 +301,7 @@ class UpdateConfig:
         "^openWB/vehicle/[0-9]+/get/force_soc_update$",
         "^openWB/vehicle/[0-9]+/get/range$",
         "^openWB/vehicle/[0-9]+/get/soc$",
+        "^openWB/vehicle/[0-9]+/get/soc_request_timestamp$",
         "^openWB/vehicle/[0-9]+/get/soc_timestamp$",
         "^openWB/vehicle/[0-9]+/match_ev/selected$",
         "^openWB/vehicle/[0-9]+/match_ev/tag_id$",
