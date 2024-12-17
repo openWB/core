@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.chargemode import Chargemode
-from control.ev import Ev
+from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory

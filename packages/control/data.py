@@ -20,7 +20,9 @@ from helpermodules.graph import Graph
 from helpermodules.subdata import SubData
 from control.counter import Counter
 from control.counter_all import CounterAll
-from control.ev import ChargeTemplate, Ev, EvTemplate
+from control.ev.charge_template import ChargeTemplate
+from control.ev.ev import Ev
+from control.ev.ev_template import EvTemplate
 from control.general import General
 from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice

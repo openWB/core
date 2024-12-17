@@ -5,8 +5,10 @@ import pytest
 
 from control import data
 from control import optional
+from control.ev.charge_template import SelectedPlan
 from control.chargepoint.charging_type import ChargingType
-from control.ev import ChargeTemplate, EvTemplate, EvTemplateData, SelectedPlan
+from control.ev.ev import ChargeTemplate
+from control.ev.ev_template import EvTemplate, EvTemplateData
 from control.general import General
 from helpermodules import timecheck
 from helpermodules.abstract_plans import Limit, ScheduledChargingPlan, TimeChargingPlan
@@ -149,7 +151,7 @@ def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
     get_phases_chargemode_mock = Mock(return_value=params.chargemode_phases)
     monkeypatch.setattr(data.data.general_data, "get_phases_chargemode", get_phases_chargemode_mock)
     search_plan_mock = Mock(return_value=params.search_plan)
-    monkeypatch.setattr(ChargeTemplate, "search_plan", search_plan_mock)
+    monkeypatch.setattr(ChargeTemplate, "_search_plan", search_plan_mock)
     evt_data = Mock(spec=EvTemplateData, max_current_multi_phases=16, max_current_single_phase=32)
     evt = Mock(spec=EvTemplate, data=evt_data)
 
@@ -174,7 +176,7 @@ def test_calculate_duration(selected: str, phases: int, expected_duration: float
     plan = ScheduledChargingPlan()
     plan.limit.selected = selected
     # execution
-    duration, missing_amount = ct.calculate_duration(plan, 60, 45000, 200, phases, ChargingType.AC.value, EvTemplate())
+    duration, missing_amount = ct._calculate_duration(plan, 60, 45000, 200, phases, ChargingType.AC.value, EvTemplate())
 
     # evaluation
     assert duration == expected_duration
@@ -196,14 +198,14 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
                      monkeypatch):
     # setup
     calculate_duration_mock = Mock(return_value=(100, 200))
-    monkeypatch.setattr(ChargeTemplate, "calculate_duration", calculate_duration_mock)
+    monkeypatch.setattr(ChargeTemplate, "_calculate_duration", calculate_duration_mock)
     check_duration_mock = Mock(side_effect=[check_duration_return1, check_duration_return2])
     monkeypatch.setattr(timecheck, "check_duration", check_duration_mock)
     ct = ChargeTemplate(0)
     plan_mock = Mock(spec=ScheduledChargingPlan, active=True, current=14, limit=Limit(selected="amount"))
     ct.data.chargemode.scheduled_charging.plans = {0: plan_mock, 1: plan_mock}
     # execution
-    plan_data = ct.search_plan(14, 60, EvTemplate(), 3, 200, ChargingType.AC.value)
+    plan_data = ct._search_plan(14, 60, EvTemplate(), 3, 200, ChargingType.AC.value)
 
     # evaluation
     if expected_plan_num is None:
