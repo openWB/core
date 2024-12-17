@@ -13,7 +13,7 @@ class SmaSunnyBoyConfiguration:
 
 class SmaSunnyBoy:
     def __init__(self,
-                 name: str = "SMA Sunny Boy/Tripower",
+                 name: str = "SMA Sunny Boy/Tripower, Tesvolt",
                  type: str = "sma_sunny_boy",
                  id: int = 0,
                  configuration: SmaSunnyBoyConfiguration = None) -> None:
@@ -50,6 +50,20 @@ class SmaSunnyBoySmartEnergyBatSetup(ComponentSetup[SmaSunnyBoySmartEnergyBatCon
                  id: int = 0,
                  configuration: SmaSunnyBoySmartEnergyBatConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or SmaSunnyBoySmartEnergyBatConfiguration())
+
+
+class SmaTesvoltBatConfiguration:
+    def __init__(self):
+        pass
+
+
+class SmaTesvoltBatSetup(ComponentSetup[SmaTesvoltBatConfiguration]):
+    def __init__(self,
+                 name: str = "Sma Tripower/Tesvolt Speicher",
+                 type: str = "bat_tesvolt",
+                 id: int = 0,
+                 configuration: SmaTesvoltBatConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or SmaTesvoltBatConfiguration())
 
 
 class SmaSunnyBoyCounterConfiguration:
