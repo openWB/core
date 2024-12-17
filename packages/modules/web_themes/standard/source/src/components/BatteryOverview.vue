@@ -11,7 +11,12 @@
           />
           Speicher Übersicht
         </div>
-        <q-icon name="settings" size="sm" @click="settingsVisible = true" />
+        <q-icon
+          v-if="multipleBatteries"
+          name="settings"
+          size="sm"
+          @click="dialog?.open()"
+        />
       </div>
       <div class="row q-mt-sm text-subtitle2 justify-between no-wrap">
         <div class="row">
@@ -53,7 +58,19 @@
           </div>
         </div>
       </div>
-      <div class="text-subtitle1 text-weight-bold q-mt-sm">Heute:</div>
+      <div class="row q-mt-md text-subtitle2">
+        <div>Überschuss Modus:</div>
+        <div class="q-ml-sm row items-center">
+          <q-icon
+            :name="batteryMode.icon"
+            size="sm"
+            class="q-mr-sm"
+            color="primary"
+          />
+          {{ batteryMode.label }}
+        </div>
+      </div>
+      <div class="text-subtitle1 text-weight-bold q-mt-md">Heute:</div>
       <div class="row q-mt-sm text-subtitle2">
         <div>Geladen:</div>
         <div class="q-ml-sm">
@@ -69,36 +86,31 @@
     </q-card-section>
   </q-card>
 
-  <q-dialog
-    v-model="settingsVisible"
-    :maximized="$q.screen.width < 385"
-    :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
-  >
-    <q-card style="min-width: 24em">
-      <q-card-section>
-        <div class="text-h6">Battery Einstellungen</div>
-        <div class="text-subtitle2 q-mt-sm">Laden mit Überschuss Modus:</div>
-        <BatteryModeButtons />
-      </q-card-section>
-      <q-card-actions align="right">
-        <q-btn flat label="OK" color="primary" v-close-popup />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+  <BatterySettingsDialog ref="dialog" />
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { useQuasar } from 'quasar';
-import BatteryModeButtons from './BatteryModeButtons.vue';
+import BatterySettingsDialog from './BatterySettingsDialog.vue';
+import { useBatteryModes } from 'src/composables/useBatteryModes.ts';
 
-const settingsVisible = ref<boolean>(false);
+const dialog = ref();
+
+const multipleBatteries = computed(() => {
+  return mqttStore.batteryIds.length > 1;
+});
 
 const mqttStore = useMqttStore();
-const $q = useQuasar();
 
 const soc = computed(() => mqttStore.batterySocTotal);
+
+const { batteryModes } = useBatteryModes();
+
+const batteryMode = computed(() => {
+  const mode = mqttStore.batteryMode();
+  return batteryModes.find((m) => m.value === mode.value) || batteryModes[0];
+});
 
 const dailyImportedEnergy = computed(() =>
   mqttStore.batteryDailyImportedTotal('textValue'),
