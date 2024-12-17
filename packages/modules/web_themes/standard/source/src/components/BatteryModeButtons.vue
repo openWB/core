@@ -1,7 +1,7 @@
 <template>
   <q-btn-group class="q-mt-md">
     <q-btn
-      v-for="mode in batModes"
+      v-for="mode in batteryModes"
       :key="mode.value"
       :color="batMode.value === mode.value ? 'primary' : 'grey'"
       :label="mode.label"
@@ -17,32 +17,11 @@
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { computed } from 'vue';
+import { useBatteryModes } from 'src/composables/useBatteryModes.ts';
 
 const mqttStore = useMqttStore();
 
-const batModes = [
-  {
-    value: 'ev_mode',
-    label: 'Auto',
-    color: 'primary',
-    icon: 'directions_car',
-    tooltip: 'Auto ',
-  },
-  {
-    value: 'bat_mode',
-    label: 'Speicher',
-    color: 'primary',
-    icon: 'battery_charging_full',
-    tooltip: 'Speicher',
-  },
-  {
-    value: 'min_soc_bat_mode',
-    label: 'SoC',
-    color: 'primary',
-    icon: 'battery_charging_full',
-    tooltip: 'Minimum Speicher SoC',
-  },
-];
+const { batteryModes } = useBatteryModes();
 
 const batMode = computed(() => mqttStore.batteryMode());
 </script>
