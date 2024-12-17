@@ -101,8 +101,8 @@ class PurgeCounterState:
                                                      chargepoint.data.get.currents)))
                     except KeyError:
                         raise KeyError("Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
-                                       f" {chargepoint.data.config.name} an die Phasen der EVU angegeben "
-                                       "werden.")
+                                       f" {chargepoint.data.config.name} an die Phasen des EVU Zählers "
+                                       "angegeben werden.")
                     self.power += chargepoint.data.get.power
                     self.imported += chargepoint.data.get.imported
                 elif element["type"] == ComponentType.BAT.value:
