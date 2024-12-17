@@ -1844,7 +1844,7 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
-                # add factor
+                # add type
                 if payload.get("type") == "huawei" and "type" not in payload["configuration"]:
                     payload["configuration"].update({"type": "s_dongle"})
                 Pub().pub(topic, payload)
