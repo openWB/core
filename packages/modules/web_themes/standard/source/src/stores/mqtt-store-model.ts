@@ -102,7 +102,7 @@ export interface ScheduledChargingPlan {
   active: boolean;
   frequency: {
     selected: string;
-    once?: string[];
+    once?: string;
     weekly?: boolean[];
     selected_days?: string[];
   };
