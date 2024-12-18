@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import IntEnum
 
 
-class DeviceType(Enum):
+class DeviceType(IntEnum):
     SINGLE_PHASE_STRING = 0x0200
     SINGLE_PHASE_HYBRID = 0x0300
     THREE_PHASE_LV_0 = 0x0500
