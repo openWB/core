@@ -286,7 +286,7 @@ class ChargeTemplate:
                 plan_data_single_phase = self._search_plan(
                     max_current, soc, ev_template, 1, used_amount, charging_type)
                 if plan_data_single_phase:
-                    if plan_data_single_phase.remaining_time > 300:
+                    if plan_data_single_phase.remaining_time > 0:
                         plan_data = plan_data_single_phase
         else:
             if charging_type == ChargingType.AC.value:
