@@ -37,7 +37,9 @@ class ChargepointModule(AbstractChargepoint):
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
         self.store = get_chargepoint_value_store(hierarchy_id)
         self.client_error_context = ErrorTimerContext(
-            f"openWB/set/internal_chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
+            f"openWB/set/internal_chargepoint/{local_charge_point_num}/get/error_timestamp",
+            CP_ERROR,
+            hide_exception=True)
         self.old_plug_state = False
         self.old_phases_in_use = 0
         self.old_chargepoint_state = ChargepointState()
