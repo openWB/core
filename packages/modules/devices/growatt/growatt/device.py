@@ -16,34 +16,43 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Growatt):
+    client = None
+
     def create_bat_component(component_config: GrowattBatSetup):
+        nonlocal client
         return GrowattBat(component_config,
                           device_config.configuration.modbus_id,
-                          GrowattVersion(device_config.configuration.version))
+                          GrowattVersion(device_config.configuration.version),
+                          client)
 
     def create_counter_component(component_config: GrowattCounterSetup):
+        nonlocal client
         return GrowattCounter(component_config,
                               device_config.configuration.modbus_id,
-                              GrowattVersion(device_config.configuration.version))
+                              GrowattVersion(device_config.configuration.version),
+                              client)
 
     def create_inverter_component(component_config: GrowattInverterSetup):
+        nonlocal client
         return GrowattInverter(component_config,
                                device_config.configuration.modbus_id,
-                               GrowattVersion(device_config.configuration.version))
+                               GrowattVersion(device_config.configuration.version),
+                               client)
 
     def update_components(components: Iterable[Union[GrowattBat, GrowattCounter, GrowattInverter]]):
-        with client as c:
+        nonlocal client
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(c)
+                    component.update()
 
-    try:
+    def initialiser():
+        nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
 
-    except Exception:
-        log.exception("Fehler in create_device")
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

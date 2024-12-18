@@ -12,21 +12,26 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: BatKitSetup):
+    client = None
+
     def create_bat_component(component_config: BatKitBatSetup):
+        nonlocal client
         return BatKit(device_config.id, component_config, client)
 
     def update_components(components: Iterable[BatKit]):
+        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    try:
+    def initialiser():
+        nonlocal client
         client = modbus.ModbusTcpClient_("192.168.193.19", 8899)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
         ),

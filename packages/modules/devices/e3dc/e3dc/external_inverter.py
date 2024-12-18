@@ -26,16 +26,17 @@ class E3dcExternalInverter(AbstractInverter):
     def __init__(self,
                  device_id: int,
                  component_config: E3dcExternalInverterSetup,
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: modbus.ModbusTcpClient_) -> None:
         self.component_config = component_config
         self.__modbus_id = modbus_id
+        self.client = client
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, client: modbus.ModbusTcpClient_) -> None:
-
-        pv_external = read_external_inverter(client, self.__modbus_id)
+    def update(self) -> None:
+        pv_external = read_external_inverter(self.client, self.__modbus_id)
         # pv_external - > pv Leistung
         # die als externe Produktion an e3dc angeschlossen ist
         # Im gegensatz zur Implementierung in Version 1.9 wird nicht mehr die PV

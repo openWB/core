@@ -17,19 +17,21 @@ class HuaweiBat(AbstractBat):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, HuaweiBatSetup],
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(HuaweiBatSetup, component_config)
         self.modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         time.sleep(1)
-        power = client.read_holding_registers(37765, ModbusDataType.INT_32, unit=self.modbus_id)
+        power = self.client.read_holding_registers(37765, ModbusDataType.INT_32, unit=self.modbus_id)
         time.sleep(1)
-        soc = client.read_holding_registers(37760, ModbusDataType.INT_16, unit=self.modbus_id) / 10
+        soc = self.client.read_holding_registers(37760, ModbusDataType.INT_16, unit=self.modbus_id) / 10
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(

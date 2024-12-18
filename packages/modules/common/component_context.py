@@ -17,10 +17,11 @@ class SingleComponentUpdateContext:
                 component.update()
     """
 
-    def __init__(self, fault_state: FaultState, update_always: bool = True, reraise: bool = False):
+    def __init__(self, fault_state: FaultState, error_handler, update_always: bool = True, reraise: bool = False):
         self.__fault_state = fault_state
         self.update_always = update_always
         self.reraise = reraise
+        self.error_handler = error_handler
 
     def __enter__(self):
         log.debug("Update Komponente ['"+self.__fault_state.component_info.name+"']")
@@ -30,6 +31,8 @@ class SingleComponentUpdateContext:
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
         MultiComponentUpdateContext.override_subcomponent_state(self.__fault_state, exception, self.update_always)
+        if isinstance(exception, Exception) and self.error_handler is not None:
+            self.error_handler()
         if self.reraise is False:
             return True
         else:
@@ -46,10 +49,11 @@ class MultiComponentUpdateContext:
     """
     __thread_local = threading.local()
 
-    def __init__(self, device_components: Union[Dict[Any, Any], List[Any]]):
+    def __init__(self, device_components: Union[Dict[Any, Any], List[Any]], error_handler: Optional[callable] = None):
         self.__device_components = \
             device_components.values() if isinstance(device_components, dict) else device_components
         self.__ignored_components = []  # type: List[ComponentInfo]
+        self.error_handler = error_handler
 
     def __enter__(self):
         if hasattr(self.__thread_local, "active_context"):
@@ -69,6 +73,8 @@ class MultiComponentUpdateContext:
                 fault_state.from_exception(exception)
                 fault_state.store_error()
         delattr(MultiComponentUpdateContext.__thread_local, "active_context")
+        if isinstance(exception, Exception) and self.error_handler is not None:
+            self.error_handler()
         return True
 
     def ignore_subcomponent_state(self, component: ComponentInfo):

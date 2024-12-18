@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-""" Modul zum Auslesen von Alpha Ess Speichern, Zählern und Wechselrichtern.
-"""
 import logging
 from typing import Iterable, Union
 
@@ -16,24 +14,30 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Studer):
+    client = None
+
     def create_bat_component(component_config: StuderBatSetup):
+        nonlocal client
         return StuderBat(component_config, client)
 
     def create_inverter_component(component_config: StuderInverterSetup):
+        nonlocal client
         return StuderInverter(component_config, client)
 
     def update_components(components: Iterable[Union[StuderBat, StuderInverter]]):
+        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    try:
+    def initialiser():
+        nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initialiser=initialiser,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             inverter=create_inverter_component,
