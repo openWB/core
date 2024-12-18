@@ -194,6 +194,11 @@ def restore_last_energy(topic: str, value: str):
             data.data.system_data[f"device{device_id}"].components[f"component{component_id}"].component_config.type)
         module = getattr(data.data, f"{module_type}_data")[f"{module_type}{get_second_index(topic)}"].data.get
         return getattr(module, value)
+    except AttributeError:
+        if (value == "imported" and
+                "inverter" in data.data.system_data[f"device{device_id}"].components[
+                    f"component{component_id}"].component_config.type):
+            return 0
     except ValueError:
         # Wenn kein Index enthalten, ist es Hausverbrauch.
         if value == "exported":
