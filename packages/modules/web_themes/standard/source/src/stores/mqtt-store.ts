@@ -1811,14 +1811,14 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         const plans = vehicleScheduledChargingPlans(chargePointId).value;
         const plan = plans.find((p) => p.id === planId);
-        return plan?.frequency.once?.[0];
+        return plan?.frequency.once;
       },
       set(newValue: string) {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
         const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, [newValue], 'frequency.once', true);
+        updateTopic(baseTopic, newValue, 'frequency.once', true);
       },
     });
   };
