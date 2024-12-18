@@ -26,7 +26,7 @@ class DeyeCounter(AbstractCounter):
         unit = self.component_config.configuration.modbus_id
 
         if self.device_type == DeviceType.SINGLE_PHASE_STRING or self.device_type == DeviceType.SINGLE_PHASE_HYBRID:
-            frequency = client.read_holding_registers(79, ModbusDataType.INT_16, unit=unit) * 100
+            frequency = client.read_holding_registers(79, ModbusDataType.INT_16, unit=unit) / 100
 
             if self.device_type == DeviceType.SINGLE_PHASE_HYBRID:
                 powers = [0]*3
