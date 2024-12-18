@@ -22,7 +22,7 @@
               ? plan.frequency.selected_days
                 ? plan.frequency.selected_days.join(', ')
                 : ''
-              : 'einmalig'
+              : formattedDate
         }}
       </div>
       <q-icon name="schedule" size="sm" class="q-mr-xs white-icon" />
@@ -67,6 +67,16 @@ const planActive = computed({
       props.plan.id,
     ).value = newValue;
   },
+});
+
+const formattedDate = computed(() => {
+  if (!props.plan.frequency.once) return 'Datum wählen';
+  const date = new Date(props.plan.frequency.once);
+  return date.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 });
 </script>
 
