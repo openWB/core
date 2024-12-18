@@ -423,7 +423,8 @@ class SetData:
             elif ("/charge_template" in msg.topic or
                     "/ev_template" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
-            elif "/get/soc_timestamp" in msg.topic:
+            elif ("/get/soc_request_timestamp" in msg.topic or
+                  "/get/soc_timestamp" in msg.topic):
                 self._validate_value(msg, float)
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
@@ -579,9 +580,8 @@ class SetData:
                         "/control_parameter/imported_at_plan_start" in msg.topic or
                         "/control_parameter/min_current" in msg.topic or
                         "/control_parameter/timestamp_switch_on_off" in msg.topic or
-                        "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
                         "/control_parameter/timestamp_charge_start" in msg.topic or
-                        "/control_parameter/timestamp_perform_phase_switch" in msg.topic):
+                        "/control_parameter/timestamp_last_phase_switch" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
                     self._validate_value(msg, int, [(0, 7)])
@@ -783,7 +783,7 @@ class SetData:
             elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/general/chargemode_config/phase_switch_delay" in msg.topic:
-                self._validate_value(msg, int, [(1, 15)])
+                self._validate_value(msg, int, [(5, 20)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
             elif (("openWB/set/general/chargemode_config/pv_charging/phases_to_use" in msg.topic or
@@ -861,6 +861,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif ("openWB/set/optional/et/provider" in msg.topic or
                   "openWB/set/optional/ocpp/config" in msg.topic):
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/monitoring" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)

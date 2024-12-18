@@ -73,7 +73,11 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 self.calculated_soc_state.soc_start = car_state.soc
                 Pub().pub(f"openWB/set/vehicle/{self.vehicle}/soc_module/calculated_soc_state",
                           asdict(self.calculated_soc_state))
-            self.store.set(car_state)
+            if vehicle_update_data.soc_timestamp is None or vehicle_update_data.soc_timestamp < car_state.soc_timestamp:
+                # Nur wenn der SoC neuer ist als der bisherige, diesen setzen.
+                self.store.set(car_state)
+            else:
+                log.debug("Not updating SoC, because timestamp is older.")
 
     def _get_carstate_source(self, vehicle_update_data: VehicleUpdateData) -> SocSource:
         if isinstance(self.vehicle_config, MqttSocSetup):
@@ -105,7 +109,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 # Wenn SoC vom LP nicht mehr aktuell, dann berechnen.
                 return SocSource.CALCULATION
 
-    def _get_carstate_by_source(self, vehicle_update_data, source):
+    def _get_carstate_by_source(self, vehicle_update_data: VehicleUpdateData, source: SocSource) -> CarState:
         if source == SocSource.API:
             return self.__component_updater(vehicle_update_data)
         elif source == SocSource.CALCULATION:
@@ -116,7 +120,8 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 self.calculated_soc_state.soc_start,
                 vehicle_update_data.battery_capacity))
         elif source == SocSource.CP:
-            return CarState(vehicle_update_data.soc_from_cp)
+            return CarState(soc=vehicle_update_data.soc_from_cp,
+                            soc_timestamp=vehicle_update_data.timestamp_soc_from_cp)
         elif source == SocSource.MANUAL:
             soc = self.calculated_soc_state.manual_soc or self.calculated_soc_state.soc_start
             self.calculated_soc_state.manual_soc = None

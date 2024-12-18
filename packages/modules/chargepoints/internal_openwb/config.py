@@ -4,9 +4,10 @@ from modules.common.abstract_chargepoint import SetupChargepoint
 
 
 class InternalChargepointMode(Enum):
-    SOCKET = "socket"
     DUO = "duo"
+    PRO_PLUS = "pro_plus"
     SERIES = "series"
+    SOCKET = "socket"
 
 
 class InternalOpenWBConfiguration:

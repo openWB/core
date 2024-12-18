@@ -34,6 +34,8 @@ def init_store():
     store['refresh_token'] = None
     store['access_token'] = None
     store['expires_at'] = None
+    if 'captcha_token' not in store:
+        store['captcha_token'] = None
     return store
 
 
@@ -88,16 +90,35 @@ async def _fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, 
         logging.getLogger("httpx").setLevel(logging.WARNING)
 
         store = load_store()
+        # check for captcha_token in store
+        if 'captcha_token' not in store:
+            # captcha token not in store - add current captcha_token
+            log.info("initialize captcha token in store")
+            store['captcha_token'] = captcha_token
+            write_store(store)
+        else:
+            # last used captcha token in store, compare with captcha_token in configuration
+            if store['captcha_token'] != captcha_token:
+                # invalidate current refresh and access token to force new login
+                log.info("new captcha token configured - invalidate stored token set")
+                store['expires_at'] = None
+                store['access_token'] = None
+                store['refresh_token'] = None
+            else:
+                log.info("captcha token unchanged")
+
         if store['expires_at'] is not None:
             # authenticate via refresh and access token
             # user_id, password are provided in case these are required
+            log.info("authenticate via current token set")
             expires_at = datetime.datetime.fromisoformat(store['expires_at'])
             auth = MyBMWAuthentication(user_id, password, Regions.REST_OF_WORLD,
                                        refresh_token=store['refresh_token'],
                                        access_token=store['access_token'],
                                        expires_at=expires_at)
         else:
-            # no token, authenticate via user_id and password only
+            # no token, authenticate via user_id, password and captcha_token
+            log.info("authenticate via userid, password, captcha token")
             auth = MyBMWAuthentication(user_id,
                                        password,
                                        Regions.REST_OF_WORLD,
@@ -136,6 +157,7 @@ async def _fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, 
         if store['expires_at'] != expires_at:
             store['refresh_token'] = auth.refresh_token
             store['access_token'] = auth.access_token
+            store['captcha_token'] = captcha_token
             store['expires_at'] = datetime.datetime.isoformat(auth.expires_at)
             write_store(store)
 

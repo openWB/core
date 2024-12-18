@@ -10,19 +10,29 @@ from modules.devices.huawei.huawei.bat import HuaweiBat
 from modules.devices.huawei.huawei.config import Huawei, HuaweiBatSetup, HuaweiCounterSetup, HuaweiInverterSetup
 from modules.devices.huawei.huawei.counter import HuaweiCounter
 from modules.devices.huawei.huawei.inverter import HuaweiInverter
+from modules.devices.huawei.huawei.type import HuaweiType
 
 log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Huawei):
     def create_bat_component(component_config: HuaweiBatSetup):
-        return HuaweiBat(device_config.id, component_config, device_config.configuration.modbus_id)
+        return HuaweiBat(device_config.id,
+                         component_config,
+                         device_config.configuration.modbus_id,
+                         HuaweiType(device_config.configuration.type))
 
     def create_counter_component(component_config: HuaweiCounterSetup):
-        return HuaweiCounter(device_config.id, component_config, device_config.configuration.modbus_id)
+        return HuaweiCounter(device_config.id,
+                             component_config,
+                             device_config.configuration.modbus_id,
+                             HuaweiType(device_config.configuration.type))
 
     def create_inverter_component(component_config: HuaweiInverterSetup):
-        return HuaweiInverter(device_config.id, component_config, device_config.configuration.modbus_id)
+        return HuaweiInverter(device_config.id,
+                              component_config,
+                              device_config.configuration.modbus_id,
+                              HuaweiType(device_config.configuration.type))
 
     def update_components(components: Iterable[Union[HuaweiBat, HuaweiCounter, HuaweiInverter]]):
         with client:
@@ -31,8 +41,12 @@ def create_device(device_config: Huawei):
                     component.update(client)
 
     try:
-        client = ModbusTcpClient_(device_config.configuration.ip_address,
-                                  device_config.configuration.port, sleep_after_connect=7)
+        if HuaweiType(device_config.configuration.type) == HuaweiType.SDongle:
+            client = ModbusTcpClient_(device_config.configuration.ip_address,
+                                      device_config.configuration.port, sleep_after_connect=7)
+        else:
+            client = ModbusTcpClient_(device_config.configuration.ip_address,
+                                      device_config.configuration.port)
     except Exception:
         log.exception("Fehler in create_device")
     return ConfigurableDevice(
