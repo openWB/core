@@ -4,7 +4,7 @@
     :maximized="$q.platform.is.mobile"
     :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
   >
-    <q-card @scroll.capture="handleScroll">
+    <q-card>
       <q-card-section>
         <div class="row">
           <div class="text-h6">Einstellungen {{ name }}</div>
@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { useQuasar, QDialog } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { computed, ref, watch, provide } from 'vue';
+import { computed, ref, watch } from 'vue';
 import ChargePointInstantSettings from './ChargePointInstantSettings.vue';
 import ChargePointPVSettings from './ChargePointPVSettings.vue';
 import ChargePointScheduledSettings from './ChargePointScheduledSettings.vue';
@@ -81,14 +81,6 @@ const props = defineProps<{
   chargePointId: number;
   modelValue: boolean;
 }>();
-
-const isDialogScrolled = ref(false);
-
-const handleScroll = () => {
-  isDialogScrolled.value = true;
-};
-
-provide('isDialogScrolled', isDialogScrolled);
 
 const emit = defineEmits<{
   'update:model-value': [value: boolean];
