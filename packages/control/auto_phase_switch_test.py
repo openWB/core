@@ -8,7 +8,7 @@ from control.counter import Counter, CounterData, Set
 from control.pv_all import PvAll
 from control.bat_all import BatAll
 from control.general import General
-from control.ev import Ev
+from control.ev.ev import Ev
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
 
@@ -88,7 +88,7 @@ cases = [
            timestamp_auto_phase_switch=1652682772.0, phases_to_use=1, required_current=6,
            evu_surplus=1640, get_currents=[15.6, 0, 0], get_power=3450,
            state=ChargepointState.PHASE_SWITCH_DELAY,
-           expected_phases_to_use=3, expected_current=6, expected_state=ChargepointState.PHASE_SWITCH_DELAY_EXPIRED),
+           expected_phases_to_use=3, expected_current=6, expected_state=ChargepointState.PHASE_SWITCH_AWAITED),
 
     Params("3to1, not enough power, start timer", max_current_single_phase=16, timestamp_auto_phase_switch=None,
            phases_to_use=3, required_current=6, evu_surplus=0,
@@ -116,7 +116,7 @@ cases = [
            timestamp_auto_phase_switch=1652682592.0, phases_to_use=3, required_current=6,
            evu_surplus=-460, get_currents=[4.5, 4.4, 5.8],
            get_power=3381, state=ChargepointState.PHASE_SWITCH_DELAY, expected_phases_to_use=1, expected_current=16,
-           expected_state=ChargepointState.PHASE_SWITCH_DELAY_EXPIRED),
+           expected_state=ChargepointState.PHASE_SWITCH_AWAITED),
 ]
 
 

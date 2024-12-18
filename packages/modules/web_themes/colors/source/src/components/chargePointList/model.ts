@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { updateServer } from '@/assets/js/sendMessages'
 import { ChargeMode, type PowerItem } from '@/assets/js/types'
 import { globalConfig } from '@/assets/js/themeConfig'
@@ -451,3 +451,39 @@ export function resetChargePoints() {
 		delete chargePoints[parseInt(key)]
 	})
 }
+
+export const topVehicles = computed(() => {
+	const result: number[] = []
+	const cps = Object.values(chargePoints)
+	const vhcls = Object.values(vehicles).filter((v) => v.visible)
+	// vehicle 1
+	let v1 = -1
+	switch (cps.length) {
+		case 0:
+			v1 = vhcls[0] ? vhcls[0].id : -1
+			break
+		default:
+			v1 = cps[0].connectedVehicle //?? vhcls[0] ? vhcls[0].id : -1
+	}
+	// vehicle 2
+	let v2 = -1
+	switch (cps.length) {
+		case 0:
+		case 1:
+			v2 = vhcls[0] ? vhcls[0].id : -1
+			break
+		default:
+			v2 = cps[1].connectedVehicle //?? vhcls[1] ? vhcls[1].id : -1
+	}
+	// change v2 if the same as v1
+	if (v1 == v2) {
+		v2 = vhcls[1] ? vhcls[1].id : -1
+	}
+	if (v1 != -1) {
+		result.push(v1)
+	}
+	if (v2 != -1) {
+		result.push(v2)
+	}
+	return result
+})

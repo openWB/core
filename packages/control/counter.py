@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.chargemode import Chargemode
-from control.ev import Ev
+from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
@@ -243,13 +243,7 @@ class Counter:
         control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
         control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
         control_range_center = control_range_high - (control_range_high - control_range_low) / 2
-        control_range_state = self.get_control_range_state(0)
-        if control_range_state == ControlRangeState.BELOW:
-            range_offset = abs(control_range_center)
-        elif control_range_state == ControlRangeState.ABOVE:
-            range_offset = - abs(control_range_center)
-        else:
-            range_offset = 0
+        range_offset = control_range_center
         log.debug(f"Anpassen des Regelbereichs {range_offset}W")
         return range_offset
 
@@ -498,6 +492,7 @@ class Counter:
                 else:
                     evu_counter.data.set.released_surplus -= (pv_config.switch_on_threshold
                                                               * chargepoint.data.control_parameter.phases)
+                chargepoint.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 

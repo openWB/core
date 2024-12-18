@@ -11,7 +11,8 @@ from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Get, Set
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter
-from control.ev import ChargeTemplate, Ev
+from control.ev.charge_template import ChargeTemplate
+from control.ev.ev import Ev
 
 
 @pytest.fixture(autouse=True)
@@ -63,7 +64,7 @@ def test_filter_by_feed_in_limit(feed_in_limit_1: bool,
 def test_limit_adjust_current(new_current: float, expected_current: float, monkeypatch):
     # setup
     cp = Chargepoint(0, None)
-    cp.data = ChargepointData(get=Get(currents=[15]*3))
+    cp.data = ChargepointData(get=Get(charge_state=True, currents=[15]*3))
     cp.template = CpTemplate()
     monkeypatch.setattr(Chargepoint, "set_state_and_log", Mock())
 
@@ -101,24 +102,24 @@ def test_set_required_current_to_max(phases: int,
 
 
 @pytest.mark.parametrize(
-    "evse_current, limited_current, required_current, expected_current",
+    "evse_current, limited_current, expected_current",
     [
-        pytest.param(None, 6, 16, 6, id="Kein Soll-Strom aus der EVSE ausgelesen"),
-        pytest.param(15, 15, 16, 15, id="Auto lädt mit Soll-Stromstärke"),
-        pytest.param(14.5, 14.5, 14.5, 14, id="Auto lädt mit mehr als Soll-Stromstärke"),
-        pytest.param(15.5, 15.5, 16, 16, id="Auto lädt mit weniger als Soll-Stromstärke"),
-        pytest.param(16, 16, 16, 16,
+        pytest.param(None, 6, 6, id="Kein Soll-Strom aus der EVSE ausgelesen"),
+        pytest.param(13, 13, 13, id="Auto lädt mit Soll-Stromstärke"),
+        pytest.param(12.5, 12.5, 12.5, id="Auto lädt mit 0.5A Abweichung von der Soll-Stromstärke"),
+        pytest.param(11.8, 11.8, 10.600000000000001, id="Auto lädt mit mehr als Soll-Stromstärke"),
+        pytest.param(14.2, 14.2, 15.399999999999999, id="Auto lädt mit weniger als Soll-Stromstärke"),
+        pytest.param(15, 15, 16,
                      id="Auto lädt mit weniger als Soll-Stromstärke, aber EVSE-Begrenzung ist erreicht.")
     ])
 def test_add_unused_evse_current(evse_current: float,
                                  limited_current: float,
-                                 required_current: float,
                                  expected_current: float):
     # setup
     c = Chargepoint(0, None)
-    c.data.get.currents = [15]*3
+    c.data.get.currents = [13]*3
     c.data.get.evse_current = evse_current
-    c.data.control_parameter.required_current = required_current
+    c.data.control_parameter.required_current = 16
     c.data.set.current = limited_current
 
     # execution

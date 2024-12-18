@@ -423,7 +423,8 @@ class SetData:
             elif ("/charge_template" in msg.topic or
                     "/ev_template" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
-            elif "/get/soc_timestamp" in msg.topic:
+            elif ("/get/soc_request_timestamp" in msg.topic or
+                  "/get/soc_timestamp" in msg.topic):
                 self._validate_value(msg, float)
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
@@ -623,6 +624,9 @@ class SetData:
             self._validate_value(msg, int, [(0, 2)])
         elif "/get/evse_current" in msg.topic:
             self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
+        elif ("/get/error_timestamp" in msg.topic or
+                "/get/rfid_timestamp" in msg.topic):
+            self._validate_value(msg, float)
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
                 "/get/heartbeat" in msg.topic or
@@ -630,13 +634,8 @@ class SetData:
                 "/get/vehicle_id" in msg.topic or
                 "/get/serial_number" in msg.topic):
             self._validate_value(msg, str)
-        elif ("/get/error_timestamp" in msg.topic or
-                "/get/rfid_timestamp" in msg.topic):
-            self._validate_value(msg, float)
         elif ("/get/soc" in msg.topic):
             self._validate_value(msg, float, [(0, 100)])
-        elif "/get/rfid_timestamp" in msg.topic:
-            self._validate_value(msg, float)
         elif "/get/simulation" in msg.topic:
             self._validate_value(msg, "json")
         else:
@@ -863,6 +862,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif ("openWB/set/optional/et/provider" in msg.topic or
                   "openWB/set/optional/ocpp/config" in msg.topic):
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/monitoring" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)

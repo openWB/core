@@ -9,8 +9,9 @@ from control.algorithm import filter_chargepoints
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Log, Set
+from control.chargepoint.control_parameter import ControlParameter
 from control.counter_all import CounterAll
-from control.ev import ControlParameter, Ev, EvData, Get
+from control.ev.ev import Ev, EvData, Get
 
 
 @dataclass

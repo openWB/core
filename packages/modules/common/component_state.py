@@ -130,7 +130,7 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: float = 0):
+    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: Optional[float] = None):
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
@@ -138,7 +138,10 @@ class CarState:
         """
         self.soc = soc
         self.range = range
-        self.soc_timestamp = soc_timestamp
+        if soc_timestamp is None:
+            self.soc_timestamp = timecheck.create_timestamp()
+        else:
+            self.soc_timestamp = soc_timestamp
 
 
 @auto_str

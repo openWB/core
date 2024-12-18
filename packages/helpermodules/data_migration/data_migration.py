@@ -18,7 +18,8 @@ import tarfile
 from threading import Thread
 from typing import Callable, Dict, List, Optional, Union
 
-from control import data, ev
+from control import data
+from control.ev import ev
 from dataclass_utils import dataclass_from_dict
 import dataclass_utils
 from helpermodules.data_migration.id_mapping import MapId
