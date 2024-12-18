@@ -84,6 +84,9 @@ $toggle-off: #e0e0e0;
   background-color: var(--q-background-1);
   // Text color
   color: var(--q-brown-text);
+  .theme-text {
+    color: var(--q-brown-text) !important;
+  }
   // Header colors
   .q-header {
     background-color: var(--q-background-2);
@@ -184,6 +187,9 @@ $dark-tab-icon: #d7d9e0;
   background-color: var($dark-page);
   // Text color
   color: var(--q-white);
+  .theme-text {
+    color: var(--q-white) !important;
+  }
 
   // Override default dark theme background
   body.body--dark {
