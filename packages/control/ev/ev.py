@@ -348,7 +348,6 @@ class Ev:
         delay = cm_config.phase_switch_delay * 60
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
-
             required_reserved_power = (control_parameter.min_current * max_phases * 230 -
                                        self.ev_template.data.max_current_single_phase * 230)
 
