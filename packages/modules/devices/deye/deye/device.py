@@ -6,7 +6,7 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
-from modules.common.modbus import ModbusTcpClient_
+from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.devices.deye.deye.bat import DeyeBat
 from modules.devices.deye.deye.counter import DeyeCounter
 from modules.devices.deye.deye.device_type import DeviceType
@@ -19,13 +19,19 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Deye):
     def create_bat_component(component_config: DeyeBatSetup):
-        return DeyeBat(device_config.id, component_config)
+        device_type = client.read_holding_registers(
+            0, ModbusDataType.INT_16, unit=component_config.configuration.modbus_id)
+        return DeyeBat(device_config.id, component_config, device_type)
 
     def create_counter_component(component_config: DeyeCounterSetup):
-        return DeyeCounter(device_config.id, component_config)
+        device_type = client.read_holding_registers(
+            0, ModbusDataType.INT_16, unit=component_config.configuration.modbus_id)
+        return DeyeCounter(device_config.id, component_config, device_type)
 
     def create_inverter_component(component_config: DeyeInverterSetup):
-        return DeyeInverter(device_config.id, component_config)
+        device_type = client.read_holding_registers(
+            0, ModbusDataType.INT_16, unit=component_config.configuration.modbus_id)
+        return DeyeInverter(device_config.id, component_config, device_type)
 
     def update_components(components: Iterable[Union[DeyeBat, DeyeCounter, DeyeInverter]]):
         with client as c:
