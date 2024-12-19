@@ -108,7 +108,7 @@
               color="primary"
               :label="day"
               :class="{ 'theme-text': !selectedWeekDays[index] }"
-              @click="toggleWeekDay(index)"
+              @click="selectDay(index)"
             />
           </div>
         </div>
@@ -144,7 +144,7 @@ const $q = useQuasar();
 
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-const toggleWeekDay = (index: number) => {
+const selectDay = (index: number) => {
   const newArray = [...selectedWeekDays.value];
   newArray[index] = !newArray[index];
   selectedWeekDays.value = newArray;
