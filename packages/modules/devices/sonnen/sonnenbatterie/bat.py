@@ -47,9 +47,9 @@ class SonnenbatterieBat(AbstractBat):
             soc=battery_soc
         )
 
-    def __read_variant_1(self, api: str = "v1"):
+    def __read_variant_1(self, api: str = "v1", target: str = "status") -> Dict:
         return req.get_http_session().get(
-            "http://" + self.__device_address + "/api/" + api + "/status",
+            f"http://{self.__device_address}/api/{api}/{target}",
             timeout=5,
             headers={"Auth-Token": self.__api_v2_token} if api == "v2" else None
         ).json()
@@ -105,6 +105,32 @@ class SonnenbatterieBat(AbstractBat):
             exported=exported
         )
 
+    def __get_json_api_v2_configurations(self) -> Dict:
+        if self.__device_variant != 3:
+            raise ValueError("JSON API v2 wird nur für Variante 3 unterstützt!")
+        return self.__read_variant_1("v2", "configurations")
+
+    def __set_json_api_v2_configurations(self, configuration: Dict) -> None:
+        if self.__device_variant != 3:
+            raise ValueError("JSON API v2 wird nur für Variante 3 unterstützt!")
+        req.get_http_session().put(
+            f"http://{self.__device_address}/api/v2/configurations",
+            json=configuration,
+            headers={"Auth-Token": self.__api_v2_token}
+        )
+
+    def __set_json_api_v2_setpoint(self, power_limit: int) -> None:
+        if self.__device_variant != 3:
+            raise ValueError("JSON API v2 wird nur für Variante 3 unterstützt!")
+        command = "charge"
+        if power_limit < 0:
+            command = "discharge"
+            power_limit = -power_limit
+        req.get_http_session().post(
+            f"http://{self.__device_address}/api/v2/setpoint/{command}/{power_limit}",
+            headers={"Auth-Token": self.__api_v2_token, "Content-Type": "application/json"}
+        )
+
     def __read_variant_2_element(self, element: str) -> str:
         response = req.get_http_session().get(
             'http://' + self.__device_address + ':7979/rest/devices/battery/' + element,
@@ -136,6 +162,24 @@ class SonnenbatterieBat(AbstractBat):
         else:
             raise ValueError("Unbekannte Variante: " + str(self.__device_variant))
         self.store.set(state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        if self.__device_variant != 3:
+            raise ValueError("Leistungsvorgabe wird nur für Variante 3 unterstützt!")
+        operating_mode = self.__get_json_api_v2_configurations()["EM_OperatingMode"]
+        log.debug(f"Betriebsmodus: aktuell: {operating_mode}")
+        if power_limit is None:
+            # Keine Leistungsvorgabe, Betriebsmodus "Eigenverbrauch" aktivieren
+            if operating_mode == "1":
+                log.debug("Keine Leistungsvorgabe, aktiviere normale Steuerung durch den Speicher")
+                self.__set_json_api_v2_configurations({"EM_OperatingMode": "2"})
+        else:
+            # Leistungsvorgabe, Betriebsmodus "Manuell" aktivieren
+            if operating_mode == "2":
+                log.debug(f"Leistungsvorgabe: {power_limit}, aktiviere manuelle Steuerung durch openWB")
+                self.__set_json_api_v2_configurations({"EM_OperatingMode": "1"})
+            log.debug(f"Setze Leistungsvorgabe auf: {power_limit}")
+            self.__set_json_api_v2_setpoint(power_limit)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SonnenbatterieBatSetup)
