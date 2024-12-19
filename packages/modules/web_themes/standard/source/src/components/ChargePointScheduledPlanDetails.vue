@@ -107,7 +107,7 @@
               :outline="selectedWeekDays[index]"
               color="primary"
               :label="day"
-              :class="{ 'theme-text': !selectedWeekDays[index] }"
+              :class="{ deselected: !selectedWeekDays[index] }"
               @click="selectDay(index)"
             />
           </div>
