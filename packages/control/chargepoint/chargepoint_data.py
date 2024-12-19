@@ -138,6 +138,9 @@ class Set:
     plug_time: Optional[float] = None
     required_power: float = 0
     rfid: Optional[str] = None
+    # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
+    # (für Control-Pilot-Unterbrechung)
+    current_prev: float = 0.0
     target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
     ocpp_transaction_id: Optional[int] = None
@@ -228,7 +231,5 @@ class ChargepointProtocol(Protocol):
     def chargepoint_module(self) -> AbstractChargepoint: ...
     @property
     def num(self) -> int: ...
-    @property
-    def set_current_prev(self) -> float: ...
     @property
     def data(self) -> ChargepointData: ...

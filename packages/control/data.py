@@ -335,7 +335,6 @@ class Data:
             except TypeError:
                 self.cp_data[cp] = Chargepoint(SubData.cp_data[cp].chargepoint.num, None)
                 self.cp_data[cp].template = copy.deepcopy(SubData.cp_data[cp].chargepoint.template)
-                self.cp_data[cp].set_current_prev = copy.deepcopy(SubData.cp_data[cp].chargepoint.set_current_prev)
                 self.cp_data[cp].data = copy.deepcopy(SubData.cp_data[cp].chargepoint.data)
                 self.cp_data[cp].chargepoint_module = SubData.cp_data[cp].chargepoint.chargepoint_module
         self.cp_all_data = copy.deepcopy(SubData.cp_all_data)
