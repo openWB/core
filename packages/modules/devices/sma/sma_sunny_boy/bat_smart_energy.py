@@ -68,7 +68,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
 
         current_limit = self.__tcp_client.read_holding_registers(POWER_LIMIT_REGISTER, ModbusDataType.INT_32, unit=unit)
 
-        if current_limit == power_limit:
+        if current_limit != power_limit:
             log.debug(f'Aktives Entladelimit {current_limit} W weicht vom Sollwert {power_limit} W ab.')    
             log.debug(f'Setze neuen Wert {power_limit} in Register {POWER_LIMIT_REGISTER}.')
             self.__tcp_client.write_registers(POWER_LIMIT_REGISTER, power_limit, unit=unit)
