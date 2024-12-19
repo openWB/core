@@ -33,7 +33,10 @@ class SampleBat(AbstractBat):
         self.store.set(bat_state)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        # Methode entfernen, falls die Batterie keine Steuerung der Ladeleistung unterstützt
+        # Methode entfernen, falls der Speicher keine Steuerung der Ladeleistung unterstützt
+        # Wenn der Speicher die Steuerung der Ladeleistung unterstützt, muss bei Übergabe einer Zahl auf aktive
+        # Speichersteurung umgeschaltet werden, sodass der Speicher mit der übergebenen Leistung lädt/entlädt. Wird
+        # None übergeben, muss der Speicher die Null-Punkt-Ausregelung selbst übernehmen.
         self.client.write_registers(reg, power_limit)
 
 
