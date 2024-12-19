@@ -529,7 +529,8 @@ class SetData:
                 if ("/set/charging_ev" in msg.topic or
                         "/set/charging_ev_prev" in msg.topic):
                     self._validate_value(msg, int, [(-1, float("inf"))])
-                elif "/set/current" in msg.topic:
+                elif ("/set/current" in msg.topic or
+                      "/set/current_prev" in msg.topic):
                     if hardware_configuration.get_hardware_configuration_setting("dc_charging"):
                         self._validate_value(msg, float, [(0, 0), (6, 32), (0, 450)])
                     else:

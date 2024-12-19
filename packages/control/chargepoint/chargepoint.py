@@ -70,9 +70,6 @@ class Chargepoint(ChargepointRfidMixin):
             self.template: CpTemplate = None
             self.chargepoint_module: AbstractChargepoint = None
             self.num = index
-            # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
-            # (für Control-Pilot-Unterbrechung)
-            self.set_current_prev = 0.0
             # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht veröffentlichen
             self.data: ChargepointData = ChargepointData()
             self.data.set_event(event)
@@ -304,8 +301,9 @@ class Chargepoint(ChargepointRfidMixin):
 
     def remember_previous_values(self):
         self.data.set.plug_state_prev = self.data.get.plug_state
-        self.set_current_prev = self.data.set.current
+        self.data.set.current_prev = self.data.set.current
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/current_prev", self.data.set.current_prev)
 
     def reset_log_data_chargemode_switch(self) -> None:
         reset_log = Log()
@@ -337,7 +335,7 @@ class Chargepoint(ChargepointRfidMixin):
             if charging_ev.ev_template.data.control_pilot_interruption:
                 if self.data.config.control_pilot_interruption_hw:
                     # Wird die Ladung gestartet?
-                    if self.set_current_prev == 0 and self.data.set.current != 0:
+                    if self.data.set.current_prev == 0 and self.data.set.current != 0:
                         # Die CP-Unterbrechung erfolgt in Threads, da diese länger als ein Zyklus dauert.
                         if thread_handler(threading.Thread(
                                 target=self.chargepoint_module.interrupt_cp,
@@ -370,7 +368,7 @@ class Chargepoint(ChargepointRfidMixin):
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
             ((self.data.set.current != 0 and self.data.get.charge_state) or
-             (self.data.set.current != 0 and self.set_current_prev == 0) or
+             (self.data.set.current != 0 and self.data.set.current_prev == 0) or
              self.data.set.current == 0)):
             phase_switch_required = True
         if (self.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
@@ -619,7 +617,7 @@ class Chargepoint(ChargepointRfidMixin):
     def set_timestamp_charge_start(self):
         # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
         if self.data.control_parameter.timestamp_charge_start is None:
-            if self.set_current_prev == 0 and self.data.set.current != 0:
+            if self.data.set.current_prev == 0 and self.data.set.current != 0:
                 self.data.control_parameter.timestamp_charge_start = create_timestamp()
         elif self.data.set.current == 0:
             self.data.control_parameter.timestamp_charge_start = None
