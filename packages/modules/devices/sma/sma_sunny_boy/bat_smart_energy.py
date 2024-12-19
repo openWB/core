@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from typing import Dict, Union
+import logging
 
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
@@ -10,6 +11,9 @@ from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
+from typing import Optional
+
+log = logging.getLogger(__name__)
 
 
 class SunnyBoySmartEnergyBat(AbstractBat):
@@ -51,6 +55,23 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             imported=imported,
             exported=exported
         )
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        POWER_LIMIT_REGISTER = 40799
+        unit = self.component_config.configuration.modbus_id
+
+        if power_limit is None:
+            power_limit = -1
+            log.debug("Kein Entladelimit für den Speicher vorgegeben, Entladung wird durch den Speicher geregelt.")
+        else:
+            log.debug(f'Entladelimit {power_limit} W vorgegeben.')    
+
+        current_limit = self.__tcp_client.read_holding_registers(POWER_LIMIT_REGISTER, ModbusDataType.INT_32, unit=unit)
+
+        if current_limit == power_limit:
+            log.debug(f'Aktives Entladelimit {current_limit} W weicht vom Sollwert {power_limit} W ab.')    
+            log.debug(f'Setze neuen Wert {power_limit} in Register {POWER_LIMIT_REGISTER}.')
+            self.__tcp_client.write_registers(POWER_LIMIT_REGISTER, power_limit, unit=unit)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SmaSunnyBoySmartEnergyBatSetup)
