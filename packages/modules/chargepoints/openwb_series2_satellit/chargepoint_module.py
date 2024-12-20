@@ -40,6 +40,7 @@ class ChargepointModule(AbstractChargepoint):
                 f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
             self._create_client()
             self._validate_version()
+        self.max_evse_current = self._client.evse_client.get_max_current()
 
     def delay_second_cp(self, delay: float):
         if self.config.configuration.duo_num == 0:
@@ -93,7 +94,8 @@ class ChargepointModule(AbstractChargepoint):
                                 plug_state=plug_state,
                                 charge_state=charge_state,
                                 phases_in_use=phases_in_use,
-                                serial_number=self._client.meter_client.get_serial_number()
+                                serial_number=self._client.meter_client.get_serial_number(),
+                                max_evse_current=self.max_evse_current
                             )
                         self.store.set(chargepoint_state)
                         self.client_error_context.reset_error_counter()
