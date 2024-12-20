@@ -15,11 +15,13 @@ declare resultStatus
 	mkdir -p "$WORKING_DIR"
 	echo "****************************************"
 	echo "Step 2: extract archive to working directory"
-	# extracting as root preserves file owner/group and permissions!
+	# extracting as root preserves file owner/group and permissions, but directory owner/group is root!
 	if ! sudo tar --verbose --extract --file="$SOURCE_FILE" --directory="$WORKING_DIR"; then
 		resultMessage="Beim Entpacken des Archivs ist ein Fehler aufgetreten!"
 		resultStatus=1
 	else
+		echo "fixing directory owner/group"
+		sudo chown --verbose openwb:openwb "$WORKING_DIR/openWB" "$WORKING_DIR/openWB/data" "$WORKING_DIR/openWB/data/log"
 		echo "****************************************"
 		echo "Step 3: validating extracted files"
 		if [[ ! -f "$WORKING_DIR/SHA256SUM" ]] ||
