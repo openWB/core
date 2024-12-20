@@ -36,6 +36,9 @@ declare resultStatus
 			if [[ ! -f "$WORKING_DIR/configuration.json" ]]; then
 				echo "configuration missing; continue anyway"
 			fi
+			if [[ ! -d "$WORKING_DIR/conf_local.d" ]]; then
+				echo "mosquitto configuration missing; continue anyway"
+			fi
 			if ! (cd "$WORKING_DIR" && sudo sha256sum --quiet --check "SHA256SUM"); then
 				resultMessage="Einige Dateien wurden gelöscht oder bearbeitet!"
 				resultStatus=1
