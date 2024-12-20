@@ -62,7 +62,11 @@ fi
 		--file="$BACKUPFILE" \
 		--directory="/var/lib/" \
 		"mosquitto/" "mosquitto_local/"
-	# ToDo: add mosquitto configuration files
+	echo "adding mosquitto configuration"
+	sudo tar --verbose --append \
+		--file="$BACKUPFILE" \
+		--directory="/etc/mosquitto/" \
+		"conf_local.d/"
 	echo "adding git information"
 	git branch --no-color --show-current >"$RAMDISKDIR/GIT_BRANCH"
 	git log --pretty='format:%H' -n1 >"$RAMDISKDIR/GIT_HASH"
