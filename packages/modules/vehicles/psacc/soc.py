@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import logging
 
-from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.vehicles.psacc.config import PSACCVehicleSoc
 from modules.vehicles.json.soc import create_vehicle as create_vehicle_json
