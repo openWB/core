@@ -1,6 +1,6 @@
 from typing import Optional
 
-from modules.vehicles.json.config import JsonSocConfiguration
+from modules.vehicles.json.config import JsonSocConfiguration, JsonSocSetup
 
 
 class PSACCVehicleSocConfiguration(JsonSocConfiguration):
@@ -27,11 +27,10 @@ class PSACCVehicleSocConfiguration(JsonSocConfiguration):
         pass
 
 
-class PSACCVehicleSoc:
+class PSACCVehicleSoc(JsonSocSetup):
     def __init__(self,
                  name: str = "PSA Car Controller",
                  type: str = "psacc",
                  configuration: PSACCVehicleSocConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.configuration = configuration or PSACCVehicleSocConfiguration()
+        super().__init__(name=name, type=type,
+                         configuration=configuration or PSACCVehicleSocConfiguration())
