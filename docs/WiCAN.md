@@ -27,7 +27,7 @@ Es ist hierbei darauf zu achten, dass nur der WiCAN-OBD2 oder der WiCAN PRO (Com
 
 ### 4. Konfiguration WiCAN Settings
 
-* Zunächst muss der WiCAN ins Heim-WLAN geholt werden:
+* Zunächst muss der WiCAN ins Heim-WLAN geholt werden:  
 https://meatpihq.github.io/wican-fw/config/wifi
 
 * Nun werden die weiteren Parameter konfiguriert:  
