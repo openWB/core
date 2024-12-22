@@ -3,6 +3,8 @@
 Mit Hilfe des WiCAN OBD2 Dongles von meatPi Electronics können die Werte des Fahrzeugs über die OBD2-Schnittstelle ausgelesen und im WLAN per MQTT an die openWB Wallbox gesendet werden. In Verbindung mit dem manuellem SoC Modul der openWB ist hiermit die Nutzung ohne Cloud-Dienste der Fahrzeughersteller möglich.  
 https://github.com/meatpiHQ/wican-fw
 
+Beim "einfahren" ins heimische WLAN und ggf. auch während des Ladevorganges wird dann der aktuelle SoC des Fahrzeugs an die openWB übertragen.
+
 Die erste Umsetzung erfolgte von zut im openWB Forum, der hierfür auch eine Unterstützung von Spritmonitor umgesetzt hat. Hierfür ist ein weiteres Gerät im Netzwerk nötig, auf dem ein kleines Programm (soc_helper) laufen kann:  
 https://forum.openwb.de/viewtopic.php?t=7451
 
