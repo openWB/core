@@ -113,7 +113,7 @@ Um dieses Problem zu umgehen sind momentan folgende Lösungen bekannt:
 - Bei einigen Fahrzeugen liegt an PIN1 des OBD2-Ports nur bei eingeschalteter Zündung eine Spannung von 12V an. Diese kann dann zur Versorung des WiCAN Dongles verwendet werden, so dass dieser bei abgeschalteter Zündung gar keine Spannungsversorgung hat. Normalerweise liegt an PIN16 die Versorgungsspannung für den WiCAN an.  
 Es kann also in doiesem Fall mit einem entsprechend "manipuliertem" Adapterkabel z.B. PIN1 und PIN16 getauscht werden:  
 https://forum.openwb.de/viewtopic.php?p=115467#p115467
-- Ggf. ist eine Anpassung der OBD2-Überwachung der Alarmanlage möglich:
+- Ggf. ist eine Anpassung der OBD2-Überwachung der Alarmanlage möglich:  
 https://www.born-forum.de/forum/thread/193-m%C3%B6gliche-codierungen-am-cupra-born-ohne-gew%C3%A4hr-auf-eigene-gefahr/?postID=77395#post77395
 
 Beide Lösungen dienen nur zur Info und erfolgen stets auf eigene Gefahr
@@ -130,6 +130,5 @@ Zur besseren Übersicht  werden hier nur die tatsächlich verwendeten Fahrzeuge 
 |Hyundai&#160;Ioniq&#160;(28&#160;kWh)&#160;2017|ATSP6;ATSH7E4;ATST96;|manual_soc||2105|B39/2|
 |Peugeot iOn|ATSP6;ATFCSH761;ATFCSD300000;ATFCSM1;ATSH761;ATCRA762;|manual_soc||2101|(B4/2)&#x2011;5|
 |
-
 Anmerkungen zur Tabelle:  
 Um einen Zeilenumbruch zu verhindern, müssen Leerzeichen durch einen "no-break space character" (\&#160;) und ein Minuszeichen durch "no-brak hyphen" (\&#x2011;) im Markdown Quelltext ersetzt werden.
