@@ -103,7 +103,6 @@ Name|Init|PID|Expression|Period(ms)|Type|Send_to
 -|-|-|-|-|-|-
 manual_soc|ATSP7;ATSHFC007B;ATCP17;ATCRA17FE007B;ATFCSH17FC007B;|22028C1|B4*0.4425&#x2011;6.1947|10000|MQTT_Topic|openWB/set/vehicle/**3**/soc_module/calculated_soc_state
 range|ATSP6;ATSH710;ATCP18; ATCRA77A;ATFCSH710;|222AB62|[B5:B6]|10000|MQTT_Topic|openWB/set/vehicle/**3**/get/range
-|
 
 ### 7. Alarmanlage des Fahrzeugs
 
@@ -129,6 +128,6 @@ Zur besseren Übersicht  werden hier nur die tatsächlich verwendeten Fahrzeuge 
 |CUPRA&#160;Born&#160;2022|ATST96;ATFCSD300000;ATFCSM1;|manual_soc|ATSP7;ATCP17;ATSHFC007B;ATFCSH17FC007B;ATCRA17FE007B;|22028C1|B4*0.4425&#x2011;6.1947|
 |Hyundai&#160;Ioniq&#160;(28&#160;kWh)&#160;2017|ATSP6;ATSH7E4;ATST96;|manual_soc||2105|B39/2|
 |Peugeot iOn|ATSP6;ATFCSH761;ATFCSD300000;ATFCSM1;ATSH761;ATCRA762;|manual_soc||2101|(B4/2)&#x2011;5|
-|
+
 Anmerkungen zur Tabelle:  
 Um einen Zeilenumbruch zu verhindern, müssen Leerzeichen durch einen "no-break space character" (\&#160;) und ein Minuszeichen durch "no-brak hyphen" (\&#x2011;) im Markdown Quelltext ersetzt werden.
