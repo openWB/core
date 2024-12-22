@@ -91,7 +91,7 @@ die gefundenen Werte werden nun im Tab Automate bei den Custom PIDs eingetragen:
 - Period(ms) ist das Intervall, in denen die Werte abgefragt werden.
 - Im Feld Type muss für den SoC "MQTT_Topic", für die Reichweite jedoch "MQTT_Wallbox" eingestellt werden.
 - Im Feld Send_to muss die Fahrzeug ID aus der openWB, die wir in Punkt 3 ermittelt haben, eingesetzt werden (...vehicle/**x**/...):  
-[3. Konfiguration manueller SoC in openWB](#3-konfiguration-manueller-soc-in-openwb)  
+([3. Konfiguration manueller SoC in openWB](#3-konfiguration-manueller-soc-in-openwb))  
 Die Werte lauten für den SoC:  
 openWB/set/vehicle/**x**/soc_module/calculated_soc_state  
 Für die Reichweite:  
