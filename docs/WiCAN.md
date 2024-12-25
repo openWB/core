@@ -106,8 +106,8 @@ Das Ergebnis sieht dann z.B. so aus:
 
 Name|Init|PID|Expression|Period(ms)|Type|Send_to
 -|-|-|-|-|-|-
-manual_soc|ATSP7;ATSHFC007B;ATCP17;ATCRA17FE007B;ATFCSH17FC007B;|22028C1|B4*0.4425&#x2011;6.1947|10000|MQTT_Topic|openWB/set/vehicle/**3**/soc_module/calculated_soc_state
-range|ATSP6;ATSH710;ATCP18; ATCRA77A;ATFCSH710;|222AB62|[B5:B6]|10000|MQTT_Topic|openWB/set/vehicle/**3**/get/range
+manual_soc|ATSP7;ATSHFC007B;ATCP17;ATCRA17FE007B;ATFCSH17FC007B;|22028C1|B4*0.4425&#x2011;6.1947|60000|MQTT_Topic|openWB/set/vehicle/**3**/soc_module/calculated_soc_state
+range|ATSP6;ATSH710;ATCP18; ATCRA77A;ATFCSH710;|222AB62|[B5:B6]|60000|MQTT_Topic|openWB/set/vehicle/**3**/get/range
 
 ### 7. Alarmanlage des Fahrzeugs
 
