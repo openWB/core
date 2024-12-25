@@ -32,7 +32,7 @@ Es ist hierbei darauf zu achten, dass nur der WiCAN-OBD2 oder der WiCAN PRO (Com
 * Zunächst muss der WiCAN ins Heim-WLAN geholt werden:  
 https://meatpihq.github.io/wican-fw/config/wifi
 
-* Firmware Update auf 3.48 oder neuer:
+* Firmware Update auf 3.48 oder neuer:  
 https://meatpihq.github.io/wican-fw/config/firmware-update
 
 * Nun werden die weiteren Parameter konfiguriert:  
