@@ -192,10 +192,10 @@ class Ev:
                 # Info vom Zielladen erhalten
                 message = f"{message or ''} {tmp_message or ''}".strip()
                 if tmp_current > 0:
-                    control_parameter.current_plan = plan_id
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
                     if plan_id != control_parameter.current_plan:
                         control_parameter.imported_at_plan_start = imported
+                    control_parameter.current_plan = plan_id
                     required_current = tmp_current
                     submode = tmp_submode
             if (required_current == 0) or (required_current is None):

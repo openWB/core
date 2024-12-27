@@ -1893,7 +1893,8 @@ class UpdateConfig:
 
     def upgrade_datastore_69(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
-            if (re.search("openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+", topic) is not None):
+            if (re.search("openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+", topic) is not None or
+                    re.search("openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+", topic) is not None):
                 payload = decode_payload(payload)
                 payload["id"] = int(get_second_index(topic))
                 return {topic: payload}
