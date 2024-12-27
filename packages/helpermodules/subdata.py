@@ -901,7 +901,7 @@ class SubData:
                                   str(index)+" gefunden werden.")
                 else:
                     io_config = decode_payload(msg.payload)
-                    if "/io/local/config" in msg.topic:
+                    if io_config["configuration"]["host"] == "localhost":
                         self.event_restart_gpio.set()
                         dev = importlib.import_module(f".internal_chargepoint_handler.{io_config['type']}.api",
                                                       "modules")
