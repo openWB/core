@@ -1,14 +1,14 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 from dataclass_utils.factories import empty_list_factory
 from modules.io_actions.groups import ActionGroup
 
 
 @dataclass
 class PowerLevelsConfig:
-    io_device: int = 0
+    io_device: Optional[int] = None
     digital_input: List[int] = field(default_factory=empty_list_factory)
-    component_id: int = 0
+    component_id: Optional[int] = None
 
 
 class PowerLevelsSetup:
