@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 
 def create_vehicle(vehicle_config: PSACCVehicleSoc, vehicle: int):
-    return create_vehicle_json(vehicle_config, int)
+    return create_vehicle_json(vehicle_config, vehicle)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=PSACCVehicleSoc)
