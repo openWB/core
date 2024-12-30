@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 68
+    DATASTORE_VERSION = 69
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -1874,3 +1874,19 @@ class UpdateConfig:
                     return {"openWB/general/chargemode_config/phase_switch_delay": 5}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 68)
+
+    def upgrade_datastore_68(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                if payload.get("type") == "discovergy":
+                    for component_topic, component_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config",
+                                     component_topic) is not None:
+                            config_payload = decode_payload(component_payload)
+                            if "info" not in config_payload:
+                                config_payload.update({"info": {"manufacturer": None, "model": None}})
+                                return {component_topic: config_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 69)

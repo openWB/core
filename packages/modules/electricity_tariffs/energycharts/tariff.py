@@ -20,7 +20,7 @@ def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[int, float]:
     for price in raw_prices['price']:
         price_arr.append((float(price + (config.surcharge*10))/1000000))  # €/MWh -> €/Wh + Aufschlag
     prices: Dict[int, float] = {}
-    prices = dict(zip(raw_prices['unix_seconds'], price_arr))
+    prices = dict(zip([str(int(unix_seconds)) for unix_seconds in raw_prices['unix_seconds']], price_arr))
     return prices
 
 

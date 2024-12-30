@@ -616,6 +616,7 @@ class Chargepoint(ChargepointRfidMixin):
 
     def set_timestamp_charge_start(self):
         # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
+        # Nach dem Algorithmus setzen, sonst steht set current noch nicht fest.
         if self.data.control_parameter.timestamp_charge_start is None:
             if self.data.set.current_prev == 0 and self.data.set.current != 0:
                 self.data.control_parameter.timestamp_charge_start = create_timestamp()
@@ -670,7 +671,6 @@ class Chargepoint(ChargepointRfidMixin):
                     charging_ev.set_submode_changed(self.data.control_parameter, submode)
                     self.set_control_parameter(submode, required_current)
                     self.set_required_currents(required_current)
-                    self.set_timestamp_charge_start()
                     self.check_phase_switch_completed()
 
                     if charging_ev.chargemode_changed or charging_ev.submode_changed:

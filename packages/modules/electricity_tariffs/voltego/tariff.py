@@ -77,7 +77,7 @@ def fetch(config: VoltegoTariff) -> None:
         # timezone of the result should already be UTC as epoch does not support timezones
         timestamp = datetime.datetime.fromisoformat(data["begin"]).astimezone(
             pytz.timezone("Europe/Berlin")).timestamp()
-        prices.update({int(timestamp): formatted_price})
+        prices.update({str(int(timestamp)): formatted_price})
     return prices
 
 

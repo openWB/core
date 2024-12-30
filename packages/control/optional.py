@@ -53,7 +53,7 @@ class Optional(OcppMixin):
             return False
 
     def et_get_current_price(self):
-        return self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())]
+        return self.data.et.get.prices[str(int(create_unix_timestamp_current_full_hour()))]
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """
