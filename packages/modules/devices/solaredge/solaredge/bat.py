@@ -60,45 +60,40 @@ class SolaredgeBat(AbstractBat):
             return None, None
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        # Setzt die Leistungsbegrenzung fuer die Batterie.
-        # - Bei None wird die Null-Punkt-Ausregelung aktiviert, Standardwert 5000 W.
-        # - Bei Uebergabe einer Zahl wird die Begrenzung entsprechend gesetzt.
-        # - Schreibt den Wert nur, wenn er vom bestehenden Limit abweicht.
+    # Setzt die Leistungsbegrenzung für die Batterie.
+    # - Bei None wird die Null-Punkt-Ausregelung aktiviert, Standardwert 5000 W.
+    # - Bei Übergabe einer Zahl wird die Begrenzung entsprechend gesetzt.
+    # - Schreibt den Wert nur, wenn er vom bestehenden Limit abweicht.
 
-        # Hinweis:
-        # Fuer die aktive Steuerung muss der Speicher in den Remote-Modus versetzt werden.
-        # Dazu muss `StorageConf_CtrlMode (0xE004)` auf 4 ("Remote") gesetzt werden.
+    DISCHARGE_LIMIT_REGISTER = 57360  # Discharge Limit Register
+    unit = self.component_config.configuration.modbus_id
 
-        DISCHARGE_LIMIT_REGISTER = 57360  # Discharge Limit Register
-        unit = self.component_config.configuration.modbus_id
+    # Logik bei None
+    if power_limit is None:
+        log.debug("Null-Punkt-Ausregelung aktiviert, Entladelimit wird auf 5000 W gesetzt.")
+        power_limit = 5000  # Maximale Entladeleistung
 
-        # Logik bei None
-        if power_limit is None:
-            log.debug("Null-Punkt-Ausregelung aktiviert, Entladelimit wird auf 5000 W gesetzt.")
-            power_limit = 5000  # Maximale Entladeleistung
+    # Validierung für übergebene Werte
+    elif power_limit < 0 or power_limit > 5000:
+        log.error(f"Ungültiges Entladelimit: {power_limit}. Muss zwischen 0 und 5000 liegen.")
+        return
 
-        # Validierung fuer uebergebene Werte
-        elif power_limit < 0 or power_limit > 5000:
-            log.error(f"Ungueltiges Entladelimit: {power_limit}. Muss zwischen 0 und 5000 liegen.")
+    try:
+        # Bestehendes Limit lesen
+        current_limit = self.__tcp_client.read_holding_registers(
+            DISCHARGE_LIMIT_REGISTER, ModbusDataType.FLOAT_32, unit=unit)
+
+        # Nur schreiben, wenn der neue Wert vom bestehenden abweicht
+        if current_limit == power_limit:
+            log.info(f"Entladelimit ist bereits auf {current_limit} W gesetzt. Kein Schreiben erforderlich.")
             return
 
-        try:
-            # Bestehendes Limit lesen
-            current_limit = self.__tcp_client.read_holding_registers(
-                DISCHARGE_LIMIT_REGISTER, ModbusDataType.FLOAT_32, unit=unit)
+        # Neuen Wert schreiben
+        self.__tcp_client.write_registers(
+            DISCHARGE_LIMIT_REGISTER, [float_32(power_limit)], unit=unit)
+        log.debug(f"Entladelimit erfolgreich auf {power_limit} W gesetzt.")
 
-            # Nur schreiben, wenn der neue Wert vom bestehenden abweicht
-            if current_limit == power_limit:
-                log.debug(f"Entladelimit ist bereits auf {current_limit} W gesetzt. Kein Schreiben erforderlich.")
-                return
-
-            # Neuen Wert schreiben
-            self.__tcp_client.write_registers(
-                DISCHARGE_LIMIT_REGISTER, power_limit, unit=unit)
-            log.debug(f"Entladelimit erfolgreich auf {power_limit} W gesetzt.")
-
-        except Exception as e:
-            log.error(f"Fehler beim Setzen des Entladelimits: {e}")
-
+    except Exception as e:
+        log.error(f"Fehler beim Setzen des Entladelimits: {e}")
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolaredgeBatSetup)
