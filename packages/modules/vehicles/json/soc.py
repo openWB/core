@@ -24,10 +24,10 @@ def extract_to_epoch(input_string: str) -> float:
 
     # Try parsing as UTC formatted time
     try:
-        dt = datetime.strptime(input_string, "%Y-%m-%dT%H:%M:%SZ")
+        dt = datetime.fromisoformat(input_string)
         return int(dt.timestamp())
     except ValueError:
-        log.exception(f"Kein UTC formatiertes Datum in '{input_string}' gefunden.")
+        log.exception(f"Kein ISO 8601 formatiertes Datum in '{input_string}' gefunden.")
         return None
 
 
