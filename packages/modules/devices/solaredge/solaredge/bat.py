@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple, Union, Optional
 
 from pymodbus.constants import Endian
 
@@ -16,8 +16,6 @@ from modules.common.store import get_bat_value_store
 from modules.devices.solaredge.solaredge.config import SolaredgeBatSetup
 
 log = logging.getLogger(__name__)
-
-FLOAT32_UNSUPPORTED = -0xffffff00000000000000000000000000
 
 
 class SolaredgeBat(AbstractBat):
@@ -35,9 +33,13 @@ class SolaredgeBat(AbstractBat):
     def update(self) -> None:
         self.store.set(self.read_state())
 
-    def read_state(self):
+    def read_state(self) -> BatState:
         power, soc = self.get_values()
-        imported, exported = self.get_imported_exported(power)
+        if soc is None or power is None:
+            log.error("Ungültige Werte aus den Modbus-Registern gelesen.")
+            return BatState(power=0, soc=0, imported=0, exported=0)
+        imported, exported = self.sim_counter.sim_count(power)
+        log.debug(f"Gelesen - Power: {power}, SOC: {soc}")
         return BatState(
             power=power,
             soc=soc,
@@ -45,18 +47,59 @@ class SolaredgeBat(AbstractBat):
             exported=exported
         )
 
-    def get_values(self) -> Tuple[float, float]:
+    def get_values(self) -> Tuple[Optional[float], Optional[float]]:
         unit = self.component_config.configuration.modbus_id
-        soc = self.__tcp_client.read_holding_registers(
-            62852, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)
-        power = self.__tcp_client.read_holding_registers(
-            62836, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)
-        if power == FLOAT32_UNSUPPORTED:
-            power = 0
-        return power, soc
+        try:
+            soc = self.__tcp_client.read_holding_registers(
+                57732, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)  # SOC Register
+            power = self.__tcp_client.read_holding_registers(
+                57716, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)  # Power Register
+            return power, soc
+        except Exception as e:
+            log.error(f"Fehler beim Lesen von Modbus-Registern: {e}")
+            return None, None
 
-    def get_imported_exported(self, power: float) -> Tuple[float, float]:
-        return self.sim_counter.sim_count(power)
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        """
+        Setzt die Leistungsbegrenzung für die Batterie.
+        - Bei None wird die Null-Punkt-Ausregelung aktiviert, Standardwert 5000 W.
+        - Bei Übergabe einer Zahl wird die Begrenzung entsprechend gesetzt.
+        - Schreibt den Wert nur, wenn er vom bestehenden Limit abweicht.
+
+        Hinweis:
+        Für die aktive Steuerung muss der Speicher in den Remote-Modus versetzt werden.
+        Dazu muss `StorageConf_CtrlMode (0xE004)` auf 4 ("Remote") gesetzt werden.
+        """
+        DISCHARGE_LIMIT_REGISTER = 57360  # Discharge Limit Register
+        unit = self.component_config.configuration.modbus_id
+
+        # Logik bei None
+        if power_limit is None:
+            log.debug("Null-Punkt-Ausregelung aktiviert, Entladelimit wird auf 5000 W gesetzt.")
+            power_limit = 5000  # Maximale Entladeleistung
+
+        # Validierung für übergebene Werte
+        elif power_limit < 0 or power_limit > 5000:
+            log.error(f"Ungültiges Entladelimit: {power_limit}. Muss zwischen 0 und 5000 liegen.")
+            return
+
+        try:
+            # Bestehendes Limit lesen
+            current_limit = self.__tcp_client.read_holding_registers(
+                DISCHARGE_LIMIT_REGISTER, ModbusDataType.FLOAT_32, unit=unit)
+
+            # Nur schreiben, wenn der neue Wert vom bestehenden abweicht
+            if current_limit == power_limit:
+                log.debug(f"Entladelimit ist bereits auf {current_limit} W gesetzt. Kein Schreiben erforderlich.")
+                return
+
+            # Neuen Wert schreiben
+            self.__tcp_client.write_registers(
+                DISCHARGE_LIMIT_REGISTER, power_limit, unit=unit)
+            log.debug(f"Entladelimit erfolgreich auf {power_limit} W gesetzt.")
+
+        except Exception as e:
+            log.error(f"Fehler beim Setzen des Entladelimits: {e}")
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolaredgeBatSetup)
