@@ -36,7 +36,7 @@ class SolaredgeBat(AbstractBat):
     def read_state(self) -> BatState:
         power, soc = self.get_values()
         if soc is None or power is None:
-            log.error("Ungültige Werte aus den Modbus-Registern gelesen.")
+            log.error("Ungueltige Werte aus den Modbus-Registern gelesen.")
             return BatState(power=0, soc=0, imported=0, exported=0)
         imported, exported = self.sim_counter.sim_count(power)
         log.debug(f"Gelesen - Power: {power}, SOC: {soc}")
@@ -60,16 +60,15 @@ class SolaredgeBat(AbstractBat):
             return None, None
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        """
-        Setzt die Leistungsbegrenzung für die Batterie.
-        - Bei None wird die Null-Punkt-Ausregelung aktiviert, Standardwert 5000 W.
-        - Bei Übergabe einer Zahl wird die Begrenzung entsprechend gesetzt.
-        - Schreibt den Wert nur, wenn er vom bestehenden Limit abweicht.
+        # Setzt die Leistungsbegrenzung fuer die Batterie.
+        # - Bei None wird die Null-Punkt-Ausregelung aktiviert, Standardwert 5000 W.
+        # - Bei Uebergabe einer Zahl wird die Begrenzung entsprechend gesetzt.
+        # - Schreibt den Wert nur, wenn er vom bestehenden Limit abweicht.
 
-        Hinweis:
-        Für die aktive Steuerung muss der Speicher in den Remote-Modus versetzt werden.
-        Dazu muss `StorageConf_CtrlMode (0xE004)` auf 4 ("Remote") gesetzt werden.
-        """
+        # Hinweis:
+        # Fuer die aktive Steuerung muss der Speicher in den Remote-Modus versetzt werden.
+        # Dazu muss `StorageConf_CtrlMode (0xE004)` auf 4 ("Remote") gesetzt werden.
+
         DISCHARGE_LIMIT_REGISTER = 57360  # Discharge Limit Register
         unit = self.component_config.configuration.modbus_id
 
@@ -78,9 +77,9 @@ class SolaredgeBat(AbstractBat):
             log.debug("Null-Punkt-Ausregelung aktiviert, Entladelimit wird auf 5000 W gesetzt.")
             power_limit = 5000  # Maximale Entladeleistung
 
-        # Validierung für übergebene Werte
+        # Validierung fuer uebergebene Werte
         elif power_limit < 0 or power_limit > 5000:
-            log.error(f"Ungültiges Entladelimit: {power_limit}. Muss zwischen 0 und 5000 liegen.")
+            log.error(f"Ungueltiges Entladelimit: {power_limit}. Muss zwischen 0 und 5000 liegen.")
             return
 
         try:
