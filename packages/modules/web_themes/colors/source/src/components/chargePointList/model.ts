@@ -485,5 +485,6 @@ export const topVehicles = computed(() => {
 	if (v2 != -1) {
 		result.push(v2)
 	}
+	console.log(result);
 	return result
 })

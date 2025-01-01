@@ -519,7 +519,7 @@ function writeCookie() {
 	document.cookie =
 		'openWBColorTheme=' +
 		JSON.stringify(prefs) +
-		';max-age=16000000;samesite=strict'
+		';max-age=16000000;samesite=none'
 }
 
 function readCookie() {

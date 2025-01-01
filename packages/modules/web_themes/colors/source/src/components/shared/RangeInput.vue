@@ -107,14 +107,8 @@ function stepUp() {
 	}
 }
 const subrangeScale = computed(() => {
-	console.log(props.subrangeMin)
-	console.log(props.subrangeMax)
-
+	
 	const sc = scaleLinear().domain([props.min, props.max]).range([0, 100])
-
-	console.log(sc(props.subrangeMin ?? 0))
-	console.log(sc(props.subrangeMax ?? 0))
-
 	return sc
 })
 const subrangeX = computed(() => {
