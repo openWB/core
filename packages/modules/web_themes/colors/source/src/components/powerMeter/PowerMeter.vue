@@ -69,7 +69,10 @@
 
 					<!-- Show the SoC for the first two cars -->
 					<PMLabel
-						v-if="topVehicles[0] != undefined && vehicles[topVehicles[0]] != undefined"
+						v-if="
+							topVehicles[0] != undefined &&
+							vehicles[topVehicles[0]] != undefined
+						"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
@@ -83,7 +86,10 @@
 						:config="globalConfig"
 					/>
 					<PMLabel
-						v-if="topVehicles[1] != undefined && vehicles[topVehicles[1]] != undefined"
+						v-if="
+							topVehicles[1] != undefined &&
+							vehicles[topVehicles[1]] != undefined
+						"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
