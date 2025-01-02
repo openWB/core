@@ -17,8 +17,9 @@ KNOWN_SENSITIVE_FIELDS = [
     'refresh_token', 'accesstoken', 'refreshtoken'
 ]
 REDACTION_PATTERNS = [
-    (r'({field})[=:]([^\s&]+)', r'\1=***REDACTED***'),  # Matches field=value, i.e. for URL query parameters
-    (r'"{field}":\s*"(.*?)"', r'"{field}": "***REDACTED***"')  # Matches "field": "value", JSON formatted data
+    (r'({field})[=:]([^\s&]+)', r'\1=***REDACTED***'),  # field=value, i.e. for URL query parameters
+    (r'"{field}":\s*"(.*?)"', r'"{field}": "***REDACTED***"'),  # "field": "value", JSON formatted data
+    (r'\'{field}\':\s*\'(.*?)\'', r"'{field}': '***REDACTED***'")  # 'field': 'value', JSON formatted data
 ]
 
 
