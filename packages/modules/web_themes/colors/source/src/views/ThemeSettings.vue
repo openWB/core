@@ -230,7 +230,7 @@
 					:fullwidth="true"
 					title="IFrame-Support für Einstellungen (Experimentell)"
 					icon="fa-gear"
-					infotext="Erlaubt das Lesen der Einstellungen, wenn das UI in andere Applikationen eingebettet ist (z.B. HomeAssistant). Erfordert SSL. Experimentelles Feature."
+					infotext="Erlaubt das Lesen der Einstellungen, wenn das UI in andere Applikationen eingebettet ist (z.B. HomeAssistant). Erfordert eine mit SSL verschlüsselte Verbindung über HTTPS! Experimentelles Feature."
 				>
 					<SwitchInput v-model="globalConfig.sslPrefs" />
 				</ConfigItem>
