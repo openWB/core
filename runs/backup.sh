@@ -67,6 +67,10 @@ fi
 		--file="$BACKUPFILE" \
 		--directory="/etc/mosquitto/" \
 		"conf_local.d/"
+	echo "adding boot file"
+	sudo tar --verbose --append \
+		--file="$BACKUPFILE" \
+		"/boot/config.txt"
 	echo "adding git information"
 	git branch --no-color --show-current >"$RAMDISKDIR/GIT_BRANCH"
 	git log --pretty='format:%H' -n1 >"$RAMDISKDIR/GIT_HASH"
