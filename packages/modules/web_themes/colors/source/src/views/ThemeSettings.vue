@@ -101,7 +101,6 @@
 						:options="shortListOptions"
 					/>
 				</ConfigItem>
-				
 			</div>
 			<div class="settingscolumn">
 				<ConfigItem
@@ -186,7 +185,7 @@
 				>
 					<SwitchInput v-model="globalConfig.alternativeEnergy" />
 				</ConfigItem>
-					<ConfigItem
+				<ConfigItem
 					:fullwidth="true"
 					title="Preistabelle anzeigen"
 					icon="fa-car"
@@ -226,7 +225,7 @@
 						unit="ct"
 					/>
 				</ConfigItem>
-				
+
 				<ConfigItem
 					:fullwidth="true"
 					title="IFrame-Support für Einstellungen (Experimentell)"
