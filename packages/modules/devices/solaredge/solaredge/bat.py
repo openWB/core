@@ -93,7 +93,7 @@ class SolaredgeBat(AbstractBat):
                 57716, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)  # Power Register
             return power, soc
         except Exception as e:
-            log.error(f"Error reading from Modbus registers: {e}")
+            log.error(f"Error reading from Modbus registers: {e} - Register: 57732, Unit: {unit}")
             return None, None
 
     def ensure_advanced_power_control(self, unit: int) -> bool:
@@ -194,15 +194,12 @@ class SolaredgeBat(AbstractBat):
                 DISCHARGE_LIMIT_REGISTER, ModbusDataType.FLOAT_32, unit=unit)
 
             # Only write if the new value differs from the existing one
-            if current_limit == power_limit:
+            if current_limit != power_limit:
+                self.__tcp_client.write_registers(
+                    DISCHARGE_LIMIT_REGISTER, [float_32(power_limit)], unit=unit)
+                log.debug(f"Discharge limit successfully set to {power_limit} W.")
+            else:
                 log.info(f"Discharge limit is already set to {current_limit} W. No action required.")
-                return
-
-            # Write new value
-            self.__tcp_client.write_registers(
-                DISCHARGE_LIMIT_REGISTER, [float_32(power_limit)], unit=unit)
-            log.debug(f"Discharge limit successfully set to {power_limit} W.")
-
         except Exception as e:
             log.error(f"Error setting discharge limit: {e}")
 
