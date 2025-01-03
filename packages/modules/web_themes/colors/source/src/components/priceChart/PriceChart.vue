@@ -189,7 +189,7 @@ const xAxisGenerator = computed(() => {
 })
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
-		.ticks(6)
+		.ticks(yDomain.value[1] - yDomain.value[0])
 		.tickSizeInner(-(width - margin.right - margin.left))
 		.tickFormat((d) => d.toString())
 })
@@ -197,7 +197,6 @@ const draw = computed(() => {
 	if (needsUpdate.value == true) {
 		dummy = !dummy
 	}
-
 	const svg = select('g#' + chartId.value)
 	svg.selectAll('*').remove()
 	const bargroups = svg

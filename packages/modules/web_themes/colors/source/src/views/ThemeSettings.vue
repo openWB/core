@@ -90,8 +90,6 @@
 						:options="clockModes"
 					></RadioInput>
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Kompakte Ladepunktliste"
@@ -103,6 +101,8 @@
 						:options="shortListOptions"
 					/>
 				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Buttonleiste für Ladepunkte"
@@ -143,8 +143,6 @@
 				>
 					<SwitchInput v-model="globalConfig.showAnimations" />
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Zähler anzeigen"
@@ -168,6 +166,24 @@
 					infotext="Zeige das Standard-Fahrzeug in der Fahzeugliste"
 				>
 					<SwitchInput v-model="globalConfig.showStandardVehicle" />
+				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
+				<ConfigItem
+					:fullwidth="true"
+					title="Wechselrichter-Details anzeigen"
+					icon="fa-solar-panel"
+					infotext="Zeige Details zu den einzelnen Wechselrichtern"
+				>
+					<SwitchInput v-model="globalConfig.showInverters" />
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Alternatives Energie-Widget"
+					icon="fa-chart-area"
+					infotext="Horizontale Darstellung der Energie-Werte"
+				>
+					<SwitchInput v-model="globalConfig.alternativeEnergy" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -209,21 +225,14 @@
 						unit="ct"
 					/>
 				</ConfigItem>
+
 				<ConfigItem
 					:fullwidth="true"
-					title="Wechselrichter-Details anzeigen"
-					icon="fa-solar-panel"
-					infotext="Zeige Details zu den einzelnen Wechselrichtern"
+					title="IFrame-Support für Einstellungen (Experimentell)"
+					icon="fa-gear"
+					infotext="Erlaubt das Lesen der Einstellungen, wenn das UI in andere Applikationen eingebettet ist (z.B. HomeAssistant). Erfordert eine mit SSL verschlüsselte Verbindung über HTTPS! Experimentelles Feature."
 				>
-					<SwitchInput v-model="globalConfig.showInverters" />
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Alternatives Energie-Widget"
-					icon="fa-chart-area"
-					infotext="Horizontale Darstellung der Energie-Werte"
-				>
-					<SwitchInput v-model="globalConfig.alternativeEnergy" />
+					<SwitchInput v-model="globalConfig.sslPrefs" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"

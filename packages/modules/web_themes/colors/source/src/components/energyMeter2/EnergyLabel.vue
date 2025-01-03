@@ -9,7 +9,7 @@
 			:fill="item.color"
 			:class="item.icon.length <= 2 ? 'fas' : ''"
 		>
-			{{ props.item.icon }}
+			{{ trimName(props.item.icon) }}
 		</text>
 		<!-- Energy -->
 		<text
@@ -73,6 +73,11 @@ function autString(): string {
 	} else {
 		return ''
 	}
+}
+
+function trimName(name: string) {
+	const maxlen = 14
+	return name.length > maxlen ? name.slice(0, maxlen - 1) + '...' : name
 }
 </script>
 
