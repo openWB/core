@@ -1986,10 +1986,10 @@ class UpdateConfig:
                         # Wenn mindestens ein Kontakt offen ist, wird die Ladung gesperrt. Wenn beide Kontakte
                         # geschlossen sind, darf geladen werden.
                         action.configuration.input_pattern = [
-                            {"value": 0, "input_matrix": {"DI0": False, "DI1": False}},
-                            {"value": 0, "input_matrix": {"DI0": False, "DI1": True}},
-                            {"value": 0, "input_matrix": {"DI0": True, "DI1": False}},
-                            {"value": 1, "input_matrix": {"DI0": True, "DI1": True}}]
+                            {"value": 0, "input_matrix": {"DI1": False, "DI2": False}},
+                            {"value": 0, "input_matrix": {"DI1": False, "DI2": True}},
+                            {"value": 0, "input_matrix": {"DI1": True, "DI2": False}},
+                            {"value": 1, "input_matrix": {"DI1": True, "DI2": True}}]
                     elif payload["type"] == "gpio":
                         # Wenn mindestens ein Kontakt geschlossen ist, wird die Ladung gesperrt. Wenn beide Kontakt
                         # offen sind, darf geladen werden.
