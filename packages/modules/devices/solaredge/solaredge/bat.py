@@ -14,7 +14,6 @@ import logging
 from typing import Dict, Tuple, Union, Optional
 
 from pymodbus.constants import Endian
-
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
@@ -30,13 +29,19 @@ log = logging.getLogger(__name__)
 
 
 class SolaredgeBat(AbstractBat):
+    """
+    A class to manage the SolarEdge battery via Modbus.
+    """
+
     ADVANCED_PWR_CTRL_REGISTER = 57740  # Register for advanced power control
     COMMIT_REGISTER = 57741  # Register to commit changes
 
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, SolaredgeBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
+    def __init__(
+        self,
+        device_id: int,
+        component_config: Union[Dict, SolaredgeBatSetup],
+        tcp_client: modbus.ModbusTcpClient_,
+    ) -> None:
         """
         Initialize the SolarEdge battery control class.
 
@@ -75,7 +80,7 @@ class SolaredgeBat(AbstractBat):
             power=power,
             soc=soc,
             imported=imported,
-            exported=exported
+            exported=exported,
         )
 
     def get_values(self) -> Tuple[Optional[float], Optional[float]]:
@@ -88,9 +93,11 @@ class SolaredgeBat(AbstractBat):
         unit = self.component_config.configuration.modbus_id
         try:
             soc = self.__tcp_client.read_holding_registers(
-                57732, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)  # SOC Register
+                57732, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
+            )
             power = self.__tcp_client.read_holding_registers(
-                57716, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)  # Power Register
+                57716, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
+            )
             return power, soc
         except Exception as e:
             log.error(f"Error reading from Modbus registers: {e} - Register: 57732, Unit: {unit}")
@@ -166,7 +173,7 @@ class SolaredgeBat(AbstractBat):
         Args:
             power_limit (Union[Optional[int], str]): Power limit value, None, or "blocked".
         """
-        DISCHARGE_LIMIT_REGISTER = 57360  # Discharge Limit Register
+        discharge_limit_register = 57360  # Discharge Limit Register
         unit = self.component_config.configuration.modbus_id
 
         # Ensure advanced power control is enabled
@@ -189,18 +196,21 @@ class SolaredgeBat(AbstractBat):
             return
 
         try:
-            # Read current limit
             current_limit = self.__tcp_client.read_holding_registers(
-                DISCHARGE_LIMIT_REGISTER, ModbusDataType.FLOAT_32, unit=unit)
+                discharge_limit_register, ModbusDataType.FLOAT_32, unit=unit
+            )
 
-            # Only write if the new value differs from the existing one
             if current_limit != power_limit:
+                builder = modbus.BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Little)
+                builder.add_32bit_float(float(power_limit))
                 self.__tcp_client.write_registers(
-                    DISCHARGE_LIMIT_REGISTER, [float_32(power_limit)], unit=unit)
+                    discharge_limit_register, builder.to_registers(), unit=unit
+                )
                 log.debug(f"Discharge limit successfully set to {power_limit} W.")
             else:
                 log.info(f"Discharge limit is already set to {current_limit} W. No action required.")
         except Exception as e:
             log.error(f"Error setting discharge limit: {e}")
+
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolaredgeBatSetup)
