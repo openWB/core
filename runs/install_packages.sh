@@ -14,7 +14,7 @@ fi
  	git \
  	mosquitto mosquitto-clients \
  	python3-pip \
- 	xserver-xorg x11-xserver-utils openbox-lxde-session lightdm lightdm-autologin-greeter accountsservice \ 	
+ 	xserver-xorg x11-xserver-utils openbox-lxde-session lightdm lightdm-autologin-greeter accountsservice \
 	chromium chromium-l10n
 sudo apt install zabbix-agent2 zabbix-agent2-plugin-*
 echo "done"
