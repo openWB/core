@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 69
+    DATASTORE_VERSION = 70
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
