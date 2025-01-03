@@ -53,6 +53,7 @@ class ChargepointModule(AbstractChargepoint):
             if self._client.evse_client.is_precise_current_active() is False:
                 self._client.evse_client.activate_precise_current()
             self._precise_current = self._client.evse_client.is_precise_current_active()
+        self.max_evse_current = self._client.evse_client.get_max_current()
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
@@ -114,7 +115,8 @@ class ChargepointModule(AbstractChargepoint):
                 power_factors=power_factors,
                 rfid=last_tag,
                 evse_current=self.set_current_evse,
-                serial_number=serial_number
+                serial_number=serial_number,
+                max_evse_current=self.max_evse_current
             )
         if self.client_error_context.error_counter_exceeded():
             chargepoint_state = ChargepointState()
