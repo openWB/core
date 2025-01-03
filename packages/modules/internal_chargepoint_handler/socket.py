@@ -1,18 +1,15 @@
-from modules.internal_chargepoint_handler.clients import ClientHandler
-from modules.internal_chargepoint_handler.chargepoint_module import ChargepointModule
-from modules.common.component_state import ChargepointState
-from modules.common.component_context import SingleComponentUpdateContext
-from helpermodules.logger import ModifyLoglevelContext
-from typing import Callable, Tuple
-from helpermodules.hardware_configuration import get_hardware_configuration_setting
-from typing import Callable
 from enum import IntEnum
 import functools
 import logging
 import time
-<< << << < HEAD
-== == == =
->>>>>> > 3bad4f628(fixes)
+from typing import Callable
+
+from helpermodules.hardware_configuration import get_hardware_configuration_setting
+from helpermodules.logger import ModifyLoglevelContext
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_state import ChargepointState
+from modules.internal_chargepoint_handler.chargepoint_module import ChargepointModule
+from modules.internal_chargepoint_handler.clients import ClientHandler
 
 
 log = logging.getLogger(__name__)
