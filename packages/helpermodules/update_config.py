@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 69
+    DATASTORE_VERSION = 70
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -104,6 +104,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/fault_state$",
         "^openWB/chargepoint/[0-9]+/get/fault_str$",
         "^openWB/chargepoint/[0-9]+/get/frequency$",
+        "^openWB/chargepoint/[0-9]+/get/max_evse_current$",
         "^openWB/chargepoint/[0-9]+/get/plug_state$",
         "^openWB/chargepoint/[0-9]+/get/phases_in_use$",
         "^openWB/chargepoint/[0-9]+/get/exported$",
@@ -1890,3 +1891,15 @@ class UpdateConfig:
                                 return {component_topic: config_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 69)
+
+    def upgrade_datastore_69(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if (re.search("openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+",
+                          topic) is not None or
+                    re.search("openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+",
+                              topic) is not None):
+                payload = decode_payload(payload)
+                payload["id"] = int(get_second_index(topic))
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 70)
