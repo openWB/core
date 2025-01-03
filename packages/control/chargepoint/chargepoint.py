@@ -357,19 +357,19 @@ class Chargepoint(ChargepointRfidMixin):
         phase_switch_required = False
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
         # nicht zwischendurch eine neue Umschaltung getriggert werden.
-        if (((self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED or
+        if ((self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED or
                 self.data.control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
             # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
-             self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use)) or
+            (self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
                 # Vorgegebene Phasenzahl hat sich geändert
-            self.check_deviating_contactor_states(self.data.set.phases_to_use,
-                                                  self.data.control_parameter.phases) and
+             self.check_deviating_contactor_states(self.data.set.phases_to_use,
+                                                   self.data.control_parameter.phases) and
                 # Wenn ein Soll-Strom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
-            ((self.data.set.current != 0 and self.data.get.charge_state) or
-             (self.data.set.current != 0 and self.data.set.current_prev == 0) or
-             self.data.set.current == 0)):
+             ((self.data.set.current != 0 and self.data.get.charge_state) or
+              (self.data.set.current != 0 and self.data.set.current_prev == 0) or
+              self.data.set.current == 0))):
             phase_switch_required = True
         if (self.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
             (self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
