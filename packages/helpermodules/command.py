@@ -17,6 +17,7 @@ from control.chargepoint.chargepoint_template import get_autolock_plan_default, 
 
 # ToDo: move to module commands if implemented
 from helpermodules import pub
+from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
@@ -363,7 +364,7 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_scheduled_plan + 1
-        charge_template_default = ev.ScheduledChargingPlan()
+        charge_template_default = ScheduledChargingPlan()
         charge_template_default.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
@@ -400,7 +401,7 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_time_charging_plan + 1
-        time_charging_plan_default = ev.TimeChargingPlan()
+        time_charging_plan_default = TimeChargingPlan()
         time_charging_plan_default.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
