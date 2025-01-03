@@ -25,7 +25,7 @@ class RippleControlReceiver(AbstractIoAction):
                 else:
                     # Alle digitalen Eingänge entsprechen dem Pattern
                     if pattern["value"] != 1:
-                        if self.timestamp:
+                        if self.timestamp is None:
                             Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                             control_command_log.info(
                                 f"RSE-Sperre an LP {self.config.configuration.cp_id} mit Wert {pattern['value']*100}"

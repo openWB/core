@@ -26,7 +26,7 @@ class Dimming(AbstractIoAction):
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                     self.config.configuration.digital_input]:
-                if self.timestamp:
+                if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     control_command_log.info("Dimmen aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
 
