@@ -1,14 +1,19 @@
+from modules.internal_chargepoint_handler.clients import ClientHandler
+from modules.internal_chargepoint_handler.chargepoint_module import ChargepointModule
+from modules.common.component_state import ChargepointState
+from modules.common.component_context import SingleComponentUpdateContext
+from helpermodules.logger import ModifyLoglevelContext
+from typing import Callable, Tuple
+from helpermodules.hardware_configuration import get_hardware_configuration_setting
+from typing import Callable
 from enum import IntEnum
 import functools
 import logging
 import time
-from typing import Callable
-from helpermodules.hardware_configuration import get_hardware_configuration_setting
+<< << << < HEAD
+== == == =
+>>>>>> > 3bad4f628(fixes)
 
-from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.component_state import ChargepointState
-from modules.internal_chargepoint_handler.chargepoint_module import ChargepointModule
-from modules.internal_chargepoint_handler.clients import ClientHandler
 
 log = logging.getLogger(__name__)
 
@@ -52,8 +57,8 @@ class Socket(ChargepointModule):
                  parent_cp: int,
                  hierarchy_id: int) -> None:
         self.socket_max_current = get_hardware_configuration_setting("max_c_socket")
-        self.chargepoint_state.max_evse_current = self.socket_max_current
-        log.debug(f"Konfiguration als Buchse mit maximal {self.socket_max_current}A Ladestrom je Phase.")
+        with ModifyLoglevelContext(log, logging.DEBUG):
+            log.info(f"Konfiguration als Buchse mit maximal {self.socket_max_current}A Ladestrom je Phase.")
         super().__init__(local_charge_point_num, client_handler, parent_hostname, parent_cp, hierarchy_id)
 
     def set_current(self, current: float) -> None:
@@ -75,6 +80,7 @@ class Socket(ChargepointModule):
             actor = ActorState(GPIO.input(19))
             log.debug("Actor: "+str(actor))
             self.chargepoint_state = super().get_values(phase_switch_cp_active, last_tag)
+            self.chargepoint_state.max_evse_current = self.socket_max_current
             if phase_switch_cp_active:
                 log.debug("Keine Actor-Bewegung, da CP-Unterbrechung oder Phasenumschaltung aktiv.")
             else:

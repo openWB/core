@@ -623,7 +623,7 @@ class SetData:
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
         elif ("/get/evse_current" in msg.topic or
-              "/get/max_evse_current"):
+              "/get/max_evse_current" in msg.topic):
             self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
