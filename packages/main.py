@@ -66,10 +66,16 @@ class HandlerAlgorithm:
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
+            
+            # In-Memory Log-Handler zurücksetzen
+            logger.clear_in_memory_log_handlers()
+
             log.info("# ***Start*** ")
             log.debug(f"Threads: {threading.enumerate()}")
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
+            logger.write_logs_to_files()
+
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:

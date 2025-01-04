@@ -6,6 +6,8 @@ import sys
 import threading
 import typing_extensions
 import re
+import io
+import os
 
 FORMAT_STR_DETAILED = '%(asctime)s - {%(name)s:%(lineno)s} - {%(levelname)s:%(threadName)s} - %(message)s'
 FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
@@ -103,18 +105,67 @@ def filter_pos(name: str, record) -> bool:
     return False
 
 
+class InMemoryLogHandler(logging.Handler):
+    def __init__(self, base_handler=None):
+        super().__init__()
+        self.base_handler = base_handler
+        self.log_stream = io.StringIO()
+        self.has_warning_or_error = False
+
+    def emit(self, record):
+        if self.base_handler is None or self.base_handler.filter(record):
+            msg = self.format(record)
+            self.log_stream.write(msg + '\n')
+            if record.levelno >= logging.WARNING:
+                self.has_warning_or_error = True
+
+    def get_logs(self):
+        return self.log_stream.getvalue()
+
+    def clear(self):
+        self.log_stream = io.StringIO()
+        self.has_warning_or_error = False
+
+
+def clear_in_memory_log_handlers() -> None:
+    global in_memory_log_handlers
+    for handler in in_memory_log_handlers.values():
+        handler.clear()
+
+
+def write_logs_to_files() -> None:
+    global in_memory_log_handlers
+
+    for name, handler in in_memory_log_handlers.items():
+        with open(os.path.join(RAMDISK_PATH, f'{name}.latest.log'), 'w') as f:
+            f.write(handler.get_logs())
+
+        # If any warning or error messages were logged, create a -warning copy
+        if handler.has_warning_or_error:
+            with open(os.path.join(RAMDISK_PATH, f'{name}.latest-warning.log'), 'w') as f:
+                f.write(handler.get_logs())
+
+
 def setup_logging() -> None:
     def mb_to_bytes(megabytes: int) -> int:
         return megabytes * 1000000
-    # Mehrere kleine Dateien verwenden, damit nicht zu viel verworfen wird, wenn die Datei voll ist.
+
+    global in_memory_log_handlers
+    in_memory_log_handlers = {name: InMemoryLogHandler() for name in ["main", "internal_chargepoint"]}
+    # to do: add smarthome and soc to in_memory_log_handlers, needs updates in individual thread calls
+
+    # Main logger
     main_file_handler = RotatingFileHandler(RAMDISK_PATH + 'main.log', maxBytes=mb_to_bytes(5.5), backupCount=4)
     main_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     main_file_handler.addFilter(RedactingFilter())
-    logging.basicConfig(level=logging.DEBUG, handlers=[main_file_handler])
+    in_memory_log_handlers["main"] = InMemoryLogHandler(main_file_handler)
+    in_memory_log_handlers["main"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
+    logging.basicConfig(level=logging.DEBUG, handlers=[main_file_handler, in_memory_log_handlers["main"]])
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "Internal Chargepoint"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "smarthome"))
 
+    # Chargelog logger
     chargelog_log = logging.getLogger("chargelog")
     chargelog_log.propagate = False
     chargelog_file_handler = RotatingFileHandler(
@@ -123,6 +174,7 @@ def setup_logging() -> None:
     chargelog_file_handler.addFilter(RedactingFilter())
     chargelog_log.addHandler(chargelog_file_handler)
 
+    # Data migration logger
     data_migration_log = logging.getLogger("data_migration")
     data_migration_log.propagate = False
     data_migration_file_handler = RotatingFileHandler(
@@ -131,6 +183,7 @@ def setup_logging() -> None:
     data_migration_file_handler.addFilter(RedactingFilter())
     data_migration_log.addHandler(data_migration_file_handler)
 
+    # MQTT logger
     mqtt_log = logging.getLogger("mqtt")
     mqtt_log.propagate = False
     mqtt_file_handler = RotatingFileHandler(RAMDISK_PATH + 'mqtt.log', maxBytes=mb_to_bytes(3), backupCount=1)
@@ -138,32 +191,47 @@ def setup_logging() -> None:
     mqtt_file_handler.addFilter(RedactingFilter())
     mqtt_log.addHandler(mqtt_file_handler)
 
+    # Smarthome logger
     smarthome_log_handler = RotatingFileHandler(RAMDISK_PATH + 'smarthome.log', maxBytes=mb_to_bytes(1), backupCount=1)
     smarthome_log_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     smarthome_log_handler.addFilter(functools.partial(filter_pos, "smarthome"))
     smarthome_log_handler.addFilter(RedactingFilter())
+    # in_memory_log_handlers["smarthome"] = InMemoryLogHandler(smarthome_log_handler)
+    # in_memory_log_handlers["smarthome"].setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     logging.getLogger().addHandler(smarthome_log_handler)
+    # logging.getLogger().addHandler(in_memory_log_handlers["smarthome"])
 
+    # SoC logger
     soc_log_handler = RotatingFileHandler(RAMDISK_PATH + 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
     soc_log_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     soc_log_handler.addFilter(functools.partial(filter_pos, "soc"))
     soc_log_handler.addFilter(RedactingFilter())
+    # in_memory_log_handlers["soc"] = InMemoryLogHandler(soc_log_handler)
+    # in_memory_log_handlers["soc"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     logging.getLogger().addHandler(soc_log_handler)
+    # logging.getLogger().addHandler(in_memory_log_handlers["soc"])
 
+    # Internal chargepoint logger
     internal_chargepoint_log_handler = RotatingFileHandler(RAMDISK_PATH + 'internal_chargepoint.log',
                                                            maxBytes=mb_to_bytes(1),
                                                            backupCount=1)
     internal_chargepoint_log_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     internal_chargepoint_log_handler.addFilter(functools.partial(filter_pos, "Internal Chargepoint"))
     internal_chargepoint_log_handler.addFilter(RedactingFilter())
+    in_memory_log_handlers["internal_chargepoint"] = InMemoryLogHandler(internal_chargepoint_log_handler)
+    in_memory_log_handlers["internal_chargepoint"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     logging.getLogger().addHandler(internal_chargepoint_log_handler)
+    logging.getLogger().addHandler(in_memory_log_handlers["internal_chargepoint"])
 
+    # Urllib3 logger
     urllib3_log = logging.getLogger("urllib3.connectionpool")
     urllib3_log.propagate = True
-    urllib3_file_handler = RotatingFileHandler(RAMDISK_PATH + 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
+    urllib3_file_handler = RotatingFileHandler(RAMDISK_PATH + 'urllib3.log', maxBytes=mb_to_bytes(2), backupCount=1)
     urllib3_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     urllib3_file_handler.addFilter(RedactingFilter())
-    urllib3_file_handler.addFilter(functools.partial(filter_pos, "soc"))
+    urllib3_file_handler.addFilter(functools.partial(filter_pos, "urllib3"))
+    in_memory_log_handlers["urllib3"] = InMemoryLogHandler(urllib3_file_handler)
+    in_memory_log_handlers["urllib3"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     urllib3_log.addHandler(urllib3_file_handler)
 
     logging.getLogger("pymodbus").setLevel(logging.WARNING)
