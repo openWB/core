@@ -127,23 +127,42 @@ class InMemoryLogHandler(logging.Handler):
         self.has_warning_or_error = False
 
 
-def clear_in_memory_log_handlers() -> None:
+def clear_in_memory_log_handler(logger_name: str = None) -> None:
     global in_memory_log_handlers
-    for handler in in_memory_log_handlers.values():
-        handler.clear()
+    if logger_name is None:
+        # Clear all in-memory log handlers
+        for handler in in_memory_log_handlers.values():
+            handler.clear()
+    else:
+        # Clear specified in-memory log handler
+        if logger_name in in_memory_log_handlers:
+            in_memory_log_handlers[logger_name].clear()
 
 
-def write_logs_to_files() -> None:
+def write_logs_to_file(logger_name: str = None) -> None:
     global in_memory_log_handlers
 
-    for name, handler in in_memory_log_handlers.items():
-        with open(os.path.join(RAMDISK_PATH, f'{name}.latest.log'), 'w') as f:
-            f.write(handler.get_logs())
-
-        # If any warning or error messages were logged, create a -warning copy
-        if handler.has_warning_or_error:
-            with open(os.path.join(RAMDISK_PATH, f'{name}.latest-warning.log'), 'w') as f:
+    if logger_name is None:
+        # Write logs for all in-memory log handlers
+        for name, handler in in_memory_log_handlers.items():
+            with open(os.path.join(RAMDISK_PATH, f'{name}.latest.log'), 'w') as f:
                 f.write(handler.get_logs())
+
+            # If any warning or error messages were logged, create a -warning copy
+            if handler.has_warning_or_error:
+                with open(os.path.join(RAMDISK_PATH, f'{name}.latest-warning.log'), 'w') as f:
+                    f.write(handler.get_logs())
+    else:
+        # Write logs for specified in-memory log handler
+        if logger_name in in_memory_log_handlers:
+            handler = in_memory_log_handlers[logger_name]
+            with open(os.path.join(RAMDISK_PATH, f'{logger_name}.latest.log'), 'w') as f:
+                f.write(handler.get_logs())
+
+            # If any warning or error messages were logged, create a -warning copy
+            if handler.has_warning_or_error:
+                with open(os.path.join(RAMDISK_PATH, f'{logger_name}.latest-warning.log'), 'w') as f:
+                    f.write(handler.get_logs())
 
 
 def setup_logging() -> None:
@@ -206,10 +225,10 @@ def setup_logging() -> None:
     soc_log_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     soc_log_handler.addFilter(functools.partial(filter_pos, "soc"))
     soc_log_handler.addFilter(RedactingFilter())
-    # in_memory_log_handlers["soc"] = InMemoryLogHandler(soc_log_handler)
-    # in_memory_log_handlers["soc"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
+    in_memory_log_handlers["soc"] = InMemoryLogHandler(soc_log_handler)
+    in_memory_log_handlers["soc"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     logging.getLogger().addHandler(soc_log_handler)
-    # logging.getLogger().addHandler(in_memory_log_handlers["soc"])
+    logging.getLogger().addHandler(in_memory_log_handlers["soc"])
 
     # Internal chargepoint logger
     internal_chargepoint_log_handler = RotatingFileHandler(RAMDISK_PATH + 'internal_chargepoint.log',
