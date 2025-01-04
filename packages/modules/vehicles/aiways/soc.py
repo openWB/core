@@ -10,29 +10,20 @@ from modules.vehicles.aiways.config import AiwaysVehicleSoc
 
 log = logging.getLogger(__name__)
 
-language = "de"
-version = "1.3.0"
-platform = "iOS"
-apptimezone = "MEZ"
-apptimezoneid = "Europe/Berlin"
-content_type = "application/json; charset=utf-8"
-accept_encoding = "gzip"
-user_agent = "okhttp/4.3.1"
-
 
 def fetch(vehicle_config: AiwaysVehicleSoc, vehicle_update_data: VehicleUpdateData) -> CarState:
     response = req.get_http_session().post(vehicle_config.configuration.condition_url, timeout=10,
-                                           headers={"language": language,
+                                           headers={"language": "de",
                                                     "registerid": vehicle_config.configuration.register_id,
                                                     "deviceid": vehicle_config.configuration.device_id,
-                                                    "version": version,
-                                                    "platform": platform,
+                                                    "version": "1.3.0",
+                                                    "platform": "iOS",
                                                     "token": vehicle_config.configuration.token,
-                                                    "apptimezone": apptimezone,
-                                                    "apptimezoneid": apptimezoneid,
-                                                    "content-type": content_type,
-                                                    "accept-encoding": accept_encoding,
-                                                    "user-agent": user_agent},
+                                                    "apptimezone": "MEZ",
+                                                    "apptimezoneid": "Europe/Berlin",
+                                                    "content-type": "application/json; charset=utf-8",
+                                                    "accept-encoding": "gzip",
+                                                    "user-agent": "okhttp/4.3.1"},
                                            json={"userId": vehicle_config.configuration.user_id,
                                                  "vin": vehicle_config.configuration.vin}, verify=False)
     response.raise_for_status()
