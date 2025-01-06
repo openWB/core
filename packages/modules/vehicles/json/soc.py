@@ -53,10 +53,9 @@ def fetch_soc(config: JsonSocSetup) -> CarState:
     timeout = config.configuration.timeout if isinstance(config.configuration.timeout, int) else None
 
     if url is None or url == "":
-        log.warning("URL nicht definiert, setze SOC auf 0")
-        return CarState(0, 0)
-    else:
-        raw_data: Dict[str, Any] = req.get_http_session().get(url, timeout=timeout).json()
+        raise ValueError("Keine URL zum Abrufen der Daten definiert. Bitte in der Konfiguration aktualisieren.")
+
+    raw_data: Dict[str, Any] = req.get_http_session().get(url, timeout=timeout).json()
 
     soc = float(parse_data(raw_data, soc_pattern))
 
