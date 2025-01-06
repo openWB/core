@@ -145,24 +145,28 @@ def write_logs_to_file(logger_name: str = None) -> None:
     if logger_name is None:
         # Write logs for all in-memory log handlers
         for name, handler in in_memory_log_handlers.items():
-            with open(os.path.join(RAMDISK_PATH, f'{name}.latest.log'), 'w') as f:
-                f.write(handler.get_logs())
+            logs = handler.get_logs()
+            if logs:
+                with open(os.path.join(RAMDISK_PATH, f'{name}.latest.log'), 'w') as f:
+                    f.write(logs)
 
-            # If any warning or error messages were logged, create a -warning copy
-            if handler.has_warning_or_error:
-                with open(os.path.join(RAMDISK_PATH, f'{name}.latest-warning.log'), 'w') as f:
-                    f.write(handler.get_logs())
+                # If any warning or error messages were logged, create a -warning copy
+                if handler.has_warning_or_error:
+                    with open(os.path.join(RAMDISK_PATH, f'{name}.latest-warning.log'), 'w') as f:
+                        f.write(logs)
     else:
         # Write logs for specified in-memory log handler
         if logger_name in in_memory_log_handlers:
             handler = in_memory_log_handlers[logger_name]
-            with open(os.path.join(RAMDISK_PATH, f'{logger_name}.latest.log'), 'w') as f:
-                f.write(handler.get_logs())
+            logs = handler.get_logs()
+            if logs:
+                with open(os.path.join(RAMDISK_PATH, f'{logger_name}.latest.log'), 'w') as f:
+                    f.write(logs)
 
-            # If any warning or error messages were logged, create a -warning copy
-            if handler.has_warning_or_error:
-                with open(os.path.join(RAMDISK_PATH, f'{logger_name}.latest-warning.log'), 'w') as f:
-                    f.write(handler.get_logs())
+                # If any warning or error messages were logged, create a -warning copy
+                if handler.has_warning_or_error:
+                    with open(os.path.join(RAMDISK_PATH, f'{logger_name}.latest-warning.log'), 'w') as f:
+                        f.write(logs)
 
 
 def setup_logging() -> None:
