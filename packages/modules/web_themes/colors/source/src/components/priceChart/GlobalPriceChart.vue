@@ -83,9 +83,12 @@ const xScale = computed(() => {
 		.domain(xdomain)
 })
 const yDomain = computed(() => {
-	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
-	yd[0] = Math.floor(yd[0]) - 1
-	yd[1] = Math.floor(yd[1]) + 1
+	let yd = [0, 0]
+	if (plotdata.value.length > 0) {
+		yd = extent(plotdata.value, (d) => d[1]) as [number, number]
+		yd[0] = Math.floor(yd[0]) - 1
+		yd[1] = Math.floor(yd[1]) + 1
+	}
 	return yd
 })
 const yScale = computed(() => {
@@ -130,7 +133,7 @@ const yAxisGenerator = computed(() => {
 	return (
 		axisLeft<number>(yScale.value)
 			//.ticks(yDomain.value[1] - yDomain.value[0])
-			.ticks(15)
+			.ticks(yDomain.value[1] - yDomain.value[0])
 			.tickSize(0)
 			.tickSizeInner(-(width - margin.right - margin.left))
 			.tickFormat((d) => d.toString())

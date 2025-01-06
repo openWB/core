@@ -85,16 +85,16 @@ const vName = computed(() => {
 		case 2:
 			return 'Speicher'
 		case 1:
-			if (vehicles[topVehicles.value[1]]) {
+			if (vehicles[topVehicles.value[1]] != undefined) {
 				return vehicles[topVehicles.value[1]].name
 			} else {
-				return 'oops'
+				return '???'
 			}
 		default:
-			if (vehicles[topVehicles.value[0]]) {
+			if (vehicles[topVehicles.value[0]] != undefined) {
 				return vehicles[topVehicles.value[0]].name
 			} else {
-				return 'hhhm'
+				return '???'
 			}
 	}
 })
@@ -113,10 +113,10 @@ const cpColor = computed(() => {
 })
 const nameX = computed(() => {
 	switch (props.order) {
-		case 1:
-			return props.width - 3
 		case 0:
 			return 3
+		case 1:
+			return props.width - 3
 		case 2:
 			return props.width / 2
 		default:
@@ -151,9 +151,9 @@ const nameY = computed(() => {
 const textPosition = computed(() => {
 	switch (props.order) {
 		case 0:
-			return 'end'
-		case 1:
 			return 'start'
+		case 1:
+			return 'end'
 		case 2:
 			return 'middle'
 		default:

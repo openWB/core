@@ -69,7 +69,10 @@
 
 					<!-- Show the SoC for the first two cars -->
 					<PMLabel
-						v-if="topVehicles[0] && vehicles[topVehicles[0]]"
+						v-if="
+							topVehicles[0] != undefined &&
+							vehicles[topVehicles[0]] != undefined
+						"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
@@ -83,13 +86,16 @@
 						:config="globalConfig"
 					/>
 					<PMLabel
-						v-if="topVehicles[1] && vehicles[topVehicles[1]]"
+						v-if="
+							topVehicles[1] != undefined &&
+							vehicles[topVehicles[1]] != undefined
+						"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
 							trimName(vehicles[topVehicles[1]].name) +
 							': ' +
-							Math.round(vehicles[topVehicles[0]].soc) +
+							Math.round(vehicles[topVehicles[1]].soc) +
 							'%'
 						"
 						:labelcolor="
