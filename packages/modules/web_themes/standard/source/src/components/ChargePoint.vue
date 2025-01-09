@@ -42,8 +42,10 @@
         />
       </div>
       <SliderDouble
+        v-if="showSocTargetSlider"
         class="q-mt-sm"
         :readonly="true"
+        :charge-mode="chargeMode"
         :connected-vehicle-soc="connectedVehicleSoc"
         :target-soc="targetSoc"
         :target-time="targetTime"
@@ -100,38 +102,47 @@ const connectedVehicleSoc = computed(() =>
   ),
 );
 
+const chargeMode = computed(
+  () =>
+    mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value,
+);
+
 const targetSoc = computed<number | undefined>(() => {
-  const chargeMode = mqttStore.chargePointConnectedVehicleChargeMode(
-    props.chargePointId,
-  ).value;
   const instantLimitMode =
     mqttStore.chargePointConnectedVehicleInstantChargeLimit(
       props.chargePointId,
     ).value;
-  if (chargeMode === 'scheduled_charging') {
-    return mqttStore.vehicleScheduledChargingTarget(props.chargePointId).value
-      ?.soc;
-  } else if (chargeMode === 'instant_charging' && instantLimitMode === 'soc') {
-    return mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
-      props.chargePointId,
-    )?.value;
-  } else if (chargeMode === 'pv_charging') {
-    return mqttStore.chargePointConnectedVehiclePVChargeMaxSoc(
-      props.chargePointId,
-    ).value;
-  } else {
-    return undefined;
+  switch (chargeMode.value) {
+    case 'scheduled_charging':
+      return mqttStore.vehicleScheduledChargingTarget(props.chargePointId).value
+        ?.soc;
+    case 'instant_charging':
+      return instantLimitMode === 'soc'
+        ? mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
+            props.chargePointId,
+          ).value
+        : undefined;
+    case 'pv_charging':
+      return mqttStore.chargePointConnectedVehiclePVChargeMaxSoc(
+        props.chargePointId,
+      ).value;
+    default:
+      return undefined;
   }
 });
 
+const showSocTargetSlider = computed(() => {
+  return (
+    chargeMode.value !== undefined &&
+    !['stop', 'standby'].includes(chargeMode.value)
+  );
+});
+
 const targetTime = computed(() => {
-  const chargeMode = mqttStore.chargePointConnectedVehicleChargeMode(
-    props.chargePointId,
-  ).value;
   const target = mqttStore.vehicleScheduledChargingTarget(
     props.chargePointId,
   ).value;
-  if (!target || !target.time || chargeMode !== 'scheduled_charging') {
+  if (!target || !target.time || chargeMode.value !== 'scheduled_charging') {
     return 'keine';
   }
   return target.time;
