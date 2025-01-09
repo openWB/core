@@ -31,7 +31,7 @@ def extract_to_epoch(input_string: str) -> float:
         return None
 
 
-def parse_data(data: Dict[str, Any], pattern: str) -> float:
+def parse_data(data: Dict[str, Any], pattern: str) -> any:
     log.debug(f"parse_data: data='{data}' pattern='{pattern}'")
 
     if pattern == "":
@@ -42,7 +42,7 @@ def parse_data(data: Dict[str, Any], pattern: str) -> float:
         raise ValueError(f"Pattern {pattern} hat keine Ergebnisse in '{data}' geliefert.")
 
     log.debug(f"result='{result}'")
-    return float(result)
+    return result
 
 
 def fetch_soc(config: JsonSocSetup) -> CarState:
@@ -53,12 +53,11 @@ def fetch_soc(config: JsonSocSetup) -> CarState:
     timeout = config.configuration.timeout if isinstance(config.configuration.timeout, int) else None
 
     if url is None or url == "":
-        log.warning("URL nicht definiert, setze SOC auf 0")
-        return CarState(0, 0)
-    else:
-        raw_data: Dict[str, Any] = req.get_http_session().get(url, timeout=timeout).json()
+        raise ValueError("Keine URL zum Abrufen der Daten definiert. Bitte in der Konfiguration aktualisieren.")
 
-    soc = parse_data(raw_data, soc_pattern)
+    raw_data: Dict[str, Any] = req.get_http_session().get(url, timeout=timeout).json()
+
+    soc = float(parse_data(raw_data, soc_pattern))
 
     if range_pattern is None or range_pattern == "":
         log.debug("Kein Pattern für Range angegeben, setze Range auf None.")
