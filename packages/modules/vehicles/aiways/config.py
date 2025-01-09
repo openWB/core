@@ -20,7 +20,7 @@ class AiwaysVehicleSocConfiguration:
 
 class AiwaysVehicleSoc:
     def __init__(self,
-                 name: str = "Aiways SoC module",
+                 name: str = "Aiways",
                  type: str = "aiways",
                  configuration: AiwaysVehicleSocConfiguration = None) -> None:
         self.name = name
