@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 71
+    DATASTORE_VERSION = 72
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -1847,14 +1847,7 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 65)
 
     def upgrade_datastore_65(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/system/device/[0-9]+", topic) is not None:
-                payload = decode_payload(payload)
-                # update firmware of Sungrow
-                if payload.get("type") == "sungrow" and "firmware" not in payload["configuration"]:
-                    payload["configuration"].update({"firmware": "v111"})
-                Pub().pub(topic, payload)
-        self._loop_all_received_topics(upgrade)
+        # sungrow version fixed in upgrade_datastore_71
         self.__update_topic("openWB/system/datastore_version", 66)
 
     def upgrade_datastore_66(self) -> None:
@@ -1914,3 +1907,19 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 71)
+
+    def upgrade_datastore_71(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # update firmware of Sungrow
+                if payload.get("type") == "sungrow":
+                    if "firmware" not in payload["configuration"]:
+                        payload["configuration"].update({"firmware": "v1"})
+                    elif payload["configuration"].get("firmware") == "v111":
+                        payload["configuration"]["firmware"] = "v1"
+                    elif payload["configuration"].get("firmware") == "v112":
+                        payload["configuration"]["firmware"] = "v2"
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 72)
