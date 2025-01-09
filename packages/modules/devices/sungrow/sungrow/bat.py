@@ -32,7 +32,7 @@ class SungrowBat(AbstractBat):
         soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
 
         if Firmware(self.device_config.configuration.firmware) == Firmware.v2:
-            bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit)
+            bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
         else:
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
 
