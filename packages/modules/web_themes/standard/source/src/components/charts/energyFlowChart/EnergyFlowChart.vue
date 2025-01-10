@@ -640,7 +640,12 @@ const svgRectWidth = computed(
           <g
             :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
           >
-          <circle cx="0" cy="0" :r="svgSize.circleRadius" class="background-circle" />
+            <circle
+              cx="0"
+              cy="0"
+              :r="svgSize.circleRadius"
+              class="background-circle"
+            />
             <circle
               cx="0"
               cy="0"
@@ -662,8 +667,6 @@ const svgRectWidth = computed(
               :height="svgIconHeight"
               :width="svgIconWidth"
             />
-
-
           </g>
         </g>
       </g>
