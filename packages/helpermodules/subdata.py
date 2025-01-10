@@ -647,25 +647,33 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            if re.search("/io/states/", msg.topic) is not None:
-                index = get_index(msg.topic)
+            if (re.search("/io/states/", msg.topic) is not None or
+                    re.search("/internal_io/states/", msg.topic) is not None):
+                if re.search("/io/states/[0-9]+/", msg.topic) is not None:
+                    index = get_index(msg.topic)
+                    key = "io_states"+index
+                else:
+                    key = "internal_io_states"
+
                 payload = decode_payload(msg.payload)
                 if payload == "":
-                    if "io_states"+index in var:
-                        var.pop("io_states"+index)
+                    if key in var:
+                        var.pop(key)
                 else:
-                    if "io_states"+index not in var:
-                        var["io_states"+index] = io_device.IoStates(index)
-                if re.search("/io/states/[0-9]+/get", msg.topic) is not None:
+                    if key not in var:
+                        var[key] = io_device.IoStates(index)
+                if (re.search("/io/states/[0-9]+/get", msg.topic) is not None or
+                        re.search("/internal_io/states/get", msg.topic) is not None):
                     # Sonst werden Dicts als Payload verwendet, aber es wird alles in ein eigenes Attribut gespeichert
                     # Typ ist hier auch kein typing.Dict, sondern ein generisches Dict[int, bool]
-                    setattr(var["io_states"+index].data.get, msg.topic.split("/")[-1], payload)
-                elif re.search("/io/states/[0-9]+/set", msg.topic) is not None:
+                    setattr(var[key].data.get, msg.topic.split("/")[-1], payload)
+                elif (re.search("/io/states/[0-9]+/set", msg.topic) is not None or
+                        re.search("/internal_io/states/set", msg.topic) is not None):
                     # Sonst werden Dicts als Payload verwendet, aber es wird alles in ein eigenes Attribut gespeichert
                     # Typ ist hier auch kein typing.Dict, sondern ein generisches Dict[int, bool]
-                    setattr(var["io_states"+index].data.set, msg.topic.split("/")[-1], payload)
+                    setattr(var[key].data.set, msg.topic.split("/")[-1], payload)
                 else:
-                    self.set_json_payload_class(var["io_states"+index].data, msg)
+                    self.set_json_payload_class(var[key].data, msg)
             elif "io/action" in msg.topic:
                 if re.search("/io/action/[0-9]+/config", msg.topic) is not None:
                     index = get_index(msg.topic)
