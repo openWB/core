@@ -38,6 +38,7 @@ if (!isset($_GET["year"]) || !preg_match("/^[0-9]{4}$/", $_GET["year"])) {
     echo json_encode(["error" => "Invalid 'year' parameter. A four-digit year, e.g., 2023, is expected."]);
     exit;
 }
+$year = intval($_GET["year"]);
 
 // If the "month" parameter is provided and matches the regex for valid months (1-12), use it
 if (isset($_GET["month"])) {
