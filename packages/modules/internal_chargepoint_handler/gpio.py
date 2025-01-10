@@ -4,7 +4,6 @@ from threading import Event
 import time
 
 from helpermodules.subdata import SubData
-from modules.internal_chargepoint_handler.add_on.api import create_io
 
 
 log = logging.getLogger(__name__)
@@ -20,7 +19,7 @@ class InternalGpioHandler:
             while True:
                 if SubData.system_data.get("iolocal") is not None:
                     if self.event_restart_gpio.is_set():
-                        io = create_io(SubData.system_data["iolocal"])
+                        io = SubData.system_data["iolocal"]
                         self.event_restart_gpio.clear()
                     data = copy.deepcopy(SubData.io_states)
                     log.debug(data)

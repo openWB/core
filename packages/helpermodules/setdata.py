@@ -84,7 +84,7 @@ class SetData:
                 self.process_bat_topic(msg)
             elif "openWB/set/general/" in msg.topic:
                 self.process_general_topic(msg)
-            elif "openWB/set/io/" in msg.topic:
+            elif ("openWB/set/io/" in msg.topic or "openWB/set/internal_io/" in msg.topic):
                 self.process_io_topic(msg)
             elif "openWB/set/optional/" in msg.topic:
                 self.process_optional_topic(msg)
