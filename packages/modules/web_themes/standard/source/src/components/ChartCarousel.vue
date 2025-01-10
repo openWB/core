@@ -15,9 +15,8 @@
       v-for="(chartComponent, index) in chartCarouselItems"
       :key="index"
       :name="chartComponent.name"
-      class="col items-center justify-center"
     >
-      <component :is="chartComponent" />
+      <component :is="chartComponent.component" />
     </q-carousel-slide>
 
     <template v-slot:control>
@@ -39,7 +38,7 @@
 import { ref } from 'vue';
 import { useQuasar } from 'quasar';
 
-import EnergyFlowChart from './charts/EnergyFlowChart.vue';
+import EnergyFlowChart from './charts/energyFlowChart/EnergyFlowChart.vue';
 import HistoryChart from './charts/HistoryChart.vue';
 
 defineOptions({
@@ -48,6 +47,15 @@ defineOptions({
 
 const $q = useQuasar();
 const fullscreen = ref(false);
-const chartCarouselItems = [EnergyFlowChart, HistoryChart];
-const currentSlide = ref<string>(EnergyFlowChart.__name ?? '');
+const chartCarouselItems = [
+  {
+    name: 'EnergyFlowChart',
+    component: EnergyFlowChart,
+  },
+  {
+    name: 'HistoryChart',
+    component: HistoryChart,
+  },
+];
+const currentSlide = ref<string>(chartCarouselItems[0].name);
 </script>

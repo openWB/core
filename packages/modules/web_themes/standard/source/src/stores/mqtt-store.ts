@@ -681,6 +681,29 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get power sum total for all charge points
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const chargePointSumPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = getValue.value(
+        'openWB/chargepoint/get/power',
+        undefined,
+        0,
+      ) as number;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+        return valueObject[returnType];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
    * Get the charge point power identified by the charge point id
    * @param chargePointId charge point id
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
@@ -1270,8 +1293,8 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get the battery power identified by the charge point id
-   * @param batteryId charge point id
+   * Get the battery power identified by the battery point id
+   * @param batteryId battery point id
    * @param returnType type of return value, 'textValue', 'absoluteTextValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject
    */
@@ -1349,6 +1372,14 @@ export const useMqttStore = defineStore('mqtt', () => {
   ////////////////////////////// Battery totals ////////////////////////////////
 
   /**
+   * Get battery configured boolean true or false
+   * @returns boolean
+   */
+  const batteryConfigured = computed(() => {
+    return getValue.value('openWB/bat/config/configured', undefined) as boolean;
+  });
+
+  /**
    * Get the battery ids
    * @returns number[]
    */
@@ -1371,7 +1402,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get the total power of all batteries
    * @param returnType type of return value, 'textValue', 'absoluteTextValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
-   * @returns number | string | ValueObject
+   * @returns number | string
    */
   const batteryTotalPower = computed(() => {
     return (returnType: string = 'textValue') => {
@@ -1901,6 +1932,111 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  /////////////////////////////// Grid Data /////////////////////////////////////
+
+  /**
+   * Get counter id from root of component hierarchy
+   * @returns number | undefined
+   */
+  const getGridId = computed(() => {
+    const hierarchy = getValue.value(
+      'openWB/counter/get/hierarchy',
+    ) as Hierarchy[];
+
+    if (hierarchy && hierarchy.length > 0) {
+      const firstElement = hierarchy[0];
+      if (firstElement.type === 'counter') {
+        return firstElement.id;
+      }
+    }
+    return undefined;
+  });
+
+  /**
+   * Get grid power identified from root of component hierarchy
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const getGridPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const gridId = getGridId.value;
+      if (gridId === undefined) {
+        return '---';
+      }
+      const power = getValue.value(
+        `openWB/counter/${gridId}/get/power`,
+        undefined,
+        0,
+      ) as number;
+      const valueObject = getValueObject.value(power);
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  ////////////////// Home data //////////////////////////
+
+  /**
+   * Get home power
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const getHomePower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = getValue.value(
+        'openWB/counter/set/home_consumption',
+        undefined,
+        0,
+      ) as number;
+      const valueObject = getValueObject.value(power);
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  ////////////////// PV data //////////////////////////
+
+  /**
+   * Get pv configured true or false
+   * @returns boolean
+   */
+  const getPvConfigured = computed(() => {
+    return getValue.value('openWB/pv/config/configured', undefined) as boolean;
+  });
+
+  /**
+   * Get pv power
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const getPvPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = getValue.value(
+        'openWB/pv/get/power',
+        undefined,
+        0,
+      ) as number;
+      const valueObject = getValueObject.value(power);
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject as ValueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
   // exports
   return {
     topics,
@@ -1925,6 +2061,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointManualLock,
     chargePointPlugState,
     chargePointChargeState,
+    chargePointSumPower,
     chargePointPower,
     chargePointEnergyCharged,
     chargePointEnergyChargedPlugged,
@@ -1965,6 +2102,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleScheduledChargingPlanSocLimit,
     vehicleScheduledChargingPlanSocScheduled,
     // Battery data
+    batteryConfigured,
     batteryIds,
     batteryName,
     batterySoc,
@@ -1976,5 +2114,13 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryDailyExportedTotal,
     batteryTotalPower,
     batteryMode,
+    // Grid data
+    getGridId,
+    getGridPower,
+    // Home data
+    getHomePower,
+    // PV data
+    getPvConfigured,
+    getPvPower,
   };
 });
