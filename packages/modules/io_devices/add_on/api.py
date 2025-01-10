@@ -22,9 +22,9 @@ def create_io(config: AddOn):
     def write(digital_output: Dict[int, int]):
         if config.configuration.host is None:
             raise ValueError("No host configured")
-        pub.pub_single("openWB/set/io/states/local/set/digital_output", digital_output,
+        pub.pub_single("openWB/set/internal_io/states/set/digital_output", digital_output,
                        hostname=config.configuration.host)
-        pub.pub_single(f"openWB/set/io/states/{config.id}/set/digital_output", digital_output)
+        pub.pub_single("openWB/set/internal_io/states/set/digital_output", digital_output)
 
     return ConfigurableIo(config=config, component_reader=read, component_writer=write)
 
