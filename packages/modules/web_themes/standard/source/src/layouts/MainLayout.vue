@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 const $q = useQuasar();
 defineOptions({
@@ -36,9 +36,15 @@ const colorModeIcon = computed(() => {
 /**
  * Toggles the color mode of the application.
  */
-function toggleColorMode() {
+ function toggleColorMode() {
   $q.dark.toggle();
+  localStorage.setItem('theme', $q.dark.isActive ? 'dark' : 'light');
 }
+
+onMounted(() => {
+  const savedTheme = localStorage.getItem('theme') || 'light'; // Set light as default theme
+  $q.dark.set(savedTheme === 'dark');
+});
 </script>
 
 <style scoped>
