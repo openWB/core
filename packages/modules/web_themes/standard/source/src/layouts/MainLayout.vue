@@ -36,7 +36,7 @@ const colorModeIcon = computed(() => {
 /**
  * Toggles the color mode of the application.
  */
- function toggleColorMode() {
+function toggleColorMode() {
   $q.dark.toggle();
   localStorage.setItem('theme', $q.dark.isActive ? 'dark' : 'light');
 }
