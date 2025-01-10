@@ -5,6 +5,7 @@ from typing import Dict, Tuple
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import IoState
 from modules.common.configurable_io import ConfigurableIo
+from modules.common.store._io_internal import get_internal_io_value_store
 from modules.io_devices.add_on.config import AddOn, DigitalInputMapping, DigitalOutputMapping
 
 log = logging.getLogger(__name__)
@@ -38,7 +39,9 @@ def create_io(config: AddOn):
             GPIO.setup(int(pin), GPIO.IN, pull_up_down=pud_up)
         GPIO.setup([7, 16, 18], GPIO.OUT)
 
-    return ConfigurableIo(config=config, component_reader=read, component_writer=write)
+    io = ConfigurableIo(config=config, component_reader=read, component_writer=write)
+    io.store = get_internal_io_value_store()
+    return io
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=AddOn)

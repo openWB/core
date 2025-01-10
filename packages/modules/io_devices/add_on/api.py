@@ -44,7 +44,7 @@ class IoStateManager:
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
         """
-        client.subscribe('openWB/io/states/local/#', 2)
+        client.subscribe('openWB/internal_io/states/#', 2)
 
     def on_message(self, client, userdata, msg):
         setattr(self.io_state, msg.topic.split("/")[-1], decode_payload(msg.payload))
