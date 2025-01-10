@@ -35,8 +35,8 @@ def create_io(config: AddOn):
 
     if has_gpio:
         GPIO.setmode(GPIO.BOARD)
-        for pin, pud_up in config.input["digital"].items():
-            GPIO.setup(int(pin), GPIO.IN, pull_up_down=pud_up)
+        for pin in config.input["digital"].keys():
+            GPIO.setup(DigitalInputMapping[pin].value, GPIO.IN)
         GPIO.setup([7, 16, 18], GPIO.OUT)
 
     io = ConfigurableIo(config=config, component_reader=read, component_writer=write)
