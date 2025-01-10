@@ -61,6 +61,7 @@ def rfid_factory() -> Rfid:
 @dataclass
 class Ocpp:
     active: bool = False
+    boot_notification_sent: bool = False
     url: Optional[str] = None
     version: str = "ocpp1.6"
 

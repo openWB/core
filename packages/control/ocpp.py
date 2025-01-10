@@ -56,6 +56,7 @@ try:
                     firmware_version=data.data.system_data["system"].data["version"],
                     meter_serial_number=serial_number
                 ))
+                log.debug(f"BootNotification für Chargebox ID: {chargebox_id} gesendet.")
             except Exception as e:
                 fault_state.from_exception(e)
 
