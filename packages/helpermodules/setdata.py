@@ -576,7 +576,7 @@ class SetData:
                 elif "/control_parameter/prio" in msg.topic:
                     self._validate_value(msg, bool)
                 elif "/control_parameter/current_plan" in msg.topic:
-                    self._validate_value(msg, str)
+                    self._validate_value(msg, int)
                 elif ("/control_parameter/imported_instant_charging" in msg.topic or
                         "/control_parameter/imported_at_plan_start" in msg.topic or
                         "/control_parameter/min_current" in msg.topic or
