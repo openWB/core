@@ -897,7 +897,7 @@ class ProcessBrokerBranch:
     def get_cloud_id(self):
         try:
             self.ids = []
-            InternalBrokerClient("processBrokerBranch", self.on_connect, self.__on_message_cloud_id).start_finite_loop()
+            BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_cloud_id).start_finite_loop()
             return self.ids
         except Exception:
             log.exception("Fehler im Command-Modul")

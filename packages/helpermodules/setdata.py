@@ -858,6 +858,8 @@ class SetData:
                 self._validate_value(msg, int, [(0, 2)])
             elif "get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
+            elif "/timestamp" in msg.topic:
+                self._validate_value(msg, float)
             else:
                 self.__unknown_topic(msg)
         except Exception:
