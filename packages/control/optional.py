@@ -25,7 +25,6 @@ class Optional(OcppMixin):
             self.et_module: ConfigurableElectricityTariff = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
-            self.ocpp_boot_notification_sent = False
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
@@ -104,13 +103,14 @@ class Optional(OcppMixin):
     def _transfer_meter_values(self):
         for cp in data.data.cp_data.values():
             try:
-                if self.ocpp_boot_notification_sent is False:
+                if self.data.ocpp.boot_notification_sent is False:
                     # Boot-Notfification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
                     self.boot_notification(cp.data.config.ocpp_chargebox_id,
                                            cp.chargepoint_module.fault_state,
                                            cp.chargepoint_module.config.type,
                                            cp.data.get.serial_number)
-                    self.ocpp_boot_notification_sent = True
+                    self.data.ocpp.boot_notification_sent = True
+                    Pub().pub("openWB/set/optional/ocpp/boot_notification_sent", True)
                 if cp.data.set.ocpp_transaction_id is not None:
                     self.send_heart_beat(cp.data.config.ocpp_chargebox_id, cp.chargepoint_module.fault_state)
                     self.transfer_values(cp.data.config.ocpp_chargebox_id,
