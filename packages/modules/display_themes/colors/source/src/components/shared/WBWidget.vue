@@ -16,12 +16,12 @@
 					<slot name="buttons" />
 				</div>
 			</div>
-			<div class="wb-subwidget mx-2 subgrid">
+			<div class="wb-subwidget mx-2">
 				<slot />
 			</div>
 			<div v-if="$slots.footer != undefined" class="subgrid">
 				<hr class="grid-col-12" />
-				<div class="wb-subwidget mx-2 subgrid">
+				<div class="wb-subwidget mx-2">
 					<slot name="footer" />
 				</div>
 			</div>

@@ -73,7 +73,6 @@ export type InfoItemValues = {
 .btn-outline-secondary.active {
 	background-color: var(--color-bg);
 	border: 0px solid var(--color-fg);
-	/* box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); */
 	opacity: 0.8;
 }
 .btn-group {
