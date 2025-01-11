@@ -281,29 +281,11 @@ export const widescreen = computed(() => {
 	return screensize.x >= breakpoint
 })
 export const chargemodes: { [key: string]: ChargeModeInfo } = {
-	stop: {
-		mode: ChargeMode.stop,
-		name: 'Stop',
-		color: 'var(--color-fg)',
-		icon: 'fa-power-off',
-	},
-	standby: {
-		mode: ChargeMode.standby,
-		name: 'Standby',
-		color: 'var(--color-axis',
-		icon: 'fa-pause',
-	},
 	pv_charging: {
 		mode: ChargeMode.pv_charging,
 		name: 'PV',
 		color: 'var(--color-pv',
 		icon: 'fa-solar-panel',
-	},
-	scheduled_charging: {
-		mode: ChargeMode.scheduled_charging,
-		name: 'Zielladen',
-		color: 'var(--color-battery)',
-		icon: 'fa-bullseye',
 	},
 	instant_charging: {
 		mode: ChargeMode.instant_charging,
@@ -311,6 +293,24 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 		color: 'var(--color-charging)',
 		icon: 'fa-bolt',
 	},
+	scheduled_charging: {
+		mode: ChargeMode.scheduled_charging,
+		name: 'Zielladen',
+		color: 'var(--color-battery)',
+		icon: 'fa-bullseye',
+	},
+	standby: {
+		mode: ChargeMode.standby,
+		name: 'Standby',
+		color: 'var(--color-axis)',
+		icon: 'fa-pause',
+	},
+	stop: {
+		mode: ChargeMode.stop,
+		name: 'Stop',
+		color: 'var(--color-fg)',
+		icon: 'fa-power-off',
+	}
 }
 // methods
 export function savePrefs() {
