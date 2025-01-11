@@ -1,9 +1,11 @@
 <template>
 	<div class="content">
 		<div class="leftside">
-			<div v-show="globalConfig.graphToShow == 'powermeter'">
-				<PowerMeter></PowerMeter>
-			</div>
+			<!-- <div v-show="globalConfig.graphToShow == 'powermeter'">-->
+			<PowerMeter
+				v-show="globalConfig.graphToShow == 'powermeter'"
+			></PowerMeter>
+			<!--</div>-->
 			<div v-show="globalConfig.graphToShow == 'powergraph'">
 				<PowerGraph></PowerGraph>
 			</div>
@@ -102,11 +104,16 @@ function haveFocus() {
 .leftside {
 	min-width: 0px;
 	overflow: hidden;
+	height: 100%;
+	align-self: stretch;
 }
 
 .rightside {
 	min-width: 0px;
 	overflow: hidden;
+	height: 100%;
+	align-self: stretch;
+	align-items: stretch;
 }
 
 .settingstitle {

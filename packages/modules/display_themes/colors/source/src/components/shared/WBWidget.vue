@@ -1,6 +1,6 @@
 <template>
-	<div class="p-2 m-0">
-		<div class="wb-widget m-0 pb-4 shadow">
+	<div class="p-2 m-0 cont">
+		<div class="wb-widget m-0 pb-2 shadow">
 			<div class="header mt-4 mx-2">
 				<div class="titles">
 					<div class="title">
@@ -35,6 +35,7 @@
 .wb-widget {
 	background-color: var(--color-bg);
 	border: 0.1px solid var(--color-frame);
+	height: 100%;
 	align-self: stretch;
 	width: 100%;
 	border-radius: 30px;
@@ -69,6 +70,11 @@
 	transform: scaleX(0.9294);
 }
 
+.cont {
+	display: grid;
+	align-self: stretch;
+	height: 100%;
+}
 .subtitle {
 	font-size: var(--font-medium);
 }

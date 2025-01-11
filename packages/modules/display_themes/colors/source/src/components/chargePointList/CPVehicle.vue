@@ -18,6 +18,29 @@
 				</div>
 			</DisplayButton>
 		</div>
+		<div
+			v-if="editSoc"
+			class="socEditor rounded mt-2 d-flex flex-column align-items-center grid-col-12 grid-left"
+		>
+			<span class="d-flex m-1 p-0 socEditTitle">Ladestand einstellen:</span>
+			<span class="d-flex justify-content-stretch align-items-center">
+				<span>
+					<RangeInput
+						id="manualSoc"
+						v-model="manualSoc"
+						:min="0"
+						:max="100"
+						:step="1"
+						unit="%"
+					/>
+				</span>
+			</span>
+			<span
+				type="button"
+				class="fa-solid d-flex fa-lg m-3 me-1 mb-4 align-self-end fa-circle-check"
+				@click="setSoc"
+			/>
+		</div>
 		<!-- Car info -->
 		<InfoItem
 			v-if="chargepoint.isSocConfigured"
@@ -25,6 +48,12 @@
 			class="grid-col-4 grid-left"
 		>
 			<BatterySymbol :soc="soc" class="me-2" />
+			<DisplayButton v-if="chargepoint.isSocManual" @click="editSoc = !editSoc">
+				<i
+					class="fa-solid fa-sm fas fa-edit py-0 px-4 mt-3"
+					:style="{ color: 'var(--color-fg)' }"
+				/>
+			</DisplayButton>
 		</InfoItem>
 		<InfoItem
 			v-if="chargepoint.isSocConfigured"
@@ -109,14 +138,30 @@ import BatterySymbol from '@/components/shared/BatterySymbol.vue'
 import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import DisplayButton from '@/components/shared/DisplayButton.vue'
 import SwitchInput from '../shared/SwitchInput.vue'
+import RangeInput from '../shared/RangeInput.vue'
 import { etData } from '../priceChart/model'
 import { computed } from 'vue'
 import { Modal, Tab } from 'bootstrap'
+import { updateServer } from '@/assets/js/sendMessages'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
 const cp = ref(props.chargepoint)
+const editSoc = ref(false)
+
+function setSoc() {
+	updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
+	editSoc.value = false
+}
+const manualSoc = computed({
+	get() {
+		return props.chargepoint.soc
+	},
+	set(s: number) {
+		chargePoints[props.chargepoint.id].soc = s
+	},
+})
 const soc = computed(() => {
 	return props.chargepoint.soc
 })
@@ -158,6 +203,7 @@ function openSettings(target: string = '') {
 				chargePanelName = '#chSettings'
 		}
 	}
+
 	const tabToActivate = document.querySelector(
 		chargePanelName + props.chargepoint.id,
 	)
@@ -168,6 +214,7 @@ function openSettings(target: string = '') {
 		console.error('no element found')
 	}
 }
+
 const currentPriceStyle = computed(() => {
 	return props.chargepoint.etMaxPrice >= +currentPrice.value
 		? { color: 'var(--color-charging)' }
@@ -196,5 +243,15 @@ const currentPriceStyle = computed(() => {
 
 .fa-star {
 	color: var(--color-evu);
+}
+.fa-circle-check {
+	font-size: 20pt;
+}
+.fa-edit {
+	font-size: 10pt;
+}
+.socEditor {
+	border: 1px solid var(--color-menu);
+	justify-self: stretch;
 }
 </style>
