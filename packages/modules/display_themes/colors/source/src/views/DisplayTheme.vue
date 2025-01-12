@@ -47,7 +47,7 @@
 	</ModalComponent>
 </template>
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { globalConfig, initConfig } from '@/assets/js/themeConfig'
 import { updateDimensions } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
@@ -83,6 +83,11 @@ onMounted(() => {
 	window.addEventListener('focus', haveFocus)
 	//window.addEventListener('blur',lostFocus)
 	msgInit()
+})
+onBeforeUnmount(() => {
+	window.removeEventListener('focus', haveFocus)
+	window.removeEventListener('resize', updateDimensions)
+	
 })
 function haveFocus() {
 	if (document.hasFocus()) {

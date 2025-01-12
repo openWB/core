@@ -8,10 +8,6 @@
 <script setup lang="ts">
 import NavigationBar from './views/NavigationBar.vue'
 import DisplayTheme from './views/DisplayTheme.vue'
-
-//import { RouterLink, RouterView } from 'vue-router'
-//import HelloWorld from './components/HelloWorld.vue'
-// methods
 </script>
 
 <style>
