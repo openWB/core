@@ -46,13 +46,13 @@ class IoLanConfiguration:
 
 
 def init_input():
-    return {"analog": {pin.name: None for pin in AnalogInputMapping},
-            "digital": {pin.name: False for pin in DigitalInputMapping}}
+    return {"analog": {pin.name: {} for pin in AnalogInputMapping},
+            "digital": {pin.name: {"normal_position": False} for pin in DigitalInputMapping}}
 
 
 def init_output():
     return {"analog": {},
-            "digital": {pin.name: False for pin in DigitalOutputMapping}}
+            "digital": {pin.name: {} for pin in DigitalOutputMapping}}
 
 
 @auto_str

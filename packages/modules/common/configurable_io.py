@@ -28,7 +28,13 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
         if hasattr(self, "component_reader"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
             with SingleComponentUpdateContext(self.fault_state):
-                self.store.set(self.component_reader())
+                io_state = self.component_reader()
+                for pin, state in io_state.digital_input.items():
+                    if (self.config.input["digital"][pin].get("normal_position") and
+                            self.config.input["digital"][pin]["normal_position"] is True):
+                        # invert normally open contacts
+                        io_state.digital_input[pin] = not state
+                self.store.set(io_state)
 
     def write(self):
         if hasattr(self, "component_writer"):

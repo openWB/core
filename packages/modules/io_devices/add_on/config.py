@@ -26,12 +26,12 @@ class AddOnConfiguration:
 
 def init_input():
     return {"analog": {},
-            "digital": {pin.name: False for pin in DigitalInputMapping}}
+            "digital": {pin.name: {"normal_position": False} for pin in DigitalInputMapping}}
 
 
 def init_output():
     return {"analog": {},
-            "digital": {pin.name: False for pin in DigitalOutputMapping}}
+            "digital": {pin.name: {} for pin in DigitalOutputMapping}}
 
 
 class AddOn(IoDeviceSetup[AddOnConfiguration]):
