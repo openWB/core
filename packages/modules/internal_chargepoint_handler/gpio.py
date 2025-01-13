@@ -26,5 +26,6 @@ class InternalGpioHandler:
                     log.setLevel(SubData.system_data["system"].data["debug_level"])
                     io.read()
                     io.store.update()
-                    io.write(data["internal_io_states"].data.set.digital_output)
+                    if "internal_io_states" in data:
+                        io.write(data["internal_io_states"].data.set.digital_output)
                 time.sleep(3)

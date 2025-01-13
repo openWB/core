@@ -132,6 +132,7 @@ class SubData:
             ("openWB/bat/#", 2),
             ("openWB/general/#", 2),
             ("openWB/graph/#", 2),
+            ("openWB/internal_io/#", 2),
             ("openWB/io/#", 2),
             ("openWB/optional/#", 2),
             ("openWB/counter/#", 2),
@@ -178,7 +179,7 @@ class SubData:
             self.process_graph_topic(self.graph_data, msg)
         elif "openWB/io/action" in msg.topic:
             self.process_io_topic(self.io_actions, msg)
-        elif "openWB/io/states" in msg.topic:
+        elif "openWB/io/states" in msg.topic or "openWB/internal_io/states" in msg.topic:
             self.process_io_topic(self.io_states, msg)
         elif "openWB/internal_chargepoint/" in msg.topic:
             self.process_internal_chargepoint_topic(client, self.internal_chargepoint_data, msg)
@@ -653,6 +654,7 @@ class SubData:
                     index = get_index(msg.topic)
                     key = "io_states"+index
                 else:
+                    index = "internal"
                     key = "internal_io_states"
 
                 payload = decode_payload(msg.payload)

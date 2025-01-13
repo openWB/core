@@ -28,10 +28,10 @@ def create_io(config: AddOn):
         else:
             return IoState()
 
-    def write(digital_output: Dict[int, int]):
+    def write(digital_output: Dict[str, int]):
         if has_gpio:
-            for i, value in digital_output.items():
-                GPIO.output(i, GPIO.HIGH if value else GPIO.LOW)
+            for pin, value in digital_output.items():
+                GPIO.output(DigitalInputMapping[pin], GPIO.HIGH if value else GPIO.LOW)
 
     if has_gpio:
         GPIO.setmode(GPIO.BOARD)
