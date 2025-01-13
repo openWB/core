@@ -78,12 +78,6 @@ const iScale = computed(() => {
 		.range([0, props.width])
 })
 
-/* const iScaleMonth = computed(() =>
-	scaleBand<number>()
-		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
-		.range([0, props.width + props.margin.right])
-		.paddingInner(0.4),
-) */
 const stackGen = computed(() => stack().keys(keys.value))
 const stackedSeries = computed(() => stackGen.value(graphData.data))
 
@@ -202,8 +196,8 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 				graphData.graphMode == 'year'
 					? yScale.value(d[1] / 1000)
 					: yScale.value(d[1]),
-			),
-			sourceGraphIsInitialized()
+			)
+		sourceGraphIsInitialized()
 	} else {
 		graph.selectAll('*').remove()
 		rects = graph

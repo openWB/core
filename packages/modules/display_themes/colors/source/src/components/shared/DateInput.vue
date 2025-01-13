@@ -134,7 +134,7 @@ const days = computed(() => {
 			if (Math.trunc(year.value / 4) * 4 == year.value) {
 				maxDaysPerMonth = 29
 			} else {
-				maxDaysPerMonth == 28
+				maxDaysPerMonth = 28
 			}
 	}
 
