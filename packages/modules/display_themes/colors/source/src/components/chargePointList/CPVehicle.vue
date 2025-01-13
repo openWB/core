@@ -1,6 +1,6 @@
 <template>
-	<div class="subgrid justify-content-left">
-		<div class="titleline grid-col-12 d-flex justify-content-left mb-3">
+	<div class="vehicleinfo justify-content-left">
+		<div class="titleline  mb-3">
 			<DisplayButton @click="openSettings('#chSettings')">
 				<div
 					class="carname d-flex justify-content-left align-items-center px-2"
@@ -42,6 +42,7 @@
 			/>
 		</div>
 		<!-- Car info -->
+		 <div class="infoline">
 		<InfoItem
 			v-if="chargepoint.isSocConfigured"
 			heading="Ladestand:"
@@ -50,7 +51,7 @@
 			<BatterySymbol :soc="soc" class="me-2" />
 			<DisplayButton v-if="chargepoint.isSocManual" @click="editSoc = !editSoc">
 				<i
-					class="fa-solid fa-sm fas fa-edit py-0 px-4 mt-3"
+					class="fa-solid fa-sm fas fa-edit py-0 px-3 mt-3"
 					:style="{ color: 'var(--color-fg)' }"
 				/>
 			</DisplayButton>
@@ -74,7 +75,8 @@
 			/>
 			{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
 		</InfoItem>
-
+</div>
+<div class="infoline">
 		<!-- ET Information -->
 		<InfoItem
 			v-if="etData.active"
@@ -107,7 +109,7 @@
 		>
 			<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
 		</InfoItem>
-
+</div>
 		<!-- Chargemode buttons -->
 		<RadioBarInput
 			:id="'chargemode-' + chargepoint.name"
@@ -223,9 +225,14 @@ const currentPriceStyle = computed(() => {
 </script>
 <style scoped>
 .titleline {
+	display:flex;
 	justify-content: left;
 }
-
+.infoline {
+	display:flex;
+	justify-content: space-between;
+	flex-direction: row;
+}
 .chargemodes {
 	grid-column: 1 / 13;
 	justify-self: center;
@@ -248,10 +255,14 @@ const currentPriceStyle = computed(() => {
 	font-size: 20pt;
 }
 .fa-edit {
-	font-size: 10pt;
+	font-size: 8pt;
 }
 .socEditor {
 	border: 1px solid var(--color-menu);
 	justify-self: stretch;
+}
+.vehicleinfo {
+	display:flex;
+	flex-direction: column;
 }
 </style>

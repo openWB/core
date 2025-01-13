@@ -19,7 +19,7 @@
 			<div class="wb-subwidget mx-2">
 				<slot />
 			</div>
-			<div v-if="$slots.footer != undefined" class="subgrid">
+			<div v-if="$slots.footer != undefined">
 				<hr class="grid-col-12" />
 				<div class="wb-subwidget mx-2">
 					<slot name="footer" />
@@ -39,16 +39,16 @@
 	align-self: stretch;
 	width: 100%;
 	border-radius: 30px;
-	display: grid;
+	/* display: grid;
 	grid-template-columns: repeat(12, auto);
-	gap: 0.2em;
-	justify-content: stretch;
+	gap: 0.2em; */
+	
 }
 
 .wb-subwidget {
 	border: 0px solid var(--color-subframe);
 	padding: var(--padding-widget);
-	grid-column: span 12;
+	/*grid-column: span 12;*/
 }
 
 .header {
@@ -71,7 +71,7 @@
 }
 
 .cont {
-	display: grid;
+	
 	align-self: stretch;
 	height: 100%;
 }
