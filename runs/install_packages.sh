@@ -8,7 +8,7 @@ echo "install required packages with 'apt-get'..."
  	git \
  	mosquitto mosquitto-clients \
  	python3-pip \
- 	xserver-xorg x11-xserver-utils openbox-lxde-session lightdm lightdm-autologin-greeter accountsservice \ 	
+ 	xserver-xorg x11-xserver-utils openbox-lxde-session lightdm lightdm-autologin-greeter accountsservice \
 	chromium chromium-l10n
 if [ -z "$(dpkg -l | grep zabbix-agent2)" ]
 then
