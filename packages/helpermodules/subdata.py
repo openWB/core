@@ -689,9 +689,15 @@ class SubData:
                     # do not reconfigure monitoring if topic is received on startup
                     if self.event_subdata_initialized.is_set():
                         config = decode_payload(msg.payload)
-                        mod = importlib.import_module(f".monitoring.{config['type']}.api", "modules")
-                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
-                        mod.create_config(config)
+                        if config["type"] is not None:
+                            mod = importlib.import_module(f".monitoring.{config['type']}.api", "modules")
+                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
+                            mod.create_config(config)
+                            run_command(["sudo", "systemctl", "restart", "zabbix-agent2"], process_exception=True)
+                            run_command(["sudo", "systemctl", "enable", "zabbix-agent2"], process_exception=True)
+                        else:
+                            run_command(["sudo", "systemctl", "stop", "zabbix-agent2"], process_exception=True)
+                            run_command(["sudo", "systemctl", "disable", "zabbix-agent2"], process_exception=True)
                     else:
                         log.debug("skipping monitoring config on startup")
                 else:
