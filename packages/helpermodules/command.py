@@ -16,6 +16,8 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 # ToDo: move to module commands if implemented
+from control.ev.charge_template import get_new_charge_template
+from control.ev.ev_template import EvTemplateData
 from helpermodules import pub
 from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
@@ -335,7 +337,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Lade-Profil erstellt werden soll.
         """
         new_id = self.max_id_charge_template + 1
-        charge_template_default = ev.get_new_charge_template()
+        charge_template_default = get_new_charge_template()
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
                   str(new_id), charge_template_default)
         self.max_id_charge_template = new_id
@@ -487,7 +489,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Fahrzeug-Profil erstellt werden soll.
         """
         new_id = self.max_id_ev_template + 1
-        ev_template_default = dataclass_utils.asdict(ev.EvTemplateData())
+        ev_template_default = dataclass_utils.asdict(EvTemplateData())
         Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
         self.max_id_ev_template = new_id
         Pub().pub("openWB/set/command/max_id/ev_template", new_id)
