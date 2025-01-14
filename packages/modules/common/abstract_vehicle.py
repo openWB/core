@@ -11,6 +11,7 @@ class VehicleUpdateData:
     efficiency: float = 90
     soc_from_cp: Optional[float] = None
     timestamp_soc_from_cp: Optional[int] = None
+    soc_timestamp: Optional[int] = None
 
 
 @dataclass

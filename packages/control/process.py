@@ -27,7 +27,6 @@ class Process:
             for cp in data.data.cp_data.values():
                 try:
                     control_parameter = cp.data.control_parameter
-                    cp.remember_previous_values()
                     if cp.data.set.charging_ev != -1:
                         # Ladelog-Daten müssen vor dem Setzen des Stroms gesammelt werden,
                         # damit bei Phasenumschaltungs-empfindlichen EV sicher noch nicht geladen wurde.
@@ -35,8 +34,9 @@ class Process:
                         cp.initiate_control_pilot_interruption()
                         cp.initiate_phase_switch()
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
-                            control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                            control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
                         self._update_state(cp)
+                        cp.set_timestamp_charge_start()
                     else:
                         # LP, an denen nicht geladen werden darf
                         if cp.data.set.charging_ev_prev != -1:
@@ -58,6 +58,7 @@ class Process:
                     if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NO_ERROR:
                         cp.chargepoint_module.fault_state.store_error()
                     modules_threads.append(self._start_charging(cp))
+                    cp.remember_previous_values()
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
             for bat_component in get_controllable_bat_components():
@@ -100,8 +101,7 @@ class Process:
                 "LP"+str(chargepoint.num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
         # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
-        if (chargepoint.data.control_parameter.timestamp_perform_phase_switch is not None or
-                chargepoint.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH):
+        if chargepoint.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
             current = 0
 
         chargepoint.data.set.current = current

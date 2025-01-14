@@ -4,28 +4,36 @@
 			{{ heading }}
 		</template>
 		<template #buttons>
-			<PgSelector
-				widgetid="graphsettings"
-				:show-left-button="true"
-				:show-right-button="true"
-				:ignore-live="true"
-				@shift-left="shiftLeft"
-				@shift-right="shiftRight"
-				@shift-up="shiftUp"
-				@shift-down="shiftDown"
-			/>
+			<div class="d-flex justify-content-end">
+				<PgSelector
+					widgetid="graphsettings"
+					:show-left-button="true"
+					:show-right-button="true"
+					:ignore-live="true"
+					@shift-left="shiftLeft"
+					@shift-right="shiftRight"
+					@shift-up="shiftUp"
+					@shift-down="shiftDown"
+				/>
+				<span
+					v-if="widescreen"
+					type="button"
+					class="ms-1 p-0 pt-1"
+					@click="zoomGraph"
+				>
+					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
+				</span>
+			</div>
 		</template>
 		<figure id="energymeter" class="p-0 m-0">
-			<svg :viewBox="'0 0 500 ' + Math.abs(height - 50)">
+			<svg :viewBox="'0 0 500 ' + height">
 				<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
 					<!--  Bar Graph -->
 					<BarGraph
 						:plotdata="plotdata"
 						:xscale="xScale"
 						:yscale="yScale"
-						:height="height"
-						:width="width"
-						:margin="margin"
+						:item-height="itemHeight"
 					/>
 					<!-- Y Axis -->
 					<!-- 		<EMYAxis
@@ -44,12 +52,10 @@
 					</text>
 					<EnergyLabels
 						:plotdata="plotdata"
-						:xscale="xScale"
 						:yscale="yScale"
-						:height="height"
 						:width="width"
+						:item-height="itemHeight"
 						:margin="margin"
-						:config="globalConfig"
 					/>
 				</g>
 			</svg>
@@ -73,7 +79,7 @@ import BarGraph from './BarGraph.vue'
 import EnergyLabels from './EnergyLabels.vue'
 import WBWidget from '../shared/WBWidget.vue'
 import PgSelector from '../powerGraph/PgSelector.vue'
-import { globalConfig } from '@/assets/js/themeConfig'
+import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import {
 	shiftLeft,
 	shiftRight,
@@ -88,16 +94,17 @@ import { batteries } from '../batteryList/model'
 
 //state
 const width = 500
-const height = computed(() => {
-	return plotdata.value.length * 65
-	//return 600
-})
+const itemHeight = 60
 const margin = {
-	top: 10,
+	top: 0,
 	bottom: 30,
 	left: 0,
 	right: 0,
 }
+const height = computed(() => {
+	return plotdata.value.length * itemHeight + margin.top + margin.bottom
+	//return 600
+})
 const axisFontsize = 12
 // computed
 const plotdata = computed(() => {
@@ -158,9 +165,9 @@ const xScale = computed(() => {
 })
 const yScale = computed(() => {
 	return scaleBand()
-		.range([height.value - margin.top - margin.bottom, 0])
-		.domain(plotdata.value.map((d) => d.name))
-		.padding(0.4)
+		.range([margin.top, height.value - margin.bottom])
+		.domain(plotdata.value.map((d, i) => i.toString()))
+		.padding(0.1)
 })
 const heading = 'Energie'
 
@@ -229,6 +236,14 @@ function printDebugOutput() {
 	console.debug(['usage details:', usageDetails.value])
 	console.debug(['historic summary:', historicSummary])
 }
+function zoomGraph() {
+	globalConfig.zoomedWidget = 2
+	globalConfig.zoomGraph = !globalConfig.zoomGraph
+}
 </script>
 
-<style scoped></style>
+<style scoped>
+.fa-magnifying-glass {
+	color: var(--color-menu);
+}
+</style>

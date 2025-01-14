@@ -80,18 +80,21 @@ def create_device(device_config: Solaredge):
                                                   SolaredgeCounterSetup,
                                                   SolaredgeInverterSetup,
                                                   SolaredgeExternalInverterSetup]) -> None:
-        if client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
-                                         unit=component_config.configuration.modbus_id
-                                         ) == synergy_unit_identifier:
-            # Snyergy-Units vom Haupt-WR des angeschlossenen Meters ermitteln. Es kann mehrere Haupt-WR mit
-            # unterschiedlichen Modbus-IDs im Verbund geben.
-            log.debug("Synergy Units supported")
-            synergy_units = int(client.read_holding_registers(
-                40129, modbus.ModbusDataType.UINT_16,
-                unit=component_config.configuration.modbus_id)) or 1
-            log.debug(
-                f"Synergy Units detected for Modbus ID {component_config.configuration.modbus_id}: {synergy_units}")
-        else:
+        try:
+            if client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
+                                             unit=component_config.configuration.modbus_id
+                                             ) == synergy_unit_identifier:
+                # Snyergy-Units vom Haupt-WR des angeschlossenen Meters ermitteln. Es kann mehrere Haupt-WR mit
+                # unterschiedlichen Modbus-IDs im Verbund geben.
+                log.debug("Synergy Units supported")
+                synergy_units = int(client.read_holding_registers(
+                    40129, modbus.ModbusDataType.UINT_16,
+                    unit=component_config.configuration.modbus_id)) or 1
+                log.debug(
+                    f"Synergy Units detected for Modbus ID {component_config.configuration.modbus_id}: {synergy_units}")
+            else:
+                synergy_units = 1
+        except Exception:
             synergy_units = 1
         return synergy_units
     try:

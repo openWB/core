@@ -130,7 +130,7 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: float = 0):
+    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: Optional[float] = None):
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
@@ -138,7 +138,10 @@ class CarState:
         """
         self.soc = soc
         self.range = range
-        self.soc_timestamp = soc_timestamp
+        if soc_timestamp is None:
+            self.soc_timestamp = timecheck.create_timestamp()
+        else:
+            self.soc_timestamp = soc_timestamp
 
 
 @auto_str
@@ -164,7 +167,8 @@ class ChargepointState:
                  soc: Optional[float] = None,
                  soc_timestamp: Optional[int] = None,
                  evse_current: Optional[float] = None,
-                 vehicle_id: Optional[str] = None):
+                 vehicle_id: Optional[str] = None,
+                 max_evse_current: Optional[int] = None):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
@@ -188,6 +192,7 @@ class ChargepointState:
         self.soc = soc
         self.soc_timestamp = soc_timestamp
         self.evse_current = evse_current
+        self.max_evse_current = max_evse_current
         self.vehicle_id = vehicle_id
 
 

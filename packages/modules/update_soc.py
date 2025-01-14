@@ -5,7 +5,7 @@ import copy
 from threading import Event, Thread
 
 from control import data
-from control.ev import Ev
+from control.ev.ev import Ev
 from helpermodules import subdata
 from helpermodules import timecheck
 from helpermodules.constants import NO_ERROR
@@ -62,7 +62,8 @@ class UpdateSoc:
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", 0)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
-                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", timecheck.create_timestamp())
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp",
+                                  timecheck.create_timestamp())
                         threads_update.append(Thread(target=ev.soc_module.update,
                                                      args=(vehicle_update_data,), name=f"fetch soc_ev{ev.num}"))
                         if hasattr(ev.soc_module, "store"):
@@ -78,6 +79,8 @@ class UpdateSoc:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", None)
                     if ev.data.get.soc_timestamp is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", None)
+                    if ev.data.get.soc_request_timestamp is not None:
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp", None)
                     if ev.data.get.range is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
             except Exception:
@@ -98,8 +101,6 @@ class UpdateSoc:
                 plug_state = cp.data.get.plug_state
                 charge_state = cp.data.get.charge_state
                 imported = cp.data.get.imported
-                battery_capacity = ev_template.data.battery_capacity
-                efficiency = ev_template.data.efficiency
                 if ev.soc_module.general_config.use_soc_from_cp:
                     soc_from_cp = cp.data.get.soc
                     timestamp_soc_from_cp = cp.data.get.soc_timestamp
@@ -111,17 +112,19 @@ class UpdateSoc:
             plug_state = False
             charge_state = False
             imported = None
-            battery_capacity = ev_template.data.battery_capacity
-            efficiency = ev_template.data.efficiency
             soc_from_cp = None
             timestamp_soc_from_cp = None
+        battery_capacity = ev_template.data.battery_capacity
+        efficiency = ev_template.data.efficiency
+        soc_timestamp = ev.data.get.soc_timestamp
         return VehicleUpdateData(plug_state=plug_state,
                                  charge_state=charge_state,
                                  efficiency=efficiency,
                                  imported=imported,
                                  battery_capacity=battery_capacity,
                                  soc_from_cp=soc_from_cp,
-                                 timestamp_soc_from_cp=timestamp_soc_from_cp)
+                                 timestamp_soc_from_cp=timestamp_soc_from_cp,
+                                 soc_timestamp=soc_timestamp)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)

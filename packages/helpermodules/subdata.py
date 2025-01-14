@@ -9,15 +9,18 @@ import re
 import subprocess
 import paho.mqtt.client as mqtt
 
-from control import bat_all, bat, counter, counter_all, ev, general, optional, pv, pv_all
+from control import bat_all, bat, counter, counter_all, general, optional, pv, pv_all
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
+from control.ev.charge_template import ChargeTemplate, ChargeTemplateData
+from control.ev import ev
+from control.ev.ev_template import EvTemplate, EvTemplateData
 from control.optional_data import Ocpp
 from helpermodules import graph, system
-from helpermodules.abstract_plans import AutolockPlan
+from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.utils.run_command import run_command
@@ -49,8 +52,8 @@ class SubData:
     pv_data: Dict[str, pv.Pv] = {}
     pv_all_data = pv_all.PvAll()
     ev_data: Dict[str, ev.Ev] = {}
-    ev_template_data: Dict[str, ev.EvTemplate] = {}
-    ev_charge_template_data: Dict[str, ev.ChargeTemplate] = {}
+    ev_template_data: Dict[str, EvTemplate] = {}
+    ev_charge_template_data: Dict[str, ChargeTemplate] = {}
     counter_data: Dict[str, counter.Counter] = {}
     counter_all_data = counter_all.CounterAll()
     bat_all_data = bat_all.BatAll()
@@ -331,7 +334,7 @@ class SubData:
                                       str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.chargemode.scheduled_charging.plans[
-                            index_second] = dataclass_from_dict(ev.ScheduledChargingPlan, decode_payload(msg.payload))
+                            index_second] = dataclass_from_dict(ScheduledChargingPlan, decode_payload(msg.payload))
                     self.event_scheduled_charging_plan.set()
                 elif re.search("/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
                                msg.topic) is not None:
@@ -344,20 +347,20 @@ class SubData:
                                       str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.time_charging.plans[
-                            index_second] = dataclass_from_dict(ev.TimeChargingPlan, decode_payload(msg.payload))
+                            index_second] = dataclass_from_dict(TimeChargingPlan, decode_payload(msg.payload))
                     self.event_time_charging_plan.set()
                 else:
                     # Pläne unverändert übernehmen
                     scheduled_charging_plans = var["ct" + index].data.chargemode.scheduled_charging.plans
                     time_charging_plans = var["ct" + index].data.time_charging.plans
-                    var["ct" + index].data = dataclass_from_dict(ev.ChargeTemplateData, decode_payload(msg.payload))
+                    var["ct" + index].data = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
                     var["ct"+index].data.time_charging.plans = time_charging_plans
                     var["ct"+index].data.chargemode.scheduled_charging.plans = scheduled_charging_plans
                     self.event_charge_template.set()
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_vehicle_ev_template_topic(self, var: Dict[str, ev.EvTemplate], msg: mqtt.MQTTMessage):
+    def process_vehicle_ev_template_topic(self, var: Dict[str, EvTemplate], msg: mqtt.MQTTMessage):
         """ Handler für die EV-Topics
 
         Parameter
@@ -375,8 +378,8 @@ class SubData:
                         var.pop("et"+index)
                 else:
                     if "et"+index not in var:
-                        var["et"+index] = ev.EvTemplate(et_num=int(index))
-                    var["et" + index].data = dataclass_from_dict(ev.EvTemplateData, decode_payload(msg.payload))
+                        var["et"+index] = EvTemplate(et_num=int(index))
+                    var["et" + index].data = dataclass_from_dict(EvTemplateData, decode_payload(msg.payload))
                     self.event_ev_template.set()
         except Exception:
             log.exception("Fehler im subdata-Modul")
@@ -682,6 +685,21 @@ class SubData:
                 elif re.search("/optional/ocpp/", msg.topic) is not None:
                     config_dict = decode_payload(msg.payload)
                     var.data.ocpp = dataclass_from_dict(Ocpp, config_dict)
+                elif re.search("/optional/monitoring/", msg.topic) is not None:
+                    # do not reconfigure monitoring if topic is received on startup
+                    if self.event_subdata_initialized.is_set():
+                        config = decode_payload(msg.payload)
+                        if config["type"] is not None:
+                            mod = importlib.import_module(f".monitoring.{config['type']}.api", "modules")
+                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
+                            mod.create_config(config)
+                            run_command(["sudo", "systemctl", "restart", "zabbix-agent2"], process_exception=True)
+                            run_command(["sudo", "systemctl", "enable", "zabbix-agent2"], process_exception=True)
+                        else:
+                            run_command(["sudo", "systemctl", "stop", "zabbix-agent2"], process_exception=True)
+                            run_command(["sudo", "systemctl", "disable", "zabbix-agent2"], process_exception=True)
+                    else:
+                        log.debug("skipping monitoring config on startup")
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
@@ -825,6 +843,11 @@ class SubData:
                     var["system"].backup_cloud = ConfigurableBackupCloud(config, mod.create_backup_cloud)
             elif "openWB/system/backup_cloud/backup_before_update" in msg.topic:
                 self.set_json_payload(var["system"].data["backup_cloud"], msg)
+            elif ("openWB/system/dataprotection_acknowledged" == msg.topic and
+                    decode_payload(msg.payload) is False):
+                Pub().pub("openWB/set/command/removeCloudBridge/todo", {
+                    "command": "removeCloudBridge"
+                })
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
@@ -843,6 +866,7 @@ class SubData:
                 elif "openWB/system/debug_level" == msg.topic:
                     logging.getLogger().setLevel(decode_payload(msg.payload))
                 self.set_json_payload(var["system"].data, msg)
+
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

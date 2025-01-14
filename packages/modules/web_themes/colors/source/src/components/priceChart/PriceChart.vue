@@ -16,14 +16,25 @@
 	<div v-if="chargepoint != undefined" class="p-3">
 		<RangeInput
 			v-if="chargepoint.etActive"
-			id="foo"
+			id="pricechart_local"
 			v-model="maxPrice"
-			:min="-25"
-			:max="95"
+			:min="Math.floor(prices[0] - 1)"
+			:max="Math.ceil(prices[prices.length - 1] + 1)"
 			:step="0.1"
 			:decimals="1"
+			:show-subrange="true"
+			:subrange-min="prices[0]"
+			:subrange-max="prices[prices.length - 1]"
 			unit="ct"
 		/>
+	</div>
+	<div class="d-flex justify-content-between px-3 pb-2 pt-0 mt-0">
+		<button type="button" class="btn btn-sm jumpbutton" @click="priceDown">
+			<i class="fa fa-sm fa-arrow-left" />
+		</button>
+		<button type="button" class="btn btn-sm jumpbutton" @click="priceUp">
+			<i class="fa fa-sm fa-arrow-right" />
+		</button>
 	</div>
 	<div v-if="chargepoint != undefined" class="d-flex justify-content-end">
 		<span class="me-3 pt-0" @click="setMaxPrice">
@@ -54,6 +65,7 @@ import {
 } from 'd3'
 import RangeInput from '../shared/RangeInput.vue'
 import { chargePoints, type ChargePoint } from '../chargePointList/model'
+import { globalConfig } from '@/assets/js/themeConfig'
 const props = defineProps<{
 	chargepoint?: ChargePoint
 	globalview?: boolean
@@ -143,6 +155,23 @@ const linePath = computed(() => {
 	]
 	return generator(points as [number, number][])
 })
+const lowerPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(globalConfig.lowerPriceBound)],
+		[width - margin.right, yScale.value(globalConfig.lowerPriceBound)],
+	]
+	return generator(points as [number, number][])
+})
+const upperPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(globalConfig.upperPriceBound)],
+		[width - margin.right, yScale.value(globalConfig.upperPriceBound)],
+	]
+	return generator(points as [number, number][])
+})
+
 const zeroPath = computed(() => {
 	const generator = line()
 	const points = [
@@ -160,7 +189,7 @@ const xAxisGenerator = computed(() => {
 })
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
-		.ticks(6)
+		.ticks(yDomain.value[1] - yDomain.value[0])
 		.tickSizeInner(-(width - margin.right - margin.left))
 		.tickFormat((d) => d.toString())
 })
@@ -168,7 +197,6 @@ const draw = computed(() => {
 	if (needsUpdate.value == true) {
 		dummy = !dummy
 	}
-
 	const svg = select('g#' + chartId.value)
 	svg.selectAll('*').remove()
 	const bargroups = svg
@@ -218,9 +246,12 @@ const draw = computed(() => {
 			.attr('d', zeroPath.value)
 			.attr('stroke', 'var(--color-fg)')
 	}
+	// Line for lower bound
+	svg.append('path').attr('d', lowerPath.value).attr('stroke', 'green')
+	// Line for upper bound
+	svg.append('path').attr('d', upperPath.value).attr('stroke', 'red')
 	// Line for max price
 	svg.append('path').attr('d', linePath.value).attr('stroke', 'yellow')
-
 	return 'PriceChart.vue'
 })
 const chartId = computed(() => {
@@ -230,6 +261,36 @@ const chartId = computed(() => {
 		return 'priceChartCanvasGlobal'
 	}
 })
+const prices = computed(() => {
+	let result: number[] = []
+	etData.etPriceList.forEach((p) => {
+		result.push(p)
+	})
+	return result.sort((a, b) => a - b)
+})
+function priceDown() {
+	let lastValue = prices.value[0]
+	for (let p of prices.value) {
+		if (p >= maxPrice.value) {
+			break
+		} else {
+			lastValue = p
+		}
+	}
+	maxPrice.value = lastValue
+}
+function priceUp() {
+	let result = prices.value[0]
+	for (let p of prices.value) {
+		if (p > maxPrice.value) {
+			result = p
+			break
+		} else {
+			result = p
+		}
+	}
+	maxPrice.value = result
+}
 onMounted(() => {
 	needsUpdate.value = !needsUpdate.value
 })
@@ -253,5 +314,10 @@ onMounted(() => {
 .providername {
 	color: var(--color-axis);
 	font-size: 16px;
+}
+.jumpbutton {
+	background-color: var(--color-menu);
+	color: var(--color-bg);
+	border: 0;
 }
 </style>
