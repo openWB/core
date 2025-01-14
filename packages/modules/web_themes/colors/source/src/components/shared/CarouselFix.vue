@@ -63,7 +63,7 @@ watch(
 		if (swiper) {
 			let slidesPerView = zoomGraph ? '1' : '3'
 			swiperEl.setAttribute('slides-per-view', slidesPerView)
-			swiper.activeIndex = 1
+			swiper.activeIndex = globalConfig.zoomedWidget
 			swiper.update()
 		}
 	},

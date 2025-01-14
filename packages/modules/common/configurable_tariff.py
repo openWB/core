@@ -25,7 +25,7 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
             with SingleComponentUpdateContext(self.fault_state):
                 tariff_state = self._component_updater()
-                current_hour = create_unix_timestamp_current_full_hour()
+                current_hour = str(int(create_unix_timestamp_current_full_hour()))
                 self.store.set(tariff_state)
                 self.store.update()
                 for timestamp in tariff_state.prices.keys():

@@ -68,6 +68,7 @@ export default {
       ],
       mqttStore: useMqttStore(),
       chartInterval: "",
+      clearConsoleHandler: undefined
     };
   },
   computed: {
@@ -102,14 +103,38 @@ export default {
     this.doSubscribe(this.mqttTopicsToSubscribe);
     // timer for chart data
     this.chartInterval = setInterval(this.mqttStore.updateChartData, 5000);
+    // schedule first clearance of browser console at midnight
+    const now = new Date();
+    const midnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+      0,
+      0,
+      0,
+      0,
+    );
+    const timeout = midnight.getTime() - now.getTime();
+    console.debug("clear console in", timeout, "ms");
+    this.clearConsoleHandler = setTimeout(() => this.clearConsole(), timeout);
   },
   beforeUnmount() {
     // unsubscribe our topics
     this.doUnsubscribe(this.mqttTopicsToSubscribe);
     // clear timer for chart data
     clearInterval(this.chartInterval);
+    // clear timer for console clearing
+    clearTimeout(this.clearConsoleHandler);
   },
   methods: {
+    /**
+     * clears the browser console and reschedules this task after 24 hours
+     */
+    clearConsole() {
+      console.clear();
+      console.debug("console cleared at", new Date());
+      this.clearConsoleHandler = setTimeout(() => this.clearConsole(), 24 * 60 * 60 * 1000);
+    },
     /**
      * Establishes a connection to the configured broker
      */

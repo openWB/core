@@ -4,16 +4,26 @@
 			{{ heading }}
 		</template>
 		<template #buttons>
-			<PgSelector
-				widgetid="graphsettings"
-				:show-left-button="true"
-				:show-right-button="true"
-				:ignore-live="true"
-				@shift-left="shiftLeft"
-				@shift-right="shiftRight"
-				@shift-up="shiftUp"
-				@shift-down="shiftDown"
-			/>
+			<div class="d-flex justify-content-end">
+				<PgSelector
+					widgetid="graphsettings"
+					:show-left-button="true"
+					:show-right-button="true"
+					:ignore-live="true"
+					@shift-left="shiftLeft"
+					@shift-right="shiftRight"
+					@shift-up="shiftUp"
+					@shift-down="shiftDown"
+				/>
+				<span
+					v-if="widescreen"
+					type="button"
+					class="ms-1 p-0 pt-1"
+					@click="zoomGraph"
+				>
+					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
+				</span>
+			</div>
 		</template>
 		<figure id="energymeter" class="p-0 m-0">
 			<svg viewBox="0 0 500 500">
@@ -70,7 +80,7 @@ import EMYAxis from './EMYAxis.vue'
 import EMLabels from './EMLabels.vue'
 import WBWidget from '../shared/WBWidget.vue'
 import PgSelector from '../powerGraph/PgSelector.vue'
-import { globalConfig } from '@/assets/js/themeConfig'
+import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import {
 	shiftLeft,
 	shiftRight,
@@ -187,6 +197,14 @@ function printDebugOutput() {
 	console.debug(['usage details:', usageDetails.value])
 	console.debug(['historic summary:', historicSummary])
 }
+function zoomGraph() {
+	globalConfig.zoomedWidget = 2
+	globalConfig.zoomGraph = !globalConfig.zoomGraph
+}
 </script>
 
-<style scoped></style>
+<style scoped>
+.fa-magnifying-glass {
+	color: var(--color-menu);
+}
+</style>

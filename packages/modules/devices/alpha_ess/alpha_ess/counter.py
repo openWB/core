@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import time
-from typing import Dict, Union
+from typing import Callable, Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.devices.alpha_ess.alpha_ess.config import AlphaEssConfiguration, AlphaEssCounterSetup
@@ -29,22 +29,23 @@ class AlphaEssCounter(AbstractCounter):
 
     def update(self):
         time.sleep(0.1)
-        counter_state = self.__get_values_factory()
+        factory_method = self.__get_values_factory()
+        counter_state = factory_method(self.__modbus_id)
         self.store.set(counter_state)
 
-    def __get_values_factory(self) -> CounterState:
+    def __get_values_factory(self) -> Callable[[int], CounterState]:
         if self.__device_config.source == 0 and self.__device_config.version == 0:
             return self.__get_values_before_v123
         else:
             return self.__get_values_since_v123
 
-    def __get_values_before_v123(self) -> CounterState:
+    def __get_values_before_v123(self, unit: int) -> CounterState:
         power, exported, imported = self.__tcp_client.read_holding_registers(
-            0x6, [modbus.ModbusDataType.INT_32] * 3, unit=self.__modbus_id)
+            0x6, [modbus.ModbusDataType.INT_32] * 3, unit=unit)
         exported *= 10
         imported *= 10
         currents = [val / 230 for val in self.__tcp_client.read_holding_registers(
-            0x0000, [ModbusDataType.INT_32]*3, unit=self.__modbus_id)]
+            0x0000, [ModbusDataType.INT_32]*3, unit=unit)]
 
         counter_state = CounterState(
             currents=currents,
@@ -54,14 +55,13 @@ class AlphaEssCounter(AbstractCounter):
         )
         return counter_state
 
-    def __get_values_since_v123(self) -> CounterState:
-        power = self.__tcp_client.read_holding_registers(0x0021, ModbusDataType.INT_32, unit=self.__modbus_id)
+    def __get_values_since_v123(self, unit: int) -> CounterState:
+        power = self.__tcp_client.read_holding_registers(0x0021, ModbusDataType.INT_32, unit=unit)
         exported, imported = [
             val * 10 for val in self.__tcp_client.read_holding_registers(
-                0x0010, [ModbusDataType.INT_32] * 2, unit=self.__modbus_id
-            )]
+                0x0010, [ModbusDataType.INT_32] * 2, unit=unit)]
         currents = [val / 1000 for val in self.__tcp_client.read_holding_registers(
-            0x0017, [ModbusDataType.INT_16]*3, unit=self.__modbus_id)]
+            0x0017, [ModbusDataType.INT_16]*3, unit=unit)]
 
         counter_state = CounterState(
             currents=currents,

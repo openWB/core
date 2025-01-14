@@ -9,16 +9,16 @@ from modules.devices.kostal.kostal_piko_old.config import KostalPikoOldInverterS
 
 
 @pytest.mark.parametrize("sample_file_name, expected_inverter_state",
-                         [pytest.param("sample.html", InverterState(power=-50, exported=73288000), id="Inverter on"),
+                         [pytest.param("sample.html", InverterState(power=-50, exported=200), id="Inverter on"),
                           pytest.param("sample_off.html", InverterState(
-                              power=0, exported=42906000), id="Inverter off")]
+                              power=0, exported=200), id="Inverter off")]
                          )
 def test_parse_html(sample_file_name, expected_inverter_state, monkeypatch):
     # setup
     sample = (Path(__file__).parent / sample_file_name).read_text()
     mock_inverter_value_store = Mock()
     monkeypatch.setattr(inverter, 'get_inverter_value_store', Mock(return_value=mock_inverter_value_store))
-    inv = inverter.KostalPikoOldInverter(KostalPikoOldInverterSetup())
+    inv = inverter.KostalPikoOldInverter(0, KostalPikoOldInverterSetup())
 
     # execution
     inv.update(sample)

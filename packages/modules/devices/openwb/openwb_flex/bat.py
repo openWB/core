@@ -8,6 +8,7 @@ from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
+from modules.common.sdm import Sdm120
 from modules.common.sdm import Sdm630_72
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
@@ -40,7 +41,7 @@ class BatKitFlex(AbstractBat):
                 power = power * -1
             else:
                 _, power = self.__client.get_power()
-            if isinstance(self.__client, Lovato):
+            if isinstance(self.__client, Lovato) or isinstance(self.__client, Sdm120):
                 imported, exported = self.sim_counter.sim_count(power)
             else:
                 imported = self.__client.get_imported()

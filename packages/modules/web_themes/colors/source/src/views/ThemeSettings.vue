@@ -90,8 +90,6 @@
 						:options="clockModes"
 					></RadioInput>
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Kompakte Ladepunktliste"
@@ -103,6 +101,8 @@
 						:options="shortListOptions"
 					/>
 				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Buttonleiste für Ladepunkte"
@@ -143,8 +143,6 @@
 				>
 					<SwitchInput v-model="globalConfig.showAnimations" />
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Zähler anzeigen"
@@ -169,14 +167,8 @@
 				>
 					<SwitchInput v-model="globalConfig.showStandardVehicle" />
 				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Preistabelle anzeigen"
-					icon="fa-car"
-					infotext="Zeige die Strompreistabelle in einer separaten Box an"
-				>
-					<SwitchInput v-model="globalConfig.showPrices" />
-				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Wechselrichter-Details anzeigen"
@@ -192,6 +184,55 @@
 					infotext="Horizontale Darstellung der Energie-Werte"
 				>
 					<SwitchInput v-model="globalConfig.alternativeEnergy" />
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Preistabelle anzeigen"
+					icon="fa-car"
+					infotext="Zeige die Strompreistabelle in einer separaten Box an"
+				>
+					<SwitchInput v-model="globalConfig.showPrices" />
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Untere Markierung in der Preistabelle"
+					icon="fa-car"
+					infotext="Position der unteren Markierung festlegen"
+				>
+					<RangeInput
+						id="lowerPriceBound"
+						v-model="globalConfig.lowerPriceBound"
+						:min="-25"
+						:max="95"
+						:step="0.1"
+						:decimals="1"
+						unit="ct"
+					/>
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Obere Markierung in der Preistabelle"
+					icon="fa-car"
+					infotext="Position der oberen Markierung festlegen"
+				>
+					<RangeInput
+						id="upperPriceBound"
+						v-model="globalConfig.upperPriceBound"
+						:min="-25"
+						:max="95"
+						:step="0.1"
+						:decimals="1"
+						unit="ct"
+					/>
+				</ConfigItem>
+
+				<ConfigItem
+					:fullwidth="true"
+					title="IFrame-Support für Einstellungen (Experimentell)"
+					icon="fa-gear"
+					infotext="Erlaubt das Lesen der Einstellungen, wenn das UI in andere Applikationen eingebettet ist (z.B. HomeAssistant). Erfordert eine mit SSL verschlüsselte Verbindung über HTTPS! Experimentelles Feature."
+				>
+					<SwitchInput v-model="globalConfig.sslPrefs" />
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -222,6 +263,7 @@ import ConfigItem from '@/components/shared/ConfigItem.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
 import WbWidgetFlex from '@/components/shared/WbWidgetFlex.vue'
+import RangeInput from '@/components/shared/RangeInput.vue'
 const emit = defineEmits(['reset-arcs'])
 const colorschemes: [string, string][] = [
 	['Dunkel', 'dark'],

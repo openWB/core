@@ -38,7 +38,8 @@ class SurplusControlled:
                 for cp in preferenced_cps_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
-            self._fix_deviating_evse_current(cp)
+            if cp.data.control_parameter.state in CHARGING_STATES:
+                self._fix_deviating_evse_current(cp)
 
     def _set(self,
              chargepoints: List[Chargepoint],
@@ -57,7 +58,7 @@ class SurplusControlled:
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
             if counter.get_control_range_state(feed_in_yield) == ControlRangeState.MIDDLE:
                 pv_charging = data.data.general_data.data.chargemode_config.pv_charging
-                dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.set_current_prev
+                dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.data.set.current_prev
                 # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
                 # nachregeln, auch wenn der Regelbereich eingehalten wird. Sonst würde zB nicht berücksichtigt werden,
                 # wenn noch ein Fahrzeug dazu kommmt.
@@ -65,7 +66,7 @@ class SurplusControlled:
                     current = available_for_cp
                 else:
                     # Nicht mehr freigeben, wie das Lastmanagement vorgibt
-                    current = min(cp.set_current_prev - cp.data.set.target_current, available_for_cp)
+                    current = min(cp.data.set.current_prev - cp.data.set.target_current, available_for_cp)
             else:
                 current = available_for_cp
 
@@ -109,7 +110,7 @@ class SurplusControlled:
             MAX_CURRENT = 30
         msg = None
         nominal_difference = chargepoint.data.set.charging_ev_data.ev_template.data.nominal_difference
-        if chargepoint.data.set.charging_ev_data.chargemode_changed:
+        if chargepoint.data.set.charging_ev_data.chargemode_changed or chargepoint.data.get.charge_state is False:
             return new_current
         else:
             # Um max. +/- 5A pro Zyklus regeln
@@ -138,15 +139,17 @@ class SurplusControlled:
         Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen. Wenn das
         Auto nur in 1A-Schritten regeln kann, rundet es und lädt immer etwas mehr oder weniger als Soll-Strom. Schlägt
         man den EVSE-Strom auf, pendelt die Regelung um diesen 1A-Schritt."""
+        MAX_DEVIATION = 1.1
         evse_current = chargepoint.data.get.evse_current
-        if evse_current and chargepoint.data.set.current != chargepoint.set_current_prev:
+        if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
             formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
-            current_with_offset = chargepoint.data.set.current + \
-                formatted_evse_current - max(chargepoint.data.get.currents)
-            current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
-            if current != chargepoint.data.set.current:
-                log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
-            chargepoint.data.set.current = current
+            offset = formatted_evse_current - max(chargepoint.data.get.currents)
+            if abs(offset) >= MAX_DEVIATION:
+                current_with_offset = chargepoint.data.set.current + offset
+                current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
+                if current != chargepoint.data.set.current:
+                    log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
+                chargepoint.data.set.current = current
 
     def check_submode_pv_charging(self) -> None:
         evu_counter = data.data.counter_all_data.get_evu_counter()

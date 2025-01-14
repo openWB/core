@@ -101,13 +101,6 @@ const iScale = computed(() => {
 		.range([0, props.width])
 })
 
-/* const iScaleMonth = computed(() =>
-	scaleBand<number>()
-		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
-		.range([0, props.width + props.margin.right])
-		.paddingInner(0.4),
-) */
-
 const yScale = computed(() => {
 	return scaleLinear()
 		.range([props.height + 10, 2 * props.height])

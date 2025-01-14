@@ -143,7 +143,7 @@ def create_device(device_config: Enphase):
                 log.error(f"unknown version: {device_config.configuration.version}")
                 return
             for component in components:
-                components[component].update(json_response, json_live_data)
+                component.update(json_response, json_live_data)
 
     read_live_data = False
     token_tries = 0
