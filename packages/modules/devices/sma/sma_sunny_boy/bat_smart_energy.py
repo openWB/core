@@ -13,7 +13,8 @@ from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSe
 
 
 class SunnyBoySmartEnergyBat(AbstractBat):
-    SMA_INT32_NAN = 0xFFFFFFFF  # SMA uses this value to represent NaN
+    SMA_UINT32_NAN = 0xFFFFFFFF  # SMA uses this value to represent NaN
+    SMA_UINT_64_NAN = 0xFFFFFFFFFFFFFFFF  # SMA uses this value to represent NaN
 
     def __init__(self,
                  device_id: int,
@@ -36,7 +37,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         current = self.__tcp_client.read_holding_registers(30843, ModbusDataType.INT_32, unit=unit)/-1000
         voltage = self.__tcp_client.read_holding_registers(30851, ModbusDataType.INT_32, unit=unit)/100
 
-        if soc == self.SMA_INT32_NAN:
+        if soc == self.SMA_UINT32_NAN:
             # If the storage is empty and nothing is produced on the DC side, the inverter does not supply any values.
             soc = 0
             power = 0
@@ -44,6 +45,11 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             power = current*voltage
         exported = self.__tcp_client.read_holding_registers(31401, ModbusDataType.UINT_64, unit=3)
         imported = self.__tcp_client.read_holding_registers(31397, ModbusDataType.UINT_64, unit=3)
+
+        if exported == self.SMA_UINT_64_NAN or imported == self.SMA_UINT_64_NAN:
+            raise ValueError(f'Batterie lieferte nicht plausible Werte. Export: {exported}, Import: {imported}. ',
+                             'Sobald die Batterie geladen/entladen wird sollte sich dieser Wert ändern, ',
+                             'andernfalls kann ein Defekt vorliegen.')
 
         return BatState(
             power=power,

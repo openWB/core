@@ -20,9 +20,9 @@ def fetch(vehicle_config: TeslaSoc, vehicle_update_data: VehicleUpdateData) -> C
     vehicle_config.configuration.token = api.validate_token(vehicle_config.configuration.token)
     if vehicle_update_data.charge_state is False:
         _wake_up_car(vehicle_config)
-    soc, range = api.request_soc_range(
+    soc, range, soc_timestamp = api.request_soc_range(
         vehicle=vehicle_config.configuration.tesla_ev_num, token=vehicle_config.configuration.token)
-    return CarState(soc, range)
+    return CarState(soc=soc, range=range, soc_timestamp=soc_timestamp)
 
 
 def _wake_up_car(vehicle_config: TeslaSoc):

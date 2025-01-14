@@ -93,7 +93,7 @@ def time_charging_factory() -> TimeCharging:
 @dataclass
 class ChargemodeConfig:
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
-    phase_switch_delay: int = field(default=7, metadata={
+    phase_switch_delay: int = field(default=5, metadata={
         "topic": "chargemode_config/phase_switch_delay"})
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     retry_failed_phase_switches: bool = field(

@@ -30,7 +30,7 @@ class ErrorTimerContext:
                 Pub().pub(self.topic, self.error_timestamp)
             log.error(exception)
             if self.hide_exception is False or timecheck.check_timestamp(self.error_timestamp, self.timeout) is False:
-                raise exception
+                return False
         return True
 
     def error_counter_exceeded(self) -> bool:

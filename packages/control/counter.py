@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.chargemode import Chargemode
-from control.ev import Ev
+from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
@@ -492,6 +492,7 @@ class Counter:
                 else:
                     evu_counter.data.set.released_surplus -= (pv_config.switch_on_threshold
                                                               * chargepoint.data.control_parameter.phases)
+                chargepoint.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
