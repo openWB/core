@@ -10,27 +10,29 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.store import get_inverter_value_store
-from modules.devices.solax.solax.config import SolaxInverterSetup
+from modules.devices.solax.solax.config import SolaxInverterSetup, Solax
+from modules.devices.solax.solax.version import SolaxVersion
 
 
 class SolaxInverter(AbstractInverter):
     def __init__(self,
-                 device_id: int,
+                 device_config: Union[Dict, Solax],
                  component_config: Union[Dict, SolaxInverterSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
-                 modbus_id: int) -> None:
+                 tcp_client: modbus.ModbusTcpClient_) -> None:
+        self.device_config = device_config
         self.component_config = dataclass_from_dict(SolaxInverterSetup, component_config)
-        self.__modbus_id = modbus_id
         self.__tcp_client = tcp_client
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
+        unit = self.device_config.configuration.modbus_id
         with self.__tcp_client:
-            power_temp = self.__tcp_client.read_input_registers(10, [ModbusDataType.UINT_16] * 2, unit=self.__modbus_id)
-            power = sum(power_temp) * -1
-            exported = self.__tcp_client.read_input_registers(82, ModbusDataType.UINT_32, wordorder=Endian.Little,
-                                                              unit=self.__modbus_id) * 100
+            if SolaxVersion(self.device_config.configuration.version) == SolaxVersion.g3:
+                power_temp = self.__tcp_client.read_input_registers(10, [ModbusDataType.UINT_16] * 2, unit=unit)
+                power = sum(power_temp) * -1
+                exported = self.__tcp_client.read_input_registers(82, ModbusDataType.UINT_32, wordorder=Endian.Little,
+                                                                  unit=unit) * 100
 
         inverter_state = InverterState(
             power=power,

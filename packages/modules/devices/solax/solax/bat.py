@@ -10,27 +10,28 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
-from modules.devices.solax.solax.config import SolaxBatSetup
+from modules.devices.solax.solax.config import SolaxBatSetup, Solax
+from modules.devices.solax.solax.version import SolaxVersion
 
 
 class SolaxBat(AbstractBat):
     def __init__(self,
-                 device_id: int,
+                 device_config: Union[Dict, Solax],
                  component_config: Union[Dict, SolaxBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
-                 modbus_id: int) -> None:
-        self.__device_id = device_id
-        self.__modbus_id = modbus_id
+                 tcp_client: modbus.ModbusTcpClient_) -> None:
+        self.device_config = device_config
         self.component_config = dataclass_from_dict(SolaxBatSetup, component_config)
         self.__tcp_client = tcp_client
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
+        unit = self.device_config.configuration.modbus_id
         with self.__tcp_client:
-            power = self.__tcp_client.read_input_registers(22, ModbusDataType.INT_16, unit=self.__modbus_id)
-            soc = self.__tcp_client.read_input_registers(28, ModbusDataType.UINT_16, unit=self.__modbus_id)
+            if SolaxVersion(self.device_config.configuration.version) == SolaxVersion.g3:
+                power = self.__tcp_client.read_input_registers(22, ModbusDataType.INT_16, unit=unit)
+                soc = self.__tcp_client.read_input_registers(28, ModbusDataType.UINT_16, unit=unit)
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
