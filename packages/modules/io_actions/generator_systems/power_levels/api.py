@@ -12,13 +12,6 @@ control_command_log = logging.getLogger("steuve_control_command")
 
 
 class PowerLevels(AbstractIoAction):
-    PATTERN = [
-        {"matrix": (False, False, False), "value": 1},
-        {"matrix": (True, False, False), "value": 0.6},
-        {"matrix": (False, True, False), "value": 0.3},
-        {"matrix": (False, False, True), "value": 0},
-    ]
-
     def __init__(self, config: PowerLevelsSetup):
         self.config = config
         comp = get_component_obj_by_id(self.config.configuration.component_id, [])
@@ -31,39 +24,44 @@ class PowerLevels(AbstractIoAction):
 
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-            io_device_input = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                                  ].data.get.digital_input
-            s1 = io_device_input[self.config.configuration.digital_input[0]]
-            s2 = io_device_input[self.config.configuration.digital_input[1]]
-            w3 = io_device_input[self.config.configuration.digital_input[2]]
-            for matrix, value in self.PATTERN.items():
-                if matrix == (s1, s2, w3) and value != 1:
-                    comp = get_component_obj_by_id(self.config.configuration.component_id, [])
-                    if self.timestamp:
-                        Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                        control_command_log.info(
-                            f"Erzeugungsanlage (EZA) {comp.config.name} mit ID {self.config.configuration.component_id}"
-                            f" auf {value*100}% begrenzt. Leistungswerte vor Ausführung des Steuerbefehls:")
+            for pattern in self.config.configuration.input_pattern:
+                for digital_input, value in pattern["input_matrix"].items():
+                    if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+                            digital_input] != value:
+                        break
+                else:
+                    # Alle digitalen Eingänge entsprechen dem Pattern
+                    if pattern["value"] != 1:
+                        comp = get_component_obj_by_id(self.config.configuration.component_id, [])
+                        if self.timestamp:
+                            Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
+                            control_command_log.info(
+                                f"Erzeugungsanlage (EZA) {comp.config.name} mit ID "
+                                f"{self.config.configuration.component_id} auf {value*100}% begrenzt. "
+                                "Leistungswerte vor Ausführung des Steuerbefehls:")
 
-                    evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
-                    msg = (f"EVU-Zähler: {evu_counter.data.get.powers}W"
-                           f"EZA: {data.data.pv_data[f'pv{self.config.configuration.component_id}'].data.get.power}W")
-                    control_command_log.info(msg)
+                        evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
+                        msg = (
+                            f"EVU-Zähler: {evu_counter.data.get.powers}W "
+                            f"EZA: {data.data.pv_data[f'pv{self.config.configuration.component_id}'].data.get.power}W")
+                        control_command_log.info(msg)
             else:
                 if self.timestamp:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
-                    control_command_log.info("Begerenzung der EZA aufgehoben.")
+                    control_command_log.info("Begrenzung der EZA aufgehoben.")
 
     def ripple_control_receiver(self, component_id: int) -> float:
-        io_device_input = data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input
-        s1 = io_device_input[self.config.configuration.digital_input[0]]
-        s2 = io_device_input[self.config.configuration.digital_input[1]]
-        w3 = io_device_input[self.config.configuration.digital_input[2]]
-        for matrix, value in self.PATTERN.items():
-            if matrix == (s1, s2, w3):
+        for pattern in self.config.configuration.input_pattern:
+            for digital_input, value in pattern["input_matrix"].items():
+                if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+                        digital_input] != value:
+                    break
+            else:
+                # Alle digitalen Eingänge entsprechen dem Pattern
                 get_component_obj_by_id(component_id, []).set_power_limit(value)
         else:
-            raise Exception(f"{[s1, s2, w3]} ist kein gültiges Pattern.")
+            # Zustand entspricht keinem Pattern
+            control_command_log.error("Kein passendes Pattern gefunden!")
 
 
 def create_action(config: PowerLevelsSetup):
