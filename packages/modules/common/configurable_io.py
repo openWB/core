@@ -36,10 +36,10 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
                         io_state.digital_input[pin] = not state
                 self.store.set(io_state)
 
-    def write(self):
+    def write(self, digital_output):
         if hasattr(self, "component_writer"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
             with SingleComponentUpdateContext(self.fault_state):
-                io_state = self.component_writer()
+                io_state = self.component_writer(digital_output)
                 if io_state is not None:
                     self.store.set(io_state)
