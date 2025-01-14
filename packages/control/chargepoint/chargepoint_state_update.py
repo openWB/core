@@ -44,7 +44,6 @@ class ChargepointStateUpdate:
                     cp = copy.deepcopy(self.chargepoint)
                 except TypeError:
                     cp = Chargepoint(self.chargepoint.num, None)
-                    cp.set_current_prev = copy.deepcopy(self.chargepoint.set_current_prev)
                     cp.data = copy.deepcopy(self.chargepoint.data)
                     cp.chargepoint_module = self.chargepoint.chargepoint_module
                 cp.template = copy.deepcopy(self.cp_template_data[f"cpt{self.chargepoint.data.config.template}"])

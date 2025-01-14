@@ -6,6 +6,7 @@ import requests
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.fronius.fronius.bat import FroniusBat
 from modules.devices.fronius.fronius.config import (Fronius, FroniusBatSetup, FroniusSecondaryInverterSetup,
@@ -41,23 +42,30 @@ def create_device(device_config: Fronius):
     def update_components(components: Iterable[fronius_component_classes]):
         inverter_response = None
         for component in components:
-            if component.component_config.type == "inverter" or component.component_config.type == "inverter_secondary":
-                if inverter_response is None:
-                    try:
-                        inverter_response = req.get_http_session().get(
-                            (f'http://{device_config.configuration.ip_address}'
-                                '/solar_api/v1/GetPowerFlowRealtimeData.fcgi'),
-                            params=(('Scope', 'System'),),
-                            timeout=3).json()
-                    except (requests.ConnectTimeout, requests.ConnectionError) as e:
-                        inverter_response = e
-                    # Nachtmodus: WR ist ausgeschaltet
-                component.update(inverter_response)
+            with SingleComponentUpdateContext(component.fault_state):
+                if (
+                    component.component_config.type == "inverter" or
+                    component.component_config.type == "inverter_secondary"
+                ):
+                    if inverter_response is None:
+                        try:
+                            inverter_response = req.get_http_session().get(
+                                (f'http://{device_config.configuration.ip_address}'
+                                    '/solar_api/v1/GetPowerFlowRealtimeData.fcgi'),
+                                params=(('Scope', 'System'),),
+                                timeout=3).json()
+                        except (requests.ConnectTimeout, requests.ConnectionError) as e:
+                            inverter_response = e
+                        # Nachtmodus: WR ist ausgeschaltet
+                    component.update(inverter_response)
 
         for component in components:
-            if (component.component_config.type != "inverter" and
-                    component.component_config.type != "inverter_secondary"):
-                component.update()
+            with SingleComponentUpdateContext(component.fault_state):
+                if (
+                    component.component_config.type != "inverter" and
+                    component.component_config.type != "inverter_secondary"
+                ):
+                    component.update()
 
     return ConfigurableDevice(
         device_config=device_config,

@@ -29,18 +29,18 @@
 		<figure v-show="graphData.data.length > 0" id="powergraph" class="p-0 m-0">
 			<svg id="powergraph" :viewBox="'0 0 ' + width + ' ' + height">
 				<!-- Draw the source graph -->
-				<PGSourceGraph
+				<PgSourceGraph
 					:width="width - margin.left - 2 * margin.right"
 					:height="(height - margin.top - margin.bottom) / 2"
 					:margin="margin"
 				/>
-				<PGUsageGraph
+				<PgUsageGraph
 					:width="width - margin.left - 2 * margin.right"
 					:height="(height - margin.top - margin.bottom) / 2"
 					:margin="margin"
 					:stack-order="globalConfig.usageStackOrder"
 				/>
-				<PGXAxis
+				<PgXAxis
 					:width="width - margin.left - 2 * margin.right"
 					:height="height - margin.top - margin.bottom"
 					:margin="margin"
@@ -52,7 +52,7 @@
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today' ||
 								graphData.graphMode == 'live') &&
-							Object.values(chargePoints).length > 0
+							Object.values(vehicles).filter((v) => v.visible).length > 0
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -64,7 +64,7 @@
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today' ||
 								graphData.graphMode == 'live') &&
-							Object.values(chargePoints).length > 1
+							Object.values(vehicles).filter((v) => v.visible).length > 1
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -101,7 +101,7 @@
 					:margin="margin"
 					:data="graphData.data"
 				></PgToolTips>
-				<g id="button" @click="changeStackOrder">
+				<g id="button" type="button" @click="changeStackOrder">
 					<text
 						:x="width - 10"
 						:y="height - 10"
@@ -120,9 +120,9 @@
 
 <script setup lang="ts">
 import WBWidget from '../shared/WBWidget.vue'
-import PGSourceGraph from './PGSourceGraph.vue'
-import PGUsageGraph from './PGUsageGraph.vue'
-import PGXAxis from './PGXAxis.vue'
+import PgSourceGraph from './PgSourceGraph.vue'
+import PgUsageGraph from './PgUsageGraph.vue'
+import PgXAxis from './PgXAxis.vue'
 import { globalData } from '@/assets/js/model'
 import {
 	graphData,
@@ -139,7 +139,7 @@ import {
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
-import { chargePoints } from '../chargePointList/model'
+import { vehicles } from '../chargePointList/model'
 import PgSelector from './PgSelector.vue'
 import { zoom, type D3ZoomEvent, type Selection, select } from 'd3'
 import { onMounted } from 'vue'
@@ -186,6 +186,7 @@ function filter(event: PointerEvent | WheelEvent) {
 }
 
 function zoomGraph() {
+	globalConfig.zoomedWidget = 1
 	globalConfig.zoomGraph = !globalConfig.zoomGraph
 }
 

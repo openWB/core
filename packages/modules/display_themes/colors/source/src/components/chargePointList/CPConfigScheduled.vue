@@ -1,35 +1,37 @@
 <template>
-	<div class="schedulestable p-3 grid12">
-		<div class="subtitle grid-col-12">Pläne für Zielladen:</div>
-		<div v-if="plans.length == 0" class="warning grid-col-12 p-5">
+	<div class="d-flex flex-column p-3">
+		<div class="subtitle mb-4">Pläne für Zielladen:</div>
+		<div v-if="plans.length == 0" class="warning p-5">
 			Es sind noch keine Pläne definiert. Pläne für das Zielladen können in der
 			Web-App festgelegt werden.
 		</div>
-		<div class="subgrid tableheader">
-			<span class="grid-col-2 grid-left"></span>
-			<span class="grid-col-3 grid-left">Startzeit</span>
-			<span class="grid-col-2">SoC-Ziel</span>
-			<span class="grid-col-2">SoC-Limit</span>
-			<span class="grid-col-3">Wiederholung</span>
-		</div>
-		<div
-			v-for="(plan, i) in plans"
-			:key="i"
-			:style="cellStyle(i)"
-			class="subgrid tableline"
-		>
-			<span class="grid-col-2">
-				<SwitchInput
-					v-model="plan.active"
-					@update:model-value="updatePlanState(i)"
-				>
-				</SwitchInput>
-			</span>
-			<span class="grid-col-3 grid-left">{{ timeString(i) }}</span>
-			<span class="grid-col-2">{{ plan.limit.soc_scheduled }}%</span>
-			<span class="grid-col-2">{{ plan.limit.soc_limit }}%</span>
-			<span class="grid-col-3">{{ freqNames[plan.frequency.selected] }}</span>
-		</div>
+
+		<table class="table table-dark">
+			<thead>
+				<tr>
+					<th></th>
+					<th>Startzeit</th>
+					<th>SoC-Ziel</th>
+					<th>SoC-Limit</th>
+					<th>Wiederholung</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr v-for="(plan, i) in plans" :key="i" :style="cellStyle(i)">
+					<td>
+						<SwitchInput
+							v-model="plan.active"
+							@update:model-value="updatePlanState(i)"
+						>
+						</SwitchInput>
+					</td>
+					<td>{{ timeString(i) }}</td>
+					<td>{{ plan.limit.soc_scheduled }}%</td>
+					<td>{{ plan.limit.soc_limit }}%</td>
+					<td>{{ freqNames[plan.frequency.selected] }}</td>
+				</tr>
+			</tbody>
+		</table>
 	</div>
 </template>
 
@@ -75,26 +77,6 @@ function cellStyle(key: number) {
 </script>
 
 <style scoped>
-.schedulestable {
-	justify-content: center;
-	gap: 20px;
-}
-.tableline {
-	color: var(--color-fg);
-	background-color: var(--color-bg);
-	text-align: center;
-	font-size: var(--font-settings);
-	margin-top: 0px;
-	align-items: center;
-}
-.tableheader {
-	color: var(--color-menu);
-	background-color: var(--color-bg);
-	text-align: center;
-	font-style: normal;
-	font-size: var(--font-settings);
-	font-weight: bold;
-}
 .subtitle {
 	font-size: var(--font-large);
 	font-weight: bold;
@@ -103,5 +85,11 @@ function cellStyle(key: number) {
 	font-size: var(--font-large);
 	font-weight: bold;
 	color: var(--color-evu);
+}
+td {
+	background-color: var(--color-bg) !important;
+}
+th {
+	background-color: var(--color-bg) !important;
 }
 </style>

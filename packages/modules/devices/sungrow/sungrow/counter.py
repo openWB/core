@@ -25,14 +25,21 @@ class SungrowCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.fault_text = "Dieser Sungrow Zähler liefert von Werk aus (entgegen der Dokumentation) "
+        "keine Leistung der einzelnen Phasen. "
+        "Das Lastmanagement ist daher nur anhand der Gesamtleistung (nicht phasenbasiert) möglich."
 
     def update(self, pv_power: float):
         unit = self.device_config.configuration.modbus_id
         if self.device_config.configuration.version in (Version.SH, Version.SH_winet_dongle):
             power = self.__tcp_client.read_input_registers(13009, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -1
-            powers = self.__tcp_client.read_input_registers(5602, [ModbusDataType.INT_32] * 3,
-                                                            wordorder=Endian.Little, unit=unit)
+            try:
+                powers = self.__tcp_client.read_input_registers(5602, [ModbusDataType.INT_32] * 3,
+                                                                wordorder=Endian.Little, unit=unit)
+            except Exception:
+                powers = None
+                self.fault_state.warning(self.fault_text)
         else:
             if pv_power != 0:
                 power = self.__tcp_client.read_input_registers(5082, ModbusDataType.INT_32,
@@ -40,8 +47,12 @@ class SungrowCounter(AbstractCounter):
             else:
                 power = self.__tcp_client.read_input_registers(5090, ModbusDataType.INT_32,
                                                                wordorder=Endian.Little, unit=unit)
-            powers = self.__tcp_client.read_input_registers(5084, [ModbusDataType.INT_32] * 3,
-                                                            wordorder=Endian.Little, unit=unit)
+            try:
+                powers = self.__tcp_client.read_input_registers(5084, [ModbusDataType.INT_32] * 3,
+                                                                wordorder=Endian.Little, unit=unit)
+            except Exception:
+                powers = None
+                self.fault_state.warning(self.fault_text)
 
         frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
         if self.device_config.configuration.version == Version.SH_winet_dongle:

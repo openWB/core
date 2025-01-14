@@ -69,22 +69,34 @@
 
 					<!-- Show the SoC for the first two cars -->
 					<PMLabel
-						v-if="vehicle1"
+						v-if="
+							topVehicles[0] != undefined &&
+							vehicles[topVehicles[0]] != undefined
+						"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
-							trimName(vehicle1.name) + ': ' + Math.round(vehicle1.soc) + '%'
+							trimName(vehicles[topVehicles[0]].name) +
+							': ' +
+							Math.round(vehicles[topVehicles[0]].soc) +
+							'%'
 						"
 						:labelcolor="chargepoints[0].color"
 						:anchor="'start'"
 						:config="globalConfig"
 					/>
 					<PMLabel
-						v-if="vehicle2"
+						v-if="
+							topVehicles[1] != undefined &&
+							vehicles[topVehicles[1]] != undefined
+						"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
-							trimName(vehicle2.name) + ': ' + Math.round(vehicle2.soc) + '%'
+							trimName(vehicles[topVehicles[1]].name) +
+							': ' +
+							Math.round(vehicles[topVehicles[1]].soc) +
+							'%'
 						"
 						:labelcolor="
 							chargepoints[1] ? chargepoints[1].color : 'var(--color-charging)'
@@ -153,7 +165,11 @@ import {
 	masterData,
 } from '@/assets/js/model'
 import { shDevices } from '../smartHome/model'
-import { chargePoints, vehicles } from '@/components/chargePointList/model'
+import {
+	chargePoints,
+	vehicles,
+	topVehicles,
+} from '@/components/chargePointList/model'
 import PMSourceArc from './PMSourceArc.vue'
 import PMUsageArc from './PMUsageArc.vue'
 import PMLabel from './PMLabel.vue'
@@ -240,36 +256,6 @@ const scheme = computed(() => schemes[valuesToDisplay.value.length - 1])
 function labelCoordinates(item: number) {
 	return labelPositions[scheme.value[item]]
 }
-
-const vehicle1 = computed(() => {
-	if (
-		chargepoints.value.length >= 1 &&
-		chargepoints.value[0].connectedVehicle != undefined &&
-		vehicles[chargepoints.value[0].connectedVehicle]
-	) {
-		return vehicles[chargepoints.value[0].connectedVehicle]
-	} else {
-		return undefined
-	}
-})
-const vehicle2 = computed(() => {
-	if (chargepoints.value.length < 1) {
-		return undefined
-	} else if (chargepoints.value.length == 1) {
-		if (Object.values(vehicles).filter((v) => v.visible).length > 1) {
-			const cars = Object.values(vehicles).filter((v) => v.visible)
-			if (cars[0].id == chargepoints.value[0].connectedVehicle) {
-				return cars[1]
-			} else {
-				return cars[0]
-			}
-		} else {
-			return undefined
-		}
-	} else {
-		return vehicles[chargepoints.value[1].connectedVehicle] ?? undefined
-	}
-})
 
 // methods
 function trimName(name: string) {

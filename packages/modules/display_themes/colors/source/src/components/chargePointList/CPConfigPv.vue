@@ -1,5 +1,5 @@
 <template>
-	<div class="pvsettings pt-5 grid12">
+	<div class="pvsettings pt-2">
 		<!-- Maximum SoC -->
 		<ConfigItem
 			title="Ladestand begrenzen"
@@ -140,8 +140,11 @@ const limitSoc = computed({
 
 <style scoped>
 .pvsettings {
+	display: grid;
 	justify-content: center;
+	align-items: center;
 	grid-gap: 20px;
+	grid-template-columns: auto auto;
 }
 .chargeConfigSelect {
 	background: var(--color-bg);
