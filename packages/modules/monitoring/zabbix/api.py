@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-from helpermodules.utils.run_command import run_command
 from modules.common.abstract_device import DeviceDescriptor
 from modules.monitoring.zabbix.config import Zabbix
 
@@ -35,7 +34,6 @@ def create_config(config: Zabbix):
     set_value(CONFIG_PATH, "TLSAccept", "psk")
     set_value(CONFIG_PATH, "TLSPSKFile", KEY_PATH)
     set_value(CONFIG_PATH, "TLSPSKIdentity", config.configuration.psk_identifier)
-    run_command(["sudo", "systemctl", "restart", "zabbix-agent2"], process_exception=True)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Zabbix)
