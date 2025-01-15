@@ -48,7 +48,6 @@ class ZCSCounter(AbstractCounter):
             imported=imported,
             exported=exported,
             power=power,
-            powers=powers,
             frequency=frequency,
         )
         self.store.set(counter_state)
