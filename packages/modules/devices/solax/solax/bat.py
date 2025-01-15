@@ -11,7 +11,6 @@ from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.solax.solax.config import SolaxBatSetup, Solax
-from modules.devices.solax.solax.version import SolaxVersion
 
 
 class SolaxBat(AbstractBat):
@@ -29,9 +28,9 @@ class SolaxBat(AbstractBat):
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
         with self.__tcp_client:
-            if SolaxVersion(self.device_config.configuration.version) == SolaxVersion.g3:
-                power = self.__tcp_client.read_input_registers(22, ModbusDataType.INT_16, unit=unit)
-                soc = self.__tcp_client.read_input_registers(28, ModbusDataType.UINT_16, unit=unit)
+            # kein Speicher für Versionen G2 und G4
+            power = self.__tcp_client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=unit)
+            soc = self.__tcp_client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=unit)
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(

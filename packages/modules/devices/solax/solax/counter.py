@@ -28,9 +28,12 @@ class SolaxCounter(AbstractCounter):
     def update(self):
         unit = self.device_config.configuration.modbus_id
         with self.__tcp_client:
+            if SolaxVersion(self.device_config.configuration.version) == SolaxVersion.g2:
+                power = self.__tcp_client.read_input_registers(
+                    70, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
             if SolaxVersion(self.device_config.configuration.version) == SolaxVersion.g3:
-                power = self.__tcp_client.read_input_registers(70, ModbusDataType.INT_32, wordorder=Endian.Little,
-                                                               unit=unit) * -1
+                power = self.__tcp_client.read_input_registers(
+                    70, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
                 frequency = self.__tcp_client.read_input_registers(7, ModbusDataType.UINT_16, unit=unit) / 100
                 try:
                     powers = [-value for value in self.__tcp_client.read_input_registers(
@@ -42,6 +45,9 @@ class SolaxCounter(AbstractCounter):
                                       for value in self.__tcp_client.read_input_registers(
                                           72, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit
                                           )]
+            else:
+                power = self.__tcp_client.read_input_registers(
+                    70, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
 
         counter_state = CounterState(
             imported=imported,
