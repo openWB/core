@@ -110,7 +110,7 @@ class SurplusControlled:
             MAX_CURRENT = 30
         msg = None
         nominal_difference = chargepoint.data.set.charging_ev_data.ev_template.data.nominal_difference
-        if chargepoint.data.set.charging_ev_data.chargemode_changed or chargepoint.data.get.charge_state is False:
+        if chargepoint.chargemode_changed or chargepoint.data.get.charge_state is False:
             return new_current
         else:
             # Um max. +/- 5A pro Zyklus regeln
