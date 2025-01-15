@@ -36,16 +36,20 @@ def create_config(config: Zabbix):
         config_file.truncate()
 
 
-def enable(config: Zabbix):
-    os.system("sudo ./runs/install_zabbix.sh")
-    create_config(config)
-    os.system("sudo systemctl restart zabbix-agent2")
-    os.system("sudo systemctl enable zabbix-agent2")
+def create_start_monitoring(config: Zabbix):
+    def start_monitoring():
+        os.system("sudo ./runs/install_zabbix.sh")
+        create_config(config)
+        os.system("sudo systemctl restart zabbix-agent2")
+        os.system("sudo systemctl enable zabbix-agent2")
+    return start_monitoring
 
 
-def disable():
-    os.system("sudo systemctl stop zabbix-agent2")
-    os.system("sudo systemctl disable zabbix-agent2")
+def create_stop_monitoring():
+    def stop_monitoring():
+        os.system("sudo systemctl stop zabbix-agent2")
+        os.system("sudo systemctl disable zabbix-agent2")
+    return stop_monitoring
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Zabbix)

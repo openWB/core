@@ -28,6 +28,7 @@ from helpermodules.utils.topic_parser import decode_payload, get_index, get_seco
 from helpermodules.pub import Pub
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
+from modules.common.configurable_monitoring import ConfigurableMonitoring
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
@@ -690,13 +691,15 @@ class SubData:
                     if self.event_subdata_initialized.is_set():
                         config = decode_payload(msg.payload)
                         if config["type"] is None:
-                            mod = importlib.import_module(".monitoring.zabbix.api", "modules")
-                            mod.disable()
+                            var.monitoring_stop()
+                            var.mon_module = None
                         else:
                             if config["type"] == "zabbix":
                                 mod = importlib.import_module(f".monitoring.{config['type']}.api", "modules")
                                 config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
-                                mod.enable(config)
+                                var.mon_module = ConfigurableMonitoring(mod.create_start_monitoring(config),
+                                                                        mod.create_stop_monitoring)
+                                var.monitoring_start()
                     else:
                         log.debug("skipping monitoring config on startup")
                 else:
