@@ -72,16 +72,8 @@ class Chargepoint(ChargepointRfidMixin):
             self.template: CpTemplate = None
             self.chargepoint_module: AbstractChargepoint = None
             self.num = index
-
-
-<< << << < HEAD
-== == == =
-            # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
-            # (für Control-Pilot-Unterbrechung)
-            self.set_current_prev = 0.0
             self.chargemode_changed = False
             self.submode_changed = False
->>>>>> > 5fb37bee2(dashboard temporary settings)
             # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht veröffentlichen
             self.data: ChargepointData = ChargepointData()
             self.data.set_event(event)
@@ -637,6 +629,18 @@ class Chargepoint(ChargepointRfidMixin):
         elif self.data.set.current == 0:
             self.data.control_parameter.timestamp_charge_start = None
 
+    def set_chargemode_changed(self, submode: str) -> None:
+        if ((submode == "time_charging" and self.data.control_parameter.chargemode != "time_charging") or
+                (submode != "time_charging" and
+                 self.data.control_parameter.chargemode != self.data.set.charge_template.data.chargemode.selected)):
+            self.chargemode_changed = True
+            log.debug("Änderung des Lademodus")
+        else:
+            self.chargemode_changed = False
+
+    def set_submode_changed(self, submode: str) -> None:
+        self.submode_changed = (submode != self.data.control_parameter.submode)
+
     def update_ev(self, ev_list: Dict[str, Ev]) -> None:
         self._validate_rfid()
         charging_possible = self.is_charging_possible()[0]
@@ -688,7 +692,7 @@ class Chargepoint(ChargepointRfidMixin):
                     self.set_required_currents(required_current)
                     self.check_phase_switch_completed()
 
-                    if charging_ev.chargemode_changed or charging_ev.submode_changed:
+                    if self.chargemode_changed or self.submode_changed:
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                             self, charging_ev)
                         charging_ev.reset_phase_switch(self.data.control_parameter)
