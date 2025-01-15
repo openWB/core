@@ -31,17 +31,6 @@ class ZCSCounter(AbstractCounter):
         # 0x020C Grid frequency UInt 0-100 Hz Unit 0,01 Hz
         frequency = self.client.read_input_registers(
             0x020C, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
-        try:
-            # 0x0206 A phase voltage UInt 0-1000V unit 0,1V
-            # 0x0207 A phase current Int 0-100A Unit 0,01A, rms
-            # 0x0230 R-Phase voltage UInt Unit 0,1V
-            # 0x0231 R-Phase current UInt Unit 0,01A
-            powers = (self.client.read_input_registers(
-                0x0206, ModbusDataType.UINT_16, unit=self.__modbus_id) / 10) * \
-                (self.client.read_input_registers(0x0207, ModbusDataType.INT_16, unit=self.__modbus_id) / 10)
-        except Exception:
-            powers = None
-
         exported = [value * 10
                     for value in self.client.read_input_registers(
                         # 0x021E Total energy injected into the grid UInt16 Unit 1kWh high
