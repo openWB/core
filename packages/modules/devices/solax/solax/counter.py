@@ -30,24 +30,32 @@ class SolaxCounter(AbstractCounter):
         with self.__tcp_client:
             if SolaxVersion(self.device_config.configuration.version) == SolaxVersion.g2:
                 power = self.__tcp_client.read_input_registers(
-                    70, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
+                    0x043B, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
+                frequency = self.__tcp_client.read_input_registers(0x0407, ModbusDataType.UINT_16, unit=unit) / 100
+                powers = [-value for value in self.__tcp_client.read_input_registers(
+                    0x0704, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit)]
+                exported, imported = [value * 10 for value in self.__tcp_client.read_input_registers(
+                    0x043D, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit)]
+
             if SolaxVersion(self.device_config.configuration.version) == SolaxVersion.g3:
                 power = self.__tcp_client.read_input_registers(
-                    70, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
-                frequency = self.__tcp_client.read_input_registers(7, ModbusDataType.UINT_16, unit=unit) / 100
+                    0x0046, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
+                frequency = self.__tcp_client.read_input_registers(0x0007, ModbusDataType.UINT_16, unit=unit) / 100
                 try:
                     powers = [-value for value in self.__tcp_client.read_input_registers(
-                        130, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit
-                    )]
+                        0x0082, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit)]
                 except Exception:
                     powers = None
-                exported, imported = [value * 10
-                                      for value in self.__tcp_client.read_input_registers(
-                                          72, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit
-                                          )]
+                exported, imported = [value * 10 for value in self.__tcp_client.read_input_registers(
+                    0x0048, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit)]
+
             else:
                 power = self.__tcp_client.read_input_registers(
-                    70, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
+                    0x0409, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
+                frequency = self.__tcp_client.read_input_registers(0x0406, ModbusDataType.UINT_16, unit=unit) / 100
+                powers = None
+                exported, imported = [value * 100 for value in self.__tcp_client.read_input_registers(
+                    0x042F, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit)]
 
         counter_state = CounterState(
             imported=imported,
