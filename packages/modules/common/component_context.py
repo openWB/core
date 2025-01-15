@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Optional, List, Union, Any, Dict
+from typing import Callable, Optional, List, Union, Any, Dict
 from helpermodules.constants import NO_ERROR
 
 from modules.common.fault_state import ComponentInfo, FaultState, FaultStateLevel
@@ -17,7 +17,11 @@ class SingleComponentUpdateContext:
                 component.update()
     """
 
-    def __init__(self, fault_state: FaultState, error_handler, update_always: bool = True, reraise: bool = False):
+    def __init__(self,
+                 fault_state: FaultState,
+                 error_handler: Callable = None,
+                 update_always: bool = True,
+                 reraise: bool = False):
         self.__fault_state = fault_state
         self.update_always = update_always
         self.reraise = reraise
