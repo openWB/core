@@ -502,17 +502,9 @@ class Chargepoint(ChargepointRfidMixin):
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
-    def get_phases_by_selected_chargemode(self) -> int:
+    def get_phases_by_selected_chargemode(self, phases_chargemode: int) -> int:
         charging_ev = self.data.set.charging_ev_data
-        # Zeitladen kann nicht als Lademodus ausgewählt werden. Ob Zeitladen aktiv ist, lässt sich aus dem Submode
-        # erkennen.
-        if self.data.control_parameter.submode == "time_charging":
-            mode = "time_charging"
-        else:
-            mode = charging_ev.charge_template.data.chargemode.selected
-        chargemode = data.data.general_data.get_phases_chargemode(mode, self.data.control_parameter.submode)
-
-        if (chargemode is None or
+        if (phases_chargemode is None or
                 (self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state) or
                 self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
@@ -521,7 +513,7 @@ class Chargepoint(ChargepointRfidMixin):
         elif self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
             phases = self.data.set.phases_to_use
             log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
-        elif chargemode == 0:
+        elif phases_chargemode == 0:
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
@@ -540,10 +532,10 @@ class Chargepoint(ChargepointRfidMixin):
                         phases = self.data.config.connected_phases
             log.debug(f"Phasenzahl Lademodus: {phases}")
         else:
-            if chargemode == 0:
+            if phases_chargemode == 0:
                 phases = self.data.control_parameter.phases
             else:
-                phases = chargemode
+                phases = phases_chargemode
         return phases
 
     def get_max_phase_hw(self) -> int:
@@ -651,14 +643,14 @@ class Chargepoint(ChargepointRfidMixin):
                 try:
                     charging_ev = self._get_charging_ev(vehicle, ev_list)
                     max_phase_hw = self.get_max_phase_hw()
-                    self.data.control_parameter.phases = min(
-                        self.get_phases_by_selected_chargemode(), max_phase_hw)
                     state, message_ev, submode, required_current, phases = charging_ev.get_required_current(
                         self.data.control_parameter,
                         self.data.get.imported,
                         max_phase_hw,
                         self.cp_ev_support_phase_switch(),
                         self.template.data.charging_type)
+                    self.data.control_parameter.phases = min(
+                        self.get_phases_by_selected_chargemode(phases), max_phase_hw)
                     phases = self.set_phases(phases)
                     self._pub_connected_vehicle(charging_ev)
                     required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
