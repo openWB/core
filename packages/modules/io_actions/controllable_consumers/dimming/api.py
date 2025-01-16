@@ -15,6 +15,11 @@ class Dimming(AbstractIoAction):
     def __init__(self, config: DimmingSetup):
         self.config = config
         self.import_power_left = None
+        for pattern in self.config.configuration.pattern:
+            if pattern["value"]:
+                self.dimming_input, self.dimming_value = pattern["input_matrix"].items()[0]
+            if pattern["value"] is False:
+                self.no_dimming_input, self.no_dimming_value = pattern["input_matrix"].items()[0]
 
         super().__init__()
 
@@ -25,32 +30,35 @@ class Dimming(AbstractIoAction):
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                    self.config.configuration.digital_input]:
+                    self.dimming_input] == self.dimming_value:
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     control_command_log.info("Dimmen aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
 
                 msg = (f"EVU-Zähler: "
                        f"{data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W")
-                for cp in self.config.configuration.cp_ids:
-                    msg += f", LP {cp}: {data.data.cp_data[f'cp{cp}'].data.get.powers}W"
+                for cp in self.config.configuration.devices:
+                    msg += f", Gerät {cp}: {data.data.cp_data[f'cp{cp}'].data.get.powers}W"
                 control_command_log.info(msg)
             elif self.timestamp:
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                 control_command_log.info("Dimmen deaktiviert.")
 
-    def dimming_get_import_power_left(self, cp_num: int) -> None:
-        if cp_num in self.config.configuration.cp_ids:
+    def dimming_get_import_power_left(self, device: str) -> None:
+        if device in self.config.configuration.devices:
             if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                    self.config.configuration.digital_input]:
+                    self.dimming_input] == self.dimming_value:
                 return self.import_power_left
-            else:
+            elif data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+                    self.no_dimming_input] == self.no_dimming_value:
                 return None
+            else:
+                raise Exception("Pattern passt nicht zur Dimmung.")
         else:
             return None
 
-    def dimming_set_import_power_left(self, cp_num: int, used_power: float) -> None:
-        if cp_num in self.config.configuration.cp_ids:
+    def dimming_set_import_power_left(self, device: str, used_power: float) -> None:
+        if device in self.config.configuration.devices:
             self.import_power_left -= used_power
             log.debug(f"verbleibende Dimm-Leistung: {self.import_power_left}W inkl Überschuss")
             return self.import_power_left

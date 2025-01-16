@@ -58,27 +58,27 @@ class IoActions:
         if data.data.io_states[f"io_states{io_device}"].data.get.fault_state == 2:
             raise ValueError(LimitingValue.CONTROLLABLE_CONSUMERS_ERROR.value.format(get_io_name_by_id(io_device)))
 
-    def dimming_get_import_power_left(self, cp_num: int) -> Optional[float]:
+    def dimming_get_import_power_left(self, device: str) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
-                if cp_num in action.config.configuration.cp_ids:
+                if device in action.config.configuration.devices:
                     self._check_fault_state_io_device(action.config.configuration.io_device)
-                    return action.dimming_get_import_power_left(cp_num)
+                    return action.dimming_get_import_power_left(device)
         else:
             return None
 
-    def dimming_set_import_power_left(self, cp_num: int, used_power: float) -> Optional[float]:
+    def dimming_set_import_power_left(self, device: str, used_power: float) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
-                if cp_num in action.config.configuration.cp_ids:
-                    return action.dimming_set_import_power_left(cp_num, used_power)
+                if device in action.config.configuration.devices:
+                    return action.dimming_set_import_power_left(device, used_power)
 
-    def dimming_via_direct_control(self, cp_num: int) -> float:
+    def dimming_via_direct_control(self, device: str) -> float:
         for action in self.actions.values():
             if isinstance(action, DimmingDirectControl):
-                if cp_num == action.config.configuration.cp_id:
+                if device == action.config.configuration.device:
                     self._check_fault_state_io_device(action.config.configuration.io_device)
-                    return action.dimming_via_direct_control(cp_num)
+                    return action.dimming_via_direct_control(device)
         else:
             return None
 

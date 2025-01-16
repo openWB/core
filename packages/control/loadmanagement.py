@@ -124,7 +124,7 @@ class Loadmanagement:
     def _limit_by_dimming_via_direct_control(self,
                                              missing_currents: List[float],
                                              cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        if data.data.io_actions.dimming_via_direct_control(cp.num):
+        if data.data.io_actions.dimming_via_direct_control(f"cp{cp.num}"):
             phases = 3-missing_currents.count(0)
             current_per_phase = 4.2/phases
             available_currents = [current_per_phase if c > 0 else 0 for c in missing_currents]
@@ -136,7 +136,7 @@ class Loadmanagement:
     def _limit_by_dimming(self,
                           available_currents: List[float],
                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        dimming_power_left = data.data.io_actions.dimming_get_import_power_left(cp.num)
+        dimming_power_left = data.data.io_actions.dimming_get_import_power_left(f"cp{cp.num}")
         if dimming_power_left:
             if sum(available_currents)*230 > dimming_power_left:
                 phases = 3-available_currents.count(0)

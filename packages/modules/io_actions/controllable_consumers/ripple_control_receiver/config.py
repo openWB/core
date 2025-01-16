@@ -7,7 +7,7 @@ from modules.io_actions.groups import ActionGroup
 @dataclass
 class RippleControlReceiverConfig:
     io_device: Optional[int] = None
-    # [{"value": 0.5, "input_matrix": {"1": False, "2": True}}]
+    # [{"value": 0.5, "input_matrix": {"SofortLa": False, "PV": True}}]
     input_pattern: List[Dict] = field(default_factory=empty_list_factory)
     cp_ids: List[int] = field(default_factory=empty_list_factory)
 
