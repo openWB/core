@@ -63,9 +63,12 @@ class TimeframePlan(PlanBase):
 class ScheduledChargingPlan(PlanBase):
     current: int = 14
     dc_current: float = 145
+    et_active: bool = False
     id: Optional[int] = None
     name: str = "neuer Zielladen-Plan"
     limit: ScheduledLimit = field(default_factory=scheduled_limit_factory)
+    phases_to_use: int = 0
+    phases_to_use_pv: int = 0
     time: str = "07:00"  # ToDo: aktuelle Zeit verwenden
 
 

@@ -212,7 +212,7 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
     if expected_plan_num is None:
         assert plan_data is None
     else:
-        assert plan_data.id == expected_plan_num
+        assert plan_data.plan.id == expected_plan_num
         assert plan_data.duration == 100
 
 
