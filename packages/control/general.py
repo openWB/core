@@ -57,16 +57,6 @@ def pv_charging_factory() -> PvCharging:
 
 
 @dataclass
-class TimeCharging:
-    phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/time_charging/phases_to_use"})
-
-
-def time_charging_factory() -> TimeCharging:
-    return TimeCharging()
-
-
-@dataclass
 class ChargemodeConfig:
     phase_switch_delay: int = field(default=5, metadata={
         "topic": "chargemode_config/phase_switch_delay"})
@@ -74,7 +64,6 @@ class ChargemodeConfig:
     retry_failed_phase_switches: bool = field(
         default=False,
         metadata={"topic": "chargemode_config/retry_failed_phase_switches"})
-    time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = field(
         default=18, metadata={"topic": "chargemode_config/unbalanced_load_limit"})
     unbalanced_load: bool = field(default=False, metadata={

@@ -159,7 +159,7 @@ class Ev:
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
                     if (self.charge_template.data.chargemode.scheduled_charging.plans[str(plan_data.id)].limit.
                             selected == "amount" and
-                            plan_data.id != control_parameter.current_plan):
+                            plan_data.plan.id != control_parameter.current_plan):
                         control_parameter.imported_at_plan_start = imported
                     # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
                     # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
@@ -167,7 +167,7 @@ class Ev:
                             self.charge_template.data.chargemode.
                             scheduled_charging.plans[str(plan_data.id)].limit.selected == "soc"):
                         soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
-                    control_parameter.current_plan = plan_data.id
+                    control_parameter.current_plan = plan_data.plan.id
                 else:
                     control_parameter.current_plan = None
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
@@ -184,7 +184,7 @@ class Ev:
                 if control_parameter.imported_at_plan_start is None:
                     control_parameter.imported_at_plan_start = imported
                 used_amount = imported - control_parameter.imported_at_plan_start
-                tmp_current, tmp_submode, tmp_message, plan_id = self.charge_template.time_charging(
+                tmp_current, tmp_submode, tmp_message, plan_id, phases = self.charge_template.time_charging(
                     self.data.get.soc,
                     used_amount,
                     charging_type
