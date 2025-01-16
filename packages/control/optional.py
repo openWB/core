@@ -24,15 +24,15 @@ class Optional(OcppMixin):
         try:
             self.data = OptionalData()
             self.et_module: ConfigurableElectricityTariff = None
-            self.mon_module: ConfigurableMonitoring = None
+            self.monitoring_module: ConfigurableMonitoring = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
     def monitoring_start(self):
-        if self.mon_module is not None:
-            self.mon_module.start_monitoring()
+        if self.monitoring_module is not None:
+            self.monitoring_module.start_monitoring()
 
     def monitoring_stop(self):
         if self.mon_module is not None:

@@ -2,6 +2,7 @@
 import os
 from modules.common.abstract_device import DeviceDescriptor
 from modules.monitoring.zabbix.config import Zabbix
+from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 
 KEY_PATH = "/etc/zabbix/encrypt.psk"
@@ -36,20 +37,17 @@ def create_config(config: Zabbix):
         config_file.truncate()
 
 
-def create_start_monitoring(config: Zabbix):
+def create_monitoring(config: Zabbix):
     def start_monitoring():
         os.system("sudo ./runs/install_zabbix.sh")
         create_config(config)
         os.system("sudo systemctl restart zabbix-agent2")
         os.system("sudo systemctl enable zabbix-agent2")
-    return start_monitoring
 
-
-def create_stop_monitoring():
     def stop_monitoring():
         os.system("sudo systemctl stop zabbix-agent2")
         os.system("sudo systemctl disable zabbix-agent2")
-    return stop_monitoring
+    return ConfigurableMonitoring(start_monitoring, stop_monitoring)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Zabbix)
