@@ -210,7 +210,7 @@ class Ev:
                         used_amount,
                         charging_type)
                 elif self.charge_template.data.chargemode.selected == "pv_charging":
-                    required_current, submode, message = self.charge_template.pv_charging(
+                    required_current, submode, message, phases = self.charge_template.pv_charging(
                         self.data.get.soc, control_parameter.min_current, charging_type)
                 elif self.charge_template.data.chargemode.selected == "standby":
                     # Text von Zeit-und Zielladen nicht überschreiben.
@@ -222,8 +222,6 @@ class Ev:
                     required_current, submode, message = self.charge_template.stop()
             if submode == "stop" or submode == "standby" or (self.charge_template.data.chargemode.selected == "stop"):
                 state = False
-            if phases is None:
-                phases = control_parameter.phases
             return state, message, submode, required_current, phases
         except Exception as e:
             log.exception("Fehler im ev-Modul "+str(self.num))

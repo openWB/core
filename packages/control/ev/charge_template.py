@@ -52,11 +52,13 @@ class InstantCharging:
 class PvCharging:
     dc_min_current: float = 145
     dc_min_soc_current: float = 145
-    min_soc_current: int = 10
-    min_current: int = 0
     feed_in_limit: bool = False
+    limit: Limit = field(default_factory=limit_factory)
+    min_current: int = 0
+    min_soc_current: int = 10
     min_soc: int = 0
-    max_soc: int = 100
+    phases_to_use: int = 0
+    phases_to_use_min_soc: int = 3
 
 
 def pv_charging_factory() -> PvCharging:
@@ -88,21 +90,10 @@ def chargemode_factory() -> Chargemode:
 
 
 @dataclass
-class Et:
-    active: bool = False
-    max_price: float = 0.0002
-
-
-def et_factory() -> Et:
-    return Et()
-
-
-@dataclass
 class ChargeTemplateData:
     name: str = "Lade-Profil"
     prio: bool = False
     load_default: bool = False
-    et: Et = field(default_factory=et_factory)
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     chargemode: Chargemode = field(default_factory=chargemode_factory)
 
@@ -180,8 +171,8 @@ class ChargeTemplate:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None
 
-    INSTANT_CHARGING_SOC_REACHED = "Kein Sofortladen, da der Soc bereits erreicht wurde."
-    INSTANT_CHARGING_AMOUNT_REACHED = "Kein Sofortladen, da die Energiemenge bereits geladen wurde."
+    SOC_REACHED = "Keine Ladung, da der Soc bereits erreicht wurde."
+    AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
 
     def instant_charging(self,
                          soc: Optional[float],
@@ -198,55 +189,67 @@ class ChargeTemplate:
                 current = instant_charging.current
             else:
                 current = instant_charging.dc_current
-            if instant_charging.limit.selected == "soc":
-                if soc:
-                    if soc > instant_charging.limit.soc:
-                        current = 0
-                        sub_mode = "stop"
-                        message = self.INSTANT_CHARGING_SOC_REACHED
+
+            if instant_charging.limit.selected == "soc" and soc and soc > instant_charging.limit.soc:
+                current = 0
+                sub_mode = "stop"
+                message = self.SOC_REACHED
             elif instant_charging.limit.selected == "amount":
                 if imported_instant_charging > self.data.chargemode.instant_charging.limit.amount:
                     current = 0,
                     sub_mode = "stop"
-                    message = self.INSTANT_CHARGING_AMOUNT_REACHED
-            else:
-                raise TypeError(f'{instant_charging.limit.selected} unbekanntes Sofortladen-Limit.')
+                    message = self.AMOUNT_REACHED
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
-    PV_CHARGING_SOC_REACHED = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
     PV_CHARGING_SOC_CHARGING = ("Ladung evtl. auch ohne PV-Überschuss, da der Mindest-SoC des Fahrzeugs noch nicht "
                                 "erreicht wurde.")
     PV_CHARGING_MIN_CURRENT_CHARGING = "Ladung evtl. auch ohne PV-Überschuss, da minimaler Dauerstrom aktiv ist."
 
-    def pv_charging(self, soc: Optional[float], min_current: int, charging_type: str) -> Tuple[int, str, Optional[str]]:
+    def pv_charging(self,
+                    soc: Optional[float],
+                    min_current: int,
+                    charging_type: str) -> Tuple[int, str, Optional[str], int]:
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
         """
         message = None
+        sub_mode = "pv_charging"
         try:
             pv_charging = self.data.chargemode.pv_charging
-            if soc is None or soc < pv_charging.max_soc:
-                if pv_charging.min_soc != 0 and soc is not None:
-                    if soc < pv_charging.min_soc:
-                        if charging_type == ChargingType.AC.value:
-                            current = pv_charging.min_soc_current
-                        else:
-                            current = pv_charging.dc_min_soc_current
-                        return current, "instant_charging", self.PV_CHARGING_SOC_CHARGING
-                if charging_type == ChargingType.AC.value:
-                    pv_min_current = pv_charging.min_current
-                else:
-                    pv_min_current = pv_charging.dc_min_current
-                if pv_min_current == 0:
+            phases = pv_charging.phases_to_use
+            min_pv_current = (pv_charging.min_current if charging_type == ChargingType.AC.value
+                              else pv_charging.dc_min_current)
+            if pv_charging.limit.selected == "soc" and soc and soc > pv_charging.limit.soc:
+                current = 0
+                sub_mode = "stop"
+                message = self.SOC_REACHED
+            elif (pv_charging.limit.selected == "amount" and
+                    pv_charging > self.data.chargemode.instant_charging.limit.amount):
+                current = 0,
+                sub_mode = "stop"
+                message = self.AMOUNT_REACHED
+            else:
+                if pv_charging.min_soc != 0 and soc is not None and soc < pv_charging.min_soc:
+                    if charging_type == ChargingType.AC.value:
+                        current = pv_charging.min_soc_current
+                    else:
+                        current = pv_charging.dc_min_soc_current
+                    sub_mode = "instant_charging"
+                    message = self.PV_CHARGING_SOC_CHARGING
+                    phases = pv_charging.phases_to_use_min_soc
+                elif min_pv_current == 0:
                     # nur PV; Ampere darf nicht 0 sein, wenn geladen werden soll
-                    return min_current, "pv_charging", message
+                    current = min_current
+                    sub_mode = "pv_charging"
                 else:
                     # Min PV
-                    return pv_min_current, "instant_charging", self.PV_CHARGING_MIN_CURRENT_CHARGING
-            else:
-                return 0, "stop", self.PV_CHARGING_SOC_REACHED
+                    current = min_pv_current
+                    sub_mode = "instant_charging"
+                    message = self.PV_CHARGING_MIN_CURRENT_CHARGING
+
+            return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
