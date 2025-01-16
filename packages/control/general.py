@@ -29,8 +29,6 @@ class PvCharging:
         "topic": "chargemode_config/pv_charging/feed_in_yield"})
     phase_switch_delay: int = field(default=7, metadata={
         "topic": "chargemode_config/pv_charging/phase_switch_delay"})
-    phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/pv_charging/phases_to_use"})
     bat_power_discharge: int = field(default=1500, metadata={
         "topic": "chargemode_config/pv_charging/bat_power_discharge"})
     bat_power_discharge_active: bool = field(default=False, metadata={
