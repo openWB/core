@@ -74,11 +74,12 @@ class ScheduledChargingPlan(PlanBase):
 
 @dataclass
 class TimeChargingPlan(TimeframePlan):
-    name: str = "neuer Zeitladen-Plan"
     current: int = 16
     dc_current: float = 145
     id: Optional[int] = None
     limit: Limit = field(default_factory=limit_factory)
+    name: str = "neuer Zeitladen-Plan"
+    phases_to_use: int = 1
 
 
 @dataclass

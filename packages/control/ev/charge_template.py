@@ -132,41 +132,39 @@ class ChargeTemplate:
     def time_charging(self,
                       soc: Optional[float],
                       used_amount_time_charging: float,
-                      charging_type: str) -> Tuple[int, str, Optional[str], Optional[str]]:
+                      charging_type: str) -> Tuple[int, str, Optional[str], Optional[str], int]:
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         message = None
+        sub_mode = "time_charging"
+        id = None
         try:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
                     current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
-                    if self.data.et.active:
-                        if not data.data.optional_data.et_charging_allowed(self.data.et.max_price):
-                            return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.id
-                    if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
-                        return current, "time_charging", message, plan.id
-                    elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
-                        if soc:
-                            if soc < plan.limit.soc:
-                                return current, "time_charging", message, plan.id  # Limit nicht erreicht
-                            else:
-                                return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.id  # Limit erreicht
-                        else:
-                            return plan.current, "time_charging", message, plan.id
-                    elif plan.limit.selected == "amount":  # Energiemengenlimit konfiguriert
-                        if used_amount_time_charging < plan.limit.amount:
-                            return current, "time_charging", message, plan.id  # Limit nicht erreicht
-                        else:
-                            return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.id  # Limit erreicht
-                    else:
-                        raise TypeError(f'{plan.limit.selected} unbekanntes Zeitladen-Limit.')
+                    phases = plan.phases_to_use
+                    id = plan.id
+                    if plan.limit.selected == "soc" and soc and soc > plan.limit.soc:
+                        # SoC-Limit erreicht
+                        current = 0
+                        sub_mode = "stop"
+                        message = self.TIME_CHARGING_SOC_REACHED
+                    elif plan.limit.selected == "amount" and used_amount_time_charging > plan.limit.amount:
+                        # Energie-Limit erreicht
+                        current = 0
+                        sub_mode = "stop"
+                        message = self.TIME_CHARGING_AMOUNT_REACHED
                 else:
                     message = self.TIME_CHARGING_NO_PLAN_ACTIVE
+                    current = 0
+                    sub_mode = "stop"
             else:
                 message = self.TIME_CHARGING_NO_PLAN_CONFIGURED
+                current = 0
+                sub_mode = "stop"
             log.debug(message)
-            return 0, "stop", message, None
+            return current, sub_mode, message, id, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None
