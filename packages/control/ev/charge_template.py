@@ -41,6 +41,15 @@ class TimeCharging:
 
 
 @dataclass
+class EcoCharging:
+    current: int = 6
+    dc_current: float = 145
+    limit: Limit = field(default_factory=limit_factory)
+    max_price: float = 0.0002
+    phases_to_use: int = 3
+
+
+@dataclass
 class InstantCharging:
     current: int = 10
     dc_current: float = 145
@@ -61,6 +70,10 @@ class PvCharging:
     phases_to_use_min_soc: int = 3
 
 
+def eco_charging_factory() -> EcoCharging:
+    return EcoCharging()
+
+
 def pv_charging_factory() -> PvCharging:
     return PvCharging()
 
@@ -76,6 +89,7 @@ def instant_charging_factory() -> InstantCharging:
 @dataclass
 class Chargemode:
     selected: str = "stop"
+    eco_charging: EcoCharging = field(default_factory=eco_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
@@ -122,7 +136,8 @@ class ChargeTemplate:
         "topic": ""})
 
     BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
-    CHARGING_PRICE_EXCEEDED = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
+    CHARGING_PRICE_EXCEEDED = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt. Falls vorhanden wird mit EVU-Überschuss geladen."
+    CHARGING_PRICE_LOW = "Ladung, da der aktuelle Strompreis unter dem maximalen Strompreis liegt."
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."
     TIME_CHARGING_NO_PLAN_ACTIVE = "Keine Ladung, da kein Zeitfenster für Zeitladen aktiv ist."
@@ -247,6 +262,40 @@ class ChargeTemplate:
                     sub_mode = "instant_charging"
                     message = self.PV_CHARGING_MIN_CURRENT_CHARGING
 
+            return current, sub_mode, message, phases
+        except Exception:
+            log.exception("Fehler im ev-Modul "+str(self.ct_num))
+            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+
+    def eco_charging(self,
+                     soc: Optional[float],
+                     min_current: int,
+                     charging_type: str) -> Tuple[int, str, Optional[str], int]:
+        """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
+        """
+        message = None
+        sub_mode = "pv_charging"
+        try:
+            eco_charging = self.data.chargemode.eco_charging
+            phases = eco_charging.phases_to_use
+            current = eco_charging.current if charging_type == ChargingType.AC.value else eco_charging.dc_current
+
+            if eco_charging.limit.selected == "soc" and soc and soc > eco_charging.limit.soc:
+                current = 0
+                sub_mode = "stop"
+                message = self.SOC_REACHED
+            elif (eco_charging.limit.selected == "amount" and
+                    eco_charging > self.data.chargemode.instant_charging.limit.amount):
+                current = 0,
+                sub_mode = "stop"
+                message = self.AMOUNT_REACHED
+            elif (data.data.optional_data.et_provider_available() and
+                  data.data.optional_data.et_price_lower_than_limit(eco_charging.max_price)):
+                current = min_current
+                message = self.CHARGING_PRICE_EXCEEDED
+            else:
+                sub_mode = "instant_charging"
+                message = self.CHARGING_PRICE_LOW
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
