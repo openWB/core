@@ -9,7 +9,7 @@ class SolaxConfiguration:
     def __init__(self, modbus_id: int = 1,
                  ip_address: Optional[str] = None,
                  port: int = 502,
-                 version: SolaxVersion = SolaxVersion.g3):
+                 version: SolaxVersion = SolaxVersion.G3):
         self.modbus_id = modbus_id
         self.ip_address = ip_address
         self.port = port
