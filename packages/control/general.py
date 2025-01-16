@@ -13,16 +13,6 @@ from helpermodules import timecheck
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class InstantCharging:
-    phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/instant_charging/phases_to_use"})
-
-
-def instant_charging_factory() -> InstantCharging:
-    return InstantCharging()
-
-
 def control_range_factory() -> List:
     return [0, 230]
 
@@ -87,7 +77,6 @@ def time_charging_factory() -> TimeCharging:
 
 @dataclass
 class ChargemodeConfig:
-    instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
     phase_switch_delay: int = field(default=5, metadata={
         "topic": "chargemode_config/phase_switch_delay"})
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)

@@ -206,7 +206,7 @@ class Ev:
                     if control_parameter.imported_instant_charging is None:
                         control_parameter.imported_instant_charging = imported
                     used_amount = imported - control_parameter.imported_instant_charging
-                    required_current, submode, message = self.charge_template.instant_charging(
+                    required_current, submode, message, phases = self.charge_template.instant_charging(
                         self.data.get.soc,
                         used_amount,
                         charging_type)
