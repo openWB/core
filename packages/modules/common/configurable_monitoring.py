@@ -7,8 +7,8 @@ log = logging.getLogger(__name__)
 
 class ConfigurableMonitoring():
     def __init__(self,
-                 start_initializer: Callable[[]],
-                 stop_initializer: Callable[[]]) -> None:
+                 start_initializer: Callable[[], None],
+                 stop_initializer: Callable[[], None]) -> None:
         try:
             self._start_monitoring = start_initializer()
             self._stop_monitoring = stop_initializer()
