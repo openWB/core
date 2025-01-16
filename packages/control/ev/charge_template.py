@@ -45,6 +45,7 @@ class InstantCharging:
     current: int = 10
     dc_current: float = 145
     limit: Limit = field(default_factory=limit_factory)
+    phases_to_use: int = 3
 
 
 @dataclass
@@ -185,36 +186,32 @@ class ChargeTemplate:
     def instant_charging(self,
                          soc: Optional[float],
                          imported_instant_charging: float,
-                         charging_type: str) -> Tuple[int, str, Optional[str]]:
+                         charging_type: str) -> Tuple[int, str, Optional[str], int]:
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
         """
         message = None
+        sub_mode = "instant_charging"
         try:
             instant_charging = self.data.chargemode.instant_charging
+            phases = instant_charging.phases_to_use
             if charging_type == ChargingType.AC.value:
                 current = instant_charging.current
             else:
                 current = instant_charging.dc_current
-            if self.data.et.active:
-                if not data.data.optional_data.et_charging_allowed(self.data.et.max_price):
-                    return 0, "stop", self.CHARGING_PRICE_EXCEEDED
-            if instant_charging.limit.selected == "none":
-                return current, "instant_charging", message
-            elif instant_charging.limit.selected == "soc":
+            if instant_charging.limit.selected == "soc":
                 if soc:
-                    if soc < instant_charging.limit.soc:
-                        return current, "instant_charging", message
-                    else:
-                        return 0, "stop", self.INSTANT_CHARGING_SOC_REACHED
-                else:
-                    return current, "instant_charging", message
+                    if soc > instant_charging.limit.soc:
+                        current = 0
+                        sub_mode = "stop"
+                        message = self.INSTANT_CHARGING_SOC_REACHED
             elif instant_charging.limit.selected == "amount":
-                if imported_instant_charging < self.data.chargemode.instant_charging.limit.amount:
-                    return current, "instant_charging", message
-                else:
-                    return 0, "stop", self.INSTANT_CHARGING_AMOUNT_REACHED
+                if imported_instant_charging > self.data.chargemode.instant_charging.limit.amount:
+                    current = 0,
+                    sub_mode = "stop"
+                    message = self.INSTANT_CHARGING_AMOUNT_REACHED
             else:
                 raise TypeError(f'{instant_charging.limit.selected} unbekanntes Sofortladen-Limit.')
+            return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
