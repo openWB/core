@@ -13,7 +13,7 @@ control_command_log = logging.getLogger("steuve_control_command")
 class DimmingDirectControl(AbstractIoAction):
     def __init__(self, config: DimmingDirectControlSetup):
         self.config = config
-        for pattern in self.config.configuration.pattern:
+        for pattern in self.config.configuration.input_pattern:
             if pattern["value"]:
                 self.dimming_input, self.dimming_value = pattern["input_matrix"].items()[0]
             if pattern["value"] is False:

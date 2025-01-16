@@ -7,7 +7,7 @@ from modules.io_actions.groups import ActionGroup
 @dataclass
 class DimmingDirectControlConfig:
     io_device: Optional[int] = None
-    pattern: List[Dict] = field(default_factory=empty_io_pattern_factory)
+    input_pattern: List[Dict] = field(default_factory=empty_io_pattern_factory)
     device: Optional[str] = None
 
 
