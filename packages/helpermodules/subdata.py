@@ -600,12 +600,6 @@ class SubData:
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
                     if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.chargemode_config.pv_charging, msg)
-                    elif re.search("/general/chargemode_config/scheduled_charging/", msg.topic) is not None:
-                        self.set_json_payload_class(var.data.chargemode_config.scheduled_charging, msg)
-                    elif re.search("/general/chargemode_config/time_charging/", msg.topic) is not None:
-                        self.set_json_payload_class(var.data.chargemode_config.time_charging, msg)
-                    elif re.search("/general/chargemode_config/standby/", msg.topic) is not None:
-                        self.set_json_payload_class(var.data.chargemode_config.standby, msg)
                     else:
                         self.set_json_payload_class(var.data.chargemode_config, msg)
                 elif "openWB/general/extern" == msg.topic:
