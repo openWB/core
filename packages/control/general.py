@@ -8,7 +8,6 @@ from typing import Dict, List, Optional
 
 from control import data
 from control.bat_all import BatConsiderationMode
-from control.chargemode import Chargemode
 from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
 from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
@@ -154,25 +153,6 @@ class General:
     def __init__(self):
         self.data: GeneralData = GeneralData()
         self.ripple_control_receiver: ConfigurableRcr = None
-
-    def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
-        """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
-        Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
-        die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
-        """
-        try:
-            if chargemode == "stop" or chargemode == "standby":
-                # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
-                return None
-            elif chargemode == "scheduled_charging" and (submode == "pv_charging" or submode == Chargemode.PV_CHARGING):
-                # todo Lademodus von String auf Enum umstellen
-                # Phasenumschaltung bei PV-Ueberschuss nutzen
-                return getattr(self.data.chargemode_config, chargemode).phases_to_use_pv
-            else:
-                return getattr(self.data.chargemode_config, chargemode).phases_to_use
-        except Exception:
-            log.exception("Fehler im General-Modul")
-            return 1
 
     def grid_protection(self):
         """ Wenn der Netzschutz konfiguriert ist, wird geprüft, ob die Frequenz außerhalb des Normalbereichs liegt

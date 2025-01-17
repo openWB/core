@@ -8,7 +8,6 @@ from control.algorithm.integration_test.conftest import ParamsExpectedSetCurrent
 from control.chargemode import Chargemode
 from control import data
 from control.algorithm.algorithm import Algorithm
-from control.algorithm.algorithm import data as algorithm_data
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory
@@ -229,6 +228,9 @@ def test_surplus(params: ParamsSurplus, all_cp_pv_charging_3p, all_cp_charging_3
     data.data.counter_data["counter6"].data.set.raw_currents_left = params.raw_currents_left_counter6
     mockget_component_name_by_id = Mock(return_value="Garage")
     monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
+    data.data.cp_data["cp3"].data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.phases_to_use = 1
+    data.data.cp_data["cp4"].data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.phases_to_use = 1
+    data.data.cp_data["cp5"].data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.phases_to_use = 1
 
     # execution
     Algorithm().calc_current()
@@ -277,8 +279,6 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     data.data.counter_data["counter6"].data.set.raw_currents_left = cases_phase_switch[0].raw_currents_left_counter6
     mockget_component_name_by_id = Mock(return_value="Garage")
     monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
-    mockget_get_phases_chargemode = Mock(return_value=0)
-    monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
     data.data.cp_data[
         "cp3"].data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
     data.data.cp_data[
@@ -302,8 +302,7 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     data.data.counter_data["counter6"].data.set.raw_currents_left = cases_phase_switch[1].raw_currents_left_counter6
     mockget_component_name_by_id = Mock(return_value="Garage")
     monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
-    mockget_get_phases_chargemode = Mock(return_value=0)
-    monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
+
     data.data.cp_data["cp3"].data.get.currents = [32, 0, 0]
     data.data.cp_data["cp3"].data.get.power = 7360
     data.data.cp_data["cp3"].data.control_parameter.timestamp_last_phase_switch = 1652682252
