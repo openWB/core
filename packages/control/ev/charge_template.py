@@ -153,6 +153,7 @@ class ChargeTemplate:
         message = None
         sub_mode = "time_charging"
         id = None
+        phases = None
         try:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
@@ -160,12 +161,12 @@ class ChargeTemplate:
                     current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                     phases = plan.phases_to_use
                     id = plan.id
-                    if plan.limit.selected == "soc" and soc and soc > plan.limit.soc:
+                    if plan.limit.selected == "soc" and soc and soc >= plan.limit.soc:
                         # SoC-Limit erreicht
                         current = 0
                         sub_mode = "stop"
                         message = self.TIME_CHARGING_SOC_REACHED
-                    elif plan.limit.selected == "amount" and used_amount_time_charging > plan.limit.amount:
+                    elif plan.limit.selected == "amount" and used_amount_time_charging >= plan.limit.amount:
                         # Energie-Limit erreicht
                         current = 0
                         sub_mode = "stop"
@@ -203,13 +204,13 @@ class ChargeTemplate:
             else:
                 current = instant_charging.dc_current
 
-            if instant_charging.limit.selected == "soc" and soc and soc > instant_charging.limit.soc:
+            if instant_charging.limit.selected == "soc" and soc and soc >= instant_charging.limit.soc:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
             elif instant_charging.limit.selected == "amount":
-                if imported_instant_charging > self.data.chargemode.instant_charging.limit.amount:
-                    current = 0,
+                if imported_instant_charging >= self.data.chargemode.instant_charging.limit.amount:
+                    current = 0
                     sub_mode = "stop"
                     message = self.AMOUNT_REACHED
             return current, sub_mode, message, phases
@@ -239,7 +240,7 @@ class ChargeTemplate:
                 sub_mode = "stop"
                 message = self.SOC_REACHED
             elif (pv_charging.limit.selected == "amount" and
-                    pv_charging > self.data.chargemode.instant_charging.limit.amount):
+                    pv_charging >= self.data.chargemode.instant_charging.limit.amount):
                 current = 0,
                 sub_mode = "stop"
                 message = self.AMOUNT_REACHED
@@ -280,12 +281,12 @@ class ChargeTemplate:
             phases = eco_charging.phases_to_use
             current = eco_charging.current if charging_type == ChargingType.AC.value else eco_charging.dc_current
 
-            if eco_charging.limit.selected == "soc" and soc and soc > eco_charging.limit.soc:
+            if eco_charging.limit.selected == "soc" and soc and soc >= eco_charging.limit.soc:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
             elif (eco_charging.limit.selected == "amount" and
-                    eco_charging > self.data.chargemode.instant_charging.limit.amount):
+                    eco_charging >= self.data.chargemode.instant_charging.limit.amount):
                 current = 0,
                 sub_mode = "stop"
                 message = self.AMOUNT_REACHED
