@@ -28,6 +28,16 @@
 				document.getElementById("log").classList.toggle("hide");
 			});
 		});
+
+		// schedule a window reload at 15 minutes past midnight
+		let now = new Date();
+		let reloadTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 0, 15, 0, 0);
+		var millisecondsTillReload = reloadTime - now;
+		console.log("Current time: " + now);
+		console.log("Scheduled reload at " + reloadTime.toString() + " in " + millisecondsTillReload + "ms");
+		window.setTimeout(() => {
+			window.location.reload();
+		}, millisecondsTillReload);
 	</script>
 </head>
 
