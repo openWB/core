@@ -515,8 +515,5 @@ class ChargeTemplate:
                     phases = plan.phases_to_use_pv
         return current, submode, message, phases
 
-    def standby(self) -> Tuple[int, str, str]:
-        return 0, "standby", "Keine Ladung, da der Lademodus Standby aktiv ist."
-
     def stop(self) -> Tuple[int, str, str]:
         return 0, "stop", "Keine Ladung, da der Lademodus Stop aktiv ist."
