@@ -288,13 +288,15 @@ class ChargeTemplate:
                 current = 0,
                 sub_mode = "stop"
                 message = self.AMOUNT_REACHED
-            elif (data.data.optional_data.et_provider_available() and
-                  data.data.optional_data.et_price_lower_than_limit(eco_charging.max_price)):
-                current = min_current
-                message = self.CHARGING_PRICE_EXCEEDED
+            elif data.data.optional_data.et_provider_available():
+                if data.data.optional_data.et_price_lower_than_limit(eco_charging.max_price):
+                    current = min_current
+                    message = self.CHARGING_PRICE_EXCEEDED
+                else:
+                    sub_mode = "instant_charging"
+                    message = self.CHARGING_PRICE_LOW
             else:
-                sub_mode = "instant_charging"
-                message = self.CHARGING_PRICE_LOW
+                current = min_current
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
