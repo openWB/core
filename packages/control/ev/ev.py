@@ -221,6 +221,9 @@ class Ev:
                     phases = control_parameter.phases or max_phases_hw
             if submode == "stop" or (self.charge_template.data.chargemode.selected == "stop"):
                 state = False
+                if phases is None:
+                    log.debug("Keine Phasenvorgabe durch Lademodus. Behalte Phasenzahl bei.")
+                    phases = control_parameter.phases
             return state, message, submode, required_current, phases
         except Exception as e:
             log.exception("Fehler im ev-Modul "+str(self.num))
