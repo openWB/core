@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import Dict
+from typing import Dict, Optional
 from modules.common.component_state import IoState
 from modules.common.configurable_io import ConfigurableIo
 from modules.io_devices.dimm_kit.config import IoLan, AnalogInputMapping, DigitalInputMapping, DigitalOutputMapping
@@ -52,7 +52,7 @@ def create_io(config: IoLan):
                     pin.value, 1, unit=config.configuration.modbus_id
                 ) for pin in DigitalOutputMapping})
 
-    def write(digital_output: Dict[int, int]) -> None:
+    def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, int]]) -> None:
         for i, value in digital_output.items():
             client.write_single_coil(i-1, value, unit=config.configuration.modbus_id)
 

@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Dict
+from typing import Dict, Optional
 
 
 class AbstractIoDevice:
@@ -12,7 +12,7 @@ class AbstractIoDevice:
         pass
 
     @abstractmethod
-    def write(self, digital_output: Dict[int, int]) -> None:
+    def write(self, analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]) -> None:
         pass
 
 

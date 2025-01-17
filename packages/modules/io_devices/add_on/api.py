@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from helpermodules import pub
 from helpermodules.broker import BrokerClient
@@ -19,7 +19,7 @@ def create_io(config: AddOn):
             raise ValueError("No host configured")
         return IoStateManager().get(config.configuration.host)
 
-    def write(digital_output: Dict[int, int]):
+    def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]):
         if config.configuration.host is None:
             raise ValueError("No host configured")
         pub.pub_single("openWB/set/internal_io/states/set/digital_output", digital_output,

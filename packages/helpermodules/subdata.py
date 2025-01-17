@@ -667,12 +667,12 @@ class SubData:
                 if (re.search("/io/states/[0-9]+/get", msg.topic) is not None or
                         re.search("/internal_io/states/get", msg.topic) is not None):
                     # Sonst werden Dicts als Payload verwendet, aber es wird alles in ein eigenes Attribut gespeichert
-                    # Typ ist hier auch kein typing.Dict, sondern ein generisches Dict[int, bool]
+                    # Typ ist hier auch kein typing.Dict, sondern ein generisches Dict[str, bool]
                     setattr(var[key].data.get, msg.topic.split("/")[-1], payload)
                 elif (re.search("/io/states/[0-9]+/set", msg.topic) is not None or
                         re.search("/internal_io/states/set", msg.topic) is not None):
                     # Sonst werden Dicts als Payload verwendet, aber es wird alles in ein eigenes Attribut gespeichert
-                    # Typ ist hier auch kein typing.Dict, sondern ein generisches Dict[int, bool]
+                    # Typ ist hier auch kein typing.Dict, sondern ein generisches Dict[str, bool]
                     setattr(var[key].data.set, msg.topic.split("/")[-1], payload)
                 else:
                     self.set_json_payload_class(var[key].data, msg)

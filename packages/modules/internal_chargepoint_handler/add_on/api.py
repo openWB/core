@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import IoState
@@ -28,7 +28,7 @@ def create_io(config: AddOn):
         else:
             return IoState()
 
-    def write(digital_output: Dict[str, int]):
+    def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]):
         if has_gpio:
             for pin, value in digital_output.items():
                 GPIO.output(DigitalInputMapping[pin], GPIO.HIGH if value else GPIO.LOW)
