@@ -57,7 +57,7 @@ class ChargepointModule(AbstractChargepoint):
     def _validate_version(self):
         try:
             parsed_answer = get_version_by_telnet(
-                f'{self.VALID_MODELS["type"]}{self.VALID_MODELS["versions"][0]}', self.config.configuration.ip_address)
+                f'{self.VALID_MODELS["type"]} {self.VALID_MODELS["versions"][0]}', self.config.configuration.ip_address)
             for version in self.VALID_MODELS["versions"]:
                 if version in parsed_answer:
                     self.version = True
