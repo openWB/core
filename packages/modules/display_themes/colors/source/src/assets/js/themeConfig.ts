@@ -43,6 +43,8 @@ export class Config {
 	animationDuration = 300
 	animationDelay = 100
 	zoomGraph = false
+	parentChargePoint1: undefined
+	parentChargePoint2: undefined
 
 	constructor() {}
 	get showRelativeArcs() {
@@ -249,6 +251,16 @@ export class Config {
 	}
 }
 export const globalConfig = reactive(new Config())
+export const wbSettings: { [key: string]: string | number | undefined } =
+	reactive({
+		localIp: undefined,
+		localBranch: undefined,
+		localCommit: undefined,
+		localVersion: undefined,
+		parentChargePoint1: undefined,
+		parentChargePoint2: undefined,
+	})
+
 export function initConfig() {
 	// readCookie()
 	// set the background

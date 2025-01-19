@@ -146,10 +146,8 @@ export const dayGraph = reactive({
 				(this.date.getMonth() + 1).toString().padStart(2, '0') +
 				this.date.getDate().toString().padStart(2, '0')
 			mqttSubscribe(this.topic)
-			sendCommand({
-				command: 'getDailyLog',
-				data: { day: dateString },
-			})
+			sendCommand('getDailyLog',{ day: dateString })
+			
 			// graphData.data = []
 		}
 	},
@@ -178,10 +176,7 @@ export const monthGraph = reactive({
 			this.year.toString() + this.month.toString().padStart(2, '0')
 		graphData.data = []
 		mqttSubscribe(this.topic)
-		sendCommand({
-			command: 'getMonthlyLog',
-			data: { month: dateString },
-		})
+		sendCommand('getMonthlyLog',{ month: dateString })
 	},
 	deactivate() {
 		mqttUnsubscribe(this.topic)
@@ -221,10 +216,7 @@ export const yearGraph = reactive({
 		const dateString = this.year.toString()
 		graphData.data = []
 		mqttSubscribe(this.topic)
-		sendCommand({
-			command: 'getYearlyLog',
-			data: { year: dateString },
-		})
+		sendCommand('getYearlyLog', { year: dateString })
 	},
 	deactivate() {
 		mqttUnsubscribe(this.topic)
