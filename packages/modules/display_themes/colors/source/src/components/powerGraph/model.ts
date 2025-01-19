@@ -342,7 +342,7 @@ export function updateEnergyValues(
 		Object.entries(totals.sh).forEach(([id, values]) => {
 			historicSummary.setEnergy(id, values.energy_imported)
 			const idNumber = id.substring(2)
-			if (!shDevices[+idNumber].countAsHouse) {
+			if (!shDevices.get(+idNumber)!.countAsHouse) {
 				historicSummary.items.devices.energy += values.energy_imported
 			}
 		})
@@ -380,7 +380,7 @@ export function updateEnergyValues(
 					cp.pvPercentage = hcp.pvPercentage
 				}
 			})
-			Object.values(shDevices).map((device) => {
+			shDevices.forEach((device) => {
 				const hDevice = historicSummary.items['sh' + device.id]
 				if (hDevice) {
 					device.energy = hDevice.energy
@@ -409,7 +409,7 @@ function resetPvValues() {
 		cp.energyBat = 0
 		cp.pvPercentage = 0
 	})
-	Object.values(shDevices).map((device) => {
+	shDevices.forEach((device) => {
 		device.energyPv = 0
 		device.energyBat = 0
 		device.pvPercentage = 0

@@ -396,7 +396,7 @@ interface Preferences {
 
 function writeCookie() {
 	const prefs: Preferences = {}
-	prefs.hideSH = Object.values(shDevices)
+	prefs.hideSH = [...shDevices.values()]
 		.filter((device) => !device.showInGraph)
 		.map((device) => device.id)
 	prefs.showLG = globalConfig.graphPreference == 'live'

@@ -38,7 +38,7 @@
 			</div>
 			
 		</div> -->
-		<!-- <div v-if="shutdown"
+	<!-- <div v-if="shutdown"
 			class="confirmationBox rounded m-5 p-5 d-flex flex-column align-items-center "
 		>
 			<span class="confirmTitle">Abschalten</span>
@@ -82,7 +82,6 @@ function reload() {
 }
 .controlbuttons {
 	font-size: var(--font-settings);
-	
 }
 .controlbutton {
 	background-color: var(--color-menu);
@@ -95,11 +94,10 @@ function reload() {
 	font-size: var(--font-settings);
 	background-color: var(--color-fg);
 	color: var(--color-evu);
-
 }
 .confirmTitle {
 	font-weight: bold;
-	}
+}
 .cancelButton {
 	font-size: var(--font-settings);
 	background-color: var(--color-battery);
@@ -109,5 +107,4 @@ function reload() {
 	background-color: var(--color-evu);
 	color: var(--color-fg);
 }
-
 </style>
