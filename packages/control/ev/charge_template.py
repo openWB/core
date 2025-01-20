@@ -118,9 +118,7 @@ def charge_template_data_factory() -> ChargeTemplateData:
 @dataclass
 class SelectedPlan:
     remaining_time: float = 0
-    available_current: float = 14
     duration: float = 0
-    max_current: int = 16
     missing_amount: float = 0
     phases: int = 1
     plan: Optional[ScheduledChargingPlan] = None
@@ -135,7 +133,8 @@ class ChargeTemplate:
         "topic": ""})
 
     BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
-    CHARGING_PRICE_EXCEEDED = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt. Falls vorhanden wird mit EVU-Überschuss geladen."
+    CHARGING_PRICE_EXCEEDED = ("Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt. "
+                               + "Falls vorhanden wird mit EVU-Überschuss geladen.")
     CHARGING_PRICE_LOW = "Ladung, da der aktuelle Strompreis unter dem maximalen Strompreis liegt."
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."
@@ -308,93 +307,60 @@ class ChargeTemplate:
                                        ev_template: EvTemplate,
                                        phases: int,
                                        used_amount: float,
-                                       max_hw_phasess: int,
+                                       max_hw_phases: int,
                                        phase_switch_supported: bool,
-                                       charging_type: str) -> Optional[SelectedPlan]:
-        """ prüft, ob der Ziel-SoC oder die Ziel-Energiemenge erreicht wurde und stellt den zur Erreichung nötigen
-        Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
-        nicht eingehalten werden konnte.
-        """
-        if phase_switch_supported:
-            if charging_type == ChargingType.AC.value:
-                max_current = ev_template.data.max_current_multi_phases
-            else:
-                max_current = ev_template.data.dc_max_current
-            selected_plan = self._search_plan(max_current, soc, ev_template, min(
-                3 if plan.phases_to_use == 0 else plan.phases_to_use, max_hw_phases), used_amount, charging_type)
-            if (selected_plan and
-                charging_type == ChargingType.AC.value and
-                selected_plan.plan.phases_to_use == 0 and
-                selected_plan.remaining_time > 300 and
-                    selected_plan.plan.et_active is False):
-                max_current = ev_template.data.max_current_single_phase
-                plan_data_single_phase = self._search_plan(
-                    max_current, soc, ev_template, 1, used_amount, charging_type)
-                if plan_data_single_phase:
-                    if plan_data_single_phase.remaining_time > 0:
-                        selected_plan = plan_data_single_phase
-        else:
-            if charging_type == ChargingType.AC.value:
-                if phases == 1:
-                    max_current = ev_template.data.max_current_single_phase
-                else:
-                    max_current = ev_template.data.max_current_multi_phases
-            else:
-                max_current = ev_template.data.dc_max_current
-            selected_plan = self._search_plan(max_current, soc, ev_template, phases, used_amount, charging_type)
-        return selected_plan
-
-    def _search_plan(self,
-                     max_current: int,
-                     soc: Optional[float],
-                     ev_template: EvTemplate,
-                     max_hw_phases: int,
-                     used_amount: float,
-                     charging_type: str) -> Optional[SelectedPlan]:
-        smallest_remaining_time = float("inf")
-        missed_date_today_of_plan_with_smallest_remaining_time = False
-        selected_plan: Optional[SelectedPlan] = None
-        battery_capacity = ev_template.data.battery_capacity
-        for plan in self.data.chargemode.scheduled_charging.plans.values():
-            if plan.active:
-                if plan.limit.selected == "soc" and soc is None:
+                                       charging_type: str,
+                                       chargemde_switch_timestamp: float) -> Optional[SelectedPlan]:
+        plans_diff_end_date = []
+        for p in self.data.chargemode.scheduled_charging.plans.values():
+            if p.active:
+                if p.limit.selected == "soc" and soc is None:
                     raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren "
-                                     f"oder im Plan {plan.name} als Begrenzung Energie einstellen.")
+                                     f"oder im Plan {p.name} als Begrenzung Energie einstellen.")
                 try:
-                    phases = min(3 if plan.phases_to_use == 0 else plan.phases_to_use, max_hw_phases)
-                    duration, missing_amount = self._calculate_duration(
-                        plan, soc, battery_capacity, used_amount, phases, charging_type, ev_template)
-                    remaining_time, missed_date_today = timecheck.check_duration(plan, duration, self.BUFFER)
-                    if remaining_time:
-                        # Wenn der Zeitpunkt vorüber, aber noch nicht abgelaufen ist oder
-                        # wenn noch gar kein Plan vorhanden ist,
-                        if ((remaining_time < 0 and missed_date_today is False) or
-                                # oder der Zeitpunkt noch nicht vorüber ist
-                                remaining_time > 0):
-                            # Wenn die verbleibende Zeit geringer als die niedrigste bisherige verbleibende Zeit ist
-                            if (remaining_time < smallest_remaining_time or
-                                    # oder wenn der Zeitpunkt abgelaufen ist und es noch einen Zeitpunkt gibt, der in
-                                    # der Zukunft liegt.
-                                    (missed_date_today_of_plan_with_smallest_remaining_time and 0 < remaining_time)):
-                                smallest_remaining_time = remaining_time
-                                missed_date_today_of_plan_with_smallest_remaining_time = missed_date_today
-                                if charging_type == ChargingType.AC.value:
-                                    available_current = plan.current
-                                else:
-                                    available_current = plan.dc_current
-                                selected_plan = SelectedPlan(
-                                    remaining_time=remaining_time,
-                                    available_current=available_current,
-                                    max_current=max_current,
-                                    phases=phases,
-                                    plan=plan,
-                                    missing_amount=missing_amount,
-                                    duration=duration)
-                    log.debug(f"Plan-Nr. {plan.id}: Differenz zum Start {remaining_time}s, Dauer {duration/3600}h, "
-                              f"Termin heute verpasst: {missed_date_today}")
+                    plans_diff_end_date.update(
+                        {p.id: timecheck.check_end_time(p.time, chargemde_switch_timestamp)})
+
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.ct_num))
-        return selected_plan
+        if plans_diff_end_date:
+            # ermittle den Key vom kleinsten value in plans_diff_end_date
+            plan_dict = min(plans_diff_end_date, key=lambda x: x.get(
+                'plans_diff_end_date', float('inf')))
+            plan_id = list(plan_dict.keys())[0]
+            plan_end_time = list(plan_dict.values())[0]
+
+        plan = self.data.chargemode.scheduled_charging.plans[plan_id]
+
+        if plan.phases_to_use == 0:
+            if max_hw_phases == 1 or phase_switch_supported is False:
+                duration, missing_amount = self._calculate_duration(
+                    plan, soc, ev_template.data.battery_capacity, used_amount, 1, charging_type, ev_template)
+            else:
+                duration_3p, missing_amount = self._calculate_duration(
+                    plan, soc, ev_template.data.battery_capacity, used_amount, 3, charging_type, ev_template)
+                duration_1p, missing_amount = self._calculate_duration(
+                    plan, soc, ev_template.data.battery_capacity, used_amount, 1, charging_type, ev_template)
+                if duration_1p < 0:
+                    # Zeit reicht nicht mehr für einphasiges Laden
+                    duration = duration_3p
+                    phases = 3
+                else:
+                    duration = duration_1p
+                    phases = 1
+        elif plan.phases_to_use == 3 or plan.phases_to_use == 1:
+            duration, missing_amount = self._calculate_duration(
+                plan, soc, ev_template.data.battery_capacity,
+                used_amount, plan.phases_to_use, charging_type, ev_template)
+
+        start_time = plan_end_time - duration
+        remaining_time = timecheck.create_timestamp() - start_time
+
+        return SelectedPlan(remaining_time=remaining_time,
+                            duration=duration,
+                            missing_amount=missing_amount,
+                            phases=phases,
+                            plan=plan)
 
     def _calculate_duration(self,
                             plan: ScheduledChargingPlan,
@@ -404,6 +370,7 @@ class ChargeTemplate:
                             phases: int,
                             charging_type: str,
                             ev_template: EvTemplate) -> Tuple[float, float]:
+
         if plan.limit.selected == "soc":
             if soc is not None:
                 missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
