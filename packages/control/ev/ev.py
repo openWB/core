@@ -119,7 +119,8 @@ class Ev:
                              imported: float,
                              max_phases_hw: int,
                              phase_switch_supported: bool,
-                             charging_type: str) -> Tuple[bool, Optional[str], str, float, int]:
+                             charging_type: str,
+                             chargemde_switch_timestamp: float) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -154,7 +155,8 @@ class Ev:
                     used_amount,
                     max_phases_hw,
                     phase_switch_supported,
-                    charging_type)
+                    charging_type,
+                    chargemde_switch_timestamp)
                 soc_request_interval_offset = 0
                 if plan_data:
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
