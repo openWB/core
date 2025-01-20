@@ -97,10 +97,11 @@ export function updateServer(
 	}
 }
 
-export function sendCommand(event: object) {
-	// console.log ("SENDCOMMAND " + JSON.stringify(event))
+export function sendCommand(command: string, data: object = {}) {
+	console.log('send command ' + command + ' ' + JSON.stringify(data))
+
 	mqttPublish(
-		'openWB/set/command/' + mqttClientId() + '/todo',
-		JSON.stringify(event),
+		`openWB/set/command/${mqttClientId()}/todo`,
+		JSON.stringify({ command: command, data: data }),
 	)
 }

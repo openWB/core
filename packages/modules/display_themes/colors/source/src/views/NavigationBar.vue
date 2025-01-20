@@ -4,21 +4,40 @@
 	<div class="navigation">
 		<span class="graphbuttons">
 			<span class="brand me-4">openWB</span>
-			<DisplayButton icon="fa-chart-pie" @click="selectPowermeter">Leistung</DisplayButton>
-			<DisplayButton icon="fa-chart-line" @click="selectPowergraph">Verlauf</DisplayButton>
-			<DisplayButton icon="fa-chart-column" @click="selectEnergymeter">Energie</DisplayButton>
+			<DisplayButton icon="fa-chart-pie" @click="selectPowermeter"
+				>Leistung</DisplayButton
+			>
+			<DisplayButton icon="fa-chart-line" @click="selectPowergraph"
+				>Verlauf</DisplayButton
+			>
+			<DisplayButton icon="fa-chart-column" @click="selectEnergymeter"
+				>Energie</DisplayButton
+			>
 		</span>
 
-		<DisplayButton icon="fa-rectangle-list" @click="showStatus">Status</DisplayButton>
+		<DisplayButton icon="fa-rectangle-list" @click="showStatus"
+			>Status</DisplayButton
+		>
 		<span class="cpbuttons">
-			<DisplayButton v-if="Object.values(chargePoints).length > 1" color="var(--color-cp0)" @click="cpLeft">
+			<DisplayButton
+				v-if="Object.values(chargePoints).length > 1"
+				color="var(--color-cp0)"
+				@click="cpLeft"
+			>
 				<span class="fas fa-arrow-left px-2" />
 				<span class="fas fa-charging-station pe-2" />
 			</DisplayButton>
-			<DisplayButton :bgcolor="displayConfig.locked ? 'var(--color-evu)' : 'var(--color-pv)'" @click="unlockDisplay">
+			<DisplayButton
+				:bgcolor="displayConfig.locked ? 'var(--color-evu)' : 'var(--color-pv)'"
+				@click="unlockDisplay"
+			>
 				<span class="fas fa-lock px-4" />
 			</DisplayButton>
-			<DisplayButton v-if="Object.values(chargePoints).length > 1" color="var(--color-cp0)" @click="cpRight">
+			<DisplayButton
+				v-if="Object.values(chargePoints).length > 1"
+				color="var(--color-cp0)"
+				@click="cpRight"
+			>
 				<span class="fas fa-charging-station px-2" />
 				<span class="fas fa-arrow-right pe-2" />
 			</DisplayButton>
