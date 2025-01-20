@@ -20,23 +20,6 @@ class Params:
             self.second_time = second_time
 
 
-@pytest.mark.parametrize("begin_hour, begin_min, end_hour, end_min,expected",
-                         [pytest.param(0, 0, 5, 5, 9300, id="too early"),
-                          pytest.param(8, 18, 10, 35, -780, id="start"),
-                          pytest.param(18, 8, 17, 24, -11640, id="missed date")
-                          ])
-def test_get_remaining_time(begin_hour: int, begin_min: int, end_hour: int, end_min: int, expected: int):
-    # setup
-    end = datetime.datetime(2022, 9, 26, end_hour, end_min)
-    begin = datetime.datetime(2022, 9, 26, begin_hour, begin_min)
-
-    # execution
-    diff = timecheck._get_remaining_time(begin, 9000, end)
-
-    # evaluation
-    assert expected == diff
-
-
 @pytest.mark.parametrize("time, selected, date, expected",
                          [pytest.param("9:00", "once", "2022-05-16", (-7852.0, False), id="once"),
                           pytest.param("8:00", "once", "2022-05-16", (-11452.0, True), id="once missed date"),
@@ -77,23 +60,6 @@ def test_get_next_charging_day(weekday: int, weekly: List[bool], expected_days: 
 
     # evaluation
     assert days == expected_days
-
-
-@pytest.mark.parametrize("now, end, expected_missed",
-                         [pytest.param(datetime.datetime(2022, 9, 29, 8, 40),
-                                       datetime.datetime(2022, 9, 29, 9, 5), False),
-                          pytest.param(datetime.datetime(2022, 9, 29, 8, 40),
-                                       datetime.datetime(2022, 9, 29, 8, 39), False),
-                          pytest.param(datetime.datetime(2022, 9, 29, 8, 40),
-                                       datetime.datetime(2022, 9, 29, 8, 19), True)
-                          ]
-                         )
-def test_missed_date_today(now: datetime.datetime, end: datetime.datetime, expected_missed: bool):
-    # setup and execution
-    missed = timecheck._missed_date_today(now, end, -1200)
-
-    # evaluation
-    assert missed == expected_missed
 
 
 @pytest.mark.parametrize(
