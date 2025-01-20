@@ -34,15 +34,18 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         unit = self.component_config.configuration.modbus_id
 
         soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.UINT_32, unit=unit)
-        current = self.__tcp_client.read_holding_registers(30843, ModbusDataType.INT_32, unit=unit)/-1000
-        voltage = self.__tcp_client.read_holding_registers(30851, ModbusDataType.INT_32, unit=unit)/100
+        imp = self.__tcp_client.read_holding_registers(31393, ModbusDataType.INT_32, unit=unit)
+        exp = self.__tcp_client.read_holding_registers(31395, ModbusDataType.INT_32, unit=unit)
 
         if soc == self.SMA_UINT32_NAN:
             # If the storage is empty and nothing is produced on the DC side, the inverter does not supply any values.
             soc = 0
             power = 0
         else:
-            power = current*voltage
+            if imp > 5:
+                power = imp
+            else:
+                power = exp * -1
         exported = self.__tcp_client.read_holding_registers(31401, ModbusDataType.UINT_64, unit=3)
         imported = self.__tcp_client.read_holding_registers(31397, ModbusDataType.UINT_64, unit=3)
 
