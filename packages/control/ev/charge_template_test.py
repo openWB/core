@@ -125,47 +125,29 @@ def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
     assert ret == expected
 
 
-Params = NamedTuple("Params", [("name", str),
-                               ("phase_switch_supported", bool),
-                               ("chargemode_phases", int),
-                               ("search_plan", Optional[SelectedPlan]),
-                               ("expected_max_current", int),
-                               ("phases", int),
-                               ("max_phases", int),
-                               ("expected_phases", int)])
-
-cases = [
-    Params(name="no phase switch, one phase", phase_switch_supported=False, chargemode_phases=0,
-           search_plan=None, phases=1, max_phases=3, expected_max_current=32, expected_phases=1),
-    Params(name="no phase switch, multi phase", phase_switch_supported=False, chargemode_phases=0,
-           search_plan=None, phases=3, max_phases=3, expected_max_current=16, expected_phases=3),
-    Params(name="no automatic mode, multi phase", phase_switch_supported=True, chargemode_phases=2,
-           search_plan=None, phases=2, max_phases=2, expected_max_current=16, expected_phases=2),
-    Params(name="select phases, not enough time", phase_switch_supported=True, chargemode_phases=0, search_plan=Mock(
-        spec=SelectedPlan, remaining_time=300), phases=1, max_phases=3, expected_max_current=16, expected_phases=3),
-    Params(name="select phases, enough time", phase_switch_supported=True, chargemode_phases=0, search_plan=Mock(
-        spec=SelectedPlan, remaining_time=301), phases=1, max_phases=3, expected_max_current=32, expected_phases=1)
-]
-
-
-@pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
+@pytest.mark.parametrize("phases_to_use, calc_duration, max_hw_phases, phase_switch_supported, expected",
+                         [
+                             pytest.param(0, (1000, 3), 1, True, (3748, 3, 1, 1000), id="automatic, one hw phase"),
+                             pytest.param(0, (1000, 3), 3, False, (3748, 3, 3, 1000), id="automatic, no phase switch"),
+                             pytest.param(0, (1000, 3), 3, True, (3748, 3, 3, 1000), id="automatic, 3p"),
+                             pytest.param(0, [(5000, 3)], 3, True, (5248, 3, 1, 1000), id="automatic, 1p"),
+                             pytest.param(0, (1000, 3), 3, True, (5248, 3, 3, 1000), id="end time in past"),
+                         ])
+def test_calc_remaining_time(phases_to_use, calc_duration, max_hw_phases, phase_switch_supported, expected, monkeypatch):
     # setup
-    ct = ChargeTemplate(0)
-    get_phases_chargemode_mock = Mock(return_value=params.chargemode_phases)
-    monkeypatch.setattr(data.data.general_data, "get_phases_chargemode", get_phases_chargemode_mock)
-    search_plan_mock = Mock(return_value=params.search_plan)
-    monkeypatch.setattr(ChargeTemplate, "_search_plan", search_plan_mock)
-    evt_data = Mock(spec=EvTemplateData, max_current_multi_phases=16, max_current_single_phase=32)
-    evt = Mock(spec=EvTemplate, data=evt_data)
+    ct = ChargeTemplate()
+    plan = ScheduledChargingPlan(phases_to_use=phases_to_use)
+    calculate_duration_mock = Mock(return_value=calc_duration)
+    monkeypatch.setattr(ChargeTemplate, "_calculate_duration", calculate_duration_mock)
+    evt = Mock(spec=EvTemplate)
 
     # execution
-    ct.scheduled_charging_recent_plan(50, evt, params.phases, 5, params.max_phases,
-                                      params.phase_switch_supported, ChargingType.AC.value)
+    remaining_time, missing_amount, phases, duration = ct._calc_remaining_time(
+        plan, 1652688000, 50, evt, 3000, max_hw_phases, phase_switch_supported, ChargingType.AC.value)
+    # end time 16.5.22 10:00
 
     # evaluation
-    assert search_plan_mock.call_args.args[0] == params.expected_max_current
-    assert search_plan_mock.call_args.args[3] == params.expected_phases
+    assert (remaining_time, missing_amount, phases, duration) == expected
 
 
 @pytest.mark.parametrize(
@@ -204,7 +186,7 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
     calculate_duration_mock = Mock(return_value=(100, 200))
     monkeypatch.setattr(ChargeTemplate, "_calculate_duration", calculate_duration_mock)
     check_duration_mock = Mock(side_effect=[check_duration_return1, check_duration_return2])
-    monkeypatch.setattr(timecheck, "check_duration", check_duration_mock)
+    monkeypatch.setattr(timecheck, "check_end_time", check_duration_mock)
     ct = ChargeTemplate(0)
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
@@ -266,7 +248,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
         plan_data.plan = plan
 
     # execution
-    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6, 0)
+    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6, 0, ChargingType.AC.value, EvTemplate())
 
     # evaluation
     assert ret == expected
@@ -277,7 +259,7 @@ def test_scheduled_charging_calc_current_no_plans():
     ct = ChargeTemplate(0)
 
     # execution
-    ret = ct.scheduled_charging_calc_current(None, 63, 5, 3, 6, 0)
+    ret = ct.scheduled_charging_calc_current(None, 63, 5, 3, 6, 0, ChargingType.AC.value, EvTemplate())
 
     # evaluation
     assert ret == (0, "stop", ChargeTemplate.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, 3)
@@ -307,7 +289,7 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
 
     # execution
     ret = ct.scheduled_charging_calc_current(SelectedPlan(
-        plan=plan, remaining_time=301, phases=3, duration=3600), 79, 0, 3, 6, 0)
+        plan=plan, remaining_time=301, phases=3, duration=3600), 79, 0, 3, 6, 0, ChargingType.AC.value, EvTemplate())
 
     # evaluation
     assert ret == expected

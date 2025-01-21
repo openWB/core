@@ -133,7 +133,7 @@ def check_end_time(plan: ScheduledChargingPlan, chargemde_switch_timestamp: floa
     elif plan.frequency.selected == "daily":
         end = end.replace(now.year, now.month, now.day)
         remaining_time = end - now
-        if remaining_time.total_seconds() < 0 and end < chargemde_switch_timestamp:
+        if remaining_time.total_seconds() < 0 and end.timestamp() < chargemde_switch_timestamp:
             # Wenn auf Zielladen umgeschaltet wurde und der Termin noch nicht vorbei war, noch auf diesen Termin laden.
             end = end + datetime.timedelta(days=1)
             remaining_time = end - now
@@ -142,12 +142,17 @@ def check_end_time(plan: ScheduledChargingPlan, chargemde_switch_timestamp: floa
             raise ValueError("Es muss mindestens ein Tag ausgewählt werden.")
         end = end.replace(now.year, now.month, now.day + _get_next_charging_day(plan.frequency.weekly, now.weekday()))
         remaining_time = end - now
+        if remaining_time.total_seconds() < 0 and end.timestamp() < chargemde_switch_timestamp:
+            end = end.replace(now.year, now.month, now.day +
+                              _get_next_charging_day(plan.frequency.weekly, now.weekday()+1)+1)
+            remaining_time = end - now
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
-    if end < chargemde_switch_timestamp:
+    if end.timestamp() < chargemde_switch_timestamp:
         # Als auf Zielladen umgeschaltet wurde, war der Termin schon vorbei
-        remaining_time = None
-    return remaining_time
+        return None
+    else:
+        return remaining_time.total_seconds()
 
 
 def _get_next_charging_day(weekly: List[bool], weekday: int) -> int:
