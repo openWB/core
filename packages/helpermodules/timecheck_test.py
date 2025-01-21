@@ -3,7 +3,6 @@ from typing import List, Optional, Union
 from unittest.mock import MagicMock, Mock
 import pytest
 
-from control.ev.charge_template import ChargeTemplate
 from helpermodules import timecheck
 from helpermodules.abstract_plans import AutolockPlan, Frequency, ScheduledChargingPlan, TimeChargingPlan
 
@@ -20,37 +19,42 @@ class Params:
             self.second_time = second_time
 
 
-@pytest.mark.parametrize("time, selected, date, expected",
-                         [pytest.param("9:00", "once", "2022-05-16", (-7852.0, False), id="once"),
-                          pytest.param("8:00", "once", "2022-05-16", (-11452.0, True), id="once missed date"),
-                          pytest.param("12:00", "daily", [], (2948.0, False), id="daily today"),
-                          pytest.param("2:00", "daily", [], (53348.0, False), id="daily  missed today, use next day"),
-                          pytest.param("8:05", "weekly", [True, False, False, False,
-                                       False, False, False], (593648.0, False), id="weekly missed today"),
+@pytest.mark.parametrize("time, selected, date, expected_remaining_time",
+                         [pytest.param("9:00", "once", "2022-05-16", 1148, id="once"),
+                          pytest.param("7:55", "once", "2022-05-16", None, id="missed date"),
+                          pytest.param("8:05", "once", "2022-05-16", -2152, id="once missed date"),
+                          pytest.param("12:00", "daily", [], 11948, id="daily today"),
+                          pytest.param("2:00", "daily", [], 62348, id="daily  missed today, use next day"),
+                          pytest.param("7:55", "weekly", [True, False, False, False,
+                                       False, False, False], 602048, id="weekly missed today"),
                           pytest.param("2:00", "weekly", [False, False, True, False, False, False, False],
-                          (139748.0, False),
-                             id="weekly missed today's date, no date on next day"),
+                          148748,
+                                       id="weekly missed today's date, no date on next day"),
                           pytest.param("2:00", "weekly", [True, True, False, False, False, False, False],
-                          (53348.0, False),
-                             id="weekly missed today's date, date on next day"),
+                          62348,
+                                       id="weekly missed today's date, date on next day"),
                           ]
                          )
-def test_check_duration(time: str, selected: str, date: List, expected: float):
+def test_check_end_time(time: str,
+                        selected: str,
+                        date: List,
+                        expected_remaining_time: float):
     # setup
     plan = Mock(spec=ScheduledChargingPlan, time=time, frequency=Mock(spec=Frequency, selected=selected,))
     if date:
         setattr(plan.frequency, selected, date)
 
     # execution
-    remaining_time, missed_date_today = timecheck.check_duration(plan, 9000, ChargeTemplate.BUFFER)
+    remaining_time = timecheck.check_end_time(
+        plan, chargemde_switch_timestamp=1652680800)  # angesteckt am 16.5.22 um 8:00
 
     # evaluation
-    assert (remaining_time, missed_date_today) == expected
+    assert remaining_time == expected_remaining_time
 
 
 @pytest.mark.parametrize("weekday, weekly, expected_days",
-                         [pytest.param(0, [True, True, False, False, False, False, False], 1),
-                          pytest.param(0, [True, False, False, False, False, False, False], 7),
+                         [pytest.param(0, [True, True, False, False, False, False, False], 0),
+                          pytest.param(1, [True, False, False, False, False, False, False], 6),
                           pytest.param(3, [True, False, False, False, False, False, False], 4),
                           ]
                          )

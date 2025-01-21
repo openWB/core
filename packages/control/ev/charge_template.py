@@ -332,6 +332,24 @@ class ChargeTemplate:
 
         plan = self.data.chargemode.scheduled_charging.plans[plan_id]
 
+        remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
+            plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported, charging_type)
+
+        return SelectedPlan(remaining_time=remaining_time,
+                            duration=duration,
+                            missing_amount=missing_amount,
+                            phases=phases,
+                            plan=plan)
+
+    def _calc_remaining_time(self,
+                             plan: ScheduledChargingPlan,
+                             plan_end_time: float,
+                             soc: Optional[float],
+                             ev_template: EvTemplate,
+                             used_amount: float,
+                             max_hw_phases: int,
+                             phase_switch_supported: bool,
+                             charging_type: str) -> SelectedPlan:
         if plan.phases_to_use == 0:
             if max_hw_phases == 1 or phase_switch_supported is False:
                 duration, missing_amount = self._calculate_duration(
@@ -354,13 +372,8 @@ class ChargeTemplate:
                 used_amount, plan.phases_to_use, charging_type, ev_template)
 
         start_time = plan_end_time - duration
-        remaining_time = timecheck.create_timestamp() - start_time
-
-        return SelectedPlan(remaining_time=remaining_time,
-                            duration=duration,
-                            missing_amount=missing_amount,
-                            phases=phases,
-                            plan=plan)
+        remaining_time = start_time - timecheck.create_timestamp()
+        return remaining_time, missing_amount, phases, duration
 
     def _calculate_duration(self,
                             plan: ScheduledChargingPlan,
@@ -412,7 +425,9 @@ class ChargeTemplate:
                                         used_amount: float,
                                         control_parameter_phases: int,
                                         min_current: int,
-                                        soc_request_interval_offset: int) -> Tuple[float, str, str, int]:
+                                        soc_request_interval_offset: int,
+                                        charging_type: str,
+                                        ev_template: EvTemplate) -> Tuple[float, str, str, int]:
         current = 0
         submode = "stop"
         if selected_plan is None:
@@ -423,6 +438,12 @@ class ChargeTemplate:
         plan = selected_plan.plan
         limit = plan.limit
         phases = selected_plan.phases
+        if charging_type == ChargingType.AC.value:
+            plan_current = plan.current
+            max_current = ev_template.data.max_current_multi_phases
+        else:
+            plan_current = plan.dc_current
+            max_current = ev_template.data.dc_max_current
         log.debug("Verwendeter Plan: "+str(plan.name))
         if limit.selected == "soc" and soc >= limit.soc_limit and soc >= limit.soc_scheduled:
             message = self.SCHEDULED_CHARGING_REACHED_LIMIT_SOC
@@ -441,18 +462,17 @@ class ChargeTemplate:
                 limit_string = self.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(limit.soc_scheduled)
             else:
                 limit_string = self.SCHEDULED_CHARGING_LIMITED_BY_AMOUNT.format(limit.amount/1000)
-            message = self.SCHEDULED_CHARGING_IN_TIME.format(
-                selected_plan.available_current, limit_string, plan.time)
-            current = selected_plan.available_current
+            message = self.SCHEDULED_CHARGING_IN_TIME.format(plan_current, limit_string, plan.time)
+            current = plan_current
             submode = "instant_charging"
         # weniger als die berechnete Zeit verfügbar
         # Ladestart wurde um maximal 20 Min verpasst.
         elif selected_plan.remaining_time <= 0 - soc_request_interval_offset:
             if selected_plan.duration + selected_plan.remaining_time < 0:
-                current = selected_plan.max_current
+                current = max_current
             else:
                 current = min(selected_plan.missing_amount/((selected_plan.duration + selected_plan.remaining_time) /
-                              3600)/(phases*230), selected_plan.max_current)
+                              3600)/(phases*230), max_current)
             message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(round(current, 2))
             submode = "instant_charging"
         else:
@@ -464,7 +484,7 @@ class ChargeTemplate:
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
                 if timecheck.is_list_valid(hour_list):
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR
-                    current = selected_plan.available_current
+                    current = plan_current
                     submode = "instant_charging"
                 elif ((limit.selected == "soc" and soc <= limit.soc_limit) or
                       (limit.selected == "amount" and used_amount < limit.amount)):

@@ -178,7 +178,9 @@ class Ev:
                     used_amount,
                     control_parameter.phases,
                     control_parameter.min_current,
-                    soc_request_interval_offset)
+                    soc_request_interval_offset,
+                    charging_type,
+                    self.ev_template)
 
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
             if (submode != "instant_charging" and
