@@ -40,7 +40,7 @@
       </q-btn-group>
       <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
         <SliderStandard
-          title="Fahrzeug-SoC zum Zielzeitpunkt"
+          title="EV-SoC"
           :min="5"
           :max="100"
           :step="5"
@@ -60,7 +60,7 @@
       <q-input
         v-if="planLimitSelected.value === 'amount'"
         v-model="planLimitAmount.value"
-        label="Ziel-Energy (kWh)"
+        label="Energiemenge (kWh)"
         class="col"
       />
       <div class="q-mb-md">
