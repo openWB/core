@@ -155,7 +155,8 @@ class Ev:
                     max_phases_hw,
                     phase_switch_supported,
                     charging_type,
-                    chargemde_switch_timestamp)
+                    chargemde_switch_timestamp,
+                    control_parameter)
                 soc_request_interval_offset = 0
                 if plan_data:
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
