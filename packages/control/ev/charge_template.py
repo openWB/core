@@ -6,6 +6,7 @@ from typing import Dict, Optional, Tuple
 
 from control import data
 from control.chargepoint.charging_type import ChargingType
+from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
 from dataclass_utils.factories import empty_dict_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
@@ -311,7 +312,8 @@ class ChargeTemplate:
                                        max_hw_phases: int,
                                        phase_switch_supported: bool,
                                        charging_type: str,
-                                       chargemde_switch_timestamp: float) -> Optional[SelectedPlan]:
+                                       chargemde_switch_timestamp: float,
+                                       control_parameter: ControlParameter) -> Optional[SelectedPlan]:
         plans_diff_end_date = []
         for p in self.data.chargemode.scheduled_charging.plans.values():
             if p.active:
@@ -328,19 +330,23 @@ class ChargeTemplate:
             # ermittle den Key vom kleinsten value in plans_diff_end_date
             plan_dict = min(plans_diff_end_date, key=lambda x: x.get(
                 'plans_diff_end_date', float('inf')))
-            plan_id = list(plan_dict.keys())[0]
-            plan_end_time = list(plan_dict.values())[0]
+            if plan_dict:
+                plan_id = list(plan_dict.keys())[0]
+                plan_end_time = list(plan_dict.values())[0]
 
-        plan = self.data.chargemode.scheduled_charging.plans[plan_id]
+                plan = self.data.chargemode.scheduled_charging.plans[plan_id]
 
-        remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
-            plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported, charging_type)
+                remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
+                    plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
+                    charging_type, control_parameter.phases)
 
-        return SelectedPlan(remaining_time=remaining_time,
-                            duration=duration,
-                            missing_amount=missing_amount,
-                            phases=phases,
-                            plan=plan)
+                return SelectedPlan(remaining_time=remaining_time,
+                                    duration=duration,
+                                    missing_amount=missing_amount,
+                                    phases=phases,
+                                    plan=plan)
+            else:
+                return None
 
     def _calc_remaining_time(self,
                              plan: ScheduledChargingPlan,
@@ -350,11 +356,18 @@ class ChargeTemplate:
                              used_amount: float,
                              max_hw_phases: int,
                              phase_switch_supported: bool,
-                             charging_type: str) -> SelectedPlan:
+                             charging_type: str,
+                             control_parameter_phases) -> SelectedPlan:
         if plan.phases_to_use == 0:
-            if max_hw_phases == 1 or phase_switch_supported is False:
+            if max_hw_phases == 1:
                 duration, missing_amount = self._calculate_duration(
                     plan, soc, ev_template.data.battery_capacity, used_amount, 1, charging_type, ev_template)
+                phases = 1
+            elif phase_switch_supported is False:
+                duration, missing_amount = self._calculate_duration(
+                    plan, soc, ev_template.data.battery_capacity, used_amount, control_parameter_phases,
+                    charging_type, ev_template)
+                phases = control_parameter_phases
             else:
                 duration_3p, missing_amount = self._calculate_duration(
                     plan, soc, ev_template.data.battery_capacity, used_amount, 3, charging_type, ev_template)
@@ -371,6 +384,7 @@ class ChargeTemplate:
             duration, missing_amount = self._calculate_duration(
                 plan, soc, ev_template.data.battery_capacity,
                 used_amount, plan.phases_to_use, charging_type, ev_template)
+            phases = plan.phases_to_use
 
         start_time = plan_end_time - duration
         remaining_time = start_time - timecheck.create_timestamp()
