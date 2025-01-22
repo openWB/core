@@ -11,6 +11,3 @@ topic read openWB/#
 topic read openWB-remote/#
 # allow branch "others" for devices other than openWB
 topic readwrite others/#
-
-# allow branch YourCharge
-topic readwrite yourCharge/#
