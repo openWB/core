@@ -22,20 +22,20 @@
 // $warning: #F2C037;
 /////////////////////////////////////////////////////////////////////
 // Default Light Theme Base Colors
-$primary: #5C93D1;
-$secondary: #D2D2D7;
-$accent: #546E7A;
-$positive: #66BD7A;
-$negative: #DB4F5F;
-$info: #7DC5D4;
-$warning: #D98E44;
-$background-1: #E3E3EC;
-$background-2: #EEEEF3;
-$brown-text: #524F57;
-$white: #FFFFFF;
-$grey: #9E9E9E; // Quasar's default grey
-$toggle-off: #E0E0E0;
-$battery: #BA7128;
+$primary: #5c93d1;
+$secondary: #d2d2d7;
+$accent: #546e7a;
+$positive: #66bd7a;
+$negative: #db4f5f;
+$info: #7dc5d4;
+$warning: #d98e44;
+$background-1: #e3e3ec;
+$background-2: #eeeef3;
+$brown-text: #524f57;
+$white: #ffffff;
+$grey: #9e9e9e; // Quasar's default grey
+$toggle-off: #e0e0e0;
+$battery: #ba7128;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -53,6 +53,8 @@ $battery: #BA7128;
   --q-toggle-off: #{$toggle-off};
   --q-flow-home-stroke: #{$grey};
   --q-battery: #{$battery};
+  --q-icon: #{$brown-text};
+  --q-icon-background: #{$background-1};
   // Main background
   background-color: var(--q-background-1);
   // Text color
@@ -129,18 +131,18 @@ $battery: #BA7128;
 }
 // Dark Theme Base Colors
 $dark-page: #030627; // This overrides Quasar's default dark page color
-$dark-primary: #3874DB;
-$dark-secondary: #28293D;
-$dark-accent: #546E7A;
-$dark-positive: #3E8F5E;
-$dark-negative: #C54D57;
-$dark-info: #4B89AA;
-$dark-warning: #D98E44;
+$dark-primary: #3874db;
+$dark-secondary: #28293d;
+$dark-accent: #546e7a;
+$dark-positive: #3e8f5e;
+$dark-negative: #c54d57;
+$dark-info: #4b89aa;
+$dark-warning: #d98e44;
 $dark-background-1: #030627;
 $dark-background-2: #010322;
-$dark-list: #3C3E5C;
-$dark-carousel: #8B8F9F;
-$dark-tab-icon: #D7D9E0;
+$dark-list: #3c3e5c;
+$dark-carousel: #8b8f9f;
+$dark-tab-icon: #d7d9e0;
 // Dark theme
 .body--dark {
   --q-primary: #{$dark-primary};
@@ -160,6 +162,8 @@ $dark-tab-icon: #D7D9E0;
   --q-tab-icon: #{$dark-tab-icon};
   --q-flow-home-stroke: #{$grey};
   --q-battery: #{$dark-warning};
+  --q-icon: #{$white};
+  --q-icon-background: #{$dark-background-1};
   // Main background
   background-color: var($dark-page);
   // Text color
