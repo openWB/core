@@ -5,6 +5,7 @@
     :animated="animated"
     control-color="primary"
     infinite
+    @update:model-value="handleSlideChange"
     padding
     :navigation="groupedItems.length > 1"
     :arrows="groupedItems.length > 1 && $q.screen.gt.xs"
@@ -78,6 +79,13 @@ watch(
     animated.value = true;
   },
 );
+
+const handleSlideChange = () => {
+  const currentScroll = window.scrollY;
+  nextTick(() => {
+    window.scrollTo(0, currentScroll);
+  });
+};
 </script>
 
 <style scoped>
@@ -89,5 +97,6 @@ watch(
 }
 .carousel-height {
   min-height: fit-content;
+  height: 100%;
 }
 </style>

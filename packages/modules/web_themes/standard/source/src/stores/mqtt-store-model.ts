@@ -116,3 +116,16 @@ export interface ScheduledChargingPlan {
   };
   name: string;
 }
+
+export interface GraphDataPoint {
+  timestamp: number;
+  time: string;
+  grid: number;
+  'house-power': number;
+  'charging-all': number;
+  'pv-all': number;
+  'bat-all-power': number;
+  'bat-all-soc': number;
+  [key: `cp${number}-power`]: number;
+  [key: `ev${number}-soc`]: number | null;
+}

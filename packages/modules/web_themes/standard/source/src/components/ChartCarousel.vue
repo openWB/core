@@ -9,7 +9,7 @@
     infinite
     :navigation="chartCarouselItems.length > 1"
     :arrows="chartCarouselItems.length > 1 && $q.screen.gt.xs"
-    class="full-width bg-transparent"
+    class="full-width full-height bg-transparent carousel-height"
   >
     <q-carousel-slide
       v-for="(chartComponent, index) in chartCarouselItems"
@@ -59,3 +59,9 @@ const chartCarouselItems = [
 ];
 const currentSlide = ref<string>(chartCarouselItems[0].name);
 </script>
+
+<style scoped>
+.carousel-height {
+  min-height: fit-content;
+}
+</style>
