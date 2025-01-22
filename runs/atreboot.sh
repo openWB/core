@@ -21,6 +21,19 @@ chmod 666 "$LOGFILE"
 		fi
 	}
 
+	yourChargeVersionMatch() {
+		file=$1
+		target=$2
+		currentVersion=$(grep -o "yc-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
+		installedVersion=$(grep -o "yc-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
+		# echo "$currentVersion == $installedVersion ?"
+		if ((currentVersion == installedVersion)); then
+			return 0
+		else
+			return 1
+		fi
+	}
+
 	waitForServiceStop() {
 		# this function waits for a service to stop and kills the process if it takes too long
 		# this is necessary at least for mosquitto, as the service is stopped, but the process is still running
@@ -351,11 +364,11 @@ chmod 666 "$LOGFILE"
 		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
 		restartService=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf" && yourChargeVersionMatch "${OPENWBBASEDIR}/data/config/mosquitto/yc_openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
 		echo "mosquitto openwb_local.conf already up to date"
 	else
 		echo "updating mosquitto openwb_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
+		sudo cat "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "${OPENWBBASEDIR}/data/config/mosquitto/yc_openwb_local.conf" > "/etc/mosquitto/conf_local.d/openwb_local.conf"
 		restartService=1
 	fi
 	if ((restartService == 1)); then
