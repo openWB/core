@@ -137,18 +137,6 @@ const lineChartData = computed(() => {
         yAxisID: 'y',
       },
       {
-        label: 'CP1 Power',
-        borderColor: '#4766b5',
-        backgroundColor: 'rgba(71, 102, 181, 0.2)',
-        data: selectedData.value.map((item) => item['cp2-power'] as number),
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointHitRadius: 5,
-        fill: true,
-        yAxisID: 'y',
-      },
-      {
         label: 'Speicher SoC',
         borderColor: '#FFB96E',
         borderWidth: 2,
