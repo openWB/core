@@ -776,12 +776,18 @@ rect {
 }
 
 @keyframes dash {
+  from {
+    stroke-dashoffset: 20;
+  }
   to {
-    stroke-dashoffset: -20;
+    stroke-dashoffset: 0;
   }
 }
 
 @keyframes dashReverse {
+  from {
+    stroke-dashoffset: 0;
+  }
   to {
     stroke-dashoffset: 20;
   }
