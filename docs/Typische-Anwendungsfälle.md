@@ -1,3 +1,14 @@
+## Übersicht
+| Szenario      | Konfiguration      |
+|---------------|---------------|
+|Ich muss schnell weg und brauche ein voll geladenes Fahrzeug. | Sofortladen |
+|Ich stecke mittags an, möchte PV nutzen und brauch am nächsten Morgen um 8:00 mindestens 75% SoC. | Zielladen |
+|Ich habe einen dynamischen Stromtarif und stecke mittags an, möchte PV nutzen und brauch am nächsten Morgen um 8:00 mindestens 75% SoC. | Zielladen: Anhand der berechneten Ladedauer werden die günstigsten Stunden ermittelt und dann geladen.|
+|Ich habe einen dynamischen Stromtarif und möchte nur laden, wenn Überschuss vorhanden ist oder der Strompreis unter einer von mir festgelegten Grenze liegt. | Eco |
+|Ich möchte nur Überschuss laden. | PV |
+|Ich möchte Überschuss laden. Falls ich spontan fahren möchte, brauche ich immer mind 40% SoC. | PV mit Mindest-SoC |
+|Ich möchte Überschuss laden. Ich habe kein SoC-Modul und möchte das mein Auto immer etwas geladen wird, falls ich spontan fahren möchte. | PV mit Begrenzung Energiemenge |
+|Für meinen Arbeitstag brauche ich mind 60% SoC. Falls Überschuss da ist, soll der auch in mein Auto geladen werden. Mein Auto soll immer mindestens 25% haben, falls ich spontan fahren möchte.  | Zielladen und Zeitladen mit Begrenzung SoC |
 ## Privater Haushalt, ein E-Auto und PV-Anlage
 
 In diesem Szenario sind die Ziele meistens, das Auto morgens für den Weg zur Arbeit fahrbereit zu haben, aber bis dahin möglichst viel Energie aus der PV-Anlage zum Laden zu nutzen.
