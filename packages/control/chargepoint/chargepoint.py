@@ -518,8 +518,10 @@ class Chargepoint(ChargepointRfidMixin):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use or self.data.set.phases_to_use
-        elif (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
-                                   self.data.get.phases_in_use == 0)):
+        elif self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
+            phases = self.data.set.phases_to_use
+            log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
+        elif chargemode == 0:
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
@@ -537,9 +539,6 @@ class Chargepoint(ChargepointRfidMixin):
                         # phases_target
                         phases = self.data.config.connected_phases
             log.debug(f"Phasenzahl Lademodus: {phases}")
-        elif self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
-            phases = self.data.set.phases_to_use
-            log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
         else:
             if chargemode == 0:
                 phases = self.data.control_parameter.phases
