@@ -17,6 +17,7 @@ import type {
   Vehicle,
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
+  GraphDataPoint,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -2037,6 +2038,26 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  ////////////////// Chart //////////////////////////
+
+  const chartData = computed(() => {
+    const list = getWildcardValues.value('openWB/graph/+');
+    const result: GraphDataPoint[] = [];
+
+    Object.entries(list).forEach(([topic, data]) => {
+      if (topic.includes('alllivevaluesJson') && typeof data === 'string') {
+        const lines = data.split('\n');
+        lines.forEach((line) => {
+          if (line && line.startsWith('{') && line.endsWith('}')) {
+            const dataPoint = JSON.parse(line);
+            result.push(dataPoint);
+          }
+        });
+      }
+    });
+    return result.sort((a, b) => a.timestamp - b.timestamp);
+  });
+
   // exports
   return {
     topics,
@@ -2122,5 +2143,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     // PV data
     getPvConfigured,
     getPvPower,
+    // Chart data
+    chartData,
   };
 });
