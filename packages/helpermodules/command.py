@@ -627,6 +627,12 @@ class Command:
                        hostname=SubData.cp_data[payload["data"]["chargepoint"]
                                                 ].chargepoint.chargepoint_module.config.configuration.ip_address)
 
+    def chargepointUpdate(self, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemUpdate", "data": {}},
+                       hostname=SubData.cp_data[payload["data"]["chargepoint"]
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
+
     def systemReboot(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Neustart wird ausgeführt.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
@@ -668,6 +674,15 @@ class Command:
             run_command([
                 str(parent_file / "runs" / "update_self.sh"),
                 SubData.system_data["system"].data["current_branch"]])
+            try:
+                if not SubData.general_data.data.extern:
+                    # FIXME: Updatefunktion der Secondaries dauerhaft an.
+                    for cp in SubData.cp_data.values():
+                        if cp.chargepoint.chargepoint_module.config.configuration.ip_adress != 'localhost':
+                            time.sleep(2)
+                            self.chargepointUpdate({"data": {"chargepoint": cp}})
+            except Exception:
+                log.error("Fehler im command Modul")
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
         log.info("Fetch versions requested")
