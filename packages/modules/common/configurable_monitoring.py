@@ -10,8 +10,8 @@ class ConfigurableMonitoring():
                  start_initializer: Callable[[], None],
                  stop_initializer: Callable[[], None]) -> None:
         try:
-            self._start_monitoring = start_initializer()
-            self._stop_monitoring = stop_initializer()
+            self._start_monitoring = start_initializer
+            self._stop_monitoring = stop_initializer
         except Exception:
             log.exception("Fehler im Monitoring Modul")
 
