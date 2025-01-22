@@ -122,7 +122,7 @@ class YcConfig:
     standard_socket_installed: Optional[bool] = None
     use_last_charging_phase: Optional[bool] = None
     box_id: Optional[str] = None
-    max_plugin_wait_time_s: float = 60.0
+    max_plugin_wait_time_s: float = 180.0
     min_current_for_charge_detect: float = 1.0
     energy_limit: float = 0.0
 

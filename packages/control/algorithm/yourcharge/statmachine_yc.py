@@ -189,6 +189,7 @@ class StatemachineYc():
                     log.error("Internal error: Detected valid RFID scan but _rfiddata_for_ev_activation is still None")
                 self._state_change("Valid EV RFID tag scanned while idle but plugged-in", LoadControlState.EvActive)
             else:
+                self._wait_for_plugin_entered = datetime.datetime.now(datetime.timezone.utc)
                 self._state_change("Valid EV RFID tag scanned while idle and unplugged: Waiting "
                                    + f"{data.data.yc_data.data.yc_config.max_plugin_wait_time_s} for plugin",
                                    LoadControlState.WaitingForPlugin)
