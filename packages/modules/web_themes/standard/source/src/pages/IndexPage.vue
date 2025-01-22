@@ -1,7 +1,7 @@
 <template>
   <q-page class="column">
     <!-- Top Carousel -->
-    <div class="row justify-center">
+    <div class="row justify-center full-width chart-section">
       <ChartCarousel />
     </div>
 
@@ -67,3 +67,9 @@ const mqttStore = useMqttStore();
 const chargePointIds = computed(() => mqttStore.chargePointIds);
 const batteryIds = computed(() => mqttStore.batteryIds);
 </script>
+
+<style scoped>
+.chart-section {
+  height: 40vh;
+}
+</style>
