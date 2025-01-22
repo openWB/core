@@ -1,7 +1,7 @@
 Der Gesetzgeber sieht verschiedene Möglichkeiten für steuerbare Verbrauchseinrichtungen vor. Für jede steuerbare Verbrauchseinrichtung kann eine andere Option angemeldet werden. Bei der Konfiguration muss deshalb auch immer der/die Ladepunkte angegeben werden, für die die IO-Aktion angewendet werden soll.
 
 ### Dimmen
-Beim Dimmen wird eine Mindestleistung für alle steuerbaren Verbrauchseinrichtungen nach einer vorgegebene Formel ermittelt. Das Ergebnis dieser Formel muss bei der IO-Aktion `Dimmen` in der Einstellung `Mindestleistung` eingetragen werden. ACHTUNG: Die openWB kann aktuell nur die Ladepunkte berücksichtigen. Sind noch weitere steuerbare Verbraucher angemeldet, muss dies bei der Ermittlung der Mindestleistung berücksichtigt werden. Für die korrekte Ermitllung der Mindestleistung ist der Betreiber, nicht openWB oder die software2 verantwortlich.
+Beim Dimmen wird eine Mindestleistung für alle steuerbaren Verbrauchseinrichtungen nach einer vorgegebene Formel ermittelt. Das Ergebnis dieser Formel muss bei der IO-Aktion `Dimmen` in der Einstellung `Mindestleistung` eingetragen werden. ACHTUNG: Die openWB kann aktuell nur die Ladepunkte berücksichtigen. Sind noch weitere steuerbare Verbraucher angemeldet, muss dies bei der Ermittlung der Mindestleistung berücksichtigt werden. Für die korrekte Ermittlung der Mindestleistung ist der Betreiber, nicht openWB oder die software2 verantwortlich.
 Vorhandener Überschuss kann zusätzlich zur Mindestleistung verwendet werden.
 
 ### Dimmung per Direkt-Steuerung
