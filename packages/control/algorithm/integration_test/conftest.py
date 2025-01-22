@@ -9,7 +9,7 @@ from control.bat_all import BatAll
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter_all import CounterAll
 from control.counter import Counter
-from control.ev import Ev
+from control.ev.ev import Ev
 from control.pv import Pv
 from control.chargepoint.chargepoint_state import ChargepointState
 from test_utils.default_hierarchies import NESTED_HIERARCHY

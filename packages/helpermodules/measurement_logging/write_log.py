@@ -1,4 +1,5 @@
 from enum import Enum
+import os
 import json
 import logging
 from math import isnan
@@ -143,6 +144,10 @@ def save_log(log_type: LogType):
             with open(filepath, "r") as jsonFile:
                 content = json.load(jsonFile)
         except FileNotFoundError:
+            content = {"entries": [], "names": {}}
+        except json.JSONDecodeError:
+            new_filepath = str(parent_file / f"{file_name}_invalid.json")
+            os.rename(filepath, new_filepath)
             content = {"entries": [], "names": {}}
 
         previous_entry = get_previous_entry(parent_file, content)

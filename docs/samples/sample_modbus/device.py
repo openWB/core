@@ -18,19 +18,19 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Sample):
     def create_bat_component(component_config: SampleBatSetup):
-        return SampleBat(device_config.id, component_config, device_config.configuration.ip_address)
+        return SampleBat(device_config.id, component_config, device_config.configuration.ip_address, client)
 
     def create_counter_component(component_config: SampleCounterSetup):
-        return SampleCounter(device_config.id, component_config, device_config.configuration.ip_address)
+        return SampleCounter(device_config.id, component_config, device_config.configuration.ip_address, client)
 
     def create_inverter_component(component_config: SampleInverterSetup):
-        return SampleInverter(device_config.id, component_config, device_config.configuration.ip_address)
+        return SampleInverter(device_config.id, component_config, device_config.configuration.ip_address, client)
 
     def update_components(components: Iterable[Union[SampleBat, SampleCounter, SampleInverter]]):
-        with client as c:
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(c)
+                    component.update()
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)

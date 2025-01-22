@@ -90,3 +90,8 @@ class Evse:
     def set_current(self, current: int) -> None:
         time.sleep(0.1)
         self.client.write_registers(1000, current, unit=self.id)
+
+    def get_max_current(self) -> int:
+        time.sleep(0.1)
+        current = self.client.read_holding_registers(2007, ModbusDataType.UINT_16, unit=self.id)
+        return current

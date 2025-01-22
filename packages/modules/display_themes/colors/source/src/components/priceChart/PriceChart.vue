@@ -221,9 +221,6 @@ const chartId = computed(() => {
 onMounted(() => {
 	needsUpdate.value = !needsUpdate.value
 })
-/* onUpdated(() => {
-	mp.value = cp.value.etMaxPrice
-}) */
 </script>
 <style scoped>
 .grapharea {

@@ -8,8 +8,10 @@ from modules.common.configurable_device import ComponentFactoryByType, Configura
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.sma.sma_sunny_boy.bat import SunnyBoyBat
 from modules.devices.sma.sma_sunny_boy.bat_smart_energy import SunnyBoySmartEnergyBat
+from modules.devices.sma.sma_sunny_boy.bat_tesvolt import TesvoltBat
 from modules.devices.sma.sma_sunny_boy.config import (SmaSunnyBoy, SmaSunnyBoyBatSetup, SmaSunnyBoyCounterSetup,
-                                                      SmaSunnyBoyInverterSetup, SmaSunnyBoySmartEnergyBatSetup)
+                                                      SmaSunnyBoyInverterSetup, SmaSunnyBoySmartEnergyBatSetup,
+                                                      SmaTesvoltBatSetup)
 from modules.devices.sma.sma_sunny_boy.counter import SmaSunnyBoyCounter
 from modules.devices.sma.sma_sunny_boy.inverter import SmaSunnyBoyInverter
 
@@ -30,6 +32,9 @@ def create_device(device_config: SmaSunnyBoy):
 
     def create_bat_smart_energy_component(component_config: SmaSunnyBoySmartEnergyBatSetup):
         return SunnyBoySmartEnergyBat(device_config.id, component_config, client)
+
+    def create_bat_tesvolt_component(component_config: SmaTesvoltBatSetup):
+        return TesvoltBat(device_config.id, component_config, client)
 
     def create_counter_component(component_config: SmaSunnyBoyCounterSetup):
         return SmaSunnyBoyCounter(device_config.id, component_config, client)
@@ -52,6 +57,7 @@ def create_device(device_config: SmaSunnyBoy):
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             bat_smart_energy=create_bat_smart_energy_component,
+            bat_tesvolt=create_bat_tesvolt_component,
             counter=create_counter_component,
             inverter=create_inverter_component,
         ),

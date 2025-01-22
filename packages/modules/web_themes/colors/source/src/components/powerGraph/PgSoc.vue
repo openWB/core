@@ -38,7 +38,7 @@ import {
 	type Selection,
 	select,
 } from 'd3'
-import { chargePoints } from '../chargePointList/model'
+import { topVehicles, vehicles } from '../chargePointList/model'
 import { graphData, type GraphDataItem, zoomedRange } from './model'
 
 const props = defineProps<{
@@ -66,7 +66,11 @@ const myline = computed(() => {
 		.y(
 			(d) =>
 				yScale.value(
-					props.order == 2 ? d.batSoc : d['soc' + cp.value.connectedVehicle],
+					props.order == 2
+						? d.batSoc
+						: props.order == 0
+							? d['soc' + topVehicles.value[0]]
+							: d['soc' + topVehicles.value[1]!],
 				) ?? yScale.value(0),
 		)
 
@@ -74,17 +78,24 @@ const myline = computed(() => {
 	return p ? p : ''
 })
 const vID = computed(() => {
-	if (props.order == 2) {
-		return 'Speicher'
-	} else {
-		return cp.value.connectedVehicle
-	}
+	return props.order
 })
 const vName = computed(() => {
-	if (props.order == 2) {
-		return 'Speicher'
-	} else {
-		return cp.value.vehicleName
+	switch (props.order) {
+		case 2:
+			return 'Speicher'
+		case 1:
+			if (vehicles[topVehicles.value[1]] != undefined) {
+				return vehicles[topVehicles.value[1]].name
+			} else {
+				return '???'
+			}
+		default:
+			if (vehicles[topVehicles.value[0]] != undefined) {
+				return vehicles[topVehicles.value[0]].name
+			} else {
+				return '???'
+			}
 	}
 })
 
@@ -103,29 +114,30 @@ const cpColor = computed(() => {
 const nameX = computed(() => {
 	switch (props.order) {
 		case 0:
-			return props.width - 3
-		case 1:
 			return 3
+		case 1:
+			return props.width - 3
 		case 2:
 			return props.width / 2
 		default:
 			return 0 // error
 	}
 })
-const cp = computed(() => {
-	const idx = props.order == 2 ? 0 : props.order
-	return Object.values(chargePoints)[idx]
-})
+
 const nameY = computed(() => {
 	if (graphData.data.length > 0) {
 		let index: number
 		switch (props.order) {
 			case 0:
 				index = graphData.data.length - 1
-				return yScale.value(graphData.data[index]['soc' + vID.value] + 2)
+				return yScale.value(
+					graphData.data[index]['soc' + topVehicles.value[0]] + 2,
+				)
 			case 1:
 				index = 0
-				return yScale.value(graphData.data[index]['soc' + vID.value] + 2)
+				return yScale.value(
+					graphData.data[index]['soc' + topVehicles.value[1]] + 2,
+				)
 			case 2:
 				index = Math.round(graphData.data.length / 2)
 				return yScale.value(graphData.data[index].batSoc + 2)
@@ -139,9 +151,9 @@ const nameY = computed(() => {
 const textPosition = computed(() => {
 	switch (props.order) {
 		case 0:
-			return 'end'
-		case 1:
 			return 'start'
+		case 1:
+			return 'end'
 		case 2:
 			return 'middle'
 		default:
@@ -161,7 +173,11 @@ const autozoom = computed(() => {
 			.y(
 				(d) =>
 					yScale.value(
-						props.order == 2 ? d.batSoc : d['soc' + cp.value.connectedVehicle],
+						props.order == 2
+							? d.batSoc
+							: props.order == 1
+								? d['soc' + topVehicles.value[0]]
+								: d['soc' + topVehicles.value[1]!],
 					) ?? yScale.value(0),
 			)
 		path1.attr('d', path(graphData.data))

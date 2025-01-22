@@ -41,7 +41,9 @@ import {
 	timeFormat,
 	axisLeft,
 	select,
+	line,
 } from 'd3'
+import { globalConfig } from '@/assets/js/themeConfig'
 
 const props = defineProps<{
 	id: string
@@ -81,15 +83,43 @@ const xScale = computed(() => {
 		.domain(xdomain)
 })
 const yDomain = computed(() => {
-	let yd = extent(plotdata.value, (d) => d[1]) as [number, number]
-	yd[0] = Math.floor(yd[0]) - 1
-	yd[1] = Math.floor(yd[1]) + 1
+	let yd = [0, 0]
+	if (plotdata.value.length > 0) {
+		yd = extent(plotdata.value, (d) => d[1]) as [number, number]
+		yd[0] = Math.floor(yd[0]) - 1
+		yd[1] = Math.floor(yd[1]) + 1
+	}
 	return yd
 })
 const yScale = computed(() => {
 	return scaleLinear()
 		.range([height - margin.bottom, 0])
 		.domain(yDomain.value)
+})
+const lowerPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(globalConfig.lowerPriceBound)],
+		[width - margin.right, yScale.value(globalConfig.lowerPriceBound)],
+	]
+	return generator(points as [number, number][])
+})
+const upperPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(globalConfig.upperPriceBound)],
+		[width - margin.right, yScale.value(globalConfig.upperPriceBound)],
+	]
+	return generator(points as [number, number][])
+})
+
+const zeroPath = computed(() => {
+	const generator = line()
+	const points = [
+		[margin.left, yScale.value(0)],
+		[width - margin.right, yScale.value(0)],
+	]
+	return generator(points as [number, number][])
 })
 
 const xAxisGenerator = computed(() => {
@@ -103,7 +133,7 @@ const yAxisGenerator = computed(() => {
 	return (
 		axisLeft<number>(yScale.value)
 			//.ticks(yDomain.value[1] - yDomain.value[0])
-			.ticks(15)
+			.ticks(yDomain.value[1] - yDomain.value[0])
 			.tickSize(0)
 			.tickSizeInner(-(width - margin.right - margin.left))
 			.tickFormat((d) => d.toString())
@@ -157,6 +187,16 @@ const draw = computed(() => {
 		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+	if (yDomain.value[0] < 0) {
+		svg
+			.append('path')
+			.attr('d', zeroPath.value)
+			.attr('stroke', 'var(--color-fg)')
+	}
+	// Line for lower bound
+	svg.append('path').attr('d', lowerPath.value).attr('stroke', 'green')
+	// Line for upper bound
+	svg.append('path').attr('d', upperPath.value).attr('stroke', 'red')
 
 	// Tooltips
 	const ttips = svg

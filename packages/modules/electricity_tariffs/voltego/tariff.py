@@ -52,6 +52,7 @@ def fetch(config: VoltegoTariff) -> None:
         ).json()["elements"]
 
     validate_token(config)
+    # ToDo: get rid of hard coded timezone! Check supported time formats by Voltego API
     # start_date von voller Stunde sonst liefert die API die nächste Stunde
     start_date = datetime.datetime.fromtimestamp(
         timecheck.create_unix_timestamp_current_full_hour()).astimezone(
@@ -73,9 +74,10 @@ def fetch(config: VoltegoTariff) -> None:
     prices: Dict[int, float] = {}
     for data in raw_prices:
         formatted_price = data["price"]/1000000  # €/MWh -> €/Wh
+        # timezone of the result should already be UTC as epoch does not support timezones
         timestamp = datetime.datetime.fromisoformat(data["begin"]).astimezone(
             pytz.timezone("Europe/Berlin")).timestamp()
-        prices.update({int(timestamp): formatted_price})
+        prices.update({str(int(timestamp)): formatted_price})
     return prices
 
 

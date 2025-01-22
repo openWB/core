@@ -57,8 +57,6 @@ function stepDown() {
 	}
 }
 function stepUp() {
-	console.log('stepup')
-	console.log(v.value)
 	if (v.value < props.max) {
 		v.value =
 			Math.round((v.value + props.step) * Math.pow(10, dec)) / Math.pow(10, dec)

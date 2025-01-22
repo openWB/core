@@ -1,14 +1,19 @@
 from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
+from modules.devices.huawei.huawei.type import HuaweiType
 from ..vendor import vendor_descriptor
 
 
 class HuaweiConfiguration:
-    def __init__(self, modbus_id: int = 1, ip_address: Optional[str] = None, port: int = 502):
+    def __init__(self, modbus_id: int = 1,
+                 ip_address: Optional[str] = None,
+                 port: int = 502,
+                 type: HuaweiType = HuaweiType.SDongle):
         self.modbus_id = modbus_id
         self.ip_address = ip_address
         self.port = port
+        self.type = type
 
 
 class Huawei:

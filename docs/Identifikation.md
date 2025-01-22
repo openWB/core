@@ -1,4 +1,4 @@
-Die openWB bietet die Möglichkeit, den Ladepunkt vor dem Laden zu entsperren und/oder das Fahrzeug zuzuordnen, welches geladen wird. Es gibt zwei grundlegende Konzepte, die für sich oder in Kombination genutzt werden können: Das Entsperren eines Ladepunkts und das Zuordnen eines Fahrzeugs.
+Mit den verschiedenen Identifikations-Möglichkeiten kannst du die openWB grundsätzlich vor unbefugtem Laden schützen oder fahrzeugbasierte Funktionen nutzen. Es gibt zwei grundlegende Konzepte: Das Entsperren eines Ladepunkts und das Zuordnen eines Fahrzeugs.
 
 Die Identifikation erfolgt über
 

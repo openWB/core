@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from unittest.mock import MagicMock, Mock
 import pytest
 
-from control.ev import ChargeTemplate
+from control.ev.charge_template import ChargeTemplate
 from helpermodules import timecheck
 from helpermodules.abstract_plans import AutolockPlan, Frequency, ScheduledChargingPlan, TimeChargingPlan
 

@@ -4,7 +4,7 @@ import pytest
 
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_template import CpTemplate
-from control.ev import Ev
+from control.ev.ev import Ev
 
 
 @pytest.mark.parametrize("phase_1, phases, expected_required_currents",

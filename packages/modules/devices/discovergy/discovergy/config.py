@@ -12,7 +12,7 @@ class DiscovergyConfiguration:
 
 class Discovergy:
     def __init__(self,
-                 name: str = "Discovergy",
+                 name: str = "inexogy (Discovergy)",
                  type: str = "discovergy",
                  id: int = 0,
                  configuration: DiscovergyConfiguration = None) -> None:
@@ -28,16 +28,13 @@ class DiscovergyCounterConfiguration:
         self.meter_id = meter_id
 
 
-class DiscovergyCounterSetup:
+class DiscovergyCounterSetup(ComponentSetup[DiscovergyCounterConfiguration]):
     def __init__(self,
-                 name: str = "Discovergy Zähler",
+                 name: str = "inexogy (Discovergy) Zähler",
                  type: str = "counter",
                  id: Optional[int] = 0,
                  configuration: DiscovergyCounterConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.id = id
-        self.configuration = configuration or DiscovergyCounterConfiguration()
+        super().__init__(name, type, id, configuration or DiscovergyCounterConfiguration())
 
 
 class DiscovergyInverterConfiguration:
@@ -47,7 +44,7 @@ class DiscovergyInverterConfiguration:
 
 class DiscovergyInverterSetup(ComponentSetup[DiscovergyInverterConfiguration]):
     def __init__(self,
-                 name: str = "Discovergy Wechselrichter",
+                 name: str = "inexogy (Discovergy) Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: DiscovergyInverterConfiguration = None) -> None:
