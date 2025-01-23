@@ -681,6 +681,7 @@ const svgRectWidth = computed(
   align-items: center;
   width: 100%;
   height: 100%;
+  user-select: none;
 }
 
 /* ------ */
@@ -688,6 +689,7 @@ svg {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  pointer-events: none;
 }
 /* ------ */
 
