@@ -50,11 +50,10 @@ $battery: #ba7128;
   --q-brown-text: #{$brown-text};
   --q-white: #{$white};
   --q-grey: #{$grey};
+  --q-carousel-control: #{$primary};
   --q-toggle-off: #{$toggle-off};
   --q-flow-home-stroke: #{$grey};
   --q-battery: #{$battery};
-  --q-icon: #{$brown-text};
-  --q-icon-background: #{$background-1};
   // Main background
   background-color: var(--q-background-1);
   // Text color
@@ -162,8 +161,6 @@ $dark-tab-icon: #d7d9e0;
   --q-tab-icon: #{$dark-tab-icon};
   --q-flow-home-stroke: #{$grey};
   --q-battery: #{$dark-warning};
-  --q-icon: #{$white};
-  --q-icon-background: #{$dark-background-1};
   // Main background
   background-color: var($dark-page);
   // Text color
