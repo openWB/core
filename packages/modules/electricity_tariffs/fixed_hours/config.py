@@ -2,7 +2,7 @@ from typing import Optional, List, Dict
 
 
 class FixedHoursTariffConfiguration:
-    def __init__(self, default_price: Optional[float] = None, tariffs: Optional[List[Dict[str, any]]] = None):
+    def __init__(self, default_price: Optional[float] = None, tariffs: List[Dict[str, any]] = []) -> None:
         self.default_price = default_price
         self.tariffs = tariffs
         '''
@@ -31,7 +31,7 @@ class FixedHoursTariffConfiguration:
 class FixedHoursTariff:
     def __init__(self,
                  name: str = "Feste Tarifstunden (z.b. §14a EnWG Modul3)",
-                 type: str = "fixedhours",
+                 type: str = "fixed_hours",
                  configuration: FixedHoursTariffConfiguration = None) -> None:
         self.name = name
         self.type = type
