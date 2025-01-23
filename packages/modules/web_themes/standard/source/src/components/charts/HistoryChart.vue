@@ -187,7 +187,9 @@ const chartOptions = computed(() => ({
       },
       grid: {
         tickLength: 5,
-        color: $q.dark.isActive ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        color: $q.dark.isActive
+          ? 'rgba(255, 255, 255, 0.1)'
+          : 'rgba(0, 0, 0, 0.1)',
       },
     },
     y: {
@@ -203,7 +205,9 @@ const chartOptions = computed(() => ({
         maxTicksLimit: 11,
       },
       grid: {
-        color: $q.dark.isActive ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        color: $q.dark.isActive
+          ? 'rgba(255, 255, 255, 0.1)'
+          : 'rgba(0, 0, 0, 0.1)',
       },
     },
     y2: {
