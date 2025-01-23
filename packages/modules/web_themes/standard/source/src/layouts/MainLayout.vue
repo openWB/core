@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf" class="centered-container">
-    <q-header elevated>
+    <q-header elevated class="centered-container">
       <q-toolbar>
         <q-toolbar-title>openWB</q-toolbar-title>
         <q-btn
