@@ -9,25 +9,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useQuasar } from 'quasar';
 import { LineChart } from 'vue-chart-3';
 import { Chart, registerables } from 'chart.js';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import 'chartjs-adapter-luxon';
 
+Chart.register(...registerables);
 const $q = useQuasar();
 
-const mobileView = ref<boolean>($q.platform.is.mobile);
-const showLegend = ref<boolean>(!mobileView.value);
+const props = defineProps<{
+  showLegend: boolean;
+}>();
 
-const toggleLegend = () => {
-  showLegend.value = !showLegend.value;
-};
-
-const legendDisplay = computed(() => showLegend.value);
-
-Chart.register(...registerables);
+const legendDisplay = computed(() => props.showLegend);
 
 const mqttStore = useMqttStore();
 
@@ -154,31 +150,6 @@ const lineChartData = computed(() => {
   };
 });
 
-const settingsButtonPlugin = {
-  id: 'settingsButton',
-  afterRender(chart: { canvas: { parentNode: HTMLElement } }) {
-    const buttonContainer = document.createElement('div');
-    buttonContainer.innerHTML = `
-      <div>
-        <button style="background: transparent; color: var(--q-icon); border: none; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-          <span>
-            <i class="material-icons" style="font-size: 17px; color: var(--q-icon)">settings</i>
-          </span>
-        </button>
-      </div>
-    `;
-    buttonContainer.style.position = 'absolute';
-    buttonContainer.style.right = '55px';
-    buttonContainer.style.top = '5px';
-    buttonContainer.style.zIndex = '100';
-    buttonContainer.onclick = toggleLegend;
-
-    chart.canvas.parentNode.appendChild(buttonContainer);
-  },
-};
-
-Chart.register(settingsButtonPlugin);
-
 const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
@@ -192,14 +163,13 @@ const chartOptions = computed(() => ({
         boxHeight: 0.1,
       },
     },
-    title: {
-      display: true,
-      text: 'Zeitliche Verlauf',
-      font: {
-        size: 16,
-      },
-    },
-    customSettingsButton: settingsButtonPlugin,
+    // title: {
+    //   display: true,
+    //   text: 'Zeitliche Verlauf',
+    //   font: {
+    //     size: 16,
+    //   },
+    // },
   },
   scales: {
     x: {
@@ -217,6 +187,7 @@ const chartOptions = computed(() => ({
       },
       grid: {
         tickLength: 5,
+        color: $q.dark.isActive ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
       },
     },
     y: {
@@ -230,6 +201,9 @@ const chartOptions = computed(() => ({
       ticks: {
         stepSize: 0.2,
         maxTicksLimit: 11,
+      },
+      grid: {
+        color: $q.dark.isActive ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
       },
     },
     y2: {
