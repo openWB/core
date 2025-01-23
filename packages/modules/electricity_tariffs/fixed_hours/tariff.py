@@ -12,6 +12,8 @@ log = logging.getLogger(__name__)
 
 
 def to_time(time_str):
+    if time_str == "24:00":
+        return datetime.time(23, 59, 59)
     return datetime.datetime.strptime(time_str, "%H:%M").time()
 
 
