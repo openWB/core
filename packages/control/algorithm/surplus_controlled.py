@@ -142,7 +142,7 @@ class SurplusControlled:
         MAX_DEVIATION = 1.1
         evse_current = chargepoint.data.get.evse_current
         if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
-            formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
+            formatted_evse_current = evse_current if evse_current <= 32 else evse_current / 100
             offset = formatted_evse_current - max(chargepoint.data.get.currents)
             if abs(offset) >= MAX_DEVIATION:
                 current_with_offset = chargepoint.data.set.current + offset
