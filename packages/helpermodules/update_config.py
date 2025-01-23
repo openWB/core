@@ -1,3 +1,4 @@
+import copy
 from dataclasses import asdict
 import datetime
 import glob
@@ -51,7 +52,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 75
+    DATASTORE_VERSION = 76
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -1947,3 +1948,58 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 75)
+
+    def upgrade_datastore_75(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            topics = {}
+            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                charge_template = copy.deepcopy(payload)
+                # replace bmw soc module by no_module
+                if payload["chargemode"]["selected"] == "standby":
+                    charge_template["chargemode"]["selected"] = "stop"
+                if payload["et"]["active"] is True:
+                    charge_template["eco_charging"]["max_price"] = payload["et"]["max_price"]
+                    charge_template["eco_charging"]["limit"] = copy.deepcopy(payload["instant_charging"]["limit"])
+                    if payload["chargemode"]["selected"] == "instant_charging":
+                        charge_template["chargemode"]["selected"] = "eco_charging"
+                payload.pop("et")
+                charge_template["eco_charging"]["phases_to_use"] = self.all_received_topics[
+                    "openWB/general/chargemode_config/instant_charging/phases_to_use"]
+                charge_template["instant_charging"]["phases_to_use"] = self.all_received_topics[
+                    "openWB/general/chargemode_config/instant_charging/phases_to_use"]
+                charge_template["pv_charging"]["phases_to_use"] = self.all_received_topics[
+                    "openWB/general/chargemode_config/pv_charging/phases_to_use"]
+                charge_template["pv_charging"]["phases_to_use_min_soc"] = 3
+                if payload["pv_charging"]["max_soc"] == 101:
+                    charge_template["pv_charging"]["limit"]["selected"] = "none"
+                else:
+                    charge_template["pv_charging"]["limit"]["selected"] = "soc"
+                    charge_template["pv_charging"]["limit"]["soc"] = payload["pv_charging"]["max_soc"]
+                payload["pv_charging"].pop("max_soc")
+                topics.update({topic: charge_template})
+
+                index = get_index(topic)
+                for scheduled_plan_topic, scheduled_play_payload in self.all_received_topics.keys():
+                    if re.search(f"openWB/vehicle/template/charge_template/{index}"
+                                 "/chargemode/scheduled_charging/plans/[0-9]+$", scheduled_plan_topic) is not None:
+                        payload = decode_payload(scheduled_play_payload)
+                        scheduled_plan = copy.deepcopy(payload)
+                        scheduled_plan["phases_to_use"] = self.all_received_topics[
+                            "openWB/general/chargemode_config/scheduled_charging/phases_to_use"]
+                        scheduled_plan["phases_to_use_pv"] = self.all_received_topics[
+                            "openWB/general/chargemode_config/scheduled_charging/phases_to_use_pv"]
+                        scheduled_plan["et_active"] = payload["et"]["active"]
+                        topics.update({scheduled_plan_topic: scheduled_plan})
+                for time_plan_topic, time_play_payload in self.all_received_topics.keys():
+                    if re.search(f"openWB/vehicle/template/charge_template/{index}"
+                                 "/time_charging/plans/[0-9]+$", time_plan_topic) is not None:
+                        payload = decode_payload(time_play_payload)
+                        time_plan = copy.deepcopy(payload)
+                        time_plan["phases_to_use"] = self.all_received_topics[
+                            "openWB/general/chargemode_config/time_charging/phases_to_use"]
+                        topics.update({time_plan_topic: time_plan})
+
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 76)
