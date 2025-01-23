@@ -23,10 +23,11 @@ def validate_tariff_times(config):
         for start, end in tariff["active_times"]["times"]:
             start_time = to_time(start)
             end_time = to_time(end)
-            for existing_start, existing_end in time_slots:
-                if (start_time < existing_end and end_time > existing_start):
+            for existing_start, existing_end, existing_quarters in time_slots:
+                if (start_time < existing_end and end_time > existing_start and
+                        any(quarter in tariff["active_times"]["quarters"] for quarter in existing_quarters)):
                     raise ValueError(f"Overlapping time window detected: {start} - {end} in tariff '{tariff['name']}'")
-            time_slots.append((start_time, end_time))
+            time_slots.append((start_time, end_time, tariff["active_times"]["quarters"]))
 
 
 def fetch(config: FixedHoursTariffConfiguration) -> None:
