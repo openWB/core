@@ -540,7 +540,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif subdata.SubData.cp_data.get(f"cp{get_index(msg.topic)}"):
                 if ("/set/charging_ev" in msg.topic or
-                        "/set/charging_ev_prev" in msg.topic):
+                        "/set/charging_ev_prev" in msg.topic or
+                        "/set/ev_prev" in msg.topic):
                     self._validate_value(msg, int, [(-1, float("inf"))])
                 elif ("/set/current" in msg.topic or
                       "/set/current_prev" in msg.topic):

@@ -306,8 +306,10 @@ class Chargepoint(ChargepointRfidMixin):
     def remember_previous_values(self):
         self.data.set.plug_state_prev = self.data.get.plug_state
         self.data.set.current_prev = self.data.set.current
+        self.data.set.ev_prev = self.data.config.ev
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/current_prev", self.data.set.current_prev)
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ev_prev", self.data.set.ev_prev)
 
     def reset_log_data_chargemode_switch(self) -> None:
         reset_log = Log()
@@ -650,6 +652,8 @@ class Chargepoint(ChargepointRfidMixin):
         else:
             vehicle = -1
             self._pub_configured_ev(ev_list)
+            if self.data.config.ev != self.data.set.ev_prev:
+                self._update_charge_template(ev_list[f"ev{self.data.config.ev}"])
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
@@ -787,20 +791,24 @@ class Chargepoint(ChargepointRfidMixin):
         return charging_ev
 
     def _update_charge_template(self, charging_ev_data: Ev) -> None:
+        # evtl noch vorhandene, aber in den Einstellungen gelöschte Pläne entfernen
         def on_connect(client, userdata, flags, rc):
-            client.subscribe(f'openWB/chargepoint/{self.num}/set/charge_temlate/#', 2)
+            client.subscribe(f'openWB/chargepoint/{self.num}/set/charge_template/#', 2)
 
         def __get_payload(client, userdata, msg):
             Pub().pub(msg.topic, "")
         InternalBrokerClient("processBrokerBranch", on_connect, __get_payload).start_finite_loop()
         self.data.set.charge_template = copy.deepcopy(charging_ev_data.charge_template)
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
-                  dataclasses.asdict(self.data.set.charge_template))
+        pub_template = copy.deepcopy(self.data.set.charge_template.data)
+        pub_template = dataclasses.asdict(pub_template)
+        pub_template["chargemode"]["scheduled_charging"]["plans"].clear()
+        pub_template["time_charging"]["plans"].clear()
+        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template", pub_template)
         for id, plan in self.data.set.charge_template.data.time_charging.plans.items():
             Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template/time_charging/plans/{id}",
                       dataclasses.asdict(plan))
         for id, plan in self.data.set.charge_template.data.chargemode.scheduled_charging.plans.items():
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template/scheduled_charging/plans/{id}",
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template/chargemode/scheduled_charging/plans/{id}",
                       dataclasses.asdict(plan))
 
     def _pub_connected_vehicle(self, vehicle: Ev):
