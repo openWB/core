@@ -405,11 +405,12 @@ class SubData:
             if re.search("/chargepoint/[0-9]+/", msg.topic) is not None:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
-                    log.debug("Stop des Handlers für den internen Ladepunkt.")
-                    self.event_stop_internal_chargepoint.set()
-                    if "cp"+index in var:
-                        var.pop("cp"+index)
-                        self.set_internal_chargepoint_configured()
+                    if re.search("/chargepoint/[0-9]+/config", msg.topic) is not None:
+                        log.debug("Stop des Handlers für den internen Ladepunkt.")
+                        self.event_stop_internal_chargepoint.set()
+                        if "cp"+index in var:
+                            var.pop("cp"+index)
+                            self.set_internal_chargepoint_configured()
                 else:
                     if "cp"+index not in var:
                         var["cp"+index] = ChargepointStateUpdate(

@@ -137,6 +137,7 @@ class Set:
     charge_template: ChargeTemplate = field(default_factory=charge_template_factory)
     current: float = 0
     energy_to_charge: float = 0
+    ev_prev: int = 0
     loadmanagement_available: bool = True
     log: Log = field(default_factory=log_factory)
     manual_lock: bool = False
