@@ -211,6 +211,7 @@ class InternalChargepointHandler:
                     heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
                 if self.standard_socket_meter_handler is not None:
                     try:
+                        time.sleep(0.1)
                         self.standard_socket_meter_handler.update()
                     except Exception as e:
                         log.error(f"YC standard socket handler update() failure (ignored): {str(type(e))} {str(e)}")
