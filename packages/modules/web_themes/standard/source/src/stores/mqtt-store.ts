@@ -2040,6 +2040,10 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   ////////////////// Chart //////////////////////////
 
+  /**
+   * Get live chart data
+   * @returns GraphDataPoint[]
+   */
   const chartData = computed(() => {
     const list = getWildcardValues.value('openWB/graph/+');
     const result: GraphDataPoint[] = [];
