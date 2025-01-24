@@ -44,7 +44,6 @@ class ChargepointModule(AbstractChargepoint):
         self.old_phases_in_use = 0
         self.old_chargepoint_state = ChargepointState()
         self._client = client_handler
-        self.standard_socket_handler = None
         version = self._client.evse_client.get_firmware_version()
         with ModifyLoglevelContext(log, logging.DEBUG):
             log.debug(f"Firmware-Version der EVSE: {version}")
@@ -102,13 +101,6 @@ class ChargepointModule(AbstractChargepoint):
                 plug_state = self.old_plug_state
             else:
                 self.old_plug_state = plug_state
-
-            if self.standard_socket_handler is not None:
-                try:
-                    time.sleep(0.1)
-                    self.standard_socket_handler.update()
-                except Exception as e:
-                    log.error(f"YC standard socket handler update() failure (ignored): {str(type(e))} {str(e)}")
 
             chargepoint_state = ChargepointState(
                 power=power,

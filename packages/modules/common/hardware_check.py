@@ -1,4 +1,5 @@
 import pymodbus
+import time
 from typing import Any, List, Optional, Protocol, Tuple, Union
 
 from modules.common.evse import Evse
@@ -92,6 +93,7 @@ class SeriesHardwareCheckMixin:
 
     def check_meter(self: ClientHandlerProtocol) -> Tuple[bool, Optional[str]]:
         try:
+            time.sleep(0.1)
             serial_number = self.meter_client.get_serial_number()
             if serial_number == "0" or serial_number is None:
                 return True, METER_NO_SERIAL_NUMBER

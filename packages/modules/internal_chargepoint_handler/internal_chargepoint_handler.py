@@ -146,6 +146,7 @@ class InternalChargepointHandler:
         self.event_start = event_start
         self.event_stop = event_stop
         self.heartbeat = False
+        self.standard_socket_meter_handler = None
         self.fault_state_info_cp0 = FaultState(
             ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
                           parent_hostname=global_data.parent_ip))
@@ -208,6 +209,12 @@ class InternalChargepointHandler:
                     heartbeat_cp0 = self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
                 if self.cp1:
                     heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
+                if self.standard_socket_meter_handler is not None:
+                    try:
+                        time.sleep(0.1)
+                        self.standard_socket_meter_handler.update()
+                    except Exception as e:
+                        log.error(f"YC standard socket handler update() failure (ignored): {str(type(e))} {str(e)}")
                 self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 else False
                 time.sleep(1.1)
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):

@@ -301,16 +301,16 @@ class StandardSocketHandler:
             if self._standard_socket_handler is None:
                 self._standard_socket_handler = SocketMeterHandler(
                     self._general_cp_handler.internal_chargepoint_handler.cp0_client_handler.client)
-            if self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler is None:
-                self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler = \
+            if self._general_cp_handler.internal_chargepoint_handler is not None:
+                self._general_cp_handler.internal_chargepoint_handler.standard_socket_meter_handler = \
                     self._standard_socket_handler
             log.info(f"Standard-Socket data: {self._standard_socket_handler.data}")
             return True
         else:
             if self._standard_socket_handler is not None:
                 self._standard_socket_handler = None
-            if self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler is not None:
-                self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler = None
+            if self._general_cp_handler.internal_chargepoint_handler is not None:
+                self._general_cp_handler.internal_chargepoint_handler.standard_socket_meter_handler = None
             # reset the SM state and socket status for non-present socket
             self._current_status = StandardSocketStatus.Unknown
             self._current_control_state = StandardSocketControlState.Idle
