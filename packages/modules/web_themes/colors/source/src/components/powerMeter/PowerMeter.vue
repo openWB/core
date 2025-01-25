@@ -81,7 +81,9 @@
 							Math.round(vehicles[topVehicles[0]].soc) +
 							'%'
 						"
-						:labelcolor="chargepoints[0].color"
+						:labelcolor="
+							chargepoints[0] ? chargepoints[0].color : 'var(--color-charging)'
+						"
 						:anchor="'start'"
 						:config="globalConfig"
 					/>
