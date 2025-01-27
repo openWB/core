@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 75
+    DATASTORE_VERSION = 76
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -452,10 +452,10 @@ class UpdateConfig:
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
-        ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
+        ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.data.id),
         ("openWB/vehicle/0/soc_module/config", NO_MODULE),
         ("openWB/vehicle/0/soc_module/general_config", dataclass_utils.asdict(GeneralVehicleConfig())),
-        ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
+        ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.data.id),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
         ("openWB/vehicle/template/ev_template/0", asdict(EvTemplateData(name="Standard-Fahrzeug-Profil",
@@ -853,7 +853,7 @@ class UpdateConfig:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 if "keep_charge_active_duration" not in payload:
-                    payload["keep_charge_active_duration"] = ev.EvTemplateData().keep_charge_active_duration
+                    payload["keep_charge_active_duration"] = EvTemplateData().keep_charge_active_duration
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 8)
@@ -1957,3 +1957,14 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 75)
+
+    def upgrade_datastore_75(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
+                    re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                payload.update({"id", index})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 76)

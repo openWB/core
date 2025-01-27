@@ -97,6 +97,7 @@ def et_factory() -> Et:
 
 @dataclass
 class ChargeTemplateData:
+    id: int = 0
     name: str = "Lade-Profil"
     prio: bool = False
     load_default: bool = False
@@ -124,7 +125,6 @@ class SelectedPlan:
 class ChargeTemplate:
     """ Klasse der Lade-Profile
     """
-    ct_num: int
     data: ChargeTemplateData = field(default_factory=charge_template_data_factory, metadata={
         "topic": ""})
 
@@ -175,7 +175,7 @@ class ChargeTemplate:
             log.debug(message)
             return 0, "stop", message, None
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ct_num))
+            log.exception("Fehler im ev-Modul "+str(self.data.id))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None
 
     INSTANT_CHARGING_SOC_REACHED = "Kein Sofortladen, da der Soc bereits erreicht wurde."
@@ -215,7 +215,7 @@ class ChargeTemplate:
             else:
                 raise TypeError(f'{instant_charging.limit.selected} unbekanntes Sofortladen-Limit.')
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ct_num))
+            log.exception("Fehler im ev-Modul "+str(self.data.id))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     PV_CHARGING_SOC_REACHED = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
@@ -250,7 +250,7 @@ class ChargeTemplate:
             else:
                 return 0, "stop", self.PV_CHARGING_SOC_REACHED
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ct_num))
+            log.exception("Fehler im ev-Modul "+str(self.data.id))
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def scheduled_charging_recent_plan(self,
@@ -347,7 +347,7 @@ class ChargeTemplate:
                     log.debug(f"Plan-Nr. {plan.id}: Differenz zum Start {remaining_time}s, Dauer {duration/3600}h, "
                               f"Termin heute verpasst: {missed_date_today}")
                 except Exception:
-                    log.exception("Fehler im ev-Modul "+str(self.ct_num))
+                    log.exception("Fehler im ev-Modul "+str(self.data.id))
         return plan_data
 
     def _calculate_duration(self,

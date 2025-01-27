@@ -86,7 +86,7 @@ class Ev:
     def __init__(self, index: int):
         try:
             self.ev_template: EvTemplate = EvTemplate()
-            self.charge_template: ChargeTemplate = ChargeTemplate(0)
+            self.charge_template: ChargeTemplate = ChargeTemplate()
             self.soc_module: ConfigurableVehicle = None
             self.chargemode_changed = False
             self.submode_changed = False

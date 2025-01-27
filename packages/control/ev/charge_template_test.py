@@ -7,7 +7,7 @@ from control import data
 from control import optional
 from control.ev.charge_template import SelectedPlan
 from control.chargepoint.charging_type import ChargingType
-from control.ev.ev import ChargeTemplate
+from control.ev.charge_template import ChargeTemplate
 from control.ev.ev_template import EvTemplate, EvTemplateData
 from control.general import General
 from helpermodules import timecheck
@@ -57,7 +57,7 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
                        expected: Tuple[int, str, Optional[str], Optional[str]],
                        monkeypatch):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     ct.data.time_charging.plans = plans
     check_plans_timeframe_mock = Mock(return_value=plan_found)
     monkeypatch.setattr(timecheck, "check_plans_timeframe", check_plans_timeframe_mock)
@@ -85,7 +85,7 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
                           expected: Tuple[int, str, Optional[str]]):
     # setup
     data.data.optional_data.data.et.active = False
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     ct.data.chargemode.instant_charging.limit.selected = selected
 
     # execution
@@ -109,7 +109,7 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
 def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
                      expected: Tuple[int, str, Optional[str]]):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     ct.data.chargemode.pv_charging.min_soc = min_soc
     ct.data.chargemode.pv_charging.min_current = min_current
     data.data.bat_all_data.data.config.configured = True
@@ -147,7 +147,7 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     get_phases_chargemode_mock = Mock(return_value=params.chargemode_phases)
     monkeypatch.setattr(data.data.general_data, "get_phases_chargemode", get_phases_chargemode_mock)
     search_plan_mock = Mock(return_value=params.search_plan)
@@ -172,7 +172,7 @@ def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
     ])
 def test_calculate_duration(selected: str, phases: int, expected_duration: float, expected_missing_amount: float):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     plan = ScheduledChargingPlan()
     plan.limit.selected = selected
     # execution
@@ -201,7 +201,7 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
     monkeypatch.setattr(ChargeTemplate, "_calculate_duration", calculate_duration_mock)
     check_duration_mock = Mock(side_effect=[check_duration_return1, check_duration_return2])
     monkeypatch.setattr(timecheck, "check_duration", check_duration_mock)
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
     ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1}
@@ -252,7 +252,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          selected: str,
                                          expected: Tuple[float, str, str, int]):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     plan = ScheduledChargingPlan(active=True, id=0)
     plan.limit.selected = selected
     # json verwandelt Keys in strings
@@ -267,7 +267,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
 
 def test_scheduled_charging_calc_current_no_plans():
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
 
     # execution
     ret = ct.scheduled_charging_calc_current(None, 63, 5, 3, 6, 0)
@@ -284,7 +284,7 @@ def test_scheduled_charging_calc_current_no_plans():
     ])
 def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expected, monkeypatch):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     plan = ScheduledChargingPlan(active=True)
     plan.limit.selected = "soc"
     ct.data.chargemode.scheduled_charging.plans = {"0": plan}

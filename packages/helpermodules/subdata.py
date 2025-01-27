@@ -304,7 +304,7 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_vehicle_charge_template_topic(self, var: Dict[str, ev.ChargeTemplate], msg: mqtt.MQTTMessage):
+    def process_vehicle_charge_template_topic(self, var: Dict[str, ChargeTemplate], msg: mqtt.MQTTMessage):
         """ Handler für die EV-Topics
 
         Parameter
@@ -322,7 +322,7 @@ class SubData:
                     var.pop("ct"+index)
             else:
                 if "ct"+index not in var:
-                    var["ct"+index] = ev.ChargeTemplate(int(index))
+                    var["ct"+index] = ChargeTemplate()
                 if re.search("/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
                              msg.topic) is not None:
                     index_second = get_second_index(msg.topic)
@@ -378,7 +378,7 @@ class SubData:
                         var.pop("et"+index)
                 else:
                     if "et"+index not in var:
-                        var["et"+index] = EvTemplate(et_num=int(index))
+                        var["et"+index] = EvTemplate()
                     var["et" + index].data = dataclass_from_dict(EvTemplateData, decode_payload(msg.payload))
                     self.event_ev_template.set()
         except Exception:
