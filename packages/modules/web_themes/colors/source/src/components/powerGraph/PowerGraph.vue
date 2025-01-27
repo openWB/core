@@ -26,8 +26,16 @@
 			</div>
 		</template>
 
-		<figure v-show="graphData.data.length > 0" id="powergraph" class="p-0 m-0">
-			<svg id="powergraph" :viewBox="'0 0 ' + width + ' ' + height">
+		<figure
+			v-show="graphData.data.length > 0"
+			id="powergraphFigure"
+			class="p-0 m-0"
+		>
+			<svg
+				id="powergraph"
+				class="powergraphSvg"
+				:viewBox="'0 0 ' + width + ' ' + height"
+			>
 				<!-- Draw the source graph -->
 				<PgSourceGraph
 					:width="width - margin.left - 2 * margin.right"
@@ -44,7 +52,6 @@
 					:width="width - margin.left - 2 * margin.right"
 					:height="height - margin.top - margin.bottom"
 					:margin="margin"
-					:graph-data="graphData"
 				/>
 				<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
 					<PgSoc
