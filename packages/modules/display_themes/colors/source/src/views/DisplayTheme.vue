@@ -87,7 +87,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
 	window.removeEventListener('focus', haveFocus)
 	window.removeEventListener('resize', updateDimensions)
-	
 })
 function haveFocus() {
 	if (document.hasFocus()) {

@@ -14,6 +14,7 @@ from helpermodules.pub import Pub
 from helpermodules.timecheck import create_unix_timestamp_current_full_hour
 from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
+from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 log = logging.getLogger(__name__)
 
@@ -23,10 +24,19 @@ class Optional(OcppMixin):
         try:
             self.data = OptionalData()
             self.et_module: ConfigurableElectricityTariff = None
+            self.monitoring_module: ConfigurableMonitoring = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
         except Exception:
             log.exception("Fehler im Optional-Modul")
+
+    def monitoring_start(self):
+        if self.monitoring_module is not None:
+            self.monitoring_module.start_monitoring()
+
+    def monitoring_stop(self):
+        if self.mon_module is not None:
+            self.mon_module.stop_monitoring()
 
     def et_provider_available(self) -> bool:
         return self.et_module is not None and self.data.et.get.fault_state != 2
