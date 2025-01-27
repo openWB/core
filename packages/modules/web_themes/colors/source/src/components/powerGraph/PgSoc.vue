@@ -1,31 +1,33 @@
 <template>
-	<path
-		:id="'soc-' + vID"
-		.origin="autozoom"
-		class="soc-baseline"
-		:d="myline"
-		stroke="var(--color-bg)"
-		stroke-width="1"
-		fill="none"
-	/>
-	<path
-		:id="'socdashes-' + vID"
-		class="soc-dashes"
-		:d="myline"
-		:stroke="cpColor"
-		stroke-width="1"
-		:style="{ strokeDasharray: '3,3' }"
-		fill="none"
-	/>
-	<text
-		class="cpname"
-		:x="nameX"
-		:y="nameY"
-		:style="{ fill: cpColor, fontSize: 10 }"
-		:text-anchor="textPosition"
-	>
-		{{ vName }}
-	</text>
+	<svg x="0" :width="props.width">
+		<path
+			:id="'soc-' + vID"
+			.origin="autozoom"
+			class="soc-baseline"
+			:d="myline"
+			stroke="var(--color-bg)"
+			stroke-width="1"
+			fill="none"
+		/>
+		<path
+			:id="'socdashes-' + vID"
+			class="soc-dashes"
+			:d="myline"
+			:stroke="cpColor"
+			stroke-width="1"
+			:style="{ strokeDasharray: '3,3' }"
+			fill="none"
+		/>
+		<text
+			class="cpname"
+			:x="nameX"
+			:y="nameY"
+			:style="{ fill: cpColor, fontSize: 10 }"
+			:text-anchor="textPosition"
+		>
+			{{ vName }}
+		</text>
+	</svg>
 </template>
 
 <script setup lang="ts">

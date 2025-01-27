@@ -82,7 +82,9 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 
 // computed:
 const draw = computed(() => {
-	const graph = select('g#pgUsageGraph')
+	const graph: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+		select('g#pgUsageGraph')
+
 	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
 		drawBarGraph(graph)
 	} else {
@@ -190,7 +192,7 @@ const yAxisGenerator = computed(() => {
 			(d == 0 ? '' : Math.round(d * 10) / 10).toLocaleString(undefined),
 		)
 })
-function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+function drawGraph(graph: Selection<SVGGElement, unknown, HTMLElement, never>) {
 	const area0 = area()
 		.x((d, i) => xScale.value(graphData.data[i].date))
 		.y(yScale.value(0))
@@ -203,7 +205,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	if (globalConfig.showAnimations) {
 		if (animateUsageGraph) {
 			graph.selectAll('*').remove()
-			paths = graph
+			const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+			paths = canvas
 				.selectAll('.usageareas')
 				.data(stackedSeries.value as [number, number][][])
 				.enter()
@@ -219,7 +222,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			usageGraphIsInitialized()
 		} else {
 			graph.selectAll('*').remove()
-			graph
+			const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+			canvas
 				.selectAll('.usageareas')
 
 				.data(stackedSeries.value as [number, number][][])
@@ -230,7 +234,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 		}
 	} else {
 		graph.selectAll('*').remove()
-		graph
+		const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+		canvas
 			.selectAll('.usageareas')
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
@@ -239,7 +244,9 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.attr('fill', (d, i: number) => colors[keysToUse.value[i]])
 	}
 }
-function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+function drawBarGraph(
+	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
+) {
 	if (animateUsageGraph) {
 		graph.selectAll('*').remove()
 		rects = graph
