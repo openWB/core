@@ -105,6 +105,7 @@ def chargemode_factory() -> Chargemode:
 
 @dataclass
 class ChargeTemplateData:
+    id: int = 0
     name: str = "Lade-Profil"
     prio: bool = False
     load_default: bool = False
@@ -129,7 +130,6 @@ class SelectedPlan:
 class ChargeTemplate:
     """ Klasse der Lade-Profile
     """
-    ct_num: int
     data: ChargeTemplateData = field(default_factory=charge_template_data_factory, metadata={
         "topic": ""})
 
@@ -180,7 +180,7 @@ class ChargeTemplate:
                 sub_mode = "stop"
             return current, sub_mode, message, id, phases
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ct_num))
+            log.exception("Fehler im ev-Modul "+str(self.data.id))
             return (0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None,
                     0)
 
@@ -214,7 +214,7 @@ class ChargeTemplate:
                     message = self.AMOUNT_REACHED
             return current, sub_mode, message, phases
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ct_num))
+            log.exception("Fehler im ev-Modul "+str(self.data.id))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), 0
 
     PV_CHARGING_SOC_CHARGING = ("Ladung evtl. auch ohne PV-Überschuss, da der Mindest-SoC des Fahrzeugs noch nicht "
@@ -300,7 +300,7 @@ class ChargeTemplate:
                 current = min_current
             return current, sub_mode, message, phases
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ct_num))
+            log.exception("Fehler im ev-Modul "+str(self.data.id))
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), 0
 
     def scheduled_charging_recent_plan(self,

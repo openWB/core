@@ -786,8 +786,8 @@ class Chargepoint(ChargepointRfidMixin):
             else:
                 current_plan = None
             config_obj = ConnectedConfig(
-                charge_template=vehicle.charge_template.ct_num,
-                ev_template=vehicle.ev_template.et_num,
+                charge_template=vehicle.charge_template.data.id,
+                ev_template=vehicle.ev_template.data.id,
                 chargemode=vehicle.charge_template.data.chargemode.selected,
                 priority=vehicle.charge_template.data.prio,
                 current_plan=current_plan,
@@ -795,7 +795,7 @@ class Chargepoint(ChargepointRfidMixin):
                 time_charging_in_use=True if (self.data.control_parameter.submode ==
                                               "time_charging") else False)
             if soc_obj != self.data.get.connected_vehicle.soc:
-                Pub().pub("openWB/chargepoint/"+str(self.num) +
+                Pub().pub("openWB/chargepoint/"+str(self.data.id) +
                           "/get/connected_vehicle/soc", dataclasses.asdict(soc_obj))
             if info_obj != self.data.get.connected_vehicle.info:
                 Pub().pub("openWB/chargepoint/"+str(self.num) +
