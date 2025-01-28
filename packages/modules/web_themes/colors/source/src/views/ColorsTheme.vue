@@ -11,16 +11,7 @@ Hagen */
 		<ButtonBar v-if="globalConfig.showButtonBar" />
 
 		<!-- Main Widgets -->
-		<div v-if="false" class="row py-0 px-0 m-0">
-			<PowerMeter />
-			<PowerGraph />
-			<EnergyMeter />
-			<ChargePointList id="0" :compact="globalConfig.shortCpList == 'always'" />
-			<GlobalPriceChart id="Hidden" />
-			<VehicleList />
-			<CounterList />
-		</div>
-		<div v-if="true" class="row py-0 px-0 m-0">
+		<div class="row py-0 px-0 m-0">
 			<CarouselFix>
 				<template #item1>
 					<PowerMeter />
@@ -283,7 +274,6 @@ import {
 	screensize,
 } from '@/assets/js/themeConfig'
 import { initGraph } from '@/components/powerGraph/model'
-
 // state
 const showMQ = ref(false)
 const showSH = computed(() => {

@@ -1,41 +1,49 @@
 <template>
-	<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
+	<svg x="0" :width="props.width">
 		<g
-			id="PGXAxis"
-			class="axis"
-			:origin="drawAxis1"
-			:origin2="autozoom"
-			:transform="'translate(0,' + (height / 2 - 6) + ')'"
-		/>
-		<g
-			id="PGXAxis2"
-			class="axis"
-			:origin="drawAxis2"
-			:transform="'translate(0,' + (height / 2 + 10) + ')'"
-		/>
-		<g v-if="globalConfig.showGrid">
-			<rect
-				x="0"
-				y="0"
-				:width="width"
-				:height="height / 2 - 10"
-				fill="none"
-				stroke="var(--color-grid)"
-				stroke-width="0.5"
+			id="PgUnit"
+			:transform="'translate(' + 0 + ',' + (height / 2 + 9) + ')'"
+		></g>
+	</svg>
+	<svg :x="props.margin.left" :width="props.width">
+		<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
+			<g
+				id="PGXAxis"
+				class="axis"
+				:origin="drawAxis1"
+				:origin2="autozoom"
+				:transform="'translate(0,' + (height / 2 - 6) + ')'"
 			/>
-		</g>
-		<g v-if="globalConfig.showGrid">
-			<rect
-				x="0"
-				:y="height / 2 + 10"
-				:width="width"
-				:height="height / 2 - 10"
-				fill="none"
-				stroke="var(--color-grid)"
-				stroke-width="0.5"
+			<g
+				id="PGXAxis2"
+				class="axis"
+				:origin="drawAxis2"
+				:transform="'translate(0,' + (height / 2 + 10) + ')'"
 			/>
+			<g v-if="globalConfig.showGrid">
+				<rect
+					x="0"
+					y="0"
+					:width="width"
+					:height="height / 2 - 10"
+					fill="none"
+					stroke="var(--color-grid)"
+					stroke-width="0.5"
+				/>
+			</g>
+			<g v-if="globalConfig.showGrid">
+				<rect
+					x="0"
+					:y="height / 2 + 10"
+					:width="width"
+					:height="height / 2 - 10"
+					fill="none"
+					stroke="var(--color-grid)"
+					stroke-width="0.5"
+				/>
+			</g>
 		</g>
-	</g>
+	</svg>
 </template>
 
 <script setup lang="ts">
@@ -90,7 +98,9 @@ const ticksize = computed(() => {
 
 const drawAxis1 = computed(() => {
 	let axis = select<AxisContainerElement, number>('g#PGXAxis')
+	let unit = select('g#PgUnit')
 	axis.selectAll('*').remove()
+	unit.selectAll('*').remove()
 	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
 		axis.call(xAxisGeneratorMonth.value)
 	} else {
@@ -116,9 +126,9 @@ const drawAxis1 = computed(() => {
 		axis.selectAll('.tick line').attr('stroke', 'var(--color-bg)')
 	}
 	axis.select('.domain').attr('stroke', 'var(--color-bg)')
-	axis
+	unit
 		.append('text')
-		.attr('x', -props.margin.left)
+		.attr('x', 0)
 		.attr('y', 12)
 		.attr('fill', 'var(--color-axis)')
 		.attr('font-size', fontsize)

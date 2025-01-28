@@ -173,7 +173,7 @@ const ticklineColor = computed(() => {
 	return globalConfig.showGrid ? 'var(--color-grid)' : 'var(--color-bg)'
 })
 function drawGraph(
-	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
+	graph: Selection<SVGGElement, unknown, HTMLElement, unknown>,
 	xScale: ScaleTime<number, number, never>,
 ) {
 	const area0 = area()
@@ -187,7 +187,8 @@ function drawGraph(
 		.curve(curveBumpX)
 	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
-		paths = graph
+		const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+		paths = canvas
 			.selectAll('.sourceareas')
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
