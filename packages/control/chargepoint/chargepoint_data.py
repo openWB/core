@@ -119,7 +119,7 @@ class Get:
 
 
 def charge_template_factory() -> ChargeTemplate:
-    return ChargeTemplate(None)
+    return ChargeTemplate()
 
 
 def ev_factory() -> Ev:
