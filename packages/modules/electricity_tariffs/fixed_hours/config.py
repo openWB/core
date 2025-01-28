@@ -12,7 +12,7 @@ class FixedHoursTariffConfiguration:
                 "name": "high_tariff",
                 "price": 0.20,
                 "active_times": {
-                    "quarters": [1, 2, 3, 4],  # applicable quarters
+                    "dates": [("01-01", "31-03"), ("01-07", "30-09")],  # applicable date ranges (day-month)
                     "times": [("08:00", "12:00"), ("18:00", "22:00")]  # active times during the day
                 }
             },
@@ -20,7 +20,7 @@ class FixedHoursTariffConfiguration:
                 "name": "low_tariff",
                 "price": 0.05,
                 "active_times": {
-                    "quarters": [1, 2, 3, 4],  # applicable quarters
+                    "dates": [("01-04", "30-06"), ("01-10", "31-12")],  # applicable date ranges (day-month)
                     "times": [("00:00", "06:00"), ("22:00", "23:59")]  # active times during the day
                 }
             }
