@@ -51,7 +51,10 @@ def fetch(config: FixedHoursTariffConfiguration) -> TariffState:
 
         for tariff in config.tariffs:
             active_times = [(to_time(start), to_time(end)) for start, end in tariff["active_times"]["times"]]
-            active_dates = [(to_date(start, time_slot), to_date(end, time_slot)) for start, end in tariff["active_times"]["dates"]]
+            active_dates = [
+                (to_date(start, time_slot), to_date(end, time_slot))
+                for start, end in tariff["active_times"]["dates"]
+            ]
             if (any(start <= time_slot.time() < end for start, end in active_times) and
                     any(start <= time_slot.date() <= end for start, end in active_dates)):
                 price = tariff["price"] / 1000
