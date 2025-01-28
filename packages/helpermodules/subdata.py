@@ -322,7 +322,7 @@ class SubData:
                     var.pop("ct"+index)
             else:
                 if "ct"+index not in var:
-                    var["ct"+index] = ev.ChargeTemplate()
+                    var["ct"+index] = ChargeTemplate()
                 self.process_charge_template_topic(var["ct"+index], msg)
                 if re.search("/chargemode/scheduled_charging/plans/[0-9]+$", msg.topic) is not None:
                     self.event_scheduled_charging_plan.set()
@@ -427,6 +427,15 @@ class SubData:
                                 Log, decode_payload(msg.payload))
                         else:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
+                            if "charge_template" in msg.topic:
+                                if var["cp"+index].chargepoint.data.set.charge_template is None:
+                                    var["cp"+index].chargepoint.data.set.charge_template = ChargeTemplate()
+                                if re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None:
+                                    self.set_json_payload_class(
+                                        var["cp"+index].chargepoint.data.set.charge_template.data, msg)
+                                else:
+                                    self.process_charge_template_topic(
+                                        var["cp"+index].chargepoint.data.set.charge_template, msg)
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
                         if re.search("/chargepoint/[0-9]+/get/connected_vehicle/", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)

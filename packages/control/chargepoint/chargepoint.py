@@ -738,8 +738,12 @@ class Chargepoint(ChargepointRfidMixin):
                 self._process_charge_stop()
                 if vehicle != -1:
                     self._pub_connected_vehicle(ev_list[f"ev{vehicle}"])
+                    if self.data.set.charge_template.data.id != ev_list[f"ev{vehicle}"].charge_template.data.id:
+                        self._update_charge_template(ev_list[f"ev{vehicle}"])
                 else:
                     self._pub_configured_ev(ev_list)
+                    if self.data.set.charge_template.data.id != ev_list[f"ev{self.data.config.ev}"].charge_template.data.id:
+                        self._update_charge_template(ev_list[f"ev{self.data.config.ev}"])
             # OCPP Start Transaction nach Anstecken
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):
@@ -783,6 +787,8 @@ class Chargepoint(ChargepointRfidMixin):
             Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
             log.debug("SoC nach EV-Wechsel")
             self._update_charge_template(charging_ev)
+        if self.data.set.charge_template.data.id != charging_ev.charge_template.data.id:
+            self._update_charge_template(charging_ev)
         self.data.set.charging_ev_data = charging_ev
         self.data.set.charging_ev = vehicle
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", vehicle)
@@ -796,8 +802,11 @@ class Chargepoint(ChargepointRfidMixin):
             client.subscribe(f'openWB/chargepoint/{self.num}/set/charge_template/#', 2)
 
         def __get_payload(client, userdata, msg):
-            Pub().pub(msg.topic, "")
+            received_topics.append(msg.topic)
+        received_topics = []
         InternalBrokerClient("processBrokerBranch", on_connect, __get_payload).start_finite_loop()
+        for topic in received_topics:
+            Pub().pub(topic, "")
         self.data.set.charge_template = copy.deepcopy(charging_ev_data.charge_template)
         pub_template = copy.deepcopy(self.data.set.charge_template.data)
         pub_template = dataclasses.asdict(pub_template)

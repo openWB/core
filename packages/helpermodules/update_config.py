@@ -1966,7 +1966,7 @@ class UpdateConfig:
                     re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
                 payload = decode_payload(payload)
                 index = get_index(topic)
-                payload.update({"id", index})
+                payload.update({"id": index})
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 76)
