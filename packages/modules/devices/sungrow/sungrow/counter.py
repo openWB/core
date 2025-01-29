@@ -25,9 +25,9 @@ class SungrowCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.fault_text = "Dieser Sungrow Zähler liefert von Werk aus (entgegen der Dokumentation) "
-        "keine Leistung der einzelnen Phasen. "
-        "Das Lastmanagement ist daher nur anhand der Gesamtleistung (nicht phasenbasiert) möglich."
+        self.fault_text = "Dieser Sungrow Zähler liefert von Werk aus (entgegen der Dokumentation) "\
+            "keine Leistung der einzelnen Phasen. "\
+            "Das Lastmanagement ist daher nur anhand der Gesamtleistung (nicht phasenbasiert) möglich."
 
     def update(self, pv_power: float):
         unit = self.device_config.configuration.modbus_id
