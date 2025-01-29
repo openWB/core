@@ -58,7 +58,7 @@ class IoActions:
         if data.data.io_states[f"io_states{io_device}"].data.get.fault_state == 2:
             raise ValueError(LimitingValue.CONTROLLABLE_CONSUMERS_ERROR.value.format(get_io_name_by_id(io_device)))
 
-    def dimming_get_import_power_left(self, device: List[str, str]) -> Optional[float]:
+    def dimming_get_import_power_left(self, device: List[str]) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
                 for d in action.config.configuration.devices:
@@ -68,14 +68,14 @@ class IoActions:
         else:
             return None
 
-    def dimming_set_import_power_left(self, device: List[str, str], used_power: float) -> Optional[float]:
+    def dimming_set_import_power_left(self, device: List[str], used_power: float) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
                 for d in action.config.configuration.devices:
                     if device[0] == d[0] and ("cp" in device[0] or device[1] == d[1]):
                         return action.dimming_set_import_power_left(used_power)
 
-    def dimming_via_direct_control(self, device: List[str, str]) -> float:
+    def dimming_via_direct_control(self, device: List[str]) -> float:
         for action in self.actions.values():
             if isinstance(action, DimmingDirectControl):
                 for d in action.config.configuration.devices:
