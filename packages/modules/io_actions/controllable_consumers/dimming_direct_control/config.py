@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
-from dataclass_utils.factories import empty_io_pattern_factory
+from dataclass_utils.factories import empty_io_pattern_factory, empty_list_factory
 from modules.io_actions.groups import ActionGroup
 
 
@@ -8,7 +8,7 @@ from modules.io_actions.groups import ActionGroup
 class DimmingDirectControlConfig:
     io_device: Optional[int] = None
     input_pattern: List[Dict] = field(default_factory=empty_io_pattern_factory)
-    device: Optional[str] = None
+    devices: List[List[str, str]] = field(default_factory=empty_list_factory)
 
 
 class DimmingDirectControlSetup:

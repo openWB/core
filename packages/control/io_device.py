@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 from control import data
 from control.limiting_value import LimitingValue
 from helpermodules.constants import NO_ERROR
@@ -58,27 +58,30 @@ class IoActions:
         if data.data.io_states[f"io_states{io_device}"].data.get.fault_state == 2:
             raise ValueError(LimitingValue.CONTROLLABLE_CONSUMERS_ERROR.value.format(get_io_name_by_id(io_device)))
 
-    def dimming_get_import_power_left(self, device: str) -> Optional[float]:
+    def dimming_get_import_power_left(self, device: List[str, str]) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
-                if device in action.config.configuration.devices:
-                    self._check_fault_state_io_device(action.config.configuration.io_device)
-                    return action.dimming_get_import_power_left(device)
+                for d in action.config.configuration.devices:
+                    if device[0] == d[0] and ("cp" in device[0] or device[1] == d[1]):
+                        self._check_fault_state_io_device(action.config.configuration.io_device)
+                        return action.dimming_get_import_power_left()
         else:
             return None
 
-    def dimming_set_import_power_left(self, device: str, used_power: float) -> Optional[float]:
+    def dimming_set_import_power_left(self, device: List[str, str], used_power: float) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, Dimming):
-                if device in action.config.configuration.devices:
-                    return action.dimming_set_import_power_left(device, used_power)
+                for d in action.config.configuration.devices:
+                    if device[0] == d[0] and ("cp" in device[0] or device[1] == d[1]):
+                        return action.dimming_set_import_power_left(used_power)
 
-    def dimming_via_direct_control(self, device: str) -> float:
+    def dimming_via_direct_control(self, device: List[str, str]) -> float:
         for action in self.actions.values():
             if isinstance(action, DimmingDirectControl):
-                if device == action.config.configuration.device:
-                    self._check_fault_state_io_device(action.config.configuration.io_device)
-                    return action.dimming_via_direct_control(device)
+                for d in action.config.configuration.devices:
+                    if device[0] == d[0] and ("cp" in device[0] or device[1] == d[1]):
+                        self._check_fault_state_io_device(action.config.configuration.io_device)
+                        return action.dimming_via_direct_control()
         else:
             return None
 

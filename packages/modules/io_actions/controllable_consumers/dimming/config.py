@@ -8,7 +8,7 @@ from modules.io_actions.groups import ActionGroup
 class DimmingConfig:
     io_device: Optional[int] = None
     input_pattern: List[Dict] = field(default_factory=empty_io_pattern_factory)
-    devices: List[str] = field(default_factory=empty_list_factory)
+    devices: List[List[str, str]] = field(default_factory=empty_list_factory)
     max_import_power: int = 0
 
 

@@ -37,33 +37,29 @@ class Dimming(AbstractIoAction):
 
                 msg = (f"EVU-Zähler: "
                        f"{data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W")
-                for cp in self.config.configuration.devices:
-                    msg += f", Gerät {cp}: {data.data.cp_data[f'cp{cp}'].data.get.powers}W"
+                for device in self.config.configuration.devices:
+                    if "cp" in device[0]:
+                        cp = device[0]
+                        msg += f", Gerät {cp}: {data.data.cp_data[f'cp{cp}'].data.get.powers}W"
                 control_command_log.info(msg)
             elif self.timestamp:
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                 control_command_log.info("Dimmen deaktiviert.")
 
-    def dimming_get_import_power_left(self, device: str) -> None:
-        if device in self.config.configuration.devices:
-            if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                    self.dimming_input] == self.dimming_value:
-                return self.import_power_left
-            elif data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                    self.no_dimming_input] == self.no_dimming_value:
-                return None
-            else:
-                raise Exception("Pattern passt nicht zur Dimmung.")
-        else:
-            return None
-
-    def dimming_set_import_power_left(self, device: str, used_power: float) -> None:
-        if device in self.config.configuration.devices:
-            self.import_power_left -= used_power
-            log.debug(f"verbleibende Dimm-Leistung: {self.import_power_left}W inkl Überschuss")
+    def dimming_get_import_power_left(self) -> None:
+        if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+                self.dimming_input] == self.dimming_value:
             return self.import_power_left
-        else:
+        elif data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+                self.no_dimming_input] == self.no_dimming_value:
             return None
+        else:
+            raise Exception("Pattern passt nicht zur Dimmung.")
+
+    def dimming_set_import_power_left(self, used_power: float) -> None:
+        self.import_power_left -= used_power
+        log.debug(f"verbleibende Dimm-Leistung: {self.import_power_left}W inkl Überschuss")
+        return self.import_power_left
 
 
 def create_action(config: DimmingSetup):

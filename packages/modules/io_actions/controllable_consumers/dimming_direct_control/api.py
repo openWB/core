@@ -32,26 +32,22 @@ class DimmingDirectControl(AbstractIoAction):
 
                 msg = (f"EVU-Zähler: "
                        f"{data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W")
-                msg += (f", Gerät {self.config.configuration.device}: "
-                        f"{data.data.cp_data[f'cp{self.config.configuration.device}'].data.get.powers}W")
+                msg += (f", Gerät {self.config.configuration.devices}: "
+                        f"{data.data.cp_data[f'cp{self.config.configuration.devices}'].data.get.powers}W")
                 control_command_log.info(msg)
             elif self.timestamp:
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                 control_command_log.info("Direktsteuerung deaktiviert.")
 
-    def dimming_via_direct_control(self, device: str) -> None:
-
-        if device == self.config.configuration.device:
-            if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                    self.dimming_input] == self.dimming_value:
-                return 4200
-            elif data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                    self.no_dimming_input] == self.no_dimming_value:
-                return None
-            else:
-                raise Exception("Pattern passt nicht zur Dimmung per Direktsteuerung.")
-        else:
+    def dimming_via_direct_control(self) -> None:
+        if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+                self.dimming_input] == self.dimming_value:
+            return 4200
+        elif data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+                self.no_dimming_input] == self.no_dimming_value:
             return None
+        else:
+            raise Exception("Pattern passt nicht zur Dimmung per Direktsteuerung.")
 
 
 def create_action(config: DimmingDirectControlSetup):
