@@ -14,11 +14,14 @@ class DimmingDirectControl(AbstractIoAction):
     def __init__(self, config: DimmingDirectControlSetup):
         self.config = config
         for pattern in self.config.configuration.input_pattern:
-            if pattern["value"]:
-                self.dimming_input, self.dimming_value = pattern["input_matrix"].items()[0]
-            if pattern["value"] is False:
-                self.no_dimming_input, self.no_dimming_value = pattern["input_matrix"].items()[0]
-
+            input_matrix_list = list(pattern["input_matrix"].items())
+            if len(input_matrix_list):
+                if pattern["value"]:
+                    self.dimming_input, self.dimming_value = input_matrix_list[0]
+                if pattern["value"] is False:
+                    self.no_dimming_input, self.no_dimming_value = input_matrix_list[0]
+            else:
+                control_command_log.warning("Kein Input-Matrix-Element gefunden.")
         super().__init__()
 
     def setup(self) -> None:

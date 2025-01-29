@@ -16,17 +16,20 @@ class Dimming(AbstractIoAction):
         self.config = config
         self.import_power_left = None
         for pattern in self.config.configuration.input_pattern:
-            if pattern["value"]:
-                self.dimming_input, self.dimming_value = pattern["input_matrix"].items()[0]
-            if pattern["value"] is False:
-                self.no_dimming_input, self.no_dimming_value = pattern["input_matrix"].items()[0]
-
+            input_matrix_list = list(pattern["input_matrix"].items())
+            if len(input_matrix_list):
+                if pattern["value"]:
+                    self.dimming_input, self.dimming_value = input_matrix_list[0]
+                if pattern["value"] is False:
+                    self.no_dimming_input, self.no_dimming_value = input_matrix_list[0]
+            else:
+                control_command_log.warning("Kein Input-Matrix-Element gefunden.")
         super().__init__()
 
     def setup(self) -> None:
         self.import_power_left = self.config.configuration.max_import_power + \
             data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].calc_raw_surplus()
-        log.debug(f"Dimmen: {self.import_power_left}W inkl Überschuss")
+        log.debug(f"Dimmen: {self.import_power_left}W inkl. Überschuss")
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
@@ -58,7 +61,7 @@ class Dimming(AbstractIoAction):
 
     def dimming_set_import_power_left(self, used_power: float) -> None:
         self.import_power_left -= used_power
-        log.debug(f"verbleibende Dimm-Leistung: {self.import_power_left}W inkl Überschuss")
+        log.debug(f"verbleibende Dimm-Leistung: {self.import_power_left}W inkl. Überschuss")
         return self.import_power_left
 
 
