@@ -31,7 +31,7 @@ from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev.ev import Ev
 from control import phase_switch
-from control.chargepoint.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -361,9 +361,10 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
                 # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
             self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use)) or
-                # Vorgegebene Phasenzahl hat sich geändert
-             self.check_deviating_contactor_states(self.data.set.phases_to_use,
-                                                   self.data.control_parameter.phases)) and
+                # Vorgegebene Phasenzahl hat sich geändert und es wird geladen
+             (self.check_deviating_contactor_states(self.data.set.phases_to_use,
+                                                    self.data.control_parameter.phases) and
+                self.data.control_parameter.state in CHARGING_STATES)) and
                 # Wenn ein Soll-Strom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
