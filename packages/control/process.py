@@ -13,6 +13,7 @@ from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_io import AbstractIoDevice
 from modules.common.fault_state_level import FaultStateLevel
+from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 
 log = logging.getLogger(__name__)
 
@@ -68,6 +69,12 @@ class Process:
                         target=bat_component.set_power_limit,
                         args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
                         name=f"set power limit {bat_component.component_config.id}"))
+            for action in data.data.io_actions.actions.values():
+                if isinstance(action, DimmingDirectControl):
+                    for d in action.config.configuration.devices:
+                        if "io" in d[0]:
+                            if action.dimming_via_direct_control(d) is not None:
+                                data.data.system_data[d].data.set.digital_output[d[1]] = True
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):
                     modules_threads.append(
