@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 73
+    DATASTORE_VERSION = 74
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -1934,3 +1934,14 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 73)
+
+    def upgrade_datastore_73(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # add manufacturer and model to components
+            if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config", topic) is not None:
+                config_payload = decode_payload(payload)
+                if "info" not in config_payload:
+                    config_payload.update({"info": {"manufacturer": None, "model": None}})
+                    return {topic: config_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 74)
