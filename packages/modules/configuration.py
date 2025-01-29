@@ -290,6 +290,10 @@ def _pub_configurable_chargepoints() -> None:
                 except Exception:
                     log.exception("Fehler im configuration-Modul")
             chargepoints = sorted(chargepoints, key=lambda d: d['text'].upper())
+            # Nach Umbennnung der "Externen openWB" zu "Secondary openWB" soll der Eintrag weiterhin an zweiter Stelle
+            # stehen
+            chargepoints.remove({'value': 'external_openwb', 'text': 'Secondary openWB'})
+            chargepoints.insert(1, {'value': 'external_openwb', 'text': 'Secondary openWB'})
             return chargepoints
 
         path_list = Path(_get_packages_path()/"modules"/"chargepoints").glob('**/chargepoint_module.py')

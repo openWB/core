@@ -38,4 +38,4 @@ class KostalSemCounterSetup(ComponentSetup[KostalSemCounterConfiguration]):
         self.name = name
         self.type = type
         self.id = id
-        self.configuration = configuration or KostalSemCounterConfiguration()
+        super().__init__(name, type, id, configuration or KostalSemCounterConfiguration())
