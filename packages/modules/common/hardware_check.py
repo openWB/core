@@ -93,7 +93,7 @@ class SeriesHardwareCheckMixin:
 
     def check_meter(self: ClientHandlerProtocol) -> Tuple[bool, Optional[str]]:
         try:
-            time.sleep(0.1)
+            # time.sleep(0.1)
             serial_number = self.meter_client.get_serial_number()
             if serial_number == "0" or serial_number is None:
                 return True, METER_NO_SERIAL_NUMBER
