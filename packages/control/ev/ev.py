@@ -215,8 +215,9 @@ class Ev:
                         used_amount,
                         charging_type)
                 elif self.charge_template.data.chargemode.selected == "pv_charging":
+                    used_amount = 0
                     required_current, submode, message, phases = self.charge_template.pv_charging(
-                        self.data.get.soc, control_parameter.min_current, charging_type)
+                        self.data.get.soc, control_parameter.min_current, charging_type, used_amount)
                 elif self.charge_template.data.chargemode.selected == "eco_charging":
                     required_current, submode, message, phases = self.charge_template.eco_charging(
                         self.data.get.soc, control_parameter.min_current, charging_type)
