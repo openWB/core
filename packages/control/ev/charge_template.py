@@ -182,7 +182,8 @@ class ChargeTemplate:
             return current, sub_mode, message, id, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None
+            return (0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None,
+                    0)
 
     SOC_REACHED = "Keine Ladung, da der Soc bereits erreicht wurde."
     AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
@@ -215,7 +216,7 @@ class ChargeTemplate:
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), 0
 
     PV_CHARGING_SOC_CHARGING = ("Ladung evtl. auch ohne PV-Überschuss, da der Mindest-SoC des Fahrzeugs noch nicht "
                                 "erreicht wurde.")
@@ -224,7 +225,8 @@ class ChargeTemplate:
     def pv_charging(self,
                     soc: Optional[float],
                     min_current: int,
-                    charging_type: str) -> Tuple[int, str, Optional[str], int]:
+                    charging_type: str,
+                    used_amount: float) -> Tuple[int, str, Optional[str], int]:
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
         """
         message = None
@@ -238,9 +240,8 @@ class ChargeTemplate:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
-            elif (pv_charging.limit.selected == "amount" and
-                    pv_charging >= self.data.chargemode.instant_charging.limit.amount):
-                current = 0,
+            elif pv_charging.limit.selected == "amount" and used_amount >= pv_charging.limit.amount:
+                current = 0
                 sub_mode = "stop"
                 message = self.AMOUNT_REACHED
             else:
@@ -265,7 +266,7 @@ class ChargeTemplate:
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), 1
 
     def eco_charging(self,
                      soc: Optional[float],
@@ -301,7 +302,7 @@ class ChargeTemplate:
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), 0
 
     def scheduled_charging_recent_plan(self,
                                        soc: float,
