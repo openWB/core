@@ -31,7 +31,7 @@ from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev.ev import Ev
 from control import phase_switch
-from control.chargepoint.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -361,9 +361,10 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
                 # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
             self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use)) or
-                # Vorgegebene Phasenzahl hat sich geändert
-             self.check_deviating_contactor_states(self.data.set.phases_to_use,
-                                                   self.data.control_parameter.phases)) and
+                # Vorgegebene Phasenzahl hat sich geändert und es wird geladen
+             (self.check_deviating_contactor_states(self.data.set.phases_to_use,
+                                                    self.data.control_parameter.phases) and
+                self.data.control_parameter.state in CHARGING_STATES)) and
                 # Wenn ein Soll-Strom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
@@ -383,9 +384,7 @@ class Chargepoint(ChargepointRfidMixin):
             # Umschaltung fehlgeschlagen
             if self.data.set.phases_to_use != self.data.get.phases_in_use:
                 if data.data.general_data.data.chargemode_config.retry_failed_phase_switches:
-                    if self.data.control_parameter.failed_phase_switches <= self.MAX_FAILED_PHASE_SWITCHES:
-                        self.data.control_parameter.failed_phase_switches += 1
-                    else:
+                    if self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES:
                         phase_switch_required = False
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. Die "
@@ -396,6 +395,7 @@ class Chargepoint(ChargepointRfidMixin):
                         "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
                         "Ladeeinstellungen deaktiviert wurde. Die aktuelle "
                         "Phasenzahl wird bis zum Abstecken beibehalten.")
+                self.data.control_parameter.failed_phase_switches += 1
         return phase_switch_required
 
     STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
@@ -518,8 +518,10 @@ class Chargepoint(ChargepointRfidMixin):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use or self.data.set.phases_to_use
-        elif (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
-                                   self.data.get.phases_in_use == 0)):
+        elif self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
+            phases = self.data.set.phases_to_use
+            log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
+        elif chargemode == 0:
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
@@ -537,9 +539,6 @@ class Chargepoint(ChargepointRfidMixin):
                         # phases_target
                         phases = self.data.config.connected_phases
             log.debug(f"Phasenzahl Lademodus: {phases}")
-        elif self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
-            phases = self.data.set.phases_to_use
-            log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
         else:
             if chargemode == 0:
                 phases = self.data.control_parameter.phases
@@ -829,11 +828,19 @@ class Chargepoint(ChargepointRfidMixin):
             control_parameter.submode == Chargemode.PV_CHARGING and
             data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value,
                                                          control_parameter.submode) == 0)
+        if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
+                self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
+                (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
+                 self.data.control_parameter.failed_phase_switches == 1)):
+            failed_phase_switches_reached = True
+        else:
+            failed_phase_switches_reached = False
         return (self.cp_ev_support_phase_switch() and
                 self.data.get.charge_state and
                 (pv_auto_switch or scheduled_auto_switch) and
-                control_parameter.state == ChargepointState.CHARGING_ALLOWED or
-                control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY)
+                (control_parameter.state == ChargepointState.CHARGING_ALLOWED or
+                control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY) and
+                failed_phase_switches_reached is False)
 
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and
