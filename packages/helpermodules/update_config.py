@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 74
+    DATASTORE_VERSION = 75
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -1945,3 +1945,15 @@ class UpdateConfig:
                     return {topic: config_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 74)
+
+    def upgrade_datastore_74(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # update firmware of Sungrow
+                if payload.get("type") == "solax":
+                    if "version" not in payload["configuration"]:
+                        payload["configuration"].update({"version": "g3"})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 75)
