@@ -115,11 +115,11 @@ class Ev:
 
     def get_required_current(self,
                              control_parameter: ControlParameter,
-                             imported: float,
                              max_phases_hw: int,
                              phase_switch_supported: bool,
                              charging_type: str,
-                             chargemde_switch_timestamp: float) -> Tuple[bool, Optional[str], str, float, int]:
+                             chargemode_switch_timestamp: float,
+                             imported_since_plugged: float) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -144,31 +144,23 @@ class Ev:
         state = True
         try:
             if self.charge_template.data.chargemode.selected == "scheduled_charging":
-                if control_parameter.imported_at_plan_start is None:
-                    control_parameter.imported_at_plan_start = imported
-                used_amount = imported - control_parameter.imported_at_plan_start
                 plan_data = self.charge_template.scheduled_charging_recent_plan(
                     self.data.get.soc,
                     self.ev_template,
                     control_parameter.phases,
-                    used_amount,
+                    imported_since_plugged,
                     max_phases_hw,
                     phase_switch_supported,
                     charging_type,
-                    chargemde_switch_timestamp,
+                    chargemode_switch_timestamp,
                     control_parameter)
                 soc_request_interval_offset = 0
                 if plan_data:
-                    # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
-                    if (self.charge_template.data.chargemode.scheduled_charging.plans[str(plan_data.id)].limit.
-                            selected == "amount" and
-                            plan_data.plan.id != control_parameter.current_plan):
-                        control_parameter.imported_at_plan_start = imported
                     # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
                     # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
                     if (self.soc_module and
                             self.charge_template.data.chargemode.
-                            scheduled_charging.plans[str(plan_data.id)].limit.selected == "soc"):
+                            scheduled_charging.plans[str(plan_data.plan.id)].limit.selected == "soc"):
                         soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
                     control_parameter.current_plan = plan_data.plan.id
                 else:
@@ -176,7 +168,7 @@ class Ev:
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
                     plan_data,
                     self.data.get.soc,
-                    used_amount,
+                    imported_since_plugged,
                     control_parameter.phases,
                     control_parameter.min_current,
                     soc_request_interval_offset,
@@ -186,41 +178,29 @@ class Ev:
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
             if (submode != "instant_charging" and
                     self.charge_template.data.time_charging.active):
-                if control_parameter.imported_at_plan_start is None:
-                    control_parameter.imported_at_plan_start = imported
-                used_amount = imported - control_parameter.imported_at_plan_start
                 tmp_current, tmp_submode, tmp_message, plan_id, phases = self.charge_template.time_charging(
                     self.data.get.soc,
-                    used_amount,
+                    imported_since_plugged,
                     charging_type
                 )
                 # Info vom Zielladen erhalten
                 message = f"{message or ''} {tmp_message or ''}".strip()
                 if tmp_current > 0:
-                    # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
-                    if plan_id != control_parameter.current_plan:
-                        control_parameter.imported_at_plan_start = imported
                     control_parameter.current_plan = plan_id
                     required_current = tmp_current
                     submode = tmp_submode
             if (required_current == 0) or (required_current is None):
                 if self.charge_template.data.chargemode.selected == "instant_charging":
-                    # Wenn der Submode auf stop gestellt wird, wird auch die Energiemenge seit Wechsel des Modus
-                    # zurückgesetzt, dann darf nicht die Energiemenge erneute geladen werden.
-                    if control_parameter.imported_instant_charging is None:
-                        control_parameter.imported_instant_charging = imported
-                    used_amount = imported - control_parameter.imported_instant_charging
                     required_current, submode, message, phases = self.charge_template.instant_charging(
                         self.data.get.soc,
-                        used_amount,
+                        imported_since_plugged,
                         charging_type)
                 elif self.charge_template.data.chargemode.selected == "pv_charging":
-                    used_amount = 0
                     required_current, submode, message, phases = self.charge_template.pv_charging(
-                        self.data.get.soc, control_parameter.min_current, charging_type, used_amount)
+                        self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
                 elif self.charge_template.data.chargemode.selected == "eco_charging":
                     required_current, submode, message, phases = self.charge_template.eco_charging(
-                        self.data.get.soc, control_parameter.min_current, charging_type)
+                        self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
                 elif self.charge_template.data.chargemode.selected == "stop":
                     required_current, submode, message = self.charge_template.stop()
                     phases = control_parameter.phases or max_phases_hw

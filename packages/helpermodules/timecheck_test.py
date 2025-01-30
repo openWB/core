@@ -46,7 +46,7 @@ def test_check_end_time(time: str,
 
     # execution
     remaining_time = timecheck.check_end_time(
-        plan, chargemde_switch_timestamp=1652680800)  # angesteckt am 16.5.22 um 8:00
+        plan, chargemode_switch_timestamp=1652680800)  # angesteckt am 16.5.22 um 8:00
 
     # evaluation
     assert remaining_time == expected_remaining_time

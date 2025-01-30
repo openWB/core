@@ -112,7 +112,7 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
         return state
 
 
-def check_end_time(plan: ScheduledChargingPlan, chargemde_switch_timestamp: float) -> Optional[float]:
+def check_end_time(plan: ScheduledChargingPlan, chargemode_switch_timestamp: Optional[float]) -> Optional[float]:
     """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
     Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit
     zurückgegeben.
@@ -122,7 +122,10 @@ def check_end_time(plan: ScheduledChargingPlan, chargemde_switch_timestamp: floa
     neg: Zeitpunkt vorbei
     pos: verbleibende Sekunden
     """
-
+    def missed_date_still_active(remaining_time: float) -> bool:
+        return (chargemode_switch_timestamp and
+                remaining_time.total_seconds() < 0 and
+                end.timestamp() < chargemode_switch_timestamp)
     now = datetime.datetime.today()
     end = datetime.datetime.strptime(plan.time, '%H:%M')
     remaining_time = None
@@ -133,7 +136,7 @@ def check_end_time(plan: ScheduledChargingPlan, chargemde_switch_timestamp: floa
     elif plan.frequency.selected == "daily":
         end = end.replace(now.year, now.month, now.day)
         remaining_time = end - now
-        if remaining_time.total_seconds() < 0 and end.timestamp() < chargemde_switch_timestamp:
+        if missed_date_still_active(remaining_time):
             # Wenn auf Zielladen umgeschaltet wurde und der Termin noch nicht vorbei war, noch auf diesen Termin laden.
             end = end + datetime.timedelta(days=1)
             remaining_time = end - now
@@ -142,13 +145,13 @@ def check_end_time(plan: ScheduledChargingPlan, chargemde_switch_timestamp: floa
             raise ValueError("Es muss mindestens ein Tag ausgewählt werden.")
         end = end.replace(now.year, now.month, now.day + _get_next_charging_day(plan.frequency.weekly, now.weekday()))
         remaining_time = end - now
-        if remaining_time.total_seconds() < 0 and end.timestamp() < chargemde_switch_timestamp:
+        if missed_date_still_active(remaining_time):
             end = end.replace(now.year, now.month, now.day +
                               _get_next_charging_day(plan.frequency.weekly, now.weekday()+1)+1)
             remaining_time = end - now
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
-    if end.timestamp() < chargemde_switch_timestamp:
+    if chargemode_switch_timestamp and end.timestamp() < chargemode_switch_timestamp:
         # Als auf Zielladen umgeschaltet wurde, war der Termin schon vorbei
         return None
     else:
