@@ -322,8 +322,6 @@ class Chargepoint(ChargepointRfidMixin):
         # Wenn die Ladung zB wegen Autolock gestoppt wird, Zählerstände beibehalten, damit nicht nochmal die Ladung
         # gestartet wird.
         control_parameter = control_parameter_factory()
-        control_parameter.imported_at_plan_start = self.data.control_parameter.imported_at_plan_start
-        control_parameter.imported_instant_charging = self.data.control_parameter.imported_instant_charging
         self.data.control_parameter = control_parameter
 
     def initiate_control_pilot_interruption(self):
@@ -644,11 +642,11 @@ class Chargepoint(ChargepointRfidMixin):
                     max_phase_hw = self.get_max_phase_hw()
                     state, message_ev, submode, required_current, phases = charging_ev.get_required_current(
                         self.data.control_parameter,
-                        self.data.get.imported,
                         max_phase_hw,
                         self.cp_ev_support_phase_switch(),
                         self.template.data.charging_type,
-                        self.data.set.log.timestamp_start_charging)
+                        self.data.set.log.timestamp_start_charging,
+                        self.data.set.log.imported_since_plugged)
                     phases = self.get_phases_by_selected_chargemode(phases)
                     phases = self.set_phases(phases)
                     self._pub_connected_vehicle(charging_ev)
