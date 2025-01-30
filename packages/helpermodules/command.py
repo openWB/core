@@ -675,8 +675,7 @@ class Command:
                 str(parent_file / "runs" / "update_self.sh"),
                 SubData.system_data["system"].data["current_branch"]])
             try:
-                if not SubData.general_data.data.extern:
-                    # FIXME: Updatefunktion der Secondaries dauerhaft an.
+                if not SubData.general_data.data.extern and SubData.system_data["system"].data["secondary_auto_update"]:
                     for cp in SubData.cp_data.values():
                         if cp.chargepoint.chargepoint_module.config.configuration.ip_adress != 'localhost':
                             time.sleep(2)
