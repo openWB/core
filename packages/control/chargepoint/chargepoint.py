@@ -488,8 +488,7 @@ class Chargepoint(ChargepointRfidMixin):
 
     def get_phases_by_selected_chargemode(self, phases_chargemode: int) -> int:
         charging_ev = self.data.set.charging_ev_data
-        if (phases_chargemode is None or
-                (self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state) or
+        if ((self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state) or
                 self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
@@ -634,6 +633,7 @@ class Chargepoint(ChargepointRfidMixin):
                         self.cp_ev_support_phase_switch(),
                         self.template.data.charging_type,
                         self.data.set.log.timestamp_start_charging)
+                    phases = self.get_phases_by_selected_chargemode(phases)
                     phases = self.set_phases(phases)
                     self._pub_connected_vehicle(charging_ev)
                     required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
