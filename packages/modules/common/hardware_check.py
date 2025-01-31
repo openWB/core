@@ -78,10 +78,7 @@ class SeriesHardwareCheckMixin:
         try:
             with self.client:
                 evse_state = self.evse_client.get_evse_state()
-            if evse_state.version > EVSE_MIN_FIRMWARE:
                 evse_check_passed = True
-            else:
-                evse_check_passed = False
         except Exception as e:
             evse_check_passed = self.handle_exception(e)
         meter_check_passed, meter_error_msg, counter_state = self.check_meter()

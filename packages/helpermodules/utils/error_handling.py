@@ -28,7 +28,7 @@ class ErrorTimerContext:
             if self.error_timestamp is None:
                 self.error_timestamp = timecheck.create_timestamp()
                 Pub().pub(self.topic, self.error_timestamp)
-            log.error(exception)
+            log.exception(exception)
             if self.hide_exception is False or timecheck.check_timestamp(self.error_timestamp, self.timeout) is False:
                 return False
         return True
