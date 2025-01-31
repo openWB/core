@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
+import datetime
 from typing import List, Optional
 
 
 def once_factory() -> List:
-    return ["2021-11-01", "2021-11-05"]  # ToDo: aktuelles Datum verwenden
+    return [datetime.datetime.today().strftime("%Y%m%d"), datetime.datetime.today().strftime("%Y%m%d")]
 
 
 def weekly_factory() -> List:
