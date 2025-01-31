@@ -191,19 +191,20 @@ class Ev:
                     submode = tmp_submode
             if (required_current == 0) or (required_current is None):
                 if self.charge_template.data.chargemode.selected == "instant_charging":
-                    required_current, submode, message, phases = self.charge_template.instant_charging(
+                    required_current, submode, tmp_message, phases = self.charge_template.instant_charging(
                         self.data.get.soc,
                         imported_since_plugged,
                         charging_type)
                 elif self.charge_template.data.chargemode.selected == "pv_charging":
-                    required_current, submode, message, phases = self.charge_template.pv_charging(
+                    required_current, submode, tmp_message, phases = self.charge_template.pv_charging(
                         self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
                 elif self.charge_template.data.chargemode.selected == "eco_charging":
-                    required_current, submode, message, phases = self.charge_template.eco_charging(
+                    required_current, submode, tmp_message, phases = self.charge_template.eco_charging(
                         self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
                 elif self.charge_template.data.chargemode.selected == "stop":
-                    required_current, submode, message = self.charge_template.stop()
+                    required_current, submode, tmp_message = self.charge_template.stop()
                     phases = control_parameter.phases or max_phases_hw
+                message = f"{message or ''} {tmp_message or ''}".strip()
             if submode == "stop" or (self.charge_template.data.chargemode.selected == "stop"):
                 state = False
                 if phases is None:
