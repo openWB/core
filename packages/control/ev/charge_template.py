@@ -328,23 +328,24 @@ class ChargeTemplate:
                     log.exception("Fehler im ev-Modul "+str(self.ct_num))
         if plans_diff_end_date:
             # ermittle den Key vom kleinsten value in plans_diff_end_date
-            plan_dict = min(plans_diff_end_date, key=lambda x: x.get(
-                'plans_diff_end_date', float('inf')))
-            if plan_dict:
-                plan_id = list(plan_dict.keys())[0]
-                plan_end_time = list(plan_dict.values())[0]
+            filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] is not None]
+            if filtered_plans:
+                plan_dict = min(filtered_plans, key=lambda x: list(x.values())[0])
+                if plan_dict:
+                    plan_id = list(plan_dict.keys())[0]
+                    plan_end_time = list(plan_dict.values())[0]
 
-                plan = self.data.chargemode.scheduled_charging.plans[str(plan_id)]
+                    plan = self.data.chargemode.scheduled_charging.plans[str(plan_id)]
 
-                remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
-                    plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
-                    charging_type, control_parameter.phases)
+                    remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
+                        plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
+                        charging_type, control_parameter.phases)
 
-                return SelectedPlan(remaining_time=remaining_time,
-                                    duration=duration,
-                                    missing_amount=missing_amount,
-                                    phases=phases,
-                                    plan=plan)
+                    return SelectedPlan(remaining_time=remaining_time,
+                                        duration=duration,
+                                        missing_amount=missing_amount,
+                                        phases=phases,
+                                        plan=plan)
             else:
                 return None
 

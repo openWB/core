@@ -98,17 +98,18 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
 
 
 @pytest.mark.parametrize(
-    "min_soc, min_current, current_soc, expected",
+    "min_soc, min_current, limit_selected, current_soc, used_amount, expected",
     [
-        pytest.param(0, 0, 100, (0, "stop", ChargeTemplate.SOC_REACHED, 0), id="max soc reached"),
-        pytest.param(15, 0, 14, (10, "instant_charging", ChargeTemplate.PV_CHARGING_SOC_CHARGING, 3),
+        pytest.param(0, 0, "amount", 14, 1500, (0, "stop", ChargeTemplate.AMOUNT_REACHED, 0), id="max amount reached"),
+        pytest.param(0, 0, "soc", 100, 900, (0, "stop", ChargeTemplate.SOC_REACHED, 0), id="max soc reached"),
+        pytest.param(15, 0, None, 14, 900, (10, "instant_charging", ChargeTemplate.PV_CHARGING_SOC_CHARGING, 3),
                      id="min soc not reached"),
-        pytest.param(15, 0, None, (6, "pv_charging", None, 0), id="soc not defined"),
-        pytest.param(15, 8, 15, (8, "instant_charging", ChargeTemplate.PV_CHARGING_MIN_CURRENT_CHARGING, 0),
+        pytest.param(15, 0, None, None, 900, (6, "pv_charging", None, 0), id="soc not defined"),
+        pytest.param(15, 8, None, 15, 900, (8, "instant_charging", ChargeTemplate.PV_CHARGING_MIN_CURRENT_CHARGING, 0),
                      id="min current configured"),
-        pytest.param(15, 0, 15, (6, "pv_charging", None, 0), id="bare pv charging"),
+        pytest.param(15, 0, None, 15, 900, (6, "pv_charging", None, 0), id="bare pv charging"),
     ])
-def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
+def test_pv_charging(min_soc: int, min_current: int, limit_selected: str, current_soc: float, used_amount: float,
                      expected: Tuple[int, str, Optional[str], int]):
     # setup
     ct = ChargeTemplate(0)
@@ -116,12 +117,12 @@ def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
     ct.data.chargemode.pv_charging.min_current = min_current
     ct.data.chargemode.pv_charging.phases_to_use = 0
     ct.data.chargemode.pv_charging.phases_to_use_min_soc = 3
-    ct.data.chargemode.pv_charging.limit.selected = "soc"
+    ct.data.chargemode.pv_charging.limit.selected = limit_selected
     ct.data.chargemode.pv_charging.limit.soc = 90
     data.data.bat_all_data.data.config.configured = True
 
     # execution
-    ret = ct.pv_charging(current_soc, 6, ChargingType.AC.value)
+    ret = ct.pv_charging(current_soc, 6, ChargingType.AC.value, used_amount)
 
     # evaluation
     assert ret == expected
@@ -129,13 +130,13 @@ def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
 
 @pytest.mark.parametrize("phases_to_use, calc_duration, max_hw_phases, phase_switch_supported, expected",
                          [
-                             pytest.param(0, [(1000, 3)], 1, True, (3748, 3, 1, 1000), id="automatic, one hw phase"),
-                             pytest.param(0, [(1000, 3)], 3, False, (3748, 3, 2, 1000),
+                             pytest.param(0, [(1000, 3)], 1, True, (5000, 3, 1, 1000), id="automatic, one hw phase"),
+                             pytest.param(0, [(1000, 3)], 3, False, (5000, 3, 2, 1000),
                                           id="automatic, no phase switch"),
-                             pytest.param(0, [(1000, 3), (-50, 3)], 3, True, (3748, 3, 3, 1000), id="automatic, 3p"),
-                             pytest.param(0, [(5000, 3), (1500, 3)], 3, True, (3248, 3, 1, 1500), id="automatic, 1p"),
-                             pytest.param(3, [(5000, 3)], 3, True, (-252, 3, 3, 5000), id="3p"),
-                             pytest.param(1, [(5000, 3)], 3, True, (-252, 3, 1, 5000), id="1p"),
+                             pytest.param(0, [(1000, 3), (7000, 3)], 3, True, (5000, 3, 3, 1000), id="automatic, 3p"),
+                             pytest.param(0, [(500, 3), (1500, 3)], 3, True, (4500, 3, 1, 1500), id="automatic, 1p"),
+                             pytest.param(3, [(5000, 3)], 3, True, (1000, 3, 3, 5000), id="3p"),
+                             pytest.param(1, [(5000, 3)], 3, True, (1000, 3, 1, 5000), id="1p"),
                          ])
 def test_calc_remaining_time(phases_to_use,
                              calc_duration,
@@ -151,7 +152,7 @@ def test_calc_remaining_time(phases_to_use,
 
     # execution
     remaining_time, missing_amount, phases, duration = ct._calc_remaining_time(
-        plan, 1652688000, 50, evt, 3000, max_hw_phases, phase_switch_supported, ChargingType.AC.value, 2)
+        plan, 6000, 50, evt, 3000, max_hw_phases, phase_switch_supported, ChargingType.AC.value, 2)
     # end time 16.5.22 10:00
 
     # evaluation
@@ -180,16 +181,16 @@ def test_calculate_duration(selected: str, phases: int, expected_duration: float
 @pytest.mark.parametrize(
     "end_time_mock, expected_plan_num",
     [
-        pytest.param([1652684400, 1652686200, 1652688000], 1, id="1st plan"),  # 9:00, 9:30, 10:00
-        pytest.param([1652686200, 1652684400, 1652688000], 2, id="2nd plan"),  # 9:30, 9:00, 10:00
-        pytest.param([1652686200, 1652688000, 1652684400], 3, id="3rd plan"),  # 9:30, 10:00, 9:00
+        pytest.param([1000, 1500, 2000], 0, id="1st plan"),
+        pytest.param([1500, 1000, 2000], 1, id="2nd plan"),
+        pytest.param([1500, 2000, 1000], 2, id="3rd plan"),
         pytest.param([None]*3, 0, id="no plan"),
     ])
 def test_sscheduled_charging_recent_plan(end_time_mock,
                                          expected_plan_num: Optional[int],
                                          monkeypatch):
     # setup
-    calculate_duration_mock = Mock(return_value=(100, 3000, 3, 50))
+    calculate_duration_mock = Mock(return_value=(100, 3000, 3, 500))
     monkeypatch.setattr(ChargeTemplate, "_calc_remaining_time", calculate_duration_mock)
     check_end_time_mock = Mock(side_effect=end_time_mock)
     monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
