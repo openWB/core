@@ -301,6 +301,16 @@ class SubData:
                         self.event_soc.set()
                     else:
                         self.set_json_payload_class(var["ev"+index].data, msg)
+                        if re.search("/vehicle/[0-9]+/charge_template$", msg.topic) is not None:
+                            if var["ev"+index].data.charge_template.data.id != decode_payload(msg.payload)["id"]:
+                                ev_id = get_index(msg.topic)
+                                for cp in self.cp_data.values():
+                                    if ((cp.chargepoint.data.set.charging_ev != -1 and
+                                         cp.chargepoint.data.set.charging_ev == ev_id) or
+                                            cp.chargepoint.data.config.ev == ev_id):
+                                        cp.update_charge_template(dataclass_from_dict(
+                                            ChargeTemplateData, decode_payload(msg.payload)))
+
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
