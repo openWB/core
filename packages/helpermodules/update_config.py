@@ -2019,7 +2019,8 @@ class UpdateConfig:
                             ev_template_id = decode_payload(
                                 self.all_received_topics[f"openWB/vehicle/{ev_index}/ev_template"])
                             ev_phases = decode_payload(
-                                self.all_received_topics[f"openWB/vehicle/template/ev_template/{ev_template_id}"])["max_phases"]
+                                self.all_received_topics[
+                                    f"openWB/vehicle/template/ev_template/{ev_template_id}"])["max_phases"]
                             if ev_phases == 1:
                                 max_phases_ev = ev_phases
 
@@ -2046,7 +2047,8 @@ class UpdateConfig:
                     charge_template["chargemode"]["pv_charging"]["limit"]["selected"] = "none"
                 else:
                     charge_template["chargemode"]["pv_charging"]["limit"]["selected"] = "soc"
-                    charge_template["chargemode"]["pv_charging"]["limit"]["soc"] = payload["chargemode"]["pv_charging"]["max_soc"]
+                    charge_template["chargemode"]["pv_charging"]["limit"]["soc"] = payload[
+                        "chargemode"]["pv_charging"]["max_soc"]
                 charge_template["chargemode"]["pv_charging"].pop("max_soc")
                 topics.update({topic: charge_template})
 
