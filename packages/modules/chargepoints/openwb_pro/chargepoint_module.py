@@ -81,12 +81,11 @@ class ChargepointModule(AbstractChargepoint):
             )
 
             if json_rsp.get("voltages"):
-                meter_msg = check_meter_values(CounterState(voltages=json_rsp["voltages"],
-                                                            currents=json_rsp["currents"],
-                                                            powers=json_rsp["powers"],
-                                                            power=json_rsp["power_all"]))
-                if meter_msg:
-                    self.fault_state.warning(meter_msg)
+                check_meter_values(CounterState(voltages=json_rsp["voltages"],
+                                                currents=json_rsp["currents"],
+                                                powers=json_rsp["powers"],
+                                                power=json_rsp["power_all"]),
+                                   self.fault_state)
                 chargepoint_state.voltages = json_rsp["voltages"]
             if json_rsp.get("soc_value"):
                 chargepoint_state.soc = json_rsp["soc_value"]

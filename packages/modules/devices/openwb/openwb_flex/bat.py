@@ -23,14 +23,15 @@ class BatKitFlex(AbstractBat):
                  tcp_client: modbus.ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(BatKitFlexSetup, component_config)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         factory = kit_bat_version_factory(
             self.component_config.configuration.version)
         self.__client = factory(self.component_config.configuration.id,
-                                tcp_client)
+                                tcp_client,
+                                self.fault_state)
         self.__tcp_client = tcp_client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
-        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,

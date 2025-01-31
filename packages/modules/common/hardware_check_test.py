@@ -9,7 +9,7 @@ from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
     EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_NO_SERIAL_NUMBER, METER_PROBLEM,
-    OPEN_TICKET, USB_ADAPTER_BROKEN, SeriesHardwareCheckMixin, check_meter_values)
+    OPEN_TICKET, USB_ADAPTER_BROKEN, SeriesHardwareCheckMixin, _check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
@@ -109,7 +109,7 @@ def test_check_meter_values(voltages, power, expected_msg, monkeypatch):
     # setup
     counter_state = Mock(voltages=voltages, currents=[0, 0, 0], powers=[0, 0, 0], power=power)
     # execution
-    msg = check_meter_values(counter_state)
+    msg = _check_meter_values(counter_state)
 
     # assert
     assert msg == expected_msg if expected_msg is None else expected_msg.format(voltages)

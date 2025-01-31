@@ -59,9 +59,9 @@ class ClientHandler(SeriesHardwareCheckMixin):
             return None
 
     @staticmethod
-    def find_meter_client(meters: List[meter_config], client: Union[ModbusSerialClient_, ModbusTcpClient_]) -> METERS:
+    def find_meter_client(meters: List[meter_config], client: Union[ModbusSerialClient_, ModbusTcpClient_], fault_state: FaultState) -> METERS:
         for meter_type, modbus_id in meters:
-            meter_client = meter_type(modbus_id, client)
+            meter_client = meter_type(modbus_id, client, fault_state)
             with client:
                 try:
                     if meter_client.get_voltages()[0] > 200:
@@ -93,12 +93,13 @@ def client_factory(local_charge_point_num: int,
                    fault_state: FaultState,
                    created_client_handler: Optional[ClientHandler] = None) -> ClientHandler:
     serial_client, evse_ids = get_modbus_client(
-        local_charge_point_num, created_client_handler)
+        local_charge_point_num, created_client_handler, fault_state)
     return ClientHandler(local_charge_point_num, serial_client, evse_ids, fault_state)
 
 
 def get_modbus_client(local_charge_point_num: int,
-                      created_client_handler: Optional[ClientHandler] = None):
+                      created_client_handler: Optional[ClientHandler] = None,
+                      fault_state: Optional[FaultState] = None) -> Tuple[Union[ModbusSerialClient_, ModbusTcpClient_], List[int]]:
     tty_devices = list(Path("/dev/serial/by-path").glob("*"))
     log.debug("tty_devices"+str(tty_devices))
     resolved_devices = [str(file.resolve()) for file in tty_devices]
@@ -140,7 +141,7 @@ def get_modbus_client(local_charge_point_num: int,
                 serial_client = ModbusSerialClient_(device)
                 # Source immer an der Modbus-ID des Zählers fest machen, da diese immer fest ist.
                 # Die USB-Anschlüsse können vertauscht sein.
-                detected_device = ClientHandler.find_meter_client(meters, serial_client)
+                detected_device = ClientHandler.find_meter_client(meters, serial_client, fault_state)
                 if detected_device:
                     break
         with ModifyLoglevelContext(log, logging.DEBUG):
