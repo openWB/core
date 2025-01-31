@@ -11,6 +11,8 @@ class Sdm(AbstractCounter):
     def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
         self.client = client
         self.id = modbus_id
+        with client:
+            self.serial_number = str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, unit=self.id))
 
     def get_imported(self) -> float:
         return self.client.read_input_registers(0x0048, ModbusDataType.FLOAT_32, unit=self.id) * 1000
@@ -25,7 +27,7 @@ class Sdm(AbstractCounter):
         return frequency
 
     def get_serial_number(self) -> str:
-        return str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, unit=self.id))
+        return self.serial_number
 
 
 class Sdm630_72(Sdm):

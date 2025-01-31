@@ -33,6 +33,9 @@ class Evse:
     def __init__(self, modbus_id: int, client: modbus.ModbusSerialClient_) -> None:
         self.client = client
         self.id = modbus_id
+        with client:
+            time.sleep(0.1)
+            self.version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
 
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
         time.sleep(0.1)
@@ -53,9 +56,7 @@ class Evse:
         return plugged, charging, set_current
 
     def get_firmware_version(self) -> int:
-        time.sleep(0.1)
-        version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
-        return version
+        return self.version
 
     def get_evse_state(self) -> EvseState:
         plugged, charging, set_current = self.get_plug_charge_state()
