@@ -14,6 +14,8 @@ class Sdm(AbstractCounter):
         self.id = modbus_id
         self.last_query = self._get_time_ms()
         self.WAIT_MS_BETWEEN_QUERIES = 100
+        with client:
+            self.serial_number = str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, unit=self.id))
 
     def get_imported(self) -> float:
         self._ensure_min_time_between_queries()
@@ -30,10 +32,6 @@ class Sdm(AbstractCounter):
             frequency = frequency / 10
         return frequency
 
-    def get_serial_number(self) -> Optional[str]:
-        self._ensure_min_time_between_queries()
-        return str(self.client.read_holding_registers(0xFC00, ModbusDataType.INT_32, unit=self.id))
-
     # These meters require some minimum time between subsequent Modbus reads. Some Eastron papers recommend 100 ms.
     # Sometimes the time between calls to the get_* methods are much shorter so we forcibly wait for the remaining time.
     def _ensure_min_time_between_queries(self) -> None:
@@ -45,6 +43,9 @@ class Sdm(AbstractCounter):
 
     def _get_time_ms(self) -> float:
         return time.time_ns() / 1e6
+
+    def get_serial_number(self) -> str:
+        return self.serial_number
 
 
 class Sdm630_72(Sdm):
