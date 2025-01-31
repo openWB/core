@@ -179,7 +179,6 @@ class ChargeTemplate:
                 message = self.TIME_CHARGING_NO_PLAN_CONFIGURED
                 current = 0
                 sub_mode = "stop"
-            log.debug(message)
             return current, sub_mode, message, id, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
@@ -263,7 +262,6 @@ class ChargeTemplate:
                     current = min_pv_current
                     sub_mode = "instant_charging"
                     message = self.PV_CHARGING_MIN_CURRENT_CHARGING
-
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
