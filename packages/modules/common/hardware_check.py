@@ -24,7 +24,13 @@ EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt
                "(Fehlermeldung nur relevant, wenn diese auf der Startseite oder im Status angezeigt wird.)")
 
 
-def check_meter_values(counter_state: CounterState) -> Optional[str]:
+def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultState] = None) -> None:
+    meter_msg = _check_meter_values(counter_state)
+    if fault_state and meter_msg:
+        fault_state.warning(meter_msg)
+
+
+def _check_meter_values(counter_state: CounterState) -> Optional[str]:
     def valid_voltage(voltage) -> bool:
         return 200 < voltage < 250
     voltages = counter_state.voltages
@@ -112,6 +118,6 @@ class SeriesHardwareCheckMixin:
                 counter_state = self.meter_client.get_counter_state()
             if counter_state.serial_number == "0" or counter_state.serial_number is None:
                 return True, METER_NO_SERIAL_NUMBER, counter_state
-            return True, check_meter_values(counter_state), counter_state
+            return True, _check_meter_values(counter_state), counter_state
         except Exception:
             return False, METER_PROBLEM, None

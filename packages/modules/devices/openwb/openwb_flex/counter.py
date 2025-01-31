@@ -27,10 +27,9 @@ class EvuKitFlex(AbstractCounter):
         self.__device_id: int = self.kwargs['device_id']
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         factory = kit_counter_version_factory(self.component_config.configuration.version)
-        self.__client = factory(self.component_config.configuration.id, self.__tcp_client)
+        self.__client = factory(self.component_config.configuration.id, self.__tcp_client, self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
-        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,

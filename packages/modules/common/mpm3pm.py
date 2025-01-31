@@ -4,13 +4,16 @@ from typing import List, Tuple
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
 from modules.common.component_state import CounterState
+from modules.common.fault_state import FaultState
+from modules.common.hardware_check import check_meter_values
 from modules.common.modbus import ModbusDataType
 
 
 class Mpm3pm(AbstractCounter):
-    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
+    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
         self.client = client
         self.id = modbus_id
+        self.fault_state = fault_state
 
     def get_voltages(self) -> List[float]:
         return [val / 10 for val in self.client.read_input_registers(
@@ -51,7 +54,7 @@ class Mpm3pm(AbstractCounter):
 
     def get_counter_state(self) -> CounterState:
         powers, power = self.get_power()
-        return CounterState(
+        counter_state = CounterState(
             voltages=self.get_voltages(),
             currents=self.get_currents(),
             powers=powers,
@@ -62,3 +65,5 @@ class Mpm3pm(AbstractCounter):
             frequency=self.get_frequency(),
             serial_number=self.get_serial_number()
         )
+        check_meter_values(counter_state, self.fault_state)
+        return counter_state

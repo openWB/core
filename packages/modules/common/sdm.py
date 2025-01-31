@@ -5,6 +5,8 @@ from typing import List, Tuple, Optional
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
 from modules.common.component_state import CounterState
+from modules.common.fault_state import FaultState
+from modules.common.hardware_check import check_meter_values
 from modules.common.modbus import ModbusDataType
 
 
@@ -49,8 +51,9 @@ class Sdm(AbstractCounter):
 
 
 class Sdm630_72(Sdm):
-    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
+    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
         super().__init__(modbus_id, client)
+        self.fault_state = fault_state
 
     def get_currents(self) -> List[float]:
         self._ensure_min_time_between_queries()
@@ -72,7 +75,7 @@ class Sdm630_72(Sdm):
 
     def get_counter_state(self) -> CounterState:
         powers, power = self.get_power()
-        return CounterState(
+        counter_state = CounterState(
             imported=self.get_imported(),
             exported=self.get_exported(),
             power=power,
@@ -83,11 +86,14 @@ class Sdm630_72(Sdm):
             frequency=self.get_frequency(),
             serial_number=self.get_serial_number()
         )
+        check_meter_values(counter_state, self.fault_state)
+        return counter_state
 
 
 class Sdm120(Sdm):
-    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
+    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
         super().__init__(modbus_id, client)
+        self.fault_state = fault_state
 
     def get_power(self) -> Tuple[List[float], float]:
         self._ensure_min_time_between_queries()
@@ -109,7 +115,7 @@ class Sdm120(Sdm):
 
     def get_counter_state(self) -> CounterState:
         powers, power = self.get_power()
-        return CounterState(
+        counter_state = CounterState(
             imported=self.get_imported(),
             exported=self.get_exported(),
             power=power,
@@ -118,3 +124,5 @@ class Sdm120(Sdm):
             frequency=self.get_frequency(),
             serial_number=self.get_serial_number()
         )
+        check_meter_values(counter_state, self.fault_state)
+        return counter_state
