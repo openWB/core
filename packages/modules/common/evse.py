@@ -38,6 +38,14 @@ class Evse:
             self.version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
             time.sleep(0.1)
             self.max_current = self.client.read_holding_registers(2007, ModbusDataType.UINT_16, unit=self.id)
+            with ModifyLoglevelContext(log, logging.DEBUG):
+                log.debug(f"Firmware-Version der EVSE: {self.version}")
+            if self.version < 17:
+                self._precise_current = False
+            else:
+                if self.is_precise_current_active() is False:
+                    self.activate_precise_current()
+                self._precise_current = self.is_precise_current_active()
 
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
         time.sleep(0.1)
@@ -65,7 +73,6 @@ class Evse:
         state = EvseState(plug_state=plugged,
                           charge_state=charging,
                           set_current=set_current,
-                          version=self.get_firmware_version()
                           max_current=self.max_current)
         return state
 

@@ -239,9 +239,8 @@ class IoState:
 
 
 class EvseState:
-    def __init__(self, plug_state: bool, charge_state: bool, set_current: int, version: int, max_current: int) -> None:
+    def __init__(self, plug_state: bool, charge_state: bool, set_current: int, max_current: int) -> None:
         self.plug_state = plug_state
         self.charge_state = charge_state
         self.set_current = set_current
-        self.version = version
         self.max_current = max_current
