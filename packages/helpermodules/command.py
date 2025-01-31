@@ -677,7 +677,12 @@ class Command:
             try:
                 if not SubData.general_data.data.extern and SubData.system_data["system"].data["secondary_auto_update"]:
                     for cp in SubData.cp_data.values():
-                        if cp.chargepoint.chargepoint_module.config.configuration.ip_adress != 'localhost':
+                        # if chargepoint is external_openwb and not the second CP of duo
+                        if (
+                            cp.chargepoint.chargepoint_module.config.type == 'external_openwb' and
+                            cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0
+                            # possible check for software version
+                        ):
                             time.sleep(2)
                             self.chargepointUpdate({"data": {"chargepoint": cp}})
             except Exception:
