@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
@@ -10,6 +11,8 @@ from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
+
+log = logging.getLogger(__name__)
 
 
 class SunnyBoySmartEnergyBat(AbstractBat):
@@ -54,12 +57,14 @@ class SunnyBoySmartEnergyBat(AbstractBat):
                              'Sobald die Batterie geladen/entladen wird sollte sich dieser Wert ändern, ',
                              'andernfalls kann ein Defekt vorliegen.')
 
-        return BatState(
+        bat_state = BatState(
             power=power,
             soc=soc,
             imported=imported,
             exported=exported
         )
+        log.debug("Bat {}: {}".format(self.tcp_client.address, bat_state))
+        return bat_state
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SmaSunnyBoySmartEnergyBatSetup)
