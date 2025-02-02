@@ -7,6 +7,9 @@ import nodePolyfills from "rollup-plugin-polyfill-node";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+	server: {
+		allowedHosts: true,
+	},
   plugins: [vue({
     template: {
       compilerOptions: {
