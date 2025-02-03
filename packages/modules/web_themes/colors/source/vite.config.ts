@@ -7,7 +7,7 @@ import nodePolyfills from "rollup-plugin-polyfill-node";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-	  plugins: [vue({
+	plugins: [vue({
     template: {
       compilerOptions: {
         isCustomElement: (tag) => ['swiper-slide', 'swiper-container', 'swiper-pagination'].includes(tag)
