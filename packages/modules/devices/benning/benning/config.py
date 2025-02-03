@@ -9,7 +9,7 @@ from ..vendor import vendor_descriptor
 @auto_str
 class BenningConfiguration(JsonConfiguration):
     def __init__(self, url: Optional[str] = None):
-        self.url = "http://" + url + "/getentries.cgi?oids=11369,19000"
+        self.url = f"http://{url}/getentries.cgi?oids=11369,19000"
 
 
 @auto_str

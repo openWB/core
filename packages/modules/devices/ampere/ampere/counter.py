@@ -16,17 +16,19 @@ class AmpereCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, AmpereCounterSetup],
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(AmpereCounterSetup, component_config)
         self.modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_):
-        powers = client.read_input_registers(1349, [ModbusDataType.INT_16]*3, unit=self.modbus_id)
-        power = client.read_input_registers(1348, ModbusDataType.INT_16, unit=self.modbus_id)
+    def update(self):
+        powers = self.client.read_input_registers(1349, [ModbusDataType.INT_16]*3, unit=self.modbus_id)
+        power = self.client.read_input_registers(1348, ModbusDataType.INT_16, unit=self.modbus_id)
 
         imported, exported = self.sim_counter.sim_count(power)
 

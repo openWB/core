@@ -15,16 +15,18 @@ from modules.devices.solarmax.solarmax.config import SolarmaxInverterSetup
 class SolarmaxInverter(AbstractInverter):
     def __init__(self,
                  device_id: int,
-                 component_config: Union[Dict, SolarmaxInverterSetup]) -> None:
+                 component_config: Union[Dict, SolarmaxInverterSetup],
+                 client: ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(SolarmaxInverterSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
-        power = client.read_holding_registers(4151, ModbusDataType.UINT_32,
-                                              unit=self.component_config.configuration.modbus_id) * -1
+    def update(self) -> None:
+        power = self.client.read_holding_registers(4151, ModbusDataType.UINT_32,
+                                                   unit=self.component_config.configuration.modbus_id) * -1
         power = power / 10
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
