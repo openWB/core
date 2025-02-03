@@ -11,6 +11,7 @@ import logging
 from typing import List, Optional, Tuple
 
 from control import data
+from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
@@ -309,10 +310,11 @@ class Ev:
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
         unblanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
-        condition_1_to_3 = (((max(get_currents) > max_current and
+        condition_1_to_3 = (((get_medium_charging_current(get_currents) > max_current and
                             all_surplus > required_surplus) or unblanced_load_limit_reached) and
                             phases_in_use == 1)
-        condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
+        condition_3_to_1 = get_medium_charging_current(
+            get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
         if condition_1_to_3 or condition_3_to_1:
             return True, None
         else:
@@ -361,8 +363,8 @@ class Ev:
             new_current = self.ev_template.data.max_current_single_phase
 
         log.debug(
-            f'Genutzter Strom: {max(get_currents)}A, Überschuss: {all_surplus}W, benötigte neue Leistung: '
-            f'{required_reserved_power}W')
+            f'Genutzter Strom: {get_medium_charging_current(get_currents)}A, Überschuss: {all_surplus}W, benötigte '
+            f'neue Leistung: {required_reserved_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
         if not self.ev_template.data.prevent_phase_switch:
             condition, condition_msg = self._check_phase_switch_conditions(control_parameter,

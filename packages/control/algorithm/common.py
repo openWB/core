@@ -3,6 +3,7 @@ from typing import Iterable, List, Optional, Tuple
 
 from control import data
 from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
+from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from helpermodules.timecheck import check_timestamp
@@ -154,12 +155,13 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
 def consider_less_charging_chargepoint_in_loadmanagement(cp: Chargepoint, set_current: float) -> bool:
     if (data.data.counter_all_data.data.config.consider_less_charging is False and
         ((set_current -
-          cp.data.set.charging_ev_data.ev_template.data.nominal_difference) > max(cp.data.get.currents) and
+          cp.data.set.charging_ev_data.ev_template.data.nominal_difference) > get_medium_charging_current(
+              cp.data.get.currents) and
          cp.data.control_parameter.timestamp_charge_start is not None and
          check_timestamp(cp.data.control_parameter.timestamp_charge_start, LESS_CHARGING_TIMEOUT) is False)):
         log.debug(
             f"LP {cp.num} lädt deutlich unter dem Sollstrom und wird nur mit {cp.data.get.currents}A berücksichtigt.")
-        return max(cp.data.get.currents)
+        return get_medium_charging_current(cp.data.get.currents)
     else:
         return set_current
 # tested
