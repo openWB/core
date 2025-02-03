@@ -81,7 +81,9 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
     def add_component(self, component_config: T_COMPONENT_CONFIG) -> None:
         with SingleComponentUpdateContext(FaultState(ComponentInfo.from_component_config(component_config)),
                                           self.__initializer):
-            self.components["component" + str(component_config.id)] = self.__component_factory(component_config)
+            component = self.__component_factory(component_config)
+            component.initializer()
+            self.components["component" + str(component_config.id)] = component
 
     def update(self):
         self.__component_updater(self.components.values(), self.__initializer)

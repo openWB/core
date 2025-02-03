@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.modbus import ModbusDataType, ModbusTcpClient_
+from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.ampere.ampere.config import AmpereBatSetup
@@ -14,17 +12,18 @@ from modules.devices.ampere.ampere.config import AmpereBatSetup
 
 class AmpereBat(AbstractBat):
     def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, AmpereBatSetup],
-                 modbus_id: int,
-                 client: ModbusTcpClient_) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(AmpereBatSetup, component_config)
-        self.modbus_id = modbus_id
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+                 component_config: AmpereBatSetup,
+                 **kwargs) -> None:
+        self.component_config = component_config
+        self.kwargs = kwargs
+
+    def initialiser(self):
+        device_id = self.kwargs.get('device_id')
+        self.modbus_id = self.kwargs.get('modbus_id')
+        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.client = client
+        self.client = self.kwargs.get('client')
 
     def update(self) -> None:
         power = self.client.read_input_registers(535, ModbusDataType.INT_16, unit=self.modbus_id)

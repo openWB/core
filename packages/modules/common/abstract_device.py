@@ -18,7 +18,11 @@ class AbstractDevice:
 
 class AbstractBat:
     @abstractmethod
-    def __init__(self, *kwargs) -> None:
+    def __init__(self, component_config, **kwargs) -> None:
+        self.component_config = component_config
+        self.kwargs = kwargs
+
+    def initialiser(self):
         pass
 
     @abstractmethod
