@@ -8,16 +8,16 @@ import nodePolyfills from "rollup-plugin-polyfill-node";
 // https://vitejs.dev/config/
 export default defineConfig({
 	plugins: [vue({
-    template: {
+		template: {
 			compilerOptions: {
 				isCustomElement: (tag) => ['swiper-slide', 'swiper-container', 'swiper-pagination'].includes(tag)
-  		}
+			}
 		}
 	}),
   splitVendorChunkPlugin(),
-  ],
-  resolve: {
-    alias: {
+	],
+	resolve: {
+		alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       url: "rollup-plugin-node-polyfills/polyfills/url",
       util: "rollup-plugin-node-polyfills/polyfills/util",
