@@ -1,5 +1,6 @@
 from typing import Optional
 
+
 class OstromTariffConfiguration:
     def __init__(self,
                  client_id: Optional[str] = None,
