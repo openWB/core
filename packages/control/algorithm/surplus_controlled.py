@@ -53,6 +53,7 @@ class SurplusControlled:
             cp = chargepoints[0]
             missing_currents, counts = common.get_missing_currents_left(chargepoints)
             available_currents, limit = Loadmanagement().get_available_currents_surplus(missing_currents,
+                                                                                        cp.data.get.voltages,
                                                                                         counter,
                                                                                         cp,
                                                                                         feed_in=feed_in_yield)
@@ -64,7 +65,8 @@ class SurplusControlled:
                 # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
                 # nachregeln, auch wenn der Regelbereich eingehalten wird. Sonst würde zB nicht berücksichtigt werden,
                 # wenn noch ein Fahrzeug dazu kommmt.
-                if (pv_charging.control_range[1] - pv_charging.control_range[0]) / 230 < abs(dif_to_old_current):
+                if ((pv_charging.control_range[1] - pv_charging.control_range[0]) /
+                        (sum(counter.data.get.voltages) / len(counter.data.get.voltages)) < abs(dif_to_old_current)):
                     current = available_for_cp
                 else:
                     # Nicht mehr freigeben, wie das Lastmanagement vorgibt
