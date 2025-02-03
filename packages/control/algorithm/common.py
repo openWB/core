@@ -74,9 +74,9 @@ def set_current_counterdiff(diff_curent: float,
         counters = data.data.counter_all_data.get_counters_to_check(chargepoint.num)
         for counter in counters:
             if surplus:
-                data.data.counter_data[counter].update_surplus_values_left(diffs)
+                data.data.counter_data[counter].update_surplus_values_left(diffs, chargepoint.data.get.voltages)
             else:
-                data.data.counter_data[counter].update_values_left(diffs)
+                data.data.counter_data[counter].update_values_left(diffs, chargepoint.data.get.voltages)
         data.data.io_actions.dimming_set_import_power_left({"type": "cp", "id": chargepoint.num}, sum(diffs)*230)
 
     chargepoint.data.set.current = current
@@ -146,9 +146,9 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
         counters = data.data.counter_all_data.get_counters_to_check(chargepoint.num)
         for counter in counters:
             if surplus:
-                data.data.counter_data[counter].update_surplus_values_left(diffs)
+                data.data.counter_data[counter].update_surplus_values_left(diffs, chargepoint.data.get.voltages)
             else:
-                data.data.counter_data[counter].update_values_left(diffs)
+                data.data.counter_data[counter].update_values_left(diffs, chargepoint.data.get.voltages)
         data.data.io_actions.dimming_set_import_power_left({"type": "cp", "id": chargepoint.num}, sum(diffs)*230)
 
 
