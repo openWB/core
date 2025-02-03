@@ -16,7 +16,7 @@ from control.loadmanagement import LimitingValue, Loadmanagement
     ])
 def test_limit_by_power(available_currents: List[float], raw_power_left: float, expected_currents: List[float]):
     # setup & evaluation
-    currents = Loadmanagement()._limit_by_power(available_currents, raw_power_left, None)
+    currents = Loadmanagement()._limit_by_power(available_currents, [230]*3, raw_power_left, None)
 
     # assertion
     assert currents == expected_currents
