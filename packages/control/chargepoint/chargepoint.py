@@ -21,6 +21,7 @@ import threading
 import traceback
 from typing import Dict, Optional, Tuple
 
+from control.algorithm.utils import get_medium_charging_current
 from control.chargelog import chargelog
 from control import data
 from control.chargemode import Chargemode
@@ -696,7 +697,7 @@ class Chargepoint(ChargepointRfidMixin):
                             f"{self.data.control_parameter.submode}, Phasen: "
                             f"{self.data.control_parameter.phases}"
                             f", Priorität: {charging_ev.charge_template.data.prio}"
-                            f", max. Ist-Strom: {max(self.data.get.currents)}")
+                            f", mittlerer Ist-Strom: {get_medium_charging_current(self.data.get.currents)}")
                 except Exception:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
                     self.data.control_parameter.submode = "stop"

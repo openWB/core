@@ -7,6 +7,7 @@ from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_PV_ONLY, CONSI
 from control.algorithm.filter_chargepoints import (get_chargepoints_by_chargemodes,
                                                    get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging)
+from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState, CHARGING_STATES
@@ -115,16 +116,16 @@ class SurplusControlled:
         else:
             # Um max. +/- 5A pro Zyklus regeln
             if (-MAX_CURRENT-nominal_difference
-                    < new_current - max(chargepoint.data.get.currents)
+                    < new_current - get_medium_charging_current(chargepoint.data.get.currents)
                     < MAX_CURRENT+nominal_difference):
                 current = new_current
             else:
-                if new_current < max(chargepoint.data.get.currents):
-                    current = max(chargepoint.data.get.currents) - MAX_CURRENT
+                if new_current < get_medium_charging_current(chargepoint.data.get.currents):
+                    current = get_medium_charging_current(chargepoint.data.get.currents) - MAX_CURRENT
                     msg = f"Es darf um max {MAX_CURRENT}A unter den aktuell genutzten Strom geregelt werden."
 
                 else:
-                    current = max(chargepoint.data.get.currents) + MAX_CURRENT
+                    current = get_medium_charging_current(chargepoint.data.get.currents) + MAX_CURRENT
                     msg = f"Es darf um max {MAX_CURRENT}A über den aktuell genutzten Strom geregelt werden."
             chargepoint.set_state_and_log(msg)
             return max(current,
@@ -139,7 +140,7 @@ class SurplusControlled:
         Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen."""
         evse_current = chargepoint.data.get.evse_current
         if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
-            offset = evse_current - max(chargepoint.data.get.currents)
+            offset = evse_current - get_medium_charging_current(chargepoint.data.get.currents)
             current_with_offset = chargepoint.data.set.current + offset
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
             if current != chargepoint.data.set.current:

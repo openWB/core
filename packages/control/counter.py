@@ -7,6 +7,7 @@ import operator
 from typing import List, Optional, Tuple
 
 from control import data
+from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
@@ -150,7 +151,7 @@ class Counter:
                         chargepoint.data.config.phase_1,
                         chargepoint.data.get.currents)
                 except KeyError:
-                    element_current = [max(chargepoint.data.get.currents)]*3
+                    element_current = [get_medium_charging_current(chargepoint.data.get.currents)]*3
                 currents_raw = list(map(operator.sub, currents_raw, element_current))
             currents_raw = list(map(operator.sub, self.data.config.max_currents, currents_raw))
             if min(currents_raw) < 0:
@@ -441,7 +442,7 @@ class Counter:
                                      # Einen nach dem anderen abschalten, bis Ladeleistung des Speichers erreicht ist
                                      # und wieder eingespeist wird.
                                      self.data.set.reserved_surplus == 0))
-            if switch_off_condition and max(chargepoint.data.get.currents) <= min_current:
+            if switch_off_condition and get_medium_charging_current(chargepoint.data.get.currents) <= min_current:
                 if not charging_ev_data.ev_template.data.prevent_charge_stop:
                     # EV, die ohnehin nicht laden, wird direkt die Ladefreigabe entzogen.
                     # Würde man required_power vom released_evu_surplus subtrahieren, würden keine anderen EVs
