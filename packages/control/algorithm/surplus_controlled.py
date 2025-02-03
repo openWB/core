@@ -136,19 +136,15 @@ class SurplusControlled:
         genutzten Soll-Strom hochgeregelt werden. Wenn Fahrzeuge entgegen der Norm mehr Ladeleistung beziehen, als
         freigegeben, wird entsprechend weniger freigegeben, da sonst uU die untere Grenze für die Abschaltschwelle
         nicht erreicht wird.
-        Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen. Wenn das
-        Auto nur in 1A-Schritten regeln kann, rundet es und lädt immer etwas mehr oder weniger als Soll-Strom. Schlägt
-        man den EVSE-Strom auf, pendelt die Regelung um diesen 1A-Schritt."""
-        MAX_DEVIATION = 1.1
+        Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen."""
         evse_current = chargepoint.data.get.evse_current
         if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
             offset = evse_current - max(chargepoint.data.get.currents)
-            if abs(offset) >= MAX_DEVIATION:
-                current_with_offset = chargepoint.data.set.current + offset
-                current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
-                if current != chargepoint.data.set.current:
-                    log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
-                chargepoint.data.set.current = current
+            current_with_offset = chargepoint.data.set.current + offset
+            current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
+            if current != chargepoint.data.set.current:
+                log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
+            chargepoint.data.set.current = current
 
     def check_submode_pv_charging(self) -> None:
         evu_counter = data.data.counter_all_data.get_evu_counter()
