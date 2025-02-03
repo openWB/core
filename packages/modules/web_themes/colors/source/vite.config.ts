@@ -9,11 +9,11 @@ import nodePolyfills from "rollup-plugin-polyfill-node";
 export default defineConfig({
 	plugins: [vue({
     template: {
-      compilerOptions: {
-        isCustomElement: (tag) => ['swiper-slide', 'swiper-container', 'swiper-pagination'].includes(tag)
-      }
-    }
-  }),
+			compilerOptions: {
+				isCustomElement: (tag) => ['swiper-slide', 'swiper-container', 'swiper-pagination'].includes(tag)
+  		}
+		}
+	}),
   splitVendorChunkPlugin(),
   ],
   resolve: {
