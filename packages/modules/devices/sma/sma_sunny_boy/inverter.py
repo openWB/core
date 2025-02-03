@@ -79,7 +79,8 @@ class SmaSunnyBoyInverter(AbstractInverter):
         inverter_state = InverterState(
             power=power_total * -1,
             dc_power=dc_power * -1,
-            exported=energy
+            exported=energy,
+            is_discrete_energy_and_combined_power=True
         )
         log.debug("WR {}: {}".format(self.tcp_client.address, inverter_state))
         return inverter_state

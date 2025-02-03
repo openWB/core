@@ -109,7 +109,9 @@ class InverterState:
         exported: float,
         power: float,
         currents: Optional[List[Optional[float]]] = None,
-        dc_power: Optional[float] = None
+        dc_power: Optional[float] = None,
+        is_discrete_energy_and_combined_power: bool = False  # energy counters pv/bat are discrete, power is combined
+
     ):
         """Args:
             exported: total energy in Wh
@@ -126,6 +128,7 @@ class InverterState:
         self.power = power
         self.exported = exported
         self.dc_power = dc_power
+        self.is_discrete_energy_and_combined_power = is_discrete_energy_and_combined_power
 
 
 @auto_str

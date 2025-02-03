@@ -70,7 +70,10 @@ class PurgeInverterState:
                 for bat in hybrid:
                     bat_get = data.data.bat_data[bat].data.get
                     power -= bat_get.power
-                    exported += bat_get.imported - bat_get.exported
+                    
+                    if not state.is_discrete_energy_and_combined_power:
+                        exported += bat_get.imported - bat_get.exported
+
             if state.dc_power is not None:
                 # Manche Systeme werden auch aus dem Netz geladen, um einen Mindest-SoC zu halten.
                 if state.dc_power == 0:
