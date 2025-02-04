@@ -1,7 +1,7 @@
 {
-  "name": "openwb-standard-web-theme",
+  "name": "openwb-koala-web-theme",
   "version": "0.0.1",
-  "description": "Standard web theme for openWB software2",
+  "description": "Koala web theme for openWB software2",
   "productName": "openWB",
   "author": "openWB <info@openwb.de>",
   "type": "module",
