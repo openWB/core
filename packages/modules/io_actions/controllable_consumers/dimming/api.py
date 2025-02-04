@@ -27,8 +27,11 @@ class Dimming(AbstractIoAction):
         super().__init__()
 
     def setup(self) -> None:
-        self.import_power_left = self.config.configuration.max_import_power + \
-            data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].calc_raw_surplus()
+        surplus = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].calc_raw_surplus()
+        if surplus > 0:
+            self.import_power_left = self.config.configuration.max_import_power + surplus
+        else:
+            self.import_power_left = self.config.configuration.max_import_power
         log.debug(f"Dimmen: {self.import_power_left}W inkl. Überschuss")
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
