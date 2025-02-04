@@ -23,9 +23,13 @@ def fetch_prices(config: OstromTariffConfiguration) -> Dict[int, float]:
     utcnow = datetime.now(timezone.utc)
     startDate = quote(utcnow.strftime("%Y-%m-%dT%H:00:00.000Z"))
     endDate = quote((utcnow + timedelta(days=1)).strftime("%Y-%m-%dT%H:00:00.000Z"))
+    if config.zip:
+        zip = f"&zip={config.zip}"
+    else:
+        zip = ""
     raw_prices = req.get_http_session().get(
         url="https://production.ostrom-api.io/spot-prices?" +
-            f"startDate={startDate}&endDate={endDate}&resolution=HOUR&zip={config.zip}",
+            f"startDate={startDate}&endDate={endDate}&resolution=HOUR{zip}",
         headers={
             "accept": "application/json",
             "authorization": "Bearer " + access_token
