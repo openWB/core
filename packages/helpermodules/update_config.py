@@ -1972,7 +1972,6 @@ class UpdateConfig:
                     else:
                         dev = importlib.import_module(".io_devices."+payload["type"]+".api", "modules")
                     io_device = dev.device_descriptor.configuration_factory()
-                    io_device.configuration.host = "localhost"
 
                     action = RippleControlReceiverSetup()
                     for cp_topic in self.all_received_topics.keys():
@@ -1981,7 +1980,7 @@ class UpdateConfig:
                     action.configuration.io_device = 0
 
                     if payload["type"] == "dimm_kit":
-                        io_device.configuration.ip_address = payload["configuration"]["ip_address"]
+                        io_device.configuration.host = payload["configuration"]["ip_address"]
                         io_device.configuration.port = payload["configuration"]["port"]
                         io_device.configuration.modbus_id = payload["configuration"]["modbus_id"]
                         # Wenn mindestens ein Kontakt offen ist, wird die Ladung gesperrt. Wenn beide Kontakte
@@ -1992,6 +1991,7 @@ class UpdateConfig:
                             {"value": 0, "input_matrix": {"DI1": True, "DI2": False}},
                             {"value": 1, "input_matrix": {"DI1": True, "DI2": True}}]
                     elif payload["type"] == "gpio":
+                        io_device.configuration.host = "localhost"
                         # Wenn mindestens ein Kontakt geschlossen ist, wird die Ladung gesperrt. Wenn beide Kontakt
                         # offen sind, darf geladen werden.
                         action.configuration.input_pattern = [
