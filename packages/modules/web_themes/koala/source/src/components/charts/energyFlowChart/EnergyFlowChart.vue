@@ -243,7 +243,7 @@ const svgComponents = computed((): FlowComponent[] => {
     },
     position: { row: 0, column: 0 },
     label: ['EVU', gridPower.value.textValue as string],
-    icon: '/icons/owbGrid.svg',
+    icon: 'icons/owbGrid.svg',
   });
 
   components.push({
@@ -270,7 +270,7 @@ const svgComponents = computed((): FlowComponent[] => {
       },
       position: { row: 1, column: 0 },
       label: ['PV', pvPowerText.value as string],
-      icon: '/icons/owbPV.svg',
+      icon: 'icons/owbPV.svg',
     });
   }
 
@@ -286,7 +286,7 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 1, column: 2 },
       label: ['Speicher', batteryPower.value as string],
       soc: batterySoc.value,
-      icon: '/icons/owbBattery.svg',
+      icon: 'icons/owbBattery.svg',
     });
   }
 
@@ -309,7 +309,7 @@ const svgComponents = computed((): FlowComponent[] => {
           chargePoint1Name.value as string,
           chargePoint1Power.value.textValue as string,
         ],
-        icon: '/icons/owbChargePoint.svg',
+        icon: 'icons/owbChargePoint.svg',
       });
 
       if (chargePoint1VehicleConnected.value) {
@@ -353,7 +353,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint2Name.value as string,
             chargePoint2Power.value.textValue as string,
           ],
-          icon: '/icons/owbChargePoint.svg',
+          icon: 'icons/owbChargePoint.svg',
         });
       }
 
@@ -395,7 +395,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint3Name.value as string,
             chargePoint3Power.value.textValue as string,
           ],
-          icon: '/icons/owbChargePoint.svg',
+          icon: 'icons/owbChargePoint.svg',
         });
       }
 
@@ -433,7 +433,7 @@ const svgComponents = computed((): FlowComponent[] => {
         },
         position: { row: 2, column: 1 },
         label: ['Ladepunkte', chargePointSumPower.value.textValue as string],
-        icon: '/icons/owbChargePoint.svg',
+        icon: 'icons/owbChargePoint.svg',
       });
     }
   }
