@@ -905,6 +905,8 @@ class SubData:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
                     if "io"+index in var:
+                        if var[f"io{index}"].config.configuration.host == "localhost":
+                            var.pop("iolocal")
                         var.pop("io"+index)
                     else:
                         log.error("Es konnte kein IO-Device mit der ID " +
