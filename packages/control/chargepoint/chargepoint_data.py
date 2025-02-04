@@ -103,6 +103,7 @@ class Get:
     fault_str: str = NO_ERROR
     fault_state: int = 0
     imported: float = 0
+    max_evse_current: Optional[int] = None
     phases_in_use: int = 0
     plug_state: bool = False
     power: float = 0

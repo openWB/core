@@ -156,19 +156,18 @@ class Ev:
                     charging_type)
                 soc_request_interval_offset = 0
                 if plan_data:
-                    name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
-                    if (self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].limit.
+                    if (self.charge_template.data.chargemode.scheduled_charging.plans[str(plan_data.id)].limit.
                             selected == "amount" and
-                            name != control_parameter.current_plan):
+                            plan_data.id != control_parameter.current_plan):
                         control_parameter.imported_at_plan_start = imported
                     # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
                     # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
                     if (self.soc_module and
                             self.charge_template.data.chargemode.
-                            scheduled_charging.plans[plan_data.num].limit.selected == "soc"):
+                            scheduled_charging.plans[str(plan_data.id)].limit.selected == "soc"):
                         soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
-                    control_parameter.current_plan = name
+                    control_parameter.current_plan = plan_data.id
                 else:
                     control_parameter.current_plan = None
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
@@ -185,7 +184,7 @@ class Ev:
                 if control_parameter.imported_at_plan_start is None:
                     control_parameter.imported_at_plan_start = imported
                 used_amount = imported - control_parameter.imported_at_plan_start
-                tmp_current, tmp_submode, tmp_message, name = self.charge_template.time_charging(
+                tmp_current, tmp_submode, tmp_message, plan_id = self.charge_template.time_charging(
                     self.data.get.soc,
                     used_amount,
                     charging_type
@@ -193,10 +192,10 @@ class Ev:
                 # Info vom Zielladen erhalten
                 message = f"{message or ''} {tmp_message or ''}".strip()
                 if tmp_current > 0:
-                    control_parameter.current_plan = name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
-                    if name != control_parameter.current_plan:
+                    if plan_id != control_parameter.current_plan:
                         control_parameter.imported_at_plan_start = imported
+                    control_parameter.current_plan = plan_id
                     required_current = tmp_current
                     submode = tmp_submode
             if (required_current == 0) or (required_current is None):

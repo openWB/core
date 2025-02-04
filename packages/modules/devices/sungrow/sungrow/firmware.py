@@ -2,5 +2,5 @@ from enum import Enum
 
 
 class Firmware(Enum):
-    v111 = "v111"
-    v112 = "v112"
+    v1 = "v1"  # bis 11/2024
+    v2 = "v2"  # ab 11/2024

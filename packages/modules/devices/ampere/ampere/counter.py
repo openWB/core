@@ -26,7 +26,7 @@ class AmpereCounter(AbstractCounter):
 
     def update(self, client: ModbusTcpClient_):
         powers = client.read_input_registers(1349, [ModbusDataType.INT_16]*3, unit=self.modbus_id)
-        power = client.read_input_registers(1348, ModbusDataType.INT_16, unit=self.modbus_id) * -1
+        power = client.read_input_registers(1348, ModbusDataType.INT_16, unit=self.modbus_id)
 
         imported, exported = self.sim_counter.sim_count(power)
 

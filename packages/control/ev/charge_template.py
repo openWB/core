@@ -117,7 +117,7 @@ class SelectedPlan:
     max_current: int = 16
     missing_amount: float = 0
     phases: int = 1
-    num: int = 0
+    id: int = 0
 
 
 @dataclass
@@ -150,22 +150,22 @@ class ChargeTemplate:
                     current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                     if self.data.et.active and data.data.optional_data.et_provider_available():
                         if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
-                            return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.name
+                            return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.id
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
-                        return current, "time_charging", message, plan.name
+                        return current, "time_charging", message, plan.id
                     elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
                         if soc:
                             if soc < plan.limit.soc:
-                                return current, "time_charging", message, plan.name  # Limit nicht erreicht
+                                return current, "time_charging", message, plan.id  # Limit nicht erreicht
                             else:
-                                return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
+                                return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.id  # Limit erreicht
                         else:
-                            return plan.current, "time_charging", message, plan.name
+                            return plan.current, "time_charging", message, plan.id
                     elif plan.limit.selected == "amount":  # Energiemengenlimit konfiguriert
                         if used_amount_time_charging < plan.limit.amount:
-                            return current, "time_charging", message, plan.name  # Limit nicht erreicht
+                            return current, "time_charging", message, plan.id  # Limit nicht erreicht
                         else:
-                            return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.name  # Limit erreicht
+                            return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.id  # Limit erreicht
                     else:
                         raise TypeError(f'{plan.limit.selected} unbekanntes Zeitladen-Limit.')
                 else:
@@ -260,7 +260,7 @@ class ChargeTemplate:
                                        used_amount: float,
                                        max_phases: int,
                                        phase_switch_supported: bool,
-                                       charging_type: str) -> Tuple[Optional[SelectedPlan], float]:
+                                       charging_type: str) -> Optional[SelectedPlan]:
         """ prüft, ob der Ziel-SoC oder die Ziel-Energiemenge erreicht wurde und stellt den zur Erreichung nötigen
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
@@ -310,7 +310,7 @@ class ChargeTemplate:
         missed_date_today_of_plan_with_smallest_remaining_time = False
         plan_data: Optional[SelectedPlan] = None
         battery_capacity = ev_template.data.battery_capacity
-        for num, plan in self.data.chargemode.scheduled_charging.plans.items():
+        for plan in self.data.chargemode.scheduled_charging.plans.values():
             if plan.active:
                 if plan.limit.selected == "soc" and soc is None:
                     raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren "
@@ -341,10 +341,10 @@ class ChargeTemplate:
                                     available_current=available_current,
                                     max_current=max_current,
                                     phases=phases,
-                                    num=num,
+                                    id=plan.id,
                                     missing_amount=missing_amount,
                                     duration=duration)
-                    log.debug(f"Plan-Nr. {num}: Differenz zum Start {remaining_time}s, Dauer {duration/3600}h, "
+                    log.debug(f"Plan-Nr. {plan.id}: Differenz zum Start {remaining_time}s, Dauer {duration/3600}h, "
                               f"Termin heute verpasst: {missed_date_today}")
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.ct_num))
@@ -380,7 +380,7 @@ class ChargeTemplate:
     SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC = ("Falls vorhanden wird mit EVU-Überschuss geladen, da der Ziel-Soc "
                                                 "für Zielladen bereits erreicht wurde.")
     SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
-    SCHEDULED_CHARGING_NO_DATE_PENDING = "Kein Zielladen, da kein Ziel-Termin in den nächsten 24 Stunden ansteht."
+    SCHEDULED_CHARGING_NO_DATE_PENDING = "Kein Zielladen, da kein Ziel-Termin ansteht."
     SCHEDULED_CHARGING_USE_PV = ("Kein Zielladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, "
                                  "wird mit Überschuss geladen.")
     SCHEDULED_CHARGING_MAX_CURRENT = ("Zielladen mit {}A. Der Ladestrom wurde erhöht, um den Zieltermin zu erreichen. "
@@ -407,7 +407,7 @@ class ChargeTemplate:
                 return current, submode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, control_parameter_phases
             else:
                 return current, submode, self.SCHEDULED_CHARGING_NO_DATE_PENDING, control_parameter_phases
-        current_plan = self.data.chargemode.scheduled_charging.plans[plan_data.num]
+        current_plan = self.data.chargemode.scheduled_charging.plans[str(plan_data.id)]
         limit = current_plan.limit
         phases = plan_data.phases
         log.debug("Verwendeter Plan: "+str(current_plan.name))

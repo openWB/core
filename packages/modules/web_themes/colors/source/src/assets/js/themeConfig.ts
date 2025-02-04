@@ -38,6 +38,7 @@ export class Config {
 	private _showPrices = false
 	private _showInverters = false
 	private _alternativeEnergy = false
+	private _sslPrefs: boolean = false
 	private _debug: boolean = false
 	private _lowerPriceBound = 0
 	private _upperPriceBound = 0
@@ -202,6 +203,16 @@ export class Config {
 	}
 	setShowClock(mode: string) {
 		this._showClock = mode
+	}
+	get sslPrefs() {
+		return this._sslPrefs
+	}
+	set sslPrefs(on: boolean) {
+		this._sslPrefs = on
+		savePrefs()
+	}
+	setSslPrefs(on: boolean) {
+		this.sslPrefs = on
 	}
 	get debug() {
 		return this._debug
@@ -482,6 +493,7 @@ interface Preferences {
 	altEngy?: boolean
 	lowerP?: number
 	upperP?: number
+	sslPrefs?: boolean
 	debug?: boolean
 }
 
@@ -514,12 +526,14 @@ function writeCookie() {
 	prefs.altEngy = globalConfig.alternativeEnergy
 	prefs.lowerP = globalConfig.lowerPriceBound
 	prefs.upperP = globalConfig.upperPriceBound
+	prefs.sslPrefs = globalConfig.sslPrefs
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
 		'openWBColorTheme=' +
 		JSON.stringify(prefs) +
-		';max-age=16000000;samesite=strict'
+		';max-age=16000000;' +
+		(globalConfig.sslPrefs ? 'SameSite=None;Secure' : 'SameSite=Strict')
 }
 
 function readCookie() {
@@ -608,6 +622,9 @@ function readCookie() {
 		}
 		if (prefs.upperP !== undefined) {
 			globalConfig.setUpperPriceBound(prefs.upperP)
+		}
+		if (prefs.sslPrefs !== undefined) {
+			globalConfig.setSslPrefs(prefs.sslPrefs)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)

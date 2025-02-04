@@ -16,7 +16,10 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 # ToDo: move to module commands if implemented
+from control.ev.charge_template import get_new_charge_template
+from control.ev.ev_template import EvTemplateData
 from helpermodules import pub
+from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
@@ -193,7 +196,7 @@ class Command:
         if check_num_msg is not None:
             pub_user_message(
                 payload, connection_id, f"{check_num_msg} Wenn Sie weitere Ladepunkte anbinden wollen, müssen Sie "
-                "diese als externe Ladepunkte anbinden. Die externen Ladepunkte in den Steuerungsmodus 'secondary'"
+                "diese als secondary openWB anbinden. Die weiteren Ladepunkte in den Steuerungsmodus 'secondary'"
                 " versetzen.", MessageType.ERROR)
             return
         chargepoint_config["id"] = new_id
@@ -218,7 +221,7 @@ class Command:
             else:
                 pub_user_message(payload, connection_id,
                                  "Bitte zuerst einen EVU-Zähler konfigurieren oder in den Steuerungsmodus 'secondary' "
-                                 "umschalten, wenn die openWB als externer Ladepunkt betrieben werden soll.",
+                                 "umschalten.",
                                  MessageType.ERROR)
 
     MAX_NUM_OF_DUOS_REACHED = ("Es können maximal zwei interne Ladepunkte für eine openWB Series 1/2 Duo konfiguriert "
@@ -334,7 +337,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Lade-Profil erstellt werden soll.
         """
         new_id = self.max_id_charge_template + 1
-        charge_template_default = ev.get_new_charge_template()
+        charge_template_default = get_new_charge_template()
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
                   str(new_id), charge_template_default)
         self.max_id_charge_template = new_id
@@ -363,11 +366,12 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_scheduled_plan + 1
-        charge_template_default = dataclass_utils.asdict(ev.ScheduledChargingPlan())
+        charge_template_default = ScheduledChargingPlan()
+        charge_template_default.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/chargemode/scheduled_charging/plans/{new_id}',
-            charge_template_default)
+            dataclass_utils.asdict(charge_template_default))
         self.max_id_charge_template_scheduled_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
@@ -399,11 +403,12 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_time_charging_plan + 1
-        time_charging_plan_default = dataclass_utils.asdict(ev.TimeChargingPlan())
+        time_charging_plan_default = TimeChargingPlan()
+        time_charging_plan_default.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/time_charging/plans/{new_id}',
-            time_charging_plan_default)
+            dataclass_utils.asdict(time_charging_plan_default))
         self.max_id_charge_template_time_charging_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
@@ -484,7 +489,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Fahrzeug-Profil erstellt werden soll.
         """
         new_id = self.max_id_ev_template + 1
-        ev_template_default = dataclass_utils.asdict(ev.EvTemplateData())
+        ev_template_default = dataclass_utils.asdict(EvTemplateData())
         Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
         self.max_id_ev_template = new_id
         Pub().pub("openWB/set/command/max_id/ev_template", new_id)

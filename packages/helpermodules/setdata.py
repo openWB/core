@@ -576,7 +576,7 @@ class SetData:
                 elif "/control_parameter/prio" in msg.topic:
                     self._validate_value(msg, bool)
                 elif "/control_parameter/current_plan" in msg.topic:
-                    self._validate_value(msg, str)
+                    self._validate_value(msg, int)
                 elif ("/control_parameter/imported_instant_charging" in msg.topic or
                         "/control_parameter/imported_at_plan_start" in msg.topic or
                         "/control_parameter/min_current" in msg.topic or
@@ -622,7 +622,8 @@ class SetData:
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
-        elif "/get/evse_current" in msg.topic:
+        elif ("/get/evse_current" in msg.topic or
+              "/get/max_evse_current" in msg.topic):
             self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
@@ -869,13 +870,11 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/rotation" in msg.topic:
                 self._validate_value(msg, int, [(0, 0), (90, 90), (180, 180), (270, 270)])
-            elif "openWB/set/optional/int_display/active" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/optional/int_display/on_if_plugged_in" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/optional/int_display/only_local_charge_points" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/optional/int_display/pin_active" in msg.topic:
+            elif ("openWB/set/optional/int_display/active" in msg.topic or
+                  "openWB/set/optional/ocpp/boot_notification_sent" in msg.topic or
+                  "openWB/set/optional/int_display/on_if_plugged_in" in msg.topic or
+                  "openWB/set/optional/int_display/only_local_charge_points" in msg.topic or
+                  "openWB/set/optional/int_display/pin_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_code" in msg.topic:
                 self._validate_value(msg, str)

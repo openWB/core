@@ -34,7 +34,7 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
         for price_data in sorted_market_prices:
             start_time_epoch = datetime.fromisoformat(price_data['startsAt']).timestamp()
             if current_hour <= start_time_epoch:
-                prices.update({start_time_epoch: price_data['total'] / 1000})
+                prices.update({str(int(start_time_epoch)): price_data['total'] / 1000})
     else:
         error = response_json['errors'][0]['message']
         raise Exception(error)

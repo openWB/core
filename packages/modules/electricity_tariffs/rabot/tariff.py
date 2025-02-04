@@ -79,7 +79,7 @@ def fetch(config: RabotTariff) -> None:
         formatted_price = data["priceInCentPerKwh"]/100000  # Cent/kWh -> €/Wh
         timestamp = datetime.datetime.fromisoformat(data["timestamp"]).astimezone(
             pytz.timezone("Europe/Berlin")).timestamp()
-        prices.update({int(timestamp): formatted_price})
+        prices.update({str(int(timestamp)): formatted_price})
     return prices
 
 

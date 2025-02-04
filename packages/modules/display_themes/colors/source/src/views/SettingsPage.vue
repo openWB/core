@@ -140,12 +140,11 @@ const cpid = computed(() => {
 </script>
 
 <style scoped>
-.settingslist {
-	display: grid;
-	grid-template-columns: repeat(12, 1fr);
+.tab-pane {
 	font-size: 16px;
 	color: var(--color-fg);
 	background-color: var(--color-bg);
+	align-items: center;
 }
 
 .nav-link {

@@ -146,10 +146,8 @@ export const dayGraph = reactive({
 				(this.date.getMonth() + 1).toString().padStart(2, '0') +
 				this.date.getDate().toString().padStart(2, '0')
 			mqttSubscribe(this.topic)
-			sendCommand({
-				command: 'getDailyLog',
-				data: { day: dateString },
-			})
+			sendCommand('getDailyLog',{ day: dateString })
+			
 			// graphData.data = []
 		}
 	},
@@ -178,10 +176,7 @@ export const monthGraph = reactive({
 			this.year.toString() + this.month.toString().padStart(2, '0')
 		graphData.data = []
 		mqttSubscribe(this.topic)
-		sendCommand({
-			command: 'getMonthlyLog',
-			data: { month: dateString },
-		})
+		sendCommand('getMonthlyLog',{ month: dateString })
 	},
 	deactivate() {
 		mqttUnsubscribe(this.topic)
@@ -221,10 +216,7 @@ export const yearGraph = reactive({
 		const dateString = this.year.toString()
 		graphData.data = []
 		mqttSubscribe(this.topic)
-		sendCommand({
-			command: 'getYearlyLog',
-			data: { year: dateString },
-		})
+		sendCommand('getYearlyLog', { year: dateString })
 	},
 	deactivate() {
 		mqttUnsubscribe(this.topic)
@@ -342,7 +334,7 @@ export function updateEnergyValues(
 		Object.entries(totals.sh).forEach(([id, values]) => {
 			historicSummary.setEnergy(id, values.energy_imported)
 			const idNumber = id.substring(2)
-			if (!shDevices[+idNumber].countAsHouse) {
+			if (!shDevices.get(+idNumber)!.countAsHouse) {
 				historicSummary.items.devices.energy += values.energy_imported
 			}
 		})
@@ -380,7 +372,7 @@ export function updateEnergyValues(
 					cp.pvPercentage = hcp.pvPercentage
 				}
 			})
-			Object.values(shDevices).map((device) => {
+			shDevices.forEach((device) => {
 				const hDevice = historicSummary.items['sh' + device.id]
 				if (hDevice) {
 					device.energy = hDevice.energy
@@ -409,7 +401,7 @@ function resetPvValues() {
 		cp.energyBat = 0
 		cp.pvPercentage = 0
 	})
-	Object.values(shDevices).map((device) => {
+	shDevices.forEach((device) => {
 		device.energyPv = 0
 		device.energyBat = 0
 		device.pvPercentage = 0

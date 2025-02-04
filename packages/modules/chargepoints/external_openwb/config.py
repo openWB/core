@@ -11,7 +11,7 @@ class OpenWBSeriesConfiguration:
 
 class OpenWBSeries(SetupChargepoint[OpenWBSeriesConfiguration]):
     def __init__(self,
-                 name: str = "Externe openWB",
+                 name: str = "Secondary openWB",
                  type: str = "external_openwb",
                  id: int = 0,
                  configuration: OpenWBSeriesConfiguration = None) -> None:
