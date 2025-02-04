@@ -55,7 +55,7 @@ class Process:
                             f"openWB/set/chargepoint/{cp.num}/get/state_str",
                             "Ladevorgang wurde gestartet... (bei Problemen: Prüfe bitte zuerst in den Einstellungen"
                             " 'Ladeeinstellungen' und 'Konfiguration'.)")
-                    if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NO_ERROR:
+                    if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NORMAL_OPERATION:
                         cp.chargepoint_module.fault_state.store_error()
                     modules_threads.append(self._start_charging(cp))
                     cp.remember_previous_values()

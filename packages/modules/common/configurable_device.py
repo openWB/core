@@ -32,7 +32,7 @@ class MultiComponentUpdater:
         components_list = list(components)
         with MultiComponentUpdateContext(components_list):
             if not components:
-                raise FaultState.warning("Keine Komponenten konfiguriert")
+                raise FaultState.info("Keine Komponenten konfiguriert")
             self.__updater(components_list)
 
 

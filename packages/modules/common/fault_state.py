@@ -41,11 +41,11 @@ class FaultState(Exception):
     def __init__(self, component_info: ComponentInfo) -> None:
         self.component_info = component_info
         self.fault_str = NO_ERROR
-        self.fault_state = FaultStateLevel.NO_ERROR
+        self.fault_state = FaultStateLevel.NORMAL_OPERATION
 
     def store_error(self) -> None:
         try:
-            if self.fault_state != FaultStateLevel.NO_ERROR:
+            if self.fault_state != FaultStateLevel.NORMAL_OPERATION:
                 log.error(self.component_info.name + ": FaultState " +
                           str(self.fault_state) + ", FaultStr " +
                           self.fault_str + ", Traceback: \n" +
@@ -72,21 +72,21 @@ class FaultState(Exception):
         self.fault_str = message
         self.fault_state = FaultStateLevel.ERROR
 
-    def warning(self, message: str) -> None:
+    def info(self, message: str) -> None:
         self.fault_str = message
-        self.fault_state = FaultStateLevel.WARNING
+        self.fault_state = FaultStateLevel.INFO
 
     def no_error(self, message: Optional[str] = None) -> None:
         if message:
             self.fault_str = message
         else:
             self.fault_str = NO_ERROR
-        self.fault_state = FaultStateLevel.NO_ERROR
+        self.fault_state = FaultStateLevel.NORMAL_OPERATION
 
     def from_exception(self, exception: Optional[Exception] = None) -> None:
         if exception is None:
             self.fault_str = NO_ERROR
-            self.fault_state = FaultStateLevel.NO_ERROR
+            self.fault_state = FaultStateLevel.NORMAL_OPERATION
         elif isinstance(exception, FaultState):
             self.fault_str = exception.fault_str
             self.fault_state = exception.fault_state

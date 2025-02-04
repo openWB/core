@@ -2,6 +2,6 @@ from enum import IntEnum
 
 
 class FaultStateLevel(IntEnum):
-    NO_ERROR = 0
-    WARNING = 1
+    NORMAL_OPERATION = 0
+    INFO = 1
     ERROR = 2

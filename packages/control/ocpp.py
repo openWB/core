@@ -40,8 +40,8 @@ try:
                 if self.data.ocpp.active and chargebox_id:
                     return asyncio.run(make_call())
             except websockets.exceptions.InvalidStatusCode:
-                fault_state.warning(f"Chargebox ID {chargebox_id} konnte nicht im OCPP-Backend gefunden werden oder "
-                                    "URL des Backends ist falsch.")
+                fault_state.info(f"Chargebox ID {chargebox_id} konnte nicht im OCPP-Backend gefunden werden oder "
+                                 "URL des Backends ist falsch.")
             return None
 
         def boot_notification(self: OptionalProtocol,
