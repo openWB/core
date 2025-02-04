@@ -46,7 +46,7 @@ export default configure((/* ctx */) => {
 
       // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
-      // publicPath: '/',
+      publicPath: '/openWB/web/themes/koala/',
       // analyze: true,
       // env: {},
       // rawDefine: {}
