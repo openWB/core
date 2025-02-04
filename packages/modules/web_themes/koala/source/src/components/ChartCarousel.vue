@@ -45,7 +45,7 @@
 import { ref } from 'vue';
 import { useQuasar } from 'quasar';
 import EnergyFlowChart from './charts/energyFlowChart/EnergyFlowChart.vue';
-import HistoryChart from './charts/HistoryChart.vue';
+import HistoryChart from './charts/historyChart/HistoryChart.vue';
 
 defineOptions({
   name: 'ChartCarousel',

@@ -1286,7 +1286,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const batteryName = computed(() => {
     return (batteryId: number): string => {
-      const configuration = getWildcardValues.value(`openWB/system/device/+/component/${batteryId}/config`);
+      const configuration = getWildcardValues.value(
+        `openWB/system/device/+/component/${batteryId}/config`,
+      );
       if (Object.keys(configuration).length === 0) {
         const index = batteryIds.value.indexOf(batteryId);
         return `Speicher ${index + 1}` as string; // Returns sequential name based on id index
