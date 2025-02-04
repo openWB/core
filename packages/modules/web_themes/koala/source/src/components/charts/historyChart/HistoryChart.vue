@@ -15,6 +15,7 @@ import { LineChart } from 'vue-chart-3';
 import { Chart, registerables } from 'chart.js';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import 'chartjs-adapter-luxon';
+import type { HistoryChartTooltipItem } from './history-chart-model';
 
 Chart.register(...registerables);
 const $q = useQuasar();
@@ -40,6 +41,7 @@ const vehicles = computed(() => mqttStore.vehicleList());
 const chargePointDatasets = computed(() =>
   chargePointIds.value.map((cpId) => ({
     label: `${chargePointNames.value(cpId)}`,
+    unit: 'kW',
     borderColor: '#4766b5',
     backgroundColor: 'rgba(71, 102, 181, 0.2)',
     data: selectedData.value.map((item) => item[`cp${cpId}-power`] as number),
@@ -59,6 +61,7 @@ const vehicleDatasets = computed(() =>
       if (selectedData.value.some((item) => socKey in item)) {
         return {
           label: `${vehicle.name} SoC`,
+          unit: '%',
           borderColor: '#9F8AFF',
           borderWidth: 2,
           borderDash: [10, 5],
@@ -86,6 +89,7 @@ const lineChartData = computed(() => {
     datasets: [
       {
         label: 'Grid Power',
+        unit: 'kW',
         borderColor: '#a33c42',
         backgroundColor: 'rgba(239,182,188, 0.2)',
         data: selectedData.value.map((item) => item.grid),
@@ -97,7 +101,8 @@ const lineChartData = computed(() => {
         yAxisID: 'y',
       },
       {
-        label: 'House Power',
+        label: 'Hausverbrauch',
+        unit: 'kW',
         borderColor: '#949aa1',
         backgroundColor: 'rgba(148, 154, 161, 0.2)',
         data: selectedData.value.map((item) => item['house-power'] as number),
@@ -110,6 +115,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'PV Power',
+        unit: 'kW',
         borderColor: 'green',
         backgroundColor: 'rgba(144, 238, 144, 0.2)',
         data: selectedData.value.map((item) => item['pv-all'] as number),
@@ -122,6 +128,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Speicher ges.',
+        unit: 'kW',
         borderColor: '#b5a647',
         backgroundColor: 'rgba(181, 166, 71, 0.2)',
         data: selectedData.value.map((item) => item['bat-all-power'] as number),
@@ -134,6 +141,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Speicher SoC',
+        unit: '%',
         borderColor: '#FFB96E',
         borderWidth: 2,
         borderDash: [10, 5],
@@ -163,13 +171,14 @@ const chartOptions = computed(() => ({
         boxHeight: 0.1,
       },
     },
-    // title: {
-    //   display: true,
-    //   text: 'Zeitliche Verlauf',
-    //   font: {
-    //     size: 16,
-    //   },
-    // },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      callbacks: {
+        label: (item: HistoryChartTooltipItem) =>
+          `${item.dataset.label}: ${item.formattedValue} ${item.dataset.unit}`,
+      },
+    },
   },
   scales: {
     x: {
