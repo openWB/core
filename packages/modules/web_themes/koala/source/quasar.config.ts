@@ -201,7 +201,7 @@ export default configure((/* ctx */) => {
       builder: {
         // https://www.electron.build/configuration/configuration
 
-        appId: 'openwb-standard-web-theme',
+        appId: 'openwb-koala-web-theme',
       },
     },
 
