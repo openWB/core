@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+import logging
+from typing import Dict, Union, Tuple
 
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
@@ -10,6 +11,8 @@ from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
+
+log = logging.getLogger(__name__)
 
 
 class SunnyBoySmartEnergyBat(AbstractBat):
@@ -33,30 +36,55 @@ class SunnyBoySmartEnergyBat(AbstractBat):
     def read(self) -> BatState:
         unit = self.component_config.configuration.modbus_id
 
-        soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.UINT_32, unit=unit)
-        current = self.__tcp_client.read_holding_registers(30843, ModbusDataType.INT_32, unit=unit)/-1000
-        voltage = self.__tcp_client.read_holding_registers(30851, ModbusDataType.INT_32, unit=unit)/100
+        # Define the required registers
+        registers = {
+            "Battery_SoC": (30845, ModbusDataType.UINT_32),
+            "Battery_ChargePower": (31393, ModbusDataType.INT_32),
+            "Battery_DischargePower": (31395, ModbusDataType.INT_32),
+            "Battery_ChargedEnergy": (31401, ModbusDataType.UINT_64),
+            "Battery_DischargedEnergy": (31397, ModbusDataType.UINT_64),
+            "Inverter_Type": (30053, ModbusDataType.UINT_32)
+        }
 
-        if soc == self.SMA_UINT32_NAN:
+        # Read all values
+        values = self.read_registers(registers, unit)
+
+        if values["Battery_SoC"] == self.SMA_UINT32_NAN:
             # If the storage is empty and nothing is produced on the DC side, the inverter does not supply any values.
-            soc = 0
+            values["Battery_SoC"] = 0
             power = 0
         else:
-            power = current*voltage
-        exported = self.__tcp_client.read_holding_registers(31401, ModbusDataType.UINT_64, unit=3)
-        imported = self.__tcp_client.read_holding_registers(31397, ModbusDataType.UINT_64, unit=3)
+            if values["Battery_ChargePower"] > 5:
+                power = values["Battery_ChargePower"]
+            else:
+                power = values["Battery_DischargePower"] * -1
 
-        if exported == self.SMA_UINT_64_NAN or imported == self.SMA_UINT_64_NAN:
-            raise ValueError(f'Batterie lieferte nicht plausible Werte. Export: {exported}, Import: {imported}. ',
-                             'Sobald die Batterie geladen/entladen wird sollte sich dieser Wert ändern, ',
-                             'andernfalls kann ein Defekt vorliegen.')
+        if (values["Battery_ChargedEnergy"] == self.SMA_UINT_64_NAN or
+                values["Battery_DischargedEnergy"] == self.SMA_UINT_64_NAN):
+            raise ValueError(
+                f'Batterie lieferte nicht plausible Werte. Geladene Energie: {values["Battery_ChargedEnergy"]}, '
+                f'Entladene Energie: {values["Battery_DischargedEnergy"]}. ',
+                'Sobald die Batterie geladen/entladen wird sollte sich dieser Wert ändern, ',
+                'andernfalls kann ein Defekt vorliegen.'
+            )
 
-        return BatState(
+        bat_state = BatState(
             power=power,
-            soc=soc,
-            imported=imported,
-            exported=exported
+            soc=values["Battery_SoC"],
+            exported=values["Battery_ChargedEnergy"],
+            imported=values["Battery_DischargedEnergy"]
         )
+        log.debug("Bat {}: {}".format(self.__tcp_client.address, bat_state))
+        return bat_state
+
+    def read_registers(
+        self, registers: Dict[str, Tuple[int, ModbusDataType]], unit: int
+    ) -> Dict[str, Union[int, float]]:
+        values = {}
+        for key, (address, data_type) in registers.items():
+            values[key] = self.__tcp_client.read_holding_registers(address, data_type, unit=unit)
+        log.debug("Bat raw values {}: {}".format(self.__tcp_client.address, values))
+        return values
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SmaSunnyBoySmartEnergyBatSetup)

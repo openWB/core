@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -8,6 +9,8 @@ from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaTesvoltBatSetup
+
+log = logging.getLogger(__name__)
 
 
 class TesvoltBat(AbstractBat):
@@ -32,7 +35,7 @@ class TesvoltBat(AbstractBat):
             imported=imported,
             exported=exported
         )
-
+        log.debug("Bat {}: {}".format(self.tcp_client.address, bat_state))
         self.store.set(bat_state)
 
 
