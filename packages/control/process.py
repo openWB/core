@@ -74,7 +74,7 @@ class Process:
                     for d in action.config.configuration.devices:
                         if "io" in d[0]:
                             if action.dimming_via_direct_control(d) is not None:
-                                data.data.system_data[d].data.set.digital_output[d[1]] = True
+                                data.data.system_data[d[0]].data.set.digital_output[d[1]] = True
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):
                     modules_threads.append(

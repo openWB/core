@@ -85,11 +85,12 @@ class IoActions:
         else:
             return None
 
-    def ripple_control_receiver(self, cp_num: int) -> float:
+    def ripple_control_receiver(self, device: List[str]) -> float:
         for action in self.actions.values():
             if isinstance(action, RippleControlReceiver):
-                if cp_num in action.config.configuration.cp_ids:
-                    self._check_fault_state_io_device(action.config.configuration.io_device)
-                    return action.ripple_control_receiver(cp_num)
+                for d in action.config.configuration.devices:
+                    if device[0] == d[0]:
+                        self._check_fault_state_io_device(action.config.configuration.io_device)
+                        return action.ripple_control_receiver()
         else:
             return 1

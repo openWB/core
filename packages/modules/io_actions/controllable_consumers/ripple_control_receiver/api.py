@@ -42,23 +42,18 @@ class RippleControlReceiver(AbstractIoAction):
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                     control_command_log.info("Direktsteuerung deaktiviert.")
 
-    def ripple_control_receiver(self, cp_num: int) -> float:
-        for cp in self.config.configuration.devices:
-            if cp_num == int(cp[0][2:]):
-                for pattern in self.config.configuration.input_pattern:
-                    for digital_input, value in pattern["input_matrix"].items():
-                        if data.data.io_states[
-                            f"io_states{self.config.configuration.io_device}"
-                        ].data.get.digital_input[digital_input] != value:
-                            break
-                    else:
-                        # Alle digitalen Eingänge entsprechen dem Pattern
-                        return pattern["value"]
-                else:
-                    # Zustand entspricht keinem Pattern
-                    return 0
+    def ripple_control_receiver(self) -> float:
+        for pattern in self.config.configuration.input_pattern:
+            for digital_input, value in pattern["input_matrix"].items():
+                if data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                       ].data.get.digital_input[digital_input] != value:
+                    break
             else:
-                return 1
+                # Alle digitalen Eingänge entsprechen dem Pattern
+                return pattern["value"]
+        else:
+            # Zustand entspricht keinem Pattern
+            return 0
 
 
 def create_action(config: RippleControlReceiverSetup):

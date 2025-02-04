@@ -43,7 +43,7 @@ class Dimming(AbstractIoAction):
                 for device in self.config.configuration.devices:
                     if "cp" in device[0]:
                         cp = device[0]
-                        msg += f", Gerät {cp}: {data.data.cp_data[f'cp{cp}'].data.get.powers}W"
+                        msg += f", Gerät {cp}: {data.data.cp_data[cp].data.get.powers}W"
                 control_command_log.info(msg)
             elif self.timestamp:
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)

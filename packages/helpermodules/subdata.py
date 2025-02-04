@@ -681,8 +681,8 @@ class SubData:
                     index = get_index(msg.topic)
                     payload = decode_payload(msg.payload)
                     if payload == "":
-                        if index in var.actions:
-                            var.actions.pop(index)
+                        if f"io_action{index}" in var.actions:
+                            var.actions.pop(f"io_action{index}")
                     else:
                         mod = importlib.import_module(
                             f".io_actions.{payload['group']}.{payload['type']}.api", "modules")
