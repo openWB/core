@@ -124,10 +124,12 @@ class Loadmanagement:
     def _limit_by_dimming_via_direct_control(self,
                                              missing_currents: List[float],
                                              cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        if data.data.io_actions.dimming_via_direct_control(f"cp{cp.num}"):
+        if data.data.io_actions.dimming_via_direct_control([f"cp{cp.num}"]):
             phases = 3-missing_currents.count(0)
-            current_per_phase = 4.2/phases
-            available_currents = [current_per_phase if c > 0 else 0 for c in missing_currents]
+            current_per_phase = 4200 / (sum(v for v in cp.data.get.voltages if v >= 200) /
+                                        len([v for v in cp.data.get.voltages if v >= 200])) / phases
+            available_currents = [current_per_phase -
+                                  cp.data.set.target_current if c > 0 else 0 for c in missing_currents]
             log.debug(f"Dimmung per Direkt-Steuerung: {available_currents}A")
             return available_currents, LimitingValue.DIMMING_VIA_DIRECT_CONTROL.value
         else:
@@ -136,7 +138,7 @@ class Loadmanagement:
     def _limit_by_dimming(self,
                           available_currents: List[float],
                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        dimming_power_left = data.data.io_actions.dimming_get_import_power_left(f"cp{cp.num}")
+        dimming_power_left = data.data.io_actions.dimming_get_import_power_left([f"cp{cp.num}"])
         if dimming_power_left:
             if sum(available_currents)*230 > dimming_power_left:
                 phases = 3-available_currents.count(0)
@@ -149,7 +151,7 @@ class Loadmanagement:
     def _limit_by_ripple_control_receiver(self,
                                           available_currents: List[float],
                                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        value = data.data.io_actions.ripple_control_receiver(cp.num)
+        value = data.data.io_actions.ripple_control_receiver([f"cp{cp.num}"])
         if value != 1:
             phases = 3-available_currents.count(0)
             if phases > 1:
