@@ -1280,6 +1280,23 @@ export const useMqttStore = defineStore('mqtt', () => {
   ////////////////////////////// Battery individual ////////////////////////////////
 
   /**
+   * Get the battery name identified by the battery ID
+   * @param batteryId battery ID
+   * @returns string
+   */
+  const batteryName = computed(() => {
+    return (batteryId: number): string => {
+      const configuration = getWildcardValues.value(`openWB/system/device/+/component/${batteryId}/config`);
+      if (Object.keys(configuration).length === 0) {
+        const index = batteryIds.value.indexOf(batteryId);
+        return `Speicher ${index + 1}` as string; // Returns sequential name based on id index
+      }
+      console.log('battery configuration', configuration);
+      return configuration[Object.keys(configuration)[0]].name as string;
+    };
+  });
+
+  /**
    * Get the SoC, for each individual battery
    * @returns number
    */
@@ -1386,18 +1403,6 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const batteryIds = computed(() => {
     return getObjectIds.value('bat') as number[];
-  });
-
-  /**
-   * Get the battery name identified by the battery ID
-   * @param batteryId battery ID
-   * @returns string
-   */
-  const batteryName = computed(() => {
-    return (batteryId: number): string => {
-      const index = batteryIds.value.indexOf(batteryId);
-      return `Speicher ${index + 1}` as string; // Returns sequential name based on id index
-    };
   });
 
   /**
