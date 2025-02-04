@@ -22,21 +22,11 @@
         <div class="row">
           <q-icon
             :name="
-              soc === 0 || soc === undefined || soc === null
+              soc === undefined || soc === null
                 ? 'battery_0_bar'
-                : soc < 14
-                  ? 'battery_1_bar'
-                  : soc < 29
-                    ? 'battery_2_bar'
-                    : soc < 43
-                      ? 'battery_3_bar'
-                      : soc < 57
-                        ? 'battery_4_bar'
-                        : soc < 71
-                          ? 'battery_5_bar'
-                          : soc < 85
-                            ? 'battery_6_bar'
-                            : 'battery_full'
+                : soc < 85
+                  ? `battery_${Math.floor(soc / 15)}_bar`
+                  : 'battery_full'
             "
             size="sm"
             color="primary"
