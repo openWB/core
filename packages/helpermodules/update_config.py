@@ -1972,6 +1972,12 @@ class UpdateConfig:
                     else:
                         dev = importlib.import_module(".io_devices."+payload["type"]+".api", "modules")
                     io_device = dev.device_descriptor.configuration_factory()
+                    for cp_topic, cp_payload in self.all_received_topics.items():
+                        if re.search("openWB/chargepoint/[0-9]+/config", cp_topic) is not None:
+                            cp_config = decode_payload(cp_payload)
+                            if cp_config["type"] == "mqtt":
+                                # if cp_config["type"] == "internal_openwb":
+                                io_device.configuration.io_device = cp_config["id"]
 
                     action = RippleControlReceiverSetup()
                     for cp_topic in self.all_received_topics.keys():
