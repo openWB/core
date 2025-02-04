@@ -5,6 +5,7 @@
 * [Ladepunkte](https://github.com/openWB/core/wiki/Ladepunkte)
 * [Fahrzeuge](https://github.com/openWB/core/wiki/Fahrzeuge)
   * [Manueller SoC](https://github.com/openWB/core/wiki/Manueller-SoC)
+  * [VWId](https://github.com/openWB/core/wiki/SoC-VWId)
 * [Lademodi](https://github.com/openWB/core/wiki/Lademodi)
 * Zähler
   * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Grundsätzliches-zu-Zählern)
