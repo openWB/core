@@ -58,7 +58,7 @@ class MultiComponentUpdateContext:
         log.debug("Update Komponenten " +
                   str([component.fault_state.component_info.name for component in self.__device_components]))
         for component in self.__device_components:
-            component.fault_state.fault_state = FaultStateLevel.NO_ERROR
+            component.fault_state.fault_state = FaultStateLevel.NORMAL_OPERATION
             component.fault_state.fault_str = NO_ERROR
         return None
 

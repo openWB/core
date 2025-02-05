@@ -26,7 +26,7 @@ class LgBat(AbstractBat):
         try:
             soc = float(response["statistics"]["bat_user_soc"])
         except ValueError:
-            self.fault_state.warning('Speicher-SOC ist nicht numerisch und wird auf 0 gesetzt.')
+            self.fault_state.info('Speicher-SOC ist nicht numerisch und wird auf 0 gesetzt.')
             soc = 0
 
         imported, exported = self.sim_counter.sim_count(power)

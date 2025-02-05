@@ -22,7 +22,7 @@ def general_data_fixture() -> None:
 
 @pytest.mark.parametrize("fault_state, expected_loadmanagement_available",
                          [pytest.param(FaultStateLevel.ERROR, 1652683252),
-                          pytest.param(FaultStateLevel.NO_ERROR, None)])
+                          pytest.param(FaultStateLevel.NORMAL_OPERATION, None)])
 def test_set_loadmanagement_state(fault_state: FaultStateLevel,
                                   expected_loadmanagement_available: bool,
                                   monkeypatch,

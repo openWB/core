@@ -111,8 +111,8 @@ class CounterAll:
                 else:
                     hc_counter_source = f"counter{self.data.config.home_consumption_source_id}"
                 hc_counter_data = data.data.counter_data[hc_counter_source].data
-                if hc_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
-                    hc_counter_data.get.fault_state = FaultStateLevel.WARNING.value
+                if hc_counter_data.get.fault_state == FaultStateLevel.NORMAL_OPERATION:
+                    hc_counter_data.get.fault_state = FaultStateLevel.INFO.value
                     hc_counter_data.get.fault_str = ("Hinweis: Es gibt mehr Stromerzeuger im Haus als in der openWB "
                                                      "eingetragen sind. Der Hausverbrauch kann nicht korrekt berechnet "
                                                      "werden. Dies hat auf die PV-Überschussladung keine negativen "

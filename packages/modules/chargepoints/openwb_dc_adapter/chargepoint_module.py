@@ -78,7 +78,7 @@ class ChargepointModule(AbstractChargepoint):
                 json_rsp = self.__session.get('http://'+ip_address+'/connect.php').json()
 
                 if json_rsp["fault_state"] == 1:
-                    self.fault_state.warning(json_rsp["fault_str"])
+                    self.fault_state.info(json_rsp["fault_str"])
                 elif json_rsp["fault_state"] == 2:
                     raise Exception(json_rsp["fault_str"])
 

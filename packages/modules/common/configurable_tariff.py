@@ -30,7 +30,7 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
                 self.store.update()
                 for timestamp in tariff_state.prices.keys():
                     if timestamp < current_hour:
-                        self.fault_state.warning('Die Preisliste startet nicht mit der aktuellen Stunde.')
+                        self.fault_state.info('Die Preisliste startet nicht mit der aktuellen Stunde.')
                 if len(tariff_state.prices) < 24:
                     self.fault_state.no_error(
                         f'Die Preisliste hat nicht 24, sondern {len(tariff_state.prices)} Einträge. '

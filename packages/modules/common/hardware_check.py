@@ -83,7 +83,7 @@ class SeriesHardwareCheckMixin:
         elif evse_check_passed and meter_check_passed and meter_error_msg is not None:
             if meter_error_msg != METER_NO_SERIAL_NUMBER:
                 meter_error_msg += OPEN_TICKET
-            fault_state.warning(meter_error_msg)
+            fault_state.info(meter_error_msg)
         if evse_check_passed is False:
             if meter_error_msg is not None:
                 raise Exception(EVSE_BROKEN + " " + meter_error_msg + OPEN_TICKET)
