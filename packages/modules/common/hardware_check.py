@@ -81,10 +81,15 @@ class SeriesHardwareCheckMixin:
 
     def request_and_check_hardware(self: ClientHandlerProtocol,
                                    fault_state: FaultState) -> Tuple[EvseState, CounterState]:
+        # evse_check_passed = False
         try:
             with self.client:
                 evse_state = self.evse_client.get_evse_state()
-                evse_check_passed = True
+            evse_check_passed = True
+            # if self.evse_client.version > EVSE_MIN_FIRMWARE:
+            #     evse_check_passed = True
+            # else:
+            #     evse_check_passed = False
         except Exception as e:
             evse_check_passed = self.handle_exception(e)
         meter_check_passed, meter_error_msg, counter_state = self.check_meter()

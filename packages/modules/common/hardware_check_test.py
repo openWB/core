@@ -16,26 +16,25 @@ from modules.internal_chargepoint_handler.clients import ClientHandler
 
 
 @pytest.mark.parametrize(
-    ("evse_side_effect, evse_return_value, meter_side_effect, meter_return_value, handle_exception_side_effect,"
+    ("evse_side_effect, meter_side_effect, meter_return_value, handle_exception_side_effect,"
      "handle_exception_return_value, client_spec, expected_error_msg"),
-    [pytest.param(Exception("Modbus"), None, None, [230]*3, None, False, ModbusSerialClient_, EVSE_BROKEN,
+    [pytest.param(Exception("Modbus"), None, [230]*3, None, False, ModbusSerialClient_, EVSE_BROKEN,
                   id="EVSE defekt"),
-     pytest.param(Exception("Modbus"), None, None, [230, 0, 230], None, False, ModbusSerialClient_,
+     pytest.param(Exception("Modbus"), None, [230, 0, 230], None, False, ModbusSerialClient_,
                   EVSE_BROKEN + " " + METER_BROKEN_VOLTAGES.format([230, 0, 230]) + OPEN_TICKET,
                   id="EVSE defekt und Zähler eine Phase defekt"),
-     pytest.param(None, 18, Exception("Modbus"), None, None, None,
+     pytest.param(None, Exception("Modbus"), None, None, None,
                   ModbusSerialClient_, METER_PROBLEM, id="Zähler falsch konfiguriert"),
-     pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, None, False, ModbusSerialClient_,
+     pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusSerialClient_,
                   USB_ADAPTER_BROKEN, id="USB-Adapter defekt"),
-     pytest.param(Exception("Modbus"), None, Exception("Modbus"), None, None, False, ModbusTcpClient_,
+     pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusTcpClient_,
                   LAN_ADAPTER_BROKEN, id="LAN-Adapter defekt"),
-     pytest.param(Exception("Modbus"), None, Exception("Modbus"), None,
+     pytest.param(Exception("Modbus"), Exception("Modbus"), None,
                   Exception(NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT)), None, ModbusTcpClient_,
                   NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT), id="LAN-Adapter nicht erreichbar"),
      ]
 )
 def test_hardware_check_fails(evse_side_effect,
-                              evse_return_value,
                               meter_side_effect,
                               meter_return_value,
                               handle_exception_side_effect,
@@ -44,9 +43,8 @@ def test_hardware_check_fails(evse_side_effect,
                               expected_error_msg,
                               monkeypatch):
     # setup
-    evse_state = Mock(spec=EvseState, version=evse_return_value)
-    mock_evse_client = Mock(spec=Evse, get_evse_state=Mock(side_effect=evse_side_effect, return_value=evse_state))
-    mock_evse_facotry = Mock(spec=Evse, return_value=mock_evse_client)
+    mock_evse_client = Mock(spec=Evse, version=18, get_evse_state=Mock(side_effect=[evse_side_effect]))
+    mock_evse_facotry = Mock(return_value=mock_evse_client)
     monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
 
     counter_state_mock = Mock(spec=CounterState, side_effect=meter_side_effect,
@@ -73,9 +71,8 @@ def test_hardware_check_fails(evse_side_effect,
 
 def test_hardware_check_succeeds(monkeypatch):
     # setup
-    evse_state = Mock(spec=EvseState, version=17)
-    mock_evse_client = Mock(spec=Evse, get_evse_state=Mock(return_value=evse_state))
-    mock_evse_facotry = Mock(spec=Evse, return_value=mock_evse_client)
+    mock_evse_client = Mock(spec=Evse, get_evse_state=Mock(return_value=Mock(spec=EvseState)), version=17)
+    mock_evse_facotry = Mock(return_value=mock_evse_client)
     monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
 
     counter_state_mock = Mock(spec=CounterState, voltages=[
@@ -132,7 +129,8 @@ def test_check_meter(
     if isinstance(serial_number, Exception):
         counter_state_mock = Mock(spec=CounterState, side_effect=serial_number)
     else:
-        counter_state_mock = Mock(spec=CounterState, serial_number=serial_number, voltages=voltages)
+        counter_state_mock = Mock(spec=CounterState, serial_number=serial_number,
+                                  voltages=voltages, currents=[0, 0, 0], powers=[0, 0, 0], power=0)
     mock_meter_client = Mock()
     mock_meter_client.get_counter_state.return_value = counter_state_mock
     MockClientHandlerProtocol.meter_client = mock_meter_client

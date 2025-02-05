@@ -59,7 +59,9 @@ class ClientHandler(SeriesHardwareCheckMixin):
             return None
 
     @staticmethod
-    def find_meter_client(meters: List[meter_config], client: Union[ModbusSerialClient_, ModbusTcpClient_], fault_state: FaultState) -> METERS:
+    def find_meter_client(meters: List[meter_config],
+                          client: Union[ModbusSerialClient_, ModbusTcpClient_],
+                          fault_state: FaultState) -> METERS:
         for meter_type, modbus_id in meters:
             meter_client = meter_type(modbus_id, client, fault_state)
             with client:
@@ -99,7 +101,8 @@ def client_factory(local_charge_point_num: int,
 
 def get_modbus_client(local_charge_point_num: int,
                       created_client_handler: Optional[ClientHandler] = None,
-                      fault_state: Optional[FaultState] = None) -> Tuple[Union[ModbusSerialClient_, ModbusTcpClient_], List[int]]:
+                      fault_state: Optional[FaultState] = None) -> Tuple[Union[ModbusSerialClient_, ModbusTcpClient_],
+                                                                         List[int]]:
     tty_devices = list(Path("/dev/serial/by-path").glob("*"))
     log.debug("tty_devices"+str(tty_devices))
     resolved_devices = [str(file.resolve()) for file in tty_devices]
