@@ -2,6 +2,7 @@
 import logging
 import re
 import json
+from datetime import datetime
 from subprocess import Popen
 from pathlib import Path
 from time import sleep
@@ -9,7 +10,6 @@ from typing import Optional
 import paho.mqtt.client as mqtt
 import platform
 
-from helpermodules.timecheck import create_timestamp
 
 API_VERSION = "1"
 BASE_PATH = Path(__file__).resolve().parents[2]
@@ -210,7 +210,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
 
 
 lt_executable = get_lt_executable()
-client = mqtt.Client(f"openWB-remote-{get_serial()}-{create_timestamp()}")
+client = mqtt.Client(f"openWB-remote-{get_serial()}-{datetime.today().timestamp()}")
 client.on_connect = on_connect
 client.on_message = on_message
 client.will_set(STATE_TOPIC, json.dumps("offline"), qos=2, retain=True)
