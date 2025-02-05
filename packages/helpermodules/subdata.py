@@ -300,17 +300,19 @@ class SubData:
                             client.subscribe(f"openWB/vehicle/{index}/soc_module/general_config", 2)
                         self.event_soc.set()
                     else:
+                        # temporäres ChargeTemplate aktualisieren, wenn dem Fahrzeug ein anderes Ladeprofil zugeordnet
+                        # wird
                         self.set_json_payload_class(var["ev"+index].data, msg)
                         if re.search("/vehicle/[0-9]+/charge_template$", msg.topic) is not None:
-                            if var["ev"+index].data.charge_template.data.id != decode_payload(msg.payload)["id"]:
+                            charge_template_id = int(decode_payload(msg.payload))
+                            if var["ev"+index].data.charge_template != charge_template_id:
                                 ev_id = get_index(msg.topic)
                                 for cp in self.cp_data.values():
                                     if ((cp.chargepoint.data.set.charging_ev != -1 and
                                          cp.chargepoint.data.set.charging_ev == ev_id) or
                                             cp.chargepoint.data.config.ev == ev_id):
-                                        cp.update_charge_template(dataclass_from_dict(
-                                            ChargeTemplateData, decode_payload(msg.payload)))
-
+                                        cp.chargepoint.update_charge_template(
+                                            self.ev_charge_template_data[f"ct{charge_template_id}"])
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -340,6 +342,15 @@ class SubData:
                     self.event_time_charging_plan.set()
                 else:
                     self.event_charge_template.set()
+                # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
+                for vehicle in self.ev_data.values():
+                    if vehicle.data.charge_template == int(index):
+                        vehicle.data.charge_template = var["ct"+index]
+                        for cp in self.cp_data.values():
+                            if ((cp.chargepoint.data.set.charging_ev != -1 and
+                                    cp.chargepoint.data.set.charging_ev == vehicle.num) or
+                                    cp.chargepoint.data.config.ev == vehicle.num):
+                                cp.chargepoint.update_charge_template(var["ct"+index])
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -438,8 +449,6 @@ class SubData:
                         else:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                             if "charge_template" in msg.topic:
-                                if var["cp"+index].chargepoint.data.set.charge_template is None:
-                                    var["cp"+index].chargepoint.data.set.charge_template = ChargeTemplate()
                                 if re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None:
                                     self.set_json_payload_class(
                                         var["cp"+index].chargepoint.data.set.charge_template.data, msg)
