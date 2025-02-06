@@ -41,8 +41,8 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             "Battery_SoC": (30845, ModbusDataType.UINT_32),
             "Battery_ChargePower": (31393, ModbusDataType.INT_32),
             "Battery_DischargePower": (31395, ModbusDataType.INT_32),
-            "Battery_ChargedEnergy": (31401, ModbusDataType.UINT_64),
-            "Battery_DischargedEnergy": (31397, ModbusDataType.UINT_64),
+            "Battery_ChargedEnergy": (31397, ModbusDataType.UINT_64),
+            "Battery_DischargedEnergy": (31401, ModbusDataType.UINT_64),
             "Inverter_Type": (30053, ModbusDataType.UINT_32)
         }
 
@@ -71,8 +71,8 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         bat_state = BatState(
             power=power,
             soc=values["Battery_SoC"],
-            exported=values["Battery_ChargedEnergy"],
-            imported=values["Battery_DischargedEnergy"]
+            exported=values["Battery_DischargedEnergy"],
+            imported=values["Battery_ChargedEnergy"]
         )
         log.debug("Bat {}: {}".format(self.__tcp_client.address, bat_state))
         return bat_state
