@@ -22,7 +22,7 @@ class AbstractBat:
         self.component_config = component_config
         self.kwargs = kwargs
 
-    def initialiser(self):
+    def initializer(self):
         pass
 
     @abstractmethod
