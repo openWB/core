@@ -39,7 +39,7 @@ class ClientHandler(SeriesHardwareCheckMixin):
         self.local_charge_point_num = local_charge_point_num
         self.evse_client = self._evse_factory(client, evse_ids)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
-                                                   client)
+                                                   client, fault_state)
         self.request_and_check_hardware(fault_state)
         self.read_error = 0
 
