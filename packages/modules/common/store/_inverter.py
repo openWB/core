@@ -60,6 +60,7 @@ class PurgeInverterState:
         children = data.data.counter_all_data.get_entry_of_element(self.delegate.delegate.num)["children"]
         power = state.power
         exported = state.exported
+        imported = state.imported
         if len(children):
             hybrid = []
             for c in children:
@@ -70,9 +71,8 @@ class PurgeInverterState:
                 for bat in hybrid:
                     bat_get = data.data.bat_data[bat].data.get
                     power -= bat_get.power
-                    
-                    if not state.is_discrete_energy_and_combined_power:
-                        exported += bat_get.imported - bat_get.exported
+
+                    exported += bat_get.imported - bat_get.exported - imported
 
             if state.dc_power is not None:
                 # Manche Systeme werden auch aus dem Netz geladen, um einen Mindest-SoC zu halten.
