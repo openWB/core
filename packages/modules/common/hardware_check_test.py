@@ -44,25 +44,22 @@ def test_hardware_check_fails(evse_side_effect,
                               monkeypatch):
     # setup
     mock_evse_client = Mock(spec=Evse, version=18, get_evse_state=Mock(side_effect=[evse_side_effect]))
-    mock_evse_facotry = Mock(return_value=mock_evse_client)
-    monkeypatch.setattr(ClientHandler, "_evse_factory", mock_evse_facotry)
+    monkeypatch.setattr(ClientHandler, "_evse_factory", Mock(return_value=mock_evse_client))
 
-    counter_state_mock = Mock(spec=CounterState, side_effect=meter_side_effect,
+    counter_state_mock = Mock(spec=CounterState,
                               voltages=meter_return_value,
                               currents=[0, 0, 0],
                               powers=[0, 0, 0],
                               power=0,
                               serial_number="1234")
-    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_counter_state=Mock(return_value=counter_state_mock))
-    mock_find_meter_client = Mock(spec=sdm.Sdm630_72, return_value=mock_meter_client)
-    monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
+    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_counter_state=Mock(
+        side_effect=meter_side_effect, return_value=counter_state_mock))
+    monkeypatch.setattr(ClientHandler, "find_meter_client", Mock(return_value=mock_meter_client))
 
-    handle_exception_mock = Mock(side_effect=handle_exception_side_effect, return_value=handle_exception_return_value)
-    monkeypatch.setattr(SeriesHardwareCheckMixin, "handle_exception", handle_exception_mock)
+    monkeypatch.setattr(SeriesHardwareCheckMixin, "handle_exception", Mock(
+        side_effect=handle_exception_side_effect, return_value=handle_exception_return_value))
 
-    enter_mock = Mock(return_value=None)
-    exit_mock = Mock(return_value=True)
-    client = Mock(spec=client_spec, __enter__=enter_mock, __exit__=exit_mock)
+    client = Mock(spec=client_spec, __enter__=Mock(return_value=None), __exit__=Mock(return_value=None))
 
     # execution and evaluation
     with pytest.raises(Exception, match=re.escape(expected_error_msg)):
