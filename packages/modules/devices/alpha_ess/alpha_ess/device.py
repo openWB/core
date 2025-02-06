@@ -52,7 +52,7 @@ def create_device(device_config: AlphaEss):
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    def initialiser():
+    def initializer():
         nonlocal client
         if device_config.configuration.source == 0:
             client = modbus.ModbusTcpClient_("192.168.193.125", 8899)
@@ -62,7 +62,7 @@ def create_device(device_config: AlphaEss):
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

@@ -66,22 +66,22 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
                  device_config: T_DEVICE_CONFIG,
                  component_factory: ComponentFactory[Any, T_COMPONENT],
                  component_updater: ComponentUpdater[T_COMPONENT],
-                 initialiser: Callable = lambda: None) -> None:
-        self.__initialiser = initialiser
+                 initializer: Callable = lambda: None) -> None:
+        self.__initializer = initializer
         self.__component_factory = component_factory
         self.__component_updater = component_updater
         self.device_config = device_config
         self.components: Dict[str, T_COMPONENT] = {}
 
         try:
-            self.__initialiser()
+            self.__initializer()
         except Exception:
             log.exception(f"Initialisierung von Gerät {self.device_config.name} fehlgeschlagen")
 
     def add_component(self, component_config: T_COMPONENT_CONFIG) -> None:
         with SingleComponentUpdateContext(FaultState(ComponentInfo.from_component_config(component_config)),
-                                          self.__initialiser):
+                                          self.__initializer):
             self.components["component" + str(component_config.id)] = self.__component_factory(component_config)
 
     def update(self):
-        self.__component_updater(self.components.values(), self.__initialiser)
+        self.__component_updater(self.components.values(), self.__initializer)

@@ -52,13 +52,13 @@ def create_device(device_config: Powerdog):
                     + "wurden."
                 )
 
-    def initialiser():
+    def initializer():
         nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             counter=create_counter_component,
             inverter=create_inverter_component,

@@ -34,14 +34,14 @@ def create_device(device_config: Fems):
         for component in components:
             component.update()
 
-    def initialiser():
+    def initializer():
         nonlocal session
         session = req.get_http_session()
         session.auth = ("x", device_config.configuration.password)
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

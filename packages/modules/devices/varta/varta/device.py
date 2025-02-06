@@ -50,13 +50,13 @@ def create_device(device_config: Varta):
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    def initialiser():
+    def initializer():
         nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat_api=create_bat_api_component,
             bat_modbus=create_bat_modbus_component,

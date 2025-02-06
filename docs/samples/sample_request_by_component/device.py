@@ -26,13 +26,13 @@ def create_device(device_config: Sample):
     def create_inverter_component(component_config: SampleInverterSetup):
         return SampleInverter(device_config.id, component_config, device_config.configuration.ip_address)
 
-    def initialiser():
+    def initializer():
         nonlocal session
         session = req.get_http_session()
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
