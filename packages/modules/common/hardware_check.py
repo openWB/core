@@ -21,6 +21,8 @@ METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann n
                           "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
 EVSE_BROKEN = "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID."
+METER_IMPLAUSIBLE_VALUE = ("Der Zähler hat einen unplausiblen Wert zurückgegeben: Leistungen {}W, Ströme {}A, "
+                           "Spannungen {}V.")
 
 
 def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultState] = None) -> None:
@@ -41,7 +43,7 @@ def _check_meter_values(counter_state: CounterState) -> Optional[str]:
         return METER_BROKEN_VOLTAGES.format(voltages)
     interdependent_values = [sum(counter_state.currents), counter_state.power]
     if not (all(v == 0 for v in interdependent_values) or all(v != 0 for v in interdependent_values)):
-        return METER_PROBLEM
+        return METER_IMPLAUSIBLE_VALUE.format(counter_state.powers, counter_state.currents, counter_state.voltages)
     return None
 
 
