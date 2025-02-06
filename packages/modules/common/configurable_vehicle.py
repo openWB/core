@@ -76,7 +76,8 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             if vehicle_update_data.soc_timestamp is None or vehicle_update_data.soc_timestamp < car_state.soc_timestamp:
                 # Nur wenn der SoC neuer ist als der bisherige, diesen setzen.
                 self.store.set(car_state)
-            elif car_state.soc_timestamp > 1e10:  # car_state ist in ms geschrieben, dieser kann überschrieben werden
+            elif vehicle_update_data.soc_timestamp > 1e10:
+                # car_state ist in ms geschrieben, dieser kann überschrieben werden
                 self.store.set(car_state)
             else:
                 log.debug("Not updating SoC, because timestamp is older.")
