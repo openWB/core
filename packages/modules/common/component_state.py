@@ -141,6 +141,8 @@ class CarState:
         if soc_timestamp is None:
             self.soc_timestamp = timecheck.create_timestamp()
         else:
+            if soc_timestamp > 1e10:  # Convert soc_timestamp to seconds if it is in milliseconds
+                soc_timestamp /= 1000
             self.soc_timestamp = soc_timestamp
 
 
