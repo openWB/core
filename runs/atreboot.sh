@@ -107,7 +107,7 @@ chmod 666 "$LOGFILE"
 		echo "adding init to $boot_config_target..."
 		sudo tee -a "$boot_config_target" <"$boot_config_source" >/dev/null
 		echo "done"
-		echo "new configuration active after next boot"
+		sudo reboot now
 	fi
 
 	ramdisk_config_source="${OPENWBBASEDIR}/data/config/ramdisk_config.txt"

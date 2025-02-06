@@ -1,22 +1,22 @@
 <template>
 	<WbSubwidget titlecolor="var(--color-title)" :fullwidth="true">
 		<template #title>
-			{{ props.vehicle.name }}
+			<span class="vehiclename">{{ props.vehicle.name }}</span>
 		</template>
 		<div class="subgrid">
-			<InfoItem heading="Status:" :small="false" class="grid-left grid-col-4">
+			<InfoItem heading="Status:" :small="true" class="grid-left grid-col-4">
 				<span
 					:style="{ color: statusColor }"
 					class="d-flex justify-content-center align-items-center status-string"
 					>{{ statusString }}</span
 				>
 			</InfoItem>
-			<InfoItem heading="Ladestand:" :small="false" class="grid-col-4">
+			<InfoItem heading="Ladestand:" :small="true" class="grid-col-4">
 				{{ Math.round(props.vehicle.soc) }} %
 			</InfoItem>
 			<InfoItem
 				heading="Reichweite:"
-				:small="false"
+				:small="true"
 				class="grid-right grid-col-4"
 			>
 				{{ Math.round(props.vehicle.range) }} km
@@ -71,5 +71,8 @@ const statusColor = computed(() => {
 }
 .status-string {
 	text-align: center;
+}
+.vehiclename {
+	font-size: var(--font-medium);
 }
 </style>

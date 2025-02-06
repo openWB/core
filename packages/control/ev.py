@@ -739,21 +739,29 @@ class ChargeTemplate:
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
         """
-        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging",
-                                                                                   "instant_charging") == 0:
+        if phase_switch_supported:
             if charging_type == ChargingType.AC.value:
                 max_current = ev_template.data.max_current_multi_phases
             else:
                 max_current = ev_template.data.dc_max_current
-            plan_data = self.search_plan(max_current, soc, ev_template, max_phases, used_amount, charging_type)
-            if plan_data and charging_type == ChargingType.AC.value:
-                if plan_data.remaining_time > 300 and self.data.et.active is False:
-                    max_current = ev_template.data.max_current_single_phase
-                    plan_data_single_phase = self.search_plan(
-                        max_current, soc, ev_template, 1, used_amount, charging_type)
-                    if plan_data_single_phase:
-                        if plan_data_single_phase.remaining_time > 300:
-                            plan_data = plan_data_single_phase
+            instant_phases = data.data.general_data.get_phases_chargemode("scheduled_charging", "instant_charging")
+            if instant_phases == 0:
+                planned_phases = 3
+            else:
+                planned_phases = instant_phases
+            planned_phases = min(planned_phases, max_phases)
+            plan_data = self.search_plan(max_current, soc, ev_template, planned_phases, used_amount, charging_type)
+            if (plan_data and
+                charging_type == ChargingType.AC.value and
+                instant_phases == 0 and
+                plan_data.remaining_time > 300 and
+                    self.data.et.active is False):
+                max_current = ev_template.data.max_current_single_phase
+                plan_data_single_phase = self.search_plan(
+                    max_current, soc, ev_template, 1, used_amount, charging_type)
+                if plan_data_single_phase:
+                    if plan_data_single_phase.remaining_time > 300:
+                        plan_data = plan_data_single_phase
         else:
             if charging_type == ChargingType.AC.value:
                 if phases == 1:

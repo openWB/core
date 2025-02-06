@@ -12,4 +12,4 @@ register = int(sys.argv[2])
 value = int(sys.argv[3])
 
 client, evse_ids = get_modbus_client(local_chargepoint_num)
-client.write_registers(register, value, unit=evse_ids[local_chargepoint_num])
+client.write_registers(register, value, unit=evse_ids[0])

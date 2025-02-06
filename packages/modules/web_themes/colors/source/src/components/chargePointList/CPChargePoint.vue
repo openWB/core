@@ -77,7 +77,7 @@
 									class="me-0 fa-solid fa-xs fa-clock ps-1"
 								/>
 							</h3>
-							<WbBadge :bgcolor="batcolor">
+							<WbBadge v-if="soc != null" :bgcolor="batcolor">
 								<BatterySymbol
 									:soc="soc"
 									color="var(--color-bg)"

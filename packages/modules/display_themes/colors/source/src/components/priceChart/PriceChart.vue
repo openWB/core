@@ -27,7 +27,7 @@
 				</div>
 				<RangeInput
 					id="etmaxprice"
-					v-model="maxPrice"
+					v-model="mp"
 					:min="-25"
 					:max="95"
 					:step="0.1"
@@ -39,19 +39,17 @@
 						type="button"
 						class="btn btn-lg btn-secondary"
 						:style="confirmButtonStyle"
-						:disabled="!maxPriceEdited"
 					>
 						Bestätigen
 					</button>
 				</span>
 			</div>
 		</div>
-		<span>{{ maxPrice }}</span>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUpdated, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { etData } from './model'
 import {
 	extent,
@@ -73,15 +71,8 @@ const props = defineProps<{
 	globalview?: boolean
 }>()
 const cp = computed(() => chargePoints[props.chargePointId])
-const _maxPrice = ref(cp.value.etMaxPrice)
+let mp = ref(cp.value.etMaxPrice)
 const maxPriceEdited = ref(false)
-const maxPrice = computed({
-	get: () => _maxPrice.value,
-	set(newmax) {
-		_maxPrice.value = newmax
-		maxPriceEdited.value = true
-	},
-})
 const etActive = computed({
 	get: () => cp.value.etActive,
 	set: (value: boolean) => {
@@ -90,7 +81,7 @@ const etActive = computed({
 })
 function setMaxPrice() {
 	if (cp.value) {
-		cp.value.etMaxPrice = maxPrice.value
+		cp.value.etMaxPrice = mp.value
 	}
 	maxPriceEdited.value = false
 }
@@ -118,11 +109,7 @@ const barwidth = computed(() => {
 	}
 })
 const confirmButtonStyle = computed(() => {
-	if (maxPriceEdited.value) {
-		return { background: 'var(--color-charging)' }
-	} else {
-		return { background: 'var(--color-menu)' }
-	}
+	return { background: 'var(--color-charging)' }
 })
 const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
@@ -148,8 +135,8 @@ const yScale = computed(() => {
 const linePath = computed(() => {
 	const generator = line()
 	const points = [
-		[margin.left, yScale.value(maxPrice.value)],
-		[width - margin.right - 1, yScale.value(maxPrice.value)],
+		[margin.left, yScale.value(mp.value)],
+		[width - margin.right - 1, yScale.value(mp.value)],
 	]
 	return generator(points as [number, number][])
 })
@@ -188,7 +175,7 @@ const draw = computed(() => {
 		.attr('width', barwidth.value)
 		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
 		.attr('fill', (d) =>
-			d[1] <= maxPrice.value ? 'var(--color-charging)' : 'var(--color-axis)',
+			d[1] <= mp.value ? 'var(--color-charging)' : 'var(--color-axis)',
 		)
 	// X Axis
 	const xAxis = svg.append('g').attr('class', 'axis').call(xAxisGenerator.value)
@@ -234,9 +221,9 @@ const chartId = computed(() => {
 onMounted(() => {
 	needsUpdate.value = !needsUpdate.value
 })
-onUpdated(() => {
-	_maxPrice.value = cp.value.etMaxPrice
-})
+/* onUpdated(() => {
+	mp.value = cp.value.etMaxPrice
+}) */
 </script>
 <style scoped>
 .grapharea {

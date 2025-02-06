@@ -48,7 +48,6 @@ export function processBatteryMessages(topic: string, message: string) {
 			batteries.value.get(index)!.soc = +message
 		} else {
 			// console.warn('Ignored battery message: ' + topic)
-			console.log(topic, message)
 		}
 	} else {
 		// console.warn('Ignored battery message: ' + topic)

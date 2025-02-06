@@ -5,7 +5,7 @@
  */
 
 export function formatWatt(watt: number, decimalPlaces = 1) {
-	let wattResult
+	let wattResult: number
 	if (watt >= 1000 && decimalPlaces < 4) {
 		switch (decimalPlaces) {
 			case 0:
@@ -30,7 +30,7 @@ export function formatWatt(watt: number, decimalPlaces = 1) {
 			}) + ' kW'
 		)
 	} else {
-		return Math.round(watt).toLocaleString(undefined) + ' W'
+		return Math.round(watt).toLocaleString() + ' W'
 	}
 }
 
@@ -39,7 +39,7 @@ export function formatWattH(
 	decimalPlaces: number = 1,
 	useMWh = false,
 ) {
-	let wattResult
+	let wattResult: number
 	if (wattH > 1000000) {
 		useMWh = true
 		wattH = wattH / 1000
@@ -50,13 +50,13 @@ export function formatWattH(
 				wattResult = Math.round(wattH / 1000)
 				break
 			case 1:
-				wattResult = (Math.round(wattH / 100) / 10).toFixed(1)
+				wattResult = Math.round(wattH / 100) / 10
 				break
 			case 2:
-				wattResult = (Math.round(wattH / 10) / 100).toFixed(2)
+				wattResult = Math.round(wattH / 10) / 100
 				break
 			case 3:
-				wattResult = (Math.round(wattH) / 1000).toFixed(3)
+				wattResult = Math.round(wattH) / 1000
 				break
 			default:
 				wattResult = Math.round(wattH / 100) / 10
@@ -68,9 +68,7 @@ export function formatWattH(
 			}) + (useMWh ? ' MWh' : ' kWh')
 		)
 	} else {
-		return (
-			Math.round(wattH).toLocaleString(undefined) + (useMWh ? ' kWh' : ' Wh')
-		)
+		return Math.round(wattH).toLocaleString() + (useMWh ? ' kWh' : ' Wh')
 	}
 }
 export function formatTime(seconds: number) {

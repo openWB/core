@@ -1088,12 +1088,12 @@
 						updatePriceChart();
 					});
 
-					$('#maxPriceCancel').click(function () {
-						clearPriceForm();
-					});
-
 					$('#maxPriceOk').click(function () {
 						submitPriceForm();
+						// clearPriceForm();
+					});
+
+					$('#maxPriceModal').on('hidden.bs.modal', function (event) {
 						clearPriceForm();
 					});
 

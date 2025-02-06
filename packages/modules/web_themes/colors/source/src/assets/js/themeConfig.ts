@@ -37,6 +37,7 @@ export class Config {
 	private _showStandardVehicle = true
 	private _showPrices = false
 	private _showInverters = false
+	private _alternativeEnergy = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -271,7 +272,20 @@ export class Config {
 	setShowInverters(show: boolean) {
 		this._showInverters = show
 	}
+	get alternativeEnergy() {
+		return this._alternativeEnergy
+	}
+	set alternativeEnergy(show: boolean) {
+		this._alternativeEnergy = show
+		sourceGraphIsNotInitialized()
+		usageGraphIsNotInitialized()
+		savePrefs()
+	}
+	setAlternativeEnergy(show: boolean) {
+		this._alternativeEnergy = show
+	}
 }
+
 export const globalConfig = reactive(new Config())
 export function initConfig() {
 	readCookie()
@@ -311,17 +325,17 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 		color: 'var(--color-charging)',
 		icon: 'fa-bolt',
 	},
-	scheduled_charging: {
-		mode: ChargeMode.scheduled_charging,
-		name: 'Zielladen',
-		color: 'var(--color-battery)',
-		icon: 'fa-bullseye',
-	},
 	pv_charging: {
 		mode: ChargeMode.pv_charging,
 		name: 'PV',
 		color: 'var(--color-pv',
 		icon: 'fa-solar-panel',
+	},
+	scheduled_charging: {
+		mode: ChargeMode.scheduled_charging,
+		name: 'Zielladen',
+		color: 'var(--color-battery)',
+		icon: 'fa-bullseye',
 	},
 	standby: {
 		mode: ChargeMode.standby,
@@ -442,6 +456,7 @@ interface Preferences {
 	showStandardV?: boolean
 	showPrices?: boolean
 	showInv?: boolean
+	altEngy?: boolean
 	debug?: boolean
 }
 
@@ -471,6 +486,7 @@ function writeCookie() {
 	prefs.showStandardV = globalConfig.showStandardVehicle
 	prefs.showPrices = globalConfig.showPrices
 	prefs.showInv = globalConfig.showInverters
+	prefs.altEngy = globalConfig.alternativeEnergy
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
@@ -556,6 +572,9 @@ function readCookie() {
 		}
 		if (prefs.showInv !== undefined) {
 			globalConfig.setShowInverters(prefs.showInv)
+		}
+		if (prefs.altEngy !== undefined) {
+			globalConfig.setAlternativeEnergy(prefs.altEngy)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)

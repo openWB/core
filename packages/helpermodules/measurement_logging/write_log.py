@@ -1,6 +1,7 @@
 from enum import Enum
 import json
 import logging
+from math import isnan
 from pathlib import Path
 import re
 import string
@@ -263,7 +264,9 @@ def fix_values(new_entry: Dict, previous_entry: Optional[Dict]) -> Dict:
         if value.get(value_name) is not None:
             if value[value_name] == 0:
                 try:
-                    value[value_name] = previous_entry[group][component][value_name]
+                    if (previous_entry[group][component][value_name] is not None and
+                            isnan(previous_entry[group][component][value_name]) is False):
+                        value[value_name] = previous_entry[group][component][value_name]
                 except KeyError:
                     log.exception("Es konnte kein vorheriger Wert gefunden werden.")
     if previous_entry is not None:

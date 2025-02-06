@@ -187,6 +187,14 @@
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
+					title="Alternatives Energie-Widget"
+					icon="fa-chart-area"
+					infotext="Horizontale Darstellung der Energie-Werte"
+				>
+					<SwitchInput v-model="globalConfig.alternativeEnergy" />
+				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
 					title="Debug-Modus"
 					icon="fa-bug-slash"
 					infotext="Kontrollausgaben in der Console sowie Anzeige von Bildschirmbreite und MQ-Viewer"
