@@ -25,13 +25,13 @@ def create_device(device_config: PvKitSetup):
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    def initialiser():
+    def initializer():
         nonlocal client
         client = modbus.ModbusTcpClient_("192.168.193.13", 8899)
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             inverter=create_inverter_component,
         ),

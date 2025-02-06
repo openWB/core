@@ -72,14 +72,14 @@ def create_device(device_config: Tesla):
         __update_components(http_client, components)
         log.debug("Update completed successfully")
 
-    def initialiser():
+    def initializer():
         nonlocal http_client, session
         session = get_http_session()
         http_client = PowerwallHttpClient(device_config.configuration.ip_address, session, None)
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

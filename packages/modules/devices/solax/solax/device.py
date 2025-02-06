@@ -33,13 +33,13 @@ def create_device(device_config: Solax):
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    def initialiser():
+    def initializer():
         nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

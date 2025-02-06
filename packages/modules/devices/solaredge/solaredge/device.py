@@ -101,7 +101,7 @@ def create_device(device_config: Solaredge):
             synergy_units = 1
         return synergy_units
 
-    def initialiser():
+    def initializer():
         nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address,
                                          device_config.configuration.port,
@@ -109,7 +109,7 @@ def create_device(device_config: Solaredge):
 
     device = ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

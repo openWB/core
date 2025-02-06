@@ -26,14 +26,14 @@ def create_device(device_config: Discovergy):
     def create_inverter_component(component_config: DiscovergyInverterSetup):
         return inverter.DiscovergyInverter(component_config)
 
-    def initialiser():
+    def initializer():
         nonlocal session
         session = get_http_session()
         session.auth = (device_config.configuration.user, device_config.configuration.password)
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(counter=create_counter_component, inverter=create_inverter_component),
         component_updater=IndependentComponentUpdater(lambda component: component.update(session)),
     )

@@ -43,7 +43,7 @@ def create_device(device_config: Huawei):
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    def initialiser():
+    def initializer():
         nonlocal client
         if HuaweiType(device_config.configuration.type) == HuaweiType.SDongle:
             client = ModbusTcpClient_(device_config.configuration.ip_address,
@@ -54,7 +54,7 @@ def create_device(device_config: Huawei):
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

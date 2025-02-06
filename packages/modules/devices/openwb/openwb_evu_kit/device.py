@@ -38,13 +38,13 @@ def create_device(device_config: EvuKitSetup):
                     component.update()
                     time.sleep(0.2)
 
-    def initialiser():
+    def initializer():
         nonlocal client
         client = modbus.ModbusTcpClient_("192.168.193.15", 8899)
 
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

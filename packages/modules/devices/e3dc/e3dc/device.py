@@ -63,12 +63,12 @@ def create_device(device_config: E3dc) -> ConfigurableDevice:
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    def initialiser():
+    def initializer():
         nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.address, device_config.configuration.port)
     return ConfigurableDevice(
         device_config=device_config,
-        initialiser=initialiser,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
