@@ -45,15 +45,15 @@ class PolestarApi:
 
     def get_battery_data(self) -> dict or None:
         params = {
-            "query": "query GetBatteryData($vin: String!) { getBatteryData(vin: $vin) { "
-            + "batteryChargeLevelPercentage  estimatedDistanceToEmptyKm } }",
-            "operationName": "GetBatteryData",
+            "query": "query carTelematics($vin: String!) { carTelematics(vin: $vin) { "
+            + "battery { batteryChargeLevelPercentage  estimatedDistanceToEmptyKm } } }",
+            "operationName": "carTelematics",
             "variables": "{\"vin\":\"" + self.vin + "\"}"
         }
 
         result = self.query_params(params)
 
-        return result['data']['getBatteryData']
+        return result['data']['carTelematics']['battery']
 
     def check_vin(self) -> None:
         # get Vehicle Data
@@ -62,7 +62,7 @@ class PolestarApi:
             "operationName": "GetConsumerCarsV2",
             "variables": "{}"
         }
-        result = self.query_params(params, url='https://pc-api.polestar.com/eu-north-1/my-star/')
+        result = self.query_params(params)
         if result is not None and result['data'] is not None:
             vins = []
             # get list of cars and store the ones not matching our vin

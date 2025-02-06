@@ -57,7 +57,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            formatted_current = int(current*100) if self._precise_current else int(current)
+            formatted_current = round(current*100) if self._precise_current else round(current)
             if self.set_current_evse != formatted_current:
                 self._client.evse_client.set_current(formatted_current)
 
