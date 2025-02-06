@@ -66,6 +66,7 @@ class SeriesHardwareCheckMixin:
     def check_hardware(self: ClientHandlerProtocol, fault_state: FaultState):
 
         try:
+            time.sleep(0.1)
             if self.evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
                 evse_check_passed = True
             else:
