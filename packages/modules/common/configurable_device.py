@@ -1,4 +1,5 @@
 import inspect
+import logging
 from typing import TypeVar, Generic, Dict, Any, Callable, Iterable, List
 
 from dataclass_utils import dataclass_from_dict
@@ -12,6 +13,8 @@ T_COMPONENT_CONFIG = TypeVar("T_COMPONENT_CONFIG")
 
 ComponentUpdater = Callable[[Iterable[T_COMPONENT]], None]
 ComponentFactory = Callable[[T_COMPONENT_CONFIG], T_COMPONENT]
+
+log = logging.getLogger(__name__)
 
 
 class IndependentComponentUpdater(Generic[T_COMPONENT]):
@@ -70,7 +73,10 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
         self.device_config = device_config
         self.components: Dict[str, T_COMPONENT] = {}
 
-        self.__initialiser()
+        try:
+            self.__initialiser()
+        except Exception:
+            log.exception(f"Initialisierung von Gerät {self.device_config.name} fehlgeschlagen")
 
     def add_component(self, component_config: T_COMPONENT_CONFIG) -> None:
         with SingleComponentUpdateContext(FaultState(ComponentInfo.from_component_config(component_config)),
