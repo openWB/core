@@ -34,8 +34,8 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
         if hasattr(self, "component_writer"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
             with SingleComponentUpdateContext(self.fault_state):
-                if ((analog_output and self.store.state.analog_output != analog_output) or
-                        (digital_output and self.store.state.digital_output != digital_output)):
+                if ((analog_output and self.store.delegate.state.analog_output != analog_output) or
+                        (digital_output and self.store.delegate.state.digital_output != digital_output)):
                     io_state = self.component_writer(analog_output, digital_output)
                     if io_state is not None:
                         self.store.set(io_state)

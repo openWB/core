@@ -42,7 +42,7 @@ def create_io(config: IoLan):
             analog_input={
                 pin.name: client.read_input_registers(
                     pin.value, ModbusDataType.UINT_16, unit=config.configuration.modbus_id
-                ) for pin in AnalogInputMapping},
+                ) * 5 for pin in AnalogInputMapping},
             digital_input={
                 pin.name: client.read_coils(
                     pin.value, 1, unit=config.configuration.modbus_id
@@ -54,7 +54,7 @@ def create_io(config: IoLan):
 
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, int]]) -> None:
         for i, value in digital_output.items():
-            client.write_single_coil(i-1, value, unit=config.configuration.modbus_id)
+            client.write_single_coil(DigitalOutputMapping[i].value, value, unit=config.configuration.modbus_id)
 
     version = False
     client = ModbusTcpClient_(config.configuration.host, config.configuration.port)
