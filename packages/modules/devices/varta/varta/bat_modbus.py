@@ -13,20 +13,22 @@ from modules.devices.varta.varta.config import VartaBatModbusSetup
 class VartaBatModbus(AbstractBat):
     def __init__(self, device_id: int,
                  component_config: VartaBatModbusSetup,
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(VartaBatModbusSetup, component_config)
         self.__modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
-        self.set_state(self.get_state(client))
+    def update(self) -> None:
+        self.set_state(self.get_state())
 
-    def get_state(self, client: ModbusTcpClient_) -> BatState:
-        soc = client.read_holding_registers(1068, ModbusDataType.INT_16, unit=self.__modbus_id)
-        power = client.read_holding_registers(1066, ModbusDataType.INT_16, unit=self.__modbus_id)
+    def get_state(self) -> BatState:
+        soc = self.client.read_holding_registers(1068, ModbusDataType.INT_16, unit=self.__modbus_id)
+        power = self.client.read_holding_registers(1066, ModbusDataType.INT_16, unit=self.__modbus_id)
         return BatState(
             power=power,
             soc=soc,

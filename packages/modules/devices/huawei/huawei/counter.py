@@ -19,7 +19,8 @@ class HuaweiCounter(AbstractCounter):
                  device_id: int,
                  component_config: Union[Dict, HuaweiCounterSetup],
                  modbus_id: int,
-                 type: HuaweiType) -> None:
+                 type: HuaweiType,
+                 client: ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(HuaweiCounterSetup, component_config)
         self.modbus_id = modbus_id
@@ -27,15 +28,16 @@ class HuaweiCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_):
+    def update(self):
         if self.type == HuaweiType.SDongle:
             time.sleep(1)
-        currents = client.read_holding_registers(37107, [ModbusDataType.INT_32]*3, unit=self.modbus_id)
+        currents = self.client.read_holding_registers(37107, [ModbusDataType.INT_32]*3, unit=self.modbus_id)
         currents = [val / -100 for val in currents]
         if self.type == HuaweiType.SDongle:
             time.sleep(1)
-        power = client.read_holding_registers(37113, ModbusDataType.INT_32, unit=self.modbus_id) * -1
+        power = self.client.read_holding_registers(37113, ModbusDataType.INT_32, unit=self.modbus_id) * -1
 
         imported, exported = self.sim_counter.sim_count(power)
 

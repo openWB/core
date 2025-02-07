@@ -14,24 +14,25 @@ log = logging.getLogger(__name__)
 
 
 class MTecBat(AbstractBat):
-    def __init__(self, device_id: int, component_config: MTecBatSetup) -> None:
+    def __init__(self, device_id: int, component_config: MTecBatSetup, client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(MTecBatSetup, component_config)
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.__device_id = device_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
         generation = self.component_config.configuration.generation
 
         if generation == 2:
-            power = client.read_holding_registers(40258, ModbusDataType.INT_32, unit=unit) * -1
+            power = self.client.read_holding_registers(40258, ModbusDataType.INT_32, unit=unit) * -1
             # soc unit 0.01%
-            soc = client.read_holding_registers(43000, ModbusDataType.UINT_16, unit=unit) / 100
+            soc = self.client.read_holding_registers(43000, ModbusDataType.UINT_16, unit=unit) / 100
         else:
-            power = client.read_holding_registers(30258, ModbusDataType.INT_32, unit=unit) * -1
-            soc = client.read_holding_registers(33000, ModbusDataType.UINT_16, unit=unit) / 100
+            power = self.client.read_holding_registers(30258, ModbusDataType.INT_32, unit=unit) * -1
+            soc = self.client.read_holding_registers(33000, ModbusDataType.UINT_16, unit=unit) / 100
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

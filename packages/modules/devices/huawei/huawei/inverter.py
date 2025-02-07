@@ -19,7 +19,8 @@ class HuaweiInverter(AbstractInverter):
                  device_id: int,
                  component_config: Union[Dict, HuaweiInverterSetup],
                  modbus_id: int,
-                 type: HuaweiType) -> None:
+                 type: HuaweiType,
+                 client: ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(HuaweiInverterSetup, component_config)
         self.modbus_id = modbus_id
@@ -27,11 +28,12 @@ class HuaweiInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         if self.type == HuaweiType.SDongle:
             time.sleep(1)
-        power = client.read_holding_registers(32064, ModbusDataType.INT_32, unit=self.modbus_id) * -1
+        power = self.client.read_holding_registers(32064, ModbusDataType.INT_32, unit=self.modbus_id) * -1
 
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
