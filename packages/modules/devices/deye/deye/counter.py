@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from dataclass_utils import dataclass_from_dict
+from typing import TypedDict, Any
+
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -11,16 +12,24 @@ from modules.devices.deye.deye.config import DeyeCounterSetup
 from modules.devices.deye.deye.device_type import DeviceType
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    client: ModbusTcpClient_
+
+
 class DeyeCounter(AbstractCounter):
-    def __init__(self, device_id: int, component_config: DeyeCounterSetup, client: ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(DeyeCounterSetup, component_config)
+    def __init__(self, component_config: DeyeCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.__device_id = device_id
-        self.client = client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.device_type = DeviceType(self.client.read_holding_registers(
-            0, ModbusDataType.INT_16, unit=component_config.configuration.modbus_id))
+            0, ModbusDataType.INT_16, unit=self.component_config.configuration.modbus_id))
 
     def update(self):
         unit = self.component_config.configuration.modbus_id
@@ -33,7 +42,6 @@ class DeyeCounter(AbstractCounter):
                 currents = [0]*3
                 voltages = [0]*3
                 power = [0]
-                # High und low word vom import sind nicht in aufeinanderfolgenden Registern
                 imported, exported = self.sim_counter.sim_count(power)
 
             elif self.device_type == DeviceType.SINGLE_PHASE_STRING:
@@ -49,20 +57,16 @@ class DeyeCounter(AbstractCounter):
             currents = [c / 100 for c in self.client.read_holding_registers(613, [ModbusDataType.INT_16]*3, unit=unit)]
             voltages = [v / 10 for v in self.client.read_holding_registers(644, [ModbusDataType.INT_16]*3, unit=unit)]
             powers = self.client.read_holding_registers(616, [ModbusDataType.INT_16]*3, unit=unit)
-            power = self.client.read_holding_registers(625, ModbusDataType.INT_16, unit=unit)
-            frequency = self.client.read_holding_registers(609, ModbusDataType.INT_16, unit=unit) / 100
-
-            # Wenn der Import/export Netz in wh gerechnet wird => *100 !! kommt in kw/h *0.1
-            imported = self.client.read_holding_registers(522, ModbusDataType.INT_16, unit=unit) * 100
-            exported = self.client.read_holding_registers(524, ModbusDataType.INT_16, unit=unit) * 100
+            power = sum(powers)
+            imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
             currents=currents,
+            voltages=voltages,
+            powers=powers,
+            power=power,
             imported=imported,
             exported=exported,
-            power=power,
-            powers=powers,
-            voltages=voltages,
             frequency=frequency
         )
         self.store.set(counter_state)

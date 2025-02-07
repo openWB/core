@@ -17,8 +17,8 @@ def create_device(device_config: CarloGavazzi):
 
     def create_counter_component(component_config: CarloGavazziCounterSetup):
         nonlocal client
-        return counter.CarloGavazziCounter(device_config.id, component_config, client,
-                                           device_config.configuration.modbus_id)
+        return counter.CarloGavazziCounter(component_config=component_config, device_id=device_config.id,
+                                           tcp_client=client, modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[counter.CarloGavazziCounter]):
         nonlocal client

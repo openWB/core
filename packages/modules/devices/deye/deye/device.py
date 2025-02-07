@@ -21,15 +21,15 @@ def create_device(device_config: Deye):
 
     def create_bat_component(component_config: DeyeBatSetup):
         nonlocal client
-        return DeyeBat(device_config.id, component_config, client)
+        return DeyeBat(component_config=component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: DeyeCounterSetup):
         nonlocal client
-        return DeyeCounter(device_config.id, component_config, client)
+        return DeyeCounter(component_config=component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: DeyeInverterSetup):
         nonlocal client
-        return DeyeInverter(device_config.id, component_config, client)
+        return DeyeInverter(component_config=component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[DeyeBat, DeyeCounter, DeyeInverter]]):
         nonlocal client
