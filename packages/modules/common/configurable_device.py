@@ -83,7 +83,7 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
                                           self.__initializer):
             component = self.__component_factory(component_config)
             self.components["component" + str(component_config.id)] = component
-            component.initializer()
+            component.initialize()
 
     def update(self):
         self.__component_updater(self.components.values(), self.__initializer)

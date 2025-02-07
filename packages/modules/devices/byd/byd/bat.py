@@ -14,8 +14,10 @@ from modules.common.store import get_bat_value_store
 
 log = logging.getLogger(__name__)
 
+
 class KwargsDict(TypedDict):
     device_config: int
+
 
 class BYDBat(AbstractBat):
     def __init__(self, component_config: BYDBatSetup, **kwargs: Any) -> None:
@@ -55,7 +57,7 @@ class BydParser(HTMLParser):
     values = {"SOC:": 0, "Power:": 0}
     armed = None
 
-    @ staticmethod
+    @staticmethod
     def parse(html: str):
         parser = BydParser()
         parser.feed(html)

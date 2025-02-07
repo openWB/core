@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import TypedDict, Any
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState

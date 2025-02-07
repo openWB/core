@@ -19,15 +19,24 @@ def create_device(device_config: Ampere):
 
     def create_bat_component(component_config: AmpereBatSetup):
         nonlocal client
-        return AmpereBat(component_config=component_config, device_id=device_config.id, modbus_id=device_config.configuration.modbus_id, client=client)
+        return AmpereBat(component_config=component_config,
+                         device_id=device_config.id,
+                         modbus_id=device_config.configuration.modbus_id,
+                         client=client)
 
     def create_counter_component(component_config: AmpereCounterSetup):
         nonlocal client
-        return AmpereCounter(device_config.id, component_config, device_config.configuration.modbus_id, client)
+        return AmpereCounter(component_config=component_config,
+                             device_id=device_config.id,
+                             modbus_id=device_config.configuration.modbus_id,
+                             client=client)
 
     def create_inverter_component(component_config: AmpereInverterSetup):
         nonlocal client
-        return AmpereInverter(device_config.id, component_config, device_config.configuration.modbus_id, client)
+        return AmpereInverter(component_config=component_config,
+                              device_id=device_config.id,
+                              modbus_id=device_config.configuration.modbus_id,
+                              client=client)
 
     def update_components(components: Iterable[Union[AmpereBat, AmpereCounter, AmpereInverter]]):
         with client:
