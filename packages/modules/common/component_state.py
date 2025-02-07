@@ -110,9 +110,7 @@ class InverterState:
         power: float,
         imported: float = 0,  # simulated import counter to properly calculate PV energy when bat is charged from AC
         currents: Optional[List[Optional[float]]] = None,
-        dc_power: Optional[float] = None,
-        is_discrete_energy_and_combined_power: bool = False  # energy counters pv/bat are discrete, power is combined
-
+        dc_power: Optional[float] = None
     ):
         """Args:
             exported: total energy in Wh
@@ -131,7 +129,6 @@ class InverterState:
         self.exported = exported
         self.imported = imported
         self.dc_power = dc_power
-        self.is_discrete_energy_and_combined_power = is_discrete_energy_and_combined_power
 
 
 @auto_str
