@@ -19,15 +19,19 @@ def create_device(device_config: ZCS):
 
     def create_bat_component(component_config: ZCSBatSetup):
         nonlocal client
-        return ZCSBat(component_config, device_config.configuration.modbus_id, client)
+        return ZCSBat(component_config=component_config, modbus_id=device_config.configuration.modbus_id, client=client)
 
     def create_counter_component(component_config: ZCSCounterSetup):
         nonlocal client
-        return ZCSCounter(component_config, device_config.configuration.modbus_id, client)
+        return ZCSCounter(component_config=component_config,
+                          modbus_id=device_config.configuration.modbus_id,
+                          client=client)
 
     def create_inverter_component(component_config: ZCSInverterSetup):
         nonlocal client
-        return ZCSInverter(component_config, device_config.configuration.modbus_id, client)
+        return ZCSInverter(component_config=component_config,
+                           modbus_id=device_config.configuration.modbus_id,
+                           client=client)
 
     def update_components(components: Iterable[Union[ZCSBat, ZCSCounter, ZCSInverter]]):
         nonlocal client
