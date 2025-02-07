@@ -78,7 +78,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
                 'andernfalls kann ein Defekt vorliegen.'
             )
 
-        imported, not_needed_exported = self.sim_counter.sim_count(power_total * -1)
+        imported, _ = self.sim_counter.sim_count(power_total * -1)
 
         inverter_state = InverterState(
             power=power_total * -1,
