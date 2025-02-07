@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -13,18 +12,23 @@ from modules.devices.good_we.good_we.config import GoodWeBatSetup
 from modules.devices.good_we.good_we.version import GoodWeVersion
 
 
+class KwargsDict(TypedDict):
+    modbus_id: int
+    version: GoodWeVersion
+    firmware: int
+    tcp_client: modbus.ModbusTcpClient_
+
+
 class GoodWeBat(AbstractBat):
-    def __init__(self,
-                 modbus_id: int,
-                 version: GoodWeVersion,
-                 firmware: int,
-                 component_config: Union[Dict, GoodWeBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.__modbus_id = modbus_id
-        self.version = version
-        self.firmware = firmware
-        self.component_config = dataclass_from_dict(GoodWeBatSetup, component_config)
-        self.__tcp_client = tcp_client
+    def __init__(self, component_config: GoodWeBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__modbus_id: int = self.kwargs['modbus_id']
+        self.version: GoodWeVersion = self.kwargs['version']
+        self.firmware: int = self.kwargs['firmware']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

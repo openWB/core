@@ -22,24 +22,27 @@ def create_device(device_config: GoodWe):
 
     def create_bat_component(component_config: GoodWeBatSetup):
         nonlocal client
-        return bat.GoodWeBat(device_config.configuration.modbus_id,
-                             GoodWeVersion(device_config.configuration.version),
-                             device_config.configuration.firmware,
-                             component_config, client)
+        return bat.GoodWeBat(component_config=component_config,
+                             modbus_id=device_config.configuration.modbus_id,
+                             version=GoodWeVersion(device_config.configuration.version),
+                             firmware=device_config.configuration.firmware,
+                             client=client)
 
     def create_counter_component(component_config: GoodWeCounterSetup):
         nonlocal client
-        return counter.GoodWeCounter(device_config.id, device_config.configuration.modbus_id,
-                                     GoodWeVersion(device_config.configuration.version),
-                                     device_config.configuration.firmware,
-                                     component_config, client)
+        return counter.GoodWeCounter(component_config=component_config,
+                                     modbus_id=device_config.configuration.modbus_id,
+                                     version=GoodWeVersion(device_config.configuration.version),
+                                     firmware=device_config.configuration.firmware,
+                                     client=client)
 
     def create_inverter_component(component_config: GoodWeInverterSetup):
         nonlocal client
-        return inverter.GoodWeInverter(device_config.configuration.modbus_id,
-                                       GoodWeVersion(device_config.configuration.version),
-                                       device_config.configuration.firmware,
-                                       component_config, client)
+        return inverter.GoodWeInverter(component_config=component_config,
+                                       modbus_id=device_config.configuration.modbus_id,
+                                       version=GoodWeVersion(device_config.configuration.version),
+                                       firmware=device_config.configuration.firmware,
+                                       client=client)
 
     def update_components(components: Iterable[good_we_component_classes]):
         nonlocal client

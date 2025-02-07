@@ -25,19 +25,27 @@ fronius_component_classes = Union[FroniusBat, FroniusSmCounter,
 
 def create_device(device_config: Fronius):
     def create_bat_component(component_config: FroniusBatSetup):
-        return FroniusBat(device_config.id, component_config, device_config.configuration)
+        return FroniusBat(component_config=component_config,
+                          device_id=device_config.id,
+                          device_config=device_config.configuration)
 
     def create_counter_sm_component(component_config: FroniusSmCounterSetup):
-        return FroniusSmCounter(device_config.id, component_config, device_config.configuration)
+        return FroniusSmCounter(component_config=component_config,
+                                device_id=device_config.id,
+                                device_config=device_config.configuration)
 
     def create_counter_s0_component(component_config: FroniusS0CounterSetup):
-        return FroniusS0Counter(device_config.id, component_config, device_config.configuration)
+        return FroniusS0Counter(component_config=component_config,
+                                device_id=device_config.id,
+                                device_config=device_config.configuration)
 
     def create_inverter_component(component_config: FroniusInverterSetup):
-        return FroniusInverter(device_config.id, component_config)
+        return FroniusInverter(component_config=component_config,
+                               device_id=device_config.id)
 
     def create_inverter_secondary_component(component_config: FroniusSecondaryInverterSetup):
-        return FroniusSecondaryInverter(device_config.id, component_config)
+        return FroniusSecondaryInverter(component_config=component_config,
+                                        device_id=device_config.id)
 
     def update_components(components: Iterable[fronius_component_classes]):
         inverter_response = None
