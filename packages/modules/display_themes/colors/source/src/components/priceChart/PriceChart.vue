@@ -52,10 +52,13 @@
 				<RangeInput
 					id="etmaxprice"
 					v-model="maxPrice"
-					:min="-25"
-					:max="95"
+					:min="Math.floor(prices[0] - 1)"
+					:max="Math.ceil(prices[prices.length - 1] + 1)"
 					:step="0.1"
 					:decimals="1"
+					:show-subrange="true"
+					:subrange-min="prices[0]"
+					:subrange-max="prices[prices.length - 1]"
 					unit="ct"
 				/>
 				<div class="d-flex justify-content-between pb-2 pt-0 mt-0">
@@ -127,7 +130,7 @@ const maxPrice = computed({
 
 const maxTyped = computed({
 	get() {
-		return _maxPrice.value.toString()
+		return (Math.round(_maxPrice.value * 10) / 10).toString()
 	},
 	set(newmax) {
 		maxPrice.value = parseFloat(newmax) ?? maxPrice.value
