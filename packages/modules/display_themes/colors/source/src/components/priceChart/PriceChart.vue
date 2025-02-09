@@ -1,7 +1,7 @@
 <template>
-	<div class="pricesettings grid12">
-		<div class="subtitle grid-col-12">Anbieter: {{ etData.etProvider }}</div>
+	<div class="pricesettings">
 		<div class="grapharea">
+			<p>Anbieter: {{ etData.etProvider }}</p>
 			<figure id="pricechart">
 				<svg viewBox="0 0 400 300">
 					<g
@@ -12,11 +12,34 @@
 				</svg>
 			</figure>
 		</div>
-		<div class="controlarea d-flex align-items-center">
-			<div
-				class="priceinput d-flex flex-column justify-content-center align-items-center"
-			>
-				<div class="grid12 pb-5">
+		<div class="controlarea">
+			<span class="pt-1 pb-2 d-flex justify-content-between">
+				<button
+					type="button"
+					class="btn btn-lg keypadbutton me-3"
+					@click="showKeypad"
+				>
+					<i class="fa fa-xl fa-keyboard" />
+				</button>
+				<button
+					v-if="!displayKeypad"
+					type="button"
+					class="btn btn-lg confirmbutton"
+					:style="confirmButtonStyle"
+					data-bs-dismiss="modal"
+					@click="setMaxPrice"
+				>
+					Bestätigen
+				</button>
+			</span>
+			<PricePad
+				v-if="displayKeypad"
+				v-model="maxTyped"
+				:decimals="1"
+				class="mb-3"
+			/>
+
+			<!-- <div class="grid12 pb-5">
 					<ConfigItem
 						title="Strompreisbasiert laden"
 						icon="fa-coins"
@@ -24,26 +47,36 @@
 					>
 						<SwitchInput v-model="etActive"></SwitchInput>
 					</ConfigItem>
-				</div>
+				</div> -->
+			<div v-else class="sliderarea">
 				<RangeInput
 					id="etmaxprice"
-					v-model="mp"
+					v-model="maxPrice"
 					:min="-25"
 					:max="95"
 					:step="0.1"
 					:decimals="1"
 					unit="ct"
 				/>
-				<span class="pt-3" @click="setMaxPrice">
+				<div class="d-flex justify-content-between pb-2 pt-0 mt-0">
+					<button type="button" class="btn jumpbutton" @click="priceDown">
+						<i class="fa fa-xl fa-arrow-left" />
+					</button>
+					<button type="button" class="btn jumpbutton" @click="priceUp">
+						<i class="fa fa-xl fa-arrow-right" />
+					</button>
+				</div>
+			</div>
+
+			<!-- <span class="pt-3" @click="showKeypad">
 					<button
 						type="button"
 						class="btn btn-lg btn-secondary"
 						:style="confirmButtonStyle"
 					>
-						Bestätigen
+						Keypad
 					</button>
-				</span>
-			</div>
+				</span> -->
 		</div>
 	</div>
 </template>
@@ -62,26 +95,48 @@ import {
 	select,
 } from 'd3'
 import RangeInput from '../shared/RangeInput.vue'
-import ConfigItem from '../shared/ConfigItem.vue'
-import SwitchInput from '../shared/SwitchInput.vue'
+//import ConfigItem from '../shared/ConfigItem.vue'
+//import SwitchInput from '../shared/SwitchInput.vue'
 import { chargePoints } from '../chargePointList/model'
+import PricePad from '../shared/PricePad.vue'
 
 const props = defineProps<{
 	chargePointId: number
 	globalview?: boolean
 }>()
 const cp = computed(() => chargePoints[props.chargePointId])
-let mp = ref(cp.value.etMaxPrice)
 const maxPriceEdited = ref(false)
-const etActive = computed({
+const displayKeypad = ref(false)
+/* const etActive = computed({
 	get: () => cp.value.etActive,
 	set: (value: boolean) => {
 		cp.value.etActive = value
 	},
+}) */
+let _maxPrice = cp.value ? ref(cp.value.etMaxPrice) : ref(0)
+const maxPrice = computed({
+	get() {
+		return _maxPrice.value
+		// ref(props.chargepoint.etMaxPrice)
+	},
+	set(newmax) {
+		_maxPrice.value = newmax
+		maxPriceEdited.value = true
+	},
+})
+
+const maxTyped = computed({
+	get() {
+		return _maxPrice.value.toString()
+	},
+	set(newmax) {
+		maxPrice.value = parseFloat(newmax) ?? maxPrice.value
+		displayKeypad.value = false
+	},
 })
 function setMaxPrice() {
 	if (cp.value) {
-		cp.value.etMaxPrice = mp.value
+		cp.value.etMaxPrice = maxPrice.value
 	}
 	maxPriceEdited.value = false
 }
@@ -109,8 +164,15 @@ const barwidth = computed(() => {
 	}
 })
 const confirmButtonStyle = computed(() => {
-	return { background: 'var(--color-charging)' }
+	if (maxPriceEdited.value) {
+		return { background: 'var(--color-charging)', color: 'var(--color-fg)' }
+	} else {
+		return { background: 'var(--color-menu)' }
+	}
 })
+function showKeypad() {
+	displayKeypad.value = !displayKeypad.value
+}
 const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
 	if (xdomain[1]) {
@@ -135,8 +197,8 @@ const yScale = computed(() => {
 const linePath = computed(() => {
 	const generator = line()
 	const points = [
-		[margin.left, yScale.value(mp.value)],
-		[width - margin.right - 1, yScale.value(mp.value)],
+		[margin.left, yScale.value(maxPrice.value)],
+		[width - margin.right - 1, yScale.value(maxPrice.value)],
 	]
 	return generator(points as [number, number][])
 })
@@ -175,7 +237,7 @@ const draw = computed(() => {
 		.attr('width', barwidth.value)
 		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
 		.attr('fill', (d) =>
-			d[1] <= mp.value ? 'var(--color-charging)' : 'var(--color-axis)',
+			d[1] <= maxPrice.value ? 'var(--color-charging)' : 'var(--color-axis)',
 		)
 	// X Axis
 	const xAxis = svg.append('g').attr('class', 'axis').call(xAxisGenerator.value)
@@ -218,18 +280,70 @@ const chartId = computed(() => {
 		return 'priceChartCanvasGlobal'
 	}
 })
+const prices = computed(() => {
+	let result: number[] = []
+	etData.etPriceList.forEach((p) => {
+		result.push(p)
+	})
+	return result.sort((a, b) => a - b)
+})
+
+function priceDown() {
+	let lastValue = prices.value[0]
+	for (let p of prices.value) {
+		if (p >= maxPrice.value) {
+			break
+		} else {
+			lastValue = p
+		}
+	}
+	maxPrice.value = lastValue
+}
+function priceUp() {
+	let result = prices.value[0]
+	for (let p of prices.value) {
+		if (p > maxPrice.value) {
+			result = p
+			break
+		} else {
+			result = p
+		}
+	}
+	maxPrice.value = result
+}
+
 onMounted(() => {
 	needsUpdate.value = !needsUpdate.value
 })
 </script>
 <style scoped>
+.pricesettings {
+	display: grid;
+	grid-template-columns: 50% 50%;
+	grid-template-rows: 350px;
+}
 .grapharea {
-	width: 100%;
-	grid-column: span 9;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: stretch;
+	min-width: 0px;
+	overflow: hidden;
+	height: 100%;
 }
 .controlarea {
-	width: 100%;
-	grid-column: span 3;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: stretch;
+	min-width: 0px;
+	overflow: hidden;
+	height: 100%;
+	padding-left: 20px;
+	padding-right: 10px;
+}
+.sliderarea {
+	margin-bottom: 45px;
 }
 .subtitle {
 	font-size: var(--font-settings);
@@ -256,5 +370,18 @@ onMounted(() => {
 .providername {
 	color: var(--color-axis);
 	font-size: 16px;
+}
+.confirmbutton {
+	background-color: var(--color-charging);
+	color: var;
+}
+.keypadbutton {
+	background-color: var(--color-menu);
+}
+
+.jumpbutton {
+	background-color: var(--color-menu);
+	color: var(--color-bg);
+	border: 0;
 }
 </style>
