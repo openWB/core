@@ -323,7 +323,7 @@ onMounted(() => {
 .pricesettings {
 	display: grid;
 	grid-template-columns: 50% 50%;
-	grid-template-rows: 350px;
+	grid-template-rows: 340px;
 }
 .grapharea {
 	display: flex;
