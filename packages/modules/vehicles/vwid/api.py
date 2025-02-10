@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-import logging
+from logging import getLogger
 from typing import Union
 from modules.vehicles.vwid import libvwid
-import aiohttp
-import asyncio
-import time
+from aiohttp import ClientSession
+from asyncio import new_event_loop, set_event_loop
+from time import time, mktime
 from datetime import datetime
-import json
+from json import dumps
 from modules.common.store import RAMDISK_PATH
 from modules.vehicles.vwid.config import VWId
 from modules.vehicles.vwid.socutils import socUtils
@@ -17,11 +17,11 @@ ts_fmt = '%Y-%m-%dT%H:%M:%S'
 refreshToken_exp_days = 7    # 7 days before refreshToken expires a new refreshToken shall be stored
 initialToken = '1.2.3'
 
-log = logging.getLogger(__name__)
+log = getLogger(__name__)
 
 
 def utc2local(utc):
-    epoch = time.mktime(utc.timetuple())
+    epoch = mktime(utc.timetuple())
     offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
     return utc + offset
 
@@ -44,7 +44,7 @@ class api:
         self.accessTokenFile = str(RAMDISK_PATH) + '/soc_vwid_accessToken_vh_' + str(vehicle)
         self.accessToken_old = {}
 
-        async with aiohttp.ClientSession() as self.session:
+        async with ClientSession() as self.session:
             self.w = libvwid.vwid(self.session)
             self.w.set_vin(self.vin)
             self.w.set_credentials(self.user_id, self.password)
@@ -79,13 +79,13 @@ class api:
             if (self.data):
                 if self.su.keys_exist(self.data, 'userCapabilities', 'capabilitiesStatus', 'error'):
                     log.error("Server Error: \n"
-                              + json.dumps(self.data['userCapabilities']['capabilitiesStatus']['error'],
-                                           ensure_ascii=False, indent=4))
+                              + dumps(self.data['userCapabilities']['capabilitiesStatus']['error'],
+                                      ensure_ascii=False, indent=4))
 
                 if self.su.keys_exist(self.data, 'charging', 'batteryStatus'):
                     log.debug("batteryStatus: \n" +
-                              json.dumps(self.data['charging']['batteryStatus'],
-                                         ensure_ascii=False, indent=4))
+                              dumps(self.data['charging']['batteryStatus'],
+                                    ensure_ascii=False, indent=4))
 
                 try:
                     self.soc = int(self.data['charging']['batteryStatus']['value']['currentSOC_pct'])
@@ -93,12 +93,14 @@ class api:
                     soc_tsZ = self.data['charging']['batteryStatus']['value']['carCapturedTimestamp']
                     soc_tsdtZ = datetime.strptime(soc_tsZ, ts_fmt + "Z")
                     soc_tsdtL = utc2local(soc_tsdtZ)
+                    self.soc_tsX = datetime.timestamp(soc_tsdtL)
                     self.soc_ts = datetime.strftime(soc_tsdtL, ts_fmt)
                 except Exception as e:
                     log.exception("soc/range/soc_ts field missing exception: e=" + str(e))
                     self.soc = 0
                     self.range = 0.0
                     self.soc_ts = ""
+                    self.soc_tsX = time()
 
                 # decision logic - shall a new refreshToken be stored?
                 self.store_refreshToken = False
@@ -107,7 +109,7 @@ class api:
                 if self.refreshTokenOld != initialToken:
                     try:
                         self.expOld, self.expOld_dt = self.su.get_token_expiration(self.refreshTokenOld, date_fmt)
-                        self.now = int(time.time())
+                        self.now = int(time())
                         expirationThreshold = self.expOld - refreshToken_exp_days * 86400
 
                         if expirationThreshold < self.now:
@@ -142,17 +144,17 @@ class api:
                 if (self.w.tokens['accessToken'] != self.accessTokenOld):  # modified accessToken?
                     self.su.write_token_file(self.accessTokenFile, self.w.tokens['accessToken'])
 
-                return self.soc, self.range, self.soc_ts
+                return self.soc, self.range, self.soc_ts, self.soc_tsX
 
 
 def fetch_soc(conf: VWId, vehicle: int) -> Union[int, float, str]:
 
     # prepare and call async method
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    loop = new_event_loop()
+    set_event_loop(loop)
 
     # get soc, range from server
     a = api()
-    soc, range, soc_ts = loop.run_until_complete(a._fetch_soc(conf, vehicle))
+    soc, range, soc_ts, soc_tsX = loop.run_until_complete(a._fetch_soc(conf, vehicle))
 
-    return soc, range, soc_ts
+    return soc, range, soc_ts, soc_tsX
