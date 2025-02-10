@@ -20,6 +20,7 @@ initialToken = '1.2.3'
 log = getLogger(__name__)
 
 
+# convert utc timestamp to local time
 def utc2local(utc):
     epoch = mktime(utc.timetuple())
     offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
