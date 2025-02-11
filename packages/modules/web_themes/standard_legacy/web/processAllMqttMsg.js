@@ -53,10 +53,13 @@ function createChargePoint(hierarchy) {
 				clonedElement.attr('data-ev-template', 0).data('ev-template', 0);
 				clonedElement.find('.card-header').attr('data-target', '#collapseChargepoint' + chargePointIndex).data('target', '#collapseChargepoint' + chargePointIndex).addClass('collapsed');
 				clonedElement.find('.card-body').attr('id', 'collapseChargepoint' + chargePointIndex).removeClass('show');
+				// pv settings
 				clonedElement.find('label[for=minCurrentPvCpT]').attr('for', 'minCurrentPvCp' + chargePointIndex);
 				clonedElement.find('#minCurrentPvCpT').attr('id', 'minCurrentPvCp' + chargePointIndex);
 				clonedElement.find('label[for=minDcCurrentPvCpT]').attr('for', 'minDcCurrentPvCp' + chargePointIndex);
 				clonedElement.find('#minDcCurrentPvCpT').attr('id', 'minDcCurrentPvCp' + chargePointIndex);
+				clonedElement.find('label[for=phasesPvChargeCpT]').attr('for', 'phasesPvChargeCp' + chargePointIndex);
+				clonedElement.find('#phasesPvChargeCpT').attr('id', 'phasesPvChargeCp' + chargePointIndex);
 				clonedElement.find('label[for=minSocPvCpT]').attr('for', 'minSocPvCp' + chargePointIndex);
 				clonedElement.find('#minSocPvCpT').attr('id', 'minSocPvCp' + chargePointIndex);
 				clonedElement.find('label[for=maxSocPvCpT]').attr('for', 'maxSocPvCp' + chargePointIndex);
@@ -65,17 +68,44 @@ function createChargePoint(hierarchy) {
 				clonedElement.find('#minSocCurrentPvCpT').attr('id', 'minSocCurrentPvCp' + chargePointIndex);
 				clonedElement.find('label[for=minSocDcCurrentPvCpT]').attr('for', 'minSocDcCurrentPvCp' + chargePointIndex);
 				clonedElement.find('#minSocDcCurrentPvCpT').attr('id', 'minSocDcCurrentPvCp' + chargePointIndex);
+				clonedElement.find('label[for=phasesMinSocPvChargeCpT]').attr('for', 'phasesMinSocPvChargeCp' + chargePointIndex);
+				clonedElement.find('#phasesMinSocPvChargeCpT').attr('id', 'phasesMinSocPvChargeCp' + chargePointIndex);
+				clonedElement.find('label[for=limitPvChargeCpT]').attr('for', 'limitPvChargeCp' + chargePointIndex);
+				clonedElement.find('#limitPvChargeCpT').attr('id', 'limitPvChargeCp' + chargePointIndex);
+				clonedElement.find('label[for=socLimitPvCpT]').attr('for', 'socLimitPvCp' + chargePointIndex);
+				clonedElement.find('#socLimitPvCpT').attr('id', 'socLimitPvCp' + chargePointIndex);
+				clonedElement.find('label[for=amountLimitPvCpT]').attr('for', 'amountLimitPvCp' + chargePointIndex);
+				clonedElement.find('#amountLimitPvCpT').attr('id', 'amountLimitPvCp' + chargePointIndex);
+				// instant settings
 				clonedElement.find('label[for=currentInstantChargeCpT]').attr('for', 'currentInstantChargeCp' + chargePointIndex);
 				clonedElement.find('#currentInstantChargeCpT').attr('id', 'currentInstantChargeCp' + chargePointIndex);
 				clonedElement.find('label[for=dcCurrentInstantChargeCpT]').attr('for', 'dcCurrentInstantChargeCpT' + chargePointIndex);
 				clonedElement.find('#dcCurrentInstantChargeCpT').attr('id', 'dcCurrentInstantChargeCpT' + chargePointIndex);
+				clonedElement.find('label[for=phasesInstantChargeCpT]').attr('for', 'phasesInstantChargeCp' + chargePointIndex);
+				clonedElement.find('#phasesInstantChargeCpT').attr('id', 'phasesInstantChargeCp' + chargePointIndex);
 				clonedElement.find('label[for=limitInstantChargeCpT]').attr('for', 'limitInstantChargeCp' + chargePointIndex);
 				clonedElement.find('#limitInstantChargeCpT').attr('id', 'limitInstantChargeCp' + chargePointIndex);
-				clonedElement.find('label[for=soclimitCpT]').attr('for', 'soclimitCp' + chargePointIndex);
-				clonedElement.find('#soclimitCpT').attr('id', 'soclimitCp' + chargePointIndex);
-				clonedElement.find('label[for=amountlimitCpT]').attr('for', 'amountlimitCp' + chargePointIndex);
-				clonedElement.find('#amountlimitCpT').attr('id', 'amountlimitCp' + chargePointIndex);
+				clonedElement.find('label[for=socLimitInstantCpT]').attr('for', 'socLimitInstantCp' + chargePointIndex);
+				clonedElement.find('#socLimitInstantCpT').attr('id', 'socLimitInstantCp' + chargePointIndex);
+				clonedElement.find('label[for=amountLimitInstantCpT]').attr('for', 'amountLimitInstantCp' + chargePointIndex);
+				clonedElement.find('#amountLimitInstantCpT').attr('id', 'amountLimitInstantCp' + chargePointIndex);
+				// time settings
 				clonedElement.find('#timeChargeCpT').attr('id', 'timeChargeCp' + chargePointIndex);
+				// eco settings
+				clonedElement.find('label[for=currentEcoChargeCpT]').attr('for', 'currentEcoChargeCp' + chargePointIndex);
+				clonedElement.find('#currentEcoChargeCpT').attr('id', 'currentEcoChargeCp' + chargePointIndex);
+				clonedElement.find('label[for=dcCurrentEcoChargeCpT]').attr('for', 'dcCurrentEcoChargeCpT' + chargePointIndex);
+				clonedElement.find('#dcCurrentEcoChargeCpT').attr('id', 'dcCurrentEcoChargeCpT' + chargePointIndex);
+				clonedElement.find('label[for=phasesEcoChargeCpT]').attr('for', 'phasesEcoChargeCp' + chargePointIndex);
+				clonedElement.find('#phasesEcoChargeCpT').attr('id', 'phasesEcoChargeCp' + chargePointIndex);
+				clonedElement.find('label[for=limitEcoChargeCpT]').attr('for', 'limitEcoChargeCp' + chargePointIndex);
+				clonedElement.find('#limitEcoChargeCpT').attr('id', 'limitEcoChargeCp' + chargePointIndex);
+				clonedElement.find('label[for=socLimitEcoCpT]').attr('for', 'socLimitEcoCp' + chargePointIndex);
+				clonedElement.find('#socLimitEcoCpT').attr('id', 'socLimitEcoCp' + chargePointIndex);
+				clonedElement.find('label[for=amountLimitEcoCpT]').attr('for', 'amountLimitEcoCp' + chargePointIndex);
+				clonedElement.find('#amountLimitEcoCpT').attr('id', 'amountLimitEcoCp' + chargePointIndex);
+				// Preisgrenze!
+
 				// insert after last existing charge point to honor sorting from the array
 				target = $('.charge-point-card[data-cp]').last();
 				// console.log("target: "+target.data('cp')+" index: "+chargePointIndex);
@@ -124,31 +154,34 @@ function refreshChargeTemplate(templateIndex) {
 				// chargemode.instant_charging.dc_current
 				element = parent.find('.charge-point-instant-charge-dc-current');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.instant_charging.dc_current);
+				// chargemode.instant_charging.phases_to_use
+				element = parent.find('.charge-point-instant-charge-phases');
+				setToggleBtnGroup(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.instant_charging.phases_to_use);
 				// chargemode.instant_charging.limit.selected
 				element = parent.find('.charge-point-instant-charge-limit-selected');
 				setToggleBtnGroup(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.instant_charging.limit.selected);
 				// chargemode.instant_charging.limit.soc
 				element = parent.find('.charge-point-instant-charge-limit-soc');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.instant_charging.limit.soc);
-				// chargemode.instant_charging.limit.soc
+				// chargemode.instant_charging.limit.amount
 				element = parent.find('.charge-point-instant-charge-limit-amount');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.instant_charging.limit.amount);
-				// et.active
-				headerElement = parent.find('.charge-point-vehicle-et-active')
-				toggleElement = parent.find('.charge-point-price-charging-active')
-				if (chargeModeTemplate[templateIndex].et.active) {
-					headerElement.removeClass("hide");
-					toggleElement.bootstrapToggle('on', true);
-				} else {
-					headerElement.addClass("hide");
-					toggleElement.bootstrapToggle('off', true);
-				}
-				// et.max_price
-				element = parent.find('.charge-point-max-price-button');
-				var max_price = parseFloat((chargeModeTemplate[templateIndex].et.max_price * 100000).toFixed(2));
-				element.data('max-price', max_price);
-				element.attr('data-max-price', max_price).data('max-price', max_price);
-				element.find('.charge-point-price-charging-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+				// // et.active
+				// headerElement = parent.find('.charge-point-vehicle-et-active')
+				// toggleElement = parent.find('.charge-point-price-charging-active')
+				// if (chargeModeTemplate[templateIndex].et.active) {
+				// 	headerElement.removeClass("hide");
+				// 	toggleElement.bootstrapToggle('on', true);
+				// } else {
+				// 	headerElement.addClass("hide");
+				// 	toggleElement.bootstrapToggle('off', true);
+				// }
+				// // et.max_price
+				// element = parent.find('.charge-point-max-price-button');
+				// var max_price = parseFloat((chargeModeTemplate[templateIndex].et.max_price * 100000).toFixed(2));
+				// element.data('max-price', max_price);
+				// element.attr('data-max-price', max_price).data('max-price', max_price);
+				// element.find('.charge-point-price-charging-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
 				// ***** pv_charging *****
 				// chargemode.pv_charging.min_current
@@ -157,18 +190,30 @@ function refreshChargeTemplate(templateIndex) {
 				// chargemode.pv_charging.dc_min_current
 				element = parent.find('.charge-point-pv-charge-dc-min-current');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.dc_min_current);
+				// chargemode.pv_charging.phases_to_use
+				element = parent.find('.charge-point-pv-charge-phases');
+				setToggleBtnGroup(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.phases_to_use);
 				// chargemode.pv_charging.min_soc
 				element = parent.find('.charge-point-pv-charge-min-soc');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.min_soc);
-				// chargemode.pv_charging.max_soc
-				element = parent.find('.charge-point-pv-charge-max-soc');
-				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.max_soc);
 				// chargemode.pv_charging.min_soc_current
 				element = parent.find('.charge-point-pv-charge-min-soc-current');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.min_soc_current);
 				// chargemode.pv_charging.dc_min_soc_current
 				element = parent.find('.charge-point-pv-charge-dc-min-soc-current');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.dc_min_soc_current);
+				// chargemode.pv_charging.phases_to_use_soc_min_soc
+				element = parent.find('.charge-point-pv-charge-phases-min-soc');
+				setToggleBtnGroup(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.phases_to_use_min_soc);
+				// chargemode.pv_charging.limit.selected
+				element = parent.find('.charge-point-pv-charge-limit-selected');
+				setToggleBtnGroup(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.limit.selected);
+				// chargemode.pv_charging.limit.soc
+				element = parent.find('.charge-point-pv-charge-limit-soc');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.limit.soc);
+				// chargemode.pv_charging.limit.amount
+				element = parent.find('.charge-point-pv-charge-limit-amount');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.limit.amount);
 				// chargemode.pv_charging.feed_in_limit
 				var element = parent.find('.charge-point-pv-charge-feed-in-limit'); // now get parents respective child element
 				if (chargeModeTemplate[templateIndex].chargemode.pv_charging.feed_in_limit == true) {
@@ -178,6 +223,33 @@ function refreshChargeTemplate(templateIndex) {
 					// element.prop('checked', false);
 					element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
 				}
+
+				// ***** eco_charging *****
+				// chargemode.eco_charging.X
+				// chargemode.eco_charging.current
+				element = parent.find('.charge-point-eco-charge-current');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.eco_charging.current);
+				// chargemode.eco_charging.dc_current
+				element = parent.find('.charge-point-eco-charge-dc-current');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.eco_charging.dc_current);
+				// chargemode.eco_charging.phases_to_use
+				element = parent.find('.charge-point-eco-charge-phases');
+				setToggleBtnGroup(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.eco_charging.phases_to_use);
+				// chargemode.eco_charging.limit.selected
+				element = parent.find('.charge-point-eco-charge-limit-selected');
+				setToggleBtnGroup(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.eco_charging.limit.selected);
+				// chargemode.eco_charging.limit.soc
+				element = parent.find('.charge-point-eco-charge-limit-soc');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.eco_charging.limit.soc);
+				// chargemode.eco_charging.limit.amount
+				element = parent.find('.charge-point-eco-charge-limit-amount');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.eco_charging.limit.amount);
+				// chargemode.eco_charging.max_price
+				element = parent.find('.charge-point-eco-charge-max_price-button');
+				var max_price = parseFloat((chargeModeTemplate[templateIndex].chargemode.eco_charging.max_price * 100000).toFixed(2));
+				element.data('max-price', max_price);
+				element.attr('data-max-price', max_price).data('max-price', max_price);
+				element.find('.charge-point-eco-charge-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
 				// ***** scheduled_charging *****
 				// chargemode.scheduled_charging.X
@@ -215,6 +287,11 @@ function refreshChargeTemplate(templateIndex) {
 								schedulePlanElement.find('.charge-point-schedule-limit').text((value.limit.amount / 1000) + "kWh");
 								schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-car-battery');
 								schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-bolt');
+							}
+							if (value.et_active == true) {
+								schedulePlanElement.find('.charge-point-schedule-et-active-icon').removeClass('hide');
+							} else {
+								schedulePlanElement.find('.charge-point-schedule-et-active-icon').addClass('hide');
 							}
 							schedulePlanElement.find('.charge-point-schedule-time').text(value.time);
 							if (value.active == true) {
@@ -300,6 +377,22 @@ function refreshChargeTemplate(templateIndex) {
 							} else {
 								timeChargePlanElement.find('.charge-point-time-charge-active').removeClass('alert-success border-success');
 								timeChargePlanElement.find('.charge-point-time-charge-active').addClass('alert-danger border-danger');
+							}
+							if (value.limit.selected == "soc") {
+								timeChargePlanElement.find('.charge-point-time-charge-limit').removeClass('hide');
+								timeChargePlanElement.find('.charge-point-time-charge-limit').text(value.limit.soc + "%");
+								timeChargePlanElement.find('.charge-point-time-charge-limit-icon').removeClass('hide');
+								timeChargePlanElement.find('.charge-point-time-charge-limit-icon').removeClass('fa-bolt');
+								timeChargePlanElement.find('.charge-point-time-charge-limit-icon').addClass('fa-car-battery');
+							} else if (value.limit.selected == "amount") {
+								timeChargePlanElement.find('.charge-point-time-charge-limit').removeClass('hide');
+								timeChargePlanElement.find('.charge-point-time-charge-limit').text((value.limit.amount / 1000) + "kWh");
+								timeChargePlanElement.find('.charge-point-time-charge-limit-icon').removeClass('hide');
+								timeChargePlanElement.find('.charge-point-time-charge-limit-icon').removeClass('fa-car-battery');
+								timeChargePlanElement.find('.charge-point-time-charge-limit-icon').addClass('fa-bolt');
+							} else {
+								timeChargePlanElement.find('.charge-point-time-charge-limit').addClass('hide');
+								timeChargePlanElement.find('.charge-point-time-charge-limit-icon').addClass('hide');
 							}
 							switch (value.frequency.selected) {
 								case "once":

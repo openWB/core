@@ -457,12 +457,14 @@
 				</div>
 				<div id="collapseChargePoint0" data-parent="#chargePointAccordion" class="card-body collapse">
 					<div class="form-group">
+						<!-- Meldungen -->
 						<div class="form-row my-1 alert alert-info">
 							<div class="col">
 								<i class="fas fa-info-circle"></i>
 								<span class="charge-point-state-str">--</span>
 							</div>
 						</div>
+						<!-- Sperre -->
 						<div class="form-row mb-1">
 							<div class="col">
 								<i class="fas fa-lock"></i>
@@ -477,6 +479,7 @@
 						</div>
 						<hr>
 						<div class="charge-point-vehicle-data" data-ev="">
+							<!-- Fahrzeugauswahl -->
 							<div class="form-row mb-1">
 								<label class="col col-form-label">
 									<i class="fas fa-car-side"></i>
@@ -490,6 +493,7 @@
 									</select>
 								</div>
 							</div>
+							<!-- Lademodus -->
 							<div class="form-row mb-1">
 								<div class="col">
 									<label class="col-form-label">Lademodus</label>
@@ -498,22 +502,23 @@
 									data-toggle="buttons" data-name="chargemode"
 									data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/selected">
 									<label class="btn btn-outline-danger btn-toggle">
-										<input type="radio" name="chargemode" data-option="instant_charging">Sofortladen
+										<input type="radio" name="chargemode" data-option="instant_charging">Sofort
 									</label>
 									<label class="btn btn-outline-success btn-toggle">
 										<input type="radio" name="chargemode" data-option="pv_charging">PV
 									</label>
 									<label class="btn btn-outline-primary btn-toggle">
-										<input type="radio" name="chargemode" data-option="scheduled_charging">Zielladen
+										<input type="radio" name="chargemode" data-option="scheduled_charging">Ziel
 									</label>
 									<label class="btn btn-outline-secondary btn-toggle">
-										<input type="radio" name="chargemode" data-option="standby">Standby
+										<input type="radio" name="chargemode" data-option="eco_charging">Eco
 									</label>
 									<label class="btn btn-outline-dark btn-toggle">
 										<input type="radio" name="chargemode" data-option="stop">Stop
 									</label>
 								</div>
 							</div>
+							<!-- Priorität -->
 							<div class="form-row mb-1">
 								<div class="col">
 									<i class="fas fa-star"></i>
@@ -526,97 +531,66 @@
 										data-style="w-100">
 								</div>
 							</div>
-							<div class="et et-configured hide">
-								<div class="charge-point-charge-mode-options mb-0 hide">
-									<div class="chargemode-options chargemode-option-instant_charging chargemode-option-scheduled_charging">
-										<div class="form-row mb-1">
+							<div class="charge-point-charge-mode-options mb-0 hide">
+								<!-- Zeit -->
+								<div class="chargemode-options chargemode-option-instant_charging chargemode-option-pv_charging chargemode-option-scheduled_charging chargemode-option-eco_charging">
+									<div class="form-row mb-1">
+										<div class="col">
+											<i class="far fa-clock"></i>
+											Zeitladen
+										</div>
+										<div class="col-md-8 text-right">
+											<input class="charge-point-time-charging-active" type="checkbox" id="timeChargeCpT"
+												data-toggle="toggle"
+												data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active"
+												data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger"
+												data-size="sm" data-style="w-100">
+										</div>
+									</div>
+									<div class="chargemode-option-time_charging">
+										<div class="form-row vaRow mb-1">
 											<div class="col">
-												<i class="fas fa-coins"></i>
-												Strompreisbasiert Laden
+												<h3 class="mb-0">Termine Zeitladen</h3>
 											</div>
-											<div class="col-md-8 text-right">
-												<div class="form-row">
-													<div class="col">
-														<input class="charge-point-price-charging-active"
-															type="checkbox" data-toggle="toggle"
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/et/active"
-															data-on="Ja" data-off="Nein" data-onstyle="success"
-															data-offstyle="danger" data-size="sm" data-style="w-100">
-													</div>
-													<div class="col-3 chargemode-options chargemode-option-instant_charging">
-														<button type="button"
-															class="charge-point-max-price-button btn btn-sm btn-secondary btn-block"
-															data-max-price="">
-															<span class="charge-point-price-charging-max_price">
-																--
-															</span>&nbsp;ct/kWh
-														</button>
-													</div>
-												</div>
+											<div class="col-2 text-right">
+												<button type="button"
+													class="time_charging-settings-link btn btn-sm btn-secondary">
+													<i class="fas fa-cogs"></i>
+												</button>
+											</div>
+										</div>
+										<div
+											class="form-row mb-1 col charge-point-time-charge-plan-missing alert alert-warning">
+											Es wurden noch keine Zeitpläne eingerichtet!
+										</div>
+										<div class="form-row mb-1 charge-point-time-charge-plan charge-point-time-charge-plan-template hide"
+											data-plan="">
+											<div class="col">
+												<span class="charge-point-time-charge-name">--</span>
+											</div>
+											<div class="col-lg-6 text-right">
+												<span class="charge-point-time-charge-active border rounded p-1">
+													<span class="charge-point-time-charge-frequency">
+														<i class="fas fa-calendar-alt"></i>
+														<span class="charge-point-time-charge-frequency-value">--</span>
+													</span>
+													<span class="charge-point-time-charge-date">
+														<i class="fas fa-calendar-day"></i>
+														<span class="charge-point-time-charge-date-value">--</span>
+													</span>
+													<i class="fas fa-clock"></i> <span
+														class="charge-point-time-charge-time">--</span>
+													<i class="charge-point-time-charge-limit-icon fas fa-car-battery"></i> <span
+														class="charge-point-time-charge-limit">--</span>
+												</span>
 											</div>
 										</div>
 									</div>
 								</div>
-							</div>
-							<div class="form-row mb-1">
-								<div class="col">
-									<i class="far fa-clock"></i>
-									Zeitladen
-								</div>
-								<div class="col-md-8 text-right">
-									<input class="charge-point-time-charging-active" type="checkbox" id="timeChargeCpT"
-										data-toggle="toggle"
-										data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active"
-										data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger"
-										data-size="sm" data-style="w-100">
-								</div>
-							</div>
-							<div class="chargemode-options chargemode-option-time_charging">
-								<div class="form-row vaRow mb-1">
-									<div class="col">
-										<h3 class="mb-0">Termine Zeitladen</h3>
-									</div>
-									<div class="col-2 text-right">
-										<button type="button"
-											class="time_charging-settings-link btn btn-sm btn-secondary">
-											<i class="fas fa-cogs"></i>
-										</button>
-									</div>
-								</div>
-								<div
-									class="form-row mb-1 col charge-point-time-charge-plan-missing alert alert-warning">
-									Es wurden noch keine Zeitpläne eingerichtet!
-								</div>
-								<div class="form-row mb-1 charge-point-time-charge-plan charge-point-time-charge-plan-template hide"
-									data-plan="">
-									<div class="col">
-										<span class="charge-point-time-charge-name">--</span>
-									</div>
-									<div class="col-lg-6 text-right">
-										<span class="charge-point-time-charge-active border rounded p-1">
-											<span class="charge-point-time-charge-frequency">
-												<i class="fas fa-calendar-alt"></i>
-												<span class="charge-point-time-charge-frequency-value">--</span>
-											</span>
-											<span class="charge-point-time-charge-date">
-												<i class="fas fa-calendar-day"></i>
-												<span class="charge-point-time-charge-date-value">--</span>
-											</span>
-											<i class="fas fa-clock"></i> <span
-												class="charge-point-time-charge-time">--</span>
-											<!-- <i class="charge-point-time-charge-limit-icon fas fa-car-battery"></i> <span
-												class="charge-point-time-charge-limit">--</span> -->
-										</span>
-									</div>
-									<!-- <div class="col-4 text-right">
-											<input class="charge-point-time-charge-active" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/scheduled_charging/plans/<sched>/active" data-on="An" data-off="Aus" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
-										</div> -->
-								</div>
-							</div>
-							<div class="charge-point-charge-mode-options mb-0 hide">
 								<hr>
+								<!-- Sofort -->
 								<div class="chargemode-options chargemode-option-instant_charging">
-									<h3>Einstellungen für "Sofortladen"</h3>
+									<h3>Einstellungen für "Sofort"</h3>
 									<div class="form-row vaRow mb-0">
 										<div class="col">
 											Stromstärke
@@ -660,25 +634,41 @@
 											</div>
 										</div>
 									</div>
+									<div class="form-row vaRow mb-1">
+										<div class="col">
+											<label class="col-form-label">Anzahl Phasen</label>
+										</div>
+										<div class="col-md-8 btn-group btn-group-toggle charge-point-instant-charge-phases"
+											id="phasesInstantChargeCpT" data-name="phasesCp" data-toggle="buttons"
+											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/phases_to_use"
+											data-type="number">
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="1"> 1
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="3"> Maximum
+											</label>
+										</div>
+									</div>
 									<div class="form-row vaRow">
 										<div class="col">
 											<label class="col-form-label">Begrenzung</label>
 										</div>
 										<div class="col-md-8 btn-group btn-group-toggle charge-point-instant-charge-limit-selected"
-											id="limitInstantChargeCpT" data-name="limitCp" data-toggle="buttons"
+											id="limitInstantChargeCpT" data-name="limitInstantCp" data-toggle="buttons"
 											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/selected">
 											<label class="btn btn-outline-info btn-toggle">
-												<input type="radio" name="limitCp" data-option="none"> keine
+												<input type="radio" name="limitInstantCp" data-option="none"> Aus
 											</label>
 											<label class="btn btn-outline-info btn-toggle">
-												<input type="radio" name="limitCp" data-option="soc"> EV-SoC
+												<input type="radio" name="limitInstantCp" data-option="soc"> EV-SoC
 											</label>
 											<label class="btn btn-outline-info btn-toggle">
-												<input type="radio" name="limitCp" data-option="amount"> Energiemenge
+												<input type="radio" name="limitInstantCp" data-option="amount"> Energie
 											</label>
 										</div>
 									</div>
-									<div class="chargemode-limit-options">
+									<div class="chargemode-instant-limit-options">
 										<div
 											class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-soc">
 											<div class="col">
@@ -689,10 +679,10 @@
 													<div class="col">
 														<input type="range"
 															class="charge-point-instant-charge-limit-soc form-control-range rangeInput"
-															id="soclimitCpT" min="5" max="100" step="5"
+															id="socLimitInstantCpT" min="5" max="100" step="5"
 															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
 													</div>
-													<label for="soclimitCpT"
+													<label for="socLimitInstantCpT"
 														class="col-2 col-form-label valueLabel text-right"
 														data-suffix="%">-- %</label>
 												</div>
@@ -708,11 +698,11 @@
 													<div class="col">
 														<input type="range"
 															class="charge-point-instant-charge-limit-amount form-control-range rangeInput"
-															id="amountlimitCpT" min="1" max="50" step="1"
+															id="amountLimitInstantCpT" min="1" max="50" step="1"
 															data-transformation='{ "in": "<v>/1000", "out": "<v>*1000" }'
 															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
 													</div>
-													<label for="amountlimitCpT"
+													<label for="amountLimitInstantCpT"
 														class="col-2 col-form-label valueLabel text-right"
 														data-suffix="kWh">-- kWh</label>
 												</div>
@@ -720,6 +710,7 @@
 										</div>
 									</div>
 								</div>
+								<!-- PV -->
 								<div class="chargemode-options chargemode-option-pv_charging">
 									<h3>Einstellungen für "PV"</h3>
 									<div class="form-row vaRow mb-0">
@@ -761,6 +752,83 @@
 														class="col-2 col-form-label valueLabel text-right" data-suffix="kW">
 														-- kW
 													</label>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="form-row vaRow mb-1">
+										<div class="col">
+											<label class="col-form-label">Anzahl Phasen</label>
+										</div>
+										<div class="col-md-8 btn-group btn-group-toggle charge-point-pv-charge-phases"
+											id="phasesPvChargeCpT" data-name="phasesCp" data-toggle="buttons"
+											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/phases_to_use"
+											data-type="number">
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="1"> 1
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="3"> Maximum
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="0"> Automatik
+											</label>
+										</div>
+									</div>
+									<div class="form-row vaRow mb-1">
+										<div class="col">
+											<label class="col-form-label">Begrenzung</label>
+										</div>
+										<div class="col-md-8 btn-group btn-group-toggle charge-point-pv-charge-limit-selected"
+											id="limitPvChargeCpT" data-name="limitPvCp" data-toggle="buttons"
+											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/limit/selected">
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="limitPvCp" data-option="none"> Aus
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="limitPvCp" data-option="soc"> EV-SoC
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="limitPvCp" data-option="amount"> Energie
+											</label>
+										</div>
+									</div>
+									<div class="chargemode-pv-limit-options">
+										<div class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-soc">
+											<div class="col">
+												SoC-Limit für das Fahrzeug
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range"
+															class="charge-point-pv-charge-limit-soc form-control-range rangeInput"
+															id="socLimitPvCpT" min="5" max="100" step="5"
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/limit/soc">
+													</div>
+													<label for="socLimitPvCpT"
+														class="col-2 col-form-label valueLabel text-right"
+														data-suffix="%">-- %</label>
+												</div>
+											</div>
+										</div>
+										<div
+											class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-amount">
+											<div class="col">
+												Energie-Limit
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range"
+															class="charge-point-pv-charge-limit-amount form-control-range rangeInput"
+															id="amountLimitPvCpT" min="1" max="50" step="1"
+															data-transformation='{ "in": "<v>/1000", "out": "<v>*1000" }'
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/limit/amount">
+													</div>
+													<label for="amountLimitPvCpT"
+														class="col-2 col-form-label valueLabel text-right"
+														data-suffix="kWh">-- kWh</label>
 												</div>
 											</div>
 										</div>
@@ -827,24 +895,20 @@
 											</div>
 										</div>
 									</div>
-									<div class="form-row vaRow mb-0">
+									<div class="form-row vaRow mb-1">
 										<div class="col">
-											SoC-Limit für das Fahrzeug
+											<label class="col-form-label">Anzahl Phasen Mindest-SoC</label>
 										</div>
-										<div class="col-md-8">
-											<div class="form-row form-group mb-1 vaRow">
-												<div class="col">
-													<input type="range"
-														class="charge-point-pv-charge-max-soc form-control-range rangeInput"
-														id="maxSocPvCpT"
-														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc"
-														min="0" max="21" step="1"
-														data-list='[1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,[101,"Aus"]]'>
-												</div>
-												<label for="maxSocPvCpT"
-													class="col-2 col-form-label valueLabel text-right"
-													data-suffix="%">-- %</label>
-											</div>
+										<div class="col-md-8 btn-group btn-group-toggle charge-point-pv-charge-phases-min-soc"
+											id="phasesMinSocPvChargeCpT" data-name="phasesMinSocCp" data-toggle="buttons"
+											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/phases_to_use_min_soc"
+											data-type="number">
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="1"> 1
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="3"> Maximum
+											</label>
 										</div>
 									</div>
 									<div class="form-row mb-1">
@@ -860,10 +924,11 @@
 										</div>
 									</div>
 								</div>
+								<!-- Ziel -->
 								<div class="chargemode-options chargemode-option-scheduled_charging">
 									<div class="form-row vaRow mb-1">
 										<div class="col">
-											<h3 class="mb-0">Termine Zielladen</h3>
+											<h3 class="mb-0">Einstellungen für "Ziel"</h3>
 										</div>
 										<div class="col-2 text-right">
 											<button type="button"
@@ -894,11 +959,153 @@
 													class="charge-point-schedule-time">--</span>
 												<i class="charge-point-schedule-limit-icon fas fa-car-battery"></i>
 												<span class="charge-point-schedule-limit">--</span>
+												<i class="charge-point-schedule-et-active-icon fas fa-coins hide"></i>
 											</span>
 										</div>
-										<!-- <div class="col-4 text-right">
-												<input class="charge-point-schedule-active" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/scheduled_charging/plans/<sched>/active" data-on="An" data-off="Aus" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
-											</div> -->
+									</div>
+								</div>
+								<!-- Eco -->
+								<div class="chargemode-options chargemode-option-eco_charging">
+									<h3>Einstellungen für "Eco"</h3>
+									<div class="form-row vaRow mb-0">
+										<div class="col">
+											Minimaler Dauerstrom unter der Preisgrenze
+										</div>
+										<div class="col-md-8">
+											<div class="form-row form-group mb-1 vaRow">
+												<div class="col">
+													<input type="range"
+														class="charge-point-eco-charge-current form-control-range rangeInput"
+														id="currentEcoChargeCpT"
+														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/current"
+														min="6" max="32" step="1">
+												</div>
+												<label for="currentEcoChargeCpT"
+													class="col-2 col-form-label valueLabel text-right" data-suffix="A">
+													-- A
+												</label>
+											</div>
+										</div>
+									</div>
+									<div class="dc-charging-configured hide">
+										<div class="form-row vaRow mb-0">
+											<div class="col">
+												Minimale Dauerleistung unter der Preisgrenze
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range"
+															class="charge-point-eco-charge-dc-current form-control-range rangeInput"
+															id="dcCurrentEcoChargeCpT"
+															data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/dc_current"
+															min="4" max="300" step="1">
+													</div>
+													<label for="dcCurrentEcoChargeCpT"
+														class="col-2 col-form-label valueLabel text-right" data-suffix="kW">
+														-- kW
+													</label>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="form-row vaRow mb-1">
+										<div class="col">
+											<label class="col-form-label">Anzahl Phasen</label>
+										</div>
+										<div class="col-md-8 btn-group btn-group-toggle charge-point-eco-charge-phases"
+											id="phasesEcoChargeCpT" data-name="phasesCp" data-toggle="buttons"
+											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/phases_to_use"
+											data-type="number">
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="1"> 1
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="3"> Maximum
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="phasesCp" data-option="0"> Automatik
+											</label>
+										</div>
+									</div>
+									<div class="form-row vaRow mb-1">
+										<div class="col">
+											<label class="col-form-label">Begrenzung</label>
+										</div>
+										<div class="col-md-8 btn-group btn-group-toggle charge-point-eco-charge-limit-selected"
+											id="limitEcoChargeCpT" data-name="limitEcoCp" data-toggle="buttons"
+											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/limit/selected">
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="limitEcoCp" data-option="none"> Aus
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="limitEcoCp" data-option="soc"> EV-SoC
+											</label>
+											<label class="btn btn-outline-info btn-toggle">
+												<input type="radio" name="limitEcoCp" data-option="amount"> Energie
+											</label>
+										</div>
+									</div>
+									<div class="chargemode-eco-limit-options">
+										<div
+											class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-soc">
+											<div class="col">
+												SoC-Limit für das Fahrzeug
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range"
+															class="charge-point-eco-charge-limit-soc form-control-range rangeInput"
+															id="socLimitEcoCpT" min="5" max="100" step="5"
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/limit/soc">
+													</div>
+													<label for="socLimitEcoCpT"
+														class="col-2 col-form-label valueLabel text-right"
+														data-suffix="%">-- %</label>
+												</div>
+											</div>
+										</div>
+										<div
+											class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-amount">
+											<div class="col">
+												Energie-Limit
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range"
+															class="charge-point-eco-charge-limit-amount form-control-range rangeInput"
+															id="amountLimitEcoCpT" min="1" max="50" step="1"
+															data-transformation='{ "in": "<v>/1000", "out": "<v>*1000" }'
+															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/limit/amount">
+													</div>
+													<label for="amountLimitEcoCpT"
+														class="col-2 col-form-label valueLabel text-right"
+														data-suffix="kWh">-- kWh</label>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="et et-configured hide">
+										<div class="charge-point-charge-mode-options mb-0 hide">
+											<div class="form-row mb-1">
+												<div class="col">
+													<i class="fas fa-coins"></i>
+													Preisgrenze für strompreisbasiertes Laden
+												</div>
+												<div class="col-md-8 text-right">
+													<button type="button"
+														class="charge-point-eco-charge-max_price-button btn btn-sm btn-secondary btn-block"
+														data-max-price="">
+														<span class="charge-point-eco-charge-max_price">
+															--
+														</span>&nbsp;ct/kWh
+													</button>
+												</div>
+											</div>
+										</div>
 									</div>
 								</div>
 							</div>
@@ -1068,7 +1275,7 @@
 				function submitPriceForm() {
 					var chargeTemplate = $('#maxPriceModal').data('charge-template');
 					var maxPrice = parseFloat(($("#maxPriceBox").val() / 100000).toFixed(7));
-					publish(maxPrice, "openWB/set/vehicle/template/charge_template/" + chargeTemplate + "/et/max_price");
+					publish(maxPrice, "openWB/set/vehicle/template/charge_template/" + chargeTemplate + "/chargemode/eco_charging/max_price");
 				};
 
 				$(document).ready(function () {
@@ -1119,7 +1326,7 @@
 			// show/hide all option-parameters in form-rows for selected option
 			var parent = btnGrp.closest('.charge-point-card[data-cp]');  // get parent div element for charge limitation options
 			var chargeModeOptionsElement = $(parent).find('.charge-point-charge-mode-options');
-			if (option == "stop" || option == "standby") {
+			if (option == "stop") {
 				chargeModeOptionsElement.addClass('hide');
 			} else {
 				chargeModeOptionsElement.removeClass('hide');
@@ -1140,10 +1347,10 @@
 			}
 		}
 
-		function chargemodeLimitOptionsShowHide(btnGrp, option) {
+		function chargemodeLimitOptionsShowHide(btnGrp, mode, option) {
 			// show/hide all option-parameters in form-rows for selected option
 			var parent = btnGrp.closest('.charge-point-card[data-cp]');  // get parent div element for charge limitation options
-			var chargeModeLimitOptionsElement = $(parent).find('.chargemode-limit-options');
+			var chargeModeLimitOptionsElement = $(parent).find(`.chargemode-${mode}-limit-options`);
 			// console.log('option: '+option);
 			// console.log(chargeModeLimitOptionsElement);
 			if (option == "none") {
@@ -1357,7 +1564,7 @@
 				window.location.href = "../../settings/#/VehicleConfiguration/charge_template/" + chargeTemplate;
 			});
 
-			$('.container').on('click', '.charge-point-max-price-button', function (event) {
+			$('.container').on('click', '.charge-point-eco-charge-max_price-button', function (event) {
 				event.stopPropagation();
 				var parentChargePoint = $(this).closest('[data-cp]');
 				var chargeTemplate = parseInt(parentChargePoint.data('charge-template'));
@@ -1375,6 +1582,9 @@
 			$('.container').on('change', '.btn-group-toggle', function (event) {
 				var ct = parseInt($(this).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
 				var option = $(this).find('input[type="radio"]:checked').data('option').toString();
+				if ($(this).data('type') == 'number') {
+					option = parseFloat(option);
+				}
 				var topic = $(this).data('topic').replace('/<ct>/', '/' + ct + '/');
 				if (topic.includes('/NaN/')) {
 					console.error('missing ct data');
@@ -1385,8 +1595,13 @@
 						chargemodeOptionsShowHide(this, option);
 					}
 					if ($(this).hasClass('charge-point-instant-charge-limit-selected')) {
-						// console.log('btnGroup charge-point-instant-charge-limit-selected');
-						chargemodeLimitOptionsShowHide(this, option);
+						chargemodeLimitOptionsShowHide(this, 'instant', option);
+					}
+					if ($(this).hasClass('charge-point-pv-charge-limit-selected')) {
+						chargemodeLimitOptionsShowHide(this, 'pv', option);
+					}
+					if ($(this).hasClass('charge-point-eco-charge-limit-selected')) {
+						chargemodeLimitOptionsShowHide(this, 'eco', option);
 					}
 				}
 			});
