@@ -172,7 +172,7 @@ class ChargepointState:
                  current_branch: Optional[str] = None,
                  current_version: Optional[str] = None) -> None:
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
-        self.current_banch = current_branch
+        self.current_branch = current_branch
         self.current_version = current_version
         self.frequency = frequency
         self.imported = imported
