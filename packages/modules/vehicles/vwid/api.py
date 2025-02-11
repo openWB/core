@@ -3,7 +3,7 @@
 from logging import getLogger
 from typing import Union
 from modules.vehicles.vwid import libvwid
-from aiohttp import ClientSession
+import aiohttp
 from asyncio import new_event_loop, set_event_loop
 from time import time, mktime
 from datetime import datetime
@@ -45,7 +45,7 @@ class api:
         self.accessTokenFile = str(RAMDISK_PATH) + '/soc_vwid_accessToken_vh_' + str(vehicle)
         self.accessToken_old = {}
 
-        async with ClientSession() as self.session:
+        async with aiohttp.ClientSession() as self.session:
             self.w = libvwid.vwid(self.session)
             self.w.set_vin(self.vin)
             self.w.set_credentials(self.user_id, self.password)
