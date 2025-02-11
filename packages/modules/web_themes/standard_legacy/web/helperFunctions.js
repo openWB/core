@@ -139,7 +139,12 @@ function setToggleBtnGroup(groupId, option) {
 		chargemodeOptionsShowHide(btnGroup, option);
 	}
 	if (btnGroup.hasClass('charge-point-instant-charge-limit-selected')) {
-		chargemodeLimitOptionsShowHide(btnGroup, option);
+		chargemodeLimitOptionsShowHide(btnGroup, 'instant', option);
 	}
-
+	if (btnGroup.hasClass('charge-point-pv-charge-limit-selected')) {
+		chargemodeLimitOptionsShowHide(btnGroup, 'pv', option);
+	}
+	if (btnGroup.hasClass('charge-point-eco-charge-limit-selected')) {
+		chargemodeLimitOptionsShowHide(btnGroup, 'eco', option);
+	}
 }
