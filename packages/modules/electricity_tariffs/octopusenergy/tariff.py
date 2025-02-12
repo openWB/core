@@ -141,16 +141,11 @@ def build_tariff_state(data) -> Dict[str, float]:
 
 
 def fetch(config: OctopusEnergyTariffConfiguration) -> TariffState:
-    # request prices
-    # call OctopusEnergyClient with the email and password from the config
     client = OctopusEnergyClient(email=config.email, password=config.password)
     property_data = client.get_property_ids(config.accountId)
     property_id = property_data["account"]["properties"][0]["id"]
-    log.debug("Property IDs: %s", property_data)
     tariffs = client.get_smart_meter_usage(config.accountId, property_id)
-    log.debug("Tariff Info: %s", tariffs)
     prices = build_tariff_state(tariffs)
-    log.debug("Prices: %s", prices)
 
     return TariffState(prices=prices)
 
