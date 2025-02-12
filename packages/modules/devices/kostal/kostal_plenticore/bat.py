@@ -25,7 +25,8 @@ class KostalPlenticoreBat(AbstractBat):
     def read_state(self, reader: Callable[[int, ModbusDataType], Any]) -> BatState:
         power = reader(582, ModbusDataType.INT_16) * -1
         soc = reader(514, ModbusDataType.INT_16)
-        imported, exported = self.sim_counter.sim_count(power)
+        imported = reader(1046, ModbusDataType.FLOAT_32)
+        exported = reader(1048, ModbusDataType.FLOAT_32)
         log.debug("raw bat power "+str(power))
         # Speicherladung muss durch Wandlungsverluste und internen Verbrauch korrigiert werden, sonst
         # wird ein falscher Hausverbrauch berechnet. Die Verluste fallen hier unter den Tisch.
