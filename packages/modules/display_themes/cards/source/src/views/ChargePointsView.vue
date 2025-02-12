@@ -13,6 +13,7 @@ import {
   faCalendarDay as fasCalendarDay,
   faCalendarWeek as fasCalendarWeek,
   faCalendarAlt as fasCalendarAlt,
+  faCoins as fasCoins,
 } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
 library.add(
@@ -20,6 +21,7 @@ library.add(
   fasCalendarDay,
   fasCalendarWeek,
   fasCalendarAlt,
+  fasCoins,
 );
 
 export default {
@@ -95,6 +97,9 @@ export default {
           break;
         case "scheduled_charging":
           this.modalActiveTab = "tab-scheduled-charging";
+          break;
+        case "eco_charging":
+          this.modalActiveTab = "tab-eco-charging";
           break;
         default:
           this.modalActiveTab = "tab-instant-charging";
@@ -189,6 +194,20 @@ export default {
         );
       }
     },
+    setChargePointConnectedVehicleInstantChargingPhases(id, selected_phases) {
+      if (
+        selected_phases &&
+        selected_phases !=
+          this.mqttStore.getChargePointConnectedVehicleInstantChargingPhases(id)
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/instant_charging/phases_to_use`,
+          selected_phases,
+        );
+      }
+    },
     setChargePointConnectedVehicleInstantChargingLimit(id, selected_limit) {
       if (
         selected_limit &&
@@ -260,6 +279,65 @@ export default {
         );
       }
     },
+    setChargePointConnectedVehiclePvChargingPhases(id, selected_phases) {
+      if (
+        selected_phases &&
+        selected_phases !=
+          this.mqttStore.getChargePointConnectedVehiclePvChargingPhases(id)
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/phases_to_use`,
+          selected_phases,
+        );
+      }
+    },
+    setChargePointConnectedVehiclePvChargingLimit(id, selected_limit) {
+      if (
+        selected_limit &&
+        selected_limit !=
+          this.mqttStore.getChargePointConnectedVehiclePvChargingLimit(id)
+            .selected
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/limit/selected`,
+          selected_limit,
+        );
+      }
+    },
+    setChargePointConnectedVehiclePvChargingLimitSoc(id, soc_limit) {
+      if (
+        soc_limit &&
+        soc_limit !=
+          this.mqttStore.getChargePointConnectedVehiclePvChargingLimit(id)
+            .soc
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/limit/soc`,
+          parseInt(soc_limit),
+        );
+      }
+    },
+    setChargePointConnectedVehiclePvChargingLimitAmount(id, amount_limit) {
+      if (
+        amount_limit &&
+        amount_limit !=
+          this.mqttStore.getChargePointConnectedVehiclePvChargingLimit(id)
+            .amount
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/limit/amount`,
+          amount_limit,
+        );
+      }
+    },
     setChargePointConnectedVehiclePvChargingMinSoc(id, soc) {
       let previous_value =
         this.mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(id);
@@ -288,16 +366,102 @@ export default {
         );
       }
     },
-    setChargePointConnectedVehiclePvChargingMaxSoc(id, soc) {
+    setChargePointConnectedVehiclePvChargingMinSocPhases(id, selected_phases) {
+      if (
+        selected_phases &&
+        selected_phases !=
+          this.mqttStore.getChargePointConnectedVehiclePvChargingMinSocPhases(id)
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/phases_to_use_min_soc`,
+          selected_phases,
+        );
+      }
+    },
+    setChargePointConnectedVehicleEcoChargingCurrent(id, event) {
       let previous_value =
-        this.mqttStore.getChargePointConnectedVehiclePvChargingMaxSoc(id);
-      let new_value = parseInt(soc);
+        this.mqttStore.getChargePointConnectedVehicleEcoChargingCurrent(id);
+      let new_value = parseInt(event);
       if (new_value != previous_value && !isNaN(new_value)) {
         var template_id =
           this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
         this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/max_soc`,
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/current`,
           new_value,
+        );
+      }
+    },
+    setChargePointConnectedVehicleEcoChargingPhases(id, selected_phases) {
+      if (
+        selected_phases &&
+        selected_phases !=
+          this.mqttStore.getChargePointConnectedVehicleEcoChargingPhases(id)
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/phases_to_use`,
+          selected_phases,
+        );
+      }
+    },
+    setChargePointConnectedVehicleEcoChargingLimit(id, selected_limit) {
+      if (
+        selected_limit &&
+        selected_limit !=
+          this.mqttStore.getChargePointConnectedVehicleEcoChargingLimit(id)
+            .selected
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/limit/selected`,
+          selected_limit,
+        );
+      }
+    },
+    setChargePointConnectedVehicleEcoChargingLimitSoc(id, soc_limit) {
+      if (
+        soc_limit &&
+        soc_limit !=
+          this.mqttStore.getChargePointConnectedVehicleEcoChargingLimit(id)
+            .soc
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/limit/soc`,
+          parseInt(soc_limit),
+        );
+      }
+    },
+    setChargePointConnectedVehicleEcoChargingLimitAmount(id, amount_limit) {
+      if (
+        amount_limit &&
+        amount_limit !=
+          this.mqttStore.getChargePointConnectedVehicleEcoChargingLimit(id)
+            .amount
+      ) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/limit/amount`,
+          amount_limit,
+        );
+      }
+    },
+    setChargePointConnectedVehicleEcoChargingMaxPrice(id, event) {
+      let previous_value =
+        this.mqttStore.getChargePointConnectedVehicleEcoChargingMaxPrice(id);
+      let new_value = parseInt(event);
+      if (new_value != previous_value && !isNaN(new_value)) {
+        var template_id =
+          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
+        this.$root.sendTopicToBroker(
+          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/max_price`,
+          parseFloat((new_value / 100000).toFixed(7)),
         );
       }
     },
@@ -474,15 +638,21 @@ export default {
         </i-tab-title>
         <i-tab-title
           v-if="!mqttStore.getSimpleChargePointView"
+          for="tab-eco-charging"
+        >
+          Eco
+        </i-tab-title>
+        <i-tab-title
+          v-if="!mqttStore.getSimpleChargePointView"
           for="tab-scheduled-charging"
         >
-          Zielladen
+          Ziel
         </i-tab-title>
         <i-tab-title
           v-if="!mqttStore.getSimpleChargePointView"
           for="tab-time-charging"
         >
-          Zeitladen
+          Zeit
         </i-tab-title>
       </template>
 
@@ -508,6 +678,55 @@ export default {
             />
           </i-form-group>
           <i-form-group>
+            <i-form-label>Anzahl Phasen</i-form-label>
+            <i-button-group block>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleInstantChargingPhases(
+                    modalChargePointId,
+                  ) == 1
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehicleInstantChargingPhases(
+                    modalChargePointId,
+                  ) == 1
+                "
+                @click="
+                  setChargePointConnectedVehicleInstantChargingPhases(
+                    modalChargePointId,
+                    1,
+                  )
+                "
+              >
+                1
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleInstantChargingPhases(
+                    modalChargePointId,
+                  ) == 3
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehicleInstantChargingPhases(
+                    modalChargePointId,
+                  ) == 3
+                "
+                @click="
+                  setChargePointConnectedVehicleInstantChargingPhases(
+                    modalChargePointId,
+                    3,
+                  )
+                "
+              >
+                Maximum
+              </i-button>
+            </i-button-group>
+          </i-form-group>
+          <i-form-group>
             <i-form-label>Begrenzung</i-form-label>
             <i-button-group block>
               <i-button
@@ -530,7 +749,7 @@ export default {
                   )
                 "
               >
-                Keine
+                Aus
               </i-button>
               <i-button
                 :color="
@@ -634,6 +853,345 @@ export default {
       <i-tab name="tab-pv-charging">
         <i-form>
           <i-form-group>
+            <i-form-label>Minimaler Dauerstrom</i-form-label>
+            <extended-number-input
+              unit="A"
+              :labels="[
+                { label: 'Aus', value: 0 },
+                { label: 6, value: 6 },
+                { label: 7, value: 7 },
+                { label: 8, value: 8 },
+                { label: 9, value: 9 },
+                { label: 10, value: 10 },
+                { label: 11, value: 11 },
+                { label: 12, value: 12 },
+                { label: 13, value: 13 },
+                { label: 14, value: 14 },
+                { label: 15, value: 15 },
+                { label: 16, value: 16 },
+              ]"
+              :model-value="
+                mqttStore.getChargePointConnectedVehiclePvChargingMinCurrent(
+                  modalChargePointId,
+                )
+              "
+              @update:model-value="
+                setChargePointConnectedVehiclePvChargingMinCurrent(
+                  modalChargePointId,
+                  $event,
+                )
+              "
+            />
+          </i-form-group>
+          <i-form-group>
+            <i-form-label>Anzahl Phasen</i-form-label>
+            <i-button-group block>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingPhases(
+                    modalChargePointId,
+                  ) == 1
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehiclePvChargingPhases(
+                    modalChargePointId,
+                  ) == 1
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingPhases(
+                    modalChargePointId,
+                    1,
+                  )
+                "
+              >
+                1
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingPhases(
+                    modalChargePointId,
+                  ) == 3
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehiclePvChargingPhases(
+                    modalChargePointId,
+                  ) == 3
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingPhases(
+                    modalChargePointId,
+                    3,
+                  )
+                "
+              >
+                Maximum
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingPhases(
+                    modalChargePointId,
+                  ) == 0
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehiclePvChargingPhases(
+                    modalChargePointId,
+                  ) == 0
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingPhases(
+                    modalChargePointId,
+                    0,
+                  )
+                "
+              >
+                Automatik
+              </i-button>
+            </i-button-group>
+          </i-form-group>
+          <i-form-group>
+            <i-form-label>Begrenzung</i-form-label>
+            <i-button-group block>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'none'
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'none'
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingLimit(
+                    modalChargePointId,
+                    'none',
+                  )
+                "
+              >
+                Aus
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'soc'
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'soc'
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingLimit(
+                    modalChargePointId,
+                    'soc',
+                  )
+                "
+              >
+                EV-SoC
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'amount'
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'amount'
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingLimit(
+                    modalChargePointId,
+                    'amount',
+                  )
+                "
+              >
+                Energie
+              </i-button>
+            </i-button-group>
+          </i-form-group>
+          <i-form-group
+            v-if="
+              mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                modalChargePointId,
+              ).selected == 'soc'
+            "
+          >
+            <i-form-label>SoC-Limit für das Fahrzeug</i-form-label>
+            <extended-number-input
+              unit="%"
+              :min="5"
+              :max="100"
+              :step="5"
+              :model-value="
+                mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                  modalChargePointId,
+                ).soc
+              "
+              @update:model-value="
+                setChargePointConnectedVehiclePvChargingLimitSoc(
+                  modalChargePointId,
+                  $event,
+                )
+              "
+            />
+          </i-form-group>
+          <i-form-group
+            v-if="
+              mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                modalChargePointId,
+              ).selected == 'amount'
+            "
+          >
+            <i-form-label>Energie-Limit</i-form-label>
+            <extended-number-input
+              unit="kWh"
+              :min="1"
+              :max="100"
+              :model-value="
+                mqttStore.getChargePointConnectedVehiclePvChargingLimit(
+                  modalChargePointId,
+                ).amount / 1000
+              "
+              @update:model-value="
+                setChargePointConnectedVehiclePvChargingLimitAmount(
+                  modalChargePointId,
+                  $event * 1000,
+                )
+              "
+            />
+          </i-form-group>
+          <i-form-group>
+            <i-form-label>Mindest-SoC für das Fahrzeug</i-form-label>
+            <extended-number-input
+              unit="%"
+              :labels="[
+                { label: 'Aus', value: 0 },
+                { label: 5, value: 5 },
+                { label: 10, value: 10 },
+                { label: 15, value: 15 },
+                { label: 20, value: 20 },
+                { label: 25, value: 25 },
+                { label: 30, value: 30 },
+                { label: 35, value: 35 },
+                { label: 40, value: 40 },
+                { label: 45, value: 45 },
+                { label: 50, value: 50 },
+                { label: 55, value: 55 },
+                { label: 60, value: 60 },
+                { label: 65, value: 65 },
+                { label: 70, value: 70 },
+                { label: 75, value: 75 },
+                { label: 80, value: 80 },
+                { label: 85, value: 85 },
+                { label: 90, value: 90 },
+                { label: 95, value: 95 },
+              ]"
+              :model-value="
+                mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(
+                  modalChargePointId,
+                )
+              "
+              @update:model-value="
+                setChargePointConnectedVehiclePvChargingMinSoc(
+                  modalChargePointId,
+                  $event,
+                )
+              "
+            />
+          </i-form-group>
+          <i-form-group
+            v-if="mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(
+              modalChargePointId,
+            ) > 0"
+          >
+            <i-form-label>Mindest-SoC Strom</i-form-label>
+            <extended-number-input
+              :min="6"
+              :max="32"
+              unit="A"
+              :model-value="
+                mqttStore.getChargePointConnectedVehiclePvChargingMinSocCurrent(
+                  modalChargePointId,
+                )
+              "
+              @update:model-value="
+                setChargePointConnectedVehiclePvChargingMinSocCurrent(
+                  modalChargePointId,
+                  $event,
+                )
+              "
+            />
+          </i-form-group>
+          <i-form-group
+            v-if="mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(
+              modalChargePointId,
+            ) > 0"
+          >
+            <i-form-label>Anzahl Phasen Mindest-SoC</i-form-label>
+            <i-button-group block>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingMinSocPhases(
+                    modalChargePointId,
+                  ) == 1
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehiclePvChargingMinSocPhases(
+                    modalChargePointId,
+                  ) == 1
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingMinSocPhases(
+                    modalChargePointId,
+                    1,
+                  )
+                "
+              >
+                1
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingMinSocPhases(
+                    modalChargePointId,
+                  ) == 3
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehiclePvChargingMinSocPhases(
+                    modalChargePointId,
+                  ) == 3
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingMinSocPhases(
+                    modalChargePointId,
+                    3,
+                  )
+                "
+              >
+                Maximum
+              </i-button>
+            </i-button-group>
+          </i-form-group>
+          <i-form-group>
             <i-form-label>Einspeisegrenze beachten</i-form-label>
             <i-button-group block>
               <i-button
@@ -672,89 +1230,26 @@ export default {
               </i-button>
             </i-button-group>
           </i-form-group>
+        </i-form>
+      </i-tab>
+      <i-tab
+        v-if="!mqttStore.getSimpleChargePointView"
+        name="tab-eco-charging"
+      >
+        <i-form>
           <i-form-group>
-            <i-form-label>Minimaler Dauerstrom</i-form-label>
+            <i-form-label>Minimaler Dauerstrom unter Preisgrenze</i-form-label>
             <extended-number-input
               unit="A"
-              :labels="[
-                { label: 'Aus', value: 0 },
-                { label: 6, value: 6 },
-                { label: 7, value: 7 },
-                { label: 8, value: 8 },
-                { label: 9, value: 9 },
-                { label: 10, value: 10 },
-                { label: 11, value: 11 },
-                { label: 12, value: 12 },
-                { label: 13, value: 13 },
-                { label: 14, value: 14 },
-                { label: 15, value: 15 },
-                { label: 16, value: 16 },
-              ]"
-              :model-value="
-                mqttStore.getChargePointConnectedVehiclePvChargingMinCurrent(
-                  modalChargePointId,
-                )
-              "
-              @update:model-value="
-                setChargePointConnectedVehiclePvChargingMinCurrent(
-                  modalChargePointId,
-                  $event,
-                )
-              "
-            />
-          </i-form-group>
-          <i-form-group>
-            <i-form-label>Mindest-SoC</i-form-label>
-            <extended-number-input
-              unit="%"
-              :labels="[
-                { label: 'Aus', value: 0 },
-                { label: 5, value: 5 },
-                { label: 10, value: 10 },
-                { label: 15, value: 15 },
-                { label: 20, value: 20 },
-                { label: 25, value: 25 },
-                { label: 30, value: 30 },
-                { label: 35, value: 35 },
-                { label: 40, value: 40 },
-                { label: 45, value: 45 },
-                { label: 50, value: 50 },
-                { label: 55, value: 55 },
-                { label: 60, value: 60 },
-                { label: 65, value: 65 },
-                { label: 70, value: 70 },
-                { label: 75, value: 75 },
-                { label: 80, value: 80 },
-                { label: 85, value: 85 },
-                { label: 90, value: 90 },
-                { label: 95, value: 95 },
-              ]"
-              :model-value="
-                mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(
-                  modalChargePointId,
-                )
-              "
-              @update:model-value="
-                setChargePointConnectedVehiclePvChargingMinSoc(
-                  modalChargePointId,
-                  $event,
-                )
-              "
-            />
-          </i-form-group>
-          <i-form-group>
-            <i-form-label>Mindest-SoC Strom</i-form-label>
-            <extended-number-input
               :min="6"
               :max="32"
-              unit="A"
               :model-value="
-                mqttStore.getChargePointConnectedVehiclePvChargingMinSocCurrent(
+                mqttStore.getChargePointConnectedVehicleEcoChargingCurrent(
                   modalChargePointId,
                 )
               "
               @update:model-value="
-                setChargePointConnectedVehiclePvChargingMinSocCurrent(
+                setChargePointConnectedVehicleEcoChargingCurrent(
                   modalChargePointId,
                   $event,
                 )
@@ -762,39 +1257,213 @@ export default {
             />
           </i-form-group>
           <i-form-group>
-            <i-form-label>SoC-Limit</i-form-label>
+            <i-form-label>Anzahl Phasen</i-form-label>
+            <i-button-group block>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingPhases(
+                    modalChargePointId,
+                  ) == 1
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingPhases(
+                    modalChargePointId,
+                  ) == 1
+                "
+                @click="
+                  setChargePointConnectedVehicleEcoChargingPhases(
+                    modalChargePointId,
+                    1,
+                  )
+                "
+              >
+                1
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingPhases(
+                    modalChargePointId,
+                  ) == 3
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingPhases(
+                    modalChargePointId,
+                  ) == 3
+                "
+                @click="
+                  setChargePointConnectedVehicleEcoChargingPhases(
+                    modalChargePointId,
+                    3,
+                  )
+                "
+              >
+                Maximum
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingPhases(
+                    modalChargePointId,
+                  ) == 0
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingPhases(
+                    modalChargePointId,
+                  ) == 0
+                "
+                @click="
+                  setChargePointConnectedVehicleEcoChargingPhases(
+                    modalChargePointId,
+                    0,
+                  )
+                "
+              >
+                Automatik
+              </i-button>
+            </i-button-group>
+          </i-form-group>
+          <i-form-group>
+            <i-form-label>Begrenzung</i-form-label>
+            <i-button-group block>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'none'
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'none'
+                "
+                @click="
+                  setChargePointConnectedVehicleEcoChargingLimit(
+                    modalChargePointId,
+                    'none',
+                  )
+                "
+              >
+                Aus
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'soc'
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'soc'
+                "
+                @click="
+                  setChargePointConnectedVehicleEcoChargingLimit(
+                    modalChargePointId,
+                    'soc',
+                  )
+                "
+              >
+                EV-SoC
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'amount'
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                    modalChargePointId,
+                  ).selected == 'amount'
+                "
+                @click="
+                  setChargePointConnectedVehicleEcoChargingLimit(
+                    modalChargePointId,
+                    'amount',
+                  )
+                "
+              >
+                Energie
+              </i-button>
+            </i-button-group>
+          </i-form-group>
+          <i-form-group
+            v-if="
+              mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                modalChargePointId,
+              ).selected == 'soc'
+            "
+          >
+            <i-form-label>SoC-Limit für das Fahrzeug</i-form-label>
             <extended-number-input
               unit="%"
-              :labels="[
-                { label: 5, value: 5 },
-                { label: 10, value: 10 },
-                { label: 15, value: 15 },
-                { label: 20, value: 20 },
-                { label: 25, value: 25 },
-                { label: 30, value: 30 },
-                { label: 35, value: 35 },
-                { label: 40, value: 40 },
-                { label: 45, value: 45 },
-                { label: 50, value: 50 },
-                { label: 55, value: 55 },
-                { label: 60, value: 60 },
-                { label: 65, value: 65 },
-                { label: 70, value: 70 },
-                { label: 75, value: 75 },
-                { label: 80, value: 80 },
-                { label: 85, value: 85 },
-                { label: 90, value: 90 },
-                { label: 95, value: 95 },
-                { label: 100, value: 100 },
-                { label: 'Aus', value: 101 },
-              ]"
+              :min="5"
+              :max="100"
+              :step="5"
               :model-value="
-                mqttStore.getChargePointConnectedVehiclePvChargingMaxSoc(
+                mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                  modalChargePointId,
+                ).soc
+              "
+              @update:model-value="
+                setChargePointConnectedVehicleEcoChargingLimitSoc(
+                  modalChargePointId,
+                  $event,
+                )
+              "
+            />
+          </i-form-group>
+          <i-form-group
+            v-if="
+              mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                modalChargePointId,
+              ).selected == 'amount'
+            "
+          >
+            <i-form-label>Energie-Limit</i-form-label>
+            <extended-number-input
+              unit="kWh"
+              :min="1"
+              :max="100"
+              :model-value="
+                mqttStore.getChargePointConnectedVehicleEcoChargingLimit(
+                  modalChargePointId,
+                ).amount / 1000
+              "
+              @update:model-value="
+                setChargePointConnectedVehicleEcoChargingLimitAmount(
+                  modalChargePointId,
+                  $event * 1000,
+                )
+              "
+            />
+          </i-form-group>
+          <i-form-group>
+            <i-form-label>Preisgrenze für strompreisbasiertes Laden</i-form-label>
+            <extended-number-input
+              unit="ct/kWh"
+              :min="-80"
+              :max="80"
+              :step="0.01"
+              :precision="2"
+              :model-value="
+                mqttStore.getChargePointConnectedVehicleEcoChargingMaxPrice(
                   modalChargePointId,
                 )
               "
               @update:model-value="
-                setChargePointConnectedVehiclePvChargingMaxSoc(
+                setChargePointConnectedVehicleEcoChargingMaxPrice(
                   modalChargePointId,
                   $event,
                 )
@@ -891,6 +1560,12 @@ export default {
                     />
                     {{ plan.limit.amount / 1000 }}&nbsp;kWh
                   </span>
+                  <span v-if="plan.et_active">
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'coins']"
+                    />
+                  </span>
                 </i-button>
               </i-row>
             </i-container>
@@ -941,106 +1616,98 @@ export default {
               </i-button>
             </i-button-group>
           </i-form-group>
-          <div
+          <i-alert
             v-if="
-              mqttStore.getChargePointConnectedVehicleTimeChargingActive(
-                modalChargePointId,
-              ) === true
-            "
-          >
-            <i-alert
-              v-if="
-                Object.keys(
-                  mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
-                    modalChargePointId,
-                  ),
-                ).length === 0
-              "
-              color="warning"
-              class="_margin-top:2"
-            >
-              <template #icon>
-                <font-awesome-icon
-                  fixed-width
-                  :icon="['fas', 'fa-circle-info']"
-                />
-              </template>
-              Es wurden noch keine Zeitpläne für das Zeitladen eingerichtet.
-            </i-alert>
-            <div v-else>
-              <i-form-group
-                v-for="(
-                  plan, planKey
-                ) in mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
+              Object.keys(
+                mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
                   modalChargePointId,
-                )"
-                :key="planKey"
-              >
-                <i-container>
-                  <i-row>
-                    <i-form-label>{{ plan.name }}</i-form-label>
-                  </i-row>
-                  <i-row>
-                    <i-button
-                      size="lg"
-                      block
-                      :color="plan.active ? 'success' : 'danger'"
-                      @click="
-                        setChargePointConnectedVehicleTimeChargingPlanActive(
-                          planKey,
-                          !plan.active,
-                        )
-                      "
-                    >
-                      <span v-if="plan.frequency.selected == 'once'">
-                        <font-awesome-icon
-                          fixed-width
-                          :icon="['fas', 'calendar-day']"
-                        />
-                        {{ mqttStore.formatDateRange(plan.frequency.once) }}
-                      </span>
-                      <span v-if="plan.frequency.selected == 'daily'">
-                        <font-awesome-icon
-                          fixed-width
-                          :icon="['fas', 'calendar-week']"
-                        />
-                        täglich
-                      </span>
-                      <span v-if="plan.frequency.selected == 'weekly'">
-                        <font-awesome-icon
-                          fixed-width
-                          :icon="['fas', 'calendar-alt']"
-                        />
-                        {{
-                          mqttStore.formatWeeklyScheduleDays(
-                            plan.frequency.weekly,
-                          )
-                        }}
-                      </span>
+                ),
+              ).length === 0
+            "
+            color="warning"
+            class="_margin-top:2"
+          >
+            <template #icon>
+              <font-awesome-icon
+                fixed-width
+                :icon="['fas', 'fa-circle-info']"
+              />
+            </template>
+            Es wurden noch keine Zeitpläne für das Zeitladen eingerichtet.
+          </i-alert>
+          <div v-else>
+            <i-form-group
+              v-for="(
+                plan, planKey
+              ) in mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
+                modalChargePointId,
+              )"
+              :key="planKey"
+            >
+              <i-container>
+                <i-row>
+                  <i-form-label>{{ plan.name }}</i-form-label>
+                </i-row>
+                <i-row>
+                  <i-button
+                    size="lg"
+                    block
+                    :color="plan.active ? 'success' : 'danger'"
+                    @click="
+                      setChargePointConnectedVehicleTimeChargingPlanActive(
+                        planKey,
+                        !plan.active,
+                      )
+                    "
+                  >
+                    <span v-if="plan.frequency.selected == 'once'">
                       <font-awesome-icon
                         fixed-width
-                        :icon="['fas', 'clock']"
+                        :icon="['fas', 'calendar-day']"
                       />
-                      {{ plan.time.join("-") }}
-                      <span v-if="plan.limit.selected == 'soc'">
-                        <font-awesome-icon
-                          fixed-width
-                          :icon="['fas', 'car-battery']"
-                        />
-                        {{ plan.limit.soc }}&nbsp;%
-                      </span>
-                      <span v-if="plan.limit.selected == 'amount'">
-                        <font-awesome-icon
-                          fixed-width
-                          :icon="['fas', 'bolt']"
-                        />
-                        {{ plan.limit.amount / 1000 }}&nbsp;kWh
-                      </span>
-                    </i-button>
-                  </i-row>
-                </i-container>
-              </i-form-group>
-            </div>
+                      {{ mqttStore.formatDateRange(plan.frequency.once) }}
+                    </span>
+                    <span v-if="plan.frequency.selected == 'daily'">
+                      <font-awesome-icon
+                        fixed-width
+                        :icon="['fas', 'calendar-week']"
+                      />
+                      täglich
+                    </span>
+                    <span v-if="plan.frequency.selected == 'weekly'">
+                      <font-awesome-icon
+                        fixed-width
+                        :icon="['fas', 'calendar-alt']"
+                      />
+                      {{
+                        mqttStore.formatWeeklyScheduleDays(
+                          plan.frequency.weekly,
+                        )
+                      }}
+                    </span>
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'clock']"
+                    />
+                    {{ plan.time.join("-") }}
+                    <span v-if="plan.limit.selected == 'soc'">
+                      <font-awesome-icon
+                        fixed-width
+                        :icon="['fas', 'car-battery']"
+                      />
+                      {{ plan.limit.soc }}&nbsp;%
+                    </span>
+                    <span v-if="plan.limit.selected == 'amount'">
+                      <font-awesome-icon
+                        fixed-width
+                        :icon="['fas', 'bolt']"
+                      />
+                      {{ plan.limit.amount / 1000 }}&nbsp;kWh
+                    </span>
+                  </i-button>
+                </i-row>
+              </i-container>
+            </i-form-group>
           </div>
         </i-form>
       </i-tab>
