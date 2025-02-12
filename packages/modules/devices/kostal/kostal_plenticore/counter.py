@@ -26,7 +26,7 @@ class KostalPlenticoreCounter(AbstractCounter):
         powers = [reader(register, ModbusDataType.FLOAT_32) for register in [224, 234, 244]]
         power = reader(252, ModbusDataType.FLOAT_32)
         frequency = reader(220, ModbusDataType.FLOAT_32)
-        exported = reader(1056, ModbusDataType.FLOAT_32) 
+        exported = reader(1056, ModbusDataType.FLOAT_32)
 
         return CounterState(
             powers=powers,
