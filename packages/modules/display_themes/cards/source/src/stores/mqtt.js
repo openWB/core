@@ -689,6 +689,16 @@ export const useMqttStore = defineStore("mqtt", {
         return { selected: undefined };
       };
     },
+    getChargePointConnectedVehicleInstantChargingPhases(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.instant_charging.phases_to_use;
+        }
+        return undefined;
+      };
+    },
     getChargePointConnectedVehiclePvChargingFeedInLimit(state) {
       return (chargePointId) => {
         if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
@@ -707,6 +717,26 @@ export const useMqttStore = defineStore("mqtt", {
           ).chargemode.pv_charging.min_current;
         }
         return undefined;
+      };
+    },
+    getChargePointConnectedVehiclePvChargingPhases(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.pv_charging.phases_to_use;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehiclePvChargingLimit(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.pv_charging.limit;
+        }
+        return { selected: undefined };
       };
     },
     getChargePointConnectedVehiclePvChargingMinSoc(state) {
@@ -729,12 +759,52 @@ export const useMqttStore = defineStore("mqtt", {
         return undefined;
       };
     },
-    getChargePointConnectedVehiclePvChargingMaxSoc(state) {
+    getChargePointConnectedVehiclePvChargingMinSocPhases(state) {
       return (chargePointId) => {
         if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
           return state.getChargePointConnectedVehicleChargeTemplate(
             chargePointId,
-          ).chargemode.pv_charging.max_soc;
+          ).chargemode.pv_charging.phases_to_use_min_soc;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehicleEcoChargingCurrent(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.eco_charging.current;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehicleEcoChargingPhases(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.eco_charging.phases_to_use;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehicleEcoChargingLimit(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.eco_charging.limit;
+        }
+        return { selected: undefined };
+      };
+    },
+    getChargePointConnectedVehicleEcoChargingMaxPrice(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.eco_charging.max_price * 100000;
         }
         return undefined;
       };
@@ -936,7 +1006,7 @@ export const useMqttStore = defineStore("mqtt", {
         { id: "instant_charging" },
         { id: "pv_charging" },
         { id: "scheduled_charging" },
-        { id: "standby" },
+        { id: "eco_charging" },
         { id: "stop" },
       ];
       chargeModes.forEach((mode) => {
@@ -952,11 +1022,11 @@ export const useMqttStore = defineStore("mqtt", {
         case "pv_charging":
           return { mode: mode, label: "PV", class: "success" };
         case "scheduled_charging":
-          return { mode: mode, label: "Zielladen", class: "primary" };
+          return { mode: mode, label: "Ziel", class: "primary" };
         case "time_charging":
-          return { mode: mode, label: "Zeitladen", class: "warning" };
-        case "standby":
-          return { mode: mode, label: "Standby", class: "secondary" };
+          return { mode: mode, label: "Zeit", class: "warning" };
+        case "eco_charging":
+          return { mode: mode, label: "Eco", class: "secondary" };
         case "stop":
           return { mode: mode, label: "Stop", class: "dark" };
         default:
