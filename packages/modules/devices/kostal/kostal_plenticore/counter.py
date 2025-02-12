@@ -27,7 +27,7 @@ class KostalPlenticoreCounter(AbstractCounter):
         power = reader(252, ModbusDataType.FLOAT_32)
         frequency = reader(220, ModbusDataType.FLOAT_32)
         exported_all = reader(1056, ModbusDataType.FLOAT_32)
-        exported_bat = reader(1048, ModbusDataType.FLOAT_32)
+        imported_bat = reader(1046, ModbusDataType.FLOAT_32)
 
         return CounterState(
             powers=powers,
@@ -36,8 +36,8 @@ class KostalPlenticoreCounter(AbstractCounter):
             power=power,
             power_factors=[power_factor]*3,
             frequency=frequency,
-            exported=exported_all-exported_bat,
-            imported=0
+            exported=exported_all,
+            imported=imported_bat
         )
 
     def update(self, reader: Callable[[int, ModbusDataType], Any]):
