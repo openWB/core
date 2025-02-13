@@ -101,9 +101,9 @@ class ParamsPhaseSwitch(ParamsExpectedSetCurrent, ParamsExpectedCounterSet):
     raw_power_left: float = 0
     raw_currents_left_counter0: List[float] = field(default_factory=currents_list_factory)
     raw_currents_left_counter6: List[float] = field(default_factory=currents_list_factory)
-    expected_timestamp_auto_phase_switch_cp3: Optional[str] = None
-    expected_timestamp_auto_phase_switch_cp4: Optional[str] = None
-    expected_timestamp_auto_phase_switch_cp5: Optional[str] = None
+    expected_timestamp_last_phase_switch_cp3: Optional[str] = None
+    expected_timestamp_last_phase_switch_cp4: Optional[str] = None
+    expected_timestamp_last_phase_switch_cp5: Optional[str] = None
 
 
 def assert_counter_set(params: ParamsExpectedCounterSet):
@@ -137,7 +137,7 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 31775
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9660
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9890
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 9000
 
 
@@ -176,7 +176,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 24300
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2185
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2415
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 0
 
 
@@ -214,7 +214,7 @@ cases_limit = [
                   expected_current_cp4=6,
                   expected_current_cp5=6,
                   expected_raw_power_left=5635,
-                  expected_surplus_power_left=-16480.0,
+                  expected_surplus_power_left=-16250.0,
                   expected_reserved_surplus=0,
                   expected_released_surplus=11040),
 ]
@@ -243,23 +243,23 @@ cases_phase_switch = [
                       raw_power_left=32580,
                       raw_currents_left_counter0=[40]*3,
                       raw_currents_left_counter6=[16]*3,
-                      expected_timestamp_auto_phase_switch_cp3=1652683252.0,
-                      expected_timestamp_auto_phase_switch_cp4=None,
-                      expected_timestamp_auto_phase_switch_cp5=None,
+                      expected_timestamp_last_phase_switch_cp3=1652683252.0,
+                      expected_timestamp_last_phase_switch_cp4=None,
+                      expected_timestamp_last_phase_switch_cp5=None,
                       expected_current_cp3=10,
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=17400,
-                      expected_surplus_power_left=-4715,
+                      expected_surplus_power_left=-4485,
                       expected_reserved_surplus=0,
                       expected_released_surplus=0),
     ParamsPhaseSwitch(name="phase switch 1p->3p",
                       raw_power_left=42580,
                       raw_currents_left_counter0=[40]*3,
                       raw_currents_left_counter6=[16]*3,
-                      expected_timestamp_auto_phase_switch_cp3=1652683252.0,
-                      expected_timestamp_auto_phase_switch_cp4=None,
-                      expected_timestamp_auto_phase_switch_cp5=None,
+                      expected_timestamp_last_phase_switch_cp3=1652683252.0,
+                      expected_timestamp_last_phase_switch_cp4=None,
+                      expected_timestamp_last_phase_switch_cp5=None,
                       expected_current_cp3=32,
                       expected_current_cp4=6,
                       expected_current_cp5=6,
@@ -281,6 +281,8 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
     data.data.cp_data[
         "cp3"].data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+    data.data.cp_data[
+        "cp3"].data.control_parameter.timestamp_last_phase_switch = 1652682252
 
     # execution
     Algorithm().calc_current()
@@ -288,14 +290,7 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     # evaluation
     assert_expected_current(cases_phase_switch[0])
     assert data.data.cp_data[
-        "cp3"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
-            0].expected_timestamp_auto_phase_switch_cp3
-    assert data.data.cp_data[
-        "cp4"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
-            0].expected_timestamp_auto_phase_switch_cp4
-    assert data.data.cp_data[
-        "cp5"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
-            0].expected_timestamp_auto_phase_switch_cp5
+        "cp3"].data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY
     assert_counter_set(cases_phase_switch[0])
 
 
@@ -311,6 +306,7 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
     data.data.cp_data["cp3"].data.get.currents = [32, 0, 0]
     data.data.cp_data["cp3"].data.get.power = 7360
+    data.data.cp_data["cp3"].data.control_parameter.timestamp_last_phase_switch = 1652682252
     data.data.cp_data["cp4"].data.get.currents = [0, 0, 0]
     data.data.cp_data["cp5"].data.get.currents = [0, 0, 0]
 
@@ -320,11 +316,4 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     # evaluation
     assert_counter_set(cases_phase_switch[1])
     assert data.data.cp_data[
-        "cp3"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
-            1].expected_timestamp_auto_phase_switch_cp3
-    assert data.data.cp_data[
-        "cp4"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
-            1].expected_timestamp_auto_phase_switch_cp4
-    assert data.data.cp_data[
-        "cp5"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
-            1].expected_timestamp_auto_phase_switch_cp5
+        "cp3"].data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY

@@ -3,13 +3,12 @@
 		<!-- Bars -->
 		<g v-for="(item, i) in props.plotdata" :key="i">
 			<EnergyLabel
+				:id="i.toString()"
 				:item="item"
-				:xscale="props.xscale"
 				:yscale="props.yscale"
 				:margin="props.margin"
-				:height="props.height"
 				:width="props.width"
-				:barcount="props.plotdata.length"
+				:item-height="itemHeight"
 				:aut-text="autTxt(item)"
 				:autarchy="autPct(item)"
 			/>
@@ -25,10 +24,9 @@ import EnergyLabel from './EnergyLabel.vue'
 import type { MarginType, PowerItem } from '@/assets/js/types'
 const props = defineProps<{
 	plotdata: PowerItem[]
-	xscale: d3.ScaleLinear<number, number>
 	yscale: d3.ScaleBand<string>
-	height: number
 	width: number
+	itemHeight: number
 	margin: MarginType
 }>()
 // computed

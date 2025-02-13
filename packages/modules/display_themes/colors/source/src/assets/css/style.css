@@ -237,23 +237,23 @@ body>.container-fluid {
 	grid-column: span 12;
 }
 
-@supports (grid-template-columns: subgrid) {
+/*@supports (grid-template-columns: subgrid) { 
 	.subgrid {
 		display:grid;
 		grid-column: span 12; 
 		grid-template-columns: subgrid;
 		justify-content: top;
 	}
-}
-@supports not (grid-template-columns: subgrid) {
+}*/
+/*@supports not (grid-template-columns: subgrid) { */
 	.subgrid {
 		display:grid;
 		grid-column: span 12; 
-		grid-template-columns: auto auto auto auto auto auto auto auto auto auto auto auto;
+		grid-template-columns: repeat(12,auto);
 		justify-content: top;
 		width: 100%;
 	}
-}
+/*}*/
 .grid-left {
 	justify-self: start;
 }

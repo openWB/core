@@ -1,4 +1,4 @@
-Die Kontrolle der openWB geschieht über einen Webbrowser. Aufruf geschieht über Eingabe der IP-Adresse der openWB.
+Die Kontrolle der openWB geschieht über einen Webbrowser. Der Aufruf geschieht über die Eingabe der IP-Adresse der openWB.
 
 ## Startseite
 
@@ -6,4 +6,4 @@ Die hier angezeigten Leistungen werden direkt aus den Leistungsdaten, welche vom
 
 ## Auswertungen - Diagramme
 
-In der Auswertung (und für's Langzeit-Logging) werden 5min-Intervalle der Zählerstände (kWh-Differenz/5min = kW) verwendet.
+In der Auswertung (und für das Langzeit-Logging) werden 5-Minuten-Intervalle der Zählerstände (kWh-Differenz/5min = kW) verwendet.

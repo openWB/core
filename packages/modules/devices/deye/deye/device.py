@@ -9,7 +9,6 @@ from modules.common.configurable_device import ConfigurableDevice, ComponentFact
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.deye.deye.bat import DeyeBat
 from modules.devices.deye.deye.counter import DeyeCounter
-from modules.devices.deye.deye.device_type import DeviceType
 from modules.devices.deye.deye.inverter import DeyeInverter
 from modules.devices.deye.deye import bat, counter, inverter
 from modules.devices.deye.deye.config import Deye, DeyeBatSetup, DeyeConfiguration, DeyeCounterSetup, DeyeInverterSetup
@@ -19,19 +18,19 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Deye):
     def create_bat_component(component_config: DeyeBatSetup):
-        return DeyeBat(device_config.id, component_config)
+        return DeyeBat(device_config.id, component_config, client)
 
     def create_counter_component(component_config: DeyeCounterSetup):
-        return DeyeCounter(device_config.id, component_config)
+        return DeyeCounter(device_config.id, component_config, client)
 
     def create_inverter_component(component_config: DeyeInverterSetup):
-        return DeyeInverter(device_config.id, component_config)
+        return DeyeInverter(device_config.id, component_config, client)
 
     def update_components(components: Iterable[Union[DeyeBat, DeyeCounter, DeyeInverter]]):
-        with client as c:
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(c, DeviceType(device_config.configuration.device_type))
+                    component.update()
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)

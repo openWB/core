@@ -4,6 +4,8 @@
 * [Grundkonzept](https://github.com/openWB/core/wiki/Grundkonzept)
 * [Ladepunkte](https://github.com/openWB/core/wiki/Ladepunkte)
 * [Fahrzeuge](https://github.com/openWB/core/wiki/Fahrzeuge)
+  * [Manueller SoC](https://github.com/openWB/core/wiki/Manueller-SoC)
+* [Lademodi](https://github.com/openWB/core/wiki/Lademodi)
 * Zähler
   * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Grundsätzliches-zu-Zählern)
   * [Lastmanagement und kaskadierte Zähler](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler)

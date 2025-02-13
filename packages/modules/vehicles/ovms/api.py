@@ -12,7 +12,7 @@ from copy import deepcopy
 TOKEN_CMD = "/api/token"
 STATUS_CMD = "/api/status"
 OVMS_APPL_LABEL = "application"
-OVMS_APPL_VALUE = "owb-ovms"
+OVMS_APPL_VALUE = "owb-ovms-2.x-vh"
 OVMS_PURPOSE_LABEL = "purpose"
 OVMS_PURPOSE_VALUE = "get soc"
 
@@ -41,7 +41,7 @@ class api:
             "password": self.password
         }
         form_data = {
-            OVMS_APPL_LABEL: OVMS_APPL_VALUE,
+            OVMS_APPL_LABEL: self.ovms_appl_value,
             OVMS_PURPOSE_LABEL: OVMS_PURPOSE_VALUE
         }
         try:
@@ -82,7 +82,8 @@ class api:
                       str(status_code) + ", full_tokenlist=\n" +
                       dumps(full_tokenlist, indent=4))
             obsolete_tokenlist = list(filter(lambda token:
-                                             token[OVMS_APPL_LABEL] == OVMS_APPL_VALUE and token["token"] != self.token,
+                                             token[OVMS_APPL_LABEL] == self.ovms_appl_value
+                                             and token["token"] != self.token,
                                              full_tokenlist))
             if len(obsolete_tokenlist) > 0:
                 log.debug("cleanup_token obsolete_tokenlist=\n" + dumps(obsolete_tokenlist, indent=4))
@@ -128,13 +129,24 @@ class api:
                          conf: OVMS,
                          vehicle: int) -> Union[int, float, str, float, float]:
         self.config_topic = "openWB/set/vehicle/" + vehicle + "/soc_module/config"
+        self.server_url = conf.configuration.server_url
         self.user_id = conf.configuration.user_id
         self.password = conf.configuration.password
         self.vehicleId = conf.configuration.vehicleId
         self.vehicle = vehicle
+        self.ovms_appl_value = OVMS_APPL_VALUE + str(self.vehicle)
         self.config = deepcopy(conf)
+        self.confDict = self.config.__dict__
+        self.confDict["configuration"] = self.config.configuration.__dict__
+        log.debug("self.confDict2=" + dumps(self.confDict, indent=4))
 
-        tokenstr = self.config.configuration.token
+        if 'token' in self.confDict['configuration']:
+            tokenstr = self.confDict['configuration']['token']
+            log.debug("read tokenstr (" + str(tokenstr) + ") from configuration")
+        else:
+            tokenstr = ""
+            log.debug("init tokenstr to (" + str(tokenstr) + ")")
+        log.debug("tokenstr=" + str(tokenstr))
 
         if tokenstr is None or tokenstr == "":
             self.token = self.create_token()
@@ -148,9 +160,6 @@ class api:
             self.token = self.create_token()
         else:
             log.debug("_fetch_soc using token=" + self.token)
-
-        self.confDict = self.config.__dict__
-        self.confDict["configuration"] = self.config.configuration.__dict__
 
         self.cleanup_token()
 

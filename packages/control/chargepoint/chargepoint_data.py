@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Protocol
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
-from control.ev import Ev
+from control.ev.ev import Ev
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -103,6 +103,7 @@ class Get:
     fault_str: str = NO_ERROR
     fault_state: int = 0
     imported: float = 0
+    max_evse_current: Optional[int] = None
     phases_in_use: int = 0
     plug_state: bool = False
     power: float = 0
@@ -138,6 +139,9 @@ class Set:
     plug_time: Optional[float] = None
     required_power: float = 0
     rfid: Optional[str] = None
+    # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
+    # (für Control-Pilot-Unterbrechung)
+    current_prev: float = 0.0
     target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
     ocpp_transaction_id: Optional[int] = None
@@ -228,7 +232,5 @@ class ChargepointProtocol(Protocol):
     def chargepoint_module(self) -> AbstractChargepoint: ...
     @property
     def num(self) -> int: ...
-    @property
-    def set_current_prev(self) -> float: ...
     @property
     def data(self) -> ChargepointData: ...

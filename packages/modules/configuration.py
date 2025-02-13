@@ -19,6 +19,7 @@ def pub_configurable():
     _pub_configurable_devices_components()
     _pub_configurable_chargepoints()
     _pub_configurable_ripple_control_receivers()
+    _pub_configurable_monitoring()
 
 
 def _pub_configurable_backup_clouds() -> None:
@@ -292,7 +293,12 @@ def _pub_configurable_chargepoints() -> None:
             return chargepoints
 
         path_list = Path(_get_packages_path()/"modules"/"chargepoints").glob('**/chargepoint_module.py')
-        Pub().pub("openWB/set/system/configurable/chargepoints", create_chargepoints_list(path_list))
+        cp_list = create_chargepoints_list(path_list)
+        # Nach Umbennnung der "Externen openWB" zu "Secondary openWB" soll der Eintrag weiterhin an zweiter Stelle
+        # stehen
+        cp_list.remove({'value': 'external_openwb', 'text': 'Secondary openWB'})
+        cp_list.insert(1, {'value': 'external_openwb', 'text': 'Secondary openWB'})
+        Pub().pub("openWB/set/system/configurable/chargepoints", cp_list)
 
         path_list = Path(_get_packages_path()/"modules" /
                          "chargepoints/internal_openwb").glob('**/chargepoint_module.py')
@@ -332,6 +338,40 @@ def _pub_configurable_ripple_control_receivers() -> None:
                                             }
                                         })
         Pub().pub("openWB/set/system/configurable/ripple_control_receivers", ripple_control_receivers)
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
+
+
+def _pub_configurable_monitoring() -> None:
+    try:
+        monitoring = []
+        path_list = Path(_get_packages_path()/"modules"/"monitoring").glob('**/config.py')
+        for path in path_list:
+            try:
+                if path.name.endswith("_test.py"):
+                    # Tests überspringen
+                    continue
+                dev_defaults = importlib.import_module(
+                    f".monitoring.{path.parts[-2]}.api", "modules").device_descriptor.configuration_factory()
+                monitoring.append({
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
+                    "defaults": dataclass_utils.asdict(dev_defaults)
+                })
+            except Exception:
+                log.exception("Fehler im configuration-Modul")
+        monitoring = sorted(monitoring, key=lambda d: d['text'].upper())
+        # "leeren" Eintrag an erster Stelle einfügen
+        monitoring.insert(0,
+                          {
+                              "value": None,
+                              "text": "- kein Monitoring -",
+                              "defaults": {
+                                  "type": None,
+                                  "configuration": {}
+                              }
+                          })
+        Pub().pub("openWB/set/system/configurable/monitoring", monitoring)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 

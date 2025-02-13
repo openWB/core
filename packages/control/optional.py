@@ -14,6 +14,7 @@ from helpermodules.pub import Pub
 from helpermodules.timecheck import create_unix_timestamp_current_full_hour
 from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
+from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 log = logging.getLogger(__name__)
 
@@ -23,11 +24,19 @@ class Optional(OcppMixin):
         try:
             self.data = OptionalData()
             self.et_module: ConfigurableElectricityTariff = None
+            self.monitoring_module: ConfigurableMonitoring = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
-            self.ocpp_boot_notification_sent = False
         except Exception:
             log.exception("Fehler im Optional-Modul")
+
+    def monitoring_start(self):
+        if self.monitoring_module is not None:
+            self.monitoring_module.start_monitoring()
+
+    def monitoring_stop(self):
+        if self.mon_module is not None:
+            self.mon_module.stop_monitoring()
 
     def et_provider_available(self) -> bool:
         return self.et_module is not None and self.data.et.get.fault_state != 2
@@ -53,7 +62,7 @@ class Optional(OcppMixin):
             return False
 
     def et_get_current_price(self):
-        return self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())]
+        return self.data.et.get.prices[str(int(create_unix_timestamp_current_full_hour()))]
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """
@@ -104,13 +113,14 @@ class Optional(OcppMixin):
     def _transfer_meter_values(self):
         for cp in data.data.cp_data.values():
             try:
-                if self.ocpp_boot_notification_sent is False:
+                if self.data.ocpp.boot_notification_sent is False:
                     # Boot-Notfification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
                     self.boot_notification(cp.data.config.ocpp_chargebox_id,
                                            cp.chargepoint_module.fault_state,
                                            cp.chargepoint_module.config.type,
                                            cp.data.get.serial_number)
-                    self.ocpp_boot_notification_sent = True
+                    self.data.ocpp.boot_notification_sent = True
+                    Pub().pub("openWB/set/optional/ocpp/boot_notification_sent", True)
                 if cp.data.set.ocpp_transaction_id is not None:
                     self.send_heart_beat(cp.data.config.ocpp_chargebox_id, cp.chargepoint_module.fault_state)
                     self.transfer_values(cp.data.config.ocpp_chargebox_id,

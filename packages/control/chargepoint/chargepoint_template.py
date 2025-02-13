@@ -4,7 +4,7 @@ import traceback
 from typing import Dict, List
 
 from control import data
-from control import ev as ev_module
+from control.ev import ev as ev_module
 from control.chargepoint.charging_type import ChargingType
 from dataclass_utils.factories import empty_dict_factory, empty_list_factory
 from helpermodules.abstract_plans import AutolockPlan
