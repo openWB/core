@@ -453,6 +453,11 @@ class SetData:
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/chargemode/selected" in msg.topic:
                     self._validate_value(msg, str, pub_json=True)
+                elif "/chargemode/instant_charging/phases_to_use" in msg.topic:
+                    self._validate_value(msg, int, [(1, 1), (3, 3)], pub_json=True)
+                elif ("/chargemode/pv_charging/phases_to_use" in msg.topic or
+                      "/chargemode/eco_charging/phases_to_use" in msg.topic):
+                    self._validate_value(msg, int, [(0, 0), (1, 1), (3, 3)], pub_json=True)
                 elif "/chargemode/instant_charging/current" in msg.topic:
                     self._validate_value(msg, int, [(6, 32)], pub_json=True)
                 elif "/chargemode/instant_charging/dc_current" in msg.topic:
@@ -476,18 +481,24 @@ class SetData:
                     self._validate_value(msg, int, [(6, 32)], pub_json=True)
                 elif "/chargemode/pv_charging/dc_min_soc_current" in msg.topic:
                     self._validate_value(msg, float, [(4, 300)], pub_json=True)
-                elif "/chargemode/pv_charging/max_soc" in msg.topic:
-                    self._validate_value(msg, int, [(0, 101)], pub_json=True)
                 elif "/chargemode/scheduled_charging/plans/" in msg.topic and "/active" in msg.topic:
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/chargemode/scheduled_charging/plans" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/chargemode/scheduled_charging" in msg.topic:
                     self._validate_value(msg, "json", pub_json=True)
-                elif "/et/active" in msg.topic:
-                    self._validate_value(msg, bool, pub_json=True)
-                elif "/et/max_price" in msg.topic:
-                    self._validate_value(msg, float, pub_json=True)
+                elif "/chargemode/eco_charging/current" in msg.topic:
+                    self._validate_value(msg, int, [(6, 32)], pub_json=True)
+                elif "/chargemode/eco_charging/dc_current" in msg.topic:
+                    self._validate_value(msg, float, [(4, 300)], pub_json=True)
+                elif "/chargemode/eco_charging/limit/selected" in msg.topic:
+                    self._validate_value(msg, str, pub_json=True)
+                elif "/chargemode/eco_charging/limit/soc" in msg.topic:
+                    self._validate_value(msg, int, [(0, 100)], pub_json=True)
+                elif "/chargemode/eco_charging/limit/amount" in msg.topic:
+                    self._validate_value(msg, int, [(1000, float("inf"))], pub_json=True)
+                elif "/chargemode/eco_charging/max_price" in msg.topic:
+                    self._validate_value(msg, int, pub_json=True)
                 elif "/time_charging/active" in msg.topic:
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/time_charging/plans/" in msg.topic and "/active" in msg.topic:
