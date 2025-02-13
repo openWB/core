@@ -73,7 +73,6 @@ class Chargepoint(ChargepointRfidMixin):
             self.template: CpTemplate = None
             self.chargepoint_module: AbstractChargepoint = None
             self.num = index
-
             self.chargemode_changed = False
             self.submode_changed = False
             # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht veröffentlichen
@@ -751,7 +750,8 @@ class Chargepoint(ChargepointRfidMixin):
                         self.update_charge_template(ev_list[f"ev{vehicle}"].charge_template)
                 else:
                     self._pub_configured_ev(ev_list)
-                    if self.data.set.charge_template.data.id != ev_list[f"ev{self.data.config.ev}"].charge_template.data.id:
+                    if self.data.set.charge_template.data.id != ev_list[
+                            f"ev{self.data.config.ev}"].charge_template.data.id:
                         self.update_charge_template(ev_list[f"ev{self.data.config.ev}"].charge_template)
             # OCPP Start Transaction nach Anstecken
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
