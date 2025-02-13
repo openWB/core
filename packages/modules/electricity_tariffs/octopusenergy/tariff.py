@@ -106,6 +106,40 @@ class OctopusEnergyClient:
         return self._graphql_request(query, variables)
 
 
+def parse_datetime(datetime_str: str) -> datetime:
+    return datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+
+
+def get_rate_from_simple_product(unit_rate_info: dict) -> float:
+    return float(unit_rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
+
+
+def get_rate_from_time_of_use_product(unit_rate_info: dict, hour_time: datetime) -> float:
+    for rate_info in unit_rate_info['rates']:
+        active_from = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeFromTime'], '%H:%M:%S').time()
+        active_to = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeToTime'], '%H:%M:%S').time()
+        if active_from <= hour_time.time() < active_to or (
+           active_to == datetime.min.time() and hour_time.time() >= active_from):
+            return float(rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
+    return None
+
+
+def process_agreement(agreement: dict, hour_time: datetime, prices: Dict[str, float]):
+    valid_from = parse_datetime(agreement['validFrom'])
+    valid_to = parse_datetime(agreement['validTo'])
+
+    if valid_from <= hour_time <= valid_to:
+        unit_rate_info = agreement['unitRateInformation']
+        timestamp = str(int(hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
+
+        if unit_rate_info['__typename'] == 'SimpleProductUnitRateInformation':
+            prices[timestamp] = get_rate_from_simple_product(unit_rate_info)
+        elif unit_rate_info['__typename'] == 'TimeOfUseProductUnitRateInformation':
+            rate = get_rate_from_time_of_use_product(unit_rate_info, hour_time)
+            if rate is not None:
+                prices[timestamp] = rate
+
+
 def build_tariff_state(data) -> Dict[str, float]:
     current_time = datetime.now(timezone.utc)
     prices: Dict[str, float] = {}
@@ -113,28 +147,7 @@ def build_tariff_state(data) -> Dict[str, float]:
     for hour in range(24):
         hour_time = current_time + timedelta(hours=hour)
         for agreement in data['account']['property']['electricityMalos'][0]['agreements']:
-            valid_from = datetime.fromisoformat(agreement['validFrom'].replace('Z', '+00:00'))
-            valid_to = datetime.fromisoformat(agreement['validTo'].replace('Z', '+00:00'))
-
-            if valid_from <= hour_time <= valid_to:
-                unit_rate_info = agreement['unitRateInformation']
-                if unit_rate_info['__typename'] == 'SimpleProductUnitRateInformation':
-                    rate = float(unit_rate_info['latestGrossUnitRateCentsPerKwh'])/100/1000
-                    timestamp = str(int(hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
-                    prices[timestamp] = rate
-                elif unit_rate_info['__typename'] == 'TimeOfUseProductUnitRateInformation':
-                    for rate_info in unit_rate_info['rates']:
-                        active_from = datetime.strptime(
-                            rate_info['timeslotActivationRules'][0]['activeFromTime'], '%H:%M:%S'
-                        ).time()
-                        active_to = datetime.strptime(
-                            rate_info['timeslotActivationRules'][0]['activeToTime'], '%H:%M:%S'
-                        ).time()
-                        if active_from <= hour_time.time() < active_to or (active_to == datetime.min.time()
-                                                                           and hour_time.time() >= active_from):
-                            timestamp = str(int(hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
-                            prices[timestamp] = float(rate_info['latestGrossUnitRateCentsPerKwh'])/100/1000
-                            break
+            process_agreement(agreement, hour_time, prices)
 
     sorted_prices = dict(sorted(prices.items()))
     return sorted_prices
@@ -150,7 +163,7 @@ def fetch(config: OctopusEnergyTariffConfiguration) -> TariffState:
     return TariffState(prices=prices)
 
 
-def create_electricity_tariff(config: OctopusEnergyTariff):
+def create_electricity_tariff(config: OctopusEnergyTariff) -> callable:
     def updater():
         return fetch(config.configuration)
     return updater
