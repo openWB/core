@@ -349,6 +349,7 @@ class Command:
         """
         new_id = self.max_id_charge_template + 1
         charge_template_default = get_new_charge_template()
+        charge_template_default["id"] = new_id
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
                   str(new_id), charge_template_default)
         self.max_id_charge_template = new_id

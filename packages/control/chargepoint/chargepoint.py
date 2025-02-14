@@ -663,8 +663,6 @@ class Chargepoint(ChargepointRfidMixin):
                 try:
                     charging_ev = self._get_charging_ev(vehicle, ev_list)
                     max_phase_hw = self.get_max_phase_hw()
-                    self.data.control_parameter.phases = min(
-                        self.get_phases_by_selected_chargemode(), max_phase_hw)
                     state, message_ev, submode, required_current, phases = charging_ev.get_required_current(
                         self.data.set.charge_template,
                         self.data.control_parameter,
@@ -783,7 +781,7 @@ class Chargepoint(ChargepointRfidMixin):
             log.debug("SoC nach EV-Wechsel")
             self.update_charge_template(charging_ev.charge_template)
         if self.data.set.charge_template.data.id != charging_ev.charge_template.data.id:
-            self.update_charge_template(charging_ev)
+            self.update_charge_template(charging_ev.charge_template)
         self.data.set.charging_ev_data = charging_ev
         self.data.set.charging_ev = vehicle
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", vehicle)
@@ -847,7 +845,7 @@ class Chargepoint(ChargepointRfidMixin):
                 current_plan = None
             config_obj = ConnectedConfig(
                 charge_template=self.data.set.charge_template.data.id,
-                ev_template=vehicle.ev_template.et_num,
+                ev_template=vehicle.ev_template.data.id,
                 chargemode=self.data.set.charge_template.data.chargemode.selected,
                 priority=self.data.set.charge_template.data.prio,
                 current_plan=current_plan,
@@ -855,25 +853,23 @@ class Chargepoint(ChargepointRfidMixin):
                 time_charging_in_use=True if (self.data.control_parameter.submode ==
                                               "time_charging") else False)
             if soc_obj != self.data.get.connected_vehicle.soc:
-                Pub().pub("openWB/chargepoint/"+str(self.data.id) +
-                          "/get/connected_vehicle/soc", dataclasses.asdict(soc_obj))
+                Pub().pub(f"openWB/chargepoint/{self.num}/get/connected_vehicle/soc", dataclasses.asdict(soc_obj))
             if info_obj != self.data.get.connected_vehicle.info:
-                Pub().pub("openWB/chargepoint/"+str(self.num) +
-                          "/get/connected_vehicle/info", dataclasses.asdict(info_obj))
+                Pub().pub(f"openWB/chargepoint/{self.num}/get/connected_vehicle/info", dataclasses.asdict(info_obj))
             if config_obj != self.data.get.connected_vehicle.config:
-                Pub().pub("openWB/chargepoint/"+str(self.num) +
-                          "/get/connected_vehicle/config", dataclasses.asdict(config_obj))
+                Pub().pub(f"openWB/chargepoint/{self.num}/get/connected_vehicle/config",
+                          dataclasses.asdict(config_obj))
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
     def cp_ev_chargemode_support_phase_switch(self) -> bool:
         control_parameter = self.data.control_parameter
         pv_auto_switch = (control_parameter.chargemode == Chargemode.PV_CHARGING and
-                          self.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.phases_to_use == 0)
+                          self.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0)
         scheduled_auto_switch = (
             control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
             control_parameter.submode == Chargemode.PV_CHARGING and
-            self.data.set.charging_ev_data.charge_template.data.chargemode.scheduled_charging.plans[
+            self.data.set.charge_template.data.chargemode.scheduled_charging.plans[
                 str(self.data.get.connected_vehicle.config.current_plan)].phases_to_use_pv == 0)
         if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
                 self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or

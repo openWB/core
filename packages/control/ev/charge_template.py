@@ -1,14 +1,14 @@
 from dataclasses import asdict, dataclass, field
 import logging
 import traceback
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 from control import data
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
 from dataclass_utils.factories import empty_dict_factory
-from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan
 from helpermodules import timecheck
 log = logging.getLogger(__name__)
 
@@ -29,15 +29,15 @@ def get_charge_template_default() -> dict:
 
 @dataclass
 class ScheduledCharging:
-    plans: Dict[int, ScheduledChargingPlan] = field(default_factory=empty_dict_factory, metadata={
-                                                    "topic": ""})
+    plans: dict = field(default_factory=empty_dict_factory, metadata={
+        "topic": ""})  # Dict[int,ScheduledChargingPlan] wird bei der dict to dataclass Konvertierung nicht unterstützt
 
 
 @dataclass
 class TimeCharging:
     active: bool = False
-    plans: Dict[int, TimeChargingPlan] = field(default_factory=empty_dict_factory, metadata={
-                                               "topic": ""})
+    plans: dict = field(default_factory=empty_dict_factory, metadata={
+        "topic": ""})  # Dict[int, TimeChargingPlan] wird bei der dict to dataclass Konvertierung nicht unterstützt
 
 
 @dataclass

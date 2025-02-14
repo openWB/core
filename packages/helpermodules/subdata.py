@@ -345,7 +345,6 @@ class SubData:
                 # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
                 for vehicle in self.ev_data.values():
                     if vehicle.data.charge_template == int(index):
-                        vehicle.data.charge_template = var["ct"+index]
                         for cp in self.cp_data.values():
                             if ((cp.chargepoint.data.set.charging_ev != -1 and
                                     cp.chargepoint.data.set.charging_ev == vehicle.num) or
@@ -447,14 +446,11 @@ class SubData:
                             var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
                                 Log, decode_payload(msg.payload))
                         else:
-                            self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                             if "charge_template" in msg.topic:
-                                if re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None:
-                                    self.set_json_payload_class(
-                                        var["cp"+index].chargepoint.data.set.charge_template.data, msg)
-                                else:
-                                    self.process_charge_template_topic(
-                                        var["cp"+index].chargepoint.data.set.charge_template, msg)
+                                self.process_charge_template_topic(
+                                    var["cp"+index].chargepoint.data.set.charge_template, msg)
+                            else:
+                                self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
                         if re.search("/chargepoint/[0-9]+/get/connected_vehicle/", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)
