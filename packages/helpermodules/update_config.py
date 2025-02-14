@@ -55,7 +55,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 78
+    DATASTORE_VERSION = 80
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -134,6 +134,9 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/rfid$",
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
         "^openWB/chargepoint/[0-9]+/set/charging_ev$",
+        "^openWB/chargepoint/[0-9]+/set/charge_template/time_charging/plans/[0-9]+$",
+        "^openWB/chargepoint/[0-9]+/set/charge_template/chargemode/scheduled_charging/plans/[0-9]+$",
+        "^openWB/chargepoint/[0-9]+/set/charge_template$",
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/energy_to_charge$",
         "^openWB/chargepoint/[0-9]+/set/manual_lock$",
@@ -459,10 +462,10 @@ class UpdateConfig:
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
-        ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
+        ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.data.id),
         ("openWB/vehicle/0/soc_module/config", NO_MODULE),
         ("openWB/vehicle/0/soc_module/general_config", dataclass_utils.asdict(GeneralVehicleConfig())),
-        ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
+        ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.data.id),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
         ("openWB/vehicle/template/ev_template/0", asdict(EvTemplateData(name="Standard-Fahrzeug-Profil",
@@ -854,7 +857,7 @@ class UpdateConfig:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 if "keep_charge_active_duration" not in payload:
-                    payload["keep_charge_active_duration"] = ev.EvTemplateData().keep_charge_active_duration
+                    payload["keep_charge_active_duration"] = EvTemplateData().keep_charge_active_duration
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 8)
@@ -2087,3 +2090,32 @@ class UpdateConfig:
                 return topics
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 78)
+
+    def upgrade_datastore_78(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
+                    re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                payload.update({"id": index})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 79)
+
+    def upgrade_datastore_79(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
+                topics = {}
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                charge_template_id = decode_payload(
+                    self.all_received_topics[f'openWB/vehicle/{payload["ev"]}/charge_template'])
+                for template_topic, template_payload in self.all_received_topics.items():
+                    if f'openWB/vehicle/template/charge_template/{charge_template_id}' in template_topic:
+                        topics.update(
+                            {template_topic.replace(f'openWB/vehicle/template/charge_template/{charge_template_id}',
+                                                    f"openWB/chargepoint/{index}/set/charge_template"):
+                             decode_payload(template_payload)})
+                return topics
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 80)
