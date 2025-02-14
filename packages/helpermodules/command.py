@@ -177,6 +177,17 @@ class Command:
             Pub().pub(f'openWB/chargepoint/{new_id}/config', chargepoint_config)
             Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
+            charge_template = SubData.ev_charge_template_data[f"ct{SubData.ev_data['ev0'].data.charge_template}"]
+            for time_plan in charge_template.data.time_charging.plans:
+                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/time_charging/plans',
+                          dataclass_utils.asdict(time_plan))
+            for scheduled_plan in charge_template.data.chargemode.scheduled_charging.plans:
+                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/chargemode/scheduled_charging/plans',
+                          scheduled_plan)
+            charge_template = dataclass_utils.asdict(charge_template.data)
+            charge_template["chargemode"]["scheduled_charging"]["plans"].clear()
+            charge_template["time_charging"]["plans"].clear()
+            Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template', charge_template)
             self.max_id_hierarchy = self.max_id_hierarchy + 1
             Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
             if self.max_id_chargepoint_template == -1:
@@ -338,6 +349,7 @@ class Command:
         """
         new_id = self.max_id_charge_template + 1
         charge_template_default = get_new_charge_template()
+        charge_template_default["id"] = new_id
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
                   str(new_id), charge_template_default)
         self.max_id_charge_template = new_id
