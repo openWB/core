@@ -19,22 +19,28 @@ def create_device(device_config: Huawei):
     client = None
 
     def create_bat_component(component_config: HuaweiBatSetup):
-        return HuaweiBat(device_config.id,
-                         component_config,
-                         device_config.configuration.modbus_id,
-                         HuaweiType(device_config.configuration.type))
+        nonlocal client
+        return HuaweiBat(component_config,
+                         device_id=device_config.id,
+                         modbus_id=device_config.configuration.modbus_id,
+                         type=HuaweiType(device_config.configuration.type),
+                         client=client)
 
     def create_counter_component(component_config: HuaweiCounterSetup):
-        return HuaweiCounter(device_config.id,
-                             component_config,
-                             device_config.configuration.modbus_id,
-                             HuaweiType(device_config.configuration.type))
+        nonlocal client
+        return HuaweiCounter(component_config,
+                             device_id=device_config.id,
+                             modbus_id=device_config.configuration.modbus_id,
+                             type=HuaweiType(device_config.configuration.type),
+                             client=client)
 
     def create_inverter_component(component_config: HuaweiInverterSetup):
-        return HuaweiInverter(device_config.id,
-                              component_config,
-                              device_config.configuration.modbus_id,
-                              HuaweiType(device_config.configuration.type))
+        nonlocal client
+        return HuaweiInverter(component_config,
+                              device_id=device_config.id,
+                              modbus_id=device_config.configuration.modbus_id,
+                              type=HuaweiType(device_config.configuration.type),
+                              client=client)
 
     def update_components(components: Iterable[Union[HuaweiBat, HuaweiCounter, HuaweiInverter]]):
         nonlocal client

@@ -17,8 +17,8 @@ def create_device(device_config: Janitza):
 
     def create_counter_component(component_config: JanitzaCounterSetup):
         nonlocal client
-        return counter.JanitzaCounter(device_config.id, component_config, client,
-                                      device_config.configuration.modbus_id)
+        return counter.JanitzaCounter(component_config, device_id=device_config.id, tcp_client=client,
+                                      modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[counter.JanitzaCounter]):
         nonlocal client
