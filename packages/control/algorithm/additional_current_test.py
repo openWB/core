@@ -29,7 +29,7 @@ from control.loadmanagement import LimitingValue
 def test_set_loadmangement_message(set_current, limit, expected_msg, monkeypatch):
     # setup
     ev = Ev(0)
-    ev.charge_template = ChargeTemplate(0)
+    ev.charge_template = ChargeTemplate()
     cp1 = Chargepoint(1, None)
     cp1.data = ChargepointData(set=Set(current=set_current),
                                control_parameter=ControlParameter(required_currents=[8]*3))

@@ -62,6 +62,7 @@ class Algorithm:
                         # wurden, wieder zurückgegeben.
                         log.debug(f"Ladepunkt {cp.num}: Prüfen, ob Phasenumschaltung durchgeführt werden soll.")
                         phases, current, message = charging_ev.auto_phase_switch(
+                            cp.data.set.charge_template,
                             cp.data.control_parameter,
                             cp.num,
                             cp.data.get.currents,
