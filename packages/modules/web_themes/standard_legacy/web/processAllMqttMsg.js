@@ -10,7 +10,7 @@ var themeConfiguration = {
 	history_chart_range: 30 * 60 * 1000, // 30 minutes as default value
 };
 var graphRefreshCounter = 0;
-var chargeModeTemplate = {};
+var chargeTemplate = {};
 var schedulePlan = {};
 var timeChargePlan = {};
 var vehicleSoc = {};
@@ -130,10 +130,10 @@ function createChargePoint(hierarchy) {
 }
 
 function refreshChargeTemplate(chargePointIndex) {
-	if (chargeModeTemplate.hasOwnProperty(chargePointIndex)) {
-		console.debug("refreshing charge template on charge point", chargePointIndex);
+	if (chargeTemplate.hasOwnProperty(chargePointIndex)) {
+		// console.debug("refreshing charge template on charge point", chargePointIndex);
 		chargePoints = $('.charge-point-card[data-cp=' + chargePointIndex + ']');
-		console.debug("charge points", chargePoints);
+		// console.debug("charge points", chargePoints);
 		if (chargePoints.length == 0) {
 			console.error("charge point with index '" + chargePointIndex + "' not found");
 		}
@@ -141,13 +141,13 @@ function refreshChargeTemplate(chargePointIndex) {
 			console.error("multiple charge points with index '" + chargePointIndex + "' found");
 		}
 		let chargePoint = $(chargePoints[0]);
-		console.debug("charge point", chargePoint);
+		// console.debug("charge point", chargePoint);
 
 		// ***** time_charging *****
 		// time_charging.active
 		element = chargePoint.find('.charge-point-time-charging-active');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].time_charging.active ? 1 : 0);
-		if (chargeModeTemplate[chargePointIndex].time_charging.active) {
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].time_charging.active ? 1 : 0);
+		if (chargeTemplate[chargePointIndex].time_charging.active) {
 			element.bootstrapToggle('on', true);
 		} else {
 			element.bootstrapToggle('off', true);
@@ -156,26 +156,26 @@ function refreshChargeTemplate(chargePointIndex) {
 		// ***** instant_charging *****
 		// chargemode.instant_charging.current
 		element = chargePoint.find('.charge-point-instant-charge-current');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.instant_charging.current);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.instant_charging.current);
 		// chargemode.instant_charging.dc_current
 		element = chargePoint.find('.charge-point-instant-charge-dc-current');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.instant_charging.dc_current);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.instant_charging.dc_current);
 		// chargemode.instant_charging.phases_to_use
 		element = chargePoint.find('.charge-point-instant-charge-phases');
-		setToggleBtnGroup(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.instant_charging.phases_to_use);
+		setToggleBtnGroup(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.instant_charging.phases_to_use);
 		// chargemode.instant_charging.limit.selected
 		element = chargePoint.find('.charge-point-instant-charge-limit-selected');
-		setToggleBtnGroup(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.instant_charging.limit.selected);
+		setToggleBtnGroup(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.instant_charging.limit.selected);
 		// chargemode.instant_charging.limit.soc
 		element = chargePoint.find('.charge-point-instant-charge-limit-soc');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.instant_charging.limit.soc);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.instant_charging.limit.soc);
 		// chargemode.instant_charging.limit.amount
 		element = chargePoint.find('.charge-point-instant-charge-limit-amount');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.instant_charging.limit.amount);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.instant_charging.limit.amount);
 		// // et.active
 		// headerElement = chargePoint.find('.charge-point-vehicle-et-active')
 		// toggleElement = chargePoint.find('.charge-point-price-charging-active')
-		// if (chargeModeTemplate[chargePointIndex].et.active) {
+		// if (chargeTemplate[chargePointIndex].et.active) {
 		// 	headerElement.removeClass("hide");
 		// 	toggleElement.bootstrapToggle('on', true);
 		// } else {
@@ -184,7 +184,7 @@ function refreshChargeTemplate(chargePointIndex) {
 		// }
 		// // et.max_price
 		// element = chargePoint.find('.charge-point-max-price-button');
-		// var max_price = parseFloat((chargeModeTemplate[chargePointIndex].et.max_price * 100000).toFixed(2));
+		// var max_price = parseFloat((chargeTemplate[chargePointIndex].et.max_price * 100000).toFixed(2));
 		// element.data('max-price', max_price);
 		// element.attr('data-max-price', max_price).data('max-price', max_price);
 		// element.find('.charge-point-price-charging-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -192,37 +192,37 @@ function refreshChargeTemplate(chargePointIndex) {
 		// ***** pv_charging *****
 		// chargemode.pv_charging.min_current
 		element = chargePoint.find('.charge-point-pv-charge-min-current');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.min_current);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.min_current);
 		// chargemode.pv_charging.dc_min_current
 		element = chargePoint.find('.charge-point-pv-charge-dc-min-current');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.dc_min_current);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.dc_min_current);
 		// chargemode.pv_charging.phases_to_use
 		element = chargePoint.find('.charge-point-pv-charge-phases');
-		setToggleBtnGroup(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.phases_to_use);
+		setToggleBtnGroup(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.phases_to_use);
 		// chargemode.pv_charging.min_soc
 		element = chargePoint.find('.charge-point-pv-charge-min-soc');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.min_soc);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.min_soc);
 		// chargemode.pv_charging.min_soc_current
 		element = chargePoint.find('.charge-point-pv-charge-min-soc-current');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.min_soc_current);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.min_soc_current);
 		// chargemode.pv_charging.dc_min_soc_current
 		element = chargePoint.find('.charge-point-pv-charge-dc-min-soc-current');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.dc_min_soc_current);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.dc_min_soc_current);
 		// chargemode.pv_charging.phases_to_use_soc_min_soc
 		element = chargePoint.find('.charge-point-pv-charge-phases-min-soc');
-		setToggleBtnGroup(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.phases_to_use_min_soc);
+		setToggleBtnGroup(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.phases_to_use_min_soc);
 		// chargemode.pv_charging.limit.selected
 		element = chargePoint.find('.charge-point-pv-charge-limit-selected');
-		setToggleBtnGroup(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.limit.selected);
+		setToggleBtnGroup(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.limit.selected);
 		// chargemode.pv_charging.limit.soc
 		element = chargePoint.find('.charge-point-pv-charge-limit-soc');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.limit.soc);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.limit.soc);
 		// chargemode.pv_charging.limit.amount
 		element = chargePoint.find('.charge-point-pv-charge-limit-amount');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.pv_charging.limit.amount);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.limit.amount);
 		// chargemode.pv_charging.feed_in_limit
 		var element = chargePoint.find('.charge-point-pv-charge-feed-in-limit'); // now get parents respective child element
-		if (chargeModeTemplate[chargePointIndex].chargemode.pv_charging.feed_in_limit == true) {
+		if (chargeTemplate[chargePointIndex].chargemode.pv_charging.feed_in_limit == true) {
 			// element.prop('checked', true);
 			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
 		} else {
@@ -234,25 +234,25 @@ function refreshChargeTemplate(chargePointIndex) {
 		// chargemode.eco_charging.X
 		// chargemode.eco_charging.current
 		element = chargePoint.find('.charge-point-eco-charge-current');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.eco_charging.current);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.eco_charging.current);
 		// chargemode.eco_charging.dc_current
 		element = chargePoint.find('.charge-point-eco-charge-dc-current');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.eco_charging.dc_current);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.eco_charging.dc_current);
 		// chargemode.eco_charging.phases_to_use
 		element = chargePoint.find('.charge-point-eco-charge-phases');
-		setToggleBtnGroup(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.eco_charging.phases_to_use);
+		setToggleBtnGroup(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.eco_charging.phases_to_use);
 		// chargemode.eco_charging.limit.selected
 		element = chargePoint.find('.charge-point-eco-charge-limit-selected');
-		setToggleBtnGroup(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.eco_charging.limit.selected);
+		setToggleBtnGroup(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.eco_charging.limit.selected);
 		// chargemode.eco_charging.limit.soc
 		element = chargePoint.find('.charge-point-eco-charge-limit-soc');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.eco_charging.limit.soc);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.eco_charging.limit.soc);
 		// chargemode.eco_charging.limit.amount
 		element = chargePoint.find('.charge-point-eco-charge-limit-amount');
-		setInputValue(element.attr('id'), chargeModeTemplate[chargePointIndex].chargemode.eco_charging.limit.amount);
+		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.eco_charging.limit.amount);
 		// chargemode.eco_charging.max_price
 		element = chargePoint.find('.charge-point-eco-charge-max_price-button');
-		var max_price = parseFloat((chargeModeTemplate[chargePointIndex].chargemode.eco_charging.max_price * 100000).toFixed(2));
+		var max_price = parseFloat((chargeTemplate[chargePointIndex].chargemode.eco_charging.max_price * 100000).toFixed(2));
 		element.data('max-price', max_price);
 		element.attr('data-max-price', max_price).data('max-price', max_price);
 		element.find('.charge-point-eco-charge-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -1052,21 +1052,34 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 			priorityElement.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
 		}
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/set\/charge_template$/i)) {
-		chargePointIndex = getIndex(mqttTopic);
-		chargeModeTemplate[chargePointIndex] = JSON.parse(mqttPayload);
-		console.log(chargeModeTemplate);
+		// check for empty payload
+		if (mqttPayload.length > 2) {
+			chargePointIndex = getIndex(mqttTopic);
+			chargeTemplate[chargePointIndex] = JSON.parse(mqttPayload);
+			// console.log(chargeTemplate);
+		} else {
+			delete chargeTemplate[chargePointIndex];
+		}
 		refreshChargeTemplate(chargePointIndex);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/set\/charge_template\/chargemode\/scheduled_charging\/plans\/[0-9]+$/i)) {
 		chargePointIndex = getIndex(mqttTopic);
 		planIndex = mqttTopic.match(/[0-9]+$/i)[0];
-		try {
-			const newPlan = JSON.parse(mqttPayload);
-			if (!(chargePointIndex in schedulePlan)) {
-				schedulePlan[chargePointIndex] = {};
+		// check for empty payload
+		if (mqttPayload.length > 2) {
+			try {
+				const newPlan = JSON.parse(mqttPayload);
+				if (!(chargePointIndex in schedulePlan)) {
+					schedulePlan[chargePointIndex] = {};
+				}
+				schedulePlan[chargePointIndex][planIndex] = newPlan;
+			} catch (error) {
+				console.error("error parsing schedule plan!");
+				delete schedulePlan[chargePointIndex][planIndex];
+				if (Object.keys(schedulePlan[chargePointIndex]).length == 0) {
+					delete schedulePlan[chargePointIndex];
+				}
 			}
-			schedulePlan[chargePointIndex][planIndex] = newPlan;
-		} catch (error) {
-			console.error("error parsing schedule plan!");
+		} else {
 			delete schedulePlan[chargePointIndex][planIndex];
 			if (Object.keys(schedulePlan[chargePointIndex]).length == 0) {
 				delete schedulePlan[chargePointIndex];
@@ -1076,15 +1089,23 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/set\/charge_template\/time_charging\/plans\/[0-9]+$/i)) {
 		chargePointIndex = getIndex(mqttTopic);
 		planIndex = mqttTopic.match(/[0-9]+$/i)[0];
-		try {
-			// console.log("received time charge plan", chargePointIndex, planIndex, mqttPayload);
-			const newPlan = JSON.parse(mqttPayload);
-			if (!(chargePointIndex in timeChargePlan)) {
-				timeChargePlan[chargePointIndex] = {};
+		// check for empty payload
+		if (mqttPayload.length > 2) {
+			try {
+				// console.log("received time charge plan", chargePointIndex, planIndex, mqttPayload);
+				const newPlan = JSON.parse(mqttPayload);
+				if (!(chargePointIndex in timeChargePlan)) {
+					timeChargePlan[chargePointIndex] = {};
+				}
+				timeChargePlan[chargePointIndex][planIndex] = newPlan;
+			} catch (error) {
+				console.error("error parsing time charge plan!");
+				delete timeChargePlan[chargePointIndex][planIndex];
+				if (Object.keys(timeChargePlan[chargePointIndex]).length == 0) {
+					delete timeChargePlan[chargePointIndex];
+				}
 			}
-			timeChargePlan[chargePointIndex][planIndex] = newPlan;
-		} catch (error) {
-			console.error("error parsing time charge plan!");
+		} else {
 			delete timeChargePlan[chargePointIndex][planIndex];
 			if (Object.keys(timeChargePlan[chargePointIndex]).length == 0) {
 				delete timeChargePlan[chargePointIndex];
