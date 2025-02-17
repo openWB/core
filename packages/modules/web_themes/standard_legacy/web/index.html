@@ -542,7 +542,7 @@
 										<div class="col-md-8 text-right">
 											<input class="charge-point-time-charging-active" type="checkbox" id="timeChargeCpT"
 												data-toggle="toggle"
-												data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active"
+												data-topic="openWB/set/chargepoint/<cp>/set/charge_template/time_charging/active"
 												data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger"
 												data-size="sm" data-style="w-100">
 										</div>
@@ -640,7 +640,7 @@
 										</div>
 										<div class="col-md-8 btn-group btn-group-toggle charge-point-instant-charge-phases"
 											id="phasesInstantChargeCpT" data-name="phasesCp" data-toggle="buttons"
-											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/phases_to_use"
+											data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/instant_charging/phases_to_use"
 											data-type="number">
 											<label class="btn btn-outline-info btn-toggle">
 												<input type="radio" name="phasesCp" data-option="1"> 1
@@ -656,7 +656,7 @@
 										</div>
 										<div class="col-md-8 btn-group btn-group-toggle charge-point-instant-charge-limit-selected"
 											id="limitInstantChargeCpT" data-name="limitInstantCp" data-toggle="buttons"
-											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/selected">
+											data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/instant_charging/limit/selected">
 											<label class="btn btn-outline-info btn-toggle">
 												<input type="radio" name="limitInstantCp" data-option="none"> Aus
 											</label>
@@ -680,7 +680,7 @@
 														<input type="range"
 															class="charge-point-instant-charge-limit-soc form-control-range rangeInput"
 															id="socLimitInstantCpT" min="5" max="100" step="5"
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/instant_charging/limit/soc">
 													</div>
 													<label for="socLimitInstantCpT"
 														class="col-2 col-form-label valueLabel text-right"
@@ -762,7 +762,7 @@
 										</div>
 										<div class="col-md-8 btn-group btn-group-toggle charge-point-pv-charge-phases"
 											id="phasesPvChargeCpT" data-name="phasesCp" data-toggle="buttons"
-											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/phases_to_use"
+											data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/phases_to_use"
 											data-type="number">
 											<label class="btn btn-outline-info btn-toggle">
 												<input type="radio" name="phasesCp" data-option="1"> 1
@@ -781,7 +781,7 @@
 										</div>
 										<div class="col-md-8 btn-group btn-group-toggle charge-point-pv-charge-limit-selected"
 											id="limitPvChargeCpT" data-name="limitPvCp" data-toggle="buttons"
-											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/limit/selected">
+											data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/limit/selected">
 											<label class="btn btn-outline-info btn-toggle">
 												<input type="radio" name="limitPvCp" data-option="none"> Aus
 											</label>
@@ -804,7 +804,7 @@
 														<input type="range"
 															class="charge-point-pv-charge-limit-soc form-control-range rangeInput"
 															id="socLimitPvCpT" min="5" max="100" step="5"
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/limit/soc">
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/limit/soc">
 													</div>
 													<label for="socLimitPvCpT"
 														class="col-2 col-form-label valueLabel text-right"
@@ -824,7 +824,7 @@
 															class="charge-point-pv-charge-limit-amount form-control-range rangeInput"
 															id="amountLimitPvCpT" min="1" max="50" step="1"
 															data-transformation='{ "in": "<v>/1000", "out": "<v>*1000" }'
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/limit/amount">
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/limit/amount">
 													</div>
 													<label for="amountLimitPvCpT"
 														class="col-2 col-form-label valueLabel text-right"
@@ -901,7 +901,7 @@
 										</div>
 										<div class="col-md-8 btn-group btn-group-toggle charge-point-pv-charge-phases-min-soc"
 											id="phasesMinSocPvChargeCpT" data-name="phasesMinSocCp" data-toggle="buttons"
-											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/phases_to_use_min_soc"
+											data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/pv_charging/phases_to_use_min_soc"
 											data-type="number">
 											<label class="btn btn-outline-info btn-toggle">
 												<input type="radio" name="phasesCp" data-option="1"> 1
@@ -977,7 +977,7 @@
 													<input type="range"
 														class="charge-point-eco-charge-current form-control-range rangeInput"
 														id="currentEcoChargeCpT"
-														data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/current"
+														data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/eco_charging/current"
 														min="6" max="32" step="1">
 												</div>
 												<label for="currentEcoChargeCpT"
@@ -999,7 +999,7 @@
 															class="charge-point-eco-charge-dc-current form-control-range rangeInput"
 															id="dcCurrentEcoChargeCpT"
 															data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/dc_current"
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/eco_charging/dc_current"
 															min="4" max="300" step="1">
 													</div>
 													<label for="dcCurrentEcoChargeCpT"
@@ -1016,7 +1016,7 @@
 										</div>
 										<div class="col-md-8 btn-group btn-group-toggle charge-point-eco-charge-phases"
 											id="phasesEcoChargeCpT" data-name="phasesCp" data-toggle="buttons"
-											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/phases_to_use"
+											data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/eco_charging/phases_to_use"
 											data-type="number">
 											<label class="btn btn-outline-info btn-toggle">
 												<input type="radio" name="phasesCp" data-option="1"> 1
@@ -1035,7 +1035,7 @@
 										</div>
 										<div class="col-md-8 btn-group btn-group-toggle charge-point-eco-charge-limit-selected"
 											id="limitEcoChargeCpT" data-name="limitEcoCp" data-toggle="buttons"
-											data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/limit/selected">
+											data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/eco_charging/limit/selected">
 											<label class="btn btn-outline-info btn-toggle">
 												<input type="radio" name="limitEcoCp" data-option="none"> Aus
 											</label>
@@ -1059,7 +1059,7 @@
 														<input type="range"
 															class="charge-point-eco-charge-limit-soc form-control-range rangeInput"
 															id="socLimitEcoCpT" min="5" max="100" step="5"
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/limit/soc">
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/eco_charging/limit/soc">
 													</div>
 													<label for="socLimitEcoCpT"
 														class="col-2 col-form-label valueLabel text-right"
@@ -1079,7 +1079,7 @@
 															class="charge-point-eco-charge-limit-amount form-control-range rangeInput"
 															id="amountLimitEcoCpT" min="1" max="50" step="1"
 															data-transformation='{ "in": "<v>/1000", "out": "<v>*1000" }'
-															data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/eco_charging/limit/amount">
+															data-topic="openWB/set/chargepoint/<cp>/set/charge_template/chargemode/eco_charging/limit/amount">
 													</div>
 													<label for="amountLimitEcoCpT"
 														class="col-2 col-form-label valueLabel text-right"
@@ -1275,7 +1275,7 @@
 				function submitPriceForm() {
 					var chargePoint = $('#maxPriceModal').data('charge-point');
 					var maxPrice = parseFloat(($("#maxPriceBox").val() / 100000).toFixed(7));
-					publish(maxPrice, "openWB/set/vehicle/template/charge_template/" + chargeTemplate + "/chargemode/eco_charging/max_price");
+					publish(maxPrice, "openWB/set/chargepoint/<cp>/set/charge_template/chargemode/eco_charging/max_price");
 				};
 
 				$(document).ready(function () {
@@ -1469,31 +1469,15 @@
 			$('.container').on('change', 'input[type=checkbox]', function (event) {
 				// console.log("checkbox changed");
 				// send mqtt set to enable/disable charge point after click
-				var topic = $(this).data('topic');
-				if (topic != undefined) {
-					var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
-					var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
-					var ct = parseInt($(this).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
-					var cpt = parseInt($(this).closest('[data-charge-point-template]').data('charge-point-template'));  // get attribute charge-point-template-# of parent element
-					var et = parseInt($(this).closest('[data-ev-template]').data('ev-template'));  // get attribute ev-template-# of parent element
-					var schedule = parseInt($(this).closest('[data-plan]').data('plan'));  // get attribute plan-# of parent element
-					topic = topic.replace('<cp>', cp);
-					topic = topic.replace('<ev>', ev);
-					topic = topic.replace('<ct>', ct);
-					topic = topic.replace('<cpt>', cpt);
-					topic = topic.replace('<et>', et);
-					topic = topic.replace('<sched>', schedule);
-					if (topic.includes('/NaN/')) {
-						console.error('missing cp, ev, ct, cpt, et or sched data');
+				const topic = getTopic($(this));
+				if (topic !== undefined) {
+					if ($(this).prop('checked')) {
+						publish(true, topic);
 					} else {
-						if ($(this).prop('checked')) {
-							publish(true, topic);
-						} else {
-							publish(false, topic);
-						}
-						if ($(this).hasClass('charge-point-time-charging-active')) {
-							timeChargeOptionsShowHide(this, $(this).prop('checked'));
-						}
+						publish(false, topic);
+					}
+					if ($(this).hasClass('charge-point-time-charging-active')) {
+						timeChargeOptionsShowHide(this, $(this).prop('checked'));
 					}
 				} else {
 					console.warn("checkbox without topic changed");
@@ -1504,23 +1488,9 @@
 				// update data in parent element
 				$(this).closest('[data-ev]').attr('data-ev', $(this).val()).data('ev', $(this).val());
 				// send update to broker
-				var topic = $(this).data('topic');
-				if (topic != undefined) {
-					var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
-					var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
-					var ct = parseInt($(this).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
-					var cpt = parseInt($(this).closest('[data-charge-point-template]').data('charge-point-template'));  // get attribute charge-point-template-# of parent element
-					var et = parseInt($(this).closest('[data-ev-template]').data('ev-template'));  // get attribute ev-template-# of parent element
-					topic = topic.replace('<cp>', cp);
-					topic = topic.replace('<ev>', ev);
-					topic = topic.replace('<ct>', ct);
-					topic = topic.replace('<cpt>', cpt);
-					topic = topic.replace('<et>', et);
-					if (topic.includes('/NaN/')) {
-						console.error('missing cp, ev, ct, cpt, or et data');
-					} else {
-						publish(parseInt($(this).val()), topic);
-					}
+				const topic = getTopic($(this));
+				if (topic !== undefined) {
+					publish(parseInt($(this).val()), topic);
 				}
 			});
 
@@ -1580,15 +1550,12 @@
 			});
 
 			$('.container').on('change', '.btn-group-toggle', function (event) {
-				var ct = parseInt($(this).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
+				const topic = getTopic($(this));
 				var option = $(this).find('input[type="radio"]:checked').data('option').toString();
 				if ($(this).data('type') == 'number') {
 					option = parseFloat(option);
 				}
-				var topic = $(this).data('topic').replace('/<ct>/', '/' + ct + '/');
-				if (topic.includes('/NaN/')) {
-					console.error('missing ct data');
-				} else {
+				if (topic !== undefined) {
 					publish(option, topic);
 					// show/hide respective option-values and progress
 					if ($(this).hasClass('charge-point-charge-mode')) {
@@ -1617,23 +1584,25 @@
 				delayUserInput(elementId, function (id) {
 					// gets executed on callback, 2000ms after last input-change
 					// changes label color back to normal and sends input-value by mqtt
-					var elem = $('#' + $.escapeSelector(id));
-					var value = parseFloat(elem.val());
-					if (list = $(elem).attr('data-list')) {
+					var element = $('#' + $.escapeSelector(id));
+					var value = parseFloat(element.val());
+					if (list = $(element).attr('data-list')) {
 						var jsonList = JSON.parse(list);
 						if (Array.isArray(jsonList[parseInt(value)])) {
 							value = jsonList[parseInt(value)][0];
 						} else {
 							value = jsonList[parseInt(value)];
 						}
-					} else if (formula = $(elem).attr('data-transformation')) {
+					} else if (formula = $(element).attr('data-transformation')) {
 						formula = JSON.parse(formula);
 						formula = formula.out.replace('<v>', value);
 						value = transformRangeValue(formula);
 					}
-					var topic = getTopicToSendTo(id);
-					publish(value, topic);
-					$('label[for="' + id + '"].valueLabel').removeClass('text-danger');
+					const topic = getTopic(element);
+					if (topic !== undefined) {
+						publish(value, topic);
+						$('label[for="' + id + '"].valueLabel').removeClass('text-danger');
+					}
 				}, 2000);
 			});
 
