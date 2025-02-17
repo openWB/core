@@ -198,6 +198,10 @@ class Api:
                 log.debug("# Create _account instance")
                 # user, password and region already set in BMWAuthentication/ClientConfiguration!
                 self._account = MyBMWAccount(None, None, None, config=self._clconf, hcaptcha_token=captcha_token)
+                self._account.set_refresh_token(refresh_token=self._store['refresh_token'],
+                                                gcid=self._store['gcid'],
+                                                access_token=self._store['access_token'],
+                                                session_id=self._store['session_id'])
             else:
                 log.debug("# Reuse _account instance")
 
@@ -231,6 +235,7 @@ class Api:
             expires_at = datetime.isoformat(self._auth.expires_at)
             if self._store['expires_at'] != expires_at or \
                self._store['session_id'] != self._auth.session_id or \
+               self._store['gcid'] != self._auth.gcid or \
                self._store['access_token'] != self._auth.access_token or \
                self._store['refresh_token'] != self._auth.refresh_token:
                 self._store['refresh_token'] = self._auth.refresh_token
