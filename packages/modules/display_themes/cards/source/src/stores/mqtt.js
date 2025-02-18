@@ -608,12 +608,8 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleChargeTemplate(state) {
       return (chargePointId) => {
-        let chargeTemplateId =
-          state.getChargePointConnectedVehicleChargeTemplateIndex(
-            chargePointId,
-          );
         return state.topics[
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`
+          `openWB/chargepoint/${chargePointId}/set/charge_template`
         ];
       };
     },
@@ -811,23 +807,15 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleScheduledChargingPlans(state) {
       return (chargePointId) => {
-        let chargeTemplateId =
-          state.getChargePointConnectedVehicleChargeTemplateIndex(
-            chargePointId,
-          );
         return state.getWildcardTopics(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/+`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/+`,
         );
       };
     },
     getChargePointConnectedVehicleTimeChargingPlans(state) {
       return (chargePointId) => {
-        let chargeTemplateId =
-          state.getChargePointConnectedVehicleChargeTemplateIndex(
-            chargePointId,
-          );
         return state.getWildcardTopics(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}/time_charging/plans/+`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template/time_charging/plans/+`,
         );
       };
     },
@@ -974,8 +962,10 @@ export const useMqttStore = defineStore("mqtt", {
         } else {
           this.topics[topic] = payload;
         }
+        return this.topics[topic];
       } else {
         console.debug("topic not found: ", topic);
+        return undefined;
       }
     },
     updateChartData() {
@@ -999,7 +989,7 @@ export const useMqttStore = defineStore("mqtt", {
     },
     updateState(topic, value, objectPath = undefined) {
       console.debug("updateState:", topic, value, objectPath);
-      this.updateTopic(topic, value, objectPath);
+      return this.updateTopic(topic, value, objectPath);
     },
     chargeModeList() {
       var chargeModes = [

@@ -220,12 +220,12 @@ export default {
                 class="_width:100%"
                 :class="!changesLocked ? 'clickable' : ''"
                 :color="
-                  mqttStore.getChargePointConnectedVehicleChargeMode(chargePointId).class
+                  mqttStore.getChargePointConnectedVehicleChargeMode(chargePointId)?.class
                 "
                 @click="handleChargeModeClick(chargePointId)"
               >
                 {{
-                  mqttStore.getChargePointConnectedVehicleChargeMode(chargePointId).label
+                  mqttStore.getChargePointConnectedVehicleChargeMode(chargePointId)?.label
                 }}
                 <font-awesome-icon
                   fixed-width
