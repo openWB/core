@@ -57,15 +57,19 @@
     v-model="limitEnergy.value"
     class="q-mt-md"
   />
-  <div class="text-subtitle2 q-mt-sm q-mr-sm">Preisgrenze für strompreisbasiertes Laden</div>
+  <div class="text-subtitle2 q-mt-sm q-mr-sm">
+    Preisgrenze für strompreisbasiertes Laden
+  </div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group class="col">
       <q-btn
         color="grey"
-        :label="maxPrice.value?.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }) + ' ct/kWh'"
+        :label="
+          maxPrice.value?.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) + ' ct/kWh'
+        "
         size="sm"
         class="col"
         :no-caps="true"
@@ -111,9 +115,7 @@ const limitMode = computed(() =>
 );
 
 const limitSoC = computed(() =>
-  mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(
-    props.chargePointId,
-  ),
+  mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(props.chargePointId),
 );
 
 const limitEnergy = computed(() =>
@@ -123,8 +125,6 @@ const limitEnergy = computed(() =>
 );
 
 const maxPrice = computed(() =>
-  mqttStore.chargePointConnectedVehicleEcoChargeMaxPrice(
-    props.chargePointId,
-  ),
+  mqttStore.chargePointConnectedVehicleEcoChargeMaxPrice(props.chargePointId),
 );
 </script>

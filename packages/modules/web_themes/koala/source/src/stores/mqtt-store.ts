@@ -694,7 +694,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         0,
       ) as number;
       const valueObject = getValueObject.value(power);
-      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+      if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType];
       }
       if (returnType == 'object') {
@@ -718,7 +718,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         0,
       ) as number;
       const valueObject = getValueObject.value(power);
-      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+      if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType];
       }
       if (returnType == 'object') {
@@ -742,7 +742,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         0,
       ) as number;
       const valueObject = getValueObject.value(energyCharged, 'Wh');
-      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+      if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType];
       }
       if (returnType == 'object') {
@@ -765,7 +765,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         'imported_since_plugged',
       ) as number;
       const valueObject = getValueObject.value(energyCharged, 'Wh');
-      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+      if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType];
       }
       if (returnType == 'object') {
@@ -870,14 +870,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: string) {
         console.debug('set charge mode', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.selected',
           true,
@@ -901,14 +895,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set instant charging current', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.instant_charging.current',
           true,
@@ -932,14 +920,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set instant charging phases', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.instant_charging.phases_to_use',
           true,
@@ -963,14 +945,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: string) {
         console.debug('set instant charging limit', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.instant_charging.limit.selected',
           true,
@@ -994,14 +970,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set instant SoC limit', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.instant_charging.limit.soc',
           true,
@@ -1036,14 +1006,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set instant energy limit', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue * 1000,
           'chargemode.instant_charging.limit.amount',
           true,
@@ -1067,14 +1031,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set pv min current', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.pv_charging.min_current',
           true,
@@ -1096,14 +1054,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set pv min SoC', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.pv_charging.min_soc',
           true,
@@ -1127,14 +1079,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set pv min SoC Current', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.pv_charging.min_soc_current',
           true,
@@ -1148,9 +1094,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns number | undefined
    */
-  const chargePointConnectedVehiclePvChargePhases = (
-    chargePointId: number,
-  ) => {
+  const chargePointConnectedVehiclePvChargePhases = (chargePointId: number) => {
     return computed({
       get() {
         return chargePointConnectedVehicleChargeTemplate(chargePointId).value
@@ -1158,14 +1102,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set pv charging phases', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.pv_charging.phases_to_use',
           true,
@@ -1188,15 +1126,13 @@ export const useMqttStore = defineStore('mqtt', () => {
           ?.chargemode?.pv_charging?.phases_to_use_min_soc;
       },
       set(newValue: number) {
-        console.debug('set pv charging phases min soc', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
+        console.debug(
+          'set pv charging phases min soc',
+          newValue,
+          chargePointId,
+        );
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.pv_charging.phases_to_use_min_soc',
           true,
@@ -1210,9 +1146,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehiclePvChargeLimit = (
-    chargePointId: number,
-  ) => {
+  const chargePointConnectedVehiclePvChargeLimit = (chargePointId: number) => {
     return computed({
       get() {
         return chargePointConnectedVehicleChargeTemplate(chargePointId).value
@@ -1220,14 +1154,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: string) {
         console.debug('set pv charging limit', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.pv_charging.limit.selected',
           true,
@@ -1251,14 +1179,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set pv SoC limit', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.pv_charging.limit.soc',
           true,
@@ -1293,14 +1215,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set pv energy limit', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue * 1000,
           'chargemode.pv_charging.limit.amount',
           true,
@@ -1324,14 +1240,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: boolean) {
         console.debug('set pv feed in limit active', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.pv_charging.feed_in_limit',
           true,
@@ -1355,14 +1265,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set eco current', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.eco_charging.current',
           true,
@@ -1386,14 +1290,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set eco charging phases', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.eco_charging.phases_to_use',
           true,
@@ -1407,9 +1305,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehicleEcoChargeLimit = (
-    chargePointId: number,
-  ) => {
+  const chargePointConnectedVehicleEcoChargeLimit = (chargePointId: number) => {
     return computed({
       get() {
         return chargePointConnectedVehicleChargeTemplate(chargePointId).value
@@ -1417,14 +1313,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: string) {
         console.debug('set eco charging limit', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.eco_charging.limit.selected',
           true,
@@ -1444,18 +1334,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         return chargePointConnectedVehicleChargeTemplate(chargePointId).value
-          ?.chargemode?.pv_charging?.limit?.soc;
+          ?.chargemode?.eco_charging?.limit?.soc;
       },
       set(newValue: number) {
         console.debug('set eco SoC limit', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.eco_charging.limit.soc',
           true,
@@ -1490,14 +1374,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set eco energy limit', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue * 1000,
           'chargemode.eco_charging.limit.amount',
           true,
@@ -1526,14 +1404,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: number) {
         console.debug('set eco max price', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           parseFloat((newValue / 100000).toFixed(7)),
           'chargemode.eco_charging.max_price',
           true,
@@ -1555,14 +1427,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       },
       set(newValue: boolean) {
         console.debug('set charge priority', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'prio',
           true,
@@ -1619,26 +1485,14 @@ export const useMqttStore = defineStore('mqtt', () => {
   const chargePointConnectedVehicleChargeTemplate = (chargePointId: number) => {
     return computed({
       get() {
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.debug('chargeTemplateId is undefined');
-          return;
-        }
         return getValue.value(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
         ) as ChargeTemplateConfiguration;
       },
       set(newValue: ChargeTemplateConfiguration) {
         console.debug('set charge template', newValue, chargePointId);
-        const chargeTemplateId =
-          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-        if (chargeTemplateId === undefined) {
-          console.error('chargeTemplateId is undefined');
-          return;
-        }
         return updateTopic(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           undefined,
           true,
@@ -1696,7 +1550,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         0,
       ) as number;
       const valueObject = getValueObject.value(power);
-      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+      if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType];
       }
       if (returnType == 'object') {
@@ -1725,7 +1579,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         0,
       ) as number;
       const valueObject = getValueObject.value(energy, 'Wh', '', true);
-      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+      if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType];
       }
       if (returnType == 'object') {
@@ -1749,7 +1603,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         0,
       ) as number;
       const valueObject = getValueObject.value(energy, 'Wh', '', true);
-      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+      if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType];
       }
       if (returnType == 'object') {
@@ -1820,7 +1674,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         'openWB/bat/get/daily_imported',
       ) as number;
       const valueObject = getValueObject.value(importedEnergy, 'Wh', '', true);
-      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+      if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType];
       }
       if (returnType == 'object') {
@@ -1841,7 +1695,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         'openWB/bat/get/daily_exported',
       ) as number;
       const valueObject = getValueObject.value(exportedEnergy, 'Wh', '', true);
-      if (Object.hasOwnProperty.call(valueObject, returnType)) {
+      if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType];
       }
       if (returnType == 'object') {
@@ -1934,11 +1788,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlans = (chargePointId: number) => {
     return computed(() => {
-      const chargeTemplateId =
-        chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
-      if (chargeTemplateId === undefined) return [];
-
-      const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans`;
+      const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans`;
       const plans = getWildcardValues.value(`${baseTopic}/+`) as Record<
         string,
         Omit<ScheduledChargingPlan, 'id' | 'frequency.selected_days'>
@@ -1996,7 +1846,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'active', true);
       },
     });
@@ -2022,7 +1872,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'et_active', true);
       },
     });
@@ -2086,7 +1936,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'current', true);
       },
     });
@@ -2112,7 +1962,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'limit.selected', true);
       },
     });
@@ -2148,7 +1998,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue * 1000, 'limit.amount', true);
       },
     });
@@ -2174,7 +2024,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'name', true);
       },
     });
@@ -2200,7 +2050,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'time', true);
       },
     });
@@ -2226,7 +2076,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'frequency.selected', true);
       },
     });
@@ -2252,7 +2102,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'frequency.once', true);
       },
     });
@@ -2278,7 +2128,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'frequency.weekly', true);
       },
     });
@@ -2304,7 +2154,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'limit.soc_limit', true);
       },
     });
@@ -2330,7 +2180,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'limit.soc_scheduled', true);
       },
     });
@@ -2355,7 +2205,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'phases_to_use', true);
       },
     });
@@ -2380,7 +2230,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) return;
-        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'phases_to_use_pv', true);
       },
     });

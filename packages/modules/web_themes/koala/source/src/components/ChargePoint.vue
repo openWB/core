@@ -123,20 +123,18 @@ const targetSoc = computed<number | undefined>(() => {
           ).value
         : undefined;
     case 'pv_charging':
-      const pvLimitMode =
-        mqttStore.chargePointConnectedVehiclePvChargeLimit(
-          props.chargePointId,
-        ).value;
+      const pvLimitMode = mqttStore.chargePointConnectedVehiclePvChargeLimit(
+        props.chargePointId,
+      ).value;
       return pvLimitMode === 'soc'
         ? mqttStore.chargePointConnectedVehiclePvChargeLimitSoC(
             props.chargePointId,
           ).value
         : undefined;
     case 'eco_charging':
-      const ecoLimitMode =
-        mqttStore.chargePointConnectedVehicleEcoChargeLimit(
-          props.chargePointId,
-        ).value;
+      const ecoLimitMode = mqttStore.chargePointConnectedVehicleEcoChargeLimit(
+        props.chargePointId,
+      ).value;
       return ecoLimitMode === 'soc'
         ? mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(
             props.chargePointId,

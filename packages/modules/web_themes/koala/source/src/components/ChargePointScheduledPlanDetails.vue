@@ -6,7 +6,11 @@
       </div>
       <div class="row items-center">
         <div class="text-subtitle2 q-mr-sm">Aktiv</div>
-        <ToggleStandard v-model="planActive.value" :size="'sm'" color="positive" />
+        <ToggleStandard
+          v-model="planActive.value"
+          :size="'sm'"
+          color="positive"
+        />
       </div>
       <div class="row items-center q-mb-md">
         <q-input
@@ -117,7 +121,11 @@
       </div>
       <div class="row items-center">
         <div class="text-subtitle2 q-mr-sm">Strompreisbasiert laden</div>
-        <ToggleStandard v-model="planEtActive.value" :size="'sm'" color="positive" />
+        <ToggleStandard
+          v-model="planEtActive.value"
+          :size="'sm'"
+          color="positive"
+        />
       </div>
       <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Zielladen</div>
       <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
@@ -133,7 +141,9 @@
           />
         </q-btn-group>
       </div>
-      <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen bei PV-Überschuss</div>
+      <div class="text-subtitle2 q-mt-sm q-mr-sm">
+        Anzahl Phasen bei PV-Überschuss
+      </div>
       <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
         <q-btn-group class="col">
           <q-btn
