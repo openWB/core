@@ -21,10 +21,7 @@
               : 'Wöchentlich'
         "
       />
-      <div
-        v-if="plan.frequency.selected === 'once'"
-        class="q-mr-xs white-text"
-      >
+      <div v-if="plan.frequency.selected === 'once'" class="q-mr-xs white-text">
         {{ formattedDate }}
       </div>
       <div
@@ -86,13 +83,14 @@ const planEtActive = computed(() =>
 
 const selectedWeekDays = computed(() => {
   return props.plan.frequency.weekly
-    ? weekdays.filter((day, index) => props.plan.frequency.weekly[index]).join(', ')
+    ? weekdays
+        .filter((day, index) => props.plan.frequency.weekly[index])
+        .join(', ')
     : '-';
 });
 
 const formattedDate = computed(() => {
-  if (props.plan.frequency.once === undefined)
-    return '-';
+  if (props.plan.frequency.once === undefined) return '-';
   const date = new Date(props.plan.frequency.once);
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
