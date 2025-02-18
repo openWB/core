@@ -2,28 +2,36 @@
   <div
     class="row items-center justify-between text-subtitle2 full-width no-wrap height"
   >
-    <div class="row" @click="planActive = !planActive">
+    <div class="row" @click="planActive.value = !planActive.value">
       <q-icon
         :name="
-          plan.frequency.selected === 'daily'
-            ? 'calendar_today'
-            : plan.frequency.selected === 'weekly'
-              ? 'calendar_month'
-              : 'event'
+          plan.frequency.selected === 'once'
+            ? 'today'
+            : plan.frequency.selected === 'daily'
+              ? 'date_range'
+              : 'calendar_month'
         "
         size="sm"
         class="q-mr-xs white-icon"
+        :title="
+          plan.frequency.selected === 'once'
+            ? 'Einmalig'
+            : plan.frequency.selected === 'daily'
+              ? 'Täglich'
+              : 'Wöchentlich'
+        "
       />
-      <div class="q-mr-xs white-text">
-        {{
-          plan.frequency.selected === 'daily'
-            ? 'täglich'
-            : plan.frequency.selected === 'weekly'
-              ? plan.frequency.selected_days
-                ? plan.frequency.selected_days.join(', ')
-                : ''
-              : formattedDate
-        }}
+      <div
+        v-if="plan.frequency.selected === 'once'"
+        class="q-mr-xs white-text"
+      >
+        {{ formattedDate }}
+      </div>
+      <div
+        v-if="plan.frequency.selected === 'weekly'"
+        class="q-mr-xs white-text"
+      >
+        {{ selectedWeekDays }}
       </div>
       <q-icon name="schedule" size="sm" class="q-mr-xs white-icon" />
       <div class="q-mr-xs white-text">{{ plan.time }}</div>
@@ -38,6 +46,12 @@
       <div v-if="plan.limit.selected === 'amount'" class="q-mr-xs white-text">
         {{ plan.limit.amount ? plan.limit.amount / 1000 : '' }}kWh
       </div>
+      <q-icon
+        v-if="planEtActive.value"
+        name="bar_chart"
+        size="sm"
+        class="q-mr-xs white-icon"
+      />
     </div>
   </div>
 </template>
@@ -54,23 +68,31 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-const planActive = computed({
-  get() {
-    return mqttStore.vehicleScheduledChargingPlanActive(
-      props.chargePointId,
-      props.plan.id,
-    ).value;
-  },
-  set(newValue: boolean) {
-    mqttStore.vehicleScheduledChargingPlanActive(
-      props.chargePointId,
-      props.plan.id,
-    ).value = newValue;
-  },
+const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+const planActive = computed(() =>
+  mqttStore.vehicleScheduledChargingPlanActive(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
+
+const planEtActive = computed(() =>
+  mqttStore.vehicleScheduledChargingPlanEtActive(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
+
+const selectedWeekDays = computed(() => {
+  return props.plan.frequency.weekly
+    ? weekdays.filter((day, index) => props.plan.frequency.weekly[index]).join(', ')
+    : '-';
 });
 
 const formattedDate = computed(() => {
-  if (!props.plan.frequency.once) return 'Datum wählen';
+  if (props.plan.frequency.once === undefined)
+    return '-';
   const date = new Date(props.plan.frequency.once);
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',

@@ -44,9 +44,13 @@
         <div v-if="chargeMode.value === 'instant_charging'">
           <ChargePointInstantSettings :charge-point-id="props.chargePointId" />
         </div>
-        <!-- ///////////////// PV charge settings /////////////////// -->
+        <!-- ///////////////// Pv charge settings /////////////////// -->
         <div v-if="chargeMode.value === 'pv_charging'">
-          <ChargePointPVSettings :charge-point-id="props.chargePointId" />
+          <ChargePointPvSettings :charge-point-id="props.chargePointId" />
+        </div>
+        <!-- ///////////////// Eco charge settings /////////////////// -->
+        <div v-if="chargeMode.value === 'eco_charging'">
+          <ChargePointEcoSettings :charge-point-id="props.chargePointId" />
         </div>
         <!-- /////////////////  scheduled charging settings /////////////////// -->
         <div v-if="chargeMode.value === 'scheduled_charging'">
@@ -67,7 +71,8 @@ import { useQuasar, QDialog } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { computed, ref, watch } from 'vue';
 import ChargePointInstantSettings from './ChargePointInstantSettings.vue';
-import ChargePointPVSettings from './ChargePointPVSettings.vue';
+import ChargePointPvSettings from './ChargePointPvSettings.vue';
+import ChargePointEcoSettings from './ChargePointEcoSettings.vue';
 import ChargePointScheduledSettings from './ChargePointScheduledSettings.vue';
 import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointLock from './ChargePointLock.vue';
