@@ -1,15 +1,3 @@
-#!/usr/bin/env python3
-"""
-This script provides control for the SolarEdge battery system via Modbus.
-
-Features:
-- Reading battery state of charge (SOC) and power.
-- Enabling advanced power control with confirmation.
-- Setting power limits, including blocking battery usage.
-
-Functions are designed to minimize unnecessary Modbus writes and ensure robust control.
-"""
-
 import logging
 from typing import Dict, Tuple, Union, Optional
 
@@ -27,48 +15,49 @@ from modules.devices.solaredge.solaredge.config import SolaredgeBatSetup
 
 log = logging.getLogger(__name__)
 
-
 class SolaredgeBat(AbstractBat):
     """
-    A class to manage the SolarEdge battery via Modbus.
+    Represents a SolarEdge battery.
+
+    Handles communication with the battery via Modbus, including reading
+    state, setting power limits, and activating advanced power control.
     """
 
-    ADVANCED_PWR_CTRL_REGISTER = 57740  # Register for advanced power control
-    COMMIT_REGISTER = 57741  # Register to commit changes
+    ADVANCED_PWR_CTRL_REGISTER = 57740
+    COMMIT_REGISTER = 57741
 
-    def __init__(
-        self,
-        device_id: int,
-        component_config: Union[Dict, SolaredgeBatSetup],
-        tcp_client: modbus.ModbusTcpClient_,
-    ) -> None:
+    def __init__(self, device_id: int,
+                 component_config: Union[Dict, SolaredgeBatSetup],
+                 tcp_client: modbus.ModbusTcpClient_):
         """
-        Initialize the SolarEdge battery control class.
+        Initializes the SolaredgeBat object.
 
         Args:
-            device_id (int): The device ID of the battery.
-            component_config (Union[Dict, SolaredgeBatSetup]): Configuration data for the battery.
-            tcp_client (modbus.ModbusTcpClient_): Modbus TCP client for communication.
+            device_id: The device ID of the battery.
+            component_config: The configuration dictionary or SolaredgeBatSetup
+                object.
+            tcp_client: The Modbus TCP client used for communication.
         """
         self.__device_id = device_id
-        self.component_config = dataclass_from_dict(SolaredgeBatSetup, component_config)
+        self.component_config = dataclass_from_dict(SolaredgeBatSetup,
+                                                    component_config)
         self.__tcp_client = tcp_client
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="storage")
+        self.sim_counter = SimCounter(self.__device_id,
+                                        self.component_config.id,
+                                        prefix="storage")
         self.store = get_bat_value_store(self.component_config.id)
-        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.fault_state = FaultState(
+            ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        """
-        Update the stored battery state by reading current values.
-        """
+        """Updates the battery state by reading from Modbus."""
         self.store.set(self.read_state())
 
     def read_state(self) -> BatState:
-        """
-        Read the current state of the battery, including power and SOC.
+        """Reads the battery state from Modbus registers.
 
         Returns:
-            BatState: A dataclass containing power, SOC, imported, and exported energy values.
+            The current battery state as a BatState object.
         """
         power, soc = self.get_values()
         if soc is None or power is None:
@@ -76,141 +65,114 @@ class SolaredgeBat(AbstractBat):
             return BatState(power=0, soc=0, imported=0, exported=0)
         imported, exported = self.sim_counter.sim_count(power)
         log.debug(f"Read - Power: {power}, SOC: {soc}")
-        return BatState(
-            power=power,
-            soc=soc,
-            imported=imported,
-            exported=exported,
-        )
+        return BatState(power=power, soc=soc, imported=imported,
+                        exported=exported)
 
     def get_values(self) -> Tuple[Optional[float], Optional[float]]:
-        """
-        Fetch the current SOC and power from Modbus registers.
+        """Reads power and SOC values from Modbus registers.
 
         Returns:
-            Tuple[Optional[float], Optional[float]]: SOC and power values, or None if an error occurs.
+            A tuple containing the power and SOC values, or None if an error
+            occurs.
+        Raises:
+            RuntimeError: If a Modbus error occurs.
         """
         unit = self.component_config.configuration.modbus_id
         try:
             soc = self.__tcp_client.read_holding_registers(
-                57732, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
-            )
+                57732, ModbusDataType.FLOAT_32, wordorder=Endian.Little,
+                unit=unit)
             power = self.__tcp_client.read_holding_registers(
-                57716, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
-            )
+                57716, ModbusDataType.FLOAT_32, wordorder=Endian.Little,
+                unit=unit)
             return power, soc
         except Exception as e:
-            log.error(f"Error reading from Modbus registers: {e} - Register: 57732, Unit: {unit}")
-            return None, None
+            log.error(f"Fehler beim Lesen von Modbus-Register (Unit {unit}): {e}")
+            raise RuntimeError(f"Modbus-Fehler: {e}")
 
-    def ensure_advanced_power_control(self, unit: int) -> bool:
-        """
-        Ensure that advanced power control is enabled.
+    def activate_advanced_power_control(self, unit: int) -> None:
+        """Activates advanced power control for the battery.
 
         Args:
-            unit (int): Modbus unit ID.
-
-        Returns:
-            bool: True if advanced power control is enabled, False otherwise.
+            unit: The Modbus unit ID of the battery.
         """
         try:
             current_state = self.__tcp_client.read_holding_registers(
-                self.ADVANCED_PWR_CTRL_REGISTER, ModbusDataType.FLOAT_32, unit=unit
-            )
-            if current_state != 1.0:
-                log.error("Advanced power control is not enabled. Please enable it.")
-                return False
-            log.debug("Advanced power control is already enabled.")
-            return True
-        except Exception as e:
-            log.error(f"Error checking advanced power control: {e}")
-            return False
+                self.ADVANCED_PWR_CTRL_REGISTER, ModbusDataType.INT_16,
+                unit=unit)
+            if current_state == 1:
+                log.debug("Advanced Power Control ist bereits aktiv.")
+                return
 
-    def activate_advanced_power_control(self, unit: int) -> None:
-        """
-        Activate advanced power control by writing to the appropriate register.
-
-        Args:
-            unit (int): Modbus unit ID.
-        """
-        try:
-            builder = modbus.BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Little)
-            builder.add_32bit_float(1.0)  # Activate advanced power control
-            self.__tcp_client.write_registers(
-                self.ADVANCED_PWR_CTRL_REGISTER, builder.to_registers(), unit=unit
-            )
-            log.debug("Advanced power control successfully activated.")
-
-            # Confirm changes
+            builder = modbus.BinaryPayloadBuilder(byteorder=Endian.Big,
+                                                    wordorder=Endian.Little)
+            builder.add_16bit_int(1)
+            self.__tcp_client.write_registers(self.ADVANCED_PWR_CTRL_REGISTER,
+                                            builder.to_registers(), unit=unit)
+            log.debug("Advanced Power Control aktiviert.")
             self.commit_changes(unit)
         except Exception as e:
-            log.error(f"Error activating advanced power control: {e}")
+            log.error(f"Fehler beim Aktivieren von Advanced Power Control: {e}")
 
     def commit_changes(self, unit: int) -> None:
-        """
-        Commit changes to finalize advanced power control activation.
+        """Commits changes to the battery configuration.
 
         Args:
-            unit (int): Modbus unit ID.
+            unit: The Modbus unit ID of the battery.
         """
         try:
-            builder = modbus.BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Little)
-            builder.add_32bit_float(1.0)  # Commit changes
-            self.__tcp_client.write_registers(
-                self.COMMIT_REGISTER, builder.to_registers(), unit=unit
-            )
+            builder = modbus.BinaryPayloadBuilder(byteorder=Endian.Big,
+                                                    wordorder=Endian.Little)
+            builder.add_32bit_float(1.0)  # Value doesn't seem to matter.
+            self.__tcp_client.write_registers(self.COMMIT_REGISTER,
+                                            builder.to_registers(), unit=unit)
             log.debug("Changes successfully committed.")
         except Exception as e:
             log.error(f"Error committing changes: {e}")
 
-    def set_power_limit(self, power_limit: Union[Optional[int], str]) -> None:
-        """
-        Set the power limit for the battery. Supports three modes:
-        - Default limit (5000 W)
-        - Specific wattage limit
-        - Blocked mode (set limit to 0 W)
+    def set_power_limit(self, power_limit: Optional[Union[int, str]]) -> None:
+        """Sets the discharge power limit for the battery.
 
         Args:
-            power_limit (Union[Optional[int], str]): Power limit value, None, or "blocked".
+            power_limit: The desired power limit in Watts.  Can be an integer,
+                the string "blocked", or None.  If None, the limit is set to
+                5000W. If "blocked", the limit is set to 0W.
+
+        Raises:
+          ValueError: If the power limit is invalid.
         """
-        discharge_limit_register = 57360  # Discharge Limit Register
+        discharge_limit_register = 57360
         unit = self.component_config.configuration.modbus_id
 
-        # Ensure advanced power control is enabled
-        if not self.ensure_advanced_power_control(unit):
+        if not self.ensure_advanced_power_control(unit): # Ensure APC is enabled.
             self.activate_advanced_power_control(unit)
 
-        # Logic for None (default limit)
-        if power_limit is None:
-            log.debug("Zero-point regulation activated, discharge limit set to 5000 W.")
-            power_limit = 5000  # Maximum discharge power
+        power_limit = 5000 if power_limit is None else \
+            0 if str(power_limit).lower() == "blocked" else power_limit
 
-        # Logic for 'blocked' (disable battery usage)
-        elif isinstance(power_limit, str) and power_limit.lower() == 'blocked':
-            log.debug("Battery usage blocked, discharge limit set to 0 W.")
-            power_limit = 0
-
-        # Validate input values
-        elif isinstance(power_limit, int) and (power_limit < 0 or power_limit > 5000):
-            log.error(f"Invalid discharge limit: {power_limit}. Must be between 0 and 5000.")
+        if not (0 <= power_limit <= 5000):
+            log.error(f"Ungültiger Wert für Leistungsbegrenzung: {power_limit}. "
+                      f"Muss zwischen 0 und 5000 W sein.")
             return
 
         try:
             current_limit = self.__tcp_client.read_holding_registers(
-                discharge_limit_register, ModbusDataType.FLOAT_32, unit=unit
-            )
+                discharge_limit_register, ModbusDataType.FLOAT_32, unit=unit)
+            if current_limit == power_limit:
+                log.info(f"Leistungsbegrenzung bereits auf {power_limit} W "
+                         f"gesetzt.")
+                return
 
-            if current_limit != power_limit:
-                builder = modbus.BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Little)
-                builder.add_32bit_float(float(power_limit))
-                self.__tcp_client.write_registers(
-                    discharge_limit_register, builder.to_registers(), unit=unit
-                )
-                log.debug(f"Discharge limit successfully set to {power_limit} W.")
-            else:
-                log.info(f"Discharge limit is already set to {current_limit} W. No action required.")
+            builder = modbus.BinaryPayloadBuilder(byteorder=Endian.Big,
+                                                    wordorder=Endian.Little)
+            builder.add_32bit_float(float(power_limit))
+            self.__tcp_client.write_registers(discharge_limit_register,
+                                            builder.to_registers(), unit=unit)
+            log.info(f"Discharge-Limit erfolgreich auf {power_limit} W "
+                     f"gesetzt.")
         except Exception as e:
-            log.error(f"Error setting discharge limit: {e}")
+            log.error(f"Fehler beim Setzen der Leistungsbegrenzung: {e}")
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=SolaredgeBatSetup)
+component_descriptor = ComponentDescriptor(
+    configuration_factory=SolaredgeBatSetup)
