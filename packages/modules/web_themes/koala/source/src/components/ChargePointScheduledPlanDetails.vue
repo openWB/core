@@ -6,7 +6,7 @@
       </div>
       <div class="row items-center">
         <div class="text-subtitle2 q-mr-sm">Aktiv</div>
-        <ToggleStandard v-model="planActive" :size="'sm'" color="positive" />
+        <ToggleStandard v-model="planActive.value" :size="'sm'" color="positive" />
       </div>
       <div class="row items-center q-mb-md">
         <q-input
@@ -18,21 +18,23 @@
       </div>
       <SliderStandard
         class="q-mb-md"
-        title="Stromstärke"
+        title="Ladestrom"
         :min="6"
         :max="32"
         unit="A"
         v-model="planCurrent.value"
       />
-      <q-btn-group>
+      <q-btn-group class="full-width">
         <q-btn
           size="sm"
+          class="flex-grow"
           :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'soc'"
           label="SoC"
         />
         <q-btn
           size="sm"
+          class="flex-grow"
           :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'amount'"
           label="Amount"
@@ -112,15 +114,47 @@
             />
           </div>
         </div>
-        <div class="q-mt-lg row justify-end">
+      </div>
+      <div class="row items-center">
+        <div class="text-subtitle2 q-mr-sm">Strompreisbasiert laden</div>
+        <ToggleStandard v-model="planEtActive.value" :size="'sm'" color="positive" />
+      </div>
+      <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Zielladen</div>
+      <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
+        <q-btn-group class="col">
           <q-btn
+            v-for="option in phaseOptions"
+            :key="option.value"
+            :color="planNumPhases.value === option.value ? 'primary' : 'grey'"
+            :label="option.label"
             size="sm"
-            icon="delete"
-            :color="'primary'"
-            label="Löschen"
-            @click="deletePlan(props.chargePointId, props.plan.id)"
+            class="col"
+            @click="planNumPhases.value = option.value"
           />
-        </div>
+        </q-btn-group>
+      </div>
+      <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen bei PV-Überschuss</div>
+      <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
+        <q-btn-group class="col">
+          <q-btn
+            v-for="option in phaseOptions"
+            :key="option.value"
+            :color="planNumPhasesPv.value === option.value ? 'primary' : 'grey'"
+            :label="option.label"
+            size="sm"
+            class="col"
+            @click="planNumPhasesPv.value = option.value"
+          />
+        </q-btn-group>
+      </div>
+      <div class="q-mt-lg row justify-end">
+        <q-btn
+          size="sm"
+          icon="delete"
+          color="red"
+          label="Löschen"
+          @click="deletePlan(props.plan.id)"
+        />
       </div>
     </q-card-section>
   </q-card>
@@ -144,26 +178,31 @@ const $q = useQuasar();
 
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
+const phaseOptions = [
+  { value: 1, label: '1' },
+  { value: 3, label: 'Maximum' },
+  { value: 0, label: 'Automatik' },
+];
+
 const selectDay = (index: number) => {
   const newArray = [...selectedWeekDays.value];
   newArray[index] = !newArray[index];
   selectedWeekDays.value = newArray;
 };
 
-const planActive = computed({
-  get() {
-    return mqttStore.vehicleScheduledChargingPlanActive(
-      props.chargePointId,
-      props.plan.id,
-    ).value;
-  },
-  set(newValue: boolean) {
-    mqttStore.vehicleScheduledChargingPlanActive(
-      props.chargePointId,
-      props.plan.id,
-    ).value = newValue;
-  },
-});
+const planActive = computed(() =>
+  mqttStore.vehicleScheduledChargingPlanActive(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
+
+const planEtActive = computed(() =>
+  mqttStore.vehicleScheduledChargingPlanEtActive(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
 
 const planCurrent = computed(() =>
   mqttStore.vehicleScheduledChargingPlanCurrent(
@@ -245,7 +284,21 @@ const planSocScheduled = computed(() =>
   ),
 );
 
-const deletePlan = (chargePointId: number, planId: string) =>
+const planNumPhases = computed(() =>
+  mqttStore.vehicleScheduledChargingPlanPhases(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
+
+const planNumPhasesPv = computed(() =>
+  mqttStore.vehicleScheduledChargingPlanPhasesPv(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
+
+const deletePlan = (planId: number) =>
   mqttStore.vehicleDeleteScheduledChargingPlan(props.chargePointId, planId);
 </script>
 
@@ -253,5 +306,9 @@ const deletePlan = (chargePointId: number, planId: string) =>
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
+}
+
+.flex-grow {
+  flex-grow: 1;
 }
 </style>
