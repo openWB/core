@@ -70,7 +70,6 @@ class SubData:
 
     def __init__(self,
                  event_ev_template: threading.Event,
-                 event_charge_template: threading.Event,
                  event_cp_config: threading.Event,
                  event_module_update_completed: threading.Event,
                  event_copy_data: threading.Event,
@@ -78,8 +77,6 @@ class SubData:
                  event_command_completed: threading.Event,
                  event_subdata_initialized: threading.Event,
                  event_vehicle_update_completed: threading.Event,
-                 event_scheduled_charging_plan: threading.Event,
-                 event_time_charging_plan: threading.Event,
                  event_start_internal_chargepoint: threading.Event,
                  event_stop_internal_chargepoint: threading.Event,
                  event_update_config_completed: threading.Event,
@@ -88,7 +85,6 @@ class SubData:
                  event_jobs_running: threading.Event,
                  event_modbus_server: threading.Event,):
         self.event_ev_template = event_ev_template
-        self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
         self.event_module_update_completed = event_module_update_completed
         self.event_copy_data = event_copy_data
@@ -96,8 +92,6 @@ class SubData:
         self.event_command_completed = event_command_completed
         self.event_subdata_initialized = event_subdata_initialized
         self.event_vehicle_update_completed = event_vehicle_update_completed
-        self.event_scheduled_charging_plan = event_scheduled_charging_plan
-        self.event_time_charging_plan = event_time_charging_plan
         self.event_start_internal_chargepoint = event_start_internal_chargepoint
         self.event_stop_internal_chargepoint = event_stop_internal_chargepoint
         self.event_update_config_completed = event_update_config_completed
@@ -336,12 +330,6 @@ class SubData:
                 if "ct"+index not in var:
                     var["ct"+index] = ChargeTemplate()
                 self.process_charge_template_topic(var["ct"+index], msg)
-                if re.search("/chargemode/scheduled_charging/plans/[0-9]+$", msg.topic) is not None:
-                    self.event_scheduled_charging_plan.set()
-                elif re.search("/time_charging/plans/[0-9]+$", msg.topic) is not None:
-                    self.event_time_charging_plan.set()
-                else:
-                    self.event_charge_template.set()
                 # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
                 for vehicle in self.ev_data.values():
                     if vehicle.data.charge_template == int(index):

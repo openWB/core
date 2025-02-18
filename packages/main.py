@@ -43,7 +43,7 @@ class HandlerAlgorithm:
         """ führt den Algorithmus durch.
         """
         try:
-            @exit_after(data.data.general_data.data.control_interval)
+            #@exit_after(data.data.general_data.data.control_interval)
             def handler_with_control_interval():
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
@@ -192,14 +192,8 @@ try:
     rfid = RfidReader()
     event_ev_template = threading.Event()
     event_ev_template.set()
-    event_charge_template = threading.Event()
-    event_charge_template.set()
     event_cp_config = threading.Event()
     event_cp_config.set()
-    event_scheduled_charging_plan = threading.Event()
-    event_scheduled_charging_plan.set()
-    event_time_charging_plan = threading.Event()
-    event_time_charging_plan.set()
     event_soc = threading.Event()
     event_soc.set()
     event_copy_data = threading.Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
@@ -215,14 +209,13 @@ try:
     event_update_soc = threading.Event()
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc(event_update_soc)
-    set = setdata.SetData(event_ev_template, event_charge_template,
-                          event_cp_config, event_scheduled_charging_plan, event_time_charging_plan, event_soc,
+    set = setdata.SetData(event_ev_template,
+                          event_cp_config, event_soc,
                           event_subdata_initialized)
-    sub = subdata.SubData(event_ev_template, event_charge_template,
+    sub = subdata.SubData(event_ev_template,
                           event_cp_config, loadvars_.event_module_update_completed,
                           event_copy_data, event_global_data_initialized, event_command_completed,
                           event_subdata_initialized, soc.event_vehicle_update_completed,
-                          event_scheduled_charging_plan, event_time_charging_plan,
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,

@@ -13,8 +13,7 @@ import logging
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub, pub_single
-from helpermodules.utils.topic_parser import (decode_payload, get_index, get_index_position, get_second_index,
-                                              get_second_index_position)
+from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position
 from helpermodules.update_config import UpdateConfig
 import dataclass_utils
 
@@ -25,17 +24,11 @@ mqtt_log = logging.getLogger("mqtt")
 class SetData:
     def __init__(self,
                  event_ev_template: threading.Event,
-                 event_charge_template: threading.Event,
                  event_cp_config: threading.Event,
-                 event_scheduled_charging_plan: threading.Event,
-                 event_time_charging_plan: threading.Event,
                  event_soc: threading.Event,
                  event_subdata_initialized: threading.Event):
         self.event_ev_template = event_ev_template
-        self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
-        self.event_scheduled_charging_plan = event_scheduled_charging_plan
-        self.event_time_charging_plan = event_time_charging_plan
         self.event_soc = event_soc
         self.event_subdata_initialized = event_subdata_initialized
         self.heartbeat = False
@@ -75,7 +68,6 @@ class SetData:
                     self.event_ev_template.wait(5)
                     self.process_vehicle_ev_template_topic(msg)
                 elif "openWB/set/vehicle/template/charge_template/" in msg.topic:
-                    self.event_charge_template.wait(5)
                     self.process_vehicle_charge_template_topic(msg)
                 else:
                     self.process_vehicle_topic(msg)
@@ -161,42 +153,7 @@ class SetData:
                 else:
                     # aktuelles json-Objekt liegt in subdata
                     index = get_index(msg.topic)
-                    if "time_charging" in msg.topic and "plans" in msg.topic:
-                        index_second = get_second_index(msg.topic)
-                        event = self.event_time_charging_plan
-                        try:
-                            template = dataclasses.asdict(copy.deepcopy(
-                                subdata.SubData.ev_charge_template_data[
-                                    "ct"+index].data.time_charging.plans[index_second]))
-                        except IndexError:
-                            template = {}
-                    elif "scheduled_charging" in msg.topic and "plans" in msg.topic:
-                        index_second = get_second_index(msg.topic)
-                        event = self.event_scheduled_charging_plan
-                        try:
-                            template = dataclasses.asdict(copy.deepcopy(
-                                subdata.SubData.ev_charge_template_data[
-                                    "ct"+index].data.chargemode.scheduled_charging.plans[index_second]))
-                        except IndexError:
-                            template = {}
-                    elif "charge_template" in msg.topic:
-                        event = self.event_charge_template
-                        if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
-                            template = dataclass_utils.asdict(copy.deepcopy(
-                                subdata.SubData.ev_charge_template_data["ct"+str(index)].data))
-                            # Wenn eine Einzeleinstellung empfangen wird, muss das gesamte Profil veröffentlicht
-                            # werden (pub_json=True), allerdings ohne Pläne. Diese sind in einem Extra-Topic.
-                            try:
-                                template["chargemode"]["scheduled_charging"].pop("plans")
-                            except KeyError:
-                                log.debug("Key 'plans' nicht gefunden, keine Zielladen-Pläne vorhanden.")
-                            try:
-                                template["time_charging"].pop("plans")
-                            except KeyError:
-                                log.debug("Key 'plans' nicht gefunden, keine Zeitladen-Pläne vorhanden.")
-                        else:
-                            template = {}
-                    elif "ev_template" in msg.topic:
+                    if "ev_template" in msg.topic:
                         event = self.event_ev_template
                         if "et"+str(index) in subdata.SubData.ev_template_data:
                             template = copy.deepcopy(
@@ -222,9 +179,6 @@ class SetData:
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
                     if event == self.event_cp_config:
                         key_list = msg.topic.split("/")[5:]
-                    elif (event == self.event_scheduled_charging_plan or
-                          event == self.event_time_charging_plan):
-                        key_list = msg.topic.split("/")[-1:]
                     else:
                         key_list = msg.topic.split("/")[6:]
                     self._change_key(template, key_list, value)
@@ -232,8 +186,6 @@ class SetData:
                     index_pos = get_index_position(msg.topic)
                     if event == self.event_cp_config:
                         topic = msg.topic[:index_pos]+"/config"
-                    elif event == self.event_scheduled_charging_plan or event == self.event_time_charging_plan:
-                        topic = msg.topic[:get_second_index_position(msg.topic)]
                     elif event == self.event_soc:
                         topic = msg.topic[:index_pos]+"/soc_module/calculated_soc_state"
                     else:
@@ -450,68 +402,6 @@ class SetData:
         """
         try:
             if "charge_template" in msg.topic:
-                if "/name" in msg.topic:
-                    self._validate_value(msg, str, pub_json=True)
-                elif ("/load_default" in msg.topic or
-                        "/prio" in msg.topic):
-                    self._validate_value(msg, bool, pub_json=True)
-                elif "/chargemode/selected" in msg.topic:
-                    self._validate_value(msg, str, pub_json=True)
-                elif "/chargemode/instant_charging/phases_to_use" in msg.topic:
-                    self._validate_value(msg, int, [(1, 1), (3, 3)], pub_json=True)
-                elif ("/chargemode/pv_charging/phases_to_use" in msg.topic or
-                      "/chargemode/eco_charging/phases_to_use" in msg.topic):
-                    self._validate_value(msg, int, [(0, 0), (1, 1), (3, 3)], pub_json=True)
-                elif "/chargemode/instant_charging/current" in msg.topic:
-                    self._validate_value(msg, int, [(6, 32)], pub_json=True)
-                elif "/chargemode/instant_charging/dc_current" in msg.topic:
-                    self._validate_value(msg, float, [(4, 300)], pub_json=True)
-                elif "/chargemode/instant_charging/limit/selected" in msg.topic:
-                    self._validate_value(msg, str, pub_json=True)
-                elif "/chargemode/instant_charging/limit/soc" in msg.topic:
-                    self._validate_value(msg, int, [(0, 100)], pub_json=True)
-                elif "/chargemode/instant_charging/limit/amount" in msg.topic:
-                    self._validate_value(msg, int, [(1000, float("inf"))], pub_json=True)
-                elif "/chargemode/pv_charging/feed_in_limit" in msg.topic:
-                    self._validate_value(msg, bool, pub_json=True)
-                elif "/chargemode/pv_charging/min_current" in msg.topic:
-                    self._validate_value(
-                        msg, int, [(0, 0), (6, 16)], pub_json=True)
-                elif "/chargemode/pv_charging/dc_min_current" in msg.topic:
-                    self._validate_value(msg, float, [(0, 300)], pub_json=True)
-                elif "/chargemode/pv_charging/min_soc" in msg.topic:
-                    self._validate_value(msg, int, [(0, 100)], pub_json=True)
-                elif "/chargemode/pv_charging/min_soc_current" in msg.topic:
-                    self._validate_value(msg, int, [(6, 32)], pub_json=True)
-                elif "/chargemode/pv_charging/dc_min_soc_current" in msg.topic:
-                    self._validate_value(msg, float, [(4, 300)], pub_json=True)
-                elif "/chargemode/scheduled_charging/plans/" in msg.topic and "/active" in msg.topic:
-                    self._validate_value(msg, bool, pub_json=True)
-                elif "/chargemode/scheduled_charging/plans" in msg.topic:
-                    self._validate_value(msg, "json")
-                elif "/chargemode/scheduled_charging" in msg.topic:
-                    self._validate_value(msg, "json", pub_json=True)
-                elif "/chargemode/eco_charging/current" in msg.topic:
-                    self._validate_value(msg, int, [(6, 32)], pub_json=True)
-                elif "/chargemode/eco_charging/dc_current" in msg.topic:
-                    self._validate_value(msg, float, [(4, 300)], pub_json=True)
-                elif "/chargemode/eco_charging/limit/selected" in msg.topic:
-                    self._validate_value(msg, str, pub_json=True)
-                elif "/chargemode/eco_charging/limit/soc" in msg.topic:
-                    self._validate_value(msg, int, [(0, 100)], pub_json=True)
-                elif "/chargemode/eco_charging/limit/amount" in msg.topic:
-                    self._validate_value(msg, int, [(1000, float("inf"))], pub_json=True)
-                elif "/chargemode/eco_charging/max_price" in msg.topic:
-                    self._validate_value(msg, int, pub_json=True)
-                elif "/time_charging/active" in msg.topic:
-                    self._validate_value(msg, bool, pub_json=True)
-                elif "/time_charging/plans/" in msg.topic and "/active" in msg.topic:
-                    self._validate_value(msg, bool, pub_json=True)
-                elif "/time_charging/plans" in msg.topic:
-                    self._validate_value(msg, "json")
-                else:
-                    self._validate_value(msg, "json")
-            elif "ev_template" in msg.topic:
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
