@@ -1,12 +1,14 @@
 <template>
   <SliderStandard
-    title="Stromstärke"
+    title="Minimaler Dauerstrom unter der Preisgrenze"
     :min="6"
-    :max="32"
+    :max="16"
+    :step="1"
     unit="A"
-    v-model="instantChargeCurrent.value"
-    class="q-mt-sm"
+    v-model="current.value"
+    class="q-mt-md q-ml-sm"
   />
+
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group class="col">
@@ -21,7 +23,7 @@
       />
     </q-btn-group>
   </div>
-  <!-- <SliderQuasar class="q-mt-sm" :readonly="false" /> -->
+
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Begrenzung</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group class="col">
@@ -55,6 +57,22 @@
     v-model="limitEnergy.value"
     class="q-mt-md"
   />
+  <div class="text-subtitle2 q-mt-sm q-mr-sm">Preisgrenze für strompreisbasiertes Laden</div>
+  <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
+    <q-btn-group class="col">
+      <q-btn
+        color="grey"
+        :label="maxPrice.value?.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }) + ' ct/kWh'"
+        size="sm"
+        class="col"
+        :no-caps="true"
+        @click="console.log('maxPrice clicked', maxPrice.value)"
+      />
+    </q-btn-group>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -77,43 +95,36 @@ const limitModes = [
 const phaseOptions = [
   { value: 1, label: '1' },
   { value: 3, label: 'Maximum' },
+  { value: 0, label: 'Automatik' },
 ];
 
-const instantChargeCurrent = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeCurrent(
-    props.chargePointId,
-  ),
+const current = computed(() =>
+  mqttStore.chargePointConnectedVehicleEcoChargeCurrent(props.chargePointId),
 );
 
 const numPhases = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargePhases(props.chargePointId),
+  mqttStore.chargePointConnectedVehicleEcoChargePhases(props.chargePointId),
 );
 
 const limitMode = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeLimit(props.chargePointId),
+  mqttStore.chargePointConnectedVehicleEcoChargeLimit(props.chargePointId),
 );
 
 const limitSoC = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
+  mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(
     props.chargePointId,
   ),
 );
 
 const limitEnergy = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeLimitEnergy(
+  mqttStore.chargePointConnectedVehicleEcoChargeLimitEnergy(
+    props.chargePointId,
+  ),
+);
+
+const maxPrice = computed(() =>
+  mqttStore.chargePointConnectedVehicleEcoChargeMaxPrice(
     props.chargePointId,
   ),
 );
 </script>
-
-<style scoped>
-.q-btn-group .q-btn {
-  min-width: 100px !important;
-}
-
-body.mobile .q-btn-group .q-btn {
-  padding: 4px 8px;
-  font-size: 12px !important;
-  min-height: 30px;
-}
-</style>

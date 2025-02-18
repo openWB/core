@@ -30,13 +30,14 @@
       </q-list>
     </q-btn-dropdown>
   </div>
-  <q-btn-group class="q-mt-md" v-else>
+  <q-btn-group class="full-width q-mt-sm" v-else>
     <q-btn
       v-for="mode in chargeModes"
       :key="mode.value"
       :color="chargeMode.value === mode.value ? 'primary' : 'grey'"
       :label="mode.label"
       size="sm"
+      class="flex-grow"
       @click="chargeMode.value = mode.value"
     />
   </q-btn-group>
@@ -59,7 +60,7 @@ const chargeModes = [
   { value: 'instant_charging', label: 'Sofort', color: 'negative' },
   { value: 'pv_charging', label: 'PV', color: 'positive' },
   { value: 'scheduled_charging', label: 'Ziel', color: 'primary' },
-  { value: 'standby', label: 'Standby', color: 'warning' },
+  { value: 'eco_charging', label: 'Eco', color: 'secondary' },
   { value: 'stop', label: 'Stop', color: 'light' },
 ];
 
@@ -77,5 +78,9 @@ const currentModeLabel = computed(
 :deep(.q-btn-dropdown__arrow-container) {
   width: 0;
   padding: 0;
+}
+
+.flex-grow {
+  flex-grow: 1;
 }
 </style>
