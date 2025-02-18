@@ -141,7 +141,9 @@ const numPhases = computed(() =>
 );
 
 const numPhasesMinSoc = computed(() =>
-  mqttStore.chargePointConnectedVehiclePvChargePhasesMinSoc(props.chargePointId),
+  mqttStore.chargePointConnectedVehiclePvChargePhasesMinSoc(
+    props.chargePointId,
+  ),
 );
 
 const pvMinSoc = computed(() =>
@@ -159,15 +161,11 @@ const limitMode = computed(() =>
 );
 
 const limitSoC = computed(() =>
-  mqttStore.chargePointConnectedVehiclePvChargeLimitSoC(
-    props.chargePointId,
-  ),
+  mqttStore.chargePointConnectedVehiclePvChargeLimitSoC(props.chargePointId),
 );
 
 const limitEnergy = computed(() =>
-  mqttStore.chargePointConnectedVehiclePvChargeLimitEnergy(
-    props.chargePointId,
-  ),
+  mqttStore.chargePointConnectedVehiclePvChargeLimitEnergy(props.chargePointId),
 );
 
 const feedInLimit = computed(() =>
