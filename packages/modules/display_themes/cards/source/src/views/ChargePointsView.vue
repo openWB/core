@@ -143,26 +143,27 @@ export default {
         this.modalVehicleSelectVisible = false;
       }
     },
+    updateChargePointChargeTemplate(chargePointId, newValue, objectPath = undefined) {
+      const chargeTemplate = this.mqttStore.updateState(
+        `openWB/chargepoint/${chargePointId}/set/charge_template`,
+        newValue,
+        objectPath,
+      );
+      this.$root.sendTopicToBroker(
+        `openWB/chargepoint/${chargePointId}/set/charge_template`,
+        chargeTemplate,
+      );
+    },
     setChargePointConnectedVehicleChargeMode(id, event) {
       if (
         event.id != this.mqttStore.getChargePointConnectedVehicleChargeMode(id)
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/selected`,
-          event,
-        );
+        this.updateChargePointChargeTemplate(id, event, "chargemode.selected");
       }
     },
     setChargePointConnectedVehiclePriority(id, event) {
       if (event != this.mqttStore.getChargePointConnectedVehiclePriority(id)) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/prio`,
-          event,
-        );
+        this.updateChargePointChargeTemplate(id, event, "prio");
       }
     },
     setChargePointConnectedVehicleTimeChargingActive(id, event) {
@@ -170,12 +171,7 @@ export default {
         event !=
         this.mqttStore.getChargePointConnectedVehicleTimeChargingActive(id)
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/time_charging/active`,
-          event,
-        );
+        this.updateChargePointChargeTemplate(id, event, "time_charging.active");
       }
     },
     setChargePointConnectedVehicleInstantChargingCurrent(id, event) {
@@ -186,71 +182,46 @@ export default {
             id,
           )
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/instant_charging/current`,
-          parseFloat(event),
-        );
+        this.updateChargePointChargeTemplate(id, event, "chargemode.instant_charging.current");
       }
     },
-    setChargePointConnectedVehicleInstantChargingPhases(id, selected_phases) {
+    setChargePointConnectedVehicleInstantChargingPhases(id, event) {
       if (
-        selected_phases &&
-        selected_phases !=
+        event &&
+        event !=
           this.mqttStore.getChargePointConnectedVehicleInstantChargingPhases(id)
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/instant_charging/phases_to_use`,
-          selected_phases,
-        );
+        this.updateChargePointChargeTemplate(id, event, "chargemode.instant_charging.phases_to_use");
       }
     },
-    setChargePointConnectedVehicleInstantChargingLimit(id, selected_limit) {
+    setChargePointConnectedVehicleInstantChargingLimit(id, event) {
       if (
-        selected_limit &&
-        selected_limit !=
+        event &&
+        event !=
           this.mqttStore.getChargePointConnectedVehicleInstantChargingLimit(id)
             .selected
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/instant_charging/limit/selected`,
-          selected_limit,
-        );
+        this.updateChargePointChargeTemplate(id, event, "chargemode.instant_charging.limit.selected");
       }
     },
-    setChargePointConnectedVehicleInstantChargingLimitSoc(id, soc_limit) {
+    setChargePointConnectedVehicleInstantChargingLimitSoc(id, event) {
       if (
-        soc_limit &&
-        soc_limit !=
+        event &&
+        event !=
           this.mqttStore.getChargePointConnectedVehicleInstantChargingLimit(id)
             .soc
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/instant_charging/limit/soc`,
-          parseInt(soc_limit),
-        );
+        this.updateChargePointChargeTemplate(id, parseInt(event), "chargemode.instant_charging.limit.soc");
       }
     },
-    setChargePointConnectedVehicleInstantChargingLimitAmount(id, amount_limit) {
+    setChargePointConnectedVehicleInstantChargingLimitAmount(id, event) {
       if (
-        amount_limit &&
-        amount_limit !=
+        event &&
+        event !=
           this.mqttStore.getChargePointConnectedVehicleInstantChargingLimit(id)
             .amount
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/instant_charging/limit/amount`,
-          amount_limit,
-        );
+        this.updateChargePointChargeTemplate(id, event, "chargemode.instant_charging.limit.amount");
       }
     },
     setChargePointConnectedVehiclePvChargingFeedInLimit(id, event) {
@@ -258,12 +229,7 @@ export default {
         event !=
         this.mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(id)
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/feed_in_limit`,
-          event,
-        );
+        this.updateChargePointChargeTemplate(id, event, "chargemode.pv_charging.feed_in_limit");
       }
     },
     setChargePointConnectedVehiclePvChargingMinCurrent(id, event) {
@@ -271,26 +237,16 @@ export default {
         this.mqttStore.getChargePointConnectedVehiclePvChargingMinCurrent(id);
       let new_value = parseInt(event);
       if (new_value != previous_value && !isNaN(new_value)) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/min_current`,
-          new_value,
-        );
+        this.updateChargePointChargeTemplate(id, new_value, "chargemode.pv_charging.min_current");
       }
     },
     setChargePointConnectedVehiclePvChargingPhases(id, selected_phases) {
       if (
-        selected_phases &&
+        selected_phases !== undefined &&
         selected_phases !=
           this.mqttStore.getChargePointConnectedVehiclePvChargingPhases(id)
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/phases_to_use`,
-          selected_phases,
-        );
+        this.updateChargePointChargeTemplate(id, selected_phases, "chargemode.pv_charging.phases_to_use");
       }
     },
     setChargePointConnectedVehiclePvChargingLimit(id, selected_limit) {
@@ -300,12 +256,7 @@ export default {
           this.mqttStore.getChargePointConnectedVehiclePvChargingLimit(id)
             .selected
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/limit/selected`,
-          selected_limit,
-        );
+        this.updateChargePointChargeTemplate(id, selected_limit, "chargemode.pv_charging.limit.selected");
       }
     },
     setChargePointConnectedVehiclePvChargingLimitSoc(id, soc_limit) {
@@ -315,12 +266,7 @@ export default {
           this.mqttStore.getChargePointConnectedVehiclePvChargingLimit(id)
             .soc
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/limit/soc`,
-          parseInt(soc_limit),
-        );
+        this.updateChargePointChargeTemplate(id, parseInt(soc_limit), "chargemode.pv_charging.limit.soc");
       }
     },
     setChargePointConnectedVehiclePvChargingLimitAmount(id, amount_limit) {
@@ -330,12 +276,7 @@ export default {
           this.mqttStore.getChargePointConnectedVehiclePvChargingLimit(id)
             .amount
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/limit/amount`,
-          amount_limit,
-        );
+        this.updateChargePointChargeTemplate(id, amount_limit, "chargemode.pv_charging.limit.amount");
       }
     },
     setChargePointConnectedVehiclePvChargingMinSoc(id, soc) {
@@ -343,12 +284,7 @@ export default {
         this.mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(id);
       let new_value = parseInt(soc);
       if (new_value != previous_value && !isNaN(new_value)) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/min_soc`,
-          new_value,
-        );
+        this.updateChargePointChargeTemplate(id, new_value, "chargemode.pv_charging.min_soc");
       }
     },
     setChargePointConnectedVehiclePvChargingMinSocCurrent(id, event) {
@@ -358,12 +294,7 @@ export default {
         );
       let new_value = parseInt(event);
       if (new_value != previous_value && !isNaN(new_value)) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/min_soc_current`,
-          new_value,
-        );
+        this.updateChargePointChargeTemplate(id, new_value, "chargemode.pv_charging.min_soc_current");
       }
     },
     setChargePointConnectedVehiclePvChargingMinSocPhases(id, selected_phases) {
@@ -372,12 +303,7 @@ export default {
         selected_phases !=
           this.mqttStore.getChargePointConnectedVehiclePvChargingMinSocPhases(id)
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/pv_charging/phases_to_use_min_soc`,
-          selected_phases,
-        );
+        this.updateChargePointChargeTemplate(id, selected_phases, "chargemode.pv_charging.phases_to_use_min_soc");
       }
     },
     setChargePointConnectedVehicleEcoChargingCurrent(id, event) {
@@ -385,26 +311,16 @@ export default {
         this.mqttStore.getChargePointConnectedVehicleEcoChargingCurrent(id);
       let new_value = parseInt(event);
       if (new_value != previous_value && !isNaN(new_value)) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/current`,
-          new_value,
-        );
+        this.updateChargePointChargeTemplate(id, new_value, "chargemode.eco_charging.current");
       }
     },
     setChargePointConnectedVehicleEcoChargingPhases(id, selected_phases) {
       if (
-        selected_phases &&
+        selected_phases !== undefined &&
         selected_phases !=
           this.mqttStore.getChargePointConnectedVehicleEcoChargingPhases(id)
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/phases_to_use`,
-          selected_phases,
-        );
+        this.updateChargePointChargeTemplate(id, selected_phases, "chargemode.eco_charging.phases_to_use");
       }
     },
     setChargePointConnectedVehicleEcoChargingLimit(id, selected_limit) {
@@ -414,12 +330,7 @@ export default {
           this.mqttStore.getChargePointConnectedVehicleEcoChargingLimit(id)
             .selected
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/limit/selected`,
-          selected_limit,
-        );
+        this.updateChargePointChargeTemplate(id, selected_limit, "chargemode.eco_charging.limit.selected");
       }
     },
     setChargePointConnectedVehicleEcoChargingLimitSoc(id, soc_limit) {
@@ -429,12 +340,7 @@ export default {
           this.mqttStore.getChargePointConnectedVehicleEcoChargingLimit(id)
             .soc
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/limit/soc`,
-          parseInt(soc_limit),
-        );
+        this.updateChargePointChargeTemplate(id, parseInt(soc_limit), "chargemode.eco_charging.limit.soc");
       }
     },
     setChargePointConnectedVehicleEcoChargingLimitAmount(id, amount_limit) {
@@ -444,35 +350,35 @@ export default {
           this.mqttStore.getChargePointConnectedVehicleEcoChargingLimit(id)
             .amount
       ) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/limit/amount`,
-          amount_limit,
-        );
+        this.updateChargePointChargeTemplate(id, amount_limit, "chargemode.eco_charging.limit.amount");
       }
     },
     setChargePointConnectedVehicleEcoChargingMaxPrice(id, event) {
       let previous_value =
         this.mqttStore.getChargePointConnectedVehicleEcoChargingMaxPrice(id);
-      let new_value = parseInt(event);
+      let new_value = parseFloat(event);
       if (new_value != previous_value && !isNaN(new_value)) {
-        var template_id =
-          this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
-        this.$root.sendTopicToBroker(
-          `openWB/vehicle/template/charge_template/${template_id}/chargemode/eco_charging/max_price`,
-          parseFloat((new_value / 100000).toFixed(7)),
-        );
+        this.updateChargePointChargeTemplate(id, parseFloat((new_value / 100000).toFixed(7)), "chargemode.eco_charging.max_price");
       }
     },
     setChargePointConnectedVehicleScheduledChargingPlanActive(
       plan_key,
       active,
     ) {
-      this.$root.sendTopicToBroker(`${plan_key}/active`, active);
+      const plan = this.mqttStore.updateState(
+        `${plan_key}`,
+        active,
+        "active",
+      );
+      this.$root.sendTopicToBroker(`${plan_key}`, plan);
     },
     setChargePointConnectedVehicleTimeChargingPlanActive(plan_key, active) {
-      this.$root.sendTopicToBroker(`${plan_key}/active`, active);
+      const plan = this.mqttStore.updateState(
+        `${plan_key}`,
+        active,
+        "active",
+      );
+      this.$root.sendTopicToBroker(`${plan_key}`, plan);
     },
   },
 };
@@ -1115,11 +1021,7 @@ export default {
               "
             />
           </i-form-group>
-          <i-form-group
-            v-if="mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(
-              modalChargePointId,
-            ) > 0"
-          >
+          <i-form-group>
             <i-form-label>Mindest-SoC Strom</i-form-label>
             <extended-number-input
               :min="6"
@@ -1138,11 +1040,7 @@ export default {
               "
             />
           </i-form-group>
-          <i-form-group
-            v-if="mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(
-              modalChargePointId,
-            ) > 0"
-          >
+          <i-form-group>
             <i-form-label>Anzahl Phasen Mindest-SoC</i-form-label>
             <i-button-group block>
               <i-button
