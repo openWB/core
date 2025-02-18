@@ -44,7 +44,7 @@ class HandlerAlgorithm:
         """ führt den Algorithmus durch.
         """
         try:
-            #@exit_after(data.data.general_data.data.control_interval)
+            @exit_after(data.data.general_data.data.control_interval)
             def handler_with_control_interval():
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
