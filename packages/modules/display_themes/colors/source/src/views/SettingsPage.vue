@@ -42,6 +42,7 @@
 				<i class="fa-solid fa-clock" /> Zeitpläne
 			</a>
 			<a
+				v-if="etData.active"
 				:id="'prSettings' + cpid"
 				class="nav-link"
 				data-bs-toggle="tab"
@@ -101,6 +102,7 @@
 				/>
 			</div>
 			<div
+				v-if="etData.active"
 				:id="'priceSettings' + cpid"
 				class="tab-pane"
 				role="tabpanel"
@@ -140,12 +142,11 @@ const cpid = computed(() => {
 </script>
 
 <style scoped>
-.settingslist {
-	display: grid;
-	grid-template-columns: repeat(12, 1fr);
+.tab-pane {
 	font-size: 16px;
 	color: var(--color-fg);
 	background-color: var(--color-bg);
+	align-items: center;
 }
 
 .nav-link {

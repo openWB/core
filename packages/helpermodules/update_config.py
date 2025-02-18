@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 70
+    DATASTORE_VERSION = 75
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -470,7 +470,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve_active", True),
         ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
-        ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 50),
+        ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 0),
         ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
         ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
@@ -1847,14 +1847,7 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 65)
 
     def upgrade_datastore_65(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/system/device/[0-9]+", topic) is not None:
-                payload = decode_payload(payload)
-                # update firmware of Sungrow
-                if payload.get("type") == "sungrow" and "firmware" not in payload["configuration"]:
-                    payload["configuration"].update({"firmware": "v111"})
-                Pub().pub(topic, payload)
-        self._loop_all_received_topics(upgrade)
+        # sungrow version fixed in upgrade_datastore_71
         self.__update_topic("openWB/system/datastore_version", 66)
 
     def upgrade_datastore_66(self) -> None:
@@ -1903,3 +1896,64 @@ class UpdateConfig:
                 return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 70)
+
+    def upgrade_datastore_70(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                payload = decode_payload(payload)
+                # replace smarteq soc module by no_module
+                if payload.get("type") == "smarteq":
+                    payload = NO_MODULE
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 71)
+
+    def upgrade_datastore_71(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # update firmware of Sungrow
+                if payload.get("type") == "sungrow":
+                    if "firmware" not in payload["configuration"]:
+                        payload["configuration"].update({"firmware": "v1"})
+                    elif payload["configuration"].get("firmware") == "v111":
+                        payload["configuration"]["firmware"] = "v1"
+                    elif payload["configuration"].get("firmware") == "v112":
+                        payload["configuration"]["firmware"] = "v2"
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 72)
+
+    def upgrade_datastore_72(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                payload = decode_payload(payload)
+                # replace bmw soc module by no_module
+                if payload.get("type") == "bmw":
+                    payload = NO_MODULE
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 73)
+
+    def upgrade_datastore_73(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # add manufacturer and model to components
+            if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config", topic) is not None:
+                config_payload = decode_payload(payload)
+                if "info" not in config_payload:
+                    config_payload.update({"info": {"manufacturer": None, "model": None}})
+                    return {topic: config_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 74)
+
+    def upgrade_datastore_74(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # update firmware of Sungrow
+                if payload.get("type") == "solax":
+                    if "version" not in payload["configuration"]:
+                        payload["configuration"].update({"version": "g3"})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 75)

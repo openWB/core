@@ -67,11 +67,11 @@ def test_send_ocpp_data(mock_data, monkeypatch):
     send_heart_beat_mock = Mock()
     monkeypatch.setattr(data.data.optional_data, "send_heart_beat", send_heart_beat_mock)
 
-    data.data.optional_data.ocpp_boot_notification_sent = False
+    data.data.optional_data.data.ocpp.boot_notification_sent = False
 
     data.data.optional_data._transfer_meter_values()
 
     boot_notification_mock.call_args == (("cp1", "mqtt", "123456"),)
     send_heart_beat_mock.call_args == (("cp1",),)
     transfer_values_mock.call_args == (("cp1", 1, 0),)
-    assert data.data.optional_data.ocpp_boot_notification_sent is True
+    assert data.data.optional_data.data.ocpp.boot_notification_sent is True

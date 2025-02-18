@@ -34,8 +34,9 @@ def init_store():
     store['refresh_token'] = None
     store['access_token'] = None
     store['expires_at'] = None
-    if 'captcha_token' not in store:
-        store['captcha_token'] = None
+    store['gcid'] = None
+    store['session_id'] = None
+    store['captcha_token'] = None
     return store
 
 
@@ -82,7 +83,7 @@ async def _fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, 
         log.error("init: dataPath creation failed, dataPath: " +
                   str(DATA_PATH) + ", error=" + str(e))
         store = init_store()
-        return store
+        return 0, 0.0
     storeFile = str(DATA_PATH) + '/soc_bmwbc_vh_' + str(vnum) + '.json'
 
     try:
@@ -104,6 +105,8 @@ async def _fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, 
                 store['expires_at'] = None
                 store['access_token'] = None
                 store['refresh_token'] = None
+                store['session_id'] = None
+                store['gcid'] = None
             else:
                 log.info("captcha token unchanged")
 
@@ -123,6 +126,11 @@ async def _fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, 
                                        password,
                                        Regions.REST_OF_WORLD,
                                        hcaptcha_token=captcha_token)
+
+        if store['session_id'] is not None:
+            auth.session_id = store['session_id']
+        if store['gcid'] is not None:
+            auth.gcid = store['gcid']
 
         clconf = MyBMWClientConfiguration(auth)
         # account = MyBMWAccount(user_id, password, Regions.REST_OF_WORLD, config=clconf)
@@ -154,10 +162,12 @@ async def _fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, 
 
         # store token and expires_at if changed
         expires_at = datetime.datetime.isoformat(auth.expires_at)
-        if store['expires_at'] != expires_at:
+        if store['expires_at'] != expires_at or store['session_id'] != auth.session_id:
             store['refresh_token'] = auth.refresh_token
             store['access_token'] = auth.access_token
             store['captcha_token'] = captcha_token
+            store['session_id'] = auth.session_id
+            store['gcid'] = auth.gcid
             store['expires_at'] = datetime.datetime.isoformat(auth.expires_at)
             write_store(store)
 

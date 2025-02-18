@@ -146,9 +146,7 @@ const heading = 'Energie'
 
 const usageDetails = computed(() => {
 	const cpcount = Object.values(chargePoints).length
-	const shcount = Object.values(shDevices).filter(
-		(dev) => dev.configured,
-	).length
+	const shcount = [...shDevices.values()].filter((dev) => dev.configured).length
 	return [usageSummary.evuOut, usageSummary.devices, usageSummary.charging]
 		.concat(
 			cpcount > 1
@@ -157,7 +155,7 @@ const usageDetails = computed(() => {
 		)
 		.concat(
 			shcount > 1
-				? Object.values(shDevices).filter(
+				? [...shDevices.values()].filter(
 						(row) => row.configured && row.showInGraph,
 					)
 				: [],

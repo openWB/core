@@ -63,7 +63,7 @@ function setup_pnp_network() {
 }
 
 function check_internet_connection() {
-	if ping -c1 "www.openwb.de" &>/dev/null; then
+	if curl -s --head  --request GET "https://www.github.com" >/dev/null; then
 		echo "Internet connection is up"
 	else
 		echo "ERROR: no internet connection!"

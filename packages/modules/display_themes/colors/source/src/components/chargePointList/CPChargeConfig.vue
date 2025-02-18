@@ -1,5 +1,5 @@
 <template>
-	<div class="settingslist">
+	<div class="chargesettings pt-2">
 		<ConfigItem
 			v-if="Object.keys(vehicles).length > 1"
 			title="Fahrzeug wechseln"
@@ -25,7 +25,7 @@
 				"
 			/>
 		</ConfigItem>
-		<hr class="grid-col-12 my-2" />
+		<hr class="grid-col-2 my-2" />
 		<ConfigItem
 			title="Priorität"
 			icon="fa-star"
@@ -58,7 +58,7 @@
 		>
 			<SwitchInput v-model="etActive"></SwitchInput>
 		</ConfigItem>
-		<hr v-if="globalData.isBatteryConfigured" class="grid-col-12 my-2" />
+		<hr v-if="globalData.isBatteryConfigured" class="grid-col-2 my-2" />
 		<ConfigItem
 			v-if="globalData.isBatteryConfigured"
 			title="PV-Priorität (global)"
@@ -114,13 +114,12 @@ const timedCharging = computed({
 </script>
 
 <style scoped>
-.settingslist {
+.chargesettings {
 	display: grid;
-	grid-template-columns: repeat(12, 1fr);
+	grid-template-columns: auto, auto;
 	justify-content: center;
-	font-size: 16px;
-	color: var(--color-fg);
-	background-color: var(--color-bg);
+	align-items: center;
+	grid-gap: 1px;
 }
 .status-string {
 	font-size: var(--font-normal);
