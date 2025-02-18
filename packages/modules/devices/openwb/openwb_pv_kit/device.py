@@ -16,7 +16,7 @@ def create_device(device_config: PvKitSetup):
 
     def create_inverter_component(component_config: PvKitInverterSetup):
         nonlocal client
-        return inverter.PvKit(device_config.id, component_config, client)
+        return inverter.PvKit(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[inverter.PvKit]):
         nonlocal client

@@ -24,19 +24,19 @@ def create_device(device_config: Flex):
 
     def create_bat_component(component_config: BatKitFlexSetup):
         nonlocal client
-        return BatKitFlex(device_config.id, component_config, client)
+        return BatKitFlex(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: EvuKitFlexSetup):
         nonlocal client
-        return EvuKitFlex(device_config.id, component_config, client)
+        return EvuKitFlex(component_config, device_id=device_config.id, client=client)
 
     def create_consumption_counter_component(component_config: ConsumptionCounterFlexSetup):
         nonlocal client
-        return ConsumptionCounterFlex(device_config.id, component_config, client)
+        return ConsumptionCounterFlex(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: PvKitFlexSetup):
         nonlocal client
-        return PvKitFlex(device_config.id, component_config, client)
+        return PvKitFlex(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[BatKitFlex, ConsumptionCounterFlex, EvuKitFlex, PvKitFlex]]):
         for component in components:

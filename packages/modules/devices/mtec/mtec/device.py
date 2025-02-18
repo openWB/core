@@ -19,15 +19,15 @@ def create_device(device_config: MTec):
 
     def create_bat_component(component_config: MTecBatSetup):
         nonlocal client
-        return MTecBat(device_config.id, component_config, client)
+        return MTecBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: MTecCounterSetup):
         nonlocal client
-        return MTecCounter(device_config.id, component_config, client)
+        return MTecCounter(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: MTecInverterSetup):
         nonlocal client
-        return MTecInverter(device_config.id, component_config, client)
+        return MTecInverter(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[MTecBat, MTecCounter, MTecInverter]]):
         nonlocal client
