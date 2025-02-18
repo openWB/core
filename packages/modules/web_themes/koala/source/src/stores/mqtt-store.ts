@@ -918,7 +918,38 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the charge point connected vehicle instant charging current identified by the charge point id
+   * Get or set the charge point connected vehicle instant charging phases identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const chargePointConnectedVehicleInstantChargePhases = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.instant_charging?.phases_to_use;
+      },
+      set(newValue: number) {
+        console.debug('set instant charging phases', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.instant_charging.phases_to_use',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle instant charging limit identified by the charge point id
    * @param chargePointId charge point id
    * @returns object | undefined
    */
@@ -984,7 +1015,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehicleInstantChargeEnergieLimit = (
+  const chargePointConnectedVehicleInstantChargeLimitEnergy = (
     chargePointId: number,
   ) => {
     return computed({
@@ -1113,18 +1144,20 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the charge point connected vehicle pv max SoC limit identified by the charge point id
+   * Get or set the charge point connected vehicle pv charging phases identified by the charge point id
    * @param chargePointId charge point id
-   * @returns object | undefined
+   * @returns number | undefined
    */
-  const chargePointConnectedVehiclePVChargeMaxSoc = (chargePointId: number) => {
+  const chargePointConnectedVehiclePvChargePhases = (
+    chargePointId: number,
+  ) => {
     return computed({
       get() {
         return chargePointConnectedVehicleChargeTemplate(chargePointId).value
-          ?.chargemode?.pv_charging?.max_soc;
+          ?.chargemode?.pv_charging?.phases_to_use;
       },
       set(newValue: number) {
-        console.debug('set pv max SoC limit', newValue, chargePointId);
+        console.debug('set pv charging phases', newValue, chargePointId);
         const chargeTemplateId =
           chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
         if (chargeTemplateId === undefined) {
@@ -1134,7 +1167,142 @@ export const useMqttStore = defineStore('mqtt', () => {
         return updateTopic(
           `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
           newValue,
-          'chargemode.pv_charging.max_soc',
+          'chargemode.pv_charging.phases_to_use',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle pv charging phases for min soc identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const chargePointConnectedVehiclePvChargePhasesMinSoc = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.pv_charging?.phases_to_use_min_soc;
+      },
+      set(newValue: number) {
+        console.debug('set pv charging phases min soc', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.pv_charging.phases_to_use_min_soc',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle pv charging limit identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object | undefined
+   */
+  const chargePointConnectedVehiclePvChargeLimit = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.pv_charging?.limit?.selected;
+      },
+      set(newValue: string) {
+        console.debug('set pv charging limit', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.pv_charging.limit.selected',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle pv SoC limit identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object | undefined
+   */
+  const chargePointConnectedVehiclePvChargeLimitSoC = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.pv_charging?.limit?.soc;
+      },
+      set(newValue: number) {
+        console.debug('set pv SoC limit', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.pv_charging.limit.soc',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle pv energy limit identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object | undefined
+   */
+  const chargePointConnectedVehiclePvChargeLimitEnergy = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const energyValue =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.pv_charging?.limit?.amount;
+        if (energyValue === undefined) {
+          return;
+        }
+        const valueObject = getValueObject.value(
+          energyValue,
+          'Wh',
+          '',
+          true,
+        ) as ValueObject;
+        return valueObject.scaledValue as number;
+      },
+      set(newValue: number) {
+        console.debug('set pv energy limit', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue * 1000,
+          'chargemode.pv_charging.limit.amount',
           true,
         );
       },
@@ -1166,6 +1334,208 @@ export const useMqttStore = defineStore('mqtt', () => {
           `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
           newValue,
           'chargemode.pv_charging.feed_in_limit',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle eco charging current identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object | undefined
+   */
+  const chargePointConnectedVehicleEcoChargeCurrent = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.eco_charging?.current;
+      },
+      set(newValue: number) {
+        console.debug('set eco current', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.eco_charging.current',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle eco charging phases identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const chargePointConnectedVehicleEcoChargePhases = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.eco_charging?.phases_to_use;
+      },
+      set(newValue: number) {
+        console.debug('set eco charging phases', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.eco_charging.phases_to_use',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle eco charging limit identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object | undefined
+   */
+  const chargePointConnectedVehicleEcoChargeLimit = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.eco_charging?.limit?.selected;
+      },
+      set(newValue: string) {
+        console.debug('set eco charging limit', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.eco_charging.limit.selected',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle eco SoC limit identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object | undefined
+   */
+  const chargePointConnectedVehicleEcoChargeLimitSoC = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+          ?.chargemode?.pv_charging?.limit?.soc;
+      },
+      set(newValue: number) {
+        console.debug('set eco SoC limit', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue,
+          'chargemode.eco_charging.limit.soc',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle eco energy limit identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object | undefined
+   */
+  const chargePointConnectedVehicleEcoChargeLimitEnergy = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const energyValue =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.eco_charging?.limit?.amount;
+        if (energyValue === undefined) {
+          return;
+        }
+        const valueObject = getValueObject.value(
+          energyValue,
+          'Wh',
+          '',
+          true,
+        ) as ValueObject;
+        return valueObject.scaledValue as number;
+      },
+      set(newValue: number) {
+        console.debug('set eco energy limit', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          newValue * 1000,
+          'chargemode.eco_charging.limit.amount',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle eco charging max price identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns string | undefined
+   */
+  const chargePointConnectedVehicleEcoChargeMaxPrice = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const maxPrice =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.eco_charging?.max_price;
+        if (maxPrice === undefined) {
+          return;
+        }
+        return maxPrice * 100000;
+      },
+      set(newValue: number) {
+        console.debug('set eco max price', newValue, chargePointId);
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) {
+          console.error('chargeTemplateId is undefined');
+          return;
+        }
+        return updateTopic(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`,
+          parseFloat((newValue / 100000).toFixed(7)),
+          'chargemode.eco_charging.max_price',
           true,
         );
       },
@@ -1543,7 +1913,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleDeleteScheduledChargingPlan = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     const chargeTemplateId =
       chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
@@ -1552,7 +1922,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       command: 'removeChargeTemplateSchedulePlan',
       data: {
         template: parseInt(chargeTemplateId.toString()),
-        plan: parseInt(planId),
+        plan: planId,
       },
     });
   };
@@ -1578,7 +1948,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         .filter((planKey) => plans[planKey] && plans[planKey].frequency)
         .map((planKey) => {
           const plan = plans[planKey];
-          const planId = planKey.split('/').pop() || '';
+          const planId = parseInt(planKey.split('/').pop() || '');
           return {
             ...plan,
             id: planId,
@@ -1614,7 +1984,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanActive = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1628,6 +1998,32 @@ export const useMqttStore = defineStore('mqtt', () => {
         if (chargeTemplateId === undefined) return;
         const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'active', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the active state of the scheduled charging plan identified by the scheduled charge plan id
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @returns boolean | undefined
+   */
+  const vehicleScheduledChargingPlanEtActive = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.et_active;
+      },
+      set(newValue: boolean) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'et_active', true);
       },
     });
   };
@@ -1678,7 +2074,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanCurrent = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1704,7 +2100,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanLimitSelected = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1730,7 +2126,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanEnergyAmount = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1766,7 +2162,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanName = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1792,7 +2188,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanTime = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1818,7 +2214,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanFrequencySelected = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1844,7 +2240,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanOnceDate = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1870,7 +2266,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanWeeklyDays = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1896,7 +2292,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanSocLimit = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1922,7 +2318,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleScheduledChargingPlanSocScheduled = (
     chargePointId: number,
-    planId: string,
+    planId: number,
   ) => {
     return computed({
       get() {
@@ -1936,6 +2332,56 @@ export const useMqttStore = defineStore('mqtt', () => {
         if (chargeTemplateId === undefined) return;
         const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
         updateTopic(baseTopic, newValue, 'limit.soc_scheduled', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle scheduled charging phases identified by the charge point id and plan id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const vehicleScheduledChargingPlanPhases = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.phases_to_use;
+      },
+      set(newValue: number) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'phases_to_use', true);
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle scheduled charging phases identified by the charge point id and plan id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const vehicleScheduledChargingPlanPhasesPv = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.phases_to_use_pv;
+      },
+      set(newValue: number) {
+        const chargeTemplateId =
+          chargePointConnectedVehicleChargeTemplateIndex(chargePointId);
+        if (chargeTemplateId === undefined) return;
+        const baseTopic = `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/${planId}`;
+        updateTopic(baseTopic, newValue, 'phases_to_use_pv', true);
       },
     });
   };
@@ -2105,14 +2551,25 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleInfo,
     chargePointConnectedVehicleChargeMode,
     chargePointConnectedVehicleInstantChargeCurrent,
+    chargePointConnectedVehicleInstantChargePhases,
     chargePointConnectedVehicleInstantChargeLimit,
     chargePointConnectedVehicleInstantChargeLimitSoC,
-    chargePointConnectedVehicleInstantChargeEnergieLimit,
+    chargePointConnectedVehicleInstantChargeLimitEnergy,
     chargePointConnectedVehiclePVChargeMinCurrent,
+    chargePointConnectedVehiclePvChargePhases,
+    chargePointConnectedVehiclePvChargeLimit,
+    chargePointConnectedVehiclePvChargeLimitSoC,
+    chargePointConnectedVehiclePvChargeLimitEnergy,
     chargePointConnectedVehiclePVChargeMinSoc,
     chargePointConnectedVehiclePVChargeMinSocCurrent,
-    chargePointConnectedVehiclePVChargeMaxSoc,
+    chargePointConnectedVehiclePvChargePhasesMinSoc,
     chargePointConnectedVehiclePVChargeFeedInLimit,
+    chargePointConnectedVehicleEcoChargeCurrent,
+    chargePointConnectedVehicleEcoChargePhases,
+    chargePointConnectedVehicleEcoChargeLimit,
+    chargePointConnectedVehicleEcoChargeLimitSoC,
+    chargePointConnectedVehicleEcoChargeLimitEnergy,
+    chargePointConnectedVehicleEcoChargeMaxPrice,
     chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleChargeTemplate,
     // vehicle data
@@ -2122,6 +2579,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleDeleteScheduledChargingPlan,
     vehicleScheduledChargingPlans,
     vehicleScheduledChargingPlanActive,
+    vehicleScheduledChargingPlanEtActive,
     vehicleScheduledChargingTarget,
     vehicleScheduledChargingPlanCurrent,
     vehicleScheduledChargingPlanLimitSelected,
@@ -2133,6 +2591,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleScheduledChargingPlanWeeklyDays,
     vehicleScheduledChargingPlanSocLimit,
     vehicleScheduledChargingPlanSocScheduled,
+    vehicleScheduledChargingPlanPhases,
+    vehicleScheduledChargingPlanPhasesPv,
     // Battery data
     batteryConfigured,
     batteryIds,

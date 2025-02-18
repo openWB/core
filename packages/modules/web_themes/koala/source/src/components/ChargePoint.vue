@@ -108,24 +108,40 @@ const chargeMode = computed(
 );
 
 const targetSoc = computed<number | undefined>(() => {
-  const instantLimitMode =
-    mqttStore.chargePointConnectedVehicleInstantChargeLimit(
-      props.chargePointId,
-    ).value;
   switch (chargeMode.value) {
     case 'scheduled_charging':
       return mqttStore.vehicleScheduledChargingTarget(props.chargePointId).value
         ?.soc;
     case 'instant_charging':
+      const instantLimitMode =
+        mqttStore.chargePointConnectedVehicleInstantChargeLimit(
+          props.chargePointId,
+        ).value;
       return instantLimitMode === 'soc'
         ? mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
             props.chargePointId,
           ).value
         : undefined;
     case 'pv_charging':
-      return mqttStore.chargePointConnectedVehiclePVChargeMaxSoc(
-        props.chargePointId,
-      ).value;
+      const pvLimitMode =
+        mqttStore.chargePointConnectedVehiclePvChargeLimit(
+          props.chargePointId,
+        ).value;
+      return pvLimitMode === 'soc'
+        ? mqttStore.chargePointConnectedVehiclePvChargeLimitSoC(
+            props.chargePointId,
+          ).value
+        : undefined;
+    case 'eco_charging':
+      const ecoLimitMode =
+        mqttStore.chargePointConnectedVehicleEcoChargeLimit(
+          props.chargePointId,
+        ).value;
+      return ecoLimitMode === 'soc'
+        ? mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(
+            props.chargePointId,
+          ).value
+        : undefined;
     default:
       return undefined;
   }

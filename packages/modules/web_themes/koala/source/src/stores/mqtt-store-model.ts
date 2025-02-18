@@ -57,25 +57,22 @@ export interface ChargeTemplateConfiguration {
   name: string;
   prio: boolean;
   load_default: boolean;
-  et: {
-    active: boolean;
-    max_price: number;
-  };
   time_charging: {
     active: boolean;
   };
   chargemode: {
     selected: string;
-    pv_charging: {
-      dc_min_current: number;
-      dc_min_soc_current: number;
-      min_soc_current: number;
-      min_current: number;
-      feed_in_limit: boolean;
-      min_soc: number;
-      max_soc: number;
+    eco_charging: {
+      current: number;
+      dc_current: number;
+      limit: {
+        selected: string;
+        amount: number;
+        soc: number;
+      };
+      max_price: number;
+      phases_to_use: number;
     };
-    scheduled_charging: object;
     instant_charging: {
       current: number;
       dc_current: number;
@@ -84,7 +81,24 @@ export interface ChargeTemplateConfiguration {
         amount: number;
         soc: number;
       };
+      phases_to_use: number;
     };
+    pv_charging: {
+      dc_min_current: number;
+      dc_min_soc_current: number;
+      feed_in_limit: boolean;
+      limit: {
+        selected: string;
+        amount: number;
+        soc: number;
+      };
+      min_current: number;
+      min_soc: number;
+      min_soc_current: number;
+      phases_to_use: number;
+      phases_to_use_min_soc: number;
+    };
+    scheduled_charging: object;
   };
 }
 
@@ -98,23 +112,26 @@ export interface Vehicle {
 }
 
 export interface ScheduledChargingPlan {
-  id: string;
+  id: number;
+  name: string;
   active: boolean;
+  et_active: boolean;
+  current: number;
+  dc_current: number;
+  time: string;
+  phases_to_use: number;
+  phases_to_use_pv: number;
   frequency: {
     selected: string;
     once?: string;
-    weekly?: boolean[];
-    selected_days?: string[];
+    weekly: boolean[];
   };
-  current: number;
-  time: string;
   limit: {
     selected: string;
     amount?: number;
     soc_limit?: number;
     soc_scheduled?: number;
   };
-  name: string;
 }
 
 export interface GraphDataPoint {
