@@ -22,9 +22,10 @@ FLOAT32_UNSUPPORTED = -0xffffff00000000000000000000000000
 
 class SolaredgeBat(AbstractBat):
     """
-    Klasse zur Verwaltung der Solaredge-Batteriesteuerung. 
+    Klasse zur Verwaltung der Solaredge-Batteriesteuerung.
     Beinhaltet Funktionen zur Überwachung und Steuerung.
     """
+
     REMOTE_CONTROL_REGISTER = 57348  # Aktivierung von Remote Control
     ADVANCED_PWR_CTRL_REGISTER = 57740  # Aktivierung des erweiterten Leistungsmodus
     COMMIT_REGISTER = 57741  # Bestätigung von Änderungen
@@ -136,5 +137,6 @@ class SolaredgeBat(AbstractBat):
             self.commit_changes(unit)
         except Exception:
             log.exception("Error setting discharge limit")
+
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolaredgeBatSetup)
