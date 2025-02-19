@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -16,16 +15,21 @@ from modules.devices.powerdog.powerdog.config import PowerdogInverterSetup
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    client: modbus.ModbusTcpClient_
+    modbus_id: int
+
+
 class PowerdogInverter(AbstractInverter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, PowerdogInverterSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
-                 modbus_id: int) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(PowerdogInverterSetup, component_config)
-        self.__tcp_client = tcp_client
-        self.__modbus_id = modbus_id
+    def __init__(self, component_config: PowerdogInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__modbus_id: int = self.kwargs['modbus_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

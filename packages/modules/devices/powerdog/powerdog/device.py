@@ -18,11 +18,17 @@ def create_device(device_config: Powerdog):
 
     def create_counter_component(component_config: PowerdogCounterSetup):
         nonlocal client
-        return PowerdogCounter(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        return PowerdogCounter(component_config,
+                               device_id=device_config.id,
+                               client=client,
+                               modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: PowerdogInverterSetup):
         nonlocal client
-        return PowerdogInverter(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        return PowerdogInverter(component_config,
+                                device_id=device_config.id,
+                                client=client,
+                                modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[PowerdogCounter, PowerdogInverter]]):
         nonlocal client
