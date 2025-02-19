@@ -26,6 +26,7 @@ from pathlib import Path
 
 DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "modules" / "bmwbc"
 ts_fmt = '%Y-%m-%dT%H:%M:%S'
+dt_fmt = '%Y-%m-%d %H:%M:%S'
 api = None
 
 log = getLogger(__name__)
@@ -205,6 +206,18 @@ class Api:
             else:
                 log.debug("# Reuse _account instance")
 
+            # experimental: login  when expires_at is reached to force token refresh
+            expires_at = datetime.fromisoformat(self._store['expires_at'])
+            nowdt = datetime.now(expires_at.tzinfo)
+
+            if nowdt > expires_at:
+                log.info("# Proactive login to force refresh token before get_vehicles")
+                log.info("# before proactive login:" + str(self._auth.expires_at) +
+                         "/" + self._auth.refresh_token)
+                await self._auth.login()
+                log.info("# after  proactive login:" + str(self._auth.expires_at) +
+                         "/" + self._auth.refresh_token)
+
             # get vehicle list - needs to be called async
             await self._account.get_vehicles()
 
@@ -245,6 +258,8 @@ class Api:
                 self._store['gcid'] = self._auth.gcid
                 self._store['expires_at'] = datetime.isoformat(self._auth.expires_at)
                 write_store(self._store)
+                log.debug("# after  write_store :" + str(self._auth.expires_at) +
+                          "/" + self._auth.refresh_token)
 
         except Exception as err:
             log.error("bmwbc.fetch_soc: requestData Error, vnum: " + str(vnum) + f" {err=}, {type(err)=}")
