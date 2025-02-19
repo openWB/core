@@ -258,8 +258,8 @@ class Api:
                 self._store['gcid'] = self._auth.gcid
                 self._store['expires_at'] = datetime.isoformat(self._auth.expires_at)
                 write_store(self._store)
-                log.debug("# after  write_store :" + str(self._auth.expires_at) +
-                          "/" + self._auth.refresh_token)
+                log.info("# after  write_store :" + str(self._auth.expires_at) +
+                         "/" + self._auth.refresh_token)
 
         except Exception as err:
             log.error("bmwbc.fetch_soc: requestData Error, vnum: " + str(vnum) + f" {err=}, {type(err)=}")
