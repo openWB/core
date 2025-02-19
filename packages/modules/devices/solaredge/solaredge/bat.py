@@ -49,9 +49,9 @@ class SolaredgeBat(AbstractBat):
         """
         try:
             self.store.set(self.read_state())
-        except Exception as e:
+        except Exception:
             log.exception("Fehler beim Aktualisieren des Batterie-Status")
-            self.fault_state.set_fault("Batterie-Status konnte nicht aktualisiert werden", exception=e)
+            self.fault_state.set_fault("Batterie-Status konnte nicht aktualisiert werden")
 
     def read_state(self) -> BatState:
         """
@@ -61,9 +61,9 @@ class SolaredgeBat(AbstractBat):
             power, soc = self.get_values()
             imported, exported = self.get_imported_exported(power)
             return BatState(power=power, soc=soc, imported=imported, exported=exported)
-        except Exception as e:
+        except Exception:
             log.exception("Fehler beim Lesen des Batterie-Zustands")
-            self.fault_state.set_fault("Fehler beim Lesen des Batterie-Zustands", exception=e)
+            self.fault_state.set_fault("Fehler beim Lesen des Batterie-Zustands")
             return BatState(power=0, soc=0, imported=0, exported=0)
 
     def get_values(self) -> Tuple[float, float]:
@@ -81,7 +81,7 @@ class SolaredgeBat(AbstractBat):
             if power is None or len(power) == 0 or power[0] == FLOAT32_UNSUPPORTED:
                 power = 0
             return power, soc
-        except Exception as e:
+        except Exception:
             log.exception("Fehler beim Abrufen der Werte aus den Registern")
             return 0, 0
 
@@ -106,7 +106,7 @@ class SolaredgeBat(AbstractBat):
             self.__tcp_client.write_registers(self.REMOTE_CONTROL_REGISTER, [4], unit=unit)
             self.commit_changes(unit)
             return True
-        except Exception as e:
+        except Exception:
             log.exception("Error enabling remote control mode")
             return False
 
@@ -116,7 +116,7 @@ class SolaredgeBat(AbstractBat):
         """
         try:
             self.__tcp_client.write_registers(self.COMMIT_REGISTER, [1], unit=unit)
-        except Exception as e:
+        except Exception:
             log.exception("Error committing changes")
 
     def set_power_limit(self, power_limit: Optional[Union[int, float]]) -> None:
@@ -134,7 +134,7 @@ class SolaredgeBat(AbstractBat):
         try:
             self.__tcp_client.write_registers(self.DISCHARGE_LIMIT_REGISTER, [int(power_limit)], unit=unit)
             self.commit_changes(unit)
-        except Exception as e:
+        except Exception:
             log.exception("Error setting discharge limit")
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolaredgeBatSetup)
