@@ -53,7 +53,9 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 77
+
+    DATASTORE_VERSION = 79
+
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -253,6 +255,23 @@ class UpdateConfig:
         "^openWB/io/states/[0-9]+/set/analog_output$",
         "^openWB/io/action/[0-9]+/config$",
         "^openWB/io/action/[0-9]+/timestamp$",
+
+        "^openWB/mqtt/bat/[0-9]+/get/power$",
+        "^openWB/mqtt/bat/[0-9]+/get/soc$",
+        "^openWB/mqtt/bat/[0-9]+/get/imported$",
+        "^openWB/mqtt/bat/[0-9]+/get/exported$",
+        "^openWB/mqtt/counter/[0-9]+/get/currents$",
+        "^openWB/mqtt/counter/[0-9]+/get/imported$",
+        "^openWB/mqtt/counter/[0-9]+/get/exported$",
+        "^openWB/mqtt/counter/[0-9]+/get/power$",
+        "^openWB/mqtt/counter/[0-9]+/get/frequency$",
+        "^openWB/mqtt/counter/[0-9]+/get/power_factors$",
+        "^openWB/mqtt/counter/[0-9]+/get/powers$",
+        "^openWB/mqtt/counter/[0-9]+/get/voltages$",
+        "^openWB/mqtt/inverter/[0-9]+/get/currents$",
+        "^openWB/mqtt/inverter/[0-9]+/get/power$",
+        "^openWB/mqtt/inverter/[0-9]+/get/exported$",
+        "^openWB/mqtt/inverter/[0-9]+/get/dc_power$",
 
         "^openWB/set/log/request",
         "^openWB/set/log/data",
@@ -489,7 +508,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/phase_switch_delay", 7),
         ("openWB/general/chargemode_config/pv_charging/phases_to_use", 0),
         ("openWB/general/chargemode_config/retry_failed_phase_switches",
-         ChargemodeConfig().retry_failed_phase_switches),
+            ChargemodeConfig().retry_failed_phase_switches),
         ("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 0),
         ("openWB/general/chargemode_config/scheduled_charging/phases_to_use_pv", 0),
         ("openWB/general/chargemode_config/time_charging/phases_to_use", 1),
@@ -2048,3 +2067,18 @@ class UpdateConfig:
                     return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 78)
+
+    def upgrade_datastore_78(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            for topic, payload in self.all_received_topics.items():
+                if (re.search("openWB/system/device/[0-9]+", topic) is not None or
+                        re.search("openWB/chargepoint/[0-9]+/config", topic) is not None):
+                    payload = decode_payload(payload)
+                    if payload.get("type") == "mqtt":
+                        pub_system_message(
+                            {}, "Die Topics für MQTT-Komponenten und MQTT-Ladepunkte wurden angepasst. Bitte aktualsiere "
+                            "die Topics in Deinen angebundenen Systemen.", MessageType.WARNING)
+                        # Nachricht nur einmal senden
+                        break
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 79)
