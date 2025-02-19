@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 from pymodbus.constants import Endian
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
@@ -12,16 +11,21 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.qcells.qcells.config import QCellsInverterSetup
 
 
+class KwargsDict(TypedDict):
+    modbus_id: int
+    client: ModbusTcpClient_
+
+
 class QCellsInverter(AbstractInverter):
-    def __init__(self,
-                 component_config: Union[Dict, QCellsInverterSetup],
-                 modbus_id: int,
-                 client: ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(QCellsInverterSetup, component_config)
-        self.__modbus_id = modbus_id
+    def __init__(self, component_config: QCellsInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__modbus_id: int = self.kwargs['modbus_id']
+        self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.client = client
 
     def update(self) -> None:
         power_string1 = (self.client.read_input_registers(
