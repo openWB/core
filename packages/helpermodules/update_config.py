@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 75
+    DATASTORE_VERSION = 76
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -244,6 +244,23 @@ class UpdateConfig:
         "^openWB/internal_chargepoint/[0-1]/data/set_current$",
         "^openWB/internal_chargepoint/[0-1]/data/phases_to_use$",
         "^openWB/internal_chargepoint/[0-1]/data/parent_cp$",
+
+        "^openWB/mqtt/bat/[0-9]+/get/power$",
+        "^openWB/mqtt/bat/[0-9]+/get/soc$",
+        "^openWB/mqtt/bat/[0-9]+/get/imported$",
+        "^openWB/mqtt/bat/[0-9]+/get/exported$",
+        "^openWB/mqtt/counter/[0-9]+/get/currents$",
+        "^openWB/mqtt/counter/[0-9]+/get/imported$",
+        "^openWB/mqtt/counter/[0-9]+/get/exported$",
+        "^openWB/mqtt/counter/[0-9]+/get/power$",
+        "^openWB/mqtt/counter/[0-9]+/get/frequency$",
+        "^openWB/mqtt/counter/[0-9]+/get/power_factors$",
+        "^openWB/mqtt/counter/[0-9]+/get/powers$",
+        "^openWB/mqtt/counter/[0-9]+/get/voltages$",
+        "^openWB/mqtt/inverter/[0-9]+/get/currents$",
+        "^openWB/mqtt/inverter/[0-9]+/get/power$",
+        "^openWB/mqtt/inverter/[0-9]+/get/exported$",
+        "^openWB/mqtt/inverter/[0-9]+/get/dc_power$",
 
         "^openWB/set/log/request",
         "^openWB/set/log/data",
@@ -1957,3 +1974,16 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 75)
+
+    def upgrade_datastore_75(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if (re.search("openWB/system/device/[0-9]+", topic) is not None or
+                    re.search("openWB/chargepoint/[0-9]+/config", topic) is not None):
+                payload = decode_payload(payload)
+                if payload.get("type") == "mqtt":
+                    pub_system_message(
+                        {}, "Die Topics für MQTT-Komponenten und MQTT-Ladepunkte wurden angepasst. Bitte aktualsiere "
+                        "die Topics in Deinen angebundenen Systemen.", MessageType.WARNING)
+                    # Nachricht nur einmal senden
+                    break
+        self.__update_topic("openWB/system/datastore_version", 76)

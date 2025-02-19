@@ -1,3 +1,4 @@
+import logging
 from operator import add
 
 from control import data
@@ -10,6 +11,9 @@ from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
 from modules.common.store.ramdisk import files
+from modules.common.utils.component_parser import get_component_obj_by_id
+
+log = logging.getLogger(__name__)
 
 
 class CounterValueStoreRamdisk(ValueStore[CounterState]):
@@ -70,50 +74,52 @@ class PurgeCounterState:
             self.incomplete_currents = False
 
             def add_current_power(element):
-                if element.data.get.currents is not None:
-                    if sum(element.data.get.currents) == 0 and element.data.get.power != 0:
+                if hasattr(element, "currents") and element.currents is not None:
+                    if sum(element.currents) == 0 and element.power != 0:
                         self.currents = [0, 0, 0]
                         self.incomplete_currents = True
                     else:
-                        self.currents = list(map(add, self.currents, element.data.get.currents))
+                        self.currents = list(map(add, self.currents, element.currents))
                 else:
                     self.currents = [0, 0, 0]
                     self.incomplete_currents = True
-                self.power += element.data.get.power
+                self.power += element.power
 
             def add_imported_exported(element):
-                self.imported += element.data.get.imported
-                self.exported += element.data.get.exported
+                self.imported += element.imported
+                self.exported += element.exported
 
             def add_exported(element):
-                self.exported += element.data.get.exported
+                self.exported += element.exported
 
             counter_all = data.data.counter_all_data
             elements = counter_all.get_elements_for_downstream_calculation(self.delegate.delegate.num)
             for element in elements:
-                if element["type"] == ComponentType.CHARGEPOINT.value:
-                    chargepoint = data.data.cp_data[f"cp{element['id']}"]
-                    try:
-                        self.currents = list(map(add,
-                                                 self.currents,
-                                                 convert_cp_currents_to_evu_currents(
-                                                     chargepoint.data.config.phase_1,
-                                                     chargepoint.data.get.currents)))
-                    except KeyError:
-                        raise KeyError("Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
-                                       f" {chargepoint.data.config.name} an die Phasen des EVU Zählers "
-                                       "angegeben werden.")
-                    self.power += chargepoint.data.get.power
-                    self.imported += chargepoint.data.get.imported
-                elif element["type"] == ComponentType.BAT.value:
-                    add_current_power(data.data.bat_data[f"bat{element['id']}"])
-                    add_imported_exported(data.data.bat_data[f"bat{element['id']}"])
-                elif element["type"] == ComponentType.COUNTER.value:
-                    add_current_power(data.data.counter_data[f"counter{element['id']}"])
-                    add_imported_exported(data.data.counter_data[f"counter{element['id']}"])
-                elif element["type"] == ComponentType.INVERTER.value:
-                    add_current_power(data.data.pv_data[f"pv{element['id']}"])
-                    add_exported(data.data.pv_data[f"pv{element['id']}"])
+                try:
+                    if element["type"] == ComponentType.CHARGEPOINT.value:
+                        chargepoint = data.data.cp_data[f"cp{element['id']}"]
+                        chargepoint_state = chargepoint.chargepoint_module.store.delegate.state
+                        try:
+                            self.currents = list(map(add,
+                                                     self.currents,
+                                                     convert_cp_currents_to_evu_currents(
+                                                         chargepoint.data.config.phase_1,
+                                                         chargepoint_state.currents)))
+                        except KeyError:
+                            raise KeyError("Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
+                                           f" {chargepoint.data.config.name} an die Phasen des EVU Zählers "
+                                           "angegeben werden.")
+                        self.power += chargepoint_state.power
+                        self.imported += chargepoint_state.imported
+                    else:
+                        component = get_component_obj_by_id(element['id'])
+                        add_current_power(component.store.delegate.state)
+                        if element["type"] == ComponentType.INVERTER.value:
+                            add_exported(component.store.delegate.state)
+                        else:
+                            add_imported_exported(component.store.delegate.state)
+                except Exception:
+                    log.exception(f"Fehler beim Hinzufügen der Werte für Element {element}")
 
             if self.incomplete_currents:
                 self.currents = None
