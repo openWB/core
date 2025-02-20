@@ -27,5 +27,6 @@ class InternalGpioHandler:
                     io.read()
                     io.store.update()
                     if "internal_io_states" in data:
-                        io.write(data["internal_io_states"].data.set.digital_output)
+                        io.write(data["internal_io_states"].data.set.analog_output,
+                                 data["internal_io_states"].data.set.digital_output)
                 time.sleep(3)
