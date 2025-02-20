@@ -39,7 +39,7 @@ const props = defineProps<{
 
 //state
 const keys = computed(() => {
-	if (globalConfig.showInverters) {
+	if (!globalConfig.showInverters) {
 		return [
 			['house', 'charging', 'devices', 'batIn'],
 			['charging', 'devices', 'batIn', 'house'],
