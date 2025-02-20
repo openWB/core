@@ -31,7 +31,7 @@ def create_io(config: AddOn):
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]):
         if has_gpio:
             for pin, value in digital_output.items():
-                GPIO.output(DigitalInputMapping[pin], GPIO.HIGH if value else GPIO.LOW)
+                GPIO.output(DigitalOutputMapping[pin].value, GPIO.LOW if value else GPIO.HIGH)
 
     if has_gpio:
         GPIO.setmode(GPIO.BOARD)
