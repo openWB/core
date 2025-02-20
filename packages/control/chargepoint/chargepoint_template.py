@@ -71,7 +71,7 @@ class CpTemplate:
                 else:
                     return False
             else:
-                log.info("Keine Sperrung durch Autolock, weil keine Zeitpläne konfiguriert sind.")
+                log.info("Keine Sperrung durch Sperren nach Zeitplan, weil keine Zeitpläne konfiguriert sind.")
                 return False
         else:
             return False
