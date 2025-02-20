@@ -24,7 +24,10 @@ def fetch(vehicle_update_data: VehicleUpdateData, config: VWId, vehicle: int) ->
 def create_vehicle(vehicle_config: VWId, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
         return fetch(vehicle_update_data, vehicle_config, vehicle)
-    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
+    return ConfigurableVehicle(vehicle_config=vehicle_config,
+                               component_updater=updater,
+                               vehicle=vehicle,
+                               calc_while_charging=vehicle_config.configuration.calculate_soc)
 
 
 def vwid_update(user_id: str, password: str, vin: str, refreshToken: str, charge_point: int):
