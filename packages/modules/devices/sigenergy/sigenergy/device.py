@@ -24,15 +24,15 @@ def create_device(device_config: Sigenergy):
 
     def create_bat_component(component_config: SigenergyBatSetup):
         nonlocal client
-        return SigenergyBat(device_config.id, component_config, client)
+        return SigenergyBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SigenergyCounterSetup):
         nonlocal client
-        return SigenergyCounter(device_config.id, component_config, client)
+        return SigenergyCounter(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: SigenergyInverterSetup):
         nonlocal client
-        return SigenergyInverter(device_config.id, component_config, client)
+        return SigenergyInverter(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[SigenergyBat, SigenergyCounter, SigenergyInverter]]):
         nonlocal client

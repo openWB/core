@@ -17,7 +17,10 @@ def create_device(device_config: Saxpower):
 
     def create_bat_component(component_config: SaxpowerBatSetup):
         nonlocal client
-        return SaxpowerBat(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        return SaxpowerBat(component_config,
+                           device_id=device_config.id,
+                           client=client,
+                           modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[SaxpowerBat]):
         nonlocal client

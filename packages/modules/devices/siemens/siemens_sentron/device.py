@@ -17,7 +17,7 @@ def create_device(device_config: SiemensSentron):
 
     def create_counter_component(component_config: SiemensSentronCounterSetup):
         nonlocal client
-        return SiemensSentronCounter(component_config, client, device_config.configuration.modbus_id)
+        return SiemensSentronCounter(component_config, client=client, modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[SiemensSentronCounter]):
         nonlocal client
