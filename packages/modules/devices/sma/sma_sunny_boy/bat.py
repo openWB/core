@@ -51,7 +51,7 @@ class SunnyBoyBat(AbstractBat):
             imported=imported,
             exported=exported
         )
-        log.debug("Bat {}: {}".format(self.tcp_client.address, bat_state))
+        log.debug("Bat {}: {}".format(self.__tcp_client.address, bat_state))
         return bat_state
 
     def update(self) -> None:

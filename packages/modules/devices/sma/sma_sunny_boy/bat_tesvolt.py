@@ -35,7 +35,7 @@ class TesvoltBat(AbstractBat):
             imported=imported,
             exported=exported
         )
-        log.debug("Bat {}: {}".format(self.tcp_client.address, bat_state))
+        log.debug("Bat {}: {}".format(self.__tcp_client.address, bat_state))
         self.store.set(bat_state)
 
 
