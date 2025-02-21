@@ -49,12 +49,12 @@ def create_device(device_config: Solaredge):
 
     def create_bat_component(component_config: SolaredgeBatSetup):
         nonlocal client
-        return SolaredgeBat(device_config.id, component_config, client)
+        return SolaredgeBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SolaredgeCounterSetup):
         nonlocal client, device
         synergy_units = get_synergy_units(component_config)
-        counter = SolaredgeCounter(device_config.id, component_config, client)
+        counter = SolaredgeCounter(component_config, client=client)
         # neue Komponente wird erst nach Instanziierung device.components hinzugefügt
         components = list(device.components.values())
         components.append(counter)
@@ -63,12 +63,12 @@ def create_device(device_config: Solaredge):
 
     def create_inverter_component(component_config: SolaredgeInverterSetup):
         nonlocal client
-        return SolaredgeInverter(device_config.id, component_config, client)
+        return SolaredgeInverter(component_config, client=client)
 
     def create_external_inverter_component(component_config: SolaredgeExternalInverterSetup):
         nonlocal client, device
         synergy_units = get_synergy_units(component_config)
-        external_inverter = SolaredgeExternalInverter(device_config.id, component_config, client)
+        external_inverter = SolaredgeExternalInverter(component_config, client=client)
         components = list(device.components.values())
         components.append(external_inverter)
         set_component_registers(components, synergy_units, component_config.configuration.modbus_id)

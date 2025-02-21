@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
+from typing import Any, Dict, Union, TypedDict
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -15,12 +14,17 @@ from modules.devices.solar_watt.solar_watt.config import SolarWattCounterSetup
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+
+
 class SolarWattCounter(AbstractCounter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, SolarWattCounterSetup]) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(SolarWattCounterSetup, component_config)
+    def __init__(self, component_config: Union[Dict, SolarWattCounterSetup], **kwargs: Any) -> None:
+        self.component_config = SolarWattCounterSetup(**component_config)
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

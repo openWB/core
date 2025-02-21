@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -13,13 +12,19 @@ from modules.devices.solaredge.solaredge.config import SolaredgeInverterSetup
 from modules.devices.solaredge.solaredge.scale import create_scaled_reader
 
 
+class KwargsDict(TypedDict):
+    client: modbus.ModbusTcpClient_
+
+
 class SolaredgeInverter(AbstractInverter):
     def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, SolaredgeInverterSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(SolaredgeInverterSetup, component_config)
-        self.__tcp_client = tcp_client
+                 component_config: SolaredgeInverterSetup,
+                 **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__tcp_client = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self._read_scaled_int16 = create_scaled_reader(
