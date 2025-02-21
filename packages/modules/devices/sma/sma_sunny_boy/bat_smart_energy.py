@@ -11,8 +11,8 @@ from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
-from pymodbus.payload import BinaryPayloadBuilder
-from pymodbus.constants import Endian
+import pymodbus
+
 
 log = logging.getLogger(__name__)
 
@@ -130,8 +130,10 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             log.debug(f"Neuer Wert {encoded_value} in Register {address} geschrieben.")
 
     def _encode_value(self, value: Union[int, float], data_type: ModbusDataType) -> list:
-        builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
-
+        builder = pymodbus.payload.BinaryPayloadBuilder(
+            byteorder=pymodbus.constants.Endian.Big,
+            wordorder=pymodbus.constants.Endian.Big
+            )
         if data_type == ModbusDataType.UINT_32:
             builder.add_32bit_uint(int(value))
         elif data_type == ModbusDataType.INT_32:
