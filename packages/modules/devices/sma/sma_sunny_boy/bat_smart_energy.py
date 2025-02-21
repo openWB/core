@@ -44,6 +44,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = None
+        self.Inverter_Type = None
 
     def update(self) -> None:
         self.store.set(self.read())
@@ -51,17 +52,17 @@ class SunnyBoySmartEnergyBat(AbstractBat):
     def read(self) -> BatState:
         unit = self.component_config.configuration.modbus_id
 
-        # List the required registers to read
         registers_to_read = [
             "Battery_SoC",
             "Battery_ChargePower",
             "Battery_DischargePower",
             "Battery_ChargedEnergy",
-            "Battery_DischargedEnergy",
-            "Inverter_Type"
+            "Battery_DischargedEnergy"
         ]
 
-        # Read all values
+        if self.inverter_type is None:  # Only read Inverter_Type if not already set
+            registers_to_read.append("Inverter_Type")
+
         values = self._read_registers(registers_to_read, unit)
 
         if values["Battery_SoC"] == self.SMA_UINT32_NAN:
@@ -89,7 +90,10 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             exported=values["Battery_DischargedEnergy"],
             imported=values["Battery_ChargedEnergy"]
         )
-        log.debug("Bat {}: {}".format(self.__tcp_client.address, bat_state))
+        if self.inverter_type is None:
+            self.Inverter_Type = values["Inverter_Type"]
+        log.debug(f"Inverter Type: {self.Inverter_Type}")
+        log.debug(f"Bat {self.__tcp_client.address}: {bat_state}")
         return bat_state
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
@@ -119,7 +123,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         for key in register_names:
             address, data_type = self.REGISTERS[key]
             values[key] = self.__tcp_client.read_holding_registers(address, data_type, unit=unit)
-        log.debug("Bat raw values {}: {}".format(self.__tcp_client.address, values))
+        log.debug(f"Bat raw values {self.__tcp_client.address}: {values}")
         return values
 
     def _write_registers(self, values_to_write: Dict[str, Union[int, float]], unit: int) -> None:
@@ -131,17 +135,18 @@ class SunnyBoySmartEnergyBat(AbstractBat):
 
     def _encode_value(self, value: Union[int, float], data_type: ModbusDataType) -> list:
         builder = pymodbus.payload.BinaryPayloadBuilder(
-            byteorder=pymodbus.constants.Endian.Big,
-            wordorder=pymodbus.constants.Endian.Big
+                byteorder=pymodbus.constants.Endian.Big,
+                wordorder=pymodbus.constants.Endian.Big
             )
-        if data_type == ModbusDataType.UINT_32:
-            builder.add_32bit_uint(int(value))
-        elif data_type == ModbusDataType.INT_32:
-            builder.add_32bit_int(int(value))
-        elif data_type == ModbusDataType.UINT_16:
-            builder.add_16bit_uint(int(value))
-        elif data_type == ModbusDataType.INT_16:
-            builder.add_16bit_int(int(value))
+        encode_methods = {
+            ModbusDataType.UINT_32: builder.add_32bit_uint,
+            ModbusDataType.INT_32: builder.add_32bit_int,
+            ModbusDataType.UINT_16: builder.add_16bit_uint,
+            ModbusDataType.INT_16: builder.add_16bit_int,
+        }
+
+        if data_type in encode_methods:
+            encode_methods[data_type](int(value))
         else:
             raise ValueError(f"Unsupported data type: {data_type}")
 
