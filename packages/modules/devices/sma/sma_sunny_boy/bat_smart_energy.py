@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusTcpClient_, ModbusDataType
-from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
+
+
+class KwargsDict(TypedDict):
+    client: ModbusTcpClient_
 
 
 class SunnyBoySmartEnergyBat(AbstractBat):
     SMA_UINT32_NAN = 0xFFFFFFFF  # SMA uses this value to represent NaN
     SMA_UINT_64_NAN = 0xFFFFFFFFFFFFFFFF  # SMA uses this value to represent NaN
 
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, SmaSunnyBoySmartEnergyBatSetup],
-                 tcp_client: ModbusTcpClient_) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(SmaSunnyBoySmartEnergyBatSetup, component_config)
-        self.__tcp_client = tcp_client
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+    def __init__(self, component_config: SmaSunnyBoySmartEnergyBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import TypedDict, Any
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -10,14 +11,20 @@ from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaTesvoltBatSetup
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    client: ModbusTcpClient_
+
+
 class TesvoltBat(AbstractBat):
-    def __init__(self,
-                 device_id: int,
-                 component_config: SmaTesvoltBatSetup,
-                 tcp_client: ModbusTcpClient_) -> None:
+    def __init__(self, component_config: SmaTesvoltBatSetup, **kwargs: Any) -> None:
         self.component_config = component_config
-        self.__tcp_client = tcp_client
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

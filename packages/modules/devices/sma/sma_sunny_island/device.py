@@ -17,7 +17,7 @@ def create_device(device_config: SmaSunnyIsland):
 
     def create_bat_component(component_config: SmaSunnyIslandBatSetup):
         nonlocal client
-        return SunnyIslandBat(component_config, client)
+        return SunnyIslandBat(component_config, client=client)
 
     def update_components(components: Iterable[SunnyIslandBat]):
         nonlocal client
