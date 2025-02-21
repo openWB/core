@@ -780,8 +780,6 @@ class Chargepoint(ChargepointRfidMixin):
 
         def __get_payload(client, userdata, msg):
             received_topics.append(msg.topic)
-        if self.data.get.plug_state:
-            return
         received_topics = []
         InternalBrokerClient("processBrokerBranch", on_connect, __get_payload).start_finite_loop()
         for topic in received_topics:
