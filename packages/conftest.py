@@ -16,6 +16,9 @@ from control.counter_all import CounterAll
 from control.pv import Pv, PvData
 from control.pv import Get as PvGet
 from helpermodules import hardware_configuration, pub, timecheck
+from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
+from modules.common.component_state import ChargepointState
+from modules.common.store._api import LoggingValueStore
 
 
 @pytest.fixture(autouse=True)
@@ -118,19 +121,34 @@ def data_() -> None:
                                                 get=Mock(spec=Get, currents=[30, 0, 0], power=6900,
                                                          daily_imported=10000, daily_exported=0, imported=56000,
                                                          fault_state=0),
-                                                set=Mock(spec=Set, loadmanagement_available=True))),
+                                                set=Mock(spec=Set, loadmanagement_available=True)),
+                    chargepoint_module=Mock(spec=ChargepointModule,
+                                            store=Mock(spec=LoggingValueStore,
+                                                       delegate=Mock(spec=LoggingValueStore,
+                                                                     state=ChargepointState(currents=[30, 0, 0],
+                                                                                            power=6900))))),
         "cp4": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=2),
                                                 get=Mock(spec=Get, currents=[0, 15, 15], power=6900,
                                                          daily_imported=10000, daily_exported=0, imported=60000,
                                                          fault_state=0),
-                                                set=Mock(spec=Set, loadmanagement_available=True))),
+                                                set=Mock(spec=Set, loadmanagement_available=True)),
+                    chargepoint_module=Mock(spec=ChargepointModule,
+                                            store=Mock(spec=LoggingValueStore,
+                                                       delegate=Mock(spec=LoggingValueStore,
+                                                                     state=ChargepointState(currents=[0, 15, 15],
+                                                                                            power=6900))))),
         "cp5": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=3),
                                                 get=Mock(spec=Get, currents=[10]*3, power=6900,
                                                          daily_imported=10000, daily_exported=0, imported=62000,
                                                          fault_state=0),
-                                                set=Mock(spec=Set, loadmanagement_available=True)))}
+                                                set=Mock(spec=Set, loadmanagement_available=True)),
+                    chargepoint_module=Mock(spec=ChargepointModule,
+                                            store=Mock(spec=LoggingValueStore,
+                                                       delegate=Mock(spec=LoggingValueStore,
+                                                                     state=ChargepointState(currents=[10]*3,
+                                                                                            power=6900)))))}
     data.data.bat_data.update({"bat2": Mock(spec=Bat, num=2, data=Mock(spec=BatData, get=Mock(
         spec=BatGet, power=-5000, daily_imported=7000, daily_exported=3000, imported=12000, exported=10000,
         currents=None, fault_state=0),

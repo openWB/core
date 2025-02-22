@@ -7,15 +7,17 @@ import pytest
 
 
 from control import data
-from control.bat import Bat, BatData
-from control.bat import Get as BatGet
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter, CounterData, Get
 from control.counter_all import CounterAll
-from control.pv import Pv, PvData
-from control.pv import Get as PvGet
-from modules.common.component_state import CounterState
+from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
+from modules.common.component_state import BatState, ChargepointState, CounterState, InverterState
+from modules.common.store import _counter
+from modules.common.store._api import LoggingValueStore
 from modules.common.store._counter import PurgeCounterState
+from modules.devices.generic.mqtt.bat import MqttBat
+from modules.devices.generic.mqtt.counter import MqttCounter
+from modules.devices.generic.mqtt.inverter import MqttInverter
 
 
 @pytest.fixture(autouse=True)
@@ -28,21 +30,25 @@ def mock_data() -> None:
 def add_chargepoint(id: int):
     data.data.cp_data[f"cp{id}"] = Mock(spec=Chargepoint,
                                         id=id,
-                                        chargepoint_module=Mock(),
                                         data=Mock(
                                             config=Mock(phase_1=1),
                                             get=Mock(power=13359,
                                                      currents=[19.36, 19.36, 19.36],
                                                      imported=0,
-                                                     exported=0)))
+                                                     exported=0)),
+                                        chargepoint_module=Mock(
+                                            spec=ChargepointModule,
+                                            store=Mock(spec=LoggingValueStore,
+                                                       delegate=Mock(spec=LoggingValueStore,
+                                                                     state=ChargepointState(power=13359,
+                                                                                            currents=[
+                                                                                                19.36, 19.36, 19.36],
+                                                                                            imported=0,
+                                                                                            exported=0)))))
 
 
 def mock_data_standard():
     add_chargepoint(3)
-    data.data.bat_data["inverter1"] = Mock(spec=Pv, data=Mock(
-        spec=PvData, get=Mock(spec=PvGet, power=5786, exported=200)))
-    data.data.bat_data["bat2"] = Mock(spec=Bat, data=Mock(
-        spec=BatData, get=Mock(spec=BatGet, power=223, exported=200, imported=100)))
     data.data.counter_all_data.data.get.hierarchy = [{"id": 0, "type": "counter",
                                                       "children": [{"id": 3, "type": "cp", "children": []}]},
                                                      {"id": 1, "type": "inverter", "children": []},
@@ -63,19 +69,57 @@ def mock_data_nested():
                            {"id": 3, "type": "cp", "children": []}]}]}]
 
 
-Params = NamedTuple("Params", [("name", str), ("mock_data", Callable), ("expected_state", CounterState)])
+mock_comp_obj_inv_bat = [
+    Mock(spec=MqttBat,
+         store=Mock(spec=LoggingValueStore,
+                    delegate=Mock(spec=LoggingValueStore,
+                                  state=BatState(power=223,
+                                                 exported=200,
+                                                 imported=100)))),
+    Mock(spec=MqttInverter,
+         store=Mock(spec=LoggingValueStore,
+                    delegate=Mock(spec=LoggingValueStore,
+                                  state=InverterState(power=5786,
+                                                      exported=2000))))]
+
+mock_comp_obj_counter_inv_bat = [Mock(spec=MqttCounter,
+                                      store=Mock(spec=LoggingValueStore,
+                                                 delegate=Mock(
+                                                     spec=LoggingValueStore,
+                                                     state=CounterState(power=13359,
+                                                                        exported=0,
+                                                                        imported=0,
+                                                                        currents=[19.36]*3)))),
+                                 Mock(spec=MqttBat,
+                                      store=Mock(spec=LoggingValueStore,
+                                                 delegate=Mock(spec=LoggingValueStore,
+                                                               state=BatState(power=223,
+                                                                              exported=200,
+                                                                              imported=100)))),
+                                 Mock(spec=MqttInverter,
+                                      store=Mock(spec=LoggingValueStore,
+                                                 delegate=Mock(spec=LoggingValueStore,
+                                                               state=InverterState(power=5786,
+                                                                                   exported=2000))))
+                                 ]
+
+Params = NamedTuple("Params", [("name", str), ("mock_comp", Mock),
+                    ("mock_data", Callable), ("expected_state", CounterState)])
 cases = [
-    Params("standard", mock_data_standard, CounterState(power=8358, currents=[26.61]*3, exported=200, imported=100)),
-    Params("nested virtual", mock_data_nested, CounterState(
+    Params("standard", mock_comp_obj_inv_bat, mock_data_standard, CounterState(
+        power=8358, currents=[26.61]*3, exported=200, imported=100)),
+    Params("nested virtual", mock_comp_obj_counter_inv_bat, mock_data_nested, CounterState(
         power=21717, currents=[45.97]*3, exported=200, imported=100))
 ]
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_calc_virtual(params):
+def test_calc_virtual(params: Params, monkeypatch):
     # setup
     params.mock_data()
     purge = PurgeCounterState(delegate=Mock(delegate=Mock(num=0)), add_child_values=True)
+    mock_comp_obj = Mock(side_effect=params.mock_comp)
+    monkeypatch.setattr(_counter, "get_component_obj_by_id", mock_comp_obj)
 
     # execution
     state = purge.calc_virtual(CounterState(power=-5001, currents=[7.25]*3, exported=200, imported=100))
