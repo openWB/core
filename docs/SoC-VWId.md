@@ -15,7 +15,7 @@ Wenn der SOC-Abruf plötzlich nicht mehr funktioniert, VOR dem Posten bitte Schr
 
 
 Bei Problemen zunächst bitte diese Schritte durchführen:
-1. Sicherstellen, dass auf diesen VW-Seiten alle Einverständnisse gegeben wurden.<br>
+1. sicherstellen, dass auf diesen VW-Seiten alle Einverständnisse gegeben wurden.<br>
     https://www.volkswagen.de/de/besitzer-und-nutzer.html<br>
     https://vwid.vwgroup.io/landing-page<br>
 
@@ -30,7 +30,11 @@ Bei Problemen zunächst bitte diese Schritte durchführen:
 2. Nach einem manuellen SOC-Abruf (Kreispfeil hinter dem SOC clicken) auf der Status - Seite EV-SOC Log und Debug log auf Fehler kontrollieren
 3. Falls im Ev-SOC Log ein fehlendes Modul gemeldet wird, z.B.<br>
     `ImportError: No module named 'lxml' (LV0)`<br>
-einen Reboot durchführen (Einstellungen - System - Reboot, Fahrzeug dazu abstecken!)<br>
+- in openWB 1.9 sicherstellen, dass 1.9.304 (Nightly) installiert ist.
+- einen Reboot durchführen (Einstellungen - System - Reboot, Fahrzeug dazu abstecken!)<br>
+Bei dem Neustart sollten fehlende Module installiert werden.<br>
+Falls das nicht hilft gibt es den Support im Forum; dazu den Log der Startphase (1.9: Debug Log, 2.x Main Log) als code block (</>) posten.
+
 4. Falls im log evcc erwähnt wird: von VW ID (alt) auf VW ID umstellen.
 5. Falls im Ev-Soc Log Fehler 303 (unknown redirect) gemeldet wird:<br>
     - Ursache 1: Bestimmte Sonderzeichen im Passwort funktionieren nicht mit dem Modul. Bitte das Passwort auf eines ohne Sonderzeichen ändern und testen.
@@ -53,10 +57,10 @@ danach sollte im EV-SOC-Log eine Zeile ähnlich dieser kommen:<br>
     `SOC: 61%                  - SOC Stand`<br>
     `@2023-02-12T11:53:20      - Timestamp des Updates vom EV zum VW Cloud-Server`<br>
 
-8. Falls diese Schritte nicht zum Erfolg führen, das Problem hier posten mit Angabe relevanter Daten
+8. Falls diese Schritte nicht zum Erfolg führen, das Problem im [Support Thema](https://forum.openwb.de/viewtopic.php?t=4803) posten mit Angabe relevanter Daten<br>
     - oWB SW Version
     - oWB gekauft oder selbst installiert
     - wenn selbst installiert: welches OS(Stretch/Buster)
     - welches Fahrzeug
     - falls vorhanden Angaben über Firewall, VPN, etc., also Appliances, die den Internetzugang limitieren könnten
-    - relevante Abschnitte der Logs, vor allem Fehlermeldungen, als CODE-blocks </>.
+    - relevante Abschnitte der Logs, vor allem Fehlermeldungen, als CODE-blocks (</>).
