@@ -70,12 +70,12 @@ const myline = computed(() => {
 		.y(
 			(d) =>
 				yScale.value(
-						props.order == 2
-							? d.batSoc
-							: props.order == 0
-								? d['soc' + topVehicles.value[0]]
-								: d['soc' + topVehicles.value[1]!],
-					) ?? yScale.value(0),
+					props.order == 2
+						? d.batSoc
+						: props.order == 0
+							? d['soc' + topVehicles.value[0]]
+							: d['soc' + topVehicles.value[1]!],
+				) ?? yScale.value(0),
 		)
 	let p = path(graphData.data)
 	return p ? p : ''
