@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+import logging
+from typing import Dict, Union, Optional
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
@@ -14,6 +15,7 @@ from modules.devices.sungrow.sungrow.config import SungrowBatSetup, Sungrow
 from modules.devices.sungrow.sungrow.version import Version
 from modules.devices.sungrow.sungrow.firmware import Firmware
 
+log = logging.getLogger(__name__)
 
 class SungrowBat(AbstractBat):
     def __init__(self,
@@ -63,6 +65,30 @@ class SungrowBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        unit = self.device_config.configuration.modbus_id
+
+        if power_limit is None:
+            log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
+            if self.last_mode != "auto":
+                self.__tcp_client.write_registers(13049, [0], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_registers(13050, [0xCC], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = "auto"
+        elif power_limit == 0:
+            log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt")
+            if self.last_mode != "stop":
+                self.__tcp_client.write_registers(13049, [2], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_registers(13050, [0xCC], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = "stop"
+        else:
+            log.debug("Aktive Batteriesteuerung. Batterie wird auf Entladen gesetzt")
+            if self.last_mode != "discharge":
+                self.__tcp_client.write_registers(13049, [2], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_registers(13050, [0xBB], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = "discharge"
+            power_value = min(power_limit, 5000)
+            self.__tcp_client.write_registers(13051, [power_value], data_type=ModbusDataType.UINT_16, unit=unit)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SungrowBatSetup)
