@@ -88,7 +88,8 @@ class SungrowBat(AbstractBat):
                 self.__tcp_client.write_registers(13049, [2], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.__tcp_client.write_registers(13050, [0xBB], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = "discharge"
-            power_value = min(power_limit, 5000)
+            #Die maximale Entladeleistung begrenzen auf 5000W
+            power_value = int(min(power_limit, 5000))
             self.__tcp_client.write_registers(13051, [power_value], data_type=ModbusDataType.UINT_16, unit=unit)
 
 
