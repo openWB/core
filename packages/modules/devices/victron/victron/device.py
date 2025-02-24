@@ -19,15 +19,15 @@ def create_device(device_config: Victron):
 
     def create_bat_component(component_config: VictronBatSetup):
         nonlocal client
-        return VictronBat(device_config.id, component_config, client)
+        return VictronBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: VictronCounterSetup):
         nonlocal client
-        return VictronCounter(device_config.id, component_config, client)
+        return VictronCounter(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: VictronInverterSetup):
         nonlocal client
-        return VictronInverter(device_config.id, component_config, client)
+        return VictronInverter(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[VictronBat, VictronCounter, VictronInverter]]):
         nonlocal client

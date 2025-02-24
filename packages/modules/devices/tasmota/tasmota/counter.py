@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 import logging
 
-from dataclass_utils import dataclass_from_dict
 from modules.devices.tasmota.tasmota.config import TasmotaCounterSetup
 from modules.common.abstract_device import AbstractCounter
 from modules.common.tasmota import Tasmota
@@ -13,23 +12,24 @@ from modules.common.store import get_counter_value_store
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    ip_address: str
+    phase: int
+
+
 class TasmotaCounter(AbstractCounter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, TasmotaCounterSetup],
-                 ip_address: str,
-                 phase: int) -> None:
-        self.__device_id = device_id
-        self.__ip_address = ip_address
-        if phase:
-            self.__phase = phase
-        else:
-            self.__phase = 1
-        self.component_config = dataclass_from_dict(TasmotaCounterSetup, component_config)
+    def __init__(self, component_config: TasmotaCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__ip_address: str = self.kwargs['ip_address']
+        self.__phase: int = self.kwargs['phase']
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
-        self.__tasmota = Tasmota(self.__device_id, self.__ip_address, self.__phase)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.__tasmota = Tasmota(self.__device_id, self.__ip_address, self.__phase)
 
     def update(self):
         log.debug("tasmota.counter.update: " + self.__ip_address)

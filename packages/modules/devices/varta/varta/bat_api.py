@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import xml.etree.ElementTree as ET
 
-from dataclass_utils import dataclass_from_dict
+from typing import TypedDict, Any
 from modules.common import req
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -12,11 +12,19 @@ from modules.common.store import get_bat_value_store
 from modules.devices.varta.varta.config import VartaBatApiSetup
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    device_address: str
+
+
 class VartaBatApi(AbstractBat):
-    def __init__(self, device_id: int, component_config: VartaBatApiSetup, device_address: str) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(VartaBatApiSetup, component_config)
-        self.__device_address = device_address
+    def __init__(self, component_config: VartaBatApiSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__device_address: str = self.kwargs['device_address']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

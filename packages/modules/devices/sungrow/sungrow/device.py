@@ -19,15 +19,15 @@ def create_device(device_config: Sungrow):
 
     def create_bat_component(component_config: SungrowBatSetup):
         nonlocal client
-        return SungrowBat(device_config, component_config, client)
+        return SungrowBat(component_config, device_config=device_config, client=client)
 
     def create_counter_component(component_config: SungrowCounterSetup):
         nonlocal client
-        return SungrowCounter(device_config, component_config, client)
+        return SungrowCounter(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: SungrowInverterSetup):
         nonlocal client
-        return SungrowInverter(device_config, component_config, client)
+        return SungrowInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SungrowBat, SungrowCounter, SungrowInverter]]):
         nonlocal client

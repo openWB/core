@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -12,8 +10,10 @@ from modules.devices.tesla.tesla.config import TeslaBatSetup
 
 
 class TeslaBat(AbstractBat):
-    def __init__(self, component_config: Union[Dict, TeslaBatSetup]) -> None:
-        self.component_config = dataclass_from_dict(TeslaBatSetup, component_config)
+    def __init__(self, component_config: TeslaBatSetup) -> None:
+        self.component_config = component_config
+
+    def initialize(self) -> None:
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
