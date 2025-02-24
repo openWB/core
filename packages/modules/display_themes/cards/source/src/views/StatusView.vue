@@ -3,7 +3,7 @@ import { useMqttStore } from "@/stores/mqtt.js";
 import ReloadButton from "@/components/Status/ReloadButton.vue";
 import RebootButton from "@/components/Status/RebootButton.vue";
 import ShutdownButton from "@/components/Status/ShutdownButton.vue";
-import DashBoardCard from "@/components/DashBoardCard.vue";
+import DashboardCard from "@/components/DashboardCard.vue";
 
 export default {
   name: "StatusView",
@@ -11,7 +11,7 @@ export default {
     ReloadButton,
     RebootButton,
     ShutdownButton,
-    DashBoardCard,
+    DashboardCard,
   },
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
@@ -25,7 +25,7 @@ export default {
 </script>
 
 <template>
-  <dash-board-card color="primary">
+  <dashboard-card color="primary">
     <template #headerLeft>
       Status
     </template>
@@ -145,7 +145,7 @@ export default {
         </i-row>
       </i-form>
     </i-container>
-  </dash-board-card>
+  </dashboard-card>
 </template>
 
 <style scoped></style>

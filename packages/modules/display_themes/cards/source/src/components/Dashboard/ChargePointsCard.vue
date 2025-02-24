@@ -1,6 +1,6 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
-import DashBoardCard from "@/components/DashBoardCard.vue";
+import DashboardCard from "@/components/DashboardCard.vue";
 import SparkLine from "@/components/SparkLine.vue";
 import ChargePointPlugBadge from "@/components/ChargePointPlugBadge.vue";
 
@@ -14,7 +14,7 @@ library.add(fasChargingStation);
 export default {
   name: "ChargePointsCard",
   components: {
-    DashBoardCard,
+    DashboardCard,
     SparkLine,
     FontAwesomeIcon,
     ChargePointPlugBadge,
@@ -29,7 +29,7 @@ export default {
 </script>
 
 <template>
-  <dash-board-card
+  <dashboard-card
     v-if="mqttStore.getChargePointIds.length > 0"
     color="primary"
   >
@@ -65,5 +65,5 @@ export default {
           : mqttStore.getChargePointSumPowerChartData
       "
     />
-  </dash-board-card>
+  </dashboard-card>
 </template>
