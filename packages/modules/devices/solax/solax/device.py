@@ -18,13 +18,13 @@ def create_device(device_config: Solax):
     client = None
 
     def create_bat_component(component_config: SolaxBatSetup):
-        return SolaxBat(device_config, component_config, client)
+        return SolaxBat(component_config, device_config=device_config, client=client)
 
     def create_counter_component(component_config: SolaxCounterSetup):
-        return SolaxCounter(device_config, component_config, client)
+        return SolaxCounter(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: SolaxInverterSetup):
-        return SolaxInverter(device_config, component_config, client)
+        return SolaxInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SolaxBat, SolaxCounter, SolaxInverter]]):
         nonlocal client

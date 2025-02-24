@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 from pymodbus.constants import Endian
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -14,14 +13,19 @@ from modules.devices.solax.solax.config import SolaxCounterSetup, Solax
 from modules.devices.solax.solax.version import SolaxVersion
 
 
+class KwargsDict(TypedDict):
+    client: modbus.ModbusTcpClient_
+    device_config: Solax
+
+
 class SolaxCounter(AbstractCounter):
-    def __init__(self,
-                 device_config: Solax,
-                 component_config: Union[Dict, SolaxCounterSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.device_config = device_config
-        self.component_config = dataclass_from_dict(SolaxCounterSetup, component_config)
-        self.__tcp_client = tcp_client
+    def __init__(self, component_config: SolaxCounterSetup, **kwargs: Any) -> None:
+        self.component_config = SolaxCounterSetup(**component_config)
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__tcp_client = self.kwargs['client']
+        self.device_config = self.kwargs['device_config']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
