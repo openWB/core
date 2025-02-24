@@ -17,7 +17,7 @@ from modules.devices.openwb.openwb_flex.versions import kit_bat_version_factory
 
 class KwargsDict(TypedDict):
     device_id: int
-    tcp_client: modbus.ModbusTcpClient_
+    client: modbus.ModbusTcpClient_
 
 
 class BatKitFlex(AbstractBat):
@@ -27,7 +27,7 @@ class BatKitFlex(AbstractBat):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         factory = kit_bat_version_factory(self.component_config.configuration.version)
         self.__client = factory(self.component_config.configuration.id, self.__tcp_client)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")

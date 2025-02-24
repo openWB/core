@@ -22,7 +22,7 @@ class BatKit(BatKitFlex, AbstractBat):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.client: modbus.ModbusTcpClient_ = self.kwargs['client']
         version = self.component_config.configuration.version
         if version == 0:
             id = 1
