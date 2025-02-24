@@ -576,7 +576,7 @@
 												<span class="charge-point-time-charge-name">--</span>
 											</div>
 											<div class="col-lg-6 text-right">
-												<span class="charge-point-time-charge-active border rounded p-1">
+												<span class="charge-point-time-charge-pill charge-point-time-charge-active cursor-pointer border rounded p-1">
 													<span class="charge-point-time-charge-frequency">
 														<i class="fas fa-calendar-alt"></i>
 														<span class="charge-point-time-charge-frequency-value">--</span>
@@ -992,7 +992,7 @@
 											<span class="charge-point-schedule-name">--</span>
 										</div>
 										<div class="col-lg-6 text-right">
-											<span class="charge-point-schedule-active border rounded p-1">
+											<span class="charge-point-schedule-plan-pill charge-point-schedule-active cursor-pointer border rounded p-1">
 												<span class="charge-point-schedule-frequency">
 													<i class="fas fa-calendar-alt"></i>
 													<span class="charge-point-schedule-frequency-value">--</span>
@@ -1617,11 +1617,39 @@
 				}
 			});
 
+			$('.container').on('click', '.charge-point-time-charge-pill', function (event) {
+				event.stopPropagation();
+				var parentChargePoint = $(this).closest('[data-cp]');
+				var chargePointIndex = parseInt(parentChargePoint.data('cp'));
+				var planId = parseInt($(this).closest('.charge-point-time-charge-plan').data('plan'));
+				if (!isNaN(chargePointIndex) && !isNaN(planId)) {
+					var plan = timeChargePlan[chargePointIndex][planId];
+					if (plan !== undefined) {
+						plan.active = !plan.active;
+						publish(plan, `openWB/set/chargepoint/${chargePointIndex}/set/charge_template/time_charging/plans/${planId}`);
+					}
+				}
+			});
+
 			$('.container').on('click', '.scheduled-charging-settings-link', function (event) {
 				event.stopPropagation();
 				var parentChargePoint = $(this).closest('[data-cp]');
 				var chargeTemplate = parseInt(parentChargePoint.data('charge-template'));
 				window.location.href = "../../settings/#/VehicleConfiguration/charge_template/" + chargeTemplate;
+			});
+
+			$('.container').on('click', '.charge-point-schedule-plan-pill', function (event) {
+				event.stopPropagation();
+				var parentChargePoint = $(this).closest('[data-cp]');
+				var chargePointIndex = parseInt(parentChargePoint.data('cp'));
+				var planId = parseInt($(this).closest('.charge-point-schedule-plan').data('plan'));
+				if (!isNaN(chargePointIndex) && !isNaN(planId)) {
+					var plan = schedulePlan[chargePointIndex][planId];
+					if (plan !== undefined) {
+						plan.active = !plan.active;
+						publish(plan, `openWB/set/chargepoint/${chargePointIndex}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`);
+					}
+				}
 			});
 
 			$('.container').on('click', '.time_charging-settings-link', function (event) {
