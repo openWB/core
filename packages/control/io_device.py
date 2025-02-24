@@ -51,8 +51,7 @@ class IoActions:
 
     def setup(self):
         for action in self.actions.values():
-            if isinstance(action, Dimming):
-                action.setup()
+            action.setup()
 
     def _check_fault_state_io_device(self, io_device: int) -> None:
         if data.data.io_states[f"io_states{io_device}"].data.get.fault_state == 2:
