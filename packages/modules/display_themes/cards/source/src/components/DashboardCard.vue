@@ -1,6 +1,6 @@
 <script>
 export default {
-  name: "DashBoardCard",
+  name: "DashboardCard",
   props: {
     color: { type: String, required: true },
   },

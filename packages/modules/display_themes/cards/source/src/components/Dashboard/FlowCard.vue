@@ -1,11 +1,13 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
-import DashBoardCard from "@/components/DashBoardCard.vue";
+import DashboardCard from "@/components/DashboardCard.vue";
+import ChargeModeModal from "../ChargePoints/ChargeModeModal.vue";
 
 export default {
   name: "DashboardFlowCard",
   components: {
-    DashBoardCard,
+    DashboardCard,
+    ChargeModeModal,
   },
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
@@ -24,6 +26,8 @@ export default {
         numRows: 4,
         numColumns: 3,
       },
+      modalChargeModeSettingsVisible: false,
+      modalChargePointId: 0,
     };
   },
   computed: {
@@ -342,7 +346,9 @@ export default {
               class: {
                 base: "vehicle",
                 valueLabel:
-                  "fill-" + this.chargePoint1ConnectedVehicleChargeMode.class,
+                  "fill-" + this.chargePoint1ConnectedVehicleChargeMode?.class,
+                animated: this.chargePoint1Discharging,
+                animatedReverse: this.chargePoint1Charging,
               },
               position: {
                 row: 3,
@@ -350,10 +356,13 @@ export default {
               },
               label: [
                 this.chargePoint1ConnectedVehicleName || "---",
-                this.chargePoint1ConnectedVehicleChargeMode.label || "---",
+                this.chargePoint1ConnectedVehicleChargeMode?.label || "---",
               ],
               soc: this.chargePoint1ConnectedVehicleSoc,
               icon: "icons/owbVehicle.svg",
+              clicked: () => {
+                this.selectChargeMode(this.connectedChargePoints[0]);
+              },
             });
           }
           if (this.connectedChargePoints.length > 1) {
@@ -383,7 +392,9 @@ export default {
                 class: {
                   base: "vehicle",
                   valueLabel:
-                    "fill-" + this.chargePoint2ConnectedVehicleChargeMode.class,
+                    "fill-" + this.chargePoint2ConnectedVehicleChargeMode?.class,
+                  animated: this.chargePoint2Discharging,
+                  animatedReverse: this.chargePoint2Charging,
                 },
                 position: {
                   row: 3,
@@ -391,7 +402,7 @@ export default {
                 },
                 label: [
                   this.chargePoint2ConnectedVehicleName || "---",
-                  this.chargePoint2ConnectedVehicleChargeMode.label || "---",
+                  this.chargePoint2ConnectedVehicleChargeMode?.label || "---",
                 ],
                 soc: this.chargePoint2ConnectedVehicleSoc,
                 icon: "icons/owbVehicle.svg",
@@ -424,7 +435,9 @@ export default {
                   class: {
                     base: "vehicle",
                     valueLabel:
-                      "fill-" + this.chargePoint3ConnectedVehicleChargeMode.class,
+                      "fill-" + this.chargePoint3ConnectedVehicleChargeMode?.class,
+                    animated: this.chargePoint3Discharging,
+                    animatedReverse: this.chargePoint3Charging,
                   },
                   position: {
                     row: 3,
@@ -432,7 +445,7 @@ export default {
                   },
                   label: [
                     this.chargePoint3ConnectedVehicleName || "---",
-                    this.chargePoint3ConnectedVehicleChargeMode.label || "---",
+                    this.chargePoint3ConnectedVehicleChargeMode?.label || "---",
                   ],
                   soc: this.chargePoint3ConnectedVehicleSoc,
                   icon: "icons/owbVehicle.svg",
@@ -468,6 +481,14 @@ export default {
         this.setSvgNumRows(3);
       }
       return components;
+    },
+  },
+  watch: {
+    changesLocked(newValue, oldValue) {
+      // hide all modals if lock is kicking in
+      if (oldValue !== true && newValue === true) {
+        this.modalChargeModeSettingsVisible = false;
+      }
     },
   },
   methods: {
@@ -523,12 +544,22 @@ export default {
       }
       this.$refs[elementId][0]?.beginElement();
     },
+    selectChargeMode(chargePointId) {
+      if (!this.changesLocked) {
+        this.modalChargePointId = chargePointId;
+        this.modalChargeModeSettingsVisible = true;
+      }
+    },
   },
 };
 </script>
 
 <template>
-  <dash-board-card color="primary">
+  <charge-mode-modal
+    v-model="modalChargeModeSettingsVisible"
+    :charge-point-id="modalChargePointId"
+  />
+  <dashboard-card color="primary">
     <template #headerLeft>
       Übersicht - Energiefluss
     </template>
@@ -556,7 +587,8 @@ export default {
                 component.class.base !== 'vehicle'
                   ? `M ${calcFlowLineAnchorX(component.position.column)}, ` +
                     `${calcRowY(component.position.row)} ${calcColumnX(1)}, ${calcRowY(1)}`
-                  : ''
+                  : `M ${calcFlowLineAnchorX(component.position.column)}, ` +
+                    `${calcRowY(component.position.row)} ${calcFlowLineAnchorX(component.position.column)}, ${calcRowY(component.position.row - 1)}`
               "
             />
           </g>
@@ -579,7 +611,7 @@ export default {
               :key="component.id"
               :class="component.class.base"
               :transform="`translate(${calcColumnX(component.position.column)}, ${calcRowY(component.position.row)})`"
-              @click="beginAnimation(`animate-label-${component.id}`)"
+              @click="beginAnimation(`animate-label-${component.id}`); component.clicked ? component.clicked() : null"
             >
               <defs>
                 <clipPath
@@ -691,7 +723,7 @@ export default {
         </svg>
       </div>
     </i-container>
-  </dash-board-card>
+  </dashboard-card>
 </template>
 
 <style scoped>
@@ -745,6 +777,11 @@ path.animatedReverse.battery {
 path.animated.charge-point,
 path.animatedReverse.charge-point {
   stroke: var(--color--primary);
+}
+
+path.animated.vehicle,
+path.animatedReverse.vehicle {
+  stroke: var(--color--teal);
 }
 
 circle {

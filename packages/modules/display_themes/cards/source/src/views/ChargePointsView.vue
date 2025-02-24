@@ -4,6 +4,7 @@ import ChargePointCard from "@/components/ChargePoints/ChargePointCard.vue";
 import SimpleChargePointCard from "@/components/ChargePoints/SimpleChargePointCard.vue";
 import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
 import ManualSocInput from "@/components/ChargePoints/ManualSocInput.vue";
+import ChargeModeModal from "../components/ChargePoints/ChargeModeModal.vue";
 
 /* fontawesome */
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -31,6 +32,7 @@ export default {
     SimpleChargePointCard,
     ExtendedNumberInput,
     ManualSocInput,
+    ChargeModeModal,
     FontAwesomeIcon,
   },
   props: {
@@ -46,11 +48,6 @@ export default {
       modalVehicleId: 0,
       modalActiveTab: "tab-general",
       modalManualSocInputVisible: false,
-      simpleChargeModes: [
-        "instant_charging",
-        "pv_charging",
-        "stop",
-      ]
     };
   },
   computed: {
@@ -65,14 +62,6 @@ export default {
         vehicleList.push({ id: id, name: topicList[topic] });
       });
       return vehicleList;
-    },
-    filteredChargeModes() {
-      if (this.mqttStore.getSimpleChargePointView) {
-        return this.mqttStore.chargeModeList().filter((mode) => {
-          return this.simpleChargeModes.includes(mode.id);
-        });
-      }
-      return this.mqttStore.chargeModeList()
     },
   },
   watch: {
@@ -401,85 +390,10 @@ export default {
   </div>
   <!-- modals -->
   <!-- charge mode only -->
-  <i-modal
+  <charge-mode-modal
     v-model="modalChargeModeSettingVisible"
-    size="lg"
-  >
-    <template #header>
-      Lademodus für "{{
-        mqttStore.getChargePointConnectedVehicleName(modalChargePointId)
-      }}" auswählen
-    </template>
-    <i-form>
-      <i-form-group>
-        <i-button-group
-          block
-          vertical
-        >
-          <i-button
-            v-for="mode in filteredChargeModes"
-            :key="mode.id"
-            size="lg"
-            class="large-button"
-            outline
-            :color="mode.class != 'dark' ? mode.class : 'light'"
-            :active="
-              mqttStore.getChargePointConnectedVehicleChargeMode(
-                modalChargePointId,
-              ) != undefined &&
-                mode.id ==
-                mqttStore.getChargePointConnectedVehicleChargeMode(
-                  modalChargePointId,
-                ).mode
-            "
-            @click="
-              setChargePointConnectedVehicleChargeMode(
-                modalChargePointId,
-                mode.id,
-              )
-            "
-          >
-            {{ mode.label }}
-          </i-button>
-        </i-button-group>
-      </i-form-group>
-      <i-form-group>
-        <i-form-label>Priorität</i-form-label>
-        <i-button-group block>
-          <i-button
-            size="lg"
-            class="large-button"
-            :color="
-              mqttStore.getChargePointConnectedVehiclePriority(
-                modalChargePointId,
-              ) !== true
-                ? 'danger'
-                : ''
-            "
-            @click="
-              setChargePointConnectedVehiclePriority(modalChargePointId, false)
-            "
-          >
-            Nein
-          </i-button>
-          <i-button
-            :color="
-              mqttStore.getChargePointConnectedVehiclePriority(
-                modalChargePointId,
-              ) === true
-                ? 'success'
-                : ''
-            "
-            @click="
-              setChargePointConnectedVehiclePriority(modalChargePointId, true)
-            "
-          >
-            Ja
-          </i-button>
-        </i-button-group>
-      </i-form-group>
-    </i-form>
-  </i-modal>
+    :charge-point-id="modalChargePointId"
+  />
   <!-- end charge mode only-->
   <!-- vehicle only -->
   <i-modal
