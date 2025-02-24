@@ -28,19 +28,21 @@ class RippleControlReceiver(AbstractIoAction):
                         if self.timestamp is None:
                             Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                             control_command_log.info(
-                                f"RSE-Sperre an LP {self.config.configuration.cp_id} mit Wert {pattern['value']*100}"
+                                f"RSE-Sperre mit Wert {pattern['value']*100}"
                                 "% aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
 
                         evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
                         msg = f"EVU-Zähler: {evu_counter.data.get.powers}W"
                         for cp in self.config.configuration.devices:
                             cp_id = cp[0][2:]
-                            msg += f", LP {cp_id}: {data.data.cp_data[cp_id].data.get.powers}W"
+                            msg += (f", LP {data.data.cp_data[f'cp{cp_id}'].data.config.name}: "
+                                    f"{data.data.cp_data[f'cp{cp_id}'].data.get.powers}W")
                         control_command_log.info(msg)
+                        break
             else:
                 if self.timestamp:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
-                    control_command_log.info("Direktsteuerung deaktiviert.")
+                    control_command_log.info("RSE-Sperre deaktiviert.")
 
     def ripple_control_receiver(self) -> float:
         for pattern in self.config.configuration.input_pattern:

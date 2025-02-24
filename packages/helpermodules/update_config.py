@@ -247,6 +247,7 @@ class UpdateConfig:
         "^openWB/io/states/[0-9]+/set/digital_output$",
         "^openWB/io/states/[0-9]+/set/analog_output$",
         "^openWB/io/action/[0-9]+/config$",
+        "^openWB/io/action/[0-9]+/timestamp$",
 
         "^openWB/set/log/request",
         "^openWB/set/log/data",
