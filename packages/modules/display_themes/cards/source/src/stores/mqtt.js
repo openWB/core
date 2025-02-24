@@ -190,7 +190,36 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return undefined;
     },
-    getDashBoardEnabled(state) {
+    getDefaultView: (state) => {
+      if (state.getThemeConfiguration) {
+        const views = {
+          'dashboard': state.getThemeConfiguration.enable_dashboard_view,
+          'energy-flow': state.getThemeConfiguration.enable_energy_flow_view,
+          'charge-points': state.getThemeConfiguration.enable_charge_points_view,
+          'status': state.getThemeConfiguration.enable_status_view,
+        };
+        if (state.getThemeConfiguration.default_view !== undefined) {
+          if (views[state.getThemeConfiguration.default_view] === true) {
+            return state.getThemeConfiguration.default_view;
+          } else {
+            console.warn(`default view '${state.getThemeConfiguration.default_view}' is not enabled, check your configuration!`);
+          }
+        }
+        for (const [view, enabled] of Object.entries(views)) {
+          if (enabled) {
+            return view;
+          }
+        }
+      }
+      return undefined;
+    },
+    getDefaultViewTimeout: (state) => {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.default_view_timeout;
+      }
+      return 0;
+    },
+    getDashboardEnabled(state) {
       if (state.getThemeConfiguration) {
         return state.getThemeConfiguration.enable_dashboard_view;
       }
@@ -202,7 +231,6 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return true;
     },
-
     getChargePointsEnabled(state) {
       if (state.getThemeConfiguration) {
         return state.getThemeConfiguration.enable_charge_points_view;

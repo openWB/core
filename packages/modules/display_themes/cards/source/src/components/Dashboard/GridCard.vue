@@ -1,6 +1,6 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
-import DashBoardCard from "@/components/DashBoardCard.vue";
+import DashboardCard from "@/components/DashboardCard.vue";
 import SparkLine from "@/components/SparkLine.vue";
 
 /* fontawesome */
@@ -12,7 +12,7 @@ library.add(fasGaugeHigh);
 
 export default {
   name: "GridCard",
-  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
+  components: { DashboardCard, SparkLine, FontAwesomeIcon },
   props: {},
   data() {
     return {
@@ -23,7 +23,7 @@ export default {
 </script>
 
 <template>
-  <dash-board-card color="danger">
+  <dashboard-card color="danger">
     <template #headerLeft>
       <font-awesome-icon
         fixed-width
@@ -39,5 +39,5 @@ export default {
       color-negative="var(--color--success)"
       :data="mqttStore.getGridPowerChartData"
     />
-  </dash-board-card>
+  </dashboard-card>
 </template>

@@ -1,6 +1,6 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
-import DashBoardCard from "@/components/DashBoardCard.vue";
+import DashboardCard from "@/components/DashboardCard.vue";
 import SparkLine from "@/components/SparkLine.vue";
 
 /* fontawesome */
@@ -12,7 +12,7 @@ library.add(fasSolarPanel);
 
 export default {
   name: "InverterCard",
-  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
+  components: { DashboardCard, SparkLine, FontAwesomeIcon },
   props: {},
   data() {
     return {
@@ -23,7 +23,7 @@ export default {
 </script>
 
 <template>
-  <dash-board-card
+  <dashboard-card
     v-if="mqttStore.getPvConfigured"
     color="success"
   >
@@ -42,5 +42,5 @@ export default {
       :data="mqttStore.getPvPowerChartData"
       :inverted="true"
     />
-  </dash-board-card>
+  </dashboard-card>
 </template>
