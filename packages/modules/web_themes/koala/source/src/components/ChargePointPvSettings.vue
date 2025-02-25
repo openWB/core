@@ -8,7 +8,7 @@
     :off-value-left="-1"
     :discrete-values="[-1, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]"
     v-model="pvMinCurrent.value"
-    class="q-mt-md q-ml-sm"
+    class="q-mt-md"
   />
 
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
@@ -68,7 +68,7 @@
     unit="%"
     :off-value-left="0"
     v-model="pvMinSoc.value"
-    class="q-mt-md q-ml-sm"
+    class="q-mt-md"
   />
 
   <SliderStandard
@@ -77,7 +77,7 @@
     :max="32"
     unit="A"
     v-model="pvMinSocCurrent.value"
-    class="q-mt-md q-ml-sm"
+    class="q-mt-md"
   />
 
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Mindest-SoC</div>
@@ -95,7 +95,7 @@
     </q-btn-group>
   </div>
 
-  <div class="row items-center q-ma-none q-pa-none no-wrap">
+  <div class="row items-center justify-between q-ma-none q-pa-none no-wrap">
     <div class="text-subtitle2 q-mr-sm">Einspeisegrenze beachten</div>
     <div>
       <ToggleStandard v-model="feedInLimit.value" />

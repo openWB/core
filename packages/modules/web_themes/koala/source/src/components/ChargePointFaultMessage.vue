@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="state !== undefined && state !== 0"
-    class="row q-mt-md q-pa-sm text-white no-wrap"
+    class="row q-mt-sm q-pa-sm text-white no-wrap"
     :class="messageClass"
     style="border-radius: 10px"
   >
