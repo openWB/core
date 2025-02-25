@@ -157,15 +157,6 @@
           />
         </q-btn-group>
       </div>
-      <div class="q-mt-lg row justify-end">
-        <q-btn
-          size="sm"
-          icon="delete"
-          color="red"
-          label="Löschen"
-          @click="deletePlan(props.plan.id)"
-        />
-      </div>
     </q-card-section>
   </q-card>
 </template>
@@ -307,9 +298,6 @@ const planNumPhasesPv = computed(() =>
     props.plan.id,
   ),
 );
-
-const deletePlan = (planId: number) =>
-  mqttStore.vehicleDeleteScheduledChargingPlan(props.chargePointId, planId);
 </script>
 
 <style scoped>

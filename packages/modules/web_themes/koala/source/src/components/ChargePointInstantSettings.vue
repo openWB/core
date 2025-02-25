@@ -21,7 +21,6 @@
       />
     </q-btn-group>
   </div>
-  <!-- <SliderQuasar class="q-mt-sm" :readonly="false" /> -->
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Begrenzung</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group class="col">
