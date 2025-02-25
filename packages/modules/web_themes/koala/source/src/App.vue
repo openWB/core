@@ -4,6 +4,6 @@
 
 <script setup lang="ts">
 defineOptions({
-  name: 'OpenwbStandardWebTheme',
+  name: 'OpenwbKoalaWebTheme',
 });
 </script>
