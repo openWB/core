@@ -1,6 +1,6 @@
 <template>
   <div
-    class="row q-mt-md q-pa-sm bg-primary text-white no-wrap"
+    class="row q-mt-sm q-pa-sm bg-primary text-white no-wrap"
     color="primary"
     style="border-radius: 10px"
   >

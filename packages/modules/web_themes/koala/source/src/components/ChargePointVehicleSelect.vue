@@ -4,16 +4,12 @@
   </div>
   <q-btn-dropdown
     v-else
-    color="dark-page"
+    color="grey"
     :label="connectedVehicle?.name"
-    text-color="light"
-    flat
-    size="sm"
     icon="directions_car"
     dense
-    outline
     no-caps
-    style="font-size: 1em; text-align: left"
+    class="flex-grow"
   >
     <q-list>
       <q-item
@@ -54,3 +50,9 @@ const connectedVehicle = mqttStore.chargePointConnectedVehicleInfo(
 
 const vehicles = mqttStore.vehicleList();
 </script>
+
+<style scoped>
+.flex-grow {
+  flex-grow: 1;
+}
+</style>

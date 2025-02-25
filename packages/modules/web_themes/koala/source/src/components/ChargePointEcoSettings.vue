@@ -6,7 +6,7 @@
     :step="1"
     unit="A"
     v-model="current.value"
-    class="q-mt-md q-ml-sm"
+    class="q-mt-md"
   />
 
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>

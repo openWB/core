@@ -2,7 +2,7 @@
   <q-card class="full-height card-width">
     <q-card-section>
       <div class="row items-center text-h6 text-bold">
-        <div class="col">
+        <div class="col flex items-center">
           {{ name }}
           <ChargePointLock
             :charge-point-id="props.chargePointId"
@@ -16,7 +16,7 @@
       <ChargePointStateMessage :charge-point-id="props.chargePointId" />
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
       <div class="row q-mt-sm">
-        <div class="col q-pa-sm">
+        <div class="col">
           <div class="text-subtitle2">Leistung</div>
           {{ power }}
           <q-badge rounded color="primary" :label="phaseNumber">
@@ -24,7 +24,7 @@
           </q-badge>
           {{ chargingCurrent + ' A' }}
         </div>
-        <div class="col q-pa-sm">
+        <div class="col q-pl-sm">
           <div class="text-subtitle2">geladen</div>
           <!-- {{ energyCharged }} -->
           {{ energyChargedPlugged }}

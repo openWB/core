@@ -1,42 +1,23 @@
 <template>
   <div class="row justify-between items-center">
     <div class="text-subtitle2 q-mr-sm q-mt-md">Termine:</div>
-    <q-btn
-      icon="add"
-      color="primary"
-      round
-      size="sm"
-      class="q-mt-md"
-      @click="mqttStore.vehicleAddScheduledChargingPlan(props.chargePointId)"
-    />
   </div>
-  <q-expansion-item
+  <div
     v-for="(plan, index) in plans.value"
     :key="index"
-    expand-icon-toggle
-    :default-opened="false"
-    class="q-mt-md bg-primary rounded-borders-md"
-    :class="plan.active ? 'active-border' : 'inactive-border'"
-    :header-class="'cursor-pointer'"
-    dense
+    class="row q-mt-sm"
   >
-    <template v-slot:header>
-      <ChargePointScheduledPlanHeader
-        :charge-point-id="props.chargePointId"
-        :plan="plan"
-      />
-    </template>
-    <ChargePointScheduledPlanDetails
+    <ChargePointScheduledPlanButton
+      class="full-width"
       :charge-point-id="props.chargePointId"
       :plan="plan"
     />
-  </q-expansion-item>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-import ChargePointScheduledPlanHeader from './ChargePointScheduledPlanHeader.vue';
-import ChargePointScheduledPlanDetails from './ChargePointScheduledPlanDetails.vue';
+import ChargePointScheduledPlanButton from './ChargePointScheduledPlanButton.vue';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -51,16 +32,7 @@ const plans = computed(() =>
 </script>
 
 <style scoped>
-.rounded-borders-md {
-  border-radius: 8px;
-}
-.active-border {
-  box-shadow: 0 0 0 4px var(--q-positive);
-}
-.inactive-border {
-  box-shadow: 0 0 0 4px var(--q-negative);
-}
-:deep(.q-expansion-item__container) .q-item {
-  padding: 6px 6px;
+.full-width {
+  width: 100%;
 }
 </style>

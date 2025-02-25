@@ -3,7 +3,7 @@
     <div>
       <div class="text-subtitle2">{{ props.title }}</div>
     </div>
-    <div class="row">
+    <div class="row items-center justify-between q-ml-sm">
       <q-slider
         v-model="value"
         :min="props.discreteValues ? 0 : props.min"
@@ -20,7 +20,7 @@
         @touchend.stop
         @change="updateValue"
       />
-      <div class="q-ml-md q-mt-xs items-center no-wrap" :class="myClass">
+      <div class="q-ml-md no-wrap" :class="myClass">
         {{ displayValue }} {{ displayUnit }}
       </div>
     </div>
@@ -174,5 +174,9 @@ const myClass = computed(() => {
 <style lang="scss" scoped>
 .pending {
   color: $red;
+}
+
+.flex-grow {
+  flex-grow: 1;
 }
 </style>
