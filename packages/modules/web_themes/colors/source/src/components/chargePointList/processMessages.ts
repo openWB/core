@@ -173,6 +173,8 @@ export function processVehicleMessages(topic: string, message: string) {
 					cp.isSocManual = config.type == 'manual'
 				}
 			})
+			vehicles[index].isSocConfigured = config.type !== null
+			vehicles[index].isSocManual = config.type == 'manual'
 		} else {
 			// console.warn('Ignored vehicle message [' + topic + ']=' + message)
 		}
