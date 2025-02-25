@@ -97,7 +97,7 @@ const handleSlideChange = () => {
 const maxCardHeight = ref<number>(0);
 
 const updateMaxCardHeight = () => {
-  const cards = document.querySelectorAll('.q-card');
+  const cards = document.querySelectorAll('.item-container');
   const heights = Array.from(cards).map(
     (card) => (card as HTMLElement).offsetHeight,
   );
@@ -108,7 +108,7 @@ const observeCardChanges = () => {
   const observer = new MutationObserver(() => {
     updateMaxCardHeight();
   });
-  const cards = document.querySelectorAll('.q-card');
+  const cards = document.querySelectorAll('.item-container');
   cards.forEach((card) => {
     observer.observe(card, {
       childList: true,
