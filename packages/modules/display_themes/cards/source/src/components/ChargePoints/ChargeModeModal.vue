@@ -65,7 +65,7 @@ export default {
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <template #header>
-      XX Lademodus für "{{
+      Lademodus für "{{
         mqttStore.getChargePointConnectedVehicleName(chargePointId)
       }}" auswählen
     </template>
