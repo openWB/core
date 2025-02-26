@@ -53,18 +53,13 @@ export default {
     };
   },
   computed: {
-    vehicleList() {
-      let topicList = this.mqttStore.getVehicleList;
-      /* topicList is an object, but we need an array for our select input */
-      var vehicleList = [];
-      Object.keys(topicList).forEach((topic) => {
-        let id = parseInt(
-          topic.match(/(?:\/)([0-9]+)(?=\/)*/g)[0].replace(/[^0-9]+/g, ""),
-        );
-        vehicleList.push({ id: id, name: topicList[topic] });
-      });
-      return vehicleList;
-    },
+    timeChargingEnabled() {
+      return (chargePointId) => {
+        return this.mqttStore.getChargePointConnectedVehicleTimeChargingActive(
+          chargePointId,
+        ) === true;
+      };
+    }
   },
   watch: {
     changesLocked(newValue, oldValue) {
@@ -1270,9 +1265,6 @@ export default {
           >
             <i-container>
               <i-row>
-                <i-form-label>{{ plan.name }}</i-form-label>
-              </i-row>
-              <i-row>
                 <i-button
                   size="lg"
                   block
@@ -1284,54 +1276,54 @@ export default {
                     )
                   "
                 >
-                  <span v-if="plan.frequency.selected == 'once'">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'calendar-day']"
-                    />
-                    {{ mqttStore.formatDate(plan.frequency.once) }}
-                  </span>
-                  <span v-if="plan.frequency.selected == 'daily'">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'calendar-week']"
-                    />
-                    täglich
-                  </span>
-                  <span v-if="plan.frequency.selected == 'weekly'">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'calendar-alt']"
-                    />
-                    {{
-                      mqttStore.formatWeeklyScheduleDays(plan.frequency.weekly)
-                    }}
-                  </span>
-                  <font-awesome-icon
-                    fixed-width
-                    :icon="['fas', 'clock']"
-                  />
-                  {{ plan.time }}
-                  <span v-if="plan.limit.selected == 'soc'">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'car-battery']"
-                    />
-                    {{ plan.limit.soc_scheduled }}&nbsp;%
-                  </span>
-                  <span v-if="plan.limit.selected == 'amount'">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'bolt']"
-                    />
-                    {{ plan.limit.amount / 1000 }}&nbsp;kWh
-                  </span>
-                  <span v-if="plan.et_active">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'coins']"
-                    />
-                  </span>
+                  <div class="plan-name">
+                    {{ plan.name }}
+                  </div>
+                  <div class="plan-details">
+                    <div v-if="plan.frequency.selected == 'once'">
+                      <font-awesome-icon
+                        :icon="['fas', 'calendar-day']"
+                      />
+                      {{ mqttStore.formatDate(plan.frequency.once) }}
+                    </div>
+                    <div v-if="plan.frequency.selected == 'daily'">
+                      <font-awesome-icon
+                        :icon="['fas', 'calendar-week']"
+                      />
+                      täglich
+                    </div>
+                    <div v-if="plan.frequency.selected == 'weekly'">
+                      <font-awesome-icon
+                        :icon="['fas', 'calendar-alt']"
+                      />
+                      {{
+                        mqttStore.formatWeeklyScheduleDays(plan.frequency.weekly)
+                      }}
+                    </div>
+                    <div>
+                      <font-awesome-icon
+                        :icon="['fas', 'clock']"
+                      />
+                      {{ plan.time }}
+                    </div>
+                    <div v-if="plan.limit.selected == 'soc'">
+                      <font-awesome-icon
+                        :icon="['fas', 'car-battery']"
+                      />
+                      {{ plan.limit.soc_scheduled }}&nbsp;%
+                    </div>
+                    <div v-if="plan.limit.selected == 'amount'">
+                      <font-awesome-icon
+                        :icon="['fas', 'bolt']"
+                      />
+                      {{ plan.limit.amount / 1000 }}&nbsp;kWh
+                    </div>
+                    <div v-if="plan.et_active">
+                      <font-awesome-icon
+                        :icon="['fas', 'coins']"
+                      />
+                    </div>
+                  </div>
                 </i-button>
               </i-row>
             </i-container>
@@ -1343,14 +1335,12 @@ export default {
         name="tab-time-charging"
       >
         <i-form>
-          <i-form-group>
+          <i-form-group class="_margin-bottom:2">
             <i-form-label>Zeitladen aktivieren</i-form-label>
             <i-button-group block>
               <i-button
                 :color="
-                  mqttStore.getChargePointConnectedVehicleTimeChargingActive(
-                    modalChargePointId,
-                  ) !== true
+                  !timeChargingEnabled(modalChargePointId)
                     ? 'danger'
                     : ''
                 "
@@ -1365,9 +1355,7 @@ export default {
               </i-button>
               <i-button
                 :color="
-                  mqttStore.getChargePointConnectedVehicleTimeChargingActive(
-                    modalChargePointId,
-                  ) === true
+                  timeChargingEnabled(modalChargePointId)
                     ? 'success'
                     : ''
                 "
@@ -1391,7 +1379,6 @@ export default {
               ).length === 0
             "
             color="warning"
-            class="_margin-top:2"
           >
             <template #icon>
               <font-awesome-icon
@@ -1412,9 +1399,6 @@ export default {
             >
               <i-container>
                 <i-row>
-                  <i-form-label>{{ plan.name }}</i-form-label>
-                </i-row>
-                <i-row>
                   <i-button
                     size="lg"
                     block
@@ -1426,50 +1410,51 @@ export default {
                       )
                     "
                   >
-                    <span v-if="plan.frequency.selected == 'once'">
-                      <font-awesome-icon
-                        fixed-width
-                        :icon="['fas', 'calendar-day']"
-                      />
-                      {{ mqttStore.formatDateRange(plan.frequency.once) }}
-                    </span>
-                    <span v-if="plan.frequency.selected == 'daily'">
-                      <font-awesome-icon
-                        fixed-width
-                        :icon="['fas', 'calendar-week']"
-                      />
-                      täglich
-                    </span>
-                    <span v-if="plan.frequency.selected == 'weekly'">
-                      <font-awesome-icon
-                        fixed-width
-                        :icon="['fas', 'calendar-alt']"
-                      />
-                      {{
-                        mqttStore.formatWeeklyScheduleDays(
-                          plan.frequency.weekly,
-                        )
-                      }}
-                    </span>
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'clock']"
-                    />
-                    {{ plan.time.join("-") }}
-                    <span v-if="plan.limit.selected == 'soc'">
-                      <font-awesome-icon
-                        fixed-width
-                        :icon="['fas', 'car-battery']"
-                      />
-                      {{ plan.limit.soc }}&nbsp;%
-                    </span>
-                    <span v-if="plan.limit.selected == 'amount'">
-                      <font-awesome-icon
-                        fixed-width
-                        :icon="['fas', 'bolt']"
-                      />
-                      {{ plan.limit.amount / 1000 }}&nbsp;kWh
-                    </span>
+                    <div class="plan-name">
+                      {{ plan.name }}
+                    </div>
+                    <div class="plan-details">
+                      <div v-if="plan.frequency.selected == 'once'">
+                        <font-awesome-icon
+                          :icon="['fas', 'calendar-day']"
+                        />
+                        {{ mqttStore.formatDateRange(plan.frequency.once) }}
+                      </div>
+                      <div v-if="plan.frequency.selected == 'daily'">
+                        <font-awesome-icon
+                          :icon="['fas', 'calendar-week']"
+                        />
+                        täglich
+                      </div>
+                      <div v-if="plan.frequency.selected == 'weekly'">
+                        <font-awesome-icon
+                          :icon="['fas', 'calendar-alt']"
+                        />
+                        {{
+                          mqttStore.formatWeeklyScheduleDays(
+                            plan.frequency.weekly,
+                          )
+                        }}
+                      </div>
+                      <div>
+                        <font-awesome-icon
+                          :icon="['fas', 'clock']"
+                        />
+                        {{ plan.time.join("-") }}
+                      </div>
+                      <div v-if="plan.limit.selected == 'soc'">
+                        <font-awesome-icon
+                          :icon="['fas', 'car-battery']"
+                        />
+                        {{ plan.limit.soc }}&nbsp;%
+                      </div>
+                      <div v-if="plan.limit.selected == 'amount'">
+                        <font-awesome-icon
+                          :icon="['fas', 'bolt']"
+                        />
+                        {{ plan.limit.amount / 1000 }}&nbsp;kWh
+                      </div>
+                    </div>
                   </i-button>
                 </i-row>
               </i-container>
@@ -1507,5 +1492,19 @@ export default {
 :deep(.input-prepend),
 :deep(.input-append) {
   min-width: 3em;
+}
+
+.plan-name {
+  font-weight: bold;
+}
+
+.plan-details {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+
+.plan-details > div:not(:last-child) {
+  margin-right: 0.5em;
 }
 </style>
