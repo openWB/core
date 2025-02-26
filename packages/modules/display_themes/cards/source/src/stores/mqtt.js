@@ -1074,6 +1074,7 @@ export const useMqttStore = defineStore("mqtt", {
       const beginDate = new Date(dateArray[0]);
       const endDate = new Date(dateArray[1]);
       if (beginDate.getFullYear() == endDate.getFullYear()) {
+        separator = `.${separator}`;
         if (beginDate.getMonth() != endDate.getMonth()) {
           // add display of month if different and year is identical
           beginFormat.month = endFormat.month;
@@ -1088,14 +1089,37 @@ export const useMqttStore = defineStore("mqtt", {
       )}${separator}${this.formatDate(dateArray[1], endFormat)}`;
     },
     formatWeeklyScheduleDays(weekDays) {
-      const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-      let planDays = [];
-      weekDays.forEach(function (dayValue, index) {
-        if (dayValue == true) {
-          planDays.push(days[index]);
+        const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+        let planDays = [];
+        let rangeStart = null;
+
+        weekDays.forEach((dayValue, index) => {
+            if (dayValue) {
+                if (rangeStart === null) {
+                    rangeStart = index;
+                }
+            } else {
+                if (rangeStart !== null) {
+                    if (rangeStart === index - 1) {
+                        planDays.push(days[rangeStart]);
+                    } else {
+                        planDays.push(`${days[rangeStart]}-${days[index - 1]}`);
+                    }
+                    rangeStart = null;
+                }
+            }
+        });
+
+        // Handle the case where the last day(s) of the week are true
+        if (rangeStart !== null) {
+            if (rangeStart === weekDays.length - 1) {
+                planDays.push(days[rangeStart]);
+            } else {
+                planDays.push(`${days[rangeStart]}-${days[weekDays.length - 1]}`);
+            }
         }
-      });
-      return planDays.join(",");
-    },
+
+        return planDays.join(", ");
+    }
   },
 });
