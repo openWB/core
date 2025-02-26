@@ -51,12 +51,31 @@ class SolaredgeBat(AbstractBat):
 
     def get_values(self) -> Tuple[float, float]:
         unit = self.component_config.configuration.modbus_id
+        # Use 1 as fallback if battery_index is not set
+        battery_index = getattr(self.component_config.configuration, "battery_index", 1)
+
+        # Define registers based on battery_index
+        if battery_index == 1:
+            soc_reg = 62852  # Battery 1 SoC
+            power_reg = 62836  # Battery 1 Power
+        elif battery_index == 2:
+            soc_reg = 63108  # Battery 2 SoC
+            power_reg = 63092  # Battery 2 Power
+        else:
+            raise ValueError(f"Invalid battery_index: {battery_index}. Must be 1 or 2.")
+
+        # Read SoC and Power from the appropriate registers
         soc = self.__tcp_client.read_holding_registers(
-            62852, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)
+            soc_reg, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
+        )
         power = self.__tcp_client.read_holding_registers(
-            62836, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)
+            power_reg, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
+        )
+
+        # Handle unsupported FLOAT32 case
         if power == FLOAT32_UNSUPPORTED:
             power = 0
+
         return power, soc
 
     def get_imported_exported(self, power: float) -> Tuple[float, float]:
