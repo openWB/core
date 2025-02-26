@@ -5,6 +5,7 @@ import SimpleChargePointCard from "@/components/ChargePoints/SimpleChargePointCa
 import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
 import ManualSocInput from "@/components/ChargePoints/ManualSocInput.vue";
 import ChargeModeModal from "../components/ChargePoints/ChargeModeModal.vue";
+import VehicleSelectModal from "../components/ChargePoints/VehicleSelectModal.vue";
 
 /* fontawesome */
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -33,6 +34,7 @@ export default {
     ExtendedNumberInput,
     ManualSocInput,
     ChargeModeModal,
+    VehicleSelectModal,
     FontAwesomeIcon,
   },
   props: {
@@ -119,18 +121,6 @@ export default {
         `openWB/set/vehicle/${vehicle_id}/get/force_soc_update`,
         1,
       );
-    },
-    setChargePointConnectedVehicle(id, event) {
-      if (event.id != this.mqttStore.getChargePointConnectedVehicleId(id)) {
-        this.$root.sendTopicToBroker(
-          `openWB/chargepoint/${id}/config/ev`,
-          event.id,
-        );
-      }
-      // hide modal vehicle select if visible
-      if (this.modalVehicleSelectVisible) {
-        this.modalVehicleSelectVisible = false;
-      }
     },
     updateChargePointChargeTemplate(chargePointId, newValue, objectPath = undefined) {
       const chargeTemplate = this.mqttStore.updateState(
@@ -394,47 +384,11 @@ export default {
     v-model="modalChargeModeSettingVisible"
     :charge-point-id="modalChargePointId"
   />
-  <!-- end charge mode only-->
   <!-- vehicle only -->
-  <i-modal
+  <vehicle-select-modal
     v-model="modalVehicleSelectVisible"
-    class="modal-vehicle-select"
-    size="lg"
-  >
-    <template #header>
-      Fahrzeug an "{{ mqttStore.getChargePointName(modalChargePointId) }}"
-      auswählen
-    </template>
-    <i-form>
-      <i-form-group>
-        <i-button-group
-          vertical
-          block
-        >
-          <i-button
-            v-for="vehicle in vehicleList"
-            :key="vehicle.id"
-            size="lg"
-            class="large-button"
-            :active="
-              mqttStore.getChargePointConnectedVehicleId(modalChargePointId) ==
-                vehicle.id
-            "
-            :color="
-              mqttStore.getChargePointConnectedVehicleId(modalChargePointId) ==
-                vehicle.id
-                ? 'primary'
-                : ''
-            "
-            @click="setChargePointConnectedVehicle(modalChargePointId, vehicle)"
-          >
-            {{ vehicle.name }}
-          </i-button>
-        </i-button-group>
-      </i-form-group>
-    </i-form>
-  </i-modal>
-  <!-- end vehicle only-->
+    :charge-point-id="modalChargePointId"
+  />
   <!-- charge point settings -->
   <i-modal
     v-model="modalChargePointSettingsVisible"
@@ -1531,7 +1485,6 @@ export default {
     v-model="modalManualSocInputVisible"
     :vehicle-id="modalVehicleId"
   />
-  <!-- end manual soc input -->
 </template>
 
 <style scoped>
@@ -1541,23 +1494,12 @@ export default {
   grid-gap: var(--spacing);
 }
 
-.large-button {
-  height: 3.5rem;
-  font-size: 1.5rem;
-  padding: 0.75rem 1.5rem;
-}
-
 :deep(.toggle .toggle-label::before) {
   border-color: var(--color--dark-45);
 }
 
 :deep(.tab) {
   min-height: 72vh;
-  max-height: 72vh;
-  overflow-y: scroll;
-}
-
-.modal-vehicle-select:deep(.modal-body) {
   max-height: 72vh;
   overflow-y: scroll;
 }
