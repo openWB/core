@@ -54,13 +54,18 @@ class SolaredgeBat(AbstractBat):
         # Use 1 as fallback if battery_index is not set
         battery_index = getattr(self.component_config.configuration, "battery_index", 1)
 
-        # Define registers based on battery_index
+        # Define base registers for Battery 1 in hex
+        base_soc_reg = 0xE184  # Battery 1 SoC
+        base_power_reg = 0xE174  # Battery 1 Power
+        offset = 0x100  # 256 bytes in hex
+
+        # Adjust registers based on battery_index
         if battery_index == 1:
-            soc_reg = 62852  # Battery 1 SoC
-            power_reg = 62836  # Battery 1 Power
+            soc_reg = base_soc_reg
+            power_reg = base_power_reg
         elif battery_index == 2:
-            soc_reg = 63108  # Battery 2 SoC
-            power_reg = 63092  # Battery 2 Power
+            soc_reg = base_soc_reg + offset  # 0xE284
+            power_reg = base_power_reg + offset  # 0xE274
         else:
             raise ValueError(f"Invalid battery_index: {battery_index}. Must be 1 or 2.")
 
