@@ -245,7 +245,7 @@ export default {
             row: 0,
             column: 0,
           },
-          label: ["EVU", this.gridPower.textValue],
+          label: ["EVU", this.absoluteValue(this.gridPower).textValue],
           icon: "icons/owbGrid.svg",
         });
       }
@@ -266,7 +266,7 @@ export default {
             row: 0,
             column: 2,
           },
-          label: ["Haus", this.homePower.textValue],
+          label: ["Haus", this.absoluteValue(this.homePower).textValue],
           icon: "icons/owbHouse.svg",
         });
       }
@@ -287,7 +287,7 @@ export default {
             row: 1,
             column: 0,
           },
-          label: ["PV", this.pvPower.textValue],
+          label: ["PV", this.absoluteValue(this.pvPower).textValue],
           icon: "icons/owbPV.svg",
         });
       }
@@ -308,7 +308,7 @@ export default {
             row: 1,
             column: 2,
           },
-          label: ["Speicher", this.batteryPower.textValue],
+          label: ["Speicher", this.absoluteValue(this.batteryPower).textValue],
           soc: this.batterySoc,
           icon: "icons/owbBattery.svg",
         });
@@ -333,7 +333,7 @@ export default {
               row: 2,
               column: this.connectedChargePoints.length > 1 ? 0 : 1,
             },
-            label: [this.chargePoint1Name, this.chargePoint1Power.textValue],
+            label: [this.chargePoint1Name, this.absoluteValue(this.chargePoint1Power).textValue],
             icon: "icons/owbChargePoint.svg",
           });
           if (
@@ -379,7 +379,7 @@ export default {
                 row: 2,
                 column: this.connectedChargePoints.length > 2 ? 1 : 2,
               },
-              label: [this.chargePoint2Name, this.chargePoint2Power.textValue],
+              label: [this.chargePoint2Name, this.absoluteValue(this.chargePoint2Power).textValue],
               icon: "icons/owbChargePoint.svg",
             });
             if (
@@ -422,7 +422,7 @@ export default {
                   row: 2,
                   column: 2,
                 },
-                label: [this.chargePoint3Name, this.chargePoint3Power.textValue],
+                label: [this.chargePoint3Name, this.absoluteValue(this.chargePoint3Power).textValue],
                 icon: "icons/owbChargePoint.svg",
               });
               if (
@@ -467,7 +467,7 @@ export default {
               row: 2,
               column: 1,
             },
-            label: ["Ladepunkte", this.chargePointSumPower.textValue],
+            label: ["Ladepunkte", this.absoluteValue(this.chargePointSumPower).textValue],
             icon: "icons/owbChargePoint.svg",
           })
         }
@@ -492,6 +492,22 @@ export default {
     },
   },
   methods: {
+    absoluteValue(valueObject) {
+      // check for leading minus sign and remove it
+      // energy direction is indicated by animated flow line
+      // process object properties "textValue", "value" and "scaledValue" and return the modified valueObject
+      let newValueObject = { ...valueObject };
+      if (newValueObject.textValue) {
+        newValueObject.textValue = newValueObject.textValue.replace("-", "");
+      }
+      if (newValueObject.value) {
+        newValueObject.value = Math.abs(newValueObject.value);
+      }
+      if (newValueObject.scaledValue) {
+        newValueObject.scaledValue = Math.abs(newValueObject.scaledValue);
+      }
+      return newValueObject;
+    },
     setSvgNumRows(numRows) {
       this.svgSize.numRows = numRows;
     },
