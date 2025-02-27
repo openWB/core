@@ -6,7 +6,6 @@
           {{ name }}
           <ChargePointLock
             :charge-point-id="props.chargePointId"
-            :readonly="true"
           />
           <ChargePointStateIcon :charge-point-id="props.chargePointId" />
         </div>
@@ -14,6 +13,14 @@
       </div>
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
       <ChargePointStateMessage :charge-point-id="props.chargePointId" />
+      <div class="row items-center q-mt-sm">
+        <ChargePointVehicleSelect
+          :charge-point-id="props.chargePointId"
+        />
+        <ChargePointPriority
+          :charge-point-id="props.chargePointId"
+        />
+      </div>
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
       <div class="row q-mt-sm">
         <div class="col">
@@ -29,17 +36,6 @@
           <!-- {{ energyCharged }} -->
           {{ energyChargedPlugged }}
         </div>
-      </div>
-      <div class="row items-center q-mt-sm">
-        <q-icon name="directions_car" size="sm" />
-        <ChargePointVehicleSelect
-          :charge-point-id="props.chargePointId"
-          :readonly="true"
-        />
-        <ChargePointPriority
-          :charge-point-id="props.chargePointId"
-          :readonly="true"
-        />
       </div>
       <SliderDouble
         v-if="showSocTargetSlider"
