@@ -336,6 +336,8 @@ const svgComponents = computed((): FlowComponent[] => {
             base: 'vehicle',
             valueLabel:
               'fill-' + chargePoint1ConnectedVehicleChargeMode.value.class,
+            animated: chargePoint1Discharging.value,
+            animatedReverse: chargePoint1Charging.value,
           },
           position: {
             row: 3,
@@ -343,7 +345,7 @@ const svgComponents = computed((): FlowComponent[] => {
           },
           label: [
             chargePoint1ConnectedVehicleName.value || '---',
-            (chargePoint1ConnectedVehicleChargeMode.value.label as string) ||
+            (chargePoint1ConnectedVehicleChargeMode.value.label) ||
               '---',
           ],
           soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
@@ -381,6 +383,8 @@ const svgComponents = computed((): FlowComponent[] => {
             base: 'vehicle',
             valueLabel:
               'fill-' + chargePoint2ConnectedVehicleChargeMode.value.class,
+            animated: chargePoint2Discharging.value,
+            animatedReverse: chargePoint2Charging.value,
           },
           position: {
             row: 3,
@@ -423,6 +427,8 @@ const svgComponents = computed((): FlowComponent[] => {
             base: 'vehicle',
             valueLabel:
               'fill-' + chargePoint3ConnectedVehicleChargeMode.value.class,
+            animated: chargePoint3Discharging.value,
+            animatedReverse: chargePoint3Charging.value,
           },
           position: {
             row: 3,
@@ -551,7 +557,8 @@ const svgRectWidth = computed(
             component.class.base !== 'vehicle'
               ? `M ${calcFlowLineAnchorX(component.position.column)}, ` +
                 `${calcRowY(component.position.row)} ${calcColumnX(1)}, ${calcRowY(1)}`
-              : ''
+              : `M ${calcFlowLineAnchorX(component.position.column)}, ` +
+                `${calcRowY(component.position.row)} ${calcFlowLineAnchorX(component.position.column)}, ${calcRowY(component.position.row - 1)}`
           "
         />
       </g>
@@ -764,6 +771,11 @@ path.animatedReverse.battery {
 path.animated.charge-point,
 path.animatedReverse.charge-point {
   stroke: var(--q-primary);
+}
+
+path.animated.vehicle,
+path.animatedReverse.vehicle {
+  stroke: var(--q-accent);
 }
 
 circle {
