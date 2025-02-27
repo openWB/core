@@ -695,7 +695,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       ) as number;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
-        return valueObject[returnType];
+        return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
         return valueObject as ValueObject;
@@ -719,7 +719,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       ) as number;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
-        return valueObject[returnType];
+        return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
         return valueObject as ValueObject;
@@ -743,7 +743,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       ) as number;
       const valueObject = getValueObject.value(energyCharged, 'Wh');
       if (Object.hasOwn(valueObject, returnType)) {
-        return valueObject[returnType];
+        return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
         return valueObject as ValueObject;
@@ -766,7 +766,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       ) as number;
       const valueObject = getValueObject.value(energyCharged, 'Wh');
       if (Object.hasOwn(valueObject, returnType)) {
-        return valueObject[returnType];
+        return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
         return valueObject as ValueObject;
@@ -1551,7 +1551,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       ) as number;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
-        return valueObject[returnType];
+        return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
         return valueObject as ValueObject;
@@ -1580,7 +1580,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       ) as number;
       const valueObject = getValueObject.value(energy, 'Wh', '', true);
       if (Object.hasOwn(valueObject, returnType)) {
-        return valueObject[returnType];
+        return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
         return valueObject as ValueObject;
@@ -1604,7 +1604,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       ) as number;
       const valueObject = getValueObject.value(energy, 'Wh', '', true);
       if (Object.hasOwn(valueObject, returnType)) {
-        return valueObject[returnType];
+        return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
         return valueObject as ValueObject;
@@ -1634,24 +1634,23 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get the total power of all batteries
    * @param returnType type of return value, 'textValue', 'absoluteTextValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
-   * @returns number | string
+   * @returns number | string | ValueObject | undefined
    */
   const batteryTotalPower = computed(() => {
     return (returnType: string = 'textValue') => {
-      const totalPower = batteryIds.value.reduce((sum, batteryId) => {
-        const power = batteryPower.value(batteryId, 'value');
-        return sum + (typeof power === 'number' ? power : 0);
-      }, 0);
-      if (returnType === 'absoluteTextValue') {
-        const absValue = Math.abs(totalPower);
-        const valueObject = getValueObject.value(absValue, 'W', '', true);
-        return valueObject.textValue as string;
+      const power = getValue.value(
+        'openWB/bat/get/power',
+        undefined,
+        0,
+      ) as number;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
       }
-      if (returnType === 'textValue') {
-        const valueObject = getValueObject.value(totalPower, 'W', '', true);
-        return valueObject.textValue as string;
+      if (returnType == 'object') {
+        return valueObject;
       }
-      return totalPower as string | number;
+      console.error('returnType not found!', returnType, power);
     };
   });
 
@@ -1675,7 +1674,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       ) as number;
       const valueObject = getValueObject.value(importedEnergy, 'Wh', '', true);
       if (Object.hasOwn(valueObject, returnType)) {
-        return valueObject[returnType];
+        return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
         return valueObject as ValueObject;
@@ -1696,7 +1695,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       ) as number;
       const valueObject = getValueObject.value(exportedEnergy, 'Wh', '', true);
       if (Object.hasOwn(valueObject, returnType)) {
-        return valueObject[returnType];
+        return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
         return valueObject as ValueObject;
@@ -1992,7 +1991,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           '',
           true,
         ) as ValueObject;
-        return valueObject.scaledValue as string;
+        return valueObject.scaledValue;
       },
       set(newValue: number) {
         const chargeTemplateId =

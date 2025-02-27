@@ -103,7 +103,11 @@ export interface ChargeTemplateConfiguration {
 }
 
 export interface ValueObject {
-  [key: string]: string | number;
+  textValue: string;
+  value: number;
+  unit: string;
+  scaledValue: number;
+  scaledUnit: string;
 }
 
 export interface Vehicle {
