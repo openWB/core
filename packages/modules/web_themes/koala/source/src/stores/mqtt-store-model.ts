@@ -150,3 +150,14 @@ export interface GraphDataPoint {
   [key: `cp${number}-power`]: number;
   [key: `ev${number}-soc`]: number | null;
 }
+
+export interface BatteryConfiguration {
+  name: string;
+  info: {
+    manufacturer: string;
+    model: string;
+  }
+  type: string;
+  id: number;
+  configuration: object;
+}

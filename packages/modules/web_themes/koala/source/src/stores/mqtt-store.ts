@@ -18,6 +18,7 @@ import type {
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
+  BatteryConfiguration,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -621,14 +622,14 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get the charge point name identified by the charge point id
    * @param chargePointId charge point id
-   * @returns string
+   * @returns string | undefined
    */
   const chargePointName = computed(() => {
     return (chargePointId: number) => {
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/config`,
         'name',
-      );
+      ) as string | undefined;
     };
   });
 
@@ -692,13 +693,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         'openWB/chargepoint/get/power',
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, power);
     };
@@ -716,13 +717,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/chargepoint/${chargePointId}/get/power`,
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, power);
     };
@@ -740,13 +741,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/chargepoint/${chargePointId}/get/energy_charged`,
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(energyCharged, 'Wh');
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, energyCharged);
     };
@@ -763,13 +764,13 @@ export const useMqttStore = defineStore('mqtt', () => {
       const energyCharged = getValue.value(
         `openWB/chargepoint/${chargePointId}/set/log`,
         'imported_since_plugged',
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(energyCharged, 'Wh');
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, energyCharged);
     };
@@ -782,7 +783,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (chargePointId: number) => {
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/get/phases_in_use`,
-      ) as number;
+      ) as number || 0;
     };
   });
 
@@ -793,7 +794,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (chargePointId: number) => {
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/set/current`,
-      ) as number;
+      ) as number || 0;
     };
   });
 
@@ -804,7 +805,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (chargePointId: number) => {
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/get/state_str`,
-      ) as string;
+      ) as string | undefined;
     };
   });
 
@@ -815,7 +816,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (chargePointId: number) => {
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/get/fault_str`,
-      ) as string;
+      ) as string | undefined;
     };
   });
 
@@ -826,7 +827,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (chargePointId: number) => {
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/get/fault_state`,
-      ) as number;
+      ) as number || 0;
     };
   });
 
@@ -840,7 +841,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         return getValue.value(
           `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`,
-        ) as ChargePointConnectedVehicleInfo;
+        ) as ChargePointConnectedVehicleInfo | undefined;
       },
       set(newValue: ChargePointConnectedVehicleInfo) {
         updateTopic(
@@ -1001,8 +1002,8 @@ export const useMqttStore = defineStore('mqtt', () => {
           'Wh',
           '',
           true,
-        ) as ValueObject;
-        return valueObject.scaledValue as number;
+        );
+        return valueObject.scaledValue;
       },
       set(newValue: number) {
         console.debug('set instant energy limit', newValue, chargePointId);
@@ -1210,8 +1211,8 @@ export const useMqttStore = defineStore('mqtt', () => {
           'Wh',
           '',
           true,
-        ) as ValueObject;
-        return valueObject.scaledValue as number;
+        );
+        return valueObject.scaledValue;
       },
       set(newValue: number) {
         console.debug('set pv energy limit', newValue, chargePointId);
@@ -1369,8 +1370,8 @@ export const useMqttStore = defineStore('mqtt', () => {
           'Wh',
           '',
           true,
-        ) as ValueObject;
-        return valueObject.scaledValue as number;
+        );
+        return valueObject.scaledValue;
       },
       set(newValue: number) {
         console.debug('set eco energy limit', newValue, chargePointId);
@@ -1446,7 +1447,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed(() => {
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/get/connected_vehicle/config`,
-      ) as ChargePointConnectedVehicleConfig;
+      ) as ChargePointConnectedVehicleConfig | undefined;
     });
   };
 
@@ -1459,7 +1460,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed(() => {
       return getValue.value(
         `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`,
-      ) as ChargePointConnectedVehicleSoc;
+      ) as ChargePointConnectedVehicleSoc | undefined;
     });
   };
 
@@ -1487,7 +1488,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         return getValue.value(
           `openWB/chargepoint/${chargePointId}/set/charge_template`,
-        ) as ChargeTemplateConfiguration;
+        ) as ChargeTemplateConfiguration | undefined;
       },
       set(newValue: ChargeTemplateConfiguration) {
         console.debug('set charge template', newValue, chargePointId);
@@ -1510,15 +1511,14 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const batteryName = computed(() => {
     return (batteryId: number): string => {
-      const configuration = getWildcardValues.value(
+      const configuration = getValue.value(
         `openWB/system/device/+/component/${batteryId}/config`,
-      );
-      if (Object.keys(configuration).length === 0) {
-        const index = batteryIds.value.indexOf(batteryId);
-        return `Speicher ${index + 1}` as string; // Returns sequential name based on id index
+      ) as BatteryConfiguration | undefined;
+      if (configuration === undefined) {
+        return `Speicher ${batteryId}`;
       }
       console.log('battery configuration', configuration);
-      return configuration[Object.keys(configuration)[0]].name as string;
+      return configuration.name;
     };
   });
 
@@ -1528,11 +1528,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const batterySoc = computed(() => {
     return (batteryId: number): number | undefined => {
-      const soc = getValue.value(`openWB/bat/${batteryId}/get/soc`);
-      if (soc === undefined) {
-        return undefined;
-      }
-      return soc as number;
+      return getValue.value(`openWB/bat/${batteryId}/get/soc`) as number || 0;
     };
   });
 
@@ -1548,18 +1544,18 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/bat/${batteryId}/get/power`,
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       if (returnType === 'absoluteTextValue') {
         const absValue = Math.abs(power);
         const valueObject = getValueObject.value(absValue, 'W', '', true);
-        return valueObject.textValue as string;
+        return valueObject.textValue;
       }
       console.error('returnType not found!', returnType, power);
     };
@@ -1577,13 +1573,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/bat/${batteryId}/get/daily_imported`,
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(energy, 'Wh', '', true);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, energy);
     };
@@ -1601,13 +1597,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/bat/${batteryId}/get/daily_exported`,
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(energy, 'Wh', '', true);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, energy);
     };
@@ -1620,7 +1616,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns boolean
    */
   const batteryConfigured = computed(() => {
-    return getValue.value('openWB/bat/config/configured', undefined) as boolean;
+    return getValue.value('openWB/bat/config/configured', undefined) as boolean || false;
   });
 
   /**
@@ -1628,7 +1624,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns number[]
    */
   const batteryIds = computed(() => {
-    return getObjectIds.value('bat') as number[];
+    return getObjectIds.value('bat') as number[] || [];
   });
 
   /**
@@ -1642,7 +1638,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         'openWB/bat/get/power',
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
@@ -1659,7 +1655,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns number
    */
   const batterySocTotal = computed(() => {
-    return getValue.value('openWB/bat/get/soc') as number;
+    return getValue.value('openWB/bat/get/soc') as number || 0;
   });
 
   /**
@@ -1671,13 +1667,13 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (returnType: string = 'textValue') => {
       const importedEnergy = getValue.value(
         'openWB/bat/get/daily_imported',
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(importedEnergy, 'Wh', '', true);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, importedEnergy);
     };
@@ -1692,13 +1688,13 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (returnType: string = 'textValue') => {
       const exportedEnergy = getValue.value(
         'openWB/bat/get/daily_exported',
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(exportedEnergy, 'Wh', '', true);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, exportedEnergy);
     };
@@ -1714,7 +1710,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         return getValue.value(
           'openWB/general/chargemode_config/pv_charging/bat_mode',
-        ) as string;
+        ) as string || undefined;
       },
       set(newValue: string) {
         return updateTopic(
@@ -1740,7 +1736,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       const vehicleIndex = parseInt(key.split('/')[2]);
       return {
         id: vehicleIndex,
-        name: list[key] as string,
+        name: list[key],
       } as Vehicle;
     });
   };
@@ -1908,7 +1904,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       return {
         soc:
           soonestPlan.limit.selected === 'soc'
-            ? (soonestPlan.limit.soc_scheduled as number)
+            ? soonestPlan.limit.soc_scheduled || 0
             : 0,
         time: soonestPlan.time,
       };
@@ -1929,7 +1925,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         const plans = vehicleScheduledChargingPlans(chargePointId).value;
         const plan = plans.find((p) => p.id === planId);
-        return plan?.current as number;
+        return plan?.current;
       },
       set(newValue: number) {
         const chargeTemplateId =
@@ -1990,7 +1986,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           'Wh',
           '',
           true,
-        ) as ValueObject;
+        );
         return valueObject.scaledValue;
       },
       set(newValue: number) {
@@ -2270,13 +2266,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/counter/${gridId}/get/power`,
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(power);
       if (returnType in valueObject) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, power);
     };
@@ -2295,13 +2291,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         'openWB/counter/set/home_consumption',
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(power);
       if (returnType in valueObject) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, power);
     };
@@ -2314,7 +2310,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns boolean
    */
   const getPvConfigured = computed(() => {
-    return getValue.value('openWB/pv/config/configured', undefined) as boolean;
+    return getValue.value('openWB/pv/config/configured', undefined) as boolean || false;
   });
 
   /**
@@ -2328,13 +2324,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         'openWB/pv/get/power',
         undefined,
         0,
-      ) as number;
+      ) as number || 0;
       const valueObject = getValueObject.value(power);
       if (returnType in valueObject) {
         return valueObject[returnType as keyof ValueObject];
       }
       if (returnType == 'object') {
-        return valueObject as ValueObject;
+        return valueObject;
       }
       console.error('returnType not found!', returnType, power);
     };

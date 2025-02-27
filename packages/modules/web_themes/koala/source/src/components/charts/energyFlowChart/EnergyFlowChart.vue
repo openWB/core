@@ -79,13 +79,13 @@ const pvProduction = computed(() => {
 const connectedChargePoints = computed(() => mqttStore.chargePointIds);
 
 const chargePoint1Name = computed(() =>
-  mqttStore.chargePointName(connectedChargePoints.value[0]),
+  mqttStore.chargePointName(connectedChargePoints.value[0]) || '---',
 );
 const chargePoint2Name = computed(() =>
-  mqttStore.chargePointName(connectedChargePoints.value[1]),
+  mqttStore.chargePointName(connectedChargePoints.value[1]) || '---',
 );
 const chargePoint3Name = computed(() =>
-  mqttStore.chargePointName(connectedChargePoints.value[2]),
+  mqttStore.chargePointName(connectedChargePoints.value[2]) || '---',
 );
 
 const chargePoint1Power = computed(() => {
@@ -322,7 +322,7 @@ const svgComponents = computed((): FlowComponent[] => {
           column: connectedChargePoints.value.length > 1 ? 0 : 1,
         },
         label: [
-          chargePoint1Name.value as string,
+          chargePoint1Name.value,
           absoluteValueObject(chargePoint1Power.value).textValue,
         ],
         icon: 'icons/owbChargePoint.svg',
@@ -346,7 +346,7 @@ const svgComponents = computed((): FlowComponent[] => {
             (chargePoint1ConnectedVehicleChargeMode.value.label as string) ||
               '---',
           ],
-          soc: chargePoint1ConnectedVehicleSoc.value.value?.soc / 100,
+          soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
         });
       }
@@ -366,7 +366,7 @@ const svgComponents = computed((): FlowComponent[] => {
             column: connectedChargePoints.value.length > 2 ? 1 : 2,
           },
           label: [
-            chargePoint2Name.value as string,
+            chargePoint2Name.value,
             absoluteValueObject(chargePoint2Power.value).textValue,
           ],
           icon: 'icons/owbChargePoint.svg',
@@ -388,10 +388,10 @@ const svgComponents = computed((): FlowComponent[] => {
           },
           label: [
             chargePoint2ConnectedVehicleName.value || '---',
-            (chargePoint2ConnectedVehicleChargeMode.value.label as string) ||
+            (chargePoint2ConnectedVehicleChargeMode.value.label) ||
               '---',
           ],
-          soc: chargePoint2ConnectedVehicleSoc.value.value?.soc / 100,
+          soc: (chargePoint2ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
         });
       }
@@ -408,7 +408,7 @@ const svgComponents = computed((): FlowComponent[] => {
           },
           position: { row: 2, column: 2 },
           label: [
-            chargePoint3Name.value as string,
+            chargePoint3Name.value,
             absoluteValueObject(chargePoint3Power.value).textValue,
           ],
           icon: 'icons/owbChargePoint.svg',
@@ -430,10 +430,10 @@ const svgComponents = computed((): FlowComponent[] => {
           },
           label: [
             chargePoint3ConnectedVehicleName.value || '---',
-            (chargePoint3ConnectedVehicleChargeMode.value.label as string) ||
+            (chargePoint3ConnectedVehicleChargeMode.value.label) ||
               '---',
           ],
-          soc: chargePoint3ConnectedVehicleSoc.value.value?.soc / 100,
+          soc: (chargePoint3ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
         });
       }
