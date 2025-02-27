@@ -31,13 +31,30 @@ const svgIconHeight = computed(() => svgSize.value.circleRadius);
 
 const svgFontSize = computed(() => `${svgSize.value.textSize}px`);
 
+const absoluteValueObject = (valueObject: ValueObject): ValueObject => {
+  // check for leading minus sign and remove it
+  // energy direction is indicated by animated flow line
+  // process object properties "textValue", "value" and "scaledValue" and return the modified valueObject
+  let newValueObject = { ...valueObject } as ValueObject;
+  if (newValueObject.textValue) {
+    newValueObject.textValue = newValueObject.textValue.replace(/^-/, '');
+  }
+  if (newValueObject.value) {
+    newValueObject.value = Math.abs(newValueObject.value);
+  }
+  if (newValueObject.scaledValue) {
+    newValueObject.scaledValue = Math.abs(newValueObject.scaledValue);
+  }
+  return newValueObject;
+};
+
 const gridPower = computed(
   () => mqttStore.getGridPower('object') as ValueObject,
 );
 const gridConsumption = computed(() => Number(gridPower.value.value) > 0);
 const gridFeedIn = computed(() => Number(gridPower.value.value) < 0);
 
-const batteryPower = computed(() => mqttStore.batteryTotalPower('textValue'));
+const batteryPower = computed(() => mqttStore.batteryTotalPower('object') as ValueObject);
 const batteryDischarging = computed(
   () => Number(mqttStore.batteryTotalPower('value')) < 0,
 );
@@ -54,7 +71,6 @@ const homeConsumption = computed(() => Number(homePower.value.value) > 0);
 const homeProduction = computed(() => Number(homePower.value.value) < 0);
 
 const pvPower = computed(() => mqttStore.getPvPower('object') as ValueObject);
-const pvPowerText = computed(() => String(pvPower.value.textValue).slice(1));
 const pvProduction = computed(() => {
   const value = Number(pvPower.value.value);
   return Math.abs(value) >= 50;
@@ -242,7 +258,7 @@ const svgComponents = computed((): FlowComponent[] => {
       animatedReverse: gridFeedIn.value,
     },
     position: { row: 0, column: 0 },
-    label: ['EVU', gridPower.value.textValue as string],
+    label: ['EVU', absoluteValueObject(gridPower.value).textValue],
     icon: 'icons/owbGrid.svg',
   });
 
@@ -255,7 +271,7 @@ const svgComponents = computed((): FlowComponent[] => {
       animatedReverse: homeConsumption.value,
     },
     position: { row: 0, column: 2 },
-    label: ['Haus', homePower.value.textValue as string],
+    label: ['Haus', absoluteValueObject(homePower.value).textValue],
     icon: 'icons/owbHouse.svg',
   });
 
@@ -269,7 +285,7 @@ const svgComponents = computed((): FlowComponent[] => {
         animatedReverse: false,
       },
       position: { row: 1, column: 0 },
-      label: ['PV', pvPowerText.value as string],
+      label: ['PV', absoluteValueObject(pvPower.value).textValue],
       icon: 'icons/owbPV.svg',
     });
   }
@@ -284,7 +300,7 @@ const svgComponents = computed((): FlowComponent[] => {
         animatedReverse: batteryCharging.value,
       },
       position: { row: 1, column: 2 },
-      label: ['Speicher', batteryPower.value as string],
+      label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
       soc: batterySoc.value,
       icon: 'icons/owbBattery.svg',
     });
@@ -307,7 +323,7 @@ const svgComponents = computed((): FlowComponent[] => {
         },
         label: [
           chargePoint1Name.value as string,
-          chargePoint1Power.value.textValue as string,
+          absoluteValueObject(chargePoint1Power.value).textValue,
         ],
         icon: 'icons/owbChargePoint.svg',
       });
@@ -351,7 +367,7 @@ const svgComponents = computed((): FlowComponent[] => {
           },
           label: [
             chargePoint2Name.value as string,
-            chargePoint2Power.value.textValue as string,
+            absoluteValueObject(chargePoint2Power.value).textValue,
           ],
           icon: 'icons/owbChargePoint.svg',
         });
@@ -393,7 +409,7 @@ const svgComponents = computed((): FlowComponent[] => {
           position: { row: 2, column: 2 },
           label: [
             chargePoint3Name.value as string,
-            chargePoint3Power.value.textValue as string,
+            absoluteValueObject(chargePoint3Power.value).textValue,
           ],
           icon: 'icons/owbChargePoint.svg',
         });
@@ -432,7 +448,7 @@ const svgComponents = computed((): FlowComponent[] => {
           animatedReverse: chargePointSumCharging.value,
         },
         position: { row: 2, column: 1 },
-        label: ['Ladepunkte', chargePointSumPower.value.textValue as string],
+        label: ['Ladepunkte', absoluteValueObject(chargePointSumPower.value).textValue],
         icon: 'icons/owbChargePoint.svg',
       });
     }
