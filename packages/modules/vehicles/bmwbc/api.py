@@ -207,16 +207,17 @@ class Api:
                 log.debug("# Reuse _account instance")
 
             # experimental: login  when expires_at is reached to force token refresh
-            expires_at = datetime.fromisoformat(self._store['expires_at'])
-            nowdt = datetime.now(expires_at.tzinfo)
+            if self._store['expires_at'] is not None:
+                expires_at = datetime.fromisoformat(self._store['expires_at'])
+                nowdt = datetime.now(expires_at.tzinfo)
 
-            if nowdt > expires_at:
-                log.info("# Proactive login to force refresh token before get_vehicles")
-                log.info("# before proactive login:" + str(self._auth.expires_at) +
-                         "/" + self._auth.refresh_token)
-                await self._auth.login()
-                log.info("# after  proactive login:" + str(self._auth.expires_at) +
-                         "/" + self._auth.refresh_token)
+                if nowdt > expires_at:
+                    log.info("# Proactive login to force refresh token before get_vehicles")
+                    log.info("# before proactive login:" + str(self._auth.expires_at) +
+                             "/" + self._auth.refresh_token)
+                    await self._auth.login()
+                    log.info("# after  proactive login:" + str(self._auth.expires_at) +
+                             "/" + self._auth.refresh_token)
 
             # get vehicle list - needs to be called async
             await self._account.get_vehicles()
@@ -266,6 +267,9 @@ class Api:
             self._auth = None
             self._clconf = None
             self._account = None
+            soc = 0
+            range = 0.0
+            soc_tsX = datetime.timestamp(datetime.now())
             raise RequestFailed("SoC Request failed:\n" + str(err))
         return soc, range, soc_tsX
 
