@@ -118,7 +118,8 @@ def get_rate_from_time_of_use_product(unit_rate_info: dict, hour_time: datetime)
     for rate_info in unit_rate_info['rates']:
         active_from = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeFromTime'], '%H:%M:%S').time()
         active_to = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeToTime'], '%H:%M:%S').time()
-        if active_from <= hour_time.time() < active_to or (
+        local_hour_time = hour_time.astimezone().time()  # hour_time is UTC, time of use returns local time
+        if active_from <= local_hour_time < active_to or (
            active_to == datetime.min.time() and hour_time.time() >= active_from):
             return float(rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
     return None
@@ -131,12 +132,12 @@ def process_agreement(agreement: dict, hour_time: datetime, prices: Dict[str, fl
     if valid_from <= hour_time <= valid_to:
         unit_rate_info = agreement['unitRateInformation']
         timestamp = str(int(hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
-
         if unit_rate_info['__typename'] == 'SimpleProductUnitRateInformation':
             prices[timestamp] = get_rate_from_simple_product(unit_rate_info)
         elif unit_rate_info['__typename'] == 'TimeOfUseProductUnitRateInformation':
             rate = get_rate_from_time_of_use_product(unit_rate_info, hour_time)
             if rate is not None:
+                log.debug(f"Adding rate: {rate} for timestamp: {timestamp} with hour_time: {hour_time}")
                 prices[timestamp] = rate
 
 
