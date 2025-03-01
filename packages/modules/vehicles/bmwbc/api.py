@@ -103,10 +103,26 @@ class RequestFailed(Exception):
 
 class Api:
     # initialize class variables
+    _instance = None
     _auth = None
     _clconf = None
     _account = None
     _store = None
+    _lock = Lock()
+
+    def __new__(self, *args, **kwargs):
+        if self._instance is None:
+            with self._lock:
+                if self._instance is None:
+                    log.debug('#  Instantiate api object')
+                    self._instance = object.__new__(self)
+                    self.user_id = None
+                    self.password = None
+                else:
+                    log.debug('#  Reuse api _instance')
+        else:
+            log.debug('#  Reuse api _instance')
+        return self._instance
 
     # --------------- async fetch Function called by fetch_soc ------------------------------------
     async def _fetch_soc(self,
@@ -118,7 +134,7 @@ class Api:
 
         global storeFile
 
-        # make sure teh patch for the store fie exists
+        # make sure the path for the store fie exists
         try:
             log.debug("dataPath=" + str(DATA_PATH))
             DATA_PATH.mkdir(parents=True, exist_ok=True)
@@ -130,6 +146,35 @@ class Api:
             return 0, 0.0
 
         storeFile = str(DATA_PATH) + '/soc_bmwbc_vh_' + str(vnum) + '.json'
+
+        # check for secondary vehicle, i.e. use file from ramdisk
+        if captcha_token == "SECONDARY":
+            soc = 0
+            range = 0.0
+            soc_tsX = 0.0
+            if self._account is not None:
+                vehicle = self._account.get_vehicle(vin)
+
+                # get json of vehicle data
+                resp = dumps(vehicle, cls=MyBMWJSONEncoder, indent=4)
+
+                # vehicle data - json to dict
+                respd = loads(resp)
+                state = respd['data']['state']
+
+                # get soc, range, lastUpdated from vehicle data
+                soc = int(state['electricChargingState']['chargingLevelPercent'])
+                range = float(state['electricChargingState']['range'])
+                lastUpdatedAt = state['lastUpdatedAt']
+                # convert lastUpdatedAt to soc_timestamp
+                soc_tsdtZ = datetime.strptime(lastUpdatedAt, ts_fmt + "Z")
+                soc_tsX = datetime.timestamp(soc_tsdtZ)
+            else:
+                log.warning("existing _account is None")
+                raise RequestFailed("SoC Request: CD Account not initialized")
+
+            log.info("SECONDARY: SOC/Range: " + str(soc) + '%/' + str(range) + 'KM@' + lastUpdatedAt)
+            return soc, range, soc_tsX
 
         try:
             # set logging in httpx to WARNING to prevent unwanted log messages from bimmeer connected
@@ -181,7 +226,7 @@ class Api:
                 else:
                     log.debug("# Reuse _auth instance")
 
-            # set sessuin_id and gcid in _auth to store values
+            # set session_id and gcid in _auth to store values
             if self._store['session_id'] is not None:
                 self._auth.session_id = self._store['session_id']
             if self._store['gcid'] is not None:
@@ -212,12 +257,12 @@ class Api:
                 nowdt = datetime.now(expires_at.tzinfo)
 
                 if nowdt > expires_at:
-                    log.info("# Proactive login to force refresh token before get_vehicles")
-                    log.info("# before proactive login:" + str(self._auth.expires_at) +
-                             "/" + self._auth.refresh_token)
+                    log.debug("# Proactive login to force refresh token before get_vehicles")
+                    log.debug("# before proactive login:" + str(self._auth.expires_at) +
+                              "/" + self._auth.refresh_token)
                     await self._auth.login()
-                    log.info("# after  proactive login:" + str(self._auth.expires_at) +
-                             "/" + self._auth.refresh_token)
+                    log.debug("# after  proactive login:" + str(self._auth.expires_at) +
+                              "/" + self._auth.refresh_token)
 
             # get vehicle list - needs to be called async
             await self._account.get_vehicles()
@@ -243,7 +288,7 @@ class Api:
             # save the vehicle data for further analysis if required
             dump_json(respd, '/soc_bmwbc_reply_vehicle_' + str(vnum))
 
-            log.info(" SOC/Range: " + str(soc) + '%/' + str(range) + 'KM@' + lastUpdatedAt)
+            log.info("PRIMARY SOC/Range: " + str(soc) + '%/' + str(range) + 'KM@' + lastUpdatedAt)
 
             # store token and expires_at if changed
             expires_at = datetime.isoformat(self._auth.expires_at)
@@ -259,8 +304,8 @@ class Api:
                 self._store['gcid'] = self._auth.gcid
                 self._store['expires_at'] = datetime.isoformat(self._auth.expires_at)
                 write_store(self._store)
-                log.info("# after  write_store :" + str(self._auth.expires_at) +
-                         "/" + self._auth.refresh_token)
+                log.debug("# after  write_store :" + str(self._auth.expires_at) +
+                          "/" + self._auth.refresh_token)
 
         except Exception as err:
             log.error("bmwbc.fetch_soc: requestData Error, vnum: " + str(vnum) + f" {err=}, {type(err)=}")
