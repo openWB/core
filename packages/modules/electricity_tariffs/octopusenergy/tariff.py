@@ -145,7 +145,7 @@ def build_tariff_state(data) -> Dict[str, float]:
     current_time = datetime.now(timezone.utc)
     prices: Dict[str, float] = {}
 
-    for hour in range(24):
+    for hour in range(28):
         hour_time = current_time + timedelta(hours=hour)
         for agreement in data['account']['property']['electricityMalos'][0]['agreements']:
             process_agreement(agreement, hour_time, prices)
