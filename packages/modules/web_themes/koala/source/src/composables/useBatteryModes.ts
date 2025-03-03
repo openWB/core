@@ -2,10 +2,10 @@ export const useBatteryModes = () => {
   const batteryModes = [
     {
       value: 'ev_mode',
-      label: 'Auto',
+      label: 'Fahrzeuge',
       color: 'primary',
       icon: 'directions_car',
-      tooltip: 'Auto',
+      tooltip: 'Fahrzeuge',
     },
     {
       value: 'bat_mode',
@@ -16,10 +16,10 @@ export const useBatteryModes = () => {
     },
     {
       value: 'min_soc_bat_mode',
-      label: 'SoC',
+      label: 'Mindest-SoC',
       color: 'primary',
-      icon: 'battery_charging_full',
-      tooltip: 'Minimum Speicher SoC',
+      icon: 'battery_4_bar',
+      tooltip: 'Mindest-SoC des Speichers',
     },
   ];
 
