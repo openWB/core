@@ -1511,14 +1511,13 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const batteryName = computed(() => {
     return (batteryId: number): string => {
-      const configuration = getValue.value(
+      const configurations = getWildcardValues.value(
         `openWB/system/device/+/component/${batteryId}/config`,
-      ) as BatteryConfiguration | undefined;
-      if (configuration === undefined) {
+      ) as {[key:string]: BatteryConfiguration};
+      if (Object.keys(configurations).length === 0) {
         return `Speicher ${batteryId}`;
       }
-      console.log('battery configuration', configuration);
-      return configuration.name;
+      return Object.values(configurations)[0].name;
     };
   });
 
