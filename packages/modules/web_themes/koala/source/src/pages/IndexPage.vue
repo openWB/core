@@ -10,28 +10,32 @@
       <q-tab name="charge-points" title="Ladepunkte">
         <q-icon name="ev_station" size="md" color="primary" />
       </q-tab>
+      <q-tab name="vehicles" title="Fahrzeuge">
+        <q-icon name="directions_car" size="md" color="primary" />
+      </q-tab>
       <q-tab name="batteries" title="Speicher">
         <q-icon name="battery_full" size="md" color="primary" />
       </q-tab>
-      <q-tab name="smartHome" title="SmartHome">
+      <q-tab name="smart-home" title="SmartHome">
         <q-icon name="home" size="md" color="primary" />
       </q-tab>
     </q-tabs>
     <!-- Tab Panels -->
     <q-tab-panels v-model="tab" class="col">
+      <!-- Charge Points -->
       <q-tab-panel name="charge-points" class="q-pa-none column">
-        <BaseCarousel :items="chargePointIds">
-          <template #item="{ item }">
-            <ChargePoint :charge-point-id="item" />
-          </template>
-        </BaseCarousel>
+        <ChargePointInformation />
+      </q-tab-panel>
+      <!-- Vehicles -->
+      <q-tab-panel name="vehicles" class="q-pa-none column">
+        <VehicleInformation />
       </q-tab-panel>
       <!-- Batteries -->
       <q-tab-panel name="batteries" class="">
         <BatteryInformation />
       </q-tab-panel>
       <!-- Smart Home -->
-      <q-tab-panel name="smartHome" class="">
+      <q-tab-panel name="smart-home" class="">
         <SmartHomeInformation />
       </q-tab-panel>
     </q-tab-panels>
@@ -41,10 +45,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import ChartCarousel from 'src/components/ChartCarousel.vue';
-import BaseCarousel from 'src/components/BaseCarousel.vue';
-import ChargePoint from 'src/components/ChargePoint.vue';
+import ChargePointInformation from 'src/components/ChargePointInformation.vue';
 import BatteryInformation from 'src/components/BatteryInformation.vue';
-import BatteryOverview from 'src/components/BatteryOverview.vue';
+import VehicleInformation from 'src/components/VehicleInformation.vue';
 import SmartHomeInformation from 'src/components/SmartHomeInformation.vue';
 
 defineOptions({
