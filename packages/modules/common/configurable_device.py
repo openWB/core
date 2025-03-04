@@ -87,8 +87,14 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
         with SingleComponentUpdateContext(FaultState(ComponentInfo.from_component_config(component_config)),
                                           self.__initializer):
             component = self.__component_factory(component_config)
+            component.initialized = False
             self.components["component" + str(component_config.id)] = component
             component.initialize()
+            component.initialized = True
 
     def update(self):
-        self.__component_updater(self.components.values(), self.error_handler)
+        initialized_components = []
+        for component in self.components.values():
+            if hasattr(component, "initialized") and component.initialized:
+                initialized_components.append(component)
+        self.__component_updater(initialized_components, self.error_handler)
