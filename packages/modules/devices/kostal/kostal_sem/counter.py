@@ -21,7 +21,7 @@ class KostalSemCounter(AbstractCounter):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
-        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

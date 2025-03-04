@@ -14,10 +14,11 @@ from modules.devices.good_we.good_we.version import GoodWeVersion
 
 
 class KwargsDict(TypedDict):
+    device_id: int
     modbus_id: int
     version: GoodWeVersion
     firmware: int
-    tcp_client: modbus.ModbusTcpClient_
+    client: modbus.ModbusTcpClient_
 
 
 class GoodWeCounter(AbstractCounter):
@@ -29,8 +30,8 @@ class GoodWeCounter(AbstractCounter):
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.version: GoodWeVersion = self.kwargs['version']
         self.firmware: int = self.kwargs['firmware']
-        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

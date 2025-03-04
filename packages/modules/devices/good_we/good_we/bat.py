@@ -16,7 +16,7 @@ class KwargsDict(TypedDict):
     modbus_id: int
     version: GoodWeVersion
     firmware: int
-    tcp_client: modbus.ModbusTcpClient_
+    client: modbus.ModbusTcpClient_
 
 
 class GoodWeBat(AbstractBat):
@@ -28,7 +28,7 @@ class GoodWeBat(AbstractBat):
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.version: GoodWeVersion = self.kwargs['version']
         self.firmware: int = self.kwargs['firmware']
-        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

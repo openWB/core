@@ -33,7 +33,8 @@ def create_device(device_config: GoodWe):
                                      modbus_id=device_config.configuration.modbus_id,
                                      version=GoodWeVersion(device_config.configuration.version),
                                      firmware=device_config.configuration.firmware,
-                                     client=client)
+                                     client=client,
+                                     device_id=device_config.id)
 
     def create_inverter_component(component_config: GoodWeInverterSetup):
         nonlocal client
