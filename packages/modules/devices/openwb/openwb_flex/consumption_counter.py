@@ -14,7 +14,7 @@ from modules.devices.openwb.openwb_flex.versions import consumption_counter_fact
 
 class KwargsDict(TypedDict):
     device_id: int
-    tcp_client: modbus.ModbusTcpClient_
+    client: modbus.ModbusTcpClient_
 
 
 class ConsumptionCounterFlex(AbstractCounter):
@@ -24,7 +24,7 @@ class ConsumptionCounterFlex(AbstractCounter):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         factory = consumption_counter_factory(self.component_config.configuration.type)
         self.__client = factory(self.component_config.configuration.id, self.__tcp_client)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
