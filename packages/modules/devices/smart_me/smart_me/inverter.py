@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 class SmartMeInverter(AbstractInverter):
     def __init__(self, component_config: SmartMeInverterSetup) -> None:
-        self.component_config = SmartMeInverterSetup(**component_config)
+        self.component_config = component_config
 
     def initialize(self) -> None:
         self.store = get_inverter_value_store(self.component_config.id)

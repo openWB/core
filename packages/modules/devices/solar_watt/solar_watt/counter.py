@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Any, Dict, Union, TypedDict
+from typing import Any, Dict, TypedDict
 
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -19,8 +19,8 @@ class KwargsDict(TypedDict):
 
 
 class SolarWattCounter(AbstractCounter):
-    def __init__(self, component_config: Union[Dict, SolarWattCounterSetup], **kwargs: Any) -> None:
-        self.component_config = SolarWattCounterSetup(**component_config)
+    def __init__(self, component_config: SolarWattCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:

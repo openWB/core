@@ -20,7 +20,7 @@ class KwargsDict(TypedDict):
 
 class SolaxInverter(AbstractInverter):
     def __init__(self, component_config: SolaxInverterSetup, **kwargs: Any) -> None:
-        self.component_config = SolaxInverterSetup(**component_config)
+        self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:

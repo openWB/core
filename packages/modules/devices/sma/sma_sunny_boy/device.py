@@ -37,7 +37,7 @@ def create_device(device_config: SmaSunnyBoy):
         return SunnyBoySmartEnergyBat(component_config, client=client)
 
     def create_bat_tesvolt_component(component_config: SmaTesvoltBatSetup):
-        return TesvoltBat(component_config, client=client)
+        return TesvoltBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SmaSunnyBoyCounterSetup):
         nonlocal client

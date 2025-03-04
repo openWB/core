@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Any, Dict, Union, TypedDict
+from typing import Any, TypedDict
 import xml.etree.ElementTree as ET
 
 from modules.common import req
@@ -19,8 +19,8 @@ class KwargsDict(TypedDict):
 
 
 class SmartfoxCounter(AbstractCounter):
-    def __init__(self, component_config: Union[Dict, SmartfoxCounterSetup], **kwargs: Any) -> None:
-        self.component_config = SmartfoxCounterSetup(**component_config)
+    def __init__(self, component_config: SmartfoxCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
@@ -39,7 +39,7 @@ class SmartfoxCounter(AbstractCounter):
         headers = {
             'Accept': '*/*',
             'Accept-Encoding': 'gzip, deflate',
-            'Host': self.__device_address,
+            'Host': self.ip_address,
             'Connection': 'keep-alive)',
         }
 

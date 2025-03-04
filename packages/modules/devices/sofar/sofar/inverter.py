@@ -23,7 +23,7 @@ class SofarInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.__modbus_id: int = self.component_config.configuration.modbus_id
+        self.__modbus_id: int = self.kwargs['modbus_id']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

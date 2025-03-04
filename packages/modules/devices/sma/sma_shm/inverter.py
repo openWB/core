@@ -15,7 +15,7 @@ def parse_datagram(sma_data: dict):
 
 
 def create_component(component_config: SmaHomeManagerInverterSetup):
-    return SpeedwireComponent(get_inverter_value_store, parse_datagram, component_config)
+    return SpeedwireComponent(component_config, value_store_factory=get_inverter_value_store, parser=parse_datagram)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SmaHomeManagerInverterSetup)
