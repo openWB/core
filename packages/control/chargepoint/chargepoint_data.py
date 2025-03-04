@@ -94,8 +94,6 @@ class Get:
     charging_power: Optional[float] = 0
     charging_voltage: Optional[float] = 0
     connected_vehicle: ConnectedVehicle = field(default_factory=connected_vehicle_factory)
-    current_branch: Optional[str] = None
-    current_version: Optional[str] = None
     currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = 0
     daily_exported: float = 0

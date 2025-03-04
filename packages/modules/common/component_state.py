@@ -168,12 +168,8 @@ class ChargepointState:
                  soc_timestamp: Optional[int] = None,
                  evse_current: Optional[float] = None,
                  vehicle_id: Optional[str] = None,
-                 max_evse_current: Optional[int] = None,
-                 current_branch: Optional[str] = None,
-                 current_version: Optional[str] = None) -> None:
+                 max_evse_current: Optional[int] = None) -> None:
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
-        self.current_branch = current_branch
-        self.current_version = current_version
         self.frequency = frequency
         self.imported = imported
         self.exported = exported

@@ -105,8 +105,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/fault_str$",
         "^openWB/chargepoint/[0-9]+/get/frequency$",
         "^openWB/chargepoint/[0-9]+/get/max_evse_current$",
-        "^openWB/chargepoint/[0-9]+/get/current_branch$",
-        "^openWB/chargepoint/[0-9]+/get/current_version$",
         "^openWB/chargepoint/[0-9]+/get/plug_state$",
         "^openWB/chargepoint/[0-9]+/get/phases_in_use$",
         "^openWB/chargepoint/[0-9]+/get/exported$",
