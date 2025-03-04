@@ -69,6 +69,10 @@ $battery: #ba7128;
     background-color: var(--q-background-2);
     color: var(--q-brown-text);
   }
+  // Drawer background
+  .q-drawer {
+    background-color: var(--q-background-2);
+  }
   // Tab panel background
   .q-tab-panels {
     background-color: var(--q-background-2);
@@ -129,7 +133,7 @@ $battery: #ba7128;
   }
 }
 // Dark Theme Base Colors
-$dark-page: #030627; // This overrides Quasar's default dark page color
+$dark-page: #000000; // This overrides Quasar's default dark page color
 $dark-primary: #3874db;
 $dark-secondary: #28293d;
 $dark-accent: #546e7a;
@@ -139,7 +143,7 @@ $dark-info: #4b89aa;
 $dark-warning: #d98e44;
 $dark-background-1: #030627;
 $dark-background-2: #010322;
-$dark-list: #3c3e5c;
+$dark-list: rgb(40, 42, 62);
 $dark-carousel: #8b8f9f;
 $dark-tab-icon: #d7d9e0;
 // Dark theme
@@ -162,7 +166,7 @@ $dark-tab-icon: #d7d9e0;
   --q-flow-home-stroke: #{$grey};
   --q-battery: #{$dark-warning};
   // Main background
-  background-color: var($dark-page);
+  background-color: $dark-page;
   // Text color
   color: var(--q-white);
   .theme-text {
@@ -171,14 +175,14 @@ $dark-tab-icon: #d7d9e0;
   .deselected {
     color: var(--q-grey) !important;
   }
-  // Override default dark theme background
-  body.body--dark {
-    background: var($dark-page) !important;
-  }
   // Header colors
   .q-header {
     background-color: var(--q-background-2);
     color: var(--q-white);
+  }
+  // Drawer background
+  .q-drawer {
+    background-color: var(--q-list);
   }
   // Tab icon color
   .q-tab {
