@@ -11,6 +11,8 @@ from asyncio import new_event_loop, set_event_loop
 from datetime import datetime
 from copy import deepcopy
 from threading import Lock
+import os.path
+import shutil
 
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -27,6 +29,11 @@ from pathlib import Path
 DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "modules" / "bmwbc"
 ts_fmt = '%Y-%m-%dT%H:%M:%S'
 dt_fmt = '%Y-%m-%d %H:%M:%S'
+storeFilePrefix = '/soc_bmwbc_'
+storeFileTypeVehicle = 'vh_'
+storeFileTypeUserid = 'usr_'
+jsonFilePostfix = '.json'
+replyFilePrefix = '/soc_bmwbc_reply_vehicle_'
 
 log = getLogger(__name__)
 
@@ -55,8 +62,29 @@ def init_store():
 
 
 # load store from file, if no store file exists initialize store structure
-def load_store():
-    global storeFile
+def load_store(user_id: str, vehicle_id: str) -> dict:
+    try:
+        # check for user_id storefile
+        # if not check for vehicle_id storefile
+        storeFileUserid = str(DATA_PATH) + storeFilePrefix + storeFileTypeUserid + user_id + jsonFilePostfix
+        storeFileVehicle = str(DATA_PATH) + storeFilePrefix + storeFileTypeVehicle + vehicle_id + jsonFilePostfix
+        if os.path.isfile(storeFileUserid):
+            log.debug("load_store: storeFileUserid found")
+            storeFile = storeFileUserid
+        elif os.path.isfile(storeFileVehicle):
+            log.debug("load_store: storeFileUserid not found, storeFileVehicle found")
+            shutil.copy(storeFileVehicle, storeFileUserid)
+            storeFile = storeFileUserid
+        else:
+            log.warning("no store file found, init store")
+            store = init_store()
+            return store
+    except Exception as e:
+        log.error("init: loading stored data failed, file: " +
+                  storeFile + ", error=" + str(e))
+        store = init_store()
+        return store
+
     try:
         with open(storeFile, 'r', encoding='utf-8') as tf:
             store = load(tf)
@@ -77,8 +105,13 @@ def load_store():
 
 
 # write store file
-def write_store(store: dict):
-    global storeFile
+def write_store(store: dict, user_id: str, vehicle_id: str):
+    storeFileUserid = str(DATA_PATH) + storeFilePrefix + storeFileTypeUserid + user_id + jsonFilePostfix
+    storeFileVehicle = str(DATA_PATH) + storeFilePrefix + storeFileTypeVehicle + vehicle_id + jsonFilePostfix
+    storeFile = storeFileUserid
+    with open(storeFile, 'w', encoding='utf-8') as tf:
+        dump(store, tf, indent=4)
+    storeFile = storeFileVehicle
     with open(storeFile, 'w', encoding='utf-8') as tf:
         dump(store, tf, indent=4)
     log_store(store, "store written")
@@ -86,7 +119,7 @@ def write_store(store: dict):
 
 # write a dict as json file - useful for problem analysis
 def dump_json(data: dict, fout: str):
-    replyFile = str(RAMDISK_PATH) + fout + '.json'
+    replyFile = str(RAMDISK_PATH) + fout + jsonFilePostfix
     with open(replyFile, 'w', encoding='utf-8') as f:
         dump(data, f, ensure_ascii=False, indent=4)
 
@@ -103,10 +136,12 @@ class RequestFailed(Exception):
 class Api:
     # initialize class variables
     _instance = None
-    _auth = None
-    _clconf = None
-    _account = None
-    _store = None
+    _store = {}
+    _auth = {}
+    _clconf = {}
+    _account = {}
+    _last_reload = {}
+    _primary_vehicle_id = {}
     _lock = Lock()
 
     def __new__(self, *args, **kwargs):
@@ -129,9 +164,7 @@ class Api:
                          password: str,
                          vin: str,
                          captcha_token: str,
-                         vnum: int) -> Union[int, float]:
-
-        global storeFile
+                         vehicle_id: str) -> Union[int, float]:
 
         # make sure the path for the store fie exists
         try:
@@ -140,11 +173,17 @@ class Api:
         except Exception as e:
             log.error("init: dataPath creation failed, dataPath: " +
                       str(DATA_PATH) + ", error=" + str(e))
-            if self._store is None:
-                self._store = init_store()
-            return 0, 0.0
+            if user_id not in self._store:
+                self._store[user_id] = init_store()
+            return 0, 0.0, 0
 
-        storeFile = str(DATA_PATH) + '/soc_bmwbc_vh_' + str(vnum) + '.json'
+        # if self._storeFile is None:
+        if user_id not in self._primary_vehicle_id:
+            if captcha_token != "SECONDARY":
+                self._primary_vehicle_id[user_id] = vehicle_id
+            else:
+                log.warning("sequence problem: secondary starts without preceding primary")
+                raise RequestFailed("sequence problem: secondary starts without preceding primary")
 
         try:
             # initialize return values in case we get into trouble
@@ -157,97 +196,108 @@ class Api:
                 # set logging in httpx to WARNING to prevent unwanted log messages from bimmeer connected
                 getLogger("httpx").setLevel(WARNING)
 
-                if self._store is None:
-                    self._store = load_store()
+                if user_id not in self._store:
+                    self._store[user_id] = load_store(user_id, self._primary_vehicle_id[user_id])
 
                 # check for captcha_token in store
-                if 'captcha_token' not in self._store:
+                if 'captcha_token' not in self._store[user_id]:
                     # captcha token not in self._store - add current captcha_token
                     log.debug("initialize captcha token in store")
-                    self._store['captcha_token'] = captcha_token
-                    write_store(self._store)
+                    self._store[user_id]['captcha_token'] = captcha_token
+                    write_store(self._store[user_id], user_id, self._primary_vehicle_id[user_id])
                 else:
                     # last used captcha token in store, compare with captcha_token in configuration
-                    if self._store['captcha_token'] != captcha_token:
+                    if self._store[user_id]['captcha_token'] != captcha_token:
                         # invalidate current refresh and access token to force new login
                         log.debug("new captcha token configured - invalidate stored token set")
-                        self._store['expires_at'] = None
-                        self._store['access_token'] = None
-                        self._store['refresh_token'] = None
-                        self._store['session_id'] = None
-                        self._store['gcid'] = None
+                        self._store[user_id]['expires_at'] = None
+                        self._store[user_id]['access_token'] = None
+                        self._store[user_id]['refresh_token'] = None
+                        self._store[user_id]['session_id'] = None
+                        self._store[user_id]['gcid'] = None
                     else:
                         log.debug("captcha token unchanged")
 
-                if self._store['expires_at'] is not None and \
-                   self._store['refresh_token'] is not None and \
-                   self._store['access_token'] is not None:
-                    # authenticate via refresh and access token
-                    # user_id, password are provided in case these are required
-                    log.info("authenticate via current token set")
-                    expires_at = datetime.fromisoformat(self._store['expires_at'])
-                    if self._auth is None:
-                        self._auth = MyBMWAuthentication(user_id, password, Regions.REST_OF_WORLD,
-                                                         refresh_token=self._store['refresh_token'],
-                                                         access_token=self._store['access_token'],
-                                                         expires_at=expires_at)
-                else:
-                    # no token, authenticate via user_id, password and captcha_token
-                    log.info("authenticate via userid, password, captcha token")
-                    if self._auth is None:
-                        log.debug("# Create _auth instance")
-                        self._auth = MyBMWAuthentication(user_id,
-                                                         password,
-                                                         Regions.REST_OF_WORLD,
-                                                         hcaptcha_token=captcha_token)
+                if user_id not in self._auth:
+                    if self._store[user_id]['expires_at'] is not None and \
+                       self._store[user_id]['refresh_token'] is not None and \
+                       self._store[user_id]['access_token'] is not None:
+                        # authenticate via refresh and access token
+                        # user_id, password are provided in case these are required
+                        log.info("authenticate via current token set")
+                        expires_at = datetime.fromisoformat(self._store[user_id]['expires_at'])
+                        self._auth[user_id] = MyBMWAuthentication(
+                                                                  user_id,
+                                                                  password,
+                                                                  Regions.REST_OF_WORLD,
+                                                                  refresh_token=self._store[user_id]['refresh_token'],
+                                                                  access_token=self._store[user_id]['access_token'],
+                                                                  expires_at=expires_at)
                     else:
-                        log.debug("# Reuse _auth instance")
+                        # no token, authenticate via user_id, password and captcha_token
+                        log.info("authenticate via userid, password, captcha token")
+                        log.debug("# Create _auth instance")
+                        self._auth[user_id] = MyBMWAuthentication(user_id,
+                                                                  password,
+                                                                  Regions.REST_OF_WORLD,
+                                                                  hcaptcha_token=captcha_token)
+                else:
+                    log.debug("# Reuse _auth instance")
 
                 # set session_id and gcid in _auth to store values
-                if self._store['session_id'] is not None:
-                    self._auth.session_id = self._store['session_id']
-                if self._store['gcid'] is not None:
-                    self._auth.gcid = self._store['gcid']
+                if self._store[user_id]['session_id'] is not None:
+                    self._auth[user_id].session_id = self._store[user_id]['session_id']
+                if self._store[user_id]['gcid'] is not None:
+                    self._auth[user_id].gcid = self._store[user_id]['gcid']
 
                 # instantiate client configuration object is not existent yet
-                if self._clconf is None:
+                if user_id not in self._clconf:
                     log.debug("# Create _clconf instance")
-                    self._clconf = MyBMWClientConfiguration(self._auth)
+                    self._clconf[user_id] = MyBMWClientConfiguration(self._auth[user_id])
                 else:
                     log.debug("# Reuse _clconf instance")
 
                 # instantiate account object of not existent yet
-                if self._account is None:
+                if user_id not in self._account:
                     log.debug("# Create _account instance")
                     # user, password and region already set in BMWAuthentication/ClientConfiguration!
-                    self._account = MyBMWAccount(None, None, None, config=self._clconf, hcaptcha_token=captcha_token)
-                    self._account.set_refresh_token(refresh_token=self._store['refresh_token'],
-                                                    gcid=self._store['gcid'],
-                                                    access_token=self._store['access_token'],
-                                                    session_id=self._store['session_id'])
+                    self._account[user_id] = MyBMWAccount(None, None, None,
+                                                          config=self._clconf[user_id],
+                                                          hcaptcha_token=captcha_token)
+                    self._account[user_id].set_refresh_token(refresh_token=self._store[user_id]['refresh_token'],
+                                                             gcid=self._store[user_id]['gcid'],
+                                                             access_token=self._store[user_id]['access_token'],
+                                                             session_id=self._store[user_id]['session_id'])
                 else:
                     log.debug("# Reuse _account instance")
+            else:
+                self._mode = "SECONDARY"
 
+            # get vehicle list - if last reload is more than 5 min ago
+            self._now = datetime.timestamp(datetime.now())
+            if user_id not in self._last_reload:
+                self._last_reload[user_id] = 0
+            if self._now > self._last_reload[user_id] + 5 * 60:
                 # experimental: login  when expires_at is reached to force token refresh
-                if self._store['expires_at'] is not None:
-                    expires_at = datetime.fromisoformat(self._store['expires_at'])
+                if self._store[user_id]['expires_at'] is not None:
+                    expires_at = datetime.fromisoformat(self._store[user_id]['expires_at'])
                     nowdt = datetime.now(expires_at.tzinfo)
 
                     if nowdt > expires_at:
                         log.debug("# Proactive login to force refresh token before get_vehicles")
-                        log.debug("# before proactive login:" + str(self._auth.expires_at) +
-                                  "/" + self._auth.refresh_token)
-                        await self._auth.login()
-                        log.debug("# after  proactive login:" + str(self._auth.expires_at) +
-                                  "/" + self._auth.refresh_token)
+                        log.debug("# before proactive login:" + str(self._auth[user_id].expires_at) +
+                                  "/" + self._auth[user_id].refresh_token)
+                        await self._auth[user_id].login()
+                        log.debug("# after  proactive login:" + str(self._auth[user_id].expires_at) +
+                                  "/" + self._auth[user_id].refresh_token)
 
                 # get vehicle list - needs to be called async
-                await self._account.get_vehicles()
-            else:
-                self._mode = "SECONDARY"
+                log.info(self._mode + ": reload vehicles data")
+                await self._account[user_id].get_vehicles()
+                self._last_reload[user_id] = datetime.timestamp(datetime.now())
 
             # get vehicle data for vin
-            vehicle = self._account.get_vehicle(vin)
+            vehicle = self._account[user_id].get_vehicle(vin)
 
             # get json of vehicle data
             resp = dumps(vehicle, cls=MyBMWJSONEncoder, indent=4)
@@ -265,32 +315,34 @@ class Api:
             soc_tsX = datetime.timestamp(soc_tsdtZ)
 
             # save the vehicle data for further analysis if required
-            dump_json(respd, '/soc_bmwbc_reply_vehicle_' + str(vnum))
+            dump_json(respd, replyFilePrefix + vehicle_id)
 
             log.info(self._mode + " SOC/Range: " + str(soc) + '%/' + str(range) + 'KM@' + lastUpdatedAt)
 
             # store token and expires_at if changed
-            expires_at = datetime.isoformat(self._auth.expires_at)
-            if self._store['expires_at'] != expires_at or \
-               self._store['session_id'] != self._auth.session_id or \
-               self._store['gcid'] != self._auth.gcid or \
-               self._store['access_token'] != self._auth.access_token or \
-               self._store['refresh_token'] != self._auth.refresh_token:
-                self._store['refresh_token'] = self._auth.refresh_token
-                self._store['access_token'] = self._auth.access_token
-                self._store['captcha_token'] = captcha_token
-                self._store['session_id'] = self._auth.session_id
-                self._store['gcid'] = self._auth.gcid
-                self._store['expires_at'] = datetime.isoformat(self._auth.expires_at)
-                write_store(self._store)
-                log.debug("# after  write_store :" + str(self._auth.expires_at) +
-                          "/" + self._auth.refresh_token)
+            expires_at = datetime.isoformat(self._auth[user_id].expires_at)
+            if self._store[user_id]['expires_at'] != expires_at or \
+               self._store[user_id]['session_id'] != self._auth[user_id].session_id or \
+               self._store[user_id]['gcid'] != self._auth[user_id].gcid or \
+               self._store[user_id]['access_token'] != self._auth[user_id].access_token or \
+               self._store[user_id]['refresh_token'] != self._auth[user_id].refresh_token:
+                self._store[user_id]['refresh_token'] = self._auth[user_id].refresh_token
+                self._store[user_id]['access_token'] = self._auth[user_id].access_token
+                if captcha_token != "SECONDARY":
+                    self._store[user_id]['captcha_token'] = captcha_token
+                self._store[user_id]['session_id'] = self._auth[user_id].session_id
+                self._store[user_id]['gcid'] = self._auth[user_id].gcid
+                self._store[user_id]['expires_at'] = datetime.isoformat(self._auth[user_id].expires_at)
+                write_store(self._store[user_id], user_id, self._primary_vehicle_id[user_id])
+                log.debug("# after  write_store :" + str(self._auth[user_id].expires_at) +
+                          "/" + self._auth[user_id].refresh_token)
 
         except Exception as err:
-            log.error("bmwbc.fetch_soc: requestData Error, vnum: " + str(vnum) + f" {err=}, {type(err)=}")
-            self._auth = None
-            self._clconf = None
-            self._account = None
+            log.error("bmwbc.fetch_soc: requestData Error, vehicle_id: " + vehicle_id + f" {err=}, {type(err)=}")
+            # self._auth = None
+            self._auth.pop(user_id, None)
+            self._clconf.pop(user_id, None)
+            self._account.pop(user_id, None)
             soc = 0
             range = 0.0
             soc_tsX = datetime.timestamp(datetime.now())
@@ -299,7 +351,7 @@ class Api:
 
 
 # main entry - _fetch needs to be run async
-def fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, vnum: int) -> CarState:
+def fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, vehicle_id: str) -> CarState:
 
     # prepare and call async method
     loop = new_event_loop()
@@ -308,6 +360,6 @@ def fetch_soc(user_id: str, password: str, vin: str, captcha_token: str, vnum: i
     api = Api()
 
     # get soc, range, soc_timestamp from server
-    soc, range, soc_tsX = loop.run_until_complete(api._fetch_soc(user_id, password, vin, captcha_token, vnum))
+    soc, range, soc_tsX = loop.run_until_complete(api._fetch_soc(user_id, password, vin, captcha_token, vehicle_id))
 
     return CarState(soc=soc, range=range, soc_timestamp=soc_tsX)
