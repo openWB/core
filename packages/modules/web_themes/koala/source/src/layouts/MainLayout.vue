@@ -14,29 +14,16 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer
-      v-model="drawer"
-      side="left"
-      overlay
-      elevated
-      :breakpoint="500"
-    >
+    <q-drawer v-model="drawer" side="left" overlay elevated :breakpoint="500">
       <!-- drawer content -->
       <q-scroll-area class="fit" :horizontal-thumb-style="{ opacity: '0' }">
         <q-list padding>
-
-          <q-item
-            clickable
-            v-ripple
-            href="/openWB/web/settings/#/Status"
-          >
+          <q-item clickable v-ripple href="/openWB/web/settings/#/Status">
             <q-item-section avatar>
               <q-icon name="dashboard" />
             </q-item-section>
 
-            <q-item-section>
-              Status
-            </q-item-section>
+            <q-item-section> Status </q-item-section>
           </q-item>
 
           <q-separator />
@@ -52,9 +39,7 @@
               <q-icon name="table_chart" />
             </q-item-section>
 
-            <q-item-section>
-              Ladeprotokoll
-            </q-item-section>
+            <q-item-section> Ladeprotokoll </q-item-section>
           </q-item>
 
           <q-item
@@ -66,27 +51,18 @@
               <q-icon name="area_chart" />
             </q-item-section>
 
-            <q-item-section>
-              Diagramme
-            </q-item-section>
+            <q-item-section> Diagramme </q-item-section>
           </q-item>
 
           <q-separator />
 
-          <q-item
-            clickable
-            v-ripple
-            href="/openWB/web/settings/"
-          >
+          <q-item clickable v-ripple href="/openWB/web/settings/">
             <q-item-section avatar>
               <q-icon name="settings" />
             </q-item-section>
 
-            <q-item-section>
-              Einstellungen
-            </q-item-section>
+            <q-item-section> Einstellungen </q-item-section>
           </q-item>
-
         </q-list>
       </q-scroll-area>
     </q-drawer>

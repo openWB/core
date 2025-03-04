@@ -33,9 +33,7 @@
           <div v-if="plan.frequency.selected === 'weekly'">
             {{ selectedWeekDays }}
           </div>
-          <div v-if="plan.frequency.selected === 'daily'">
-            täglich
-          </div>
+          <div v-if="plan.frequency.selected === 'daily'">täglich</div>
         </div>
         <div>
           <q-icon name="schedule" size="sm" />
@@ -54,11 +52,7 @@
           </div>
         </div>
         <div>
-          <q-icon
-            v-if="planEtActive.value"
-            name="bar_chart"
-            size="sm"
-          />
+          <q-icon v-if="planEtActive.value" name="bar_chart" size="sm" />
         </div>
       </div>
     </div>
@@ -104,29 +98,31 @@ const selectedWeekDays = computed(() => {
   let rangeStart: number | null = null;
 
   props.plan.frequency.weekly.forEach((dayValue, index) => {
-      if (dayValue) {
-          if (rangeStart === null) {
-              rangeStart = index;
-          }
-      } else {
-          if (rangeStart !== null) {
-              if (rangeStart === index - 1) {
-                  planDays.push(weekdays[rangeStart]);
-              } else {
-                  planDays.push(`${weekdays[rangeStart]}-${weekdays[index - 1]}`);
-              }
-              rangeStart = null;
-          }
+    if (dayValue) {
+      if (rangeStart === null) {
+        rangeStart = index;
       }
+    } else {
+      if (rangeStart !== null) {
+        if (rangeStart === index - 1) {
+          planDays.push(weekdays[rangeStart]);
+        } else {
+          planDays.push(`${weekdays[rangeStart]}-${weekdays[index - 1]}`);
+        }
+        rangeStart = null;
+      }
+    }
   });
 
   // Handle the case where the last day(s) of the week are true
   if (rangeStart !== null) {
-      if (rangeStart === props.plan.frequency.weekly.length - 1) {
-          planDays.push(weekdays[rangeStart]);
-      } else {
-          planDays.push(`${weekdays[rangeStart]}-${weekdays[props.plan.frequency.weekly.length - 1]}`);
-      }
+    if (rangeStart === props.plan.frequency.weekly.length - 1) {
+      planDays.push(weekdays[rangeStart]);
+    } else {
+      planDays.push(
+        `${weekdays[rangeStart]}-${weekdays[props.plan.frequency.weekly.length - 1]}`,
+      );
+    }
   }
 
   return planDays.join(', ');

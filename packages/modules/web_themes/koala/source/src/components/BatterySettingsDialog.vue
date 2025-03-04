@@ -6,7 +6,7 @@
   >
     <q-card style="min-width: 24em">
       <q-card-section>
-        <div class="text-h6">{{cardTitle}}</div>
+        <div class="text-h6">{{ cardTitle }}</div>
         <div class="text-subtitle2 q-mt-sm">Laden mit Überschuss Modus:</div>
         <BatteryModeButtons />
       </q-card-section>

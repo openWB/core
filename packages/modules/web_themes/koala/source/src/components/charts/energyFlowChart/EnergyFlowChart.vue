@@ -54,7 +54,9 @@ const gridPower = computed(
 const gridConsumption = computed(() => Number(gridPower.value.value) > 0);
 const gridFeedIn = computed(() => Number(gridPower.value.value) < 0);
 
-const batteryPower = computed(() => mqttStore.batteryTotalPower('object') as ValueObject);
+const batteryPower = computed(
+  () => mqttStore.batteryTotalPower('object') as ValueObject,
+);
 const batteryDischarging = computed(
   () => Number(mqttStore.batteryTotalPower('value')) < 0,
 );
@@ -78,14 +80,14 @@ const pvProduction = computed(() => {
 
 const connectedChargePoints = computed(() => mqttStore.chargePointIds);
 
-const chargePoint1Name = computed(() =>
-  mqttStore.chargePointName(connectedChargePoints.value[0]) || '---',
+const chargePoint1Name = computed(
+  () => mqttStore.chargePointName(connectedChargePoints.value[0]) || '---',
 );
-const chargePoint2Name = computed(() =>
-  mqttStore.chargePointName(connectedChargePoints.value[1]) || '---',
+const chargePoint2Name = computed(
+  () => mqttStore.chargePointName(connectedChargePoints.value[1]) || '---',
 );
-const chargePoint3Name = computed(() =>
-  mqttStore.chargePointName(connectedChargePoints.value[2]) || '---',
+const chargePoint3Name = computed(
+  () => mqttStore.chargePointName(connectedChargePoints.value[2]) || '---',
 );
 
 const chargePoint1Power = computed(() => {
@@ -345,8 +347,7 @@ const svgComponents = computed((): FlowComponent[] => {
           },
           label: [
             chargePoint1ConnectedVehicleName.value || '---',
-            (chargePoint1ConnectedVehicleChargeMode.value.label) ||
-              '---',
+            chargePoint1ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
@@ -392,8 +393,7 @@ const svgComponents = computed((): FlowComponent[] => {
           },
           label: [
             chargePoint2ConnectedVehicleName.value || '---',
-            (chargePoint2ConnectedVehicleChargeMode.value.label) ||
-              '---',
+            chargePoint2ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint2ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
@@ -436,8 +436,7 @@ const svgComponents = computed((): FlowComponent[] => {
           },
           label: [
             chargePoint3ConnectedVehicleName.value || '---',
-            (chargePoint3ConnectedVehicleChargeMode.value.label) ||
-              '---',
+            chargePoint3ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint3ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
@@ -454,7 +453,10 @@ const svgComponents = computed((): FlowComponent[] => {
           animatedReverse: chargePointSumCharging.value,
         },
         position: { row: 2, column: 1 },
-        label: ['Ladepunkte', absoluteValueObject(chargePointSumPower.value).textValue],
+        label: [
+          'Ladepunkte',
+          absoluteValueObject(chargePointSumPower.value).textValue,
+        ],
         icon: 'icons/owbChargePoint.svg',
       });
     }
