@@ -4,7 +4,6 @@ from typing import Iterable
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.saxpower.saxpower.bat import SaxpowerBat
 from modules.devices.saxpower.saxpower.config import Saxpower, SaxpowerBatSetup
@@ -26,8 +25,7 @@ def create_device(device_config: Saxpower):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

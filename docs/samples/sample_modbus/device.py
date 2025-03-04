@@ -4,7 +4,6 @@ from typing import Iterable, Optional, Union, List
 
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.sample_modbus import bat, counter, inverter
@@ -34,8 +33,7 @@ def create_device(device_config: Sample):
     def update_components(components: Iterable[Union[SampleBat, SampleCounter, SampleInverter]]):
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

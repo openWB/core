@@ -4,7 +4,6 @@ from typing import Iterable, Union, List
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.solaredge.solaredge.bat import SolaredgeBat
 from modules.devices.solaredge.solaredge.counter import SolaredgeCounter
@@ -78,8 +77,7 @@ def create_device(device_config: Solaredge):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def get_synergy_units(component_config: Union[SolaredgeBatSetup,
                                                   SolaredgeCounterSetup,

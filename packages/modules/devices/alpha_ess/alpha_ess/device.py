@@ -7,7 +7,6 @@ from modules.devices.alpha_ess.alpha_ess.config import (
     AlphaEss, AlphaEssBatSetup, AlphaEssCounterSetup, AlphaEssInverterSetup)
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.devices.alpha_ess.alpha_ess import bat
 from modules.devices.alpha_ess.alpha_ess import counter
 from modules.devices.alpha_ess.alpha_ess import inverter
@@ -47,8 +46,7 @@ def create_device(device_config: AlphaEss):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

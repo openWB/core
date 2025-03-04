@@ -7,7 +7,6 @@ from modules.devices.carlo_gavazzi.carlo_gavazzi import counter
 from modules.devices.carlo_gavazzi.carlo_gavazzi.config import CarloGavazzi, CarloGavazziCounterSetup
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 
 log = logging.getLogger(__name__)
 
@@ -24,8 +23,7 @@ def create_device(device_config: CarloGavazzi):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client
