@@ -15,6 +15,7 @@ from modules.smarthome.askoheat.smartaskoheat import Saskoheat
 from modules.smarthome.nxdacxx.smartnxdacxx import Snxdacxx
 from modules.smarthome.acthor.smartacthor import Sacthor
 from modules.smarthome.avmhomeautomation.smartavm import Savm
+from modules.smarthome.nibe.smartnibe import Snibe
 from smarthome.smartbase import Sbase
 from typing import Dict, Tuple, Any
 import paho.mqtt.client as mqtt
@@ -310,6 +311,8 @@ def update_devices() -> None:
                     mydevice = Shttp()
                 elif (device_type == 'mystrom'):
                     mydevice = Smystrom()
+                elif (device_type == 'nibe'):
+                    mydevice = Snibe()                    
                 else:
                     mydevice = Sbase()
                 mydevice.updatepar(input_param)
