@@ -150,14 +150,14 @@ class Chargepoint(ChargepointRfidMixin):
             if data.data.optional_data.data.rfid.active:
                 if self.data.get.rfid is None and self.data.set.rfid is None:
                     state = False
-                    message = ("Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per ID-Tag "
-                               "freigeschaltet werden muss.")
+                    message = ("Keine Ladung, da der Ladepunkt durch Sperren nach Uhrzeit gesperrt ist und erst "
+                               "per ID-Tag freigeschaltet werden muss.")
                 else:
                     state = True
                     message = None
             else:
                 state = False
-                message = "Keine Ladung, da Autolock aktiv ist."
+                message = "Keine Ladung, da Sperren nach Uhrzeit aktiv ist."
         return state, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
