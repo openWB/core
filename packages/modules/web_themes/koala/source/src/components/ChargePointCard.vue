@@ -4,9 +4,7 @@
       <div class="row items-center text-h6 text-bold">
         <div class="col flex items-center">
           {{ name }}
-          <ChargePointLock
-            :charge-point-id="props.chargePointId"
-          />
+          <ChargePointLock :charge-point-id="props.chargePointId" />
           <ChargePointStateIcon :charge-point-id="props.chargePointId" />
         </div>
         <q-icon name="settings" size="sm" @click="settingsVisible = true" />
@@ -14,12 +12,8 @@
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
       <ChargePointStateMessage :charge-point-id="props.chargePointId" />
       <div class="row items-center q-mt-sm">
-        <ChargePointVehicleSelect
-          :charge-point-id="props.chargePointId"
-        />
-        <ChargePointPriority
-          :charge-point-id="props.chargePointId"
-        />
+        <ChargePointVehicleSelect :charge-point-id="props.chargePointId" />
+        <ChargePointPriority :charge-point-id="props.chargePointId" />
       </div>
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
       <div class="row q-mt-sm">

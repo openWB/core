@@ -71,10 +71,7 @@
       </div>
     </q-card-section>
   </q-card>
-  <BatterySettingsDialog
-    :battery-id="props.batteryId"
-    ref="dialog"
-  />
+  <BatterySettingsDialog :battery-id="props.batteryId" ref="dialog" />
 </template>
 
 <script setup lang="ts">
@@ -117,7 +114,7 @@ const soc = computed(() => {
   if (props.batteryId === undefined) {
     return mqttStore.batterySocTotal;
   }
-  return mqttStore.batterySoc(props.batteryId)
+  return mqttStore.batterySoc(props.batteryId);
 });
 
 const power = computed(() => {
@@ -131,14 +128,20 @@ const dailyImportedEnergy = computed(() => {
   if (props.batteryId === undefined) {
     return mqttStore.batteryDailyImportedTotal('textValue') as string | '---';
   }
-  return mqttStore.batteryDailyImported(props.batteryId, 'textValue') as string | '---';
+  return (
+    (mqttStore.batteryDailyImported(props.batteryId, 'textValue') as string) ||
+    '---'
+  );
 });
 
 const dailyExportedEnergy = computed(() => {
   if (props.batteryId === undefined) {
     return mqttStore.batteryDailyExportedTotal('textValue') as string | '---';
   }
-  return mqttStore.batteryDailyExported(props.batteryId, 'textValue') as string | '---';
+  return (
+    (mqttStore.batteryDailyExported(props.batteryId, 'textValue') as string) ||
+    '---'
+  );
 });
 </script>
 

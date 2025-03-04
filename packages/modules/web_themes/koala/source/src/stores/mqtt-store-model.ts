@@ -156,7 +156,7 @@ export interface BatteryConfiguration {
   info: {
     manufacturer: string;
     model: string;
-  }
+  };
   type: string;
   id: number;
   configuration: object;

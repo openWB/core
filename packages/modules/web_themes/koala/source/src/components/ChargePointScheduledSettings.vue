@@ -2,11 +2,7 @@
   <div class="row justify-between items-center">
     <div class="text-subtitle2 q-mr-sm q-mt-md">Termine:</div>
   </div>
-  <div
-    v-for="(plan, index) in plans.value"
-    :key="index"
-    class="row q-mt-sm"
-  >
+  <div v-for="(plan, index) in plans.value" :key="index" class="row q-mt-sm">
     <ChargePointScheduledPlanButton
       class="full-width"
       :charge-point-id="props.chargePointId"
