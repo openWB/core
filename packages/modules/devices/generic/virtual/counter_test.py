@@ -50,8 +50,9 @@ cases = [Params("twisted cp", init_twisted_cp, CounterState(currents=[16, 32, 32
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_virtual_counter(mock_pub: Mock, params):
     # setup
-    c = counter.VirtualCounter(0, VirtualCounterSetup(
-        id=6, configuration=VirtualCounterConfiguration(external_consumption=0)))
+    c = counter.VirtualCounter(VirtualCounterSetup(
+        id=6, configuration=VirtualCounterConfiguration(external_consumption=0)), device_id=0)
+    c.initialize()
     params.init_func()
 
     # execution
@@ -76,8 +77,9 @@ def test_virtual_counter(mock_pub: Mock, params):
                           pytest.param(hierarchy_nested, id="nested")])
 def test_virtual_counter_hierarchies(counter_all: Callable[[], CounterAll], data_, mock_pub: Mock):
     # setup
-    virtual_counter = counter.VirtualCounter(0, VirtualCounterSetup(
-        id=0, configuration=VirtualCounterConfiguration(external_consumption=0)))
+    virtual_counter = counter.VirtualCounter(VirtualCounterSetup(
+        id=0, configuration=VirtualCounterConfiguration(external_consumption=0)), device_id=0)
+    virtual_counter.initialize()
     data.data.counter_all_data = counter_all()
 
     # execution
