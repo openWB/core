@@ -168,7 +168,7 @@ class ChargepointState:
                  soc_timestamp: Optional[int] = None,
                  evse_current: Optional[float] = None,
                  vehicle_id: Optional[str] = None,
-                 max_evse_current: Optional[int] = None) -> None:
+                 max_evse_current: Optional[int] = None):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported

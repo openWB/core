@@ -18,7 +18,7 @@ from control.chargepoint.chargepoint_template import get_autolock_plan_default, 
 # ToDo: move to module commands if implemented
 from control.ev.charge_template import get_new_charge_template
 from control.ev.ev_template import EvTemplateData
-from helpermodules import pub
+from helpermodules import pub, sub
 from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
@@ -677,11 +677,13 @@ class Command:
             try:
                 if not SubData.general_data.data.extern and SubData.system_data["system"].data["secondary_auto_update"]:
                     for cp in SubData.cp_data.values():
-                        # if chargepoint is external_openwb and not the second CP of duo
+                        # if chargepoint is external_openwb and not the second CP of duo and version is Release
                         if (
                             cp.chargepoint.chargepoint_module.config.type == 'external_openwb' and
-                            cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0
-                            # possible check for software version
+                            cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0 and
+                            sub.sub_single(
+                                "openWB/system/current_branch",
+                                cp.chargepoint.chargepoint_module.config.configuration.ip_address).payload == "Release"
                         ):
                             time.sleep(2)
                             self.chargepointUpdate({"data": {"chargepoint": cp}})
