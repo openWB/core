@@ -312,7 +312,7 @@ def update_devices() -> None:
                 elif (device_type == 'mystrom'):
                     mydevice = Smystrom()
                 elif (device_type == 'nibe'):
-                    mydevice = Snibe()                    
+                    mydevice = Snibe()
                 else:
                     mydevice = Sbase()
                 mydevice.updatepar(input_param)
