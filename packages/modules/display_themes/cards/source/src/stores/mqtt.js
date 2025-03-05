@@ -934,6 +934,11 @@ export const useMqttStore = defineStore("mqtt", {
     getRfidEnabled() {
       return this.getValueBool("openWB/optional/rfid/active");
     },
+
+    /* electricity tariff provider */
+    getEtPrices(state) {
+      return state.topics["openWB/optional/et/get/prices"];
+    },
   },
   actions: {
     updateSetting(setting, value) {
