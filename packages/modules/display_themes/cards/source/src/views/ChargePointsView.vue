@@ -6,6 +6,7 @@ import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
 import ManualSocInput from "@/components/ChargePoints/ManualSocInput.vue";
 import ChargeModeModal from "../components/ChargePoints/ChargeModeModal.vue";
 import VehicleSelectModal from "../components/ChargePoints/VehicleSelectModal.vue";
+import ElectricityTariffChart from "../components/ElectricityTariffChart.vue";
 
 /* fontawesome */
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -36,6 +37,7 @@ export default {
     ChargeModeModal,
     VehicleSelectModal,
     FontAwesomeIcon,
+    ElectricityTariffChart,
   },
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
@@ -1218,6 +1220,19 @@ export default {
               :max="80"
               :step="0.01"
               :precision="2"
+              :model-value="
+                mqttStore.getChargePointConnectedVehicleEcoChargingMaxPrice(
+                  modalChargePointId,
+                )
+              "
+              @update:model-value="
+                setChargePointConnectedVehicleEcoChargingMaxPrice(
+                  modalChargePointId,
+                  $event,
+                )
+              "
+            />
+            <ElectricityTariffChart
               :model-value="
                 mqttStore.getChargePointConnectedVehicleEcoChargingMaxPrice(
                   modalChargePointId,
