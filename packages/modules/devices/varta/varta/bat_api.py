@@ -14,7 +14,7 @@ from modules.devices.varta.varta.config import VartaBatApiSetup
 
 class KwargsDict(TypedDict):
     device_id: int
-    device_address: str
+    ip_address: str
 
 
 class VartaBatApi(AbstractBat):
@@ -24,7 +24,7 @@ class VartaBatApi(AbstractBat):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.__device_address: str = self.kwargs['device_address']
+        self.ip_address: str = self.kwargs['ip_address']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
@@ -41,7 +41,7 @@ class VartaBatApi(AbstractBat):
                 # Wenn Speicher aus bzw. im Standby (keine Antwort), ersetze leeren Wert durch eine 0.
                 return 0
 
-        response = req.get_http_session().get('http://'+self.__device_address+'/cgi/ems_data.xml',
+        response = req.get_http_session().get('http://'+self.ip_address+'/cgi/ems_data.xml',
                                               timeout=5)
         response.encoding = 'utf-8'
         response = response.text.replace("\n", "")

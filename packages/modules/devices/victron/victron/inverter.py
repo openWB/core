@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 class KwargsDict(TypedDict):
     device_id: int
-    tcp_client: modbus.ModbusTcpClient_
+    client: modbus.ModbusTcpClient_
 
 
 class VictronInverter(AbstractInverter):
@@ -27,7 +27,7 @@ class VictronInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
