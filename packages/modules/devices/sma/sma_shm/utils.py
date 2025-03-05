@@ -1,5 +1,5 @@
 import logging
-from typing import TypeVar, Generic, Callable, Optional, Union
+from typing import Any, TypeVar, Generic, Callable, Optional, Union, TypedDict
 
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -14,20 +14,27 @@ def _create_serial_matcher(serial: Optional[int]) -> Callable[[dict], bool]:
     if isinstance(serial, int):
         return lambda sma_data: sma_data["serial"] == serial
     if serial is not None:
-        log.error("Serial <%s> must bei an int or None, but is <%s>. Assuming None.", serial, type(serial))
+        log.error("Serial <%s> must be an int or None, but is <%s>. Assuming None.", serial, type(serial))
     return lambda _: True
+
+
+class KwargsDict(TypedDict):
+    value_store_factory: Callable[[int], ValueStore[T]]
+    parser: Callable[[dict], T]
 
 
 class SpeedwireComponent(Generic[T]):
     def __init__(self,
-                 value_store_factory: Callable[[int], ValueStore[T]],
-                 parser: Callable[[dict], T],
-                 component_config: Union[SmaHomeManagerCounterSetup, SmaHomeManagerInverterSetup]):
-        self.store = value_store_factory(component_config.id)
-        self.__parser = parser
-        self.__serial_matcher = _create_serial_matcher(component_config.configuration.serials)
-        self.fault_state = FaultState(ComponentInfo.from_component_config(component_config))
+                 component_config: Union[SmaHomeManagerCounterSetup, SmaHomeManagerInverterSetup],
+                 **kwargs: Any):
+        self.kwargs: KwargsDict = kwargs
         self.component_config = component_config
+
+    def initialize(self) -> None:
+        self.store = self.kwargs['value_store_factory'](self.component_config.id)
+        self.__parser = self.kwargs['parser']
+        self.__serial_matcher = _create_serial_matcher(self.component_config.configuration.serials)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def read_datagram(self, datagram: dict) -> bool:
         if self.__serial_matcher(datagram):

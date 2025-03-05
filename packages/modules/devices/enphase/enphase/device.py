@@ -25,13 +25,13 @@ def create_device(device_config: Enphase):
     def create_bat_component(component_config: EnphaseBatSetup):
         nonlocal read_live_data
         read_live_data = True
-        return EnphaseBat(device_config.id, component_config)
+        return EnphaseBat(component_config=component_config, device_id=device_config.id)
 
     def create_counter_component(component_config: EnphaseCounterSetup):
-        return EnphaseCounter(device_config.id, component_config)
+        return EnphaseCounter(component_config=component_config)
 
     def create_inverter_component(component_config: EnphaseInverterSetup):
-        return EnphaseInverter(device_config.id, component_config)
+        return EnphaseInverter(component_config=component_config)
 
     def check_token() -> bool:
         if (device_config.configuration.token is None or

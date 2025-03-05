@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Any, Callable
+from typing import Any, Callable, TypedDict
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -13,13 +13,19 @@ from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreBatS
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+
+
 class KostalPlenticoreBat(AbstractBat):
-    def __init__(self,
-                 device_id: int,
-                 component_config: KostalPlenticoreBatSetup) -> None:
+    def __init__(self, component_config: KostalPlenticoreBatSetup, **kwargs: Any) -> None:
         self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
         self.store = get_bat_value_store(self.component_config.id)
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def read_state(self, reader: Callable[[int, ModbusDataType], Any]) -> BatState:

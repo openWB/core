@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
-
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
@@ -12,8 +9,10 @@ from modules.devices.tesla.tesla.config import TeslaInverterSetup
 
 
 class TeslaInverter(AbstractInverter):
-    def __init__(self, component_config: Union[Dict, TeslaInverterSetup]) -> None:
-        self.component_config = dataclass_from_dict(TeslaInverterSetup, component_config)
+    def __init__(self, component_config: TeslaInverterSetup) -> None:
+        self.component_config = component_config
+
+    def initialize(self) -> None:
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

@@ -24,7 +24,9 @@ def test_update_grid(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramd
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     assert component_config.configuration.meter_id == 0
-    counter = counter_sm.FroniusSmCounter(0, component_config, dataclass_from_dict(FroniusConfiguration, device_config))
+    counter = counter_sm.FroniusSmCounter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    counter.initialize()
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)
@@ -54,7 +56,9 @@ def test_update_grid_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     assert component_config.configuration.meter_id == 0
-    counter = counter_sm.FroniusSmCounter(0, component_config, dataclass_from_dict(FroniusConfiguration, device_config))
+    counter = counter_sm.FroniusSmCounter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    counter.initialize()
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)
@@ -83,7 +87,9 @@ def test_update_external_var2(monkeypatch, requests_mock: requests_mock.Mocker, 
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     component_config.configuration.meter_id = 1
-    counter = counter_sm.FroniusSmCounter(0, component_config, dataclass_from_dict(FroniusConfiguration, device_config))
+    counter = counter_sm.FroniusSmCounter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    counter.initialize()
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)
@@ -112,7 +118,9 @@ def test_update_load(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramd
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     component_config.configuration.meter_id = 2
-    counter = counter_sm.FroniusSmCounter(0, component_config, dataclass_from_dict(FroniusConfiguration, device_config))
+    counter = counter_sm.FroniusSmCounter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    counter.initialize()
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)

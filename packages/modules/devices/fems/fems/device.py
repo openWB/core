@@ -13,27 +13,33 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Fems):
+    session = None
+
     def create_bat_component(component_config: FemsBatSetup):
-        return bat.FemsBat(device_config.configuration.ip_address,
-                           component_config, session)
+        nonlocal session
+        return bat.FemsBat(component_config, ip_address=device_config.configuration.ip_address, session=session)
 
     def create_counter_component(component_config: FemsCounterSetup):
-        return counter.FemsCounter(device_config.configuration.ip_address,
-                                   component_config, session)
+        nonlocal session
+        return counter.FemsCounter(component_config, ip_address=device_config.configuration.ip_address, session=session)
 
     def create_inverter_component(component_config: FemsInverterSetup):
-        return inverter.FemsInverter(device_config.configuration.ip_address,
-                                     component_config, session)
+        nonlocal session
+        return inverter.FemsInverter(component_config, ip_address=device_config.configuration.ip_address,
+                                     session=session)
 
     def update_components(components: Iterable[Union[bat.FemsBat, counter.FemsCounter, inverter.FemsInverter]]):
         for component in components:
             component.update()
 
-    session = req.get_http_session()
-    session.auth = ("x", device_config.configuration.password)
+    def initializer():
+        nonlocal session
+        session = req.get_http_session()
+        session.auth = ("x", device_config.configuration.password)
 
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
