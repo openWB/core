@@ -39,7 +39,7 @@ const props = defineProps<{
 
 //state
 const keys = computed(() => {
-	if (globalConfig.showInverters) {
+	if (!globalConfig.showInverters) {
 		return [
 			['house', 'charging', 'devices', 'batIn'],
 			['charging', 'devices', 'batIn', 'house'],
@@ -141,23 +141,18 @@ const keysToUse = computed(() => {
 		const pattern = /cp\d+/
 		let additionalKeys: string[] = []
 		if (graphData.data.length > 0) {
-			additionalKeys = Object.keys(graphData.data[0]).reduce(
-				(list: string[], element: string) => {
-					if (element.match(pattern)) {
-						list.push(element)
-					}
-					return list
-				},
-				[],
+			additionalKeys = Object.keys(graphData.data[0]).filter((itemKey) =>
+				itemKey.match(pattern),
 			)
 		}
 		additionalKeys.forEach((key, i) => {
 			k.splice(idx + i, 0, key)
-			colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
+			colors[key] =
+				chargePoints[+key.slice(2)]?.color ?? 'var(--color-charging)'
 		})
-		if (globalConfig.showInverters) {
+		/* 	if (globalConfig.showInverters) {
 			k.push('evuOut')
-		}
+		} */
 		return k
 	}
 })

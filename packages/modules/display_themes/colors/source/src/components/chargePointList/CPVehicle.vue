@@ -49,10 +49,7 @@
 				class="grid-col-4 grid-left"
 			>
 				<BatterySymbol :soc="soc" class="me-2" />
-				<DisplayButton
-					v-if="chargepoint.isSocManual"
-					@click="editSoc = !editSoc"
-				>
+				<DisplayButton v-if="chargepoint.isSocManual" @click="startSocEditor">
 					<i
 						class="fa-solid fa-sm fas fa-edit py-0 px-3 mt-3"
 						:style="{ color: 'var(--color-fg)' }"
@@ -182,6 +179,7 @@ const chargeMode = computed({
 		}
 	},
 })
+
 const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return (Math.round(p * 10) / 10).toFixed(1)
@@ -189,37 +187,43 @@ const currentPrice = computed(() => {
 function openSettings(target: string = '') {
 	if (displayConfig.locked) {
 		unlockDisplay()
-	}
-	const settingspage = new Modal('#settingspage')
-	settingspage.toggle()
-	let chargePanelName = target
-	if (target == '') {
-		switch (props.chargepoint.chargeMode) {
-			case 'instant_charging':
-				chargePanelName = '#inSettings'
-				break
-			case 'pv_charging':
-				chargePanelName = '#phvSettings'
-				break
-			case 'scheduled_charging':
-				chargePanelName = '#scSettings'
-				break
-			default:
-				chargePanelName = '#chSettings'
+	} else {
+		const settingspage = new Modal('#settingspage')
+		settingspage.toggle()
+		let chargePanelName = target
+		if (target == '') {
+			switch (props.chargepoint.chargeMode) {
+				case 'instant_charging':
+					chargePanelName = '#inSettings'
+					break
+				case 'pv_charging':
+					chargePanelName = '#phvSettings'
+					break
+				case 'scheduled_charging':
+					chargePanelName = '#scSettings'
+					break
+				default:
+					chargePanelName = '#chSettings'
+			}
+		}
+		const tabToActivate = document.querySelector(
+			chargePanelName + props.chargepoint.id,
+		)
+		if (tabToActivate) {
+			var tab = new Tab(tabToActivate)
+			tab.show()
+		} else {
+			console.error('no element found')
 		}
 	}
-
-	const tabToActivate = document.querySelector(
-		chargePanelName + props.chargepoint.id,
-	)
-	if (tabToActivate) {
-		var tab = new Tab(tabToActivate)
-		tab.show()
+}
+function startSocEditor() {
+	if (displayConfig.locked) {
+		unlockDisplay()
 	} else {
-		console.error('no element found')
+		editSoc.value = !editSoc.value
 	}
 }
-
 const currentPriceStyle = computed(() => {
 	return props.chargepoint.etMaxPrice >= +currentPrice.value
 		? { color: 'var(--color-charging)' }

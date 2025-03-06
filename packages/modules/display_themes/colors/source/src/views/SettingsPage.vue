@@ -42,6 +42,7 @@
 				<i class="fa-solid fa-clock" /> Zeitpläne
 			</a>
 			<a
+				v-if="etData.active"
 				:id="'prSettings' + cpid"
 				class="nav-link"
 				data-bs-toggle="tab"
@@ -101,6 +102,7 @@
 				/>
 			</div>
 			<div
+				v-if="etData.active"
 				:id="'priceSettings' + cpid"
 				class="tab-pane"
 				role="tabpanel"
