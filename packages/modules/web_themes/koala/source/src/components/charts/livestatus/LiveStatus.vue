@@ -11,7 +11,6 @@
                 <div class="col icon-container">
                   <q-badge rounded class="pv-background">
                     <q-icon name="solar_power" style="font-size: 24px;" class="pv-color" />
-                    <q-tooltip class="bg-primary">Phasenanzahl</q-tooltip>
                   </q-badge>
                 </div>
               </div>
@@ -27,7 +26,6 @@
                 <div class="col icon-container">
                   <q-badge rounded class="grid-background">
                     <q-icon :name="mdiTransmissionTower" style="font-size: 24px;" class="grid-color"/>
-                    <q-tooltip class="bg-primary">EVU</q-tooltip>
                   </q-badge>
                 </div>
               </div>
@@ -44,7 +42,6 @@
                 <div class="col icon-container">
                   <q-badge rounded class="house-background">
                     <q-icon name="home" style="font-size: 24px;" class="house-color" />
-                    <q-tooltip class="bg-primary">gesamter Hausverbrauch heute:<br></q-tooltip>
                   </q-badge>
                 </div>
               </div>
@@ -61,7 +58,6 @@
                 <div class="col icon-container">
                   <q-badge rounded class="battery-background">
                     <q-icon name="battery_charging_full" style="font-size: 24px;" class="battery-color" />
-                    <q-tooltip class="bg-primary">Speicher</q-tooltip>
                   </q-badge>
                 </div>
               </div>
@@ -77,7 +73,6 @@
                 <div class="col icon-container">
                   <q-badge rounded class="ev-background">
                     <q-icon name="ev_station" style="font-size: 24px;" class="ev-color" />
-                    <q-tooltip class="bg-primary">Ladepunkte</q-tooltip>
                   </q-badge>
                 </div>
               </div>
