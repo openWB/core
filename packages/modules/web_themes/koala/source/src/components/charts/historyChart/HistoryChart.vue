@@ -1,7 +1,7 @@
 <template>
   <div class="chart-container">
-    <LineChart
-      :chartData="lineChartData"
+    <ChartjsLine
+      :data="lineChartData"
       :options="chartOptions"
       :class="'chart'"
     />
@@ -11,13 +11,30 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useQuasar } from 'quasar';
-import { LineChart } from 'vue-chart-3';
-import { Chart, registerables } from 'chart.js';
+import { Line as ChartjsLine } from 'vue-chartjs';
+import {
+  Chart,
+  Legend,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  TimeScale,
+  Filler,
+} from 'chart.js';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import 'chartjs-adapter-luxon';
 import type { HistoryChartTooltipItem } from './history-chart-model';
 
-Chart.register(...registerables);
+Chart.register(
+  Legend,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  TimeScale,
+  Filler,
+);
 const $q = useQuasar();
 
 const props = defineProps<{
@@ -158,86 +175,89 @@ const lineChartData = computed(() => {
   };
 });
 
-const chartOptions = computed(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: legendDisplay.value,
-      position: 'bottom',
-      fullSize: true,
-      labels: {
-        boxWidth: 19,
-        boxHeight: 0.1,
-      },
-    },
-    tooltip: {
-      mode: 'index',
-      intersect: false,
-      callbacks: {
-        label: (item: HistoryChartTooltipItem) =>
-          `${item.dataset.label}: ${item.formattedValue} ${item.dataset.unit}`,
-      },
-    },
-  },
-  scales: {
-    x: {
-      type: 'time',
-      time: {
-        unit: 'minute',
-        stepSize: 5,
-        displayFormats: {
-          minute: 'HH:mm',
+const chartOptions = computed(
+  () => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: legendDisplay.value,
+        fullSize: true,
+        align: 'center' as const,
+        position: 'bottom' as const,
+        labels: {
+          boxWidth: 19,
+          boxHeight: 0.1,
         },
       },
-      ticks: {
-        maxTicksLimit: 12,
-        source: 'auto',
-      },
-      grid: {
-        tickLength: 5,
-        color: $q.dark.isActive
-          ? 'rgba(255, 255, 255, 0.1)'
-          : 'rgba(0, 0, 0, 0.1)',
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+        callbacks: {
+          label: (item: HistoryChartTooltipItem) =>
+            `${item.dataset.label}: ${item.formattedValue} ${item.dataset.unit}`,
+        },
       },
     },
-    y: {
-      position: 'left',
-      type: 'linear',
-      display: true,
-      title: {
+    scales: {
+      x: {
+        type: 'time' as const,
+        time: {
+          unit: 'minute' as const,
+          // stepSize: 5,
+          displayFormats: {
+            minute: 'HH:mm' as const,
+          },
+        },
+        ticks: {
+          maxTicksLimit: 12,
+          source: 'auto' as const,
+        },
+        grid: {
+          tickLength: 5,
+          color: $q.dark.isActive
+            ? 'rgba(255, 255, 255, 0.1)'
+            : 'rgba(0, 0, 0, 0.1)',
+        },
+      },
+      y: {
+        position: 'left' as const,
+        type: 'linear' as const,
         display: true,
-        text: 'Leistung [kW]',
+        title: {
+          display: true,
+          text: 'Leistung [kW]',
+        },
+        ticks: {
+          stepSize: 0.2,
+          maxTicksLimit: 11,
+        },
+        grid: {
+          color: $q.dark.isActive
+            ? 'rgba(255, 255, 255, 0.1)'
+            : 'rgba(0, 0, 0, 0.1)',
+        },
       },
-      ticks: {
-        stepSize: 0.2,
-        maxTicksLimit: 11,
-      },
-      grid: {
-        color: $q.dark.isActive
-          ? 'rgba(255, 255, 255, 0.1)'
-          : 'rgba(0, 0, 0, 0.1)',
-      },
-    },
-    y2: {
-      position: 'right',
-      type: 'linear',
-      display: true,
-      title: {
+      y2: {
+        position: 'right' as const,
+        type: 'linear' as const,
         display: true,
-        text: 'SoC [%]',
-      },
-      min: 0,
-      max: 100,
-      ticks: {
-        stepSize: 10,
-      },
-      grid: {
-        display: false,
+        title: {
+          display: true,
+          text: 'SoC [%]',
+        },
+        min: 0,
+        max: 100,
+        ticks: {
+          stepSize: 10,
+        },
+        grid: {
+          display: false,
+        },
       },
     },
-  },
-}));
+  }),
+);
 </script>
 
 <style scoped>
