@@ -77,11 +77,16 @@
       />
     </q-btn-group>
   </div>
+  <ElectricityTariffChart
+    :modelValue="maxPrice.value"
+    @update:modelValue="maxPrice.value = $event"
+  />
 </template>
 
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderStandard from './SliderStandard.vue';
+import ElectricityTariffChart from './ElectricityTariffChart.vue';
 import { computed } from 'vue';
 
 const props = defineProps<{

@@ -2354,6 +2354,11 @@ export const useMqttStore = defineStore('mqtt', () => {
     return result.sort((a, b) => a.timestamp - b.timestamp);
   });
 
+  /* electricity tariff provider */
+  const etPrices = computed(() => {
+    return getValue.value('openWB/optional/et/get/prices', undefined, {});
+  });
+
   // exports
   return {
     topics,
@@ -2455,5 +2460,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     getPvPower,
     // Chart data
     chartData,
+    etPrices,
   };
 });
