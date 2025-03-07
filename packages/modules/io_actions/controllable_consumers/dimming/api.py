@@ -20,6 +20,7 @@ class Dimming(AbstractIoAction):
             if len(input_matrix_list):
                 if pattern["value"]:
                     self.dimming_input, self.dimming_value = input_matrix_list[0]
+                    control_command_log.info(f"Dimmen per HEMS: Eingang {self.dimming_input} wird überwacht.")
                 if pattern["value"] is False:
                     self.no_dimming_input, self.no_dimming_value = input_matrix_list[0]
             else:
