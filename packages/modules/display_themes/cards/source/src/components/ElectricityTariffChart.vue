@@ -2,7 +2,6 @@
 import { useMqttStore } from "@/stores/mqtt.js";
 
 import { Line as ChartjsLine } from "vue-chartjs";
-import "hammerjs";
 import "chartjs-adapter-luxon";
 import annotationPlugin from 'chartjs-plugin-annotation';
 import {
