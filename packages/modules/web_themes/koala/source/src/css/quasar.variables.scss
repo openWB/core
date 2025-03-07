@@ -84,19 +84,19 @@ $battery: #ba7128;
     background-color: var(--q-background-2);
   }
   // Tab CSS
-  .q-tab {
-    background-color: var(--q-background-2);
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border: 1px solid var(--q-secondary);
-  }
+  //.q-tab {
+  //  background-color: var(--q-background-2);
+  //  border-top-left-radius: 10px;
+  //  border-top-right-radius: 10px;
+  //  border: 1px solid var(--q-secondary);
+  //}
   // Tab icon color
   .q-tab-icon {
     color: var(--q-primary);
   }
   // Tab active background color
   .q-tab--active {
-    background-color: color.scale($secondary, $lightness: -2%);
+    background-color: color.scale($background-1, $lightness: -10%);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {
@@ -211,15 +211,15 @@ $dark-tab-icon: #d7d9e0;
     background-color: var(--q-background-2);
   }
   // Tab CSS
-  .q-tab {
-    background-color: var(--q-background-2);
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border: 1px solid var(--q-secondary);
-  }
+//  .q-tab {
+//    background-color: var(--q-background-2);
+//   border-top-left-radius: 10px;
+//    border-top-right-radius: 10px;
+//    border: 1px solid var(--q-secondary);
+//  }
   // Tab active background color
   .q-tab--active {
-    background-color: color.scale($dark-secondary, $lightness: 10%);
+    background-color: color.scale($background-1, $lightness: 10%);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {

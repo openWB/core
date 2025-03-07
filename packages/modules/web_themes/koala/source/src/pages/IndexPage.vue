@@ -6,15 +6,15 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <q-tabs v-model="tab" dense class="q-tabs__content--align-justify">
-      <q-tab name="charge-points" title="Ladepunkte">
-        <q-icon name="ev_station" size="md" color="primary" />
+    <q-tabs v-model="tab" dense inline-label>
+        <q-tab name="charge-points" title="Ladepunkte" icon="ev_station" >
+          <span class="tab-label">Ladepunkte</span>
       </q-tab>
-      <q-tab name="batteries" title="Speicher">
-        <q-icon name="battery_full" size="md" color="primary" />
+      <q-tab name="batteries" title="Speicher" icon="battery_full" >
+        <span class="tab-label">Speicher</span>
       </q-tab>
-      <q-tab name="smartHome" title="SmartHome">
-        <q-icon name="home" size="md" color="primary" />
+      <q-tab name="smartHome" title="SmartHome" icon="home" >
+        <span class="tab-label">SmartHome</span>
       </q-tab>
     </q-tabs>
     <!-- Tab Panels -->
@@ -71,5 +71,14 @@ const batteryIds = computed(() => mqttStore.batteryIds);
 <style scoped>
 .chart-section {
   height: 40vh;
+}
+.tab-label {
+  display: none;
+}
+
+@media (min-width: 400px) {
+  .tab-label {
+    display: inline;
+  }
 }
 </style>
