@@ -160,32 +160,31 @@ const cpNameStyle = computed(() => {
 function openSettings() {
 	if (displayConfig.locked) {
 		unlockDisplay()
+	}
+	const settingspage = new Modal('#settingspage')
+	settingspage.toggle()
+	let chargePanelName = ''
+	switch (props.chargepoint.chargeMode) {
+		case 'instant_charging':
+			chargePanelName = '#inSettings'
+			break
+		case 'pv_charging':
+			chargePanelName = '#phvSettings'
+			break
+		case 'scheduled_charging':
+			chargePanelName = '#scSettings'
+			break
+		default:
+			chargePanelName = '#chSettings'
+	}
+	const tabToActivate = document.querySelector(
+		chargePanelName + props.chargepoint.id,
+	)
+	if (tabToActivate) {
+		var tab = new Tab(tabToActivate)
+		tab.show()
 	} else {
-		const settingspage = new Modal('#settingspage')
-		settingspage.toggle()
-		let chargePanelName = ''
-		switch (props.chargepoint.chargeMode) {
-			case 'instant_charging':
-				chargePanelName = '#inSettings'
-				break
-			case 'pv_charging':
-				chargePanelName = '#phvSettings'
-				break
-			case 'scheduled_charging':
-				chargePanelName = '#scSettings'
-				break
-			default:
-				chargePanelName = '#chSettings'
-		}
-		const tabToActivate = document.querySelector(
-			chargePanelName + props.chargepoint.id,
-		)
-		if (tabToActivate) {
-			var tab = new Tab(tabToActivate)
-			tab.show()
-		} else {
-			console.error('no element found')
-		}
+		console.error('no element found')
 	}
 }
 </script>

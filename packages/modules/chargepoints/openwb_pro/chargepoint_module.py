@@ -60,7 +60,7 @@ class ChargepointModule(AbstractChargepoint):
             chargepoint_state = self.request_values()
             self.store.set(chargepoint_state)
 
-    def request_values(self) -> ChargepointState:
+    def request_values(self) -> None:
         with self.client_error_context:
             chargepoint_state = self.old_chargepoint_state
             ip_address = self.config.configuration.ip_address

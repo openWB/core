@@ -274,8 +274,6 @@ export class Vehicle {
 		this.id = index
 	}
 	private _chargeTemplateId = 0
-	isSocConfigured = false
-	isSocManual = false
 	get chargeTemplateId() {
 		return this._chargeTemplateId
 	}

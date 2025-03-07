@@ -235,6 +235,7 @@
 										).toFixed(1) + ' ct'
 									: '-'
 							}}
+
 							<i
 								v-if="props.chargepoint.etActive"
 								class="fa-solid fa-sm fas fa-edit ms-2"

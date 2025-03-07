@@ -83,7 +83,7 @@ export function formatTime(seconds: number) {
 	}
 }
 export function formatCurrentTime(d: Date) {
-	return d.toLocaleTimeString(['de-DE'], { hour: 'numeric', minute: '2-digit' })
+	return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
 export function formatDate(d: Date, mode: string = 'day') {
