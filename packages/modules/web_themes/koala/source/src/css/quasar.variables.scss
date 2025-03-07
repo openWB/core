@@ -58,6 +58,16 @@ $battery: #ba7128;
   background-color: var(--q-background-1);
   // Text color
   color: var(--q-brown-text);
+  --pv-color: green;
+  --grid-color: #a33c42;
+  --house-color: #949aa1;
+  --battery-color: #b5a647;
+  --ev-color: #4766b5;
+  --pv-background: rgba(144, 238, 144, 0.2);
+  --grid-background: rgba(239, 182, 188, 0.2);
+  --house-background: rgba(148, 154, 161, 0.2);
+  --battery-background: rgba(181, 166, 71, 0.2);
+  --ev-background: rgba(71, 102, 181, 0.2);
   .theme-text {
     color: var(--q-brown-text) !important;
   }
@@ -108,9 +118,9 @@ $battery: #ba7128;
     background-color: var(--q-background-2);
   }
   // Slide background
-  .q-card {
-    background-color: var(--q-secondary);
-  }
+  //.q-card {
+  //  background-color: var(--q-secondary);
+  //}
   // Expansion item (expand arrow)
   .q-expansion-item__toggle-icon {
     color: var(--q-white);
@@ -165,6 +175,16 @@ $dark-tab-icon: #d7d9e0;
   background-color: var($dark-page);
   // Text color
   color: var(--q-white);
+  --pv-color: green;
+  --grid-color: #a33c42;
+  --house-color: #949aa1;
+  --battery-color: #b5a647;
+  --ev-color: #4766b5;
+  --pv-background: rgba(144, 238, 144, 0.2);
+  --grid-background: rgba(239, 182, 188, 0.2);
+  --house-background: rgba(148, 154, 161, 0.2);
+  --battery-background: rgba(181, 166, 71, 0.2);
+  --ev-background: rgba(71, 102, 181, 0.2);
   .theme-text {
     color: var(--q-white) !important;
   }
