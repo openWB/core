@@ -175,89 +175,87 @@ const lineChartData = computed(() => {
   };
 });
 
-const chartOptions = computed(
-  () => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: legendDisplay.value,
-        fullSize: true,
-        align: 'center' as const,
-        position: 'bottom' as const,
-        labels: {
-          boxWidth: 19,
-          boxHeight: 0.1,
-        },
-      },
-      tooltip: {
-        mode: 'index' as const,
-        intersect: false,
-        callbacks: {
-          label: (item: HistoryChartTooltipItem) =>
-            `${item.dataset.label}: ${item.formattedValue} ${item.dataset.unit}`,
-        },
+const chartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: legendDisplay.value,
+      fullSize: true,
+      align: 'center' as const,
+      position: 'bottom' as const,
+      labels: {
+        boxWidth: 19,
+        boxHeight: 0.1,
       },
     },
-    scales: {
-      x: {
-        type: 'time' as const,
-        time: {
-          unit: 'minute' as const,
-          // stepSize: 5,
-          displayFormats: {
-            minute: 'HH:mm' as const,
-          },
-        },
-        ticks: {
-          maxTicksLimit: 12,
-          source: 'auto' as const,
-        },
-        grid: {
-          tickLength: 5,
-          color: $q.dark.isActive
-            ? 'rgba(255, 255, 255, 0.1)'
-            : 'rgba(0, 0, 0, 0.1)',
-        },
-      },
-      y: {
-        position: 'left' as const,
-        type: 'linear' as const,
-        display: true,
-        title: {
-          display: true,
-          text: 'Leistung [kW]',
-        },
-        ticks: {
-          stepSize: 0.2,
-          maxTicksLimit: 11,
-        },
-        grid: {
-          color: $q.dark.isActive
-            ? 'rgba(255, 255, 255, 0.1)'
-            : 'rgba(0, 0, 0, 0.1)',
-        },
-      },
-      y2: {
-        position: 'right' as const,
-        type: 'linear' as const,
-        display: true,
-        title: {
-          display: true,
-          text: 'SoC [%]',
-        },
-        min: 0,
-        max: 100,
-        ticks: {
-          stepSize: 10,
-        },
-        grid: {
-          display: false,
-        },
+    tooltip: {
+      mode: 'index' as const,
+      intersect: false,
+      callbacks: {
+        label: (item: HistoryChartTooltipItem) =>
+          `${item.dataset.label}: ${item.formattedValue} ${item.dataset.unit}`,
       },
     },
-  }),
-);
+  },
+  scales: {
+    x: {
+      type: 'time' as const,
+      time: {
+        unit: 'minute' as const,
+        // stepSize: 5,
+        displayFormats: {
+          minute: 'HH:mm' as const,
+        },
+      },
+      ticks: {
+        maxTicksLimit: 12,
+        source: 'auto' as const,
+      },
+      grid: {
+        tickLength: 5,
+        color: $q.dark.isActive
+          ? 'rgba(255, 255, 255, 0.1)'
+          : 'rgba(0, 0, 0, 0.1)',
+      },
+    },
+    y: {
+      position: 'left' as const,
+      type: 'linear' as const,
+      display: true,
+      title: {
+        display: true,
+        text: 'Leistung [kW]',
+      },
+      ticks: {
+        stepSize: 0.2,
+        maxTicksLimit: 11,
+      },
+      grid: {
+        color: $q.dark.isActive
+          ? 'rgba(255, 255, 255, 0.1)'
+          : 'rgba(0, 0, 0, 0.1)',
+      },
+    },
+    y2: {
+      position: 'right' as const,
+      type: 'linear' as const,
+      display: true,
+      title: {
+        display: true,
+        text: 'SoC [%]',
+      },
+      min: 0,
+      max: 100,
+      ticks: {
+        stepSize: 10,
+      },
+      grid: {
+        display: false,
+      },
+    },
+  },
+}));
 </script>
 
 <style scoped>

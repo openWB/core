@@ -11,11 +11,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, useTemplateRef, computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 
+import type { ChartOptions, ChartData, Point } from 'chart.js';
 import { Line as ChartjsLine } from 'vue-chartjs';
 import 'chartjs-adapter-luxon';
 import annotationPlugin from 'chartjs-plugin-annotation';
@@ -59,7 +60,7 @@ const chartDatasets = ref({
     {
       label: 'Stromtarif',
       unit: 'ct/kWh',
-      type: 'line',
+      type: 'line' as const,
       stepped: true,
       borderColor: 'rgb(18, 111, 142)',
       backgroundColor: 'rgb(18, 111, 142)',
@@ -67,21 +68,21 @@ const chartDatasets = ref({
       pointStyle: 'circle',
       pointRadius: 0,
       pointHoverRadius: 4,
-      cubicInterpolationMode: 'monotone',
+      cubicInterpolationMode: 'monotone' as const,
       hidden: false,
       borderWidth: 2,
-      data: undefined,
+      data: [] as Point[],
       yAxisID: 'y',
-      parsing: {
-        xAxisKey: 'timestamp',
-        yAxisKey: 'price',
-      },
+      // parsing: {
+      //   xAxisKey: 'timestamp',
+      //   yAxisKey: 'price',
+      // },
     },
   ],
 });
 
-const chartDataObject = computed(() => {
-  let myData = [];
+const chartDataObject = computed<ChartData<'line'>>(() => {
+  let myData: Point[] = [];
   const chartEntries = mqttStore.etPrices;
   if (Object.keys(chartEntries).length > 0) {
     // proper scaling:
@@ -89,15 +90,15 @@ const chartDataObject = computed(() => {
     // price: €/Wh -> €/kWh
     for (const [key, value] of Object.entries(chartEntries)) {
       myData.push({
-        timestamp: key * 1000,
-        price: value * 100000,
+        x: parseInt(key) * 1000,
+        y: value * 100000,
       });
     }
     // repeat last dataset with 59min 59sec offset
     const lastData = myData.slice(-1)[0];
     myData.push({
-      timestamp: lastData.timestamp + (60 * 60 - 1) * 1000,
-      price: lastData.price,
+      x: lastData.x + (60 * 60 - 1) * 1000,
+      y: lastData.y,
     });
   }
   const dataObject = chartDatasets.value;
@@ -110,50 +111,65 @@ const chartDataRead = computed(() => {
 });
 
 const priceAnnotations = computed(() => {
+  interface Annotation {
+    type: 'box';
+    drawTime: 'beforeDatasetsDraw';
+    xMin: number;
+    xMax: number;
+    borderWidth: number;
+    cornerRadius: number;
+    borderColor?: string;
+    backgroundColor?: string;
+  }
+
   const colorUnblocked = 'rgba(73, 238, 73, 0.2)'; // ToDo: use theme color
   const colorBlocked = 'rgba(255, 10, 13, 0.2)'; // ToDo: use theme color
-  const myData = chartDataObject.value.datasets[0].data;
-  class Annotation {
-    type = 'box';
-    drawTime = 'beforeDatasetsDraw';
-    xMin = myData[0].timestamp;
-    xMax = myData[0].timestamp;
-    borderWidth = 2;
-    cornerRadius = 0;
-  }
-  let annotations = [];
+  const myData = chartDataObject.value.datasets[0].data as Point[];
+  let annotations: Annotation[] = [];
   if (props.modelValue !== undefined) {
     for (let i = 0; i < myData.length; i++) {
-      if (myData[i].price <= props.modelValue) {
-        let newAnnotation = new Annotation();
-        newAnnotation.borderColor = colorUnblocked;
-        newAnnotation.backgroundColor = colorUnblocked;
-        newAnnotation.xMin = myData[i].timestamp; // set left edge of box
-        while (i < myData.length && myData[i].price <= props.modelValue) {
+      if (myData[i].y <= props.modelValue) {
+        let newAnnotation: Annotation = {
+          type: 'box',
+          drawTime: 'beforeDatasetsDraw',
+          xMin: myData[i].x, // set left edge of box,
+          xMax: 0,
+          borderWidth: 1,
+          cornerRadius: 0,
+          borderColor: colorUnblocked,
+          backgroundColor: colorUnblocked,
+        };
+        while (i < myData.length && myData[i].y <= props.modelValue) {
           i++;
         }
         if (i == myData.length) {
           // correct index if out of bounds
           i--;
         }
-        newAnnotation.xMax = myData[i].timestamp; // first index myData[i] > maxPrice is right edge of box
+        newAnnotation.xMax = myData[i].x; // first index myData[i] > maxPrice is right edge of box
         annotations.push(newAnnotation); // add box to annotations
       }
     }
     for (let i = 0; i < myData.length; i++) {
-      if (myData[i].price > props.modelValue) {
-        let newAnnotation = new Annotation();
-        newAnnotation.borderColor = colorBlocked;
-        newAnnotation.backgroundColor = colorBlocked;
-        newAnnotation.xMin = myData[i].timestamp; // set left edge of box
-        while (i < myData.length && myData[i].price > props.modelValue) {
+      if (myData[i].y > props.modelValue) {
+        let newAnnotation: Annotation = {
+          type: 'box',
+          drawTime: 'beforeDatasetsDraw',
+          xMin: myData[i].x, // set left edge of box,
+          xMax: 0,
+          borderWidth: 1,
+          cornerRadius: 0,
+          borderColor: colorBlocked,
+          backgroundColor: colorBlocked,
+        };
+        while (i < myData.length && myData[i].y > props.modelValue) {
           i++;
         }
         if (i == myData.length) {
           // correct index if out of bounds
           i--;
         }
-        newAnnotation.xMax = myData[i].timestamp; // first index myData[i] > maxPrice is right edge of box
+        newAnnotation.xMax = myData[i].x; // first index myData[i] > maxPrice is right edge of box
         annotations.push(newAnnotation); // add box to annotations
       }
     }
@@ -161,7 +177,7 @@ const priceAnnotations = computed(() => {
   return annotations;
 });
 
-const myChartOptions = computed(() => {
+const myChartOptions = computed<ChartOptions<'line'>>(() => {
   return {
     plugins: {
       title: {
@@ -244,20 +260,21 @@ const myChartOptions = computed(() => {
   };
 });
 
-function chartClick(event) {
-  const points = priceChart.value.chart.getElementsAtEventForMode(
+function chartClick(event: MouseEvent) {
+  if (!priceChart.value) {
+    return;
+  }
+  const points = (priceChart.value.chart as Chart).getElementsAtEventForMode(
     event,
     'index',
     { intersect: false },
     true,
   );
   if (points.length > 0) {
-    emit(
-      'update:modelValue',
-      Math.ceil(
-        chartDataObject.value.datasets[0].data[points[0].index].price * 100,
-      ) / 100,
-    );
+    const dataPoint = chartDataObject.value.datasets[0].data[
+      points[0].index
+    ] as Point;
+    emit('update:modelValue', Math.ceil(dataPoint.y * 100) / 100);
   }
 }
 </script>

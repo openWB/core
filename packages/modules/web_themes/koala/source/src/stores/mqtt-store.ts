@@ -2356,7 +2356,9 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /* electricity tariff provider */
   const etPrices = computed(() => {
-    return getValue.value('openWB/optional/et/get/prices', undefined, {});
+    return getValue.value('openWB/optional/et/get/prices', undefined, {}) as {
+      [key: string]: number;
+    };
   });
 
   // exports
