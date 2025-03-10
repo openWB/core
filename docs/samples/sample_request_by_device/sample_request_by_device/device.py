@@ -5,10 +5,10 @@ from typing import Iterable, Union
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
-from modules.devices.sample_request_by_device.bat import SampleBat
-from modules.devices.sample_request_by_device.config import Sample, SampleBatSetup, SampleCounterSetup, SampleInverterSetup
-from modules.devices.sample_request_by_device.counter import SampleCounter
-from modules.devices.sample_request_by_device.inverter import SampleInverter
+from modules.devices.sample_request_by_device.sample_request_by_device.bat import SampleBat
+from modules.devices.sample_request_by_device.sample_request_by_device.config import Sample, SampleBatSetup, SampleCounterSetup, SampleInverterSetup
+from modules.devices.sample_request_by_device.sample_request_by_device.counter import SampleCounter
+from modules.devices.sample_request_by_device.sample_request_by_device.inverter import SampleInverter
 
 log = logging.getLogger(__name__)
 

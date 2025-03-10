@@ -5,10 +5,10 @@ from typing import Iterable,  Union
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.sample_modbus.bat import SampleBat
-from modules.devices.sample_modbus.config import Sample, SampleBatSetup, SampleCounterSetup, SampleInverterSetup
-from modules.devices.sample_modbus.counter import SampleCounter
-from modules.devices.sample_modbus.inverter import SampleInverter
+from modules.devices.sample_modbus.sample_modbus.bat import SampleBat
+from modules.devices.sample_modbus.sample_modbus.config import Sample, SampleBatSetup, SampleCounterSetup, SampleInverterSetup
+from modules.devices.sample_modbus.sample_modbus.counter import SampleCounter
+from modules.devices.sample_modbus.sample_modbus.inverter import SampleInverter
 
 log = logging.getLogger(__name__)
 

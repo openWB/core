@@ -3,10 +3,10 @@ import logging
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
-from modules.devices.sample_request_by_component.bat import SampleBat
-from modules.devices.sample_request_by_component.config import Sample, SampleBatSetup, SampleCounterSetup, SampleInverterSetup
-from modules.devices.sample_request_by_component.counter import SampleCounter
-from modules.devices.sample_request_by_component.inverter import SampleInverter
+from modules.devices.sample_request_by_component.sample_request_by_component.bat import SampleBat
+from modules.devices.sample_request_by_component.sample_request_by_component.config import Sample, SampleBatSetup, SampleCounterSetup, SampleInverterSetup
+from modules.devices.sample_request_by_component.sample_request_by_component.counter import SampleCounter
+from modules.devices.sample_request_by_component.sample_request_by_component.inverter import SampleInverter
 
 log = logging.getLogger(__name__)
 

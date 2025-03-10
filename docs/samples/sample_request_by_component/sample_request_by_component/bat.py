@@ -7,7 +7,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
-from modules.devices.sample_request_by_component.config import SampleBatSetup, SampleConfiguration
+from modules.devices.sample_request_by_component.sample_request_by_component.config import SampleBatSetup, SampleConfiguration
 
 
 class KwargsDict(TypedDict):

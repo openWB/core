@@ -6,7 +6,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
-from modules.devices.sample_request_by_device.config import SampleCounterSetup
+from modules.devices.sample_request_by_device.sample_request_by_device.config import SampleCounterSetup
 
 
 class KwargsDict(TypedDict):

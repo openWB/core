@@ -7,7 +7,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
-from modules.devices.sample_modbus.config import SampleBatSetup
+from modules.devices.sample_modbus.sample_modbus.config import SampleBatSetup
 
 
 class KwargsDict(TypedDict):

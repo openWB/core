@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
+from modules.common import req
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
-from modules.devices.sample_modbus.config import SampleCounterSetup
+from modules.devices.sample_request_by_component.sample_request_by_component.config import SampleCounterSetup
 
 
 class KwargsDict(TypedDict):
     device_id: int
-    client: ModbusTcpClient_
+    ip_address: str
 
 
 class SampleCounter(AbstractCounter):
@@ -22,13 +22,14 @@ class SampleCounter(AbstractCounter):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.client: ModbusTcpClient_ = self.kwargs['client']
+        self.ip_address: str = self.kwargs['ip_address']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
+        resp = req.get_http_session().get(self.ip_address)
+        power = resp.json().get("power")
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
