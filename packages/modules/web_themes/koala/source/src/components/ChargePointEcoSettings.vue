@@ -61,26 +61,37 @@
     Preisgrenze für strompreisbasiertes Laden
   </div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-    <q-btn-group class="col">
+    <!-- <q-btn-group class="col"> -->
       <q-btn
+        v-if="maxPrice.value"
+        icon="remove"
         color="grey"
-        :label="
-          maxPrice.value?.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }) + ' ct/kWh'
-        "
         size="sm"
         class="col"
-        :no-caps="true"
-        @click="console.log('maxPrice clicked', maxPrice.value)"
+        @click="maxPrice.value = maxPrice.value - 0.01"
       />
-    </q-btn-group>
+      <q-btn
+        v-if="maxPrice.value"
+        icon="add"
+        color="grey"
+        size="sm"
+        class="col"
+        @click="maxPrice.value = maxPrice.value + 0.01"
+      />
+    <!-- </q-btn-group> -->
+    <div class="col-5 text-right">
+      {{ maxPrice.value?.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }) + ' ct/kWh' }}
+    </div>
   </div>
-  <ElectricityTariffChart
-    :modelValue="maxPrice.value"
-    @update:modelValue="maxPrice.value = $event"
-  />
+  <q-field filled class="q-mt-sm">
+    <ElectricityTariffChart
+      :modelValue="maxPrice.value"
+      @update:modelValue="maxPrice.value = $event"
+    />
+  </q-field>
 </template>
 
 <script setup lang="ts">

@@ -284,5 +284,6 @@ function chartClick(event: MouseEvent) {
   width: 100%;
   min-height: 200px;
   height: min(50vh, 300px);
+  padding: 0.5em 0
 }
 </style>
