@@ -10,9 +10,10 @@ from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreInve
 
 
 class KostalPlenticoreInverter(AbstractInverter):
-    def __init__(self,
-                 component_config: KostalPlenticoreInverterSetup) -> None:
+    def __init__(self, component_config: KostalPlenticoreInverterSetup) -> None:
         self.component_config = component_config
+
+    def initialize(self) -> None:
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

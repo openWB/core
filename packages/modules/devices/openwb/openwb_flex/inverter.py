@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -15,17 +14,21 @@ from modules.devices.openwb.openwb_flex.config import PvKitFlexSetup
 from modules.devices.openwb.openwb_flex.versions import kit_inverter_version_factory
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    client: modbus.ModbusTcpClient_
+
+
 class PvKitFlex(AbstractInverter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, PvKitFlexSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(PvKitFlexSetup, component_config)
-        factory = kit_inverter_version_factory(
-            self.component_config.configuration.version)
-        self.__client = factory(self.component_config.configuration.id, tcp_client)
-        self.__tcp_client = tcp_client
+    def __init__(self, component_config: PvKitFlexSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
+        factory = kit_inverter_version_factory(self.component_config.configuration.version)
+        self.__client = factory(self.component_config.configuration.id, self.__tcp_client)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.simulation = {}
         self.store = get_inverter_value_store(self.component_config.id)

@@ -18,22 +18,22 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: SonnenBatterie):
     def create_bat_component(component_config: SonnenbatterieBatSetup):
-        return SonnenbatterieBat(device_config.id,
-                                 device_config.configuration.ip_address,
-                                 device_config.configuration.variant,
-                                 component_config)
+        return SonnenbatterieBat(component_config,
+                                 device_id=device_config.id,
+                                 device_address=device_config.configuration.ip_address,
+                                 device_variant=device_config.configuration.variant)
 
     def create_counter_component(component_config: SonnenbatterieCounterSetup):
-        return SonnenbatterieCounter(device_config.id,
-                                     device_config.configuration.ip_address,
-                                     device_config.configuration.variant,
-                                     component_config)
+        return SonnenbatterieCounter(component_config,
+                                     device_id=device_config.id,
+                                     device_address=device_config.configuration.ip_address,
+                                     device_variant=device_config.configuration.variant)
 
     def create_inverter_component(component_config: SonnenbatterieInverterSetup):
-        return SonnenbatterieInverter(device_config.id,
-                                      device_config.configuration.ip_address,
-                                      device_config.configuration.variant,
-                                      component_config)
+        return SonnenbatterieInverter(component_config,
+                                      device_id=device_config.id,
+                                      device_address=device_config.configuration.ip_address,
+                                      device_variant=device_config.configuration.variant)
 
     return ConfigurableDevice(
         device_config=device_config,

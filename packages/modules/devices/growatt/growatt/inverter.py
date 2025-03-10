@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
@@ -12,27 +11,34 @@ from modules.devices.growatt.growatt.config import GrowattInverterSetup
 from modules.devices.growatt.growatt.version import GrowattVersion
 
 
+class KwargsDict(TypedDict):
+    modbus_id: int
+    version: GrowattVersion
+    client: ModbusTcpClient_
+
+
 class GrowattInverter(AbstractInverter):
-    def __init__(self,
-                 component_config: Union[Dict, GrowattInverterSetup],
-                 modbus_id: int,
-                 version: GrowattVersion) -> None:
-        self.component_config = dataclass_from_dict(GrowattInverterSetup, component_config)
-        self.__modbus_id = modbus_id
-        self.version = version
+    def __init__(self, component_config: GrowattInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__modbus_id: int = self.kwargs['modbus_id']
+        self.version: GrowattVersion = self.kwargs['version']
+        self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         if self.version == GrowattVersion.max_series:
-            power = client.read_input_registers(
+            power = self.client.read_input_registers(
                 1, ModbusDataType.UINT_32, unit=self.__modbus_id) / -10
-            exported = client.read_input_registers(
+            exported = self.client.read_input_registers(
                 91, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
         else:
-            power = client.read_input_registers(
+            power = self.client.read_input_registers(
                 3001, ModbusDataType.UINT_32, unit=self.__modbus_id) / -10
-            exported = client.read_input_registers(
+            exported = self.client.read_input_registers(
                 3053, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
 
         inverter_state = InverterState(

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
+from typing import Any, TypedDict
 import xml.etree.ElementTree as ET
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -15,12 +14,17 @@ from modules.devices.smartfox.smartfox.config import SmartfoxCounterSetup
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    ip_address: str
+
+
 class SmartfoxCounter(AbstractCounter):
-    def __init__(self,
-                 device_address: str,
-                 component_config: Union[Dict, SmartfoxCounterSetup]) -> None:
-        self.__device_address = device_address
-        self.component_config = dataclass_from_dict(SmartfoxCounterSetup, component_config)
+    def __init__(self, component_config: SmartfoxCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.ip_address: int = self.kwargs['ip_address']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
@@ -35,11 +39,11 @@ class SmartfoxCounter(AbstractCounter):
         headers = {
             'Accept': '*/*',
             'Accept-Encoding': 'gzip, deflate',
-            'Host': self.__device_address,
+            'Host': self.ip_address,
             'Connection': 'keep-alive)',
         }
 
-        response = req.get_http_session().get('http://'+self.__device_address+'/values.xml',
+        response = req.get_http_session().get('http://'+self.ip_address+'/values.xml',
                                               headers=headers,
                                               timeout=5)
         response.encoding = 'utf-8'

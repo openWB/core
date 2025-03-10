@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -12,12 +11,17 @@ from modules.common.store import get_bat_value_store
 from modules.devices.studer.studer.config import StuderBatSetup
 
 
+class KwargsDict(TypedDict):
+    client: modbus.ModbusTcpClient_
+
+
 class StuderBat(AbstractBat):
-    def __init__(self,
-                 component_config: Union[Dict, StuderBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(StuderBatSetup, component_config)
-        self.__tcp_client = tcp_client
+    def __init__(self, component_config: StuderBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

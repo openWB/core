@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Smartfox):
     def create_counter_component(component_config: SmartfoxCounterSetup):
-        return SmartfoxCounter(device_config.configuration.ip_address, component_config)
+        return SmartfoxCounter(component_config, ip_address=device_config.configuration.ip_address)
 
     return ConfigurableDevice(
         device_config=device_config,

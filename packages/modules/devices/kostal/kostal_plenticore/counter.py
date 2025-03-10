@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import Any, Callable
+from typing import Any, Callable, TypedDict
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -10,13 +10,19 @@ from modules.common.store import get_counter_value_store
 from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreCounterSetup
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+
+
 class KostalPlenticoreCounter(AbstractCounter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: KostalPlenticoreCounterSetup) -> None:
+    def __init__(self, component_config: KostalPlenticoreCounterSetup, **kwargs: Any) -> None:
         self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
         self.store = get_counter_value_store(self.component_config.id)
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def get_values(self, reader: Callable[[int, ModbusDataType], Any]) -> CounterState:

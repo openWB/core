@@ -15,8 +15,9 @@ def test_read_state():
         [616, 65535, 65535, -2],
         [14368, -1]
     ])
-    inverter = SolaredgeInverter(0, SolaredgeInverterSetup(), Mock(
+    inverter = SolaredgeInverter(SolaredgeInverterSetup(), client=Mock(
         spec=ModbusTcpClient_, read_holding_registers=mock_read_holding_registers))
+    inverter.initialize()
 
     # execution
     inverter_state = inverter.read_state()
