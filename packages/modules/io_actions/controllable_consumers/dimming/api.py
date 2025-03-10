@@ -24,7 +24,7 @@ class Dimming(AbstractIoAction):
                 if pattern["value"] is False:
                     self.no_dimming_input, self.no_dimming_value = input_matrix_list[0]
             else:
-                control_command_log.warning("Kein Input-Matrix-Element gefunden.")
+                control_command_log.warning("Dimmen per HEMS: Kein Eingang zum Überwachen konfiguriert.")
         super().__init__()
 
     def setup(self) -> None:
