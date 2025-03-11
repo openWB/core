@@ -62,28 +62,30 @@
   </div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <!-- <q-btn-group class="col"> -->
-      <q-btn
-        v-if="maxPrice.value"
-        icon="remove"
-        color="grey"
-        size="sm"
-        class="col"
-        @click="maxPrice.value = maxPrice.value - 0.01"
-      />
-      <q-btn
-        v-if="maxPrice.value"
-        icon="add"
-        color="grey"
-        size="sm"
-        class="col"
-        @click="maxPrice.value = maxPrice.value + 0.01"
-      />
+    <q-btn
+      v-if="maxPrice.value"
+      icon="remove"
+      color="grey"
+      size="sm"
+      class="col q-mr-sm"
+      @click="maxPrice.value = maxPrice.value - 0.01"
+    />
+    <q-btn
+      v-if="maxPrice.value"
+      icon="add"
+      color="grey"
+      size="sm"
+      class="col"
+      @click="maxPrice.value = maxPrice.value + 0.01"
+    />
     <!-- </q-btn-group> -->
     <div class="col-5 text-right">
-      {{ maxPrice.value?.toLocaleString(undefined, {
+      {{
+        maxPrice.value?.toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
-        }) + ' ct/kWh' }}
+        }) + ' ct/kWh'
+      }}
     </div>
   </div>
   <q-field filled class="q-mt-sm">

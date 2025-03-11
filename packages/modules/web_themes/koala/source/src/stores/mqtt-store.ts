@@ -19,6 +19,7 @@ import type {
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
   BatteryConfiguration,
+  ThemeConfiguration,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -444,8 +445,8 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param objectPath path in the object to get the value from
    * @returns unknown
    * @example
-   * getTopic('openWB/system/version');
-   * getTopic('openWB/general/web_theme', 'official');
+   * getValue('openWB/system/version');
+   * getValue('openWB/general/web_theme', 'official');
    */
   const getValue = computed(() => {
     return (
@@ -546,7 +547,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const themeConfiguration = computed(() => {
     return getValue.value('openWB/general/web_theme', 'configuration') as
-      | object
+      | ThemeConfiguration
       | undefined;
   });
 

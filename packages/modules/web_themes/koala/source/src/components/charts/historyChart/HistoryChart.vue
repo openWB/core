@@ -48,12 +48,15 @@ const mqttStore = useMqttStore();
 const selectedData = computed(() => {
   const data = mqttStore.chartData;
   const currentTime = Math.floor(Date.now() / 1000);
-  return data.filter((item) => item.timestamp > currentTime - 3600);
+  return data.filter((item) => item.timestamp > currentTime - chartRange.value);
 });
 
 const chargePointIds = computed(() => mqttStore.chargePointIds);
 const chargePointNames = computed(() => mqttStore.chargePointName);
 const vehicles = computed(() => mqttStore.vehicleList());
+const chartRange = computed(
+  () => mqttStore.themeConfiguration?.history_chart_range || 3600,
+);
 
 const chargePointDatasets = computed(() =>
   chargePointIds.value.map((cpId) => ({

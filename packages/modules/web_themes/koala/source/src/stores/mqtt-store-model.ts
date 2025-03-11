@@ -1,3 +1,7 @@
+export interface ThemeConfiguration {
+  history_chart_range: number;
+}
+
 export interface ConnectionOptions {
   protocol: string;
   host: string;
