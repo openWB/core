@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
 
-
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -16,8 +13,10 @@ log = logging.getLogger(__name__)
 
 
 class SolarViewCounter(AbstractCounter):
-    def __init__(self, component_config: Union[Dict, SolarViewCounterSetup]) -> None:
-        self.component_config = dataclass_from_dict(SolarViewCounterSetup, component_config)
+    def __init__(self, component_config: SolarViewCounterSetup) -> None:
+        self.component_config = component_config
+
+    def initialize(self) -> None:
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

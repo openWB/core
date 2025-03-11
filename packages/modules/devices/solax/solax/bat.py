@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -13,14 +12,19 @@ from modules.common.store import get_bat_value_store
 from modules.devices.solax.solax.config import SolaxBatSetup, Solax
 
 
+class KwargsDict(TypedDict):
+    client: modbus.ModbusTcpClient_
+    device_config: Solax
+
+
 class SolaxBat(AbstractBat):
-    def __init__(self,
-                 device_config: Solax,
-                 component_config: Union[Dict, SolaxBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.device_config = device_config
-        self.component_config = dataclass_from_dict(SolaxBatSetup, component_config)
-        self.__tcp_client = tcp_client
+    def __init__(self, component_config: SolaxBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__tcp_client = self.kwargs['client']
+        self.device_config = self.kwargs['device_config']
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

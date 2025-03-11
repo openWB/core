@@ -39,13 +39,13 @@ def _request_data(session: Session, session_key: str, ip_address: str) -> Dict:
 
 def create_device(device_config: LG):
     def create_bat_component(component_config: LgBatSetup):
-        return LgBat(device_config.id, component_config)
+        return LgBat(component_config, device_id=device_config.id)
 
     def create_counter_component(component_config: LgCounterSetup):
-        return LgCounter(device_config.id, component_config)
+        return LgCounter(component_config, device_id=device_config.id)
 
     def create_inverter_component(component_config: LgInverterSetup):
-        return LgInverter(device_config.id, component_config)
+        return LgInverter(component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[Union[LgBat, LgCounter, LgInverter]]):
         nonlocal session_key

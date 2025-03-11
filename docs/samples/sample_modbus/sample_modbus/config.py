@@ -5,8 +5,9 @@ from modules.common.component_setup import ComponentSetup
 
 @auto_str
 class SampleConfiguration:
-    def __init__(self, ip_address: Optional[str] = None):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
         self.ip_address = ip_address
+        self.port = port
 
 
 @auto_str
@@ -24,8 +25,8 @@ class Sample:
 
 @auto_str
 class SampleBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 1):
+        self.modbus_id = modbus_id
 
 
 @auto_str
@@ -40,8 +41,8 @@ class SampleBatSetup(ComponentSetup[SampleBatConfiguration]):
 
 @auto_str
 class SampleCounterConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 1):
+        self.modbus_id = modbus_id
 
 
 @auto_str
@@ -56,8 +57,8 @@ class SampleCounterSetup(ComponentSetup[SampleCounterConfiguration]):
 
 @auto_str
 class SampleInverterConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 1):
+        self.modbus_id = modbus_id
 
 
 @auto_str

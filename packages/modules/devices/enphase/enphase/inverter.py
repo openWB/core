@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import logging
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
@@ -14,8 +13,10 @@ log = logging.getLogger(__name__)
 
 
 class EnphaseInverter(AbstractInverter):
-    def __init__(self, device_id: int, component_config: Union[Dict, EnphaseInverterSetup]) -> None:
-        self.component_config = dataclass_from_dict(EnphaseInverterSetup, component_config)
+    def __init__(self, component_config: EnphaseInverterSetup) -> None:
+        self.component_config = component_config
+
+    def initialize(self) -> None:
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

@@ -15,16 +15,22 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: SmartMe):
+    session = None
+
     def create_counter_component(component_config: SmartMeCounterSetup):
         return SmartMeCounter(component_config)
 
     def create_inverter_component(component_config: SmartMeInverterSetup):
         return SmartMeInverter(component_config)
 
-    session = get_http_session()
-    session.auth = (device_config.configuration.user, device_config.configuration.password)
+    def initializer():
+        nonlocal session
+        session = get_http_session()
+        session.auth = (device_config.configuration.user, device_config.configuration.password)
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             counter=create_counter_component,
             inverter=create_inverter_component,
