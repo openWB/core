@@ -12,6 +12,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.sungrow.config import SungrowBatSetup, Sungrow
 from modules.devices.sungrow.sungrow.version import Version
+from modules.devices.sungrow.sungrow.firmware import Firmware
 
 
 class SungrowBat(AbstractBat):
@@ -28,24 +29,31 @@ class SungrowBat(AbstractBat):
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
-        soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.INT_16, unit=unit) / 10)
-        bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit)
+        soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
 
-        # Beim WiNet S-Dongle fehlt das Register für das Vorzeichen der Speicherleistung
-        if self.device_config.configuration.version == Version.SH_winet_dongle:
-            total_power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
-                                                                 wordorder=Endian.Little, unit=unit)
-            pv_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
-                                                              wordorder=Endian.Little, unit=unit)
-
-            # Ist die Gesamtleistung des WR größer als die PV-Erzeugung wird der Speicher entladen
-            if total_power > pv_power:
-                bat_power = bat_power * -1
+        if (
+            Firmware(self.device_config.configuration.firmware) == Firmware.v2
+            and self.device_config.configuration.version == Version.SH
+        ):
+            bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
         else:
-            resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
-            binary = bin(resp.registers[0])[2:].zfill(8)
-            if binary[5] == "1":
-                bat_power = bat_power * -1
+            bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
+
+            # Beim WiNet S-Dongle fehlt das Register für das Vorzeichen der Speicherleistung
+            if self.device_config.configuration.version == Version.SH_winet_dongle:
+                total_power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
+                                                                     wordorder=Endian.Little, unit=unit)
+                pv_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
+                                                                  wordorder=Endian.Little, unit=unit)
+
+                # Ist die Gesamtleistung des WR größer als die PV-Erzeugung wird der Speicher entladen
+                if total_power > pv_power:
+                    bat_power = bat_power * -1
+            else:
+                resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
+                binary = bin(resp.registers[0])[2:].zfill(8)
+                if binary[5] == "1":
+                    bat_power = bat_power * -1
 
         imported, exported = self.sim_counter.sim_count(bat_power)
         bat_state = BatState(

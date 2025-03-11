@@ -4,7 +4,7 @@ import traceback
 from typing import Dict, List
 
 from control import data
-from control import ev as ev_module
+from control.ev import ev as ev_module
 from control.chargepoint.charging_type import ChargingType
 from dataclass_utils.factories import empty_dict_factory, empty_list_factory
 from helpermodules.abstract_plans import AutolockPlan
@@ -71,7 +71,7 @@ class CpTemplate:
                 else:
                     return False
             else:
-                log.info("Keine Sperrung durch Autolock, weil keine Zeitpläne konfiguriert sind.")
+                log.info("Keine Sperrung durch Sperren nach Zeitplan, weil keine Zeitpläne konfiguriert sind.")
                 return False
         else:
             return False

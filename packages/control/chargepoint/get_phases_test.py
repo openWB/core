@@ -5,7 +5,7 @@ import pytest
 
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_template import CpTemplate, get_chargepoint_template_default
-from control.ev import Ev
+from control.ev.ev import Ev
 from control.general import General
 from control import data
 
@@ -35,7 +35,7 @@ class Params:
                  phases_in_use: int,
                  imported_since_plugged: float,
                  expected_phases: int,
-                 timestamp_perform_phase_switch: Optional[str] = None,
+                 timestamp_last_phase_switch: Optional[str] = None,
                  charge_state: bool = False) -> None:
         self.name = name
         self.connected_phases = connected_phases
@@ -45,7 +45,7 @@ class Params:
         self.phases_in_use = phases_in_use
         self.imported_since_plugged = imported_since_plugged
         self.expected_phases = expected_phases
-        self.timestamp_perform_phase_switch = timestamp_perform_phase_switch
+        self.timestamp_last_phase_switch = timestamp_last_phase_switch
         self.charge_state = charge_state
 
 
@@ -61,7 +61,7 @@ cases = [
            expected_phases=1, charge_state=True),
     Params("don't change during phase switch", connected_phases=3, auto_phase_switch_hw=True,
            prevent_phase_switch=False, chargemode_phases=0, phases_in_use=1, imported_since_plugged=0,
-           expected_phases=1, timestamp_perform_phase_switch="2022/05/11, 15:00:02"),
+           expected_phases=1, timestamp_last_phase_switch="2022/05/11, 15:00:02"),
     Params("auto phase during charge 3", connected_phases=3, auto_phase_switch_hw=True,
            prevent_phase_switch=False, chargemode_phases=0, phases_in_use=1, imported_since_plugged=0,
            expected_phases=1, charge_state=True),
@@ -94,7 +94,7 @@ def test_get_phases_by_selected_chargemode(monkeypatch, cp: Chargepoint, params:
     cp.data.set.log.imported_since_plugged = params.imported_since_plugged
     charging_ev_data = cp.data.set.charging_ev_data
     charging_ev_data.ev_template.data.prevent_phase_switch = params.prevent_phase_switch
-    cp.data.control_parameter.timestamp_perform_phase_switch = params.timestamp_perform_phase_switch
+    cp.data.control_parameter.timestamp_last_phase_switch = params.timestamp_last_phase_switch
     cp.data.control_parameter.phases = params.phases_in_use
 
     # execution

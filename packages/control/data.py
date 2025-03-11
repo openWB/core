@@ -20,7 +20,9 @@ from helpermodules.graph import Graph
 from helpermodules.subdata import SubData
 from control.counter import Counter
 from control.counter_all import CounterAll
-from control.ev import ChargeTemplate, Ev, EvTemplate
+from control.ev.charge_template import ChargeTemplate
+from control.ev.ev import Ev
+from control.ev.ev_template import EvTemplate
 from control.general import General
 from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
@@ -333,7 +335,6 @@ class Data:
             except TypeError:
                 self.cp_data[cp] = Chargepoint(SubData.cp_data[cp].chargepoint.num, None)
                 self.cp_data[cp].template = copy.deepcopy(SubData.cp_data[cp].chargepoint.template)
-                self.cp_data[cp].set_current_prev = copy.deepcopy(SubData.cp_data[cp].chargepoint.set_current_prev)
                 self.cp_data[cp].data = copy.deepcopy(SubData.cp_data[cp].chargepoint.data)
                 self.cp_data[cp].chargepoint_module = SubData.cp_data[cp].chargepoint.chargepoint_module
         self.cp_all_data = copy.deepcopy(SubData.cp_all_data)

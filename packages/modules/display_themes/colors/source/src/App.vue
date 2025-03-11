@@ -6,12 +6,30 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import NavigationBar from './views/NavigationBar.vue'
 import DisplayTheme from './views/DisplayTheme.vue'
+import { wbSettings } from './assets/js/themeConfig'
 
-//import { RouterLink, RouterView } from 'vue-router'
-//import HelloWorld from './components/HelloWorld.vue'
-// methods
+onMounted(() => {
+	console.log('on mounted')
+	let uri = window.location.search
+	if (uri != '') {
+		console.debug('search', uri)
+		let params = new URLSearchParams(uri)
+		if (params.has('data')) {
+			let data = JSON.parse(params.get('data')!)
+			Object.entries(data).forEach(([key, value]) => {
+				console.log('updateSetting', key, value)
+				if (key.startsWith('parentChargePoint')) {
+					wbSettings[key] = parseInt(value as string)
+				} else {
+					wbSettings[key] = value as string
+				}
+			})
+		}
+	}
+})
 </script>
 
 <style>

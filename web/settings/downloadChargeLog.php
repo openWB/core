@@ -32,14 +32,53 @@ $csv_format = [
 	"data imported_since_plugged" => ["header" => "Energie seit Anstecken", "type" => "energy"],
 ];
 
-if (!preg_match("/[0-9]{4}/", $_GET["year"]) || !preg_match("/^((0?[1-9])|(1[0-2]))$/", $_GET["month"])) {
-	http_response_code(400);
-	die("invalid data");
+// If the "year" parameter is missing or invalid, respond with HTTP 400 and return an error message.
+if (!isset($_GET["year"]) || !preg_match("/^[0-9]{4}$/", $_GET["year"])) {
+    http_response_code(400);
+    echo json_encode(["error" => "Invalid 'year' parameter. A four-digit year, e.g., 2023, is expected."]);
+    exit;
 }
+$year = intval($_GET["year"]);
 
-$file_name = sprintf('%04d%02d', $_GET["year"], $_GET["month"]);
-$charge_log_file = $charge_log_path . $file_name . ".json";
-$charge_log_data = json_decode(file_get_contents($charge_log_file), true);
+// If the "month" parameter is provided and matches the regex for valid months (1-12), use it
+if (isset($_GET["month"])) {
+    if (preg_match("/^((0?[1-9])|(1[0-2]))$/", $_GET["month"])) {
+        $month = $_GET["month"];
+        // Format the file name based on the year and month
+        $file_name = sprintf('%04d%02d', $year, $month);
+        $output_file_name = $file_name;
+        $charge_log_file = $charge_log_path . $file_name . ".json";
+
+        // Attempt to load the charge log file for the specific month
+        if (file_exists($charge_log_file)) {
+            $charge_log_data = json_decode(file_get_contents($charge_log_file), true);
+        } else {
+            $charge_log_data = []; // Default to an empty array if the file does not exist
+        }
+    } else {
+        // If the "month" parameter is invalid, return HTTP 400 Bad Request
+        http_response_code(400);
+        echo json_encode(["error" => "Invalid 'month' parameter. Expected a value between 1 and 12."]);
+        exit;
+    }
+} else {
+    // If no "month" is provided, process all months for the given year
+    $charge_log_data = [];
+    for ($month = 1; $month <= 12; $month++) {
+        // Format the file name based on the year and month
+        $file_name = sprintf('%04d%02d', $year, $month);
+        $output_file_name = sprintf('%04d', $year);
+        $charge_log_file = $charge_log_path . $file_name . ".json";
+
+        // Append data from each month's charge log file if it exists
+        if (file_exists($charge_log_file)) {
+            $monthly_data = json_decode(file_get_contents($charge_log_file), true);
+            if (is_array($monthly_data)) {
+                $charge_log_data = array_merge($charge_log_data, $monthly_data);
+            }
+        }
+    }
+}
 
 function newRow()
 {
@@ -124,7 +163,7 @@ function formatEnergy($value)
 
 if (is_array($charge_log_data)) {
 	header("Content-Type: text/csv");
-	header("Content-Disposition: attachment; filename=ChargeLog-" . $file_name . ".csv");
+	header("Content-Disposition: attachment; filename=ChargeLog-" . $output_file_name . ".csv");
 
 	# Output CSV header
 	$csv_header = newRow();

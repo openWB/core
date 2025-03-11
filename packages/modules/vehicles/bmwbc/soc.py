@@ -21,6 +21,7 @@ def create_vehicle(vehicle_config: BMWbc, vehicle: int):
             vehicle_config.configuration.user_id,
             vehicle_config.configuration.password,
             vehicle_config.configuration.vin,
+            vehicle_config.configuration.captcha_token,
             vehicle)
     return ConfigurableVehicle(vehicle_config=vehicle_config,
                                component_updater=updater,
@@ -28,13 +29,19 @@ def create_vehicle(vehicle_config: BMWbc, vehicle: int):
                                calc_while_charging=vehicle_config.configuration.calculate_soc)
 
 
-def bmwbc_update(user_id: str, password: str, vin: str, charge_point: int):
+def bmwbc_update(user_id: str, password: str, vin: str, captcha_token: str, charge_point: int):
     log.debug("bmwbc: user_id="+user_id+"vin="+vin+"charge_point="+str(charge_point))
-    vehicle_config = BMWbc(configuration=BMWbcConfiguration(charge_point, user_id, password, vin))
+    log.debug("bmwbc: captcha_token="+captcha_token)
+    vehicle_config = BMWbc(configuration=BMWbcConfiguration(charge_point,
+                                                            user_id,
+                                                            password,
+                                                            vin,
+                                                            captcha_token))
     store.get_car_value_store(charge_point).store.set(api.fetch_soc(
         vehicle_config.configuration.user_id,
         vehicle_config.configuration.password,
         vehicle_config.configuration.vin,
+        vehicle_config.configuration.captcha_token,
         charge_point))
 
 

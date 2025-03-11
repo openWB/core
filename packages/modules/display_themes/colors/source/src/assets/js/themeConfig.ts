@@ -43,6 +43,8 @@ export class Config {
 	animationDuration = 300
 	animationDelay = 100
 	zoomGraph = false
+	parentChargePoint1: undefined
+	parentChargePoint2: undefined
 
 	constructor() {}
 	get showRelativeArcs() {
@@ -249,6 +251,16 @@ export class Config {
 	}
 }
 export const globalConfig = reactive(new Config())
+export const wbSettings: { [key: string]: string | number | undefined } =
+	reactive({
+		localIp: undefined,
+		localBranch: undefined,
+		localCommit: undefined,
+		localVersion: undefined,
+		parentChargePoint1: undefined,
+		parentChargePoint2: undefined,
+	})
+
 export function initConfig() {
 	// readCookie()
 	// set the background
@@ -281,23 +293,17 @@ export const widescreen = computed(() => {
 	return screensize.x >= breakpoint
 })
 export const chargemodes: { [key: string]: ChargeModeInfo } = {
-	stop: {
-		mode: ChargeMode.stop,
-		name: 'Stop',
-		color: 'var(--color-fg)',
-		icon: 'fa-power-off',
-	},
-	standby: {
-		mode: ChargeMode.standby,
-		name: 'Standby',
-		color: 'var(--color-axis',
-		icon: 'fa-pause',
-	},
 	pv_charging: {
 		mode: ChargeMode.pv_charging,
 		name: 'PV',
 		color: 'var(--color-pv',
 		icon: 'fa-solar-panel',
+	},
+	instant_charging: {
+		mode: ChargeMode.instant_charging,
+		name: 'Sofort',
+		color: 'var(--color-charging)',
+		icon: 'fa-bolt',
 	},
 	scheduled_charging: {
 		mode: ChargeMode.scheduled_charging,
@@ -305,11 +311,17 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 		color: 'var(--color-battery)',
 		icon: 'fa-bullseye',
 	},
-	instant_charging: {
-		mode: ChargeMode.instant_charging,
-		name: 'Sofort',
-		color: 'var(--color-charging)',
-		icon: 'fa-bolt',
+	standby: {
+		mode: ChargeMode.standby,
+		name: 'Standby',
+		color: 'var(--color-axis)',
+		icon: 'fa-pause',
+	},
+	stop: {
+		mode: ChargeMode.stop,
+		name: 'Stop',
+		color: 'var(--color-fg)',
+		icon: 'fa-power-off',
 	},
 }
 // methods
@@ -396,7 +408,7 @@ interface Preferences {
 
 function writeCookie() {
 	const prefs: Preferences = {}
-	prefs.hideSH = Object.values(shDevices)
+	prefs.hideSH = [...shDevices.values()]
 		.filter((device) => !device.showInGraph)
 		.map((device) => device.id)
 	prefs.showLG = globalConfig.graphPreference == 'live'
@@ -425,81 +437,3 @@ function writeCookie() {
 		JSON.stringify(prefs) +
 		';max-age=16000000;samesite=strict'
 }
-
-/* function readCookie() {
-	const wbCookies = document.cookie.split(';')
-	const myCookie = wbCookies.filter(
-		(entry) => entry.split('=')[0] === 'openWBColorTheme',
-	)
-	if (myCookie.length > 0) {
-		const prefs = JSON.parse(myCookie[0].split('=')[1]) as Preferences
-		if (prefs.decimalP !== undefined) {
-			globalConfig.setDecimalPlaces(+prefs.decimalP)
-		}
-		if (prefs.smartHomeC !== undefined) {
-			globalConfig.setSmartHomeColors(prefs.smartHomeC)
-		}
-		if (prefs.hideSH !== undefined) {
-			prefs.hideSH.map((i) => {
-				if (shDevices[i] == undefined) {
-					addShDevice(i)
-				}
-				shDevices[i].setShowInGraph(false)
-			})
-		}
-		if (prefs.showLG !== undefined) {
-			globalConfig.setGraphPreference(prefs.showLG ? 'live' : 'today')
-		}
-		if (prefs.maxPow !== undefined) {
-			globalConfig.setMaxPower(+prefs.maxPow)
-		}
-		if (prefs.relPM !== undefined) {
-			globalConfig.setShowRelativeArcs(prefs.relPM)
-		}
-		if (prefs.displayM !== undefined) {
-			globalConfig.setDisplayMode(prefs.displayM)
-		}
-		if (prefs.stackO !== undefined) {
-			globalConfig.setUsageStackOrder(prefs.stackO)
-		}
-		if (prefs.showGr !== undefined) {
-			globalConfig.setShowGrid(prefs.showGr)
-		}
-		if (prefs.showQA !== undefined) {
-			globalConfig.setShowQuickAccess(prefs.showQA)
-		}
-		if (prefs.simpleCP !== undefined) {
-			globalConfig.setSimpleCpList(prefs.simpleCP)
-		}
-		if (prefs.shortCP !== undefined) {
-			globalConfig.setShortCpList(prefs.shortCP)
-		}
-		if (prefs.animation != undefined) {
-			globalConfig.setShowAnimations(prefs.animation)
-		}
-		if (prefs.wideB != undefined) {
-			globalConfig.setPreferWideBoxes(prefs.wideB)
-		}
-		if (prefs.fluidD != undefined) {
-			globalConfig.setFluidDisplay(prefs.fluidD)
-		}
-		if (prefs.clock != undefined) {
-			globalConfig.setShowClock(prefs.clock)
-		}
-		if (prefs.showButtonBar !== undefined) {
-			globalConfig.setShowButtonBar(prefs.showButtonBar)
-		}
-		if (prefs.showCounters !== undefined) {
-			globalConfig.setShowCounters(prefs.showCounters)
-		}
-		if (prefs.showVehicles !== undefined) {
-			globalConfig.setShowVehicles(prefs.showVehicles)
-		}
-		if (prefs.showPrices !== undefined) {
-			globalConfig.setShowPrices(prefs.showPrices)
-		}
-		if (prefs.debug !== undefined) {
-			globalConfig.setDebug(prefs.debug)
-		}
-	}
-} */

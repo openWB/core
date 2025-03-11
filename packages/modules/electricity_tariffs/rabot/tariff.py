@@ -56,6 +56,7 @@ def fetch(config: RabotTariff) -> None:
         ).json()["records"]
 
     validate_token(config)
+    # ToDo: get rid of hard coded timezone!
     # start_date von voller Stunde sonst liefert die API die nächste Stunde
     start_date = datetime.datetime.fromtimestamp(
         timecheck.create_unix_timestamp_current_full_hour()).astimezone(
@@ -78,7 +79,7 @@ def fetch(config: RabotTariff) -> None:
         formatted_price = data["priceInCentPerKwh"]/100000  # Cent/kWh -> €/Wh
         timestamp = datetime.datetime.fromisoformat(data["timestamp"]).astimezone(
             pytz.timezone("Europe/Berlin")).timestamp()
-        prices.update({int(timestamp): formatted_price})
+        prices.update({str(int(timestamp)): formatted_price})
     return prices
 
 

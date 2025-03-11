@@ -1,7 +1,9 @@
 <template>
 	<WbSubwidget :titlecolor="device.color" :fullwidth="true">
 		<template #title>
-			{{ device.name }}
+			<span class="devicename">
+				{{ device.name }}
+			</span>
 		</template>
 		<template #buttons>
 			<span v-for="(temp, idx) in device.temp" :key="idx">
@@ -25,13 +27,13 @@
 			</WbBadge>
 		</template>
 		<div class="subgrid">
-			<InfoItem heading="Leistung:" class="grid-col-4 grid-left">
+			<InfoItem heading="Leistung:" :small="true" class="grid-col-4 grid-left">
 				<FormatWatt :watt="device.power" />
 			</InfoItem>
-			<InfoItem heading="Energie:" class="grid-col-4">
+			<InfoItem heading="Energie:" :small="true" class="grid-col-4">
 				<FormatWattH :watt-h="device.energy" />
 			</InfoItem>
-			<InfoItem heading="Laufzeit:" class="grid-col-4 grid-right">
+			<InfoItem heading="Laufzeit:" :small="true" class="grid-col-4 grid-right">
 				{{ formatTime(device.runningTime) }}
 			</InfoItem>
 		</div>
@@ -108,6 +110,9 @@ const deviceMode = computed(() => {
 </script>
 
 <style scoped>
+.devicename {
+	font-size: var(--font-medium);
+}
 .statusbutton {
 	font-size: var(--font-extralarge);
 }

@@ -15,10 +15,7 @@
 			>
 		</span>
 
-		<DisplayButton
-			icon="fa-rectangle-list"
-			data-bs-toggle="modal"
-			data-bs-target="#statuspage"
+		<DisplayButton icon="fa-rectangle-list" @click="showStatus"
 			>Status</DisplayButton
 		>
 		<span class="cpbuttons">
@@ -56,6 +53,7 @@ import { displayConfig, currentTime, unlockDisplay } from '@/assets/js/model'
 import DisplayButton from '@/components/shared/DisplayButton.vue'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { chargePoints } from '@/components/chargePointList/model'
+import { Modal } from 'bootstrap'
 let interval: ReturnType<typeof setInterval>
 
 function cpRight() {
@@ -76,7 +74,14 @@ function selectPowergraph() {
 function selectEnergymeter() {
 	globalConfig.graphToShow = 'energymeter'
 }
-
+function showStatus() {
+	if (displayConfig.locked) {
+		unlockDisplay()
+	} else {
+		const statuspage = new Modal('#statuspage')
+		statuspage.toggle()
+	}
+}
 onMounted(() => {
 	interval = setInterval(() => {
 		currentTime.value = new Date()
@@ -165,6 +170,7 @@ onBeforeUnmount(() => {
 	color: var(--color-menu);
 	font-size: var(--font-normal);
 }
+
 .brand {
 	font-size: var(--font-medium);
 	font-weight: bold;

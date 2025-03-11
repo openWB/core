@@ -28,7 +28,7 @@ def get_default_charge_log_columns() -> Dict:
         "time_end": True,
         "time_time_charged": True,
         "data_costs": True,
-        "data_power_source": False,
+        "data_power_source": True,
         "vehicle_name": True,
         "vehicle_chargemode": True,
         "vehicle_prio": True,
