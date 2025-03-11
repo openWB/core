@@ -56,12 +56,12 @@ async def _fetch_soc(username, password, chargepoint):
     return soc
 
 # main entry - _fetch_soc needs to be run async
-def fetch_soc(user_id: str, password: str, charge_point: int) -> CarState:
+def fetch_soc(user_id: str, password: str, chargepoint: int) -> CarState:
 
     loop = asyncio.new_event_loop()   # prepare and call async method
     asyncio.set_event_loop(loop)
 
     # get soc from vehicle via server
-    soc = loop.run_until_complete(_fetch_soc(user_id, password, charge_point))
+    soc = loop.run_until_complete(_fetch_soc(user_id, password, chargepoint))
 
     return CarState(soc)
