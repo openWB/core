@@ -390,6 +390,13 @@ def analyse_percentage(entry):
             raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
         return sum(grid["energy_imported"] for grid in grids), sum(grid["energy_exported"] for grid in grids)
 
+    def calc_energy_imported_by_source(energy_imported, energy_source):
+        value = (Decimal(str(energy_imported)) *
+                 Decimal(str(energy_source))).quantize(Decimal('0.001'))  # limit precision
+        value = f'{value: f}'
+        value = string_to_float(value) if "." in value else string_to_int(value)
+        return value
+
     try:
         bat_imported = entry["bat"]["all"]["energy_imported"] if "all" in entry["bat"].keys() else 0
         bat_exported = entry["bat"]["all"]["energy_exported"] if "all" in entry["bat"].keys() else 0
@@ -417,17 +424,16 @@ def analyse_percentage(entry):
             entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
         for source in ("grid", "pv", "bat", "cp"):
             if "all" in entry["hc"].keys():
-                value = (Decimal(str(entry["hc"]["all"]["energy_imported"])) *
-                         Decimal(str(entry["energy_source"][source]))).quantize(Decimal('0.001'))  # limit precision
-                value = f'{value: f}'
-                value = string_to_float(value) if "." in value else string_to_int(value)
-                entry["hc"]["all"][f"energy_imported_{source}"] = value
+                entry["hc"]["all"][f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                    entry["hc"]["all"]["energy_imported"], entry["energy_source"][source])
             if "all" in entry["cp"].keys():
-                value = (Decimal(str(entry["cp"]["all"]["energy_imported"])) *
-                         Decimal(str(entry["energy_source"][source]))).quantize(Decimal('0.001'))  # limit precision
-                value = f'{value: f}'
-                value = string_to_float(value) if "." in value else string_to_int(value)
-                entry["cp"]["all"][f"energy_imported_{source}"] = value
+                entry["cp"]["all"][f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                    entry["cp"]["all"]["energy_imported"], entry["energy_source"][source])
+            for counter in entry["counter"].values():
+                if counter["exported"] == 0:
+                    counter[f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                        counter["energy_imported"], entry["energy_source"][source])
+
     except Exception:
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
     finally:
@@ -447,6 +453,11 @@ def analyse_percentage_totals(entries, totals):
                     f"energy_imported_{source}", 0)*1000
             if "all" in entry["cp"].keys() and f"energy_imported_{source}" in entry["cp"]["all"].keys():
                 totals["cp"]["all"][f"energy_imported_{source}"] += entry["cp"]["all"][f"energy_imported_{source}"]*1000
+            for key, counter in entry["counter"].items():
+                if counter["exported"] == 0:
+                    if totals["counter"][key].get(f"energy_imported_{source}") is None:
+                        totals["counter"][key].update({f"energy_imported_{source}": 0})
+                    totals["counter"][key][f"energy_imported_{source}"] += counter[f"energy_imported_{source}"]*1000
     return totals
 
 
