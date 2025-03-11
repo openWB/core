@@ -106,12 +106,7 @@ def load_store(user_id: str, vehicle_id: str) -> dict:
 
 # write store file
 def write_store(store: dict, user_id: str, vehicle_id: str):
-    storeFileUserid = str(DATA_PATH) + storeFilePrefix + storeFileTypeUserid + user_id + jsonFilePostfix
-    storeFileVehicle = str(DATA_PATH) + storeFilePrefix + storeFileTypeVehicle + vehicle_id + jsonFilePostfix
-    storeFile = storeFileUserid
-    with open(storeFile, 'w', encoding='utf-8') as tf:
-        dump(store, tf, indent=4)
-    storeFile = storeFileVehicle
+    storeFile = str(DATA_PATH) + storeFilePrefix + storeFileTypeUserid + user_id + jsonFilePostfix
     with open(storeFile, 'w', encoding='utf-8') as tf:
         dump(store, tf, indent=4)
     log_store(store, "store written")
