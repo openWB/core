@@ -306,7 +306,7 @@ class BatAll:
                 log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
             elif self.data.get.power > 0:
                 log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")
-            elif data.data.counter_all_data.get_evu_counter().data.get.power < 0:
+            elif data.data.counter_all_data.get_evu_counter().data.get.power < 80:
                 log.debug("Speicher-Leistung nicht begrenzen, da EVU-Überschuss vorhanden ist.")
             else:
                 log.debug("Speicher-Leistung nicht begrenzen.")
