@@ -6,8 +6,8 @@ from modules.common.configurable_device import ComponentFactoryByType, Configura
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.janitza.janitza import counter
-from modules.devices.janitza.janitza.config import Janitza, JanitzaCounterSetup
+from modules.devices.janitza.janitza import counter, inverter
+from modules.devices.janitza.janitza.config import Janitza, JanitzaCounterSetup, JanitzaInverterSetup
 
 log = logging.getLogger(__name__)
 
@@ -16,6 +16,10 @@ def create_device(device_config: Janitza):
     def create_counter_component(component_config: JanitzaCounterSetup):
         return counter.JanitzaCounter(device_config.id, component_config, client,
                                       device_config.configuration.modbus_id)
+
+    def create_inverter_component(component_config: JanitzaInverterSetup):
+        return inverter.JanitzaInverter(device_config.id, component_config, client,
+                                        device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[counter.JanitzaCounter]):
         with client:
