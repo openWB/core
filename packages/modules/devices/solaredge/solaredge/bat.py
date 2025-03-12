@@ -88,7 +88,7 @@ class SolaredgeBat(AbstractBat):
             self._write_registers(values_to_write, unit)
             self.last_mode = None
 
-        elif power_limit == 0 and self.last_mode != 'stop':
+        elif power_limit >= 0 and self.last_mode != 'stop':
             # externe Steuerung aktivieren, Speichermodus "Mit PV-Überschuss laden", Speicher wird nicht entladen.
             values_to_write = {
             "StorageControlMode": 4,
@@ -99,6 +99,10 @@ class SolaredgeBat(AbstractBat):
             log.debug(f"Batteriesteuerung aktiviert. Modus 'Mit PV-Überschuss laden'.")
             self.last_mode = 'stop'
 
+        """
+        Wegen Problemen bei mehrfachem Auslesen bzw. Schreiben von Registern deaktivert.
+        Modus Gesperrt und Hausverbrauch sperren daher den Speicher zunächst komplett gegen entladen.
+        
         elif power_limit > 0:
             # Powerlimit gefordert, ggf. externe Steuerung aktivieren, Limit setzen.
             if self.last_mode != 'limited':
@@ -117,6 +121,7 @@ class SolaredgeBat(AbstractBat):
             }
             self._write_registers(values_to_write, unit)
             log.debug(f"Powerlimit gesetzt {power_limit} W")
+        """
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
         values = {}
