@@ -13,6 +13,7 @@ from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_io import AbstractIoDevice
 from modules.common.fault_state_level import FaultStateLevel
+from modules.io_actions.controllable_consumers.dimming.api import Dimming
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 
 log = logging.getLogger(__name__)
@@ -72,9 +73,14 @@ class Process:
             for action in data.data.io_actions.actions.values():
                 if isinstance(action, DimmingDirectControl):
                     for d in action.config.configuration.devices:
-                        if "io" in d[0]:
-                            if action.dimming_via_direct_control(d) is not None:
-                                data.data.system_data[d[0]].data.set.digital_output[d[1]] = True
+                        if d["type"] != "cp":
+                            data.data.system_data[f"io{d['id']}"].data.set.digital_output[d["digital_output"]] = action.dimming_via_direct_control(
+                                d) is not None
+                if isinstance(action, Dimming):
+                    for d in action.config.configuration.devices:
+                        if d["type"] != "cp":
+                            data.data.system_data[f"io{d['id']}"].data.set.digital_output[d["digital_output"]] = action.dimming_active(
+                            )
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):
                     modules_threads.append(
