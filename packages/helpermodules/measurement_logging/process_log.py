@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple, Union
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
                                                          get_previous_entry)
+from helpermodules.messaging import MessageType, pub_system_message
 
 log = logging.getLogger(__name__)
 
@@ -374,9 +375,12 @@ def _collect_yearly_log_data(year: str):
 
 def _analyse_energy_source(data) -> Dict:
     if data and len(data["entries"]) > 0:
-        for i in range(0, len(data["entries"])):
-            data["entries"][i] = analyse_percentage(data["entries"][i])
-        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+        try:
+            for i in range(0, len(data["entries"])):
+                data["entries"][i] = analyse_percentage(data["entries"][i])
+            data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+        except Exception:
+            pub_system_message({}, "Fehler beim Berechnen des Strom-Mix", MessageType.ERROR)
     return data
 
 
