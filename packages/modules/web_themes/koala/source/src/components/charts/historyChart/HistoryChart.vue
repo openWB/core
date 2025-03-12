@@ -53,6 +53,15 @@ const selectedData = computed(() => {
 
 const chargePointIds = computed(() => mqttStore.chargePointIds);
 const chargePointNames = computed(() => mqttStore.chargePointName);
+
+const meterName = computed(() => {
+  const gridId = mqttStore.getGridId;
+  if (gridId !== undefined) {
+    return mqttStore.getCounterName(gridId);
+  }
+  return 'Zähler';
+});
+
 const vehicles = computed(() => mqttStore.vehicleList());
 const chartRange = computed(
   () => mqttStore.themeConfiguration?.history_chart_range || 3600,
@@ -108,7 +117,7 @@ const lineChartData = computed(() => {
     labels: selectedData.value.map((item) => item.time),
     datasets: [
       {
-        label: 'Grid Power',
+        label: meterName.value,
         unit: 'kW',
         borderColor: '#a33c42',
         backgroundColor: 'rgba(239,182,188, 0.2)',
@@ -134,7 +143,7 @@ const lineChartData = computed(() => {
         yAxisID: 'y',
       },
       {
-        label: 'PV Power',
+        label: 'PV ges.',
         unit: 'kW',
         borderColor: 'green',
         backgroundColor: 'rgba(144, 238, 144, 0.2)',
