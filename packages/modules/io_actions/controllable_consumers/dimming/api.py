@@ -10,6 +10,11 @@ from modules.io_actions.controllable_consumers.dimming.config import DimmingSetu
 log = logging.getLogger(__name__)
 control_command_log = logging.getLogger("steuve_control_command")
 
+# Gleichzeitigkeitsfaktoren bei mehreren SteuVe:
+# [4.2, 4.2*0.8, 0.75*4.2, 0.7*4.2, 0.7*4.2,0.7*4.2,0.7*4.2,0.7*4.2,0.45*4.2, ..]
+FIXED_DIMMING_POWERS = [4.2, 3.36, 3.15, 2.94, 2.94, 2.94, 2.94, 2.94]
+FIXED_DIMMING_POWER_MANY_DEVICES = 1.89
+
 
 class Dimming(AbstractIoAction):
     def __init__(self, config: DimmingSetup):
@@ -25,6 +30,20 @@ class Dimming(AbstractIoAction):
                     self.no_dimming_input, self.no_dimming_value = input_matrix_list[0]
             else:
                 control_command_log.warning("Dimmen per HEMS: Kein Eingang zum Überwachen konfiguriert.")
+
+        devices_with_fixed_import_power = 0
+        fixed_import_power = 0
+        for device in self.config.configuration.devices:
+            if device["type"] != "cp":
+                try:
+                    fixed_import_power += FIXED_DIMMING_POWERS[devices_with_fixed_import_power]
+                except IndexError:
+                    fixed_import_power += FIXED_DIMMING_POWER_MANY_DEVICES
+                devices_with_fixed_import_power += 1
+        self.config.configuration.fixed_import_power = fixed_import_power
+        log.debug(f"Dimmen per HEMS: Fest vergebene Dimmleistung: {fixed_import_power}W")
+        Pub().pub(f"openWB/set/io/action/{self.config.id}/config", self.config)
+
         super().__init__()
 
     def setup(self) -> None:
@@ -33,6 +52,8 @@ class Dimming(AbstractIoAction):
             self.import_power_left = self.config.configuration.max_import_power + surplus
         else:
             self.import_power_left = self.config.configuration.max_import_power
+        self.import_power_left -= self.config.configuration.fixed_import_power
+
         log.debug(f"Dimmen: {self.import_power_left}W inkl. Überschuss")
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
@@ -55,8 +76,7 @@ class Dimming(AbstractIoAction):
                 control_command_log.info("Dimmen deaktiviert.")
 
     def dimming_get_import_power_left(self) -> None:
-        if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                self.dimming_input] == self.dimming_value:
+        if self.dimming_active():
             return self.import_power_left
         elif data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                 self.no_dimming_input] == self.no_dimming_value:
@@ -68,6 +88,10 @@ class Dimming(AbstractIoAction):
         self.import_power_left -= used_power
         log.debug(f"verbleibende Dimm-Leistung: {self.import_power_left}W inkl. Überschuss")
         return self.import_power_left
+
+    def dimming_active(self) -> bool:
+        return data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+            self.dimming_input] == self.dimming_value
 
 
 def create_action(config: DimmingSetup):
