@@ -1,3 +1,4 @@
+import datetime
 from typing import Dict, NamedTuple, Optional, Tuple
 from unittest.mock import Mock
 
@@ -292,7 +293,9 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
     plan.limit.selected = "soc"
     ct.data.chargemode.scheduled_charging.plans = {"0": plan}
     ct.data.et.active = True
-    mock_et_get_loading_hours = Mock(return_value=[1652680800])
+    # für Github-Test keinen Zeitstempel verwenden
+    mock_et_get_loading_hours = Mock(return_value=[datetime.datetime(
+        year=2022, month=5, day=16, hour=8, minute=0).timestamp()])
     monkeypatch.setattr(data.data.optional_data, "et_get_loading_hours", mock_et_get_loading_hours)
     mock_et_provider_available = Mock(return_value=True)
     monkeypatch.setattr(data.data.optional_data, "et_provider_available", mock_et_provider_available)
