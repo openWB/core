@@ -74,11 +74,11 @@ class SolaredgeBat(AbstractBat):
 
         if power_limit is None and self.last_mode is None:
             # Kein Powerlimit gefordert, externe Steuerung bereits inaktiv
-            log.debug(f"Keine Batteriesteuerung gefordert, externe Steuerung inaktiv.")
+            pass
 
         elif power_limit is None and self.last_mode is not None:
             # Kein Powerlimit gefordert, externe Steuerung aktiv, externe Steuerung deaktivieren, Standardwerte setzen.
-            log.debug(f"Keine Batteriesteuerung mehr gefordert, deaktiviere externe Steuerung, LastMode={self.last_mode}.")
+            log.debug(f"Keine Batteriesteuerung mehr gefordert, deaktiviere externe Steuerung.")
             values_to_write = {
             "RemoteControlCommandDischargeLimit": 5000,
             "StorageChargeDischargeDefaultMode": 0,
@@ -98,30 +98,6 @@ class SolaredgeBat(AbstractBat):
             self._write_registers(values_to_write, unit)
             log.debug(f"Batteriesteuerung aktiviert. Modus 'Mit PV-Überschuss laden'.")
             self.last_mode = 'stop'
-
-        """
-        Wegen Problemen bei mehrfachem Auslesen bzw. Schreiben von Registern deaktivert.
-        Modus Gesperrt und Hausverbrauch sperren daher den Speicher zunächst komplett gegen entladen.
-        
-        elif power_limit > 0:
-            # Powerlimit gefordert, ggf. externe Steuerung aktivieren, Limit setzen.
-            if self.last_mode != 'limited':
-                # externe Steuerung aktivieren, Modus "Maximaler Eigenverbrauch", Speicher laden und entladen erlaubt.
-                values_to_write = {
-                "StorageControlMode": 4,
-                "StorageChargeDischargeDefaultMode": 7,
-                "RemoteControlCommandMode": 7,
-                }
-                self._write_registers(values_to_write, unit)
-                log.debug(f"Batteriesteuerung aktiviert. Modus 'Maximaler Eigenverbrauch'.")
-                self.last_mode = 'limited'
-
-            values_to_write = {
-            "RemoteControlCommandDischargeLimit": int(min(power_limit, 5000))
-            }
-            self._write_registers(values_to_write, unit)
-            log.debug(f"Powerlimit gesetzt {power_limit} W")
-        """
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
         values = {}
