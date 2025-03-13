@@ -33,10 +33,15 @@ class RippleControlReceiver(AbstractIoAction):
 
                         evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
                         msg = f"EVU-Zähler: {evu_counter.data.get.powers}W"
-                        for cp in self.config.configuration.devices:
-                            cp_id = cp[0][2:]
-                            msg += (f", LP {data.data.cp_data[f'cp{cp_id}'].data.config.name}: "
-                                    f"{data.data.cp_data[f'cp{cp_id}'].data.get.powers}W")
+                        for device in self.config.configuration.devices:
+                            if device["type"] == "cp":
+                                cp = f"cp{device['id']}"
+                                msg += (f", Ladepunkt {data.data.cp_data[cp].data.config.name}: "
+                                        f"{data.data.cp_data[cp].data.get.powers}W")
+                            if device["type"] == "io":
+                                io = f"io{device['id']}"
+                                msg += (f", IO-Gerät {data.data.io_data[io].data.config.name}: "
+                                        "Leistung unbekannt")
                         control_command_log.info(msg)
                         break
             else:

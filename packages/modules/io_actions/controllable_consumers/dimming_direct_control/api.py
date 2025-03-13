@@ -30,17 +30,26 @@ class DimmingDirectControl(AbstractIoAction):
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                     self.dimming_input] == self.dimming_value:
+                device = self.config.configuration.devices[0]
+                if device["type"] == "cp":
+                    cp = f"cp{device['id']}"
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                    control_command_log.info(
-                        f"Direktsteuerung an Gerät "
-                        f"{data.data.cp_data[self.config.configuration.devices[0][0]].data.config.name} aktiviert. "
-                        "Leistungswerte vor Ausführung des Steuerbefehls:")
+                    if device["type"] == "cp":
+                        control_command_log.info(
+                            f"Direktsteuerung an Ladepunkt "
+                            f"{data.data.cp_data[cp].data.config.name} aktiviert. "
+                            "Leistungswerte vor Ausführung des Steuerbefehls:")
 
                 msg = (f"EVU-Zähler: "
                        f"{data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W")
-                msg += (f", Gerät {data.data.cp_data[self.config.configuration.devices[0][0]].data.config.name}: "
-                        f"{data.data.cp_data[self.config.configuration.devices[0][0]].data.get.powers}W")
+                if device["type"] == "cp":
+                    msg += (f", Ladepunkt {data.data.cp_data[cp].data.config.name}: "
+                            f"{data.data.cp_data[cp].data.get.powers}W")
+                if device["type"] == "io":
+                    io = f"io{device['id']}"
+                    msg += (f", IO-Gerät {data.data.io_data[io].data.config.name}: "
+                            "Leistung unbekannt")
                 control_command_log.info(msg)
             elif self.timestamp:
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)

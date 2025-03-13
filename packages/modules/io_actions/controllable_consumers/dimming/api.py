@@ -56,10 +56,14 @@ class Dimming(AbstractIoAction):
                 msg = (f"EVU-Zähler: "
                        f"{data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W")
                 for device in self.config.configuration.devices:
-                    if "cp" in device[0]:
-                        cp = device[0]
-                        msg += (f", Gerät {data.data.cp_data[cp].data.config.name}: "
+                    if device["type"] == "cp":
+                        cp = f"cp{device['id']}"
+                        msg += (f", Ladepunkt {data.data.cp_data[cp].data.config.name}: "
                                 f"{data.data.cp_data[cp].data.get.powers}W")
+                    if device["type"] == "io":
+                        io = f"io{device['id']}"
+                        msg += (f", {data.data.io_data[io].data.config.name}: "
+                                "Leistung unbekannt")
                 control_command_log.info(msg)
             elif self.timestamp:
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
