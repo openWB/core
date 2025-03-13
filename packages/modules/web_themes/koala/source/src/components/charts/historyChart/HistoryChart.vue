@@ -20,6 +20,7 @@ import {
   PointElement,
   LinearScale,
   TimeScale,
+  Tooltip,
   Filler,
 } from 'chart.js';
 import { useMqttStore } from 'src/stores/mqtt-store';
@@ -33,6 +34,7 @@ Chart.register(
   PointElement,
   LinearScale,
   TimeScale,
+  Tooltip,
   Filler,
 );
 const $q = useQuasar();
