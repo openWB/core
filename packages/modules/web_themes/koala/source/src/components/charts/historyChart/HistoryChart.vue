@@ -73,7 +73,10 @@ const chargePointDatasets = computed(() =>
     unit: 'kW',
     borderColor: '#4766b5',
     backgroundColor: 'rgba(71, 102, 181, 0.2)',
-    data: selectedData.value.map((item) => item[`cp${cpId}-power`] as number),
+    data: selectedData.value.map((item) => ({
+      x: item.timestamp * 1000,
+      y: item[`cp${cpId}-power`] as number,
+    })),
     borderWidth: 2,
     pointRadius: 0,
     pointHoverRadius: 4,
@@ -97,9 +100,10 @@ const vehicleDatasets = computed(() =>
           pointRadius: 0,
           pointHoverRadius: 4,
           pointHitRadius: 5,
-          data: selectedData.value.map(
-            (item) => item[socKey as keyof typeof item] as number,
-          ),
+          data: selectedData.value.map((item) => ({
+            x: item.timestamp * 1000,
+            y: item[socKey as keyof typeof item] as number,
+          })),
           fill: false,
           yAxisID: 'y2',
         };
@@ -114,14 +118,16 @@ const vehicleDatasets = computed(() =>
 
 const lineChartData = computed(() => {
   return {
-    labels: selectedData.value.map((item) => item.time),
     datasets: [
       {
         label: meterName.value,
         unit: 'kW',
         borderColor: '#a33c42',
         backgroundColor: 'rgba(239,182,188, 0.2)',
-        data: selectedData.value.map((item) => item.grid),
+        data: selectedData.value.map((item) => ({
+          x: item.timestamp * 1000,
+          y: item.grid,
+        })),
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -134,7 +140,10 @@ const lineChartData = computed(() => {
         unit: 'kW',
         borderColor: '#949aa1',
         backgroundColor: 'rgba(148, 154, 161, 0.2)',
-        data: selectedData.value.map((item) => item['house-power'] as number),
+        data: selectedData.value.map((item) => ({
+          x: item.timestamp * 1000,
+          y: item['house-power'] as number,
+        })),
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -147,7 +156,10 @@ const lineChartData = computed(() => {
         unit: 'kW',
         borderColor: 'green',
         backgroundColor: 'rgba(144, 238, 144, 0.2)',
-        data: selectedData.value.map((item) => item['pv-all'] as number),
+        data: selectedData.value.map((item) => ({
+          x: item.timestamp * 1000,
+          y: item['pv-all'] as number,
+        })),
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -160,7 +172,10 @@ const lineChartData = computed(() => {
         unit: 'kW',
         borderColor: '#b5a647',
         backgroundColor: 'rgba(181, 166, 71, 0.2)',
-        data: selectedData.value.map((item) => item['bat-all-power'] as number),
+        data: selectedData.value.map((item) => ({
+          x: item.timestamp * 1000,
+          y: item['bat-all-power'] as number,
+        })),
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -177,7 +192,10 @@ const lineChartData = computed(() => {
         pointRadius: 0,
         pointHoverRadius: 4,
         pointHitRadius: 5,
-        data: selectedData.value.map((item) => item['bat-all-soc'] as number),
+        data: selectedData.value.map((item) => ({
+          x: item.timestamp * 1000,
+          y: item['bat-all-soc'] as number,
+        })),
         fill: false,
         yAxisID: 'y2',
       },
