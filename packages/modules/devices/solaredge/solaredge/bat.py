@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Tuple, Union, Optional
+from typing import Dict, Union, Optional
 
 from pymodbus.constants import Endian
 
@@ -19,6 +19,7 @@ import pymodbus
 log = logging.getLogger(__name__)
 
 FLOAT32_UNSUPPORTED = -0xffffff00000000000000000000000000
+
 
 class SolaredgeBat(AbstractBat):
     # Define all possible registers with their data types
@@ -78,12 +79,12 @@ class SolaredgeBat(AbstractBat):
 
         elif power_limit is None and self.last_mode is not None:
             # Kein Powerlimit gefordert, externe Steuerung aktiv, externe Steuerung deaktivieren, Standardwerte setzen.
-            log.debug(f"Keine Batteriesteuerung mehr gefordert, deaktiviere externe Steuerung.")
+            log.debug("Keine Batteriesteuerung mehr gefordert, deaktiviere externe Steuerung.")
             values_to_write = {
-            "RemoteControlCommandDischargeLimit": 5000,
-            "StorageChargeDischargeDefaultMode": 0,
-            "RemoteControlCommandMode": 0,
-            "StorageControlMode": 2,
+                "RemoteControlCommandDischargeLimit": 5000,
+                "StorageChargeDischargeDefaultMode": 0,
+                "RemoteControlCommandMode": 0,
+                "StorageControlMode": 2,
             }
             self._write_registers(values_to_write, unit)
             self.last_mode = None
@@ -91,12 +92,12 @@ class SolaredgeBat(AbstractBat):
         elif power_limit >= 0 and self.last_mode != 'stop':
             # externe Steuerung aktivieren, Speichermodus "Mit PV-Überschuss laden", Speicher wird nicht entladen.
             values_to_write = {
-            "StorageControlMode": 4,
-            "StorageChargeDischargeDefaultMode": 1,
-            "RemoteControlCommandMode": 1,
+                "StorageControlMode": 4,
+                "StorageChargeDischargeDefaultMode": 1,
+                "RemoteControlCommandMode": 1,
             }
             self._write_registers(values_to_write, unit)
-            log.debug(f"Batteriesteuerung aktiviert. Modus 'Mit PV-Überschuss laden'.")
+            log.debug("Batteriesteuerung aktiviert. Modus 'Mit PV-Überschuss laden'.")
             self.last_mode = 'stop'
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
@@ -105,7 +106,7 @@ class SolaredgeBat(AbstractBat):
             log.debug(f"Bat raw values {self.__tcp_client.address}: {values}")
             address, data_type = self.REGISTERS[key]
             values[key] = self.__tcp_client.read_holding_registers(
-            address, data_type, wordorder=Endian.Little, unit=unit
+                address, data_type, wordorder=Endian.Little, unit=unit
             )
         log.debug(f"Bat raw values {self.__tcp_client.address}: {values}")
         return values
@@ -136,5 +137,6 @@ class SolaredgeBat(AbstractBat):
             raise ValueError(f"Unsupported data type: {data_type}")
 
         return builder.to_registers()
+
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolaredgeBatSetup)
