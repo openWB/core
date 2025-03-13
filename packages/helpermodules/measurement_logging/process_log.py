@@ -430,9 +430,9 @@ def analyse_percentage(entry):
             if "all" in entry["hc"].keys():
                 entry["hc"]["all"][f"energy_imported_{source}"] = calc_energy_imported_by_source(
                     entry["hc"]["all"]["energy_imported"], entry["energy_source"][source])
-            if "all" in entry["cp"].keys():
-                entry["cp"]["all"][f"energy_imported_{source}"] = calc_energy_imported_by_source(
-                    entry["cp"]["all"]["energy_imported"], entry["energy_source"][source])
+            for key in entry["cp"].keys():
+                entry["cp"][key][f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                    entry["cp"][key]["energy_imported"], entry["energy_source"][source])
             for counter in entry["counter"].values():
                 if counter["exported"] == 0:
                     counter[f"energy_imported_{source}"] = calc_energy_imported_by_source(
@@ -450,13 +450,15 @@ def analyse_percentage_totals(entries, totals):
             totals[section]["all"] = {}
     for source in ("grid", "pv", "bat", "cp"):
         totals["hc"]["all"].update({f"energy_imported_{source}": 0})
-        totals["cp"]["all"].update({f"energy_imported_{source}": 0})
         for entry in entries:
             if "hc" in entry.keys() and "all" in entry["hc"].keys():
                 totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"].get(
                     f"energy_imported_{source}", 0)*1000
-            if "all" in entry["cp"].keys() and f"energy_imported_{source}" in entry["cp"]["all"].keys():
-                totals["cp"]["all"][f"energy_imported_{source}"] += entry["cp"]["all"][f"energy_imported_{source}"]*1000
+            for key in entry["cp"].keys():
+                if f"energy_imported_{source}" in entry["cp"][key].keys():
+                    if totals["cp"][key].get(f"energy_imported_{source}") is None:
+                        totals["cp"][key].update({f"energy_imported_{source}": 0})
+                    totals["cp"][key][f"energy_imported_{source}"] += entry["cp"][key][f"energy_imported_{source}"]*1000
             for key, counter in entry["counter"].items():
                 if counter["exported"] == 0:
                     if totals["counter"][key].get(f"energy_imported_{source}") is None:
