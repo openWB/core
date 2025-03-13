@@ -10,8 +10,7 @@ class DimmingConfig:
     input_pattern: List[Dict] = field(default_factory=empty_io_pattern_factory)
     devices: List[Dict[str]] = field(default_factory=empty_list_factory)
     # [{"type": "cp", "id": 0},
-    # {"type": "add_on", "id": 1, "digital_output": "SofortLa"},
-    # {"type": "dimm_kit", "id": 1, "digital_output": "DO1"}]
+    # {"type": "io", "id": 1, "digital_output": "SofortLa"}]
     max_import_power: int = 0
     fixed_import_power: float = 0  # don't show in UI
 
