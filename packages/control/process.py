@@ -73,13 +73,15 @@ class Process:
             for action in data.data.io_actions.actions.values():
                 if isinstance(action, DimmingDirectControl):
                     for d in action.config.configuration.devices:
-                        if d["type"] != "cp":
-                            data.data.system_data[f"io{d['id']}"].data.set.digital_output[d["digital_output"]] = action.dimming_via_direct_control(
-                                d) is not None
+                        if d["type"] == "io":
+                            data.data.system_data[f"io{d['id']}"].data.set.digital_output[d["digital_output"]] = (
+                                action.dimming_via_direct_control(d) is not None
+                            )
                 if isinstance(action, Dimming):
                     for d in action.config.configuration.devices:
-                        if d["type"] != "cp":
-                            data.data.system_data[f"io{d['id']}"].data.set.digital_output[d["digital_output"]] = action.dimming_active(
+                        if d["type"] == "io":
+                            data.data.system_data[f"io{d['id']}"].data.set.digital_output[d["digital_output"]] = (
+                                action.dimming_active()
                             )
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):

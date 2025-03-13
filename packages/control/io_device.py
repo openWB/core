@@ -61,7 +61,7 @@ class IoActions:
         for action in self.actions.values():
             if isinstance(action, Dimming):
                 for d in action.config.configuration.devices:
-                    if device[0] == d[0] and ("cp" in device[0] or device[1] == d[1]):
+                    if device[0] == f"cp{d['id']}" and ("cp" in device[0] or device[1] == d[1]):
                         self._check_fault_state_io_device(action.config.configuration.io_device)
                         return action.dimming_get_import_power_left()
         else:
@@ -71,14 +71,14 @@ class IoActions:
         for action in self.actions.values():
             if isinstance(action, Dimming):
                 for d in action.config.configuration.devices:
-                    if device[0] == d[0] and ("cp" in device[0] or device[1] == d[1]):
+                    if device[0] == f"cp{d['id']}" and ("cp" in device[0] or device[1] == d[1]):
                         return action.dimming_set_import_power_left(used_power)
 
-    def dimming_via_direct_control(self, device: List[str]) -> float:
+    def dimming_via_direct_control(self, device: List[str]) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, DimmingDirectControl):
                 for d in action.config.configuration.devices:
-                    if device[0] == d[0] and ("cp" in device[0] or device[1] == d[1]):
+                    if device[0] == d and device[0]["type"] == "cp":
                         self._check_fault_state_io_device(action.config.configuration.io_device)
                         return action.dimming_via_direct_control()
         else:
@@ -88,7 +88,7 @@ class IoActions:
         for action in self.actions.values():
             if isinstance(action, RippleControlReceiver):
                 for d in action.config.configuration.devices:
-                    if device[0] == d[0]:
+                    if device[0] == f"cp{d['id']}":
                         self._check_fault_state_io_device(action.config.configuration.io_device)
                         return action.ripple_control_receiver()
         else:
