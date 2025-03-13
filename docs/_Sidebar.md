@@ -5,7 +5,7 @@
 * [Ladepunkte](https://github.com/openWB/core/wiki/Ladepunkte)
 * [Fahrzeuge](https://github.com/openWB/core/wiki/Fahrzeuge)
   * [Manueller SoC](https://github.com/openWB/core/wiki/Manueller-SoC)
-  *  [WiCAN OBD2 Dongle mit manuellem SoC](https://github.com/openWB/core/wiki/WiCAN)
+  * [WiCAN OBD2-Dongle mit manuellem SoC](https://github.com/openWB/core/wiki/WiCAN)
 * [Lademodi](https://github.com/openWB/core/wiki/Lademodi)
 * Zähler
   * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Grundsätzliches-zu-Zählern)
