@@ -20,16 +20,21 @@ def create_vehicle(vehicle_config: LeafSoc, vehicle: int):
         return api.fetch_soc(
             vehicle_config.configuration.user_id,
             vehicle_config.configuration.password,
+            vehicle_config.configuration.region,
             vehicle)
-    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
+    return ConfigurableVehicle(vehicle_config=vehicle_config, 
+                               component_updater=updater, 
+                               vehicle=vehicle,
+                               calc_while_charging=False)
 
 
-def leaf_update(user_id: str, password: str, charge_point: int):
-    log.debug("Leaf: user_id="+user_id+"charge_point="+str(charge_point))
-    vehicle_config = LeafSoc(configuration=LeafConfiguration(charge_point, user_id, password))
+def leaf_update(user_id: str, password: str, region: str, charge_point: int):
+    log.debug("Leaf: user_id="+user_id+" region="+region+" charge_point="+str(charge_point))
+    vehicle_config = LeafSoc(configuration=LeafConfiguration(charge_point, user_id, password, region))
     store.get_car_value_store(charge_point).store.set(api.fetch_soc(
         vehicle_config.configuration.user_id,
         vehicle_config.configuration.password,
+        vehicle_config.configuration.region,
         charge_point))
 
 
