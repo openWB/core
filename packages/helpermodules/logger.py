@@ -8,11 +8,13 @@ import typing_extensions
 import re
 import io
 import os
+import shutil
 
 FORMAT_STR_DETAILED = '%(asctime)s - {%(name)s:%(lineno)s} - {%(levelname)s:%(threadName)s} - %(message)s'
 FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
 RAMDISK_PATH = str(Path(__file__).resolve().parents[2]) + '/ramdisk/'
 PERSISTENT_LOG_PATH = str(Path(__file__).resolve().parents[2]) + '/data/log/'
+NUMBER_OF_LOGFILES = 3
 
 KNOWN_SENSITIVE_FIELDS = [
     'password', 'secret', 'token', 'apikey', 'access_token',
@@ -142,31 +144,47 @@ def clear_in_memory_log_handler(logger_name: str = None) -> None:
 def write_logs_to_file(logger_name: str = None) -> None:
     global in_memory_log_handlers
 
+    def rotate_logs(base_path: str, name: str):
+        # Rotate the log files
+        for i in range(NUMBER_OF_LOGFILES-1, 0, -1):
+            src = os.path.join(base_path, f'{name}.previous{i}.log')
+            dst = os.path.join(base_path, f'{name}.previous{i+1}.log')
+            if os.path.exists(src):
+                shutil.move(src, dst)
+        # Move the current log to previous1
+        current_log = os.path.join(base_path, f'{name}.current.log')
+        if os.path.exists(current_log):
+            shutil.move(current_log, os.path.join(base_path, f'{name}.previous1.log'))
+
+    def combine_logs(base_path: str, name: str):
+        latest_log_path = os.path.join(base_path, f'{name}.latest.log')
+        with open(latest_log_path, 'w') as latest_log:
+            for i in range(NUMBER_OF_LOGFILES-1, -1, -1):
+                log_file = os.path.join(
+                    base_path, f'{name}.previous{i}.log') if i > 0 else os.path.join(base_path, f'{name}.current.log')
+                if os.path.exists(log_file):
+                    with open(log_file, 'r') as f:
+                        latest_log.write(f.read())
+
     if logger_name is None:
         # Write logs for all in-memory log handlers
         for name, handler in in_memory_log_handlers.items():
             logs = handler.get_logs()
             if logs:
-                with open(os.path.join(RAMDISK_PATH, f'{name}.latest.log'), 'w') as f:
+                rotate_logs(RAMDISK_PATH, name)
+                with open(os.path.join(RAMDISK_PATH, f'{name}.current.log'), 'w') as f:
                     f.write(logs)
-
-                # If any warning or error messages were logged, create a -warning copy
-                if handler.has_warning_or_error:
-                    with open(os.path.join(RAMDISK_PATH, f'{name}.latest-warning.log'), 'w') as f:
-                        f.write(logs)
+                combine_logs(RAMDISK_PATH, name)
     else:
         # Write logs for specified in-memory log handler
         if logger_name in in_memory_log_handlers:
             handler = in_memory_log_handlers[logger_name]
             logs = handler.get_logs()
             if logs:
-                with open(os.path.join(RAMDISK_PATH, f'{logger_name}.latest.log'), 'w') as f:
+                rotate_logs(RAMDISK_PATH, logger_name)
+                with open(os.path.join(RAMDISK_PATH, f'{logger_name}.current.log'), 'w') as f:
                     f.write(logs)
-
-                # If any warning or error messages were logged, create a -warning copy
-                if handler.has_warning_or_error:
-                    with open(os.path.join(RAMDISK_PATH, f'{logger_name}.latest-warning.log'), 'w') as f:
-                        f.write(logs)
+                combine_logs(RAMDISK_PATH, logger_name)
 
 
 def setup_logging() -> None:
@@ -219,10 +237,7 @@ def setup_logging() -> None:
     smarthome_log_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     smarthome_log_handler.addFilter(functools.partial(filter_pos, "smarthome"))
     smarthome_log_handler.addFilter(RedactingFilter())
-    # in_memory_log_handlers["smarthome"] = InMemoryLogHandler(smarthome_log_handler)
-    # in_memory_log_handlers["smarthome"].setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     logging.getLogger().addHandler(smarthome_log_handler)
-    # logging.getLogger().addHandler(in_memory_log_handlers["smarthome"])
 
     # SoC logger
     soc_log_handler = RotatingFileHandler(RAMDISK_PATH + 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
@@ -249,13 +264,6 @@ def setup_logging() -> None:
     # Urllib3 logger
     urllib3_log = logging.getLogger("urllib3.connectionpool")
     urllib3_log.propagate = True
-    urllib3_file_handler = RotatingFileHandler(RAMDISK_PATH + 'urllib3.log', maxBytes=mb_to_bytes(2), backupCount=1)
-    urllib3_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
-    urllib3_file_handler.addFilter(RedactingFilter())
-    urllib3_file_handler.addFilter(functools.partial(filter_pos, "urllib3"))
-    in_memory_log_handlers["urllib3"] = InMemoryLogHandler(urllib3_file_handler)
-    in_memory_log_handlers["urllib3"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
-    urllib3_log.addHandler(urllib3_file_handler)
 
     logging.getLogger("pymodbus").setLevel(logging.WARNING)
     logging.getLogger("uModbus").setLevel(logging.WARNING)
