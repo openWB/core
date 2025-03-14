@@ -75,7 +75,7 @@ class Process:
                     for d in action.config.configuration.devices:
                         if d["type"] == "io":
                             data.data.system_data[f"io{d['id']}"].data.set.digital_output[d["digital_output"]] = (
-                                action.dimming_via_direct_control(d) is not None
+                                action.dimming_via_direct_control() is not None
                             )
                 if isinstance(action, Dimming):
                     for d in action.config.configuration.devices:

@@ -76,7 +76,7 @@ def set_current_counterdiff(diff_curent: float,
                 data.data.counter_data[counter].update_surplus_values_left(diffs)
             else:
                 data.data.counter_data[counter].update_values_left(diffs)
-        data.data.io_actions.dimming_set_import_power_left([f"cp{chargepoint.num}"], sum(diffs)*230)
+        data.data.io_actions.dimming_set_import_power_left({"type": "cp", "id": chargepoint.num}, sum(diffs)*230)
 
     chargepoint.data.set.current = current
     log.info(f"LP{chargepoint.num}: Stromstärke {current}A")
@@ -148,7 +148,7 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
                 data.data.counter_data[counter].update_surplus_values_left(diffs)
             else:
                 data.data.counter_data[counter].update_values_left(diffs)
-        data.data.io_actions.dimming_set_import_power_left([f"cp{chargepoint.num}"], sum(diffs)*230)
+        data.data.io_actions.dimming_set_import_power_left({"type": "cp", "id": chargepoint.num}, sum(diffs)*230)
 
 
 def consider_less_charging_chargepoint_in_loadmanagement(cp: Chargepoint, set_current: float) -> bool:
