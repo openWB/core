@@ -465,7 +465,9 @@ class Chargepoint(ChargepointRfidMixin):
                     if self._is_phase_switch_required():
                         # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                         if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
-                                self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):
+                                (self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES or
+                                 (self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES and
+                                  self.data.get.charge_state is False))):
                             log.debug(
                                 f"Lp {self.num}: Ladung aktiv halten "
                                 f"{charging_ev.ev_template.data.keep_charge_active_duration}s")
