@@ -124,7 +124,7 @@ class Loadmanagement:
     def _limit_by_dimming_via_direct_control(self,
                                              missing_currents: List[float],
                                              cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        if data.data.io_actions.dimming_via_direct_control([{"type": "cp", "id": cp.num}]):
+        if data.data.io_actions.dimming_via_direct_control({"type": "cp", "id": cp.num}):
             phases = 3-missing_currents.count(0)
             current_per_phase = 4200 / 230 / phases
             available_currents = [current_per_phase -
@@ -137,7 +137,7 @@ class Loadmanagement:
     def _limit_by_dimming(self,
                           available_currents: List[float],
                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        dimming_power_left = data.data.io_actions.dimming_get_import_power_left([{"type": "cp", "id": cp.num}])
+        dimming_power_left = data.data.io_actions.dimming_get_import_power_left({"type": "cp", "id": cp.num})
         if dimming_power_left:
             if sum(available_currents)*230 > dimming_power_left:
                 phases = 3-available_currents.count(0)
@@ -150,7 +150,7 @@ class Loadmanagement:
     def _limit_by_ripple_control_receiver(self,
                                           available_currents: List[float],
                                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        value = data.data.io_actions.ripple_control_receiver([f"cp{cp.num}"])
+        value = data.data.io_actions.ripple_control_receiver({"type": "cp", "id": cp.num})
         if value != 1:
             phases = 3-available_currents.count(0)
             if phases > 1:
