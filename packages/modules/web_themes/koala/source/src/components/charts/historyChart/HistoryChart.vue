@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { Line as ChartjsLine } from 'vue-chartjs';
 import {
@@ -354,19 +354,6 @@ const chartOptions = computed(() => ({
   },
 }));
 
-watch(() => lineChartData.value, () => {
-    if (chartRef.value?.chart) {
-      const chart = chartRef.value.chart;
-      chart.data.datasets.forEach((dataset, index) => {
-        if (hiddenDatasets.value.includes(dataset.label as string)) {
-          chart.hide(index);
-        } else {
-          chart.show(index);
-        }
-      });
-      chart.update();
-    }
-}, { deep: true });
 </script>
 
 <style scoped>
