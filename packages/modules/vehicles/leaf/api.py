@@ -10,9 +10,7 @@ import pycarwings3
 log = logging.getLogger(__name__)
 
 
-async def _fetch_soc(username, password, chargepoint):
-
-    region = "NE"
+async def _fetch_soc(username, password, region = "NE", chargepoint):
 
     async def getNissanSession():     # open Https session with Nissan server
         log.debug("LP%s: login = %s, region = %s" % (chargepoint, username, region))
@@ -56,12 +54,12 @@ async def _fetch_soc(username, password, chargepoint):
     return soc
 
 # main entry - _fetch_soc needs to be run async
-def fetch_soc(user_id: str, password: str, chargepoint: int) -> CarState:
+def fetch_soc(user_id: str, password: str, region: str, chargepoint: int) -> CarState:
 
     loop = asyncio.new_event_loop()   # prepare and call async method
     asyncio.set_event_loop(loop)
 
     # get soc from vehicle via server
-    soc = loop.run_until_complete(_fetch_soc(user_id, password, chargepoint))
+    soc = loop.run_until_complete(_fetch_soc(user_id, password, region, chargepoint))
 
     return CarState(soc)
