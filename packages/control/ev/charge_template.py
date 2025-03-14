@@ -149,7 +149,7 @@ class ChargeTemplate:
                 if plan is not None:
                     current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                     if self.data.et.active and data.data.optional_data.et_provider_available():
-                        if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
+                        if not data.data.optional_data.et_price_lower_or_equal_than_limit(self.data.et.max_price):
                             return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.id
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
                         return current, "time_charging", message, plan.id
@@ -195,7 +195,7 @@ class ChargeTemplate:
             else:
                 current = instant_charging.dc_current
             if self.data.et.active and data.data.optional_data.et_provider_available():
-                if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
+                if not data.data.optional_data.et_price_lower_or_equal_than_limit(self.data.et.max_price):
                     return 0, "stop", self.CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
                 return current, "instant_charging", message

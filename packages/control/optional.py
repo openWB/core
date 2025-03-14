@@ -41,12 +41,12 @@ class Optional(OcppMixin):
     def et_provider_available(self) -> bool:
         return self.et_module is not None and self.data.et.get.fault_state != 2
 
-    def et_price_lower_than_limit(self, max_price: float):
-        """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
+    def et_price_lower_or_equal_than_limit(self, max_price: float):
+        """ prüft, ob der aktuelle Strompreis niedriger oder gleich der festgelegten Preisgrenze ist.
 
         Return
         ------
-        True: Preis liegt darunter
+        True: Preis ist gleich oder liegt darunter
         False: Preis liegt darüber
         """
         try:
