@@ -5,7 +5,7 @@
 			:transform="'translate(' + 0 + ',' + (height / 2 + 9) + ')'"
 		></g>
 	</svg>
-	<svg :x="0" :width="props.width">
+	<svg :x="0" :width="axisWidth">
 		<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
 			<g
 				id="PGXAxis"
@@ -190,6 +190,14 @@ const autozoom = computed(() => {
 	}
 
 	return 'zoomed'
+})
+
+const axisWidth = computed(() => {
+	if (['live', 'today', 'day'].includes(graphData.graphMode)) {
+		return props.width
+	} else {
+		return props.width + props.margin.left + props.margin.right
+	}
 })
 </script>
 
