@@ -2,7 +2,7 @@ from typing import Optional
 
 
 class LeafConfiguration:
-    def __init__(self, user_id: Optional[str] = None, password: Optional[str] = None):
+    def __init__(self, user_id: Optional[str] = None, password: Optional[str] = None, region: Optional[str] = None):
         self.user_id = user_id
         self.password = password
         self.region = region
