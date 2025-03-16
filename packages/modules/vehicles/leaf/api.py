@@ -2,7 +2,7 @@
 import asyncio
 import logging
 
-from config import LeafSoc, LeafConfiguration
+from modules.vehicles.leaf.config import LeafSoc, LeafConfiguration
 from modules.common.component_state import CarState
 
 import pycarwings3
