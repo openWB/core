@@ -43,7 +43,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.last_mode = None
+        self.last_mode = 'Undefined'
         self.Inverter_Type = None
 
     def update(self) -> None:
@@ -98,16 +98,18 @@ class SunnyBoySmartEnergyBat(AbstractBat):
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.component_config.configuration.modbus_id
+        log.debug(f'last_mode: {self.last_mode}')
 
-        if power_limit is None and self.last_mode is not None:
-            # Kein Powerlimit gefordert, externe Steuerung war aktiv, externe Steuerung deaktivieren
-            log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
-            values_to_write = {
-                "Externe_Steuerung": 803,
-                "Wirkleistungsvorgabe": 0,
-            }
-            self._write_registers(values_to_write, unit)
-            self.last_mode = None
+        if power_limit is None:
+            if self.last_mode is not None:
+                # Kein Powerlimit gefordert, externe Steuerung war aktiv, externe Steuerung deaktivieren
+                log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
+                values_to_write = {
+                    "Externe_Steuerung": 803,
+                    "Wirkleistungsvorgabe": 0,
+                }
+                self._write_registers(values_to_write, unit)
+                self.last_mode = None
         else:
             # Powerlimit gefordert, externe Steuerung aktivieren, Limit setzen
             log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung.")
