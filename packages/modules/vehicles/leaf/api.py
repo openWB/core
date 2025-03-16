@@ -10,7 +10,7 @@ import pycarwings3
 log = logging.getLogger(__name__)
 
 
-async def _fetch_soc(username, password, region = "NE", chargepoint):
+async def _fetch_soc(username, password, region, chargepoint):
 
     async def getNissanSession():     # open Https session with Nissan server
         log.debug("LP%s: login = %s, region = %s" % (chargepoint, username, region))
