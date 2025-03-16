@@ -2,7 +2,7 @@
 import asyncio
 import logging
 
-from modules.vehicles.leaf.config import LeafSoc, LeafConfiguration
+from config import LeafSoc, LeafConfiguration
 from modules.common.component_state import CarState
 
 import pycarwings3
@@ -10,22 +10,24 @@ import pycarwings3
 log = logging.getLogger(__name__)
 
 
-async def _fetch_soc(username, password, region, chargepoint):
+async def _fetch_soc(username, password, region, chargepoint) -> CarState:
 
-    async def getNissanSession():     # open Https session with Nissan server
+    async def getNissanSession():                         # open HTTPS session with Nissan server
         log.debug("LP%s: login = %s, region = %s" % (chargepoint, username, region))
         session = pycarwings3.Session(username, password, region)
         leaf = await session.get_leaf()
-        await asyncio.sleep(1)        # give Nissan server some time
+        await asyncio.sleep(1)                            # give Nissan server some time
         return leaf
 
-    async def readSoc(leaf):          # get SoC from Nissan server
+    async def readSoc(leaf) -> CarState:                  # get SoC & range from Nissan server
         leaf_info = await leaf.get_latest_battery_status()
-        bat_percent = int(leaf_info.battery_percent)
-        log.debug("LP%s: Battery status %s" % (chargepoint, bat_percent))
-        return bat_percent
+        soc = float(leaf_info.battery_percent)
+        log.debug("LP%s: Battery State of Charge %s" % (chargepoint, soc))
+        range = int(leaf_info.answer["BatteryStatusRecords"]["CruisingRangeAcOff"])/1000
+        log.debug("LP%s: Cruising range AC Off   %s" % (chargepoint, range)) 
+        return CarState(soc, range)
 
-    async def requestSoc(leaf: pycarwings3.Leaf):       # request Nissan server to request last SoC from car
+    async def requestSoc(leaf: pycarwings3.Leaf):         # request Nissan server to request last SoC from car
         log.debug("LP%s: Request SoC Update from vehicle" % (chargepoint))
         key = await leaf.request_update()
         sleepsecs = 20
@@ -40,18 +42,18 @@ async def _fetch_soc(username, password, region, chargepoint):
         return status
 
     try:
-        leaf = await getNissanSession()   # start HTTPS session with Nissan server
-        soc = await readSoc(leaf)         # old SoC needs to be read from server before requesting new SoC from vehicle
-        await asyncio.sleep(1)            # give Nissan server some time
-        status = await requestSoc(leaf)   # Nissan server to request new SoC from vehicle
-        if status is not None:            # was update of SoC successful?
-            await asyncio.sleep(1)        # give Nissan server some time
-            soc = await readSoc(leaf)     # final read of SoC from server
+        leaf = await getNissanSession()       # start HTTPS session with Nissan server
+        soc_range = await readSoc(leaf)       # old SoC & range need to be read from server before requesting new values from vehicle
+        await asyncio.sleep(1)                # give Nissan server some time
+        status = await requestSoc(leaf)       # Nissan server to request new values from vehicle
+        if status is not None:                # was update of values successful?
+            await asyncio.sleep(1)            # give Nissan server some time
+            soc_range = await readSoc(leaf)   # final read of SoC & range from server
     except pycarwings3.CarwingsError as e:
-        log.info("LP%s: SoC request not successful" % (chargepoint))
+        log.info("LP%s: SoC & range request not successful" % (chargepoint))
         log.info(e)
-        soc = 0
-    return soc
+        soc_range = CarState(0.0, 0.0)
+    return soc_range
 
 # main entry - _fetch_soc needs to be run async
 def fetch_soc(user_id: str, password: str, region: str, chargepoint: int) -> CarState:
@@ -59,7 +61,7 @@ def fetch_soc(user_id: str, password: str, region: str, chargepoint: int) -> Car
     loop = asyncio.new_event_loop()   # prepare and call async method
     asyncio.set_event_loop(loop)
 
-    # get soc from vehicle via server
-    soc = loop.run_until_complete(_fetch_soc(user_id, password, region, chargepoint))
+    # get SoC and range from vehicle via server
+    soc_range = loop.run_until_complete(_fetch_soc(user_id, password, region, chargepoint))
 
-    return CarState(soc)
+    return soc_range
