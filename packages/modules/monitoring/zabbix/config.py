@@ -17,7 +17,9 @@ class Zabbix:
     def __init__(self,
                  name: str = "openWB (Zabbix)",
                  type: str = "zabbix",
+                 official: bool = True,
                  configuration: ZabbixConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or ZabbixConfiguration()

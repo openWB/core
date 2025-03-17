@@ -11,7 +11,9 @@ class TibberTariff:
     def __init__(self,
                  name: str = "Tibber",
                  type: str = "tibber",
+                 official: bool = True,
                  configuration: TibberTariffConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or TibberTariffConfiguration()

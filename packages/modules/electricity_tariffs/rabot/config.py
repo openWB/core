@@ -25,7 +25,9 @@ class RabotTariff:
     def __init__(self,
                  name: str = "Rabot",
                  type: str = "rabot",
+                 official: bool = True,
                  configuration: RabotTariffConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or RabotTariffConfiguration()
