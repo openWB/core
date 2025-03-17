@@ -76,7 +76,7 @@ class SolaredgeBat(AbstractBat):
         PowerLimitMode = data.data.bat_all_data.data.config.power_limit_mode
 
         if PowerLimitMode == 'no_limit':
-            # Keine Speichersteuerung, ggf. können andere Steuerungen aktiv sein (SolarEdge One, ioBroker, Node-Red etc.).
+            # Keine Speichersteuerung, andere Steuerungen ermöglichen (SolarEdge ONE, ioBroker, Node-RED etc.).
             return
 
         if power_limit is None and self.last_mode is not None:
