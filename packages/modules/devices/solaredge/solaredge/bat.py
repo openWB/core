@@ -4,6 +4,7 @@ from typing import Dict, Union, Optional
 
 from pymodbus.constants import Endian
 
+from control import data
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
@@ -42,7 +43,7 @@ class SolaredgeBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.last_mode = None
+        self.last_mode = 'undefined'
 
     def update(self) -> None:
         self.store.set(self.read_state())
@@ -72,14 +73,15 @@ class SolaredgeBat(AbstractBat):
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.component_config.configuration.modbus_id
+        PowerLimitMode = data.data.bat_all_data.data.config.power_limit_mode
 
-        if power_limit is None and self.last_mode is None:
-            # Kein Powerlimit gefordert, externe Steuerung bereits inaktiv
-            pass
+        if PowerLimitMode == 'no_limit':
+            # Keine Speichersteuerung, ggf. können andere Steuerungen aktiv sein (SolarEdge One, ioBroker, Node-Red etc.).
+            return
 
-        elif power_limit is None and self.last_mode is not None:
-            # Kein Powerlimit gefordert, externe Steuerung aktiv, externe Steuerung deaktivieren, Standardwerte setzen.
-            log.debug("Keine Batteriesteuerung mehr gefordert, deaktiviere externe Steuerung.")
+        if power_limit is None and self.last_mode is not None:
+            # Keine Ladung mit Speichersteuerung aktiv, Steuerung deaktivieren.
+            log.debug("Keine Speichersteuerung gefordert, Steuerung deaktivieren.")
             values_to_write = {
                 "RemoteControlCommandDischargeLimit": 5000,
                 "StorageChargeDischargeDefaultMode": 0,
@@ -90,14 +92,14 @@ class SolaredgeBat(AbstractBat):
             self.last_mode = None
 
         elif power_limit >= 0 and self.last_mode != 'stop':
-            # externe Steuerung aktivieren, Speichermodus "Mit PV-Überschuss laden", Speicher wird nicht entladen.
+            # Speichersteuerung aktivieren, Speicher-Entladung sperren.
+            log.debug("Speichersteuerung aktivieren. Speicher-Entladung sperren.")
             values_to_write = {
                 "StorageControlMode": 4,
                 "StorageChargeDischargeDefaultMode": 1,
                 "RemoteControlCommandMode": 1,
             }
             self._write_registers(values_to_write, unit)
-            log.debug("Batteriesteuerung aktiviert. Modus 'Mit PV-Überschuss laden'.")
             self.last_mode = 'stop'
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
