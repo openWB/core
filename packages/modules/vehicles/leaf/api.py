@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import asyncio
 import logging
+from datetime import datetime, timezone
 
 from modules.vehicles.leaf.config import LeafSoc, LeafConfiguration
 from modules.common.component_state import CarState
@@ -12,22 +13,31 @@ log = logging.getLogger(__name__)
 
 async def _fetch_soc(username, password, region, chargepoint) -> CarState:
 
-    async def getNissanSession():                         # open HTTPS session with Nissan server
+    async def getNissanSession():
+        # open HTTPS session with Nissan server
         log.debug("LP%s: login = %s, region = %s" % (chargepoint, username, region))
         session = pycarwings3.Session(username, password, region)
         leaf = await session.get_leaf()
-        await asyncio.sleep(1)                            # give Nissan server some time
+        await asyncio.sleep(1)
         return leaf
 
-    async def readSoc(leaf) -> CarState:                  # get SoC & range from Nissan server
+    async def readSoc(leaf) -> CarState:
+        # get SoC & range & time stamp from Nissan server
         leaf_info = await leaf.get_latest_battery_status()
         soc = float(leaf_info.battery_percent)
         log.debug("LP%s: Battery State of Charge %s" % (chargepoint, soc))
         range = int(leaf_info.answer["BatteryStatusRecords"]["CruisingRangeAcOff"])/1000
         log.debug("LP%s: Cruising range AC Off   %s" % (chargepoint, range)) 
-        return CarState(soc, range)
+        time_stamp_str_utc = leaf_info.answer["BatteryStatusRecords"]["NotificationDateAndTime"]
+        soc_time = datetime.strptime(f"{time_stamp_str_utc}", "%Y/%m/%d %H:%M").replace(tzinfo=timezone.utc)
+        log.debug("LP%s: Date&Time of SoC (UTC)  %s" % (chargepoint, soc_time))
+        soc_timestamp = soc_time.timestamp()
+        log.debug("LP%s: soc_timestamp           %s" % (chargepoint, soc_timestamp))
+        log.debug("LP%s: local Date&Time of SoC  %s" % (chargepoint, datetime.fromtimestamp(soc_timestamp)))
+        return CarState(soc, range, soc_timestamp)
 
-    async def requestSoc(leaf: pycarwings3.Leaf):         # request Nissan server to request last SoC from car
+    async def requestSoc(leaf: pycarwings3.Leaf):
+        # request Nissan server to request last SoC from car
         log.debug("LP%s: Request SoC Update from vehicle" % (chargepoint))
         key = await leaf.request_update()
         sleepsecs = 20
