@@ -3,6 +3,7 @@ from control import data
 from helpermodules.logger import ModifyLoglevelContext
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_timestamp
+from dataclass_utils import asdict
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_io import AbstractIoAction
 from modules.io_actions.controllable_consumers.dimming.config import DimmingSetup
@@ -30,9 +31,10 @@ class Dimming(AbstractIoAction):
         for device in self.config.configuration.devices:
             if device["type"] != "cp":
                 fixed_import_power += 4200
-        self.config.configuration.fixed_import_power = fixed_import_power
         log.debug(f"Dimmen per HEMS: Fest vergebene Mindestleistung: {fixed_import_power}W")
-        Pub().pub(f"openWB/set/io/action/{self.config.id}/config", self.config)
+        if fixed_import_power != self.config.configuration.fixed_import_power:
+            self.config.configuration.fixed_import_power = fixed_import_power
+            Pub().pub(f"openWB/set/io/action/{self.config.id}/config", asdict(self.config))
 
         super().__init__()
 
@@ -62,7 +64,7 @@ class Dimming(AbstractIoAction):
                                 f"{data.data.cp_data[cp].data.get.powers}W")
                     if device["type"] == "io":
                         io = f"io{device['id']}"
-                        msg += (f", {data.data.io_data[io].data.config.name}: "
+                        msg += (f", {data.data.system_data[io].config.name}: "
                                 "Leistung unbekannt")
                 control_command_log.info(msg)
             elif self.timestamp:

@@ -48,7 +48,7 @@ class DimmingDirectControl(AbstractIoAction):
                             f"{data.data.cp_data[cp].data.get.powers}W")
                 if device["type"] == "io":
                     io = f"io{device['id']}"
-                    msg += (f", IO-Gerät {data.data.io_data[io].data.config.name}: "
+                    msg += (f", IO-Gerät {data.data.system_data[io].config.name}: "
                             "Leistung unbekannt")
                 control_command_log.info(msg)
             elif self.timestamp:
