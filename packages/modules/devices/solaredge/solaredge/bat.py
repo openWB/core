@@ -79,17 +79,21 @@ class SolaredgeBat(AbstractBat):
             # Keine Speichersteuerung, andere Steuerungen ermöglichen (SolarEdge ONE, ioBroker, Node-RED etc.).
             return
 
-        if power_limit is None and self.last_mode is not None:
-            # Keine Ladung mit Speichersteuerung aktiv, Steuerung deaktivieren.
-            log.debug("Keine Speichersteuerung gefordert, Steuerung deaktivieren.")
-            values_to_write = {
-                "RemoteControlCommandDischargeLimit": 5000,
-                "StorageChargeDischargeDefaultMode": 0,
-                "RemoteControlCommandMode": 0,
-                "StorageControlMode": 2,
-            }
-            self._write_registers(values_to_write, unit)
-            self.last_mode = None
+        if power_limit is None:
+            if self.last_mode is not None:
+                # Keine Ladung mit Speichersteuerung aktiv, Steuerung deaktivieren.
+                log.debug("Keine Speichersteuerung gefordert, Steuerung deaktivieren.")
+                values_to_write = {
+                    "RemoteControlCommandDischargeLimit": 5000,
+                    "StorageChargeDischargeDefaultMode": 0,
+                    "RemoteControlCommandMode": 0,
+                    "StorageControlMode": 2,
+                }
+                self._write_registers(values_to_write, unit)
+                self.last_mode = None
+            else:
+                # Keine Ladung mit Speichersteuerung aktiv, Steuerung bereits inaktiv.
+                return
 
         elif power_limit >= 0 and self.last_mode != 'stop':
             # Speichersteuerung aktivieren, Speicher-Entladung sperren.
