@@ -2016,3 +2016,34 @@ class UpdateConfig:
                 return {topic: dataclass_utils.asdict(LoadmanagementLimit(None,  None))}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 77)
+
+    def upgrade_datastore_77(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # add "official" flag to selected backup cloud
+            if re.search("openWB/system/backup_cloud/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "nextcloud":
+                    configuration_payload.update({"official": True})
+                    return {topic: configuration_payload}
+            # add "official" flag to selected electricity tariff provider
+            if re.search("openWB/optional/et/provider", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                official_providers = ["awattar", "energycharts", "rabot", "tibber", "voltego"]
+                if configuration_payload.get("type") in official_providers:
+                    configuration_payload.update({"official": True})
+                    return {topic: configuration_payload}
+            # add "official" flag to selected monitoring module
+            if re.search("openWB/optional/monitoring/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "zabbix":
+                    configuration_payload.update({"official": True})
+                    return {topic: configuration_payload}
+            # add "official" flag to selected vehicle modules
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                official_vehicle_modules = ["http", "json", "manual", "mqtt", "tronity"]
+                if configuration_payload.get("type") in official_vehicle_modules:
+                    configuration_payload.update({"official": True})
+                    return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 78)
