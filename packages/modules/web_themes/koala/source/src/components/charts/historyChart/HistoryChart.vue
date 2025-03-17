@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { Line as ChartjsLine } from 'vue-chartjs';
 import {
@@ -26,11 +26,14 @@ import {
   ChartEvent,
   LegendItem,
   LegendElement,
-  ChartTypeRegistry
+  ChartTypeRegistry,
 } from 'chart.js';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import 'chartjs-adapter-luxon';
-import type { HistoryChartTooltipItem } from './history-chart-model';
+import type {
+  HistoryChartTooltipItem,
+  ChartComponentRef,
+} from './history-chart-model';
 
 Chart.register(
   Legend,
@@ -43,75 +46,82 @@ Chart.register(
   Filler,
 );
 
-// Define a type for the component that contains the Chart instance
-interface ChartComponentRef {
-  chart?: Chart;
-}
-
-const chartRef = ref<ChartComponentRef | null>(null);
+const legendDisplay = computed(() => props.showLegend);
+const mqttStore = useMqttStore();
 const $q = useQuasar();
 const props = defineProps<{
   showLegend: boolean;
 }>();
 
+const chartRef = ref<ChartComponentRef | null>(null);
 const hiddenDatasets = ref<string[]>([]);
 
-// ******  on mount hook to preserve legend item state (hidden/shown) on card swipe / page reload *****
+// on mount hook to preserve legend item state (hidden/shown) on card swipe / page reload
 onMounted(() => {
-  const savedHiddenDatasets = localStorage.getItem('historyChartHiddenDatasets');
+  loadSavedHiddenDatasets();
+});
+
+const loadSavedHiddenDatasets = (): void => {
+  const savedHiddenDatasets = localStorage.getItem(
+    'historyChartHiddenDatasets',
+  );
   if (savedHiddenDatasets) {
     hiddenDatasets.value = JSON.parse(savedHiddenDatasets);
   }
+};
 
-  //delay to ensure the chart is fully rendered
-  setTimeout(() => {
-    if (chartRef.value?.chart) {
-      const chart = chartRef.value.chart;
+const updateChartLegend = (chart?: Chart): void => {
+  if (!chartRef.value?.chart) return;
+  chart = chartRef.value.chart;
+  if (chart.options.plugins && chart.options.plugins.legend) {
+    chart.options.plugins.legend.onClick = handleLegendClick;
+  }
+  applyHiddenDatasetsToChart(chart);
+};
 
-      if (chart.options.plugins && chart.options.plugins.legend) {
-        chart.options.plugins.legend.onClick = function(
-          e: ChartEvent,
-          legendItem: LegendItem,
-          legend: LegendElement<keyof ChartTypeRegistry>
-        ) {
-          // Get the dataset index
-          const index = legendItem.datasetIndex!;
-          const chartInstance = legend.chart;
+// Custom legend click handler to toggle dataset visibility
+const handleLegendClick = (
+  e: ChartEvent,
+  legendItem: LegendItem,
+  legend: LegendElement<keyof ChartTypeRegistry>,
+): void => {
+  const index = legendItem.datasetIndex!;
+  const chartInstance = legend.chart;
+  // Toggle visibility
+  if (chartInstance.isDatasetVisible(index)) {
+    chartInstance.hide(index);
+    hiddenDatasets.value.push(legendItem.text);
+  } else {
+    chartInstance.show(index);
+    hiddenDatasets.value = hiddenDatasets.value.filter(
+      (item) => item !== legendItem.text,
+    );
+  }
+  localStorage.setItem(
+    'historyChartHiddenDatasets',
+    JSON.stringify(hiddenDatasets.value),
+  );
+  chartInstance.update();
+};
 
-         // Toggle visibility
-         if (chartInstance.isDatasetVisible(index)) {
-            chartInstance.hide(index);
-            hiddenDatasets.value.push(legendItem.text);
-          } else {
-            chartInstance.show(index);
-            hiddenDatasets.value = hiddenDatasets.value.filter(
-              item => item !== legendItem.text
-            );
-          }
-
-          localStorage.setItem(
-            'historyChartHiddenDatasets',
-            JSON.stringify(hiddenDatasets.value)
-          );
-
-          chartInstance.update();
-        };
-      }
-
-      // Apply initial hidden datasets
-      chart.data.datasets.forEach((dataset, index) => {
-        if (hiddenDatasets.value.includes(dataset.label as string)) {
-          chart.hide(index);
-        }
-      });
-      chart.update();
+const applyHiddenDatasetsToChart = (chart: Chart): void => {
+  chart.data.datasets.forEach((dataset, index) => {
+    if (hiddenDatasets.value.includes(dataset.label as string)) {
+      chart.hide(index);
     }
-  }, 100);
-});
+  });
+  chart.update();
+};
 
-const legendDisplay = computed(() => props.showLegend);
-
-const mqttStore = useMqttStore();
+watch(
+  () => chartRef.value?.chart,
+  (chart) => {
+    if (chart) {
+      updateChartLegend(chart);
+    }
+  },
+  { immediate: true },
+);
 
 const selectedData = computed(() => {
   const data = mqttStore.chartData;
@@ -353,7 +363,6 @@ const chartOptions = computed(() => ({
     },
   },
 }));
-
 </script>
 
 <style scoped>
