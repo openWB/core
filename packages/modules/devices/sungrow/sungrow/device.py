@@ -15,16 +15,22 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Sungrow):
+    client = None
+
     def create_bat_component(component_config: SungrowBatSetup):
+        nonlocal client
         return SungrowBat(device_config, component_config, client)
 
     def create_counter_component(component_config: SungrowCounterSetup):
+        nonlocal client
         return SungrowCounter(device_config, component_config, client)
 
     def create_inverter_component(component_config: SungrowInverterSetup):
+        nonlocal client
         return SungrowInverter(device_config, component_config, client)
 
     def update_components(components: Iterable[Union[SungrowBat, SungrowCounter, SungrowInverter]]):
+        nonlocal client
         with client:
             for component in components:
                 if isinstance(component, SungrowInverter):
@@ -39,12 +45,13 @@ def create_device(device_config: Sungrow):
                     with SingleComponentUpdateContext(component.fault_state):
                         component.update()
 
-    try:
+    def initializer():
+        nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

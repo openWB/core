@@ -15,28 +15,33 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Ampere):
+    client = None
+
     def create_bat_component(component_config: AmpereBatSetup):
-        return AmpereBat(device_config.id, component_config, device_config.configuration.modbus_id)
+        nonlocal client
+        return AmpereBat(device_config.id, component_config, device_config.configuration.modbus_id, client)
 
     def create_counter_component(component_config: AmpereCounterSetup):
-        return AmpereCounter(device_config.id, component_config, device_config.configuration.modbus_id)
+        nonlocal client
+        return AmpereCounter(device_config.id, component_config, device_config.configuration.modbus_id, client)
 
     def create_inverter_component(component_config: AmpereInverterSetup):
-        return AmpereInverter(device_config.id, component_config, device_config.configuration.modbus_id)
+        nonlocal client
+        return AmpereInverter(device_config.id, component_config, device_config.configuration.modbus_id, client)
 
     def update_components(components: Iterable[Union[AmpereBat, AmpereCounter, AmpereInverter]]):
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(client)
+                    component.update()
 
-    try:
-        client = ModbusTcpClient_(device_config.configuration.ip_address,
-                                  device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+    def initializer():
+        nonlocal client
+        client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

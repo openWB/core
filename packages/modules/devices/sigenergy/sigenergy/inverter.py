@@ -12,17 +12,21 @@ from modules.devices.sigenergy.sigenergy.config import SigenergyInverterSetup
 
 
 class SigenergyInverter:
-    def __init__(self, device_id: int, component_config: Union[Dict, SigenergyInverterSetup]) -> None:
+    def __init__(self,
+                 device_id: int,
+                 component_config: Union[Dict, SigenergyInverterSetup],
+                 client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(SigenergyInverterSetup, component_config)
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.__device_id = device_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = client.read_holding_registers(30035, ModbusDataType.INT_32, unit=unit) * -1
+        power = self.client.read_holding_registers(30035, ModbusDataType.INT_32, unit=unit) * -1
         _, exported = self.sim_counter.sim_count(power)
 
         inverter_state = InverterState(

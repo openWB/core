@@ -14,13 +14,18 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Powerdog):
+    client = None
+
     def create_counter_component(component_config: PowerdogCounterSetup):
+        nonlocal client
         return PowerdogCounter(device_config.id, component_config, client, device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: PowerdogInverterSetup):
+        nonlocal client
         return PowerdogInverter(device_config.id, component_config, client, device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[PowerdogCounter, PowerdogInverter]]):
+        nonlocal client
         with client:
             if len(components) == 1:
                 for component in components:
@@ -47,12 +52,13 @@ def create_device(device_config: Powerdog):
                     + "wurden."
                 )
 
-    try:
+    def initializer():
+        nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             counter=create_counter_component,
             inverter=create_inverter_component,
