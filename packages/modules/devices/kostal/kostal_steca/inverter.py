@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import logging
-from typing import Optional, Tuple
-import xml.etree.ElementTree as ET
 import re
+from typing import Any, Optional, Tuple, TypedDict
+import xml.etree.ElementTree as ET
 from math import isnan
 
 from modules.common import req
@@ -16,10 +16,17 @@ from modules.devices.kostal.kostal_steca.config import KostalStecaInverterSetup
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    ip_address: str
+
+
 class KostalStecaInverter(AbstractInverter):
-    def __init__(self, component_config: KostalStecaInverterSetup, ip_address: str) -> None:
-        self.ip_address = ip_address
+    def __init__(self, component_config: KostalStecaInverterSetup, **kwargs: Any) -> None:
         self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.ip_address: str = self.kwargs['ip_address']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

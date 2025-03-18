@@ -4,7 +4,6 @@ from typing import Iterable, Union
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.siemens.siemens.bat import SiemensBat
 from modules.devices.siemens.siemens.config import Siemens, SiemensBatSetup, SiemensCounterSetup, SiemensInverterSetup
@@ -18,27 +17,42 @@ siemens_component_classes = Union[SiemensBat, SiemensCounter, SiemensInverter]
 
 
 def create_device(device_config: Siemens):
+    client = None
+
     def create_bat_component(component_config: SiemensBatSetup):
-        return SiemensBat(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        nonlocal client
+        return SiemensBat(component_config,
+                          device_id=device_config.id,
+                          client=client,
+                          modbus_id=device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: SiemensCounterSetup):
-        return SiemensCounter(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        nonlocal client
+        return SiemensCounter(component_config,
+                              device_id=device_config.id,
+                              client=client,
+                              modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: SiemensInverterSetup):
-        return SiemensInverter(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        nonlocal client
+        return SiemensInverter(component_config,
+                               device_id=device_config.id,
+                               client=client,
+                               modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[siemens_component_classes]):
+        nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
-    try:
+    def initializer():
+        nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
