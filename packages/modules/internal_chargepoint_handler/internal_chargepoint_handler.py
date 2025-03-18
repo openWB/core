@@ -212,7 +212,7 @@ class InternalChargepointHandler:
                 time.sleep(1.1)
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
             # Allgemeine Fehlermeldungen an LP 1
-            if self.cp0 and self.cp0.mode == InternalChargepointMode.PRO_PLUS.value:
+            if self.cp0 is not None and self.cp0.mode == InternalChargepointMode.PRO_PLUS.value:
                 _loop()
             elif self.cp0_client_handler is None and self.cp1_client_handler is None:
                 log.error("Kein ClientHandler vorhanden. Beende.")

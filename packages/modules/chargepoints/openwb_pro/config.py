@@ -11,7 +11,7 @@ class OpenWBProConfiguration:
 
 class OpenWBPro(SetupChargepoint[OpenWBProConfiguration]):
     def __init__(self,
-                 name: str = "openWB Pro",
+                 name: str = "openWB Pro (nicht Pro+)",
                  type: str = "openwb_pro",
                  id: int = 0,
                  configuration: OpenWBProConfiguration = None) -> None:
