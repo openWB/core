@@ -311,7 +311,7 @@ class Command:
         Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
             payload, connection_id,
-            f'Neuer Autolock-Plan mit ID \'{new_id}\' zu Profil '
+            f'Neuer Plan für Sperren nach Uhrzeit mit ID \'{new_id}\' zu Profil '
             f'\'{payload["data"]["template"]}\' hinzugefügt.',
             MessageType.SUCCESS)
 
@@ -329,7 +329,7 @@ class Command:
             "")
         pub_user_message(
             payload, connection_id,
-            f'Autolock-Plan mit ID \'{payload["data"]["plan"]}\' vom Profil '
+            f'Plan für Sperren nach Uhrzeit mit ID \'{payload["data"]["plan"]}\' vom Profil '
             f'\'{payload["data"]["template"]}\' gelöscht.',
             MessageType.SUCCESS)
 

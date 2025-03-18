@@ -27,10 +27,10 @@ class GrowattBat(AbstractBat):
 
     def update(self) -> None:
         if self.version == GrowattVersion.max_series:
-            power_in = self.client.read_input_registers(
-                1011, ModbusDataType.UINT_32, unit=self.__modbus_id) * -0.1
-            power_out = self.client.read_input_registers(
-                1009, ModbusDataType.UINT_32, unit=self.__modbus_id) * 0.1
+            power_in = client.read_input_registers(
+                1011, ModbusDataType.UINT_32, unit=self.__modbus_id) * 0.1
+            power_out = client.read_input_registers(
+                1009, ModbusDataType.UINT_32, unit=self.__modbus_id) * -0.1
             power = power_in + power_out
 
             soc = self.client.read_input_registers(1014, ModbusDataType.UINT_16, unit=self.__modbus_id)

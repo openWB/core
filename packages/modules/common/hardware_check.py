@@ -19,7 +19,8 @@ METER_BROKEN = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen wer
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
                           "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
-EVSE_BROKEN = "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID."
+EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
+               "(Fehlermeldung nur relevant, wenn diese auf der Startseite oder im Status angezeigt wird.)")
 
 
 def check_meter_values(voltages: List[float]) -> Optional[str]:

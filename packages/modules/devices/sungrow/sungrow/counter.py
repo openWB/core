@@ -39,7 +39,7 @@ class SungrowCounter(AbstractCounter):
                                                                 wordorder=Endian.Little, unit=unit)
             except Exception:
                 powers = None
-                self.fault_state.warning(self.fault_text)
+                self.fault_state.no_error(self.fault_text)
         else:
             if pv_power != 0:
                 power = self.__tcp_client.read_input_registers(5082, ModbusDataType.INT_32,
@@ -52,7 +52,7 @@ class SungrowCounter(AbstractCounter):
                                                                 wordorder=Endian.Little, unit=unit)
             except Exception:
                 powers = None
-                self.fault_state.warning(self.fault_text)
+                self.fault_state.no_error(self.fault_text)
 
         frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
         if self.device_config.configuration.version == Version.SH_winet_dongle:

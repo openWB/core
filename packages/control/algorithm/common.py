@@ -126,8 +126,12 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
 
         if diff_to_zero is False:
             if chargepoint.data.control_parameter.min_current < max_target_set_current:
-                diffs = [chargepoint.data.control_parameter.min_current -
-                         max_target_set_current if required_currents[i] != 0 else 0 for i in range(3)]
+                if surplus:
+                    diffs = [chargepoint.data.set.target_current -
+                             max_target_set_current if required_currents[i] != 0 else 0 for i in range(3)]
+                else:
+                    diffs = [chargepoint.data.control_parameter.min_current -
+                             max_target_set_current if required_currents[i] != 0 else 0 for i in range(3)]
             else:
                 continue
         else:
