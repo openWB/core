@@ -5,10 +5,11 @@ from ..vendor import vendor_descriptor
 
 
 class UPowerConfiguration:
-    def __init__(self, modbus_id: int = 1, ip_address: Optional[str] = None, port: int = 502):
+    def __init__(self, modbus_id: int = 1, ip_address: Optional[str] = None, port: int = 502, version: int = 1):
         self.modbus_id = modbus_id
         self.ip_address = ip_address
         self.port = port
+        self.version = version
 
 
 class UPower:
