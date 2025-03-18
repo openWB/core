@@ -86,4 +86,4 @@ def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
     soc = bat_data['batteryChargeLevelPercentage']
     est_range = bat_data['estimatedDistanceToEmptyKm']
 
-    return CarState(soc, est_range, time.strftime("%m/%d/%Y, %H:%M:%S"))
+    return CarState(soc, est_range, time.time())

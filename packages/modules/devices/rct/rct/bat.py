@@ -41,7 +41,7 @@ class RctBat(AbstractBat):
         if (stat1.value + stat2.value + stat3.value) > 0:
             # Werte werden trotz Fehlercode übermittelt.
             self.fault_state.warning(
-                f"Alarm Status Speicher ist ungleich 0. Status 1: {stat1.value}, Status 2: {stat2.value}, "
+                f"Speicher-Status ist ungleich 0. Status 1: {stat1.value}, Status 2: {stat2.value}, "
                 f"Status 3: {stat3.value}")
 
 

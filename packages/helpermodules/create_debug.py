@@ -203,7 +203,8 @@ def create_debug_log(input_data):
             data = f.read()
         req.get_http_session().put("https://openwb.de/tools/debug2.php",
                                    data=data,
-                                   params={'debugemail': debug_email})
+                                   params={'debugemail': debug_email},
+                                   timeout=10)
 
         log.info("***** cleanup...")
         os.remove(debug_file)

@@ -20,7 +20,8 @@ METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausge
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
                           "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
-EVSE_BROKEN = "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID."
+EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
+               "(Fehlermeldung nur relevant, wenn diese auf der Startseite oder im Status angezeigt wird.)")
 METER_IMPLAUSIBLE_VALUE = ("Der Zähler hat einen unplausiblen Wert zurückgegeben: Leistungen {}W, Ströme {}A, "
                            "Spannungen {}V.")
 
