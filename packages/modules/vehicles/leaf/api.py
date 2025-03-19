@@ -3,7 +3,6 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
-from modules.vehicles.leaf.config import LeafSoc, LeafConfiguration
 from modules.common.component_state import CarState
 
 import pycarwings3
@@ -27,7 +26,7 @@ async def _fetch_soc(username, password, region, vehicle) -> CarState:
         soc = float(leaf_info.battery_percent)
         log.debug("vehicle%s: Battery State of Charge %s" % (vehicle, soc))
         range = int(leaf_info.answer["BatteryStatusRecords"]["CruisingRangeAcOff"])/1000
-        log.debug("vehicle%s: Cruising range AC Off   %s" % (vehicle, range)) 
+        log.debug("vehicle%s: Cruising range AC Off   %s" % (vehicle, range))
         time_stamp_str_utc = leaf_info.answer["BatteryStatusRecords"]["NotificationDateAndTime"]
         soc_time = datetime.strptime(f"{time_stamp_str_utc}", "%Y/%m/%d %H:%M").replace(tzinfo=timezone.utc)
         log.debug("vehicle%s: Date&Time of SoC (UTC)  %s" % (vehicle, soc_time))
@@ -53,7 +52,7 @@ async def _fetch_soc(username, password, region, vehicle) -> CarState:
 
     try:
         leaf = await getNissanSession()       # start HTTPS session with Nissan server
-        soc_range = await readSoc(leaf)       # old SoC & range need to be read from server before requesting new values from vehicle
+        soc_range = await readSoc(leaf)       # read old SoC & range values from server
         await asyncio.sleep(1)                # give Nissan server some time
         status = await requestSoc(leaf)       # Nissan server to request new values from vehicle
         if status is not None:                # was update of values successful?
@@ -64,6 +63,7 @@ async def _fetch_soc(username, password, region, vehicle) -> CarState:
         log.info(e)
         soc_range = CarState(0.0, 0.0)
     return soc_range
+    
 
 # main entry - _fetch_soc needs to be run async
 def fetch_soc(user_id: str, password: str, region: str, vehicle: int) -> CarState:
