@@ -98,7 +98,6 @@ class SunnyBoySmartEnergyBat(AbstractBat):
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.component_config.configuration.modbus_id
-        log.debug(f'last_mode: {self.last_mode}')
 
         if power_limit is None:
             if self.last_mode is not None:
