@@ -44,7 +44,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
-        self.Inverter_Type = None
+        self.inverter_type = None
 
     def update(self) -> None:
         self.store.set(self.read())
@@ -60,7 +60,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             "Battery_DischargedEnergy"
         ]
 
-        if self.inverter_type is None:  # Only read Inverter_Type if not already set
+        if self.Inverter_Type is None:  # Only read Inverter_Type if not already set
             registers_to_read.append("Inverter_Type")
 
         values = self._read_registers(registers_to_read, unit)
@@ -91,8 +91,8 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             imported=values["Battery_ChargedEnergy"]
         )
         if self.inverter_type is None:
-            self.Inverter_Type = values["Inverter_Type"]
-        log.debug(f"Inverter Type: {self.Inverter_Type}")
+            self.inverter_type = values["Inverter_Type"]
+        log.debug(f"Inverter Type: {self.inverter_type}")
         log.debug(f"Bat {self.__tcp_client.address}: {bat_state}")
         return bat_state
 
