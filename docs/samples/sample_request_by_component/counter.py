@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -9,7 +10,7 @@ from modules.common.store import get_counter_value_store
 from modules.devices.sample_request_by_component.config import SampleCounterSetup, SampleConfiguration
 
 
-class SampleCounter:
+class SampleCounter(AbstractCounter):
     def __init__(self, device_id: int, component_config: SampleCounterSetup, ip_address: str) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(SampleCounterSetup, component_config)

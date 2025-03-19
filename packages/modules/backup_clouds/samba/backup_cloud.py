@@ -4,7 +4,10 @@ import os
 import io
 import re
 import socket
-from smb.SMBConnection import SMBConnection
+
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    from smb.SMBConnection import SMBConnection
 
 from modules.backup_clouds.samba.config import SambaBackupCloud, SambaBackupCloudConfiguration
 from modules.common.abstract_device import DeviceDescriptor

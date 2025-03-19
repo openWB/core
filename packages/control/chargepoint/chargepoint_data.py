@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Protocol
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
-from control.ev import Ev
+from control.ev.ev import Ev
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -90,18 +90,24 @@ def connected_vehicle_factory() -> ConnectedVehicle:
 @dataclass
 class Get:
     charge_state: bool = False
+    charging_current: Optional[float] = 0
+    charging_power: Optional[float] = 0
+    charging_voltage: Optional[float] = 0
     connected_vehicle: ConnectedVehicle = field(default_factory=connected_vehicle_factory)
     currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = 0
     daily_exported: float = 0
+    error_timestamp: int = 0
     evse_current: Optional[float] = None
     exported: float = 0
     fault_str: str = NO_ERROR
     fault_state: int = 0
     imported: float = 0
+    max_evse_current: Optional[int] = None
     phases_in_use: int = 0
     plug_state: bool = False
     power: float = 0
+    powers: List[float] = field(default_factory=currents_list_factory)
     rfid_timestamp: Optional[float] = None
     rfid: Optional[int] = None
     serial_number: Optional[str] = None
@@ -134,8 +140,12 @@ class Set:
     plug_time: Optional[float] = None
     required_power: float = 0
     rfid: Optional[str] = None
-    target_current: float = 0  # Sollstrom aus fest vorgegebener Stromstärke
+    # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
+    # (für Control-Pilot-Unterbrechung)
+    current_prev: float = 0.0
+    target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
+    ocpp_transaction_id: Optional[int] = None
 
 
 @dataclass
@@ -150,6 +160,7 @@ class Config:
     auto_phase_switch_hw: bool = False
     control_pilot_interruption_hw: bool = False
     id: int = 0
+    ocpp_chargebox_id: Optional[str] = None
 
     def __post_init__(self):
         self.event_update_state: threading.Event
@@ -222,7 +233,5 @@ class ChargepointProtocol(Protocol):
     def chargepoint_module(self) -> AbstractChargepoint: ...
     @property
     def num(self) -> int: ...
-    @property
-    def set_current_prev(self) -> float: ...
     @property
     def data(self) -> ChargepointData: ...

@@ -25,5 +25,8 @@ const WbBadgestyle = computed(() => {
 .pillWbBadge {
 	font-size: (var--font-small);
 	font-weight: regular;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 </style>

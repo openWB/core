@@ -17,7 +17,7 @@ class TestTesla:
         self.mock_context_exit = Mock(return_value=True)
         self.mock_validate_token = Mock(name="validate_token", return_value=self.token)
         self.mock_post_wake_up_command = Mock(name="post_wake_up_command", return_value="online")
-        self.mock_request_soc_range = Mock(name="request_soc_range", return_value=(42.5, 438.2))
+        self.mock_request_soc_range = Mock(name="request_soc_range", return_value=(42.5, 438.2, 1652683252))
         self.mock_value_store = Mock(name="value_store")
         monkeypatch.setattr(api, "validate_token", self.mock_validate_token)
         monkeypatch.setattr(api, "post_wake_up_command", self.mock_post_wake_up_command)

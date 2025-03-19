@@ -446,6 +446,14 @@ def loadregelvars(wattbezug: int, speicherleistung: int, speichersoc: int,
                             mydevice.device_manual_control = int(value.read())
             except Exception:
                 pass
+            try:
+                with open(bp+'/ramdisk/smarthome_device_manual_ueb_'
+                          + str(i), 'r') as value:
+                    for mydevice in mydevices:
+                        if (str(i) == str(mydevice.device_nummer)):
+                            mydevice.device_manual_ueb = int(value.read())
+            except Exception:
+                pass
     return uberschuss, uberschussoffset
 
 
@@ -488,6 +496,12 @@ def mainloop(wattbezug: int, speicherleistung: int, speichersoc: int, pvwatt: in
                         with open(fname,  'w') as f:
                             f.write(str(mydevice.device_manual_control))
                     log.info("File: " + str(fname) + " created. Content: " + str(mydevice.device_manual_control))
+                    os.chmod(fname, 0o777)
+                    fname = bp+'/ramdisk/smarthome_device_manual_ueb_'+str(i)
+                    if not os.path.isfile(fname):
+                        with open(fname,  'w') as f:
+                            f.write(str(mydevice.device_manual_ueb))
+                    log.info("File: " + str(fname) + " created. Content: " + str(mydevice.device_manual_ueb))
                     os.chmod(fname, 0o777)
     mqtt_man = {}
     sendmess = 0

@@ -3,7 +3,8 @@ import logging
 import time
 from typing import Optional
 
-from helpermodules.utils.error_counter import ErrorCounterContext
+from control import data
+from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from modules.chargepoints.openwb_series2_satellit.config import OpenWBseries2Satellit
 from modules.common import modbus
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -23,8 +24,9 @@ class ChargepointModule(AbstractChargepoint):
         "type": "openWB Satellit",
         "versions": ["2.0"]
     }
-    CP0_DELAY = 1
-    CP0_DELAY_STARTUP = 4
+    # 1/3 des Regelintervalls für Abfrage der Werte, davon die Hälfte je Duo-LP
+    CP1_DELAY = data.data.general_data.data.control_interval / 6
+    CP1_DELAY_STARTUP = 4
     ID_PHASE_SWITCH_UNIT = 3
 
     def __init__(self, config: OpenWBseries2Satellit) -> None:
@@ -32,13 +34,13 @@ class ChargepointModule(AbstractChargepoint):
         self.fault_state = FaultState(ComponentInfo(self.config.id, "Ladepunkt", "chargepoint"))
         self.version: Optional[bool] = None
         with SingleComponentUpdateContext(self.fault_state):
-            self.delay_second_cp(self.CP0_DELAY_STARTUP)
+            self.delay_second_cp(self.CP1_DELAY_STARTUP)
             self.store = get_chargepoint_value_store(self.config.id)
-            self.__client_error_context = ErrorCounterContext(
-                "Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke wird zurückgesetzt.",
-                hide_exception=True)
+            self.client_error_context = ErrorTimerContext(
+                f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
             self._create_client()
             self._validate_version()
+        self.max_evse_current = self._client.evse_client.get_max_current()
 
     def delay_second_cp(self, delay: float):
         if self.config.configuration.duo_num == 0:
@@ -56,7 +58,7 @@ class ChargepointModule(AbstractChargepoint):
     def _validate_version(self):
         try:
             parsed_answer = get_version_by_telnet(
-                f'{self.VALID_MODELS["type"]}{self.VALID_MODELS["versions"][0]}', self.config.configuration.ip_address)
+                f'{self.VALID_MODELS["type"]} {self.VALID_MODELS["versions"][0]}', self.config.configuration.ip_address)
             for version in self.VALID_MODELS["versions"]:
                 if version in parsed_answer:
                     self.version = True
@@ -72,15 +74,13 @@ class ChargepointModule(AbstractChargepoint):
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             if self.version is not None:
-                with self.__client_error_context:
+                with self.client_error_context:
                     try:
-                        self.delay_second_cp(self.CP0_DELAY)
+                        self.delay_second_cp(self.CP1_DELAY)
                         with self._client.client:
                             self._client.check_hardware(self.fault_state)
                             if self.version is False:
-                                raise ValueError(
-                                    "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. "
-                                    "Bitte den Support kontaktieren.")
+                                self._validate_version()
                             currents = self._client.meter_client.get_currents()
                             phases_in_use = sum(1 for current in currents if current > 3)
                             plug_state, charge_state, _ = self._client.evse_client.get_plug_charge_state()
@@ -94,10 +94,11 @@ class ChargepointModule(AbstractChargepoint):
                                 plug_state=plug_state,
                                 charge_state=charge_state,
                                 phases_in_use=phases_in_use,
-                                serial_number=self._client.meter_client.get_serial_number()
+                                serial_number=self._client.meter_client.get_serial_number(),
+                                max_evse_current=self.max_evse_current
                             )
                         self.store.set(chargepoint_state)
-                        self.__client_error_context.reset_error_counter()
+                        self.client_error_context.reset_error_counter()
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
@@ -107,12 +108,12 @@ class ChargepointModule(AbstractChargepoint):
 
     def set_current(self, current: float) -> None:
         if self.version is not None:
-            if self.__client_error_context.error_counter_exceeded():
+            if self.client_error_context.error_counter_exceeded():
                 current = 0
             with SingleComponentUpdateContext(self.fault_state, update_always=False):
-                with self.__client_error_context:
+                with self.client_error_context:
                     try:
-                        self.delay_second_cp(self.CP0_DELAY)
+                        self.delay_second_cp(self.CP1_DELAY)
                         with self._client.client:
                             self._client.check_hardware(self.fault_state)
                             if self.version:
@@ -126,7 +127,7 @@ class ChargepointModule(AbstractChargepoint):
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         if self.version is not None:
             with SingleComponentUpdateContext(self.fault_state, update_always=False):
-                with self.__client_error_context:
+                with self.client_error_context:
                     try:
                         with self._client.client:
                             self._client.check_hardware(self.fault_state)

@@ -11,6 +11,7 @@ from typing import Optional
 
 from helpermodules import pub
 from control import data
+from helpermodules.utils import thread_handler
 from helpermodules.utils.run_command import run_command
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
@@ -84,12 +85,7 @@ class System:
                 self.create_backup_and_send_to_cloud()
             except Exception as e:
                 log.exception(f"Error in cloud backup: {e}")
-
-        for thread in threading.enumerate():
-            if thread.name == "cloud backup":
-                log.debug("Don't start multiple instances of cloud backup thread.")
-                return
-        threading.Thread(target=create, args=(), name="cloud backup").start()
+        thread_handler(threading.Thread(target=create, args=(), name="cloud backup"))
 
     def create_backup_and_send_to_cloud(self):
         if self.backup_cloud is not None:

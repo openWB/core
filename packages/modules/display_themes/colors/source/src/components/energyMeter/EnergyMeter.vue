@@ -1,5 +1,5 @@
 <template>
-	<WBWidget :full-width="true">
+	<WBWidget>
 		<template #title>
 			{{ heading }}
 		</template>
@@ -15,43 +15,45 @@
 				@shift-down="shiftDown"
 			/>
 		</template>
-		<figure id="energymeter" class="p-0 m-0">
-			<svg viewBox="0 0 500 500">
-				<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
-					<!--  Bar Graph -->
-					<EMBarGraph
-						:plotdata="plotdata"
-						:x-scale="xScale"
-						:y-scale="yScale"
-						:height="height"
-						:margin="margin"
-					/>
-					<!-- Y Axis -->
-					<EMYAxis
-						:y-scale="yScale"
-						:width="width"
-						:fontsize="axisFontsize"
-						:config="globalConfig"
-					/>
-					<text
-						:x="-margin.left"
-						y="-15"
-						fill="var(--color-axis)"
-						:font-size="axisFontsize"
-					>
-						{{ graphData.graphMode == 'year' ? 'MWh' : 'kWh' }}
-					</text>
-					<EMLabels
-						:plotdata="plotdata"
-						:x-scale="xScale"
-						:y-scale="yScale"
-						:height="height"
-						:margin="margin"
-						:config="globalConfig"
-					/>
-				</g>
-			</svg>
-		</figure>
+		<div class="grid-col-12">
+			<figure id="energymeter" class="energymeter p-0 m-0 align-self-stretch">
+				<svg viewBox="0 0 500 500">
+					<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
+						<!--  Bar Graph -->
+						<EMBarGraph
+							:plotdata="plotdata"
+							:x-scale="xScale"
+							:y-scale="yScale"
+							:height="height"
+							:margin="margin"
+						/>
+						<!-- Y Axis -->
+						<EMYAxis
+							:y-scale="yScale"
+							:width="width"
+							:fontsize="axisFontsize"
+							:config="globalConfig"
+						/>
+						<text
+							:x="-margin.left"
+							y="-15"
+							fill="var(--color-axis)"
+							:font-size="axisFontsize"
+						>
+							{{ graphData.graphMode == 'year' ? 'MWh' : 'kWh' }}
+						</text>
+						<EMLabels
+							:plotdata="plotdata"
+							:x-scale="xScale"
+							:y-scale="yScale"
+							:height="height"
+							:margin="margin"
+							:config="globalConfig"
+						/>
+					</g>
+				</svg>
+			</figure>
+		</div>
 		<p v-if="noData">No data</p>
 	</WBWidget>
 </template>
@@ -144,9 +146,7 @@ const heading = 'Energie'
 
 const usageDetails = computed(() => {
 	const cpcount = Object.values(chargePoints).length
-	const shcount = Object.values(shDevices).filter(
-		(dev) => dev.configured,
-	).length
+	const shcount = [...shDevices.values()].filter((dev) => dev.configured).length
 	return [usageSummary.evuOut, usageSummary.devices, usageSummary.charging]
 		.concat(
 			cpcount > 1
@@ -155,7 +155,7 @@ const usageDetails = computed(() => {
 		)
 		.concat(
 			shcount > 1
-				? Object.values(shDevices).filter(
+				? [...shDevices.values()].filter(
 						(row) => row.configured && row.showInGraph,
 					)
 				: [],
@@ -164,4 +164,8 @@ const usageDetails = computed(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.energymeter {
+	width: 100%;
+}
+</style>

@@ -1,56 +1,83 @@
 <template>
-	<div class="p-2 m-0 d-flex" :class="widgetWidth">
-		<div class="wb-widget p-0 m-0 shadow">
-			<div class="d-flex justify-content-between">
-				<h3 class="m-4 me-0 mb-0">
-					<slot name="title">
-						<div class="p-0">(title goes here)</div>
-					</slot>
-					<slot name="subtitle" />
-				</h3>
-				<div class="p-4 pb-0 ps-0 m-0" style="text-align: right">
+	<div class="p-2 m-0 cont">
+		<div class="wb-widget m-0 pb-2 shadow">
+			<div class="header mt-4 mx-2">
+				<div class="titles">
+					<div class="title">
+						<slot name="title">
+							<div class="p-0">(title goes here)</div>
+						</slot>
+					</div>
+					<div class="subtitle">
+						<slot name="subtitle" />
+					</div>
+				</div>
+				<div class="buttons">
 					<slot name="buttons" />
 				</div>
 			</div>
-			<div class="px-4 pt-4 pb-2 wb-subwidget">
-				<div class="row">
-					<div class="col m-0 p-0">
-						<div class="container-fluid m-0 p-0">
-							<slot />
-						</div>
-					</div>
-				</div>
+			<div class="wb-subwidget mx-2">
+				<slot />
 			</div>
 			<div v-if="$slots.footer != undefined">
-				<hr />
-				<div class="px-4 py-2 wb-subwidget">
-					<div class="row">
-						<div class="col">
-							<div class="container-fluid m-0 p-0">
-								<slot name="footer" />
-							</div>
-						</div>
-					</div>
+				<hr class="grid-col-12" />
+				<div class="wb-subwidget mx-2">
+					<slot name="footer" />
 				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
-<script setup lang="ts">
-import { computed } from 'vue'
-import { globalConfig } from '@/assets/js/themeConfig'
-const props = defineProps<{
-	variableWidth?: boolean
-	fullWidth?: boolean
-}>()
-const widgetWidth = computed(() => {
-	return props.fullWidth
-		? 'col-12'
-		: props.variableWidth && globalConfig.preferWideBoxes
-			? 'col-lg-6'
-			: 'col-lg-4'
-})
-</script>
+<script setup lang="ts"></script>
 
-<style scoped></style>
+<style scoped>
+.wb-widget {
+	background-color: var(--color-bg);
+	border: 0.1px solid var(--color-frame);
+	height: 100%;
+	align-self: stretch;
+	width: 100%;
+	border-radius: 30px;
+	/* display: grid;
+	grid-template-columns: repeat(12, auto);
+	gap: 0.2em; */
+}
+
+.wb-subwidget {
+	border: 0px solid var(--color-subframe);
+	padding: var(--padding-widget);
+	/*grid-column: span 12;*/
+}
+
+.header {
+	grid-column: span 12;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.titles {
+	display: flex;
+	flex-direction: column;
+}
+
+.title {
+	font-size: var(--font-extralarge);
+	color: var(--color-title);
+	font-weight: bold;
+	transform: scaleX(0.9294);
+}
+
+.cont {
+	align-self: stretch;
+	height: 100%;
+}
+.subtitle {
+	font-size: var(--font-medium);
+}
+
+.buttons {
+	grid-column: span 6;
+}
+</style>

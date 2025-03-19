@@ -7,9 +7,10 @@ from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_data import Get, Log, Set
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
-from control.ev import Ev, EvData, EvTemplate, EvTemplateData
-from control.ev import Get as EvGet
-from control.ev import Set as EvSet
+from control.ev.ev import Ev, EvData
+from control.ev.ev_template import EvTemplate, EvTemplateData
+from control.ev.ev import Get as EvGet
+from control.ev.ev import Set as EvSet
 from helpermodules.subdata import SubData
 from modules.common.abstract_vehicle import GeneralVehicleConfig, VehicleUpdateData
 from modules.common.configurable_vehicle import ConfigurableVehicle
@@ -21,7 +22,7 @@ from modules.update_soc import UpdateSoc
 def mock_data() -> None:
     data.data_init(Mock())
 
-    SubData(*([Mock()]*18))
+    SubData(*([Mock()]*19))
     SubData.cp_data = {"cp0":  Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
         spec=Chargepoint,
         id=id,

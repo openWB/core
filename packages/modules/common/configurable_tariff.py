@@ -13,19 +13,19 @@ T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
 class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
     def __init__(self,
                  config: T_TARIFF_CONFIG,
-                 component_initialiser: Callable[[], float]) -> None:
+                 component_initializer: Callable[[], float]) -> None:
         self.config = config
         self.store = store.get_electricity_tariff_value_store()
         self.fault_state = FaultState(ComponentInfo(None, self.config.name, ComponentType.ELECTRICITY_TARIFF.value))
         with SingleComponentUpdateContext(self.fault_state):
-            self._component_updater = component_initialiser(config)
+            self._component_updater = component_initializer(config)
 
     def update(self):
         if hasattr(self, "_component_updater"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
             with SingleComponentUpdateContext(self.fault_state):
                 tariff_state = self._component_updater()
-                current_hour = create_unix_timestamp_current_full_hour()
+                current_hour = str(int(create_unix_timestamp_current_full_hour()))
                 self.store.set(tariff_state)
                 self.store.update()
                 for timestamp in tariff_state.prices.keys():

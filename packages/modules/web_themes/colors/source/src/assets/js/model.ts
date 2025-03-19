@@ -8,7 +8,7 @@
 // Components have their local model
 
 import { reactive, ref } from 'vue'
-import { GlobalData } from './types'
+import { GlobalData } from './themeConfig'
 import type { PowerItem, ItemProps } from './types'
 import { PvSystem } from './types'
 

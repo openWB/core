@@ -1,7 +1,5 @@
 <template>
-	<div class="mt-2 grid12">
-		<p class="heading ms-1">Sofortladen:</p>
-
+	<div class="instantsettings">
 		<!-- Ampere -->
 		<ConfigItem title="Stromstärke" icon="fa-bolt" :fullwidth="true">
 			<RangeInput
@@ -59,15 +57,20 @@
 
 <script setup lang="ts">
 // import { eventBus } from '@/main.js'
-import { computed, ref } from 'vue'
-import type { ChargePoint } from './model'
+import { computed } from 'vue'
+import { chargePoints } from './model'
 import ConfigItem from '../shared/ConfigItem.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
+
 const props = defineProps<{
-	chargepoint: ChargePoint
+	chargepointId: number
 }>()
-const cp = ref(props.chargepoint)
+
+const cp = computed(() => {
+	return chargePoints[props.chargepointId]
+})
+
 const instantChargeLimitModes = [
 	{ name: 'keine', id: 'none' },
 	{ name: 'EV-SoC', id: 'soc' },
@@ -85,6 +88,13 @@ const energyLimit = computed({
 </script>
 
 <style scoped>
+.instantsettings {
+	display: grid;
+	justify-content: center;
+	align-items: center;
+	grid-template-columns: auto auto;
+	grid-gap: 20px;
+}
 .chargeConfigSelect {
 	background: var(--color-bg);
 	color: var(--color-fg);

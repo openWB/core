@@ -9,7 +9,6 @@ import {
 } from './model'
 import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
 import { itemNames } from './model'
-import { chargePoints } from '../chargePointList/model'
 
 let columnValues: { [key: string]: number } = {}
 const consumerCategories = ['charging', 'house', 'batIn', 'devices']
@@ -57,6 +56,7 @@ export function processMonthGraphMessages(topic: string, message: string) {
 	// reloadMonthGraph(topic, message)
 }
 export function processYearGraphMessages(topic: string, message: string) {
+	console.log("process data")
 	//const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
 	//const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
 	const {
@@ -159,7 +159,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	Object.entries(inputRow.cp).forEach(([id, values]) => {
 		if (id != 'all') {
 			if (!historicSummary.keys().includes(id)) {
-				historicSummary.addItem(id, chargePoints[+id.slice(2)].color)
+				historicSummary.addItem(id)
 			}
 			outputRow[id] = values.energy_imported
 		} else {

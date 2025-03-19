@@ -4,7 +4,8 @@
 # flake8: noqa: F402
 import logging
 from helpermodules import logger
-# als erstes logging initalisieren, damit auch ImportError geloggt werden
+from helpermodules.utils import thread_handler
+# als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
 
@@ -17,24 +18,18 @@ import traceback
 from threading import Thread
 from control.chargelog.chargelog import calculate_charge_cost
 
+from control import data, prepare, process
+from control.algorithm import algorithm
+from helpermodules import command, setdata, subdata, timecheck, update_config
 from helpermodules.changed_values_handler import ChangedValuesContext
 from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
 from helpermodules.measurement_logging.write_log import LogType, save_log
-from modules import loadvars
-from modules import configuration
-from helpermodules import timecheck, update_config
-from helpermodules import subdata
-from helpermodules import setdata
-from helpermodules import command
 from helpermodules.modbusserver import start_modbus_server
 from helpermodules.pub import Pub
-from control import prepare
-from control import data
-from control import process
-from control.algorithm import algorithm
 from helpermodules.utils import exit_after
-from modules import update_soc
+from modules import configuration, loadvars, update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
+from modules.internal_chargepoint_handler.gpio import InternalGpioHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
@@ -73,6 +68,7 @@ class HandlerAlgorithm:
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
+            log.debug(f"Threads: {threading.enumerate()}")
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
         except KeyboardInterrupt:
@@ -92,6 +88,7 @@ class HandlerAlgorithm:
                 update_pv_monthly_yearly_yields()
                 data.data.general_data.grid_protection()
                 data.data.optional_data.et_get_prices()
+                data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
@@ -108,20 +105,21 @@ class HandlerAlgorithm:
             if not sub.heartbeat:
                 log.error("Heartbeat für Subdata nicht zurückgesetzt.")
                 sub.disconnect()
-                Thread(target=sub.sub_topics, args=(), name="Subdata").start()
+                thread_handler(Thread(target=sub.sub_topics, args=(), name="Subdata"))
             else:
                 sub.heartbeat = False
 
             if not set.heartbeat:
                 log.error("Heartbeat für Setdata nicht zurückgesetzt.")
                 set.disconnect()
-                Thread(target=set.set_data, args=(), name="Setdata").start()
+                thread_handler(Thread(target=set.set_data, args=(), name="Setdata"))
             else:
                 set.heartbeat = False
 
             if sub.internal_chargepoint_data["global_data"].configured:
                 if not general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat:
                     log.error("Heartbeat für Internen Ladepunkt nicht zurückgesetzt.")
+                    general_internal_chargepoint_handler.event_stop.set()
                     general_internal_chargepoint_handler.event_start.set()
                 else:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
@@ -216,6 +214,8 @@ try:
     event_jobs_running = threading.Event()
     event_jobs_running.set()
     event_update_soc = threading.Event()
+    event_restart_gpio = threading.Event()
+    gpio = InternalGpioHandler(event_restart_gpio)
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc(event_update_soc)
     set = setdata.SetData(event_ev_template, event_charge_template,
@@ -231,7 +231,7 @@ try:
                           event_update_config_completed,
                           event_update_soc,
                           event_soc,
-                          event_jobs_running, event_modbus_server)
+                          event_jobs_running, event_modbus_server, event_restart_gpio)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
@@ -240,8 +240,11 @@ try:
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
     if rfid.keyboards_detected:
-        t_rfid = Thread(target=rfid.run, args=(), name="Internal Chargepoint")
+        t_rfid = Thread(target=rfid.run, args=(), name="Internal RFID")
         t_rfid.start()
+
+    t_gpio = Thread(target=gpio.loop, args=(), name="Internal GPIO")
+    t_gpio.start()
 
     t_sub.start()
     t_set.start()
@@ -254,6 +257,9 @@ try:
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()
+    if event_jobs_running.is_set():
+        # Nach dem Starten als erstes den 10Sek-Handler aufrufen, damit die Werte der data.data initialisiert werden.
+        handler.handler10Sec()
 except Exception:
     log.exception("Fehler im Main-Modul")
 

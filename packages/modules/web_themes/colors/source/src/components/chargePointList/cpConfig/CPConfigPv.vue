@@ -8,7 +8,7 @@
 			icon="fa-battery-three-quarters"
 			:fullwidth="true"
 		>
-			<SwitchInput id="limitSoc" v-model="limitSoc" model-value="limitSoc" />
+			<SwitchInput id="limitSoc" v-model="limitSoc" />
 		</ConfigItem>
 		<ConfigItem
 			v-if="limitSoc"

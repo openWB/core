@@ -13,7 +13,7 @@ sudo sed -i "s/^xset s .*$/xset s ${timeout}/" "/home/openwb/.config/lxsession/L
 
 # enable/disable display
 default_target=$(systemctl get-default)
-if display_active=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/active" -C 1 -W 1) && [[ $display_active == "true" ]]; then
+if display_active=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/active" -C 1 -W 1) && [[ $display_active == "true" ]] && display_detected=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/detected" -C 1 -W 1) && [[ $display_detected == "true" ]]; then
 	if [[ $default_target == "graphical.target" ]]; then
 		echo "graphical target already configured"
 	else
@@ -37,7 +37,7 @@ else
 fi
 
 if rotation=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/rotation" -C 1 -W 1); then
-	rotationValue=$(((rotation / 90 + 4) % 4))  # this allows negative rotation angles
+	rotationValue=$(((rotation / 90 + 4) % 4)) # this allows negative rotation angles
 	current_rotation=$(grep "^lcd_rotate=[0-3]$" /boot/config.txt | grep -o "[0-3]$")
 	echo "current display rotation: $current_rotation"
 	echo "new display rotation: '$rotation' -> $rotationValue"

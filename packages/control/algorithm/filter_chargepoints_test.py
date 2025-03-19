@@ -9,8 +9,9 @@ from control.algorithm import filter_chargepoints
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Log, Set
+from control.chargepoint.control_parameter import ControlParameter
 from control.counter_all import CounterAll
-from control.ev import ControlParameter, Ev, EvData, Get
+from control.ev.ev import Ev, EvData, Get
 
 
 @dataclass
@@ -114,7 +115,7 @@ preferenced_cases = [
                          Chargemode.INSTANT_CHARGING, False),
                      1, (Chargemode.SCHEDULED_CHARGING,
                          Chargemode.INSTANT_CHARGING, True),
-                     [mock_cp1], id="cp2 is prioritised")
+                     [mock_cp1], id="cp2 is prioritized")
     ])
 def test_get_chargepoints_by_mode(set_mode_tuple: Tuple[Optional[str], str, bool],
                                   charging_ev_1: int,

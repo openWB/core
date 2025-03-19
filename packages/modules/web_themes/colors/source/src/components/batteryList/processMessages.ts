@@ -48,7 +48,6 @@ export function processBatteryMessages(topic: string, message: string) {
 			batteries.value.get(index)!.soc = +message
 		} else {
 			// console.warn('Ignored battery message: ' + topic)
-			console.log(topic, message)
 		}
 	} else {
 		// console.warn('Ignored battery message: ' + topic)
@@ -66,6 +65,6 @@ function getIndex(topic: string): number | undefined {
 			return undefined
 		}
 	} catch (e) {
-		console.warn('Parser error in getIndex for topic ' + topic)
+		console.warn('Parser error in getIndex for topic ' + topic + ': ' + e)
 	}
 }

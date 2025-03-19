@@ -3,7 +3,7 @@
 
 	<div class="navigation">
 		<span class="graphbuttons">
-			<span class="timedisplay">{{ formatCurrentTime(currentTime) }}</span>
+			<span class="brand me-4">openWB</span>
 			<DisplayButton icon="fa-chart-pie" @click="selectPowermeter"
 				>Leistung</DisplayButton
 			>
@@ -15,14 +15,15 @@
 			>
 		</span>
 
-		<DisplayButton
-			icon="fa-rectangle-list"
-			data-bs-toggle="modal"
-			data-bs-target="#statuspage"
+		<DisplayButton icon="fa-rectangle-list" @click="showStatus"
 			>Status</DisplayButton
 		>
 		<span class="cpbuttons">
-			<DisplayButton color="var(--color-cp0)" @click="cpLeft">
+			<DisplayButton
+				v-if="Object.values(chargePoints).length > 1"
+				color="var(--color-cp0)"
+				@click="cpLeft"
+			>
 				<span class="fas fa-arrow-left px-2" />
 				<span class="fas fa-charging-station pe-2" />
 			</DisplayButton>
@@ -32,10 +33,15 @@
 			>
 				<span class="fas fa-lock px-4" />
 			</DisplayButton>
-			<DisplayButton color="var(--color-cp0)" @click="cpRight">
+			<DisplayButton
+				v-if="Object.values(chargePoints).length > 1"
+				color="var(--color-cp0)"
+				@click="cpRight"
+			>
 				<span class="fas fa-charging-station px-2" />
 				<span class="fas fa-arrow-right pe-2" />
 			</DisplayButton>
+			<span class="timedisplay ms-4">{{ formatCurrentTime(currentTime) }}</span>
 		</span>
 	</div>
 </template>
@@ -47,6 +53,7 @@ import { displayConfig, currentTime, unlockDisplay } from '@/assets/js/model'
 import DisplayButton from '@/components/shared/DisplayButton.vue'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { chargePoints } from '@/components/chargePointList/model'
+import { Modal } from 'bootstrap'
 let interval: ReturnType<typeof setInterval>
 
 function cpRight() {
@@ -67,7 +74,14 @@ function selectPowergraph() {
 function selectEnergymeter() {
 	globalConfig.graphToShow = 'energymeter'
 }
-
+function showStatus() {
+	if (displayConfig.locked) {
+		unlockDisplay()
+	} else {
+		const statuspage = new Modal('#statuspage')
+		statuspage.toggle()
+	}
+}
 onMounted(() => {
 	interval = setInterval(() => {
 		currentTime.value = new Date()
@@ -82,8 +96,8 @@ onBeforeUnmount(() => {
 .navigation {
 	display: flex;
 	justify-content: space-between;
-	padding-left: 20px;
-	padding-right: 20px;
+	padding-left: 10px;
+	padding-right: 10px;
 	padding-top: 2px;
 	padding-bottom: 2px;
 	align-items: center;
@@ -95,7 +109,6 @@ onBeforeUnmount(() => {
 	font-size: var(--font-medium);
 	font-weight: bold;
 	color: var(--color-input);
-	margin-right: 12px;
 }
 
 .navbar {
@@ -114,6 +127,7 @@ onBeforeUnmount(() => {
 .cpbuttons {
 	display: flex;
 	justify-content: left;
+	align-items: center;
 	gap: 5px;
 }
 
@@ -155,5 +169,11 @@ onBeforeUnmount(() => {
 	font-weight: bold;
 	color: var(--color-menu);
 	font-size: var(--font-normal);
+}
+
+.brand {
+	font-size: var(--font-medium);
+	font-weight: bold;
+	color: var(--color-input);
 }
 </style>

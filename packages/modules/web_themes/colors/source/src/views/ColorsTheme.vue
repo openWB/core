@@ -11,16 +11,7 @@ Hagen */
 		<ButtonBar v-if="globalConfig.showButtonBar" />
 
 		<!-- Main Widgets -->
-		<div v-if="false" class="row py-0 px-0 m-0">
-			<PowerMeter />
-			<PowerGraph />
-			<EnergyMeter />
-			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
-			<GlobalPriceChart id="Hidden" />
-			<VehicleList />
-			<CounterList />
-		</div>
-		<div v-if="true" class="row py-0 px-0 m-0">
+		<div class="row py-0 px-0 m-0">
 			<CarouselFix>
 				<template #item1>
 					<PowerMeter />
@@ -28,7 +19,10 @@ Hagen */
 				<template #item2>
 					<PowerGraph />
 				</template>
-				<template #item3>
+				<template v-if="globalConfig.alternativeEnergy" #item3>
+					<EnergyMeter2 />
+				</template>
+				<template v-else #item3>
 					<EnergyMeter />
 				</template>
 			</CarouselFix>
@@ -39,7 +33,7 @@ Hagen */
 			v-if="!globalConfig.showQuickAccess"
 			class="row py-0 m-0 d-flex justify-content-center"
 		>
-			<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+			<ChargePointList id="1" :compact="globalConfig.shortCpList == 'always'" />
 			<GlobalPriceChart
 				v-if="globalConfig.showPrices"
 				id="NoTabs"
@@ -136,7 +130,7 @@ Hagen */
 				aria-labelledby="showall-tab"
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
-					<ChargePointList :shortlist="globalConfig.shortCpList != 'no'" />
+					<ChargePointList id="2" :compact="globalConfig.shortCpList != 'no'" />
 					<GlobalPriceChart v-if="globalConfig.showPrices" id="Overview" />
 					<VehicleList v-if="globalConfig.showVehicles" />
 					<BatteryList />
@@ -152,7 +146,10 @@ Hagen */
 				aria-labelledby="chargepoint-tab"
 			>
 				<div class="row py-0 m-0 d-flex justify-content-center">
-					<ChargePointList :shortlist="globalConfig.shortCpList == 'always'" />
+					<ChargePointList
+						id="3"
+						:compact="globalConfig.shortCpList == 'always'"
+					/>
 				</div>
 			</div>
 			<div
@@ -257,6 +254,7 @@ import { initConfig } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
 import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
+import EnergyMeter2 from '@/components/energyMeter2/EnergyMeter2.vue'
 import ChargePointList from '@/components/chargePointList/ChargePointList.vue'
 import ButtonBar from '@/components/buttonBar/ButtonBar.vue'
 import BatteryList from '@/components/batteryList/BatteryList.vue'
@@ -276,7 +274,6 @@ import {
 	screensize,
 } from '@/assets/js/themeConfig'
 import { initGraph } from '@/components/powerGraph/model'
-
 // state
 const showMQ = ref(false)
 const showSH = computed(() => {

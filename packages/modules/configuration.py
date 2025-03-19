@@ -5,6 +5,7 @@ from typing import Dict, List
 
 import dataclass_utils
 from helpermodules.pub import Pub
+from modules.io_actions.groups import READABLE_GROUP_NAME, ActionGroup
 log = logging.getLogger(__name__)
 
 
@@ -18,7 +19,9 @@ def pub_configurable():
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
     _pub_configurable_chargepoints()
-    _pub_configurable_ripple_control_receivers()
+    _pub_configurable_io_devices()
+    _pub_configurable_io_actions()
+    _pub_configurable_monitoring()
 
 
 def _pub_configurable_backup_clouds() -> None:
@@ -177,41 +180,94 @@ def _pub_configurable_soc_modules() -> None:
 
 
 def _pub_configurable_devices_components() -> None:
-    def add_components(device: str, pattern: str) -> None:
-        path_list = Path(_get_packages_path()/"modules"/"devices"/device).glob(f'**/{pattern}.py')
-        for path in path_list:
-            if path.name.endswith("_test.py"):
-                # Tests überspringen
-                continue
-            comp_defaults = importlib.import_module(
-                f".devices.{path.parts[-2]}.{path.parts[-1][:-3]}",
-                "modules").component_descriptor.configuration_factory()
-            component.append({
-                "value": comp_defaults.type,
-                "text": comp_defaults.name
-            })
+    def update_nested_dict(dictionary: Dict, update: Dict) -> Dict:
+        for key, value in update.items():
+            if isinstance(value, dict):
+                dictionary[key] = update_nested_dict(dictionary.get(key, {}), value)
+            else:
+                dictionary[key] = value
+        return dictionary
 
-    try:
-        devices_components = []
-        path_list = Path(_get_packages_path()/"modules"/"devices").glob('**/device.py')
+    def get_vendor_groups() -> Dict:
+        def get_vendor_group_name(group: str) -> str:
+            # ToDo: find a better way to lookup the group names in "devices/vendors.py"
+            if group == "generic":
+                return "herstellerunabhängig"
+            if group == "openwb":
+                return "openWB"
+            if group == "vendors":
+                return "andere Hersteller"
+            return group
+
+        vendor_groups = {}
+        path_list = Path(_get_packages_path()/"modules"/"devices").glob('**/vendor.py')
         for path in path_list:
             try:
-                device = path.parts[-2]
-                component: List = []
-                add_components(device, "*bat*")
-                add_components(device, "*counter*")
-                add_components(device, "*inverter*")
-                dev_defaults = importlib.import_module(
-                    f".devices.{device}.device", "modules").device_descriptor.configuration_factory()
-                devices_components.append({
-                    "value": dev_defaults.type,
-                    "text": dev_defaults.name,
-                    "component": component
+                if path.name.endswith("_test.py"):
+                    # Tests überspringen
+                    continue
+                vendor_path = path.parts[-2]
+                vendor_info = importlib.import_module(
+                    f".devices.{vendor_path}.vendor", "modules").vendor_descriptor.configuration_factory()
+                vendor_groups = update_nested_dict(vendor_groups, {
+                    vendor_info.group: {
+                        "group_name": get_vendor_group_name(vendor_info.group),
+                        "vendors": {
+                            vendor_path: {
+                                "vendor_name": vendor_info.vendor,
+                                "devices": get_vendor_devices(vendor_path)
+                            }
+                        }
+                    }
                 })
             except Exception:
-                log.exception("Fehler im configuration-Modul")
-        devices_components = sorted(devices_components, key=lambda d: d['text'].upper())
-        Pub().pub("openWB/set/system/configurable/devices_components", devices_components)
+                log.exception(f"Fehler im configuration-Modul: vendors: {path}")
+        return vendor_groups
+
+    def get_vendor_devices(vendor: str) -> Dict:
+        devices = {}
+        path_list = Path(_get_packages_path()/"modules"/"devices"/vendor).glob('**/device.py')
+        for path in path_list:
+            try:
+                if path.name.endswith("_test.py"):
+                    # Tests überspringen
+                    continue
+                device_path = path.parts[-2]
+                dev_defaults = importlib.import_module(
+                    f".devices.{vendor}.{device_path}.device", "modules").device_descriptor.configuration_factory()
+                devices.update({
+                    dev_defaults.type: {
+                        "device_name": dev_defaults.name,
+                        "components": get_device_components(vendor, dev_defaults.type)
+                    }
+                })
+            except Exception:
+                log.exception(f"Fehler im configuration-Modul: devices: {path}")
+        return devices
+
+    def get_device_components(vendor: str, device: str) -> Dict:
+        components = {}
+        for pattern in ["*bat*", "*counter*", "*inverter*"]:
+            path_list = Path(_get_packages_path()/"modules"/"devices"/vendor/device).glob(f'**/{pattern}.py')
+            for path in path_list:
+                try:
+                    if path.name.endswith("_test.py"):
+                        # Tests überspringen
+                        continue
+                    comp_defaults = importlib.import_module(
+                        f".devices.{path.parts[-3]}.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                        "modules").component_descriptor.configuration_factory()
+                    components.update({
+                        comp_defaults.type: {
+                            "component_name": comp_defaults.name
+                        }
+                    })
+                except Exception:
+                    log.exception(f"Fehler im configuration-Modul: components: {path}")
+        return components
+
+    try:
+        Pub().pub("openWB/set/system/configurable/devices_components", get_vendor_groups())
     except Exception:
         log.exception("Fehler im configuration-Modul")
 
@@ -228,17 +284,23 @@ def _pub_configurable_chargepoints() -> None:
                     dev_defaults = importlib.import_module(
                         f".chargepoints.{path.parts[-2]}.chargepoint_module",
                         "modules").chargepoint_descriptor.configuration_factory()
-                    chargepoints.append({
-                        "value": dev_defaults.type,
-                        "text": dev_defaults.name
-                    })
+                    if dev_defaults.visibility:
+                        chargepoints.append({
+                            "value": dev_defaults.type,
+                            "text": dev_defaults.name
+                        })
                 except Exception:
                     log.exception("Fehler im configuration-Modul")
             chargepoints = sorted(chargepoints, key=lambda d: d['text'].upper())
             return chargepoints
 
         path_list = Path(_get_packages_path()/"modules"/"chargepoints").glob('**/chargepoint_module.py')
-        Pub().pub("openWB/set/system/configurable/chargepoints", create_chargepoints_list(path_list))
+        cp_list = create_chargepoints_list(path_list)
+        # Nach Umbennnung der "Externen openWB" zu "Secondary openWB" soll der Eintrag weiterhin an zweiter Stelle
+        # stehen
+        cp_list.remove({'value': 'external_openwb', 'text': 'Secondary openWB'})
+        cp_list.insert(1, {'value': 'external_openwb', 'text': 'Secondary openWB'})
+        Pub().pub("openWB/set/system/configurable/chargepoints", cp_list)
 
         path_list = Path(_get_packages_path()/"modules" /
                          "chargepoints/internal_openwb").glob('**/chargepoint_module.py')
@@ -247,37 +309,87 @@ def _pub_configurable_chargepoints() -> None:
         log.exception("Fehler im configuration-Modul")
 
 
-def _pub_configurable_ripple_control_receivers() -> None:
+def _pub_configurable_io_devices() -> None:
     try:
-        ripple_control_receivers = []
-        path_list = Path(_get_packages_path()/"modules"/"ripple_control_receivers").glob('**/config.py')
+        io_devices = []
+        path_list = Path(_get_packages_path()/"modules"/"io_devices").glob('**/config.py')
         for path in path_list:
             try:
                 if path.name.endswith("_test.py"):
                     # Tests überspringen
                     continue
                 dev_defaults = importlib.import_module(
-                    f".ripple_control_receivers.{path.parts[-2]}.ripple_control_receiver",
-                    "modules").device_descriptor.configuration_factory()
-                ripple_control_receivers.append({
+                    f".io_devices.{path.parts[-2]}.api", "modules").device_descriptor.configuration_factory()
+                io_devices.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
                     "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
-        ripple_control_receivers = sorted(ripple_control_receivers, key=lambda d: d['text'].upper())
+        io_devices = sorted(io_devices, key=lambda d: d['text'].upper())
+        Pub().pub("openWB/set/system/configurable/io_devices", io_devices)
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
+
+
+def _pub_configurable_io_actions() -> None:
+    try:
+        action_groups = {}
+        for group in ActionGroup:
+            action_groups[group.value] = {"group_name": READABLE_GROUP_NAME[group], "actions": []}
+            path_list = Path(_get_packages_path()/"modules"/"io_actions"/group.value).glob('**/api.py')
+            for path in path_list:
+                try:
+                    if path.name.endswith("_test.py"):
+                        # Tests überspringen
+                        continue
+                    action_defaults = importlib.import_module(f".io_actions.{group.value}.{path.parts[-2]}.api",
+                                                              "modules").device_descriptor.configuration_factory()
+                    action_groups[group.value]["actions"].append({
+                        "value": action_defaults.type,
+                        "text": action_defaults.name,
+                        "defaults": dataclass_utils.asdict(action_defaults)
+                    })
+                except Exception:
+                    log.exception(f"Fehler im configuration-Modul: groups: {path}")
+            action_groups[group.value]["actions"] = sorted(
+                action_groups[group.value]["actions"], key=lambda d: d['text'].upper())
+        Pub().pub("openWB/set/system/configurable/io_actions", action_groups)
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
+
+
+def _pub_configurable_monitoring() -> None:
+    try:
+        monitoring = []
+        path_list = Path(_get_packages_path()/"modules"/"monitoring").glob('**/config.py')
+        for path in path_list:
+            try:
+                if path.name.endswith("_test.py"):
+                    # Tests überspringen
+                    continue
+                dev_defaults = importlib.import_module(
+                    f".monitoring.{path.parts[-2]}.api", "modules").device_descriptor.configuration_factory()
+                monitoring.append({
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
+                    "defaults": dataclass_utils.asdict(dev_defaults)
+                })
+            except Exception:
+                log.exception("Fehler im configuration-Modul")
+        monitoring = sorted(monitoring, key=lambda d: d['text'].upper())
         # "leeren" Eintrag an erster Stelle einfügen
-        ripple_control_receivers.insert(0,
-                                        {
-                                            "value": None,
-                                            "text": "- kein RSE Modul -",
-                                            "defaults": {
-                                                "type": None,
-                                                "configuration": {}
-                                            }
-                                        })
-        Pub().pub("openWB/set/system/configurable/ripple_control_receivers", ripple_control_receivers)
+        monitoring.insert(0,
+                          {
+                              "value": None,
+                              "text": "- kein Monitoring -",
+                              "defaults": {
+                                  "type": None,
+                                  "configuration": {}
+                              }
+                          })
+        Pub().pub("openWB/set/system/configurable/monitoring", monitoring)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 

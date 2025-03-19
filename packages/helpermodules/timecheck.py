@@ -3,8 +3,11 @@
 import copy
 import logging
 import datetime
-from dateutil.relativedelta import relativedelta
 from typing import Dict, List, Optional, Tuple, TypeVar, Union
+
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    from dateutil.relativedelta import relativedelta
 
 from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
 

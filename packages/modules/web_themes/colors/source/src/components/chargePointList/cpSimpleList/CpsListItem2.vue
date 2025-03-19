@@ -38,7 +38,11 @@
 					v-if="chargepoint.isSocConfigured"
 					class="d-flex justify-content-center align-items-center vehiclestatus"
 				>
-					<BatterySymbol class="me-1" :soc="chargepoint.soc" />
+					<BatterySymbol
+						v-if="chargepoint.soc"
+						class="me-1"
+						:soc="chargepoint.soc"
+					/>
 					<i
 						v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
 						type="button"
@@ -166,7 +170,7 @@ const statusColor = computed(() => {
 const modeStyle = computed(() => {
 	switch (props.chargepoint.chargeMode) {
 		case 'stop':
-			return { 'background-color': 'var(--fg)' }
+			return { 'background-color': 'var(--color-input)' }
 		default:
 			return {
 				'background-color': chargemodes[props.chargepoint.chargeMode].color,

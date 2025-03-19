@@ -1,98 +1,52 @@
 """Optionale Module
 """
-from dataclasses import dataclass, field
 import logging
 from math import ceil  # Aufrunden
 import threading
-from typing import Dict, List
+from typing import List
 
-from dataclass_utils.factories import empty_dict_factory
+from control import data
+from control.ocpp import OcppMixin
+from control.optional_data import OptionalData
+from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_unix_timestamp_current_full_hour
+from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
-from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class EtGet:
-    fault_state: int = 0
-    fault_str: str = NO_ERROR
-    prices: Dict = field(default_factory=empty_dict_factory)
-
-
-def get_factory() -> EtGet:
-    return EtGet()
-
-
-@dataclass
-class Et:
-    get: EtGet = field(default_factory=get_factory)
-
-
-def et_factory() -> Et:
-    return Et()
-
-
-@dataclass
-class InternalDisplay:
-    active: bool = False
-    on_if_plugged_in: bool = True
-    pin_active: bool = False
-    pin_code: str = "0000"
-    standby: int = 60
-    theme: CardsDisplayTheme = CardsDisplayTheme()
-
-
-def int_display_factory() -> InternalDisplay:
-    return InternalDisplay()
-
-
-@dataclass
-class Led:
-    active: bool = False
-
-
-def led_factory() -> Led:
-    return Led()
-
-
-@dataclass
-class Rfid:
-    active: bool = False
-
-
-def rfid_factory() -> Rfid:
-    return Rfid()
-
-
-@dataclass
-class OptionalData:
-    et: Et = field(default_factory=et_factory)
-    int_display: InternalDisplay = field(default_factory=int_display_factory)
-    led: Led = field(default_factory=led_factory)
-    rfid: Rfid = field(default_factory=rfid_factory)
-
-
-class Optional:
+class Optional(OcppMixin):
     def __init__(self):
         try:
             self.data = OptionalData()
             self.et_module: ConfigurableElectricityTariff = None
+            self.monitoring_module: ConfigurableMonitoring = None
+            self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
+            Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
-    def et_provider_availble(self) -> bool:
+    def monitoring_start(self):
+        if self.monitoring_module is not None:
+            self.monitoring_module.start_monitoring()
+
+    def monitoring_stop(self):
+        if self.mon_module is not None:
+            self.mon_module.stop_monitoring()
+
+    def et_provider_available(self) -> bool:
         return self.et_module is not None and self.data.et.get.fault_state != 2
 
-    def et_price_lower_than_limit(self, max_price: float):
-        """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
+    def et_charging_allowed(self, max_price: float):
+        """ prüft, ob der aktuelle Strompreis niedriger oder gleich der festgelegten Preisgrenze ist.
 
         Return
         ------
-        True: Preis liegt darunter
+        True: Preis ist gleich oder liegt darunter
         False: Preis liegt darüber
         """
         try:
@@ -108,11 +62,10 @@ class Optional:
             return False
 
     def et_get_current_price(self):
-        return self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())]
+        return self.data.et.get.prices[str(int(create_unix_timestamp_current_full_hour()))]
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
-        """ geht die Preise der nächsten 24h durch und liefert eine Liste der Uhrzeiten, zu denen geladen werden soll
-
+        """
         Parameter
         ---------
         duration: float
@@ -141,11 +94,7 @@ class Optional:
     def et_get_prices(self):
         try:
             if self.et_module:
-                for thread in threading.enumerate():
-                    if thread.name == "electricity tariff":
-                        log.debug("Don't start multiple instances of electricity tariff thread.")
-                        return
-                threading.Thread(target=self.et_module.update, args=(), name="electricity tariff").start()
+                thread_handler(threading.Thread(target=self.et_module.update, args=(), name="electricity tariff"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
@@ -153,3 +102,28 @@ class Optional:
                     Pub().pub("openWB/set/optional/et/get/fault_str", NO_ERROR)
         except Exception:
             log.exception("Fehler im Optional-Modul")
+
+    def ocpp_transfer_meter_values(self):
+        try:
+            if self.data.ocpp.active:
+                thread_handler(threading.Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
+        except Exception:
+            log.exception("Fehler im OCPP-Optional-Modul")
+
+    def _transfer_meter_values(self):
+        for cp in data.data.cp_data.values():
+            try:
+                if self.data.ocpp.boot_notification_sent is False:
+                    # Boot-Notfification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
+                    self.boot_notification(cp.data.config.ocpp_chargebox_id,
+                                           cp.chargepoint_module.fault_state,
+                                           cp.chargepoint_module.config.type,
+                                           cp.data.get.serial_number)
+                    self.data.ocpp.boot_notification_sent = True
+                    Pub().pub("openWB/set/optional/ocpp/boot_notification_sent", True)
+                if cp.data.set.ocpp_transaction_id is not None:
+                    self.send_heart_beat(cp.data.config.ocpp_chargebox_id, cp.chargepoint_module.fault_state)
+                    self.transfer_values(cp.data.config.ocpp_chargebox_id,
+                                         cp.chargepoint_module.fault_state, cp.num, int(cp.data.get.imported))
+            except Exception:
+                log.exception("Fehler im OCPP-Optional-Modul")

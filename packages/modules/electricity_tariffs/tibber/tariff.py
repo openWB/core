@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Dict
 from helpermodules import timecheck
 
@@ -28,20 +28,13 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
     if response_json.get("errors") is None:
         today_prices = _get_sorted_price_data(response_json, 'today')
         tomorrow_prices = _get_sorted_price_data(response_json, 'tomorrow')
-        sorted_marketprices = today_prices + tomorrow_prices
+        sorted_market_prices = today_prices + tomorrow_prices
         prices: Dict[int, float] = {}
-        i = 0
-        for price_data in sorted_marketprices:
-            # konvertiere Time-String (Format 2021-02-06T00:00:00+01:00) ()':' nicht von strptime unterstützt)
-            time_str = ''.join(price_data['startsAt'].rsplit(':', 1))
-            startzeit_localized = datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S.%f%z')
-            starttime_utc = int(startzeit_localized.astimezone(timezone.utc).timestamp())
-            if timecheck.create_unix_timestamp_current_full_hour() <= starttime_utc:
-                if i < 24:
-                    prices.update({starttime_utc: price_data['total'] / 1000})
-                    i += 1
-                else:
-                    break
+        current_hour = timecheck.create_unix_timestamp_current_full_hour()
+        for price_data in sorted_market_prices:
+            start_time_epoch = datetime.fromisoformat(price_data['startsAt']).timestamp()
+            if current_hour <= start_time_epoch:
+                prices.update({str(int(start_time_epoch)): price_data['total'] / 1000})
     else:
         error = response_json['errors'][0]['message']
         raise Exception(error)

@@ -130,7 +130,7 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: float = 0):
+    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: Optional[float] = None):
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
@@ -138,7 +138,13 @@ class CarState:
         """
         self.soc = soc
         self.range = range
-        self.soc_timestamp = soc_timestamp
+        if soc_timestamp is None:
+            self.soc_timestamp = timecheck.create_timestamp()
+        else:
+            if soc_timestamp > 1e10:  # Convert soc_timestamp to seconds if it is in milliseconds
+                log.debug(f'Zeitstempel {soc_timestamp} ist in ms, wird in s gewandelt. Modul sollte angepasst werden.')
+                soc_timestamp /= 1000
+            self.soc_timestamp = soc_timestamp
 
 
 @auto_str
@@ -149,6 +155,9 @@ class ChargepointState:
                  exported: float = 0,
                  power: float = 0,
                  serial_number: str = "",
+                 charging_current: Optional[float] = 0,
+                 charging_voltage: Optional[float] = 0,
+                 charging_power: Optional[float] = 0,
                  powers: Optional[List[Optional[float]]] = None,
                  voltages: Optional[List[Optional[float]]] = None,
                  currents: Optional[List[Optional[float]]] = None,
@@ -161,7 +170,8 @@ class ChargepointState:
                  soc: Optional[float] = None,
                  soc_timestamp: Optional[int] = None,
                  evse_current: Optional[float] = None,
-                 vehicle_id: Optional[str] = None):
+                 vehicle_id: Optional[str] = None,
+                 max_evse_current: Optional[int] = None):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
@@ -178,10 +188,14 @@ class ChargepointState:
             self.rfid_timestamp = rfid_timestamp
         if _check_none(power_factors):
             power_factors = [0.0]*3
+        self.charging_current = charging_current
+        self.charging_power = charging_power
+        self.charging_voltage = charging_voltage
         self.power_factors = power_factors
         self.soc = soc
         self.soc_timestamp = soc_timestamp
         self.evse_current = evse_current
+        self.max_evse_current = max_evse_current
         self.vehicle_id = vehicle_id
 
 
@@ -193,6 +207,14 @@ class TariffState:
 
 
 @auto_str
-class RcrState:
-    def __init__(self, override_value: float) -> None:
-        self.override_value = override_value
+class IoState:
+    """JSON erlaubt nur Zeichenketten als Schlüssel für Objekte"""
+
+    def __init__(self, analog_input: Dict[str, float] = None,
+                 digital_input: Dict[str, bool] = None,
+                 analog_output: Dict[str, float] = None,
+                 digital_output: Dict[str, bool] = None) -> None:
+        self.analog_input = analog_input
+        self.digital_input = digital_input
+        self.analog_output = analog_output
+        self.digital_output = digital_output

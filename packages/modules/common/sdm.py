@@ -27,7 +27,7 @@ class Sdm(AbstractCounter):
         return str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, unit=self.id))
 
 
-class Sdm630(Sdm):
+class Sdm630_72(Sdm):
     def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
         super().__init__(modbus_id, client)
 

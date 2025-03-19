@@ -103,7 +103,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { globalData } from '@/assets/js/model'
-import type { ChargeMode } from '../chargePointList/model'
+import { ChargeMode } from '@/assets/js/types'
 import { chargePoints } from '@/components/chargePointList/model'
 
 const props = defineProps<{

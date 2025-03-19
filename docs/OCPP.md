@@ -1,0 +1,4 @@
+OCPP ist ein standardisiertes Ladeprotokoll, um die Daten eines Ladevorgangs an einen Abrechnungsdienstleiter zu senden.
+
+Die Ladepunkte übermitteln den ID-Tag, Heartbeat und den Zählerstand zum Zeitpunkt des Ansteckens, Absteckens und alle 5 Minuten. Eine Steuerung per OCPP ist nicht möglich. Alle Ladepunkte, die ihre Daten an das OCPP-Backend übermitteln sollen, müssen zunächst im OCPP-Backend angelegt werden. Die dort eingetragene Chargebox ID muss in der openWB in den Einstellungen des Ladepunkts eingetragen werden.
+An das OCPP-Backend können auch ID-Tags und Fahrzeug-MACs übermittelt werden. Dazu müssen diese allerdings in der openWB hinterlegt sein.

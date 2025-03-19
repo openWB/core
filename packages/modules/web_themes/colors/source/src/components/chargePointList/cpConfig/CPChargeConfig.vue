@@ -30,7 +30,11 @@
 	>
 		<RadioInput
 			v-model.number="cp.connectedVehicle"
-			:options="Object.values(vehicles).map((v) => [v.name, v.id])"
+			:options="
+				Object.values(vehicles)
+					.filter((v) => v.visible)
+					.map((v) => [v.name, v.id])
+			"
 		/>
 	</ConfigItem>
 	<ConfigItem

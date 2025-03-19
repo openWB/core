@@ -14,6 +14,10 @@ const topics: { [topic: string]: string } = {
 	cpPriority: 'openWB/set/vehicle/template/charge_template/%/prio',
 	cpTimedCharging:
 		'openWB/set/vehicle/template/charge_template/%/time_charging/active',
+	cpTimedPlanActive:
+		'openWB/set/vehicle/template/charge_template/%/time_charging/plans/@/active',
+	cpScheduledPlanActive:
+		'openWB/set/vehicle/template/charge_template/%/chargemode/scheduled_charging/plans/@/active',
 	pvBatteryPriority:
 		'openWB/set/general/chargemode_config/pv_charging/bat_mode',
 	cpVehicle: 'openWB/set/chargepoint/%/config/ev',
@@ -50,6 +54,7 @@ export function updateServer(
 	item: string,
 	value: string | number | boolean,
 	index: number = 0,
+	index2: number | undefined = undefined,
 ) {
 	if (isNaN(index)) {
 		console.warn('Invalid index')
@@ -79,6 +84,9 @@ export function updateServer(
 			break
 		default:
 			topic = topic.replace('%', String(index))
+			if (index2 != undefined) {
+				topic = topic.replace('@', String(index2))
+			}
 	}
 	switch (typeof value) {
 		case 'number':
@@ -89,10 +97,11 @@ export function updateServer(
 	}
 }
 
-export function sendCommand(event: object) {
-	// console.log ("SENDCOMMAND " + JSON.stringify(event))
+export function sendCommand(command: string, data: object = {}) {
+	console.log('send command ' + command + ' ' + JSON.stringify(data))
+
 	mqttPublish(
-		'openWB/set/command/' + mqttClientId() + '/todo',
-		JSON.stringify(event),
+		`openWB/set/command/${mqttClientId()}/todo`,
+		JSON.stringify({ command: command, data: data }),
 	)
 }

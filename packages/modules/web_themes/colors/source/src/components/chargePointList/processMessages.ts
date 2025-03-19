@@ -5,7 +5,6 @@ import {
 	chargeTemplates,
 	evTemplates,
 	Vehicle,
-	ChargeMode,
 	type ChargeTimePlan,
 	scheduledChargingPlans,
 	timeChargingPlans,
@@ -16,7 +15,7 @@ import type {
 	EvTemplate,
 	ChargeSchedule,
 } from './model'
-import { globalConfig } from '@/assets/js/themeConfig'
+import { ChargeMode } from '@/assets/js/types'
 
 export function processChargepointMessages(topic: string, message: string) {
 	const index = getIndex(topic)
@@ -142,11 +141,8 @@ export function processVehicleMessages(topic: string, message: string) {
 	if (index != undefined) {
 		if (!(index in vehicles)) {
 			const v = new Vehicle(index)
-			if (index == 0 && !globalConfig.showStandardVehicle) {
-				v.visible = false
-			}
 			vehicles[index] = v
-			console.info('New vehicle created: ' + index)
+			// console.info('New vehicle created: ' + index)
 		}
 		if (topic.match(/^openwb\/vehicle\/[0-9]+\/name$/i)) {
 			// set car Name for charge point
@@ -177,6 +173,8 @@ export function processVehicleMessages(topic: string, message: string) {
 					cp.isSocManual = config.type == 'manual'
 				}
 			})
+			vehicles[index].isSocConfigured = config.type !== null
+			vehicles[index].isSocManual = config.type == 'manual'
 		} else {
 			// console.warn('Ignored vehicle message [' + topic + ']=' + message)
 		}
@@ -270,6 +268,6 @@ function getIndex(topic: string): number | undefined {
 			return undefined
 		}
 	} catch (e) {
-		console.warn('Parser error in getIndex for topic ' + topic)
+		console.warn('Parser error in getIndex for topic ' + topic + ': ' + e)
 	}
 }

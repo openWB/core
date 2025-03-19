@@ -5,6 +5,7 @@ import pytest
 from control import data
 from control.bat import Bat, BatData
 from control.bat import Get as BatGet
+from control.bat import Set as BatSet
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Config, Get, Set
 from control.counter import Counter, CounterData
@@ -14,7 +15,13 @@ from control.counter import Set as CounterSet
 from control.counter_all import CounterAll
 from control.pv import Pv, PvData
 from control.pv import Get as PvGet
-from helpermodules import pub, timecheck
+from helpermodules import hardware_configuration, pub, timecheck
+
+
+@pytest.fixture(autouse=True)
+def mock_open_file(monkeypatch) -> None:
+    mock_config = Mock(return_value={"dc_charging": False, "openwb-version": 1, "max_c_socket": 32})
+    monkeypatch.setattr(hardware_configuration, "_read_configuration", mock_config)
 
 
 @pytest.fixture(autouse=True)
@@ -109,29 +116,34 @@ def data_() -> None:
         "cp3": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=1),
                                                 get=Mock(spec=Get, currents=[30, 0, 0], power=6900,
-                                                         daily_imported=10000, daily_exported=0, imported=56000),
+                                                         daily_imported=10000, daily_exported=0, imported=56000,
+                                                         fault_state=0),
                                                 set=Mock(spec=Set, loadmanagement_available=True))),
         "cp4": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=2),
                                                 get=Mock(spec=Get, currents=[0, 15, 15], power=6900,
-                                                         daily_imported=10000, daily_exported=0, imported=60000),
+                                                         daily_imported=10000, daily_exported=0, imported=60000,
+                                                         fault_state=0),
                                                 set=Mock(spec=Set, loadmanagement_available=True))),
         "cp5": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=3),
                                                 get=Mock(spec=Get, currents=[10]*3, power=6900,
-                                                         daily_imported=10000, daily_exported=0, imported=62000),
+                                                         daily_imported=10000, daily_exported=0, imported=62000,
+                                                         fault_state=0),
                                                 set=Mock(spec=Set, loadmanagement_available=True)))}
-    data.data.bat_data.update({"bat2": Mock(spec=Bat, data=Mock(spec=BatData, get=Mock(
+    data.data.bat_data.update({"bat2": Mock(spec=Bat, num=2, data=Mock(spec=BatData, get=Mock(
         spec=BatGet, power=-5000, daily_imported=7000, daily_exported=3000, imported=12000, exported=10000,
-        currents=None)))})
+        currents=None, fault_state=0),
+        set=Mock(spec=BatSet, power_limit=None)))})
     data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(
-        spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None)))})
+        spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None,
+                              fault_state=0)))})
     data.data.counter_data.update({
         "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[40]*3, power=6200, daily_imported=45000, daily_exported=3000))),
+            spec=CounterGet, currents=[40]*3, power=6200, daily_imported=45000, daily_exported=3000, fault_state=0))),
         "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, currents=[25, 10, 25], power=13800, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000),
+            imported=14000, exported=18000, fault_state=0),
             config=Mock(spec=CounterConfig, max_currents=[32]*3),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3)))})
 
@@ -162,15 +174,17 @@ def data_hc_counter_() -> None:
         "cp3": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=1),
                                                 get=Mock(spec=Get, currents=[30, 0, 0], power=6900,
-                                                         daily_imported=10000, daily_exported=0, imported=56000),
+                                                         daily_imported=10000, daily_exported=0, imported=56000,
+                                                         fault_state=0),
                                                 set=Mock(spec=Set, loadmanagement_available=True)))}
     data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(
-        spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None)))})
+        spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None,
+                              fault_state=0)))})
     data.data.counter_data.update({
         "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[40]*3, power=-2000, daily_imported=45000, daily_exported=3000))),
+            spec=CounterGet, currents=[40]*3, power=-2000, daily_imported=45000, daily_exported=3000, fault_state=0))),
         "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, currents=[25, 10, 25], power=8000, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000),
+            imported=14000, exported=18000, fault_state=0),
             config=Mock(spec=CounterConfig, max_currents=[32]*3),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3)))})

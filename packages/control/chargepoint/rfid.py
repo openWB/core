@@ -42,29 +42,36 @@ class ChargepointRfidMixin:
         """
         msg = ""
         if self.data.get.rfid is not None:
+            rfid = self.data.get.rfid
             if data.data.optional_data.data.rfid.active:
-                if (self.data.set.log.imported_at_plugtime == 0 or
-                        self.data.set.log.imported_at_plugtime == self.data.get.imported):
-                    rfid = self.data.get.rfid
-                    if self.data.get.rfid_timestamp is None:
-                        self.data.get.rfid_timestamp = timecheck.create_timestamp()
-                        Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp",
-                                  self.data.get.rfid_timestamp)
-                        return
-                    else:
-                        if (timecheck.check_timestamp(self.data.get.rfid_timestamp, 300) or
-                                self.data.get.plug_state is True):
+                if (rfid in self.template.data.valid_tags or
+                        any(rfid in v.data.tag_id for v in data.data.ev_data.values())):
+                    if (self.data.set.log.imported_at_plugtime == 0 or
+                            self.data.set.log.imported_at_plugtime == self.data.get.imported):
+                        if self.data.get.rfid_timestamp is None:
+                            self.data.get.rfid_timestamp = timecheck.create_timestamp()
+                            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp",
+                                      self.data.get.rfid_timestamp)
                             return
                         else:
-                            self.data.get.rfid_timestamp = None
-                            if rfid in self.template.data.valid_tags or len(self.template.data.valid_tags) == 0:
-                                Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-                                msg = "Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem " \
-                                    f"der ID-Tag {rfid} zugeordnet werden kann. Daher wird dieser verworfen."
+                            if timecheck.check_timestamp(self.data.get.rfid_timestamp, 300):
+                                self.set_state_and_log("Wenn nach dem Scannen nicht innerhalb von 5 Minuten ein Auto"
+                                                       " angesteckt wird, wird der ID-Tag verworfen.")
+                                return
+                            elif self.data.get.plug_state is True:
+                                return
                             else:
-                                msg = f"Der ID-Tag {rfid} ist an diesem Ladepunkt nicht gültig."
+                                self.data.get.rfid_timestamp = None
+                                if self.template.data.disable_after_unplug:
+                                    self.data.set.manual_lock = True
+                                    Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
+                                Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
+                                msg = ("Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem "
+                                       f"der ID-Tag {rfid} zugeordnet werden kann. Daher wird dieser verworfen.")
+                    else:
+                        msg = "Nach Ladestart wird kein anderer ID-Tag akzeptiert."
                 else:
-                    msg = "Nach Ladestart wird kein anderer ID-Tag akzeptiert."
+                    msg = f"Der ID-Tag {rfid} ist an diesem Ladepunkt nicht gültig."
             else:
                 msg = "Identifikation von Fahrzeugen ist nicht aktiviert."
             self.data.get.rfid = None

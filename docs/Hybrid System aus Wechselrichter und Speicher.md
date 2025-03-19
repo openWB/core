@@ -1,4 +1,4 @@
-Bei Hybrid-Systemen ist ein DC- Speicher an den Wechselrichter angeschlossen. Bei den meisten Herstellern wird dann die Wechselrichter-Leistung anstelle der PV-Leistung ausgegeben. Auch die Zählerstände werden miteinander verrechnet. 
+Bei Hybrid-Systemen ist ein DC- Speicher an den Wechselrichter angeschlossen. Bei den meisten Herstellern wird dann die Wechselrichter-Leistung anstelle der PV-Leistung ausgegeben. Auch die Zählerstände werden miteinander verrechnet.
 
 Wechselrichter-Leistung: Summe aus PV- und Speicher-Leistung, die der Wechselrichter ins Hausnetz abgibt.
 PV-Leistung: Auf dem Dach erzeugte Leistung.
@@ -10,7 +10,7 @@ Die Struktur muss wie in der ersten Abbildung angeordnet werden, wenn die PV-Lei
 
 Hybrid-System, wenn die Wechselrichter-Leistung ausgegeben wird:
 
-<img src="hybrid.png" width="500">
+![Hybrid-System](hybrid.png)
 
 Hybrid-System, wenn die PV-Leistung ausgegeben wird:
-<img src="standard.png" width="500">
+![Hybrid-System](standard.png)

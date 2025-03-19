@@ -10,7 +10,7 @@ from control import data
 from control.chargepoint.chargepoint import Chargepoint
 import dataclass_utils
 from helpermodules import subdata
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload
@@ -119,9 +119,9 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
                         f"{ip}; Stecker-Status: {cp.data.get.plug_state}, Leistung: "
                         f"{cp.data.get.power/1000}kW, {cp.data.get.currents}A, {cp.data.get.voltages}V, Lademodus: "
                         f"{cp.data.control_parameter.chargemode}, Submode: "
-                        f"{cp.data.control_parameter.submode}, Sollstrom: "
-                        f"{cp.data.set.current}A, Status: {cp.data.get.state_str}, "
-                        f"Fehlerstatus: {cp.data.get.fault_str}\n")
+                        f"{cp.data.control_parameter.submode}, Soll-Strom: "
+                        f"{cp.data.set.current}A, EVSE-Strom: {cp.data.get.evse_current}A, "
+                        f"Status: {cp.data.get.state_str}, Fehlerstatus: {cp.data.get.fault_str}\n")
         if cp.chargepoint_module.config.type == "openwb_pro":
             try:
                 parsed_data += f"{req.get_http_session().get(f'http://{ip}/connect.php', timeout=5).text}\n"
@@ -177,7 +177,7 @@ def create_debug_log(input_data):
             write_to_file(df, lambda: f"## section: configuration and state ##\n{config_and_state()}\n")
             write_to_file(df, lambda: f'## section: system ##\n{run_command(["uptime"])}{run_command(["free"])}\n')
             write_to_file(df, lambda: f"## section: uuids ##\n{get_uuids()}\n")
-            write_to_file(df, lambda: f'## section: network ##\n{run_command(["ifconfig"])}\n')
+            write_to_file(df, lambda: f'## section: network ##\n{run_command(["ip", "-s", "address"])}\n')
             write_to_file(df, lambda: f'## section: storage ##\n{run_command(["df", "-h"])}\n')
             write_to_file(df, lambda: f"## section: broker essentials ##\n{broker.get_broker_essentials()}\n")
             write_to_file(
@@ -203,7 +203,8 @@ def create_debug_log(input_data):
             data = f.read()
         req.get_http_session().put("https://openwb.de/tools/debug2.php",
                                    data=data,
-                                   params={'debugemail': debug_email})
+                                   params={'debugemail': debug_email},
+                                   timeout=10)
 
         log.info("***** cleanup...")
         os.remove(debug_file)
@@ -217,7 +218,7 @@ class BrokerContent:
         self.content = ""
 
     def get_broker(self):
-        InternalBrokerClient("processBrokerBranch", self.__on_connect_broker, self.__get_content).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.__on_connect_broker, self.__get_content).start_finite_loop()
         return self.content
 
     def __on_connect_broker(self, client, userdata, flags, rc):
@@ -227,8 +228,8 @@ class BrokerContent:
         self.content += f"{msg.topic} {decode_payload(msg.payload)}\n"
 
     def get_broker_essentials(self):
-        InternalBrokerClient("processBrokerBranch", self.__on_connect_broker_essentials,
-                             self.__get_content).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.__on_connect_broker_essentials,
+                     self.__get_content).start_finite_loop()
         return self.content
 
     def __on_connect_broker_essentials(self, client, userdata, flags, rc):
@@ -247,7 +248,7 @@ class BrokerContent:
         client.subscribe("openWB/optional/et/provider", 2)
 
     def get_bridges(self):
-        InternalBrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_bridges).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_bridges).start_finite_loop()
         return self.content
 
     def __on_connect_bridges(self, client, userdata, flags, rc):

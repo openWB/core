@@ -1,5 +1,6 @@
 import logging
 
+from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from modules.chargepoints.mqtt.config import Mqtt
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
@@ -15,11 +16,11 @@ class ChargepointModule(AbstractChargepoint):
         self.fault_state = FaultState(ComponentInfo(
             self.config.id,
             "Ladepunkt", "chargepoint"))
-        self.a = 5
+        self.client_error_context = ErrorTimerContext(
+            f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
 
     def set_current(self, current: float) -> None:
-        with SingleComponentUpdateContext(self.fault_state):
-            log.debug("MQTT-Ladepunkte abonnieren die Soll-Stromstärke direkt vom Broker.")
+        log.debug("MQTT-Ladepunkte abonnieren die Soll-Stromstärke direkt vom Broker.")
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):

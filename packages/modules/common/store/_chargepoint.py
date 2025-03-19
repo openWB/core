@@ -28,6 +28,11 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         self.state = state
 
     def update(self):
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) +
+                      "/get/charging_current", self.state.charging_current, 2)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/charging_power", self.state.charging_power, 2)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) +
+                      "/get/charging_voltage", self.state.charging_voltage, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/voltages", self.state.voltages, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/currents", self.state.currents, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/power_factors", self.state.power_factors, 2)
@@ -46,6 +51,7 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/soc_timestamp", self.state.soc_timestamp)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/evse_current", self.state.evse_current)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/vehicle_id", self.state.vehicle_id)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/max_evse_current", self.state.max_evse_current)
 
 
 def get_chargepoint_value_store(id: int) -> ValueStore[ChargepointState]:

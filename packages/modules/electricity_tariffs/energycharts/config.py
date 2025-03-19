@@ -1,6 +1,5 @@
-
 class EnergyChartsTariffConfiguration:
-    def __init__(self, country: str = 'de', surcharge: float = 0):
+    def __init__(self, country: str = "DE-LU", surcharge: float = 0):
         self.country = country
         self.surcharge = surcharge
 

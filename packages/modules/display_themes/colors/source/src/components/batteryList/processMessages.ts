@@ -64,6 +64,6 @@ function getIndex(topic: string): number | undefined {
 			return undefined
 		}
 	} catch (e) {
-		console.warn('Parser error in getIndex for topic ' + topic)
+		console.warn('Parser error in getIndex for topic ' + topic + ' : ' + e)
 	}
 }

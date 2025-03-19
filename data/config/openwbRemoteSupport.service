@@ -1,6 +1,7 @@
-# openwb-version:2
+# openwb-version:3
 [Unit]
 Description="Remote Support Handler openWB 2.0"
+After=mosquitto_local.service
 
 [Service]
 User=openwb
@@ -10,4 +11,3 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
-After=mosquitto_local.service

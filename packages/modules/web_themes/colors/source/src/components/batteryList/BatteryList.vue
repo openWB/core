@@ -27,7 +27,7 @@ Hagen */
 			</InfoItem>
 			<InfoItem heading="Geladen:" class="grid-col-4">
 				<span>
-					{{ formatWattH(usageSummary.batIn.energy) }}
+					{{ formatWattH(importedSum) }}
 				</span>
 			</InfoItem>
 			<InfoItem heading="Geliefert" class="grid-right grid-col-4">
@@ -61,13 +61,19 @@ const batteryState = computed(() => {
 	}
 })
 
-
 const statusbg = computed(() => {
 	return sourceSummary.batOut.power > 0
 		? 'var(--color-pv)'
 		: usageSummary.batIn.power > 0
 			? 'var(--color-battery)'
 			: 'var(--color-menu)'
+})
+const importedSum = computed(() => {
+	let sum = 0
+	batteries.value.forEach((bat) => {
+		sum += bat.dailyYieldImport
+	})
+	return sum
 })
 </script>
 

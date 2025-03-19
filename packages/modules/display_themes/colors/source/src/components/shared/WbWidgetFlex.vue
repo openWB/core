@@ -37,6 +37,9 @@ const widgetWidth = computed(() => {
 
 <style scoped>
 .wb-widget {
+	background-color: var(--color-bg);
+	border: 0.1px solid var(--color-frame);
+	align-self: stretch;
 	width: 100%;
 	border-radius: 30px;
 }

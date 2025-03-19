@@ -55,14 +55,20 @@ function createChargePoint(hierarchy) {
 				clonedElement.find('.card-body').attr('id', 'collapseChargepoint' + chargePointIndex).removeClass('show');
 				clonedElement.find('label[for=minCurrentPvCpT]').attr('for', 'minCurrentPvCp' + chargePointIndex);
 				clonedElement.find('#minCurrentPvCpT').attr('id', 'minCurrentPvCp' + chargePointIndex);
+				clonedElement.find('label[for=minDcCurrentPvCpT]').attr('for', 'minDcCurrentPvCp' + chargePointIndex);
+				clonedElement.find('#minDcCurrentPvCpT').attr('id', 'minDcCurrentPvCp' + chargePointIndex);
 				clonedElement.find('label[for=minSocPvCpT]').attr('for', 'minSocPvCp' + chargePointIndex);
 				clonedElement.find('#minSocPvCpT').attr('id', 'minSocPvCp' + chargePointIndex);
 				clonedElement.find('label[for=maxSocPvCpT]').attr('for', 'maxSocPvCp' + chargePointIndex);
 				clonedElement.find('#maxSocPvCpT').attr('id', 'maxSocPvCp' + chargePointIndex);
 				clonedElement.find('label[for=minSocCurrentPvCpT]').attr('for', 'minSocCurrentPvCp' + chargePointIndex);
 				clonedElement.find('#minSocCurrentPvCpT').attr('id', 'minSocCurrentPvCp' + chargePointIndex);
+				clonedElement.find('label[for=minSocDcCurrentPvCpT]').attr('for', 'minSocDcCurrentPvCp' + chargePointIndex);
+				clonedElement.find('#minSocDcCurrentPvCpT').attr('id', 'minSocDcCurrentPvCp' + chargePointIndex);
 				clonedElement.find('label[for=currentInstantChargeCpT]').attr('for', 'currentInstantChargeCp' + chargePointIndex);
 				clonedElement.find('#currentInstantChargeCpT').attr('id', 'currentInstantChargeCp' + chargePointIndex);
+				clonedElement.find('label[for=dcCurrentInstantChargeCpT]').attr('for', 'dcCurrentInstantChargeCpT' + chargePointIndex);
+				clonedElement.find('#dcCurrentInstantChargeCpT').attr('id', 'dcCurrentInstantChargeCpT' + chargePointIndex);
 				clonedElement.find('label[for=limitInstantChargeCpT]').attr('for', 'limitInstantChargeCp' + chargePointIndex);
 				clonedElement.find('#limitInstantChargeCpT').attr('id', 'limitInstantChargeCp' + chargePointIndex);
 				clonedElement.find('label[for=soclimitCpT]').attr('for', 'soclimitCp' + chargePointIndex);
@@ -115,6 +121,9 @@ function refreshChargeTemplate(templateIndex) {
 				// chargemode.instant_charging.current
 				element = parent.find('.charge-point-instant-charge-current');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.instant_charging.current);
+				// chargemode.instant_charging.dc_current
+				element = parent.find('.charge-point-instant-charge-dc-current');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.instant_charging.dc_current);
 				// chargemode.instant_charging.limit.selected
 				element = parent.find('.charge-point-instant-charge-limit-selected');
 				setToggleBtnGroup(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.instant_charging.limit.selected);
@@ -145,6 +154,9 @@ function refreshChargeTemplate(templateIndex) {
 				// chargemode.pv_charging.min_current
 				element = parent.find('.charge-point-pv-charge-min-current');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.min_current);
+				// chargemode.pv_charging.dc_min_current
+				element = parent.find('.charge-point-pv-charge-dc-min-current');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.dc_min_current);
 				// chargemode.pv_charging.min_soc
 				element = parent.find('.charge-point-pv-charge-min-soc');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.min_soc);
@@ -154,6 +166,9 @@ function refreshChargeTemplate(templateIndex) {
 				// chargemode.pv_charging.min_soc_current
 				element = parent.find('.charge-point-pv-charge-min-soc-current');
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.min_soc_current);
+				// chargemode.pv_charging.dc_min_soc_current
+				element = parent.find('.charge-point-pv-charge-dc-min-soc-current');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.dc_min_soc_current);
 				// chargemode.pv_charging.feed_in_limit
 				var element = parent.find('.charge-point-pv-charge-feed-in-limit'); // now get parents respective child element
 				if (chargeModeTemplate[templateIndex].chargemode.pv_charging.feed_in_limit == true) {
@@ -380,6 +395,7 @@ function handleMessage(mqttTopic, mqttPayload) {
 	else if (mqttTopic.match(/^openwb\/general\/chargemode_config\/pv_charging\//i)) { processPvConfigMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/graph\//i)) { processGraphMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/optional\/et\//i)) { processETProviderMessages(mqttTopic, mqttPayload); }
+	else if (mqttTopic.match(/^openwb\/optional\//i)) { processOptionalMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/LegacySmartHome\//i)) { processSmartHomeDeviceMessages(mqttTopic, mqttPayload); }
 } // end handleMessage
 
@@ -1068,6 +1084,17 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 		electricityPriceList = JSON.parse(mqttPayload);
 		var currentPrice = electricityPriceList[Object.keys(electricityPriceList)[0]] * 100000;
 		$('.et-current-price').text(currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' ct/kWh');
+	}
+}
+
+function processOptionalMessages(mqttTopic, mqttPayload) {
+	if (mqttTopic == 'openWB/optional/dc_charging') {
+		data = JSON.parse(mqttPayload);
+		if (data == true) {
+			$('.dc-charging-configured').removeClass('hide');
+		} else {
+			$('.dc-charging-configured').addClass('hide');
+		}
 	}
 }
 

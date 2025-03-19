@@ -1,14 +1,12 @@
 <template>
-	<div class="pt-2 grid12">
-		<p class="heading ms-1">PV-Laden:</p>
-
+	<div class="pvsettings pt-2">
 		<!-- Maximum SoC -->
 		<ConfigItem
 			title="Ladestand begrenzen"
 			icon="fa-battery-three-quarters"
 			:fullwidth="true"
 		>
-			<SwitchInput id="limitSoc" :v-model="limitSoc" :model-value="limitSoc" />
+			<SwitchInput id="limitSoc" v-model="limitSoc" />
 		</ConfigItem>
 		<ConfigItem
 			v-if="limitSoc"
@@ -36,7 +34,6 @@
 		<ConfigItem
 			title="Mindest-Ladestand"
 			icon="fa-battery-half"
-			:infotext="infotext['minsoc']"
 			:fullwidth="true"
 		>
 			<SwitchInput v-model="useMinSoc" />
@@ -44,9 +41,6 @@
 
 		<!-- Minimum SoC -->
 		<ConfigItem v-if="useMinSoc" title="...bis SoC" :fullwidth="true">
-			<template #info>
-				{{ infotext['minsoc'] }}
-			</template>
 			<RangeInput
 				id="minSoc"
 				v-model="cp.pvMinSoc"
@@ -69,12 +63,7 @@
 		</ConfigItem>
 
 		<!-- Min+PV-Laden -->
-		<ConfigItem
-			title="Minimaler Ladestrom"
-			icon="fa-bolt"
-			:infotext="infotext['minpv']"
-			:fullwidth="true"
-		>
+		<ConfigItem title="Minimaler Ladestrom" icon="fa-bolt" :fullwidth="true">
 			<SwitchInput v-model="useMinPv" />
 		</ConfigItem>
 		<!-- Minimum Current -->
@@ -96,16 +85,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { ChargePoint } from './model'
+import { computed } from 'vue'
+import { chargePoints } from './model'
 import ConfigItem from '../shared/ConfigItem.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
-import { infotext } from '@/assets/js/themeConfig'
 const props = defineProps<{
-	chargepoint: ChargePoint
+	chargepointId: number
 }>()
-const cp = ref(props.chargepoint)
+const cp = computed(() => {
+	return chargePoints[props.chargepointId]
+})
 
 // methods:
 
@@ -149,6 +139,13 @@ const limitSoc = computed({
 </script>
 
 <style scoped>
+.pvsettings {
+	display: grid;
+	justify-content: center;
+	align-items: center;
+	grid-gap: 20px;
+	grid-template-columns: auto auto;
+}
 .chargeConfigSelect {
 	background: var(--color-bg);
 	color: var(--color-fg);

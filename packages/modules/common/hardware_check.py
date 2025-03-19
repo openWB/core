@@ -9,23 +9,26 @@ EVSE_MIN_FIRMWARE = 7
 
 OPEN_TICKET = (" Bitte nehme bei anhaltenden Problemen über die Support-Funktion in den Einstellungen Kontakt mit " +
                "uns auf.")
-RS485_ADPATER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist {} defekt oder zwei "
+RS485_ADAPTER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist {} defekt oder zwei "
                         "Busteilnehmer haben die gleiche Modbus-ID. Bitte die Zähler-ID prüfen.")
-USB_ADAPTER_BROKEN = RS485_ADPATER_BROKEN.format('der USB-Adapter')
-LAN_ADAPTER_BROKEN = (f"{RS485_ADPATER_BROKEN.format('der LAN-Konverter abgestürzt,')} "
+USB_ADAPTER_BROKEN = RS485_ADAPTER_BROKEN.format('der USB-Adapter')
+LAN_ADAPTER_BROKEN = (f"{RS485_ADAPTER_BROKEN.format('der LAN-Konverter abgestürzt,')} "
                       "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = "Der Zähler konnte nicht ausgelesen werden. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
 METER_BROKEN = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
                           "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
-EVSE_BROKEN = "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID."
+EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
+               "(Fehlermeldung nur relevant, wenn diese auf der Startseite oder im Status angezeigt wird.)")
 
 
 def check_meter_values(voltages: List[float]) -> Optional[str]:
     def valid_voltage(voltage) -> bool:
         return 200 < voltage < 260
     if ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
+            # Zoe lädt einphasig an einphasiger Wallbox und erzeugt Spannung auf L2 (ca 126V)
+            (valid_voltage(voltages[0]) and 115 < voltages[1] < 135 and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
         return None

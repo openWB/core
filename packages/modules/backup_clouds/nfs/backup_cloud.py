@@ -17,7 +17,7 @@ def _run(_cmd: str, _timeout: float, _shell: bool) -> bool:
         p = run([_cmd], timeout=_timeout, stdout=PIPE, stderr=PIPE, shell=_shell)
         p.check_returncode()
     except CalledProcessError as e:
-        log.exception('backup-nfs: cmd ' + _cmd + ', Faii: errorcode: '
+        log.exception('backup-nfs: cmd ' + _cmd + ', Fail: error code: '
                       + str(e.returncode) + ', stderr: ' + p.stderr.decode('utf-8'))
         raise e
         return False

@@ -1,7 +1,7 @@
 /*
  * style.css
  * colors theme for openwb 2.0
- * Copyright (c) 2022-24 Claus Hagen
+ * Copyright (c) 2022 Claus Hagen
  */
 
 html {
@@ -213,24 +213,16 @@ body>.container-fluid {
 	background-color: var(--color-frame);
 }
 
-.wb-widget {
-	background-color: var(--color-bg);
-	border: 0.1px solid var(--color-frame);
-	align-self: stretch;
-	width: 100%;
-	border-radius: 30px;
-}
 
-.wb-subwidget {
-	border: 0px solid var(--color-subframe);
-	padding: var(--padding-widget);
-}
 
 .grid12 {
 	display: grid;
 	grid-template-columns: repeat(12, auto);
 	gap: .2em;
-	justify-items: center;
+	justify-items: left;
+}
+.grid-col-2 {
+	grid-column: span 2;
 }
 .grid-col-3 {
 	grid-column: span 3;
@@ -245,23 +237,23 @@ body>.container-fluid {
 	grid-column: span 12;
 }
 
-@supports (grid-template-columns: subgrid) {
+/*@supports (grid-template-columns: subgrid) { 
 	.subgrid {
 		display:grid;
 		grid-column: span 12; 
 		grid-template-columns: subgrid;
 		justify-content: top;
 	}
-}
-@supports not (grid-template-columns: subgrid) {
+}*/
+/*@supports not (grid-template-columns: subgrid) { */
 	.subgrid {
 		display:grid;
 		grid-column: span 12; 
-		grid-template-columns: auto auto auto auto auto auto auto auto auto auto auto auto;
+		grid-template-columns: repeat(12,auto);
 		justify-content: top;
 		width: 100%;
 	}
-}
+/*}*/
 .grid-left {
 	justify-self: start;
 }

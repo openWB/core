@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import threading
+from helpermodules.utils import thread_handler
 from smarthome.smartcommon import mainloop, initparam
 import logging
 from threading import Thread
@@ -51,8 +51,4 @@ def smarthome_handler() -> None:
             log.exception("Fehler im Smarthome-Handler")
     # run as thread for logging reasons
     initparam(mqttcg, mqttcs, mqttsdevstat, mqttsglobstat, mqtttopicdisengageable, ramdiskwrite, mqttport)
-    for thread in threading.enumerate():
-        if thread.name == "smarthome":
-            log.debug("Don't start multiple instances of smarthome thread.")
-            return
-    Thread(target=handler, args=(), name="smarthome").start()
+    thread_handler(Thread(target=handler, args=(), name="smarthome"))

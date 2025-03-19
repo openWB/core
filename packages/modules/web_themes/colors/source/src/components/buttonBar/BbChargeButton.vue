@@ -54,7 +54,8 @@ Hagen */
 
 <script setup lang="ts">
 import { globalData } from '@/assets/js/model'
-import { ChargePoint, ChargeMode } from '@/components/chargePointList/model'
+import { ChargePoint } from '@/components/chargePointList/model'
+import { ChargeMode } from '@/assets/js/types'
 import { chargemodes } from '@/assets/js/themeConfig'
 import { computed } from 'vue'
 import { formatWatt } from '@/assets/js/helpers'

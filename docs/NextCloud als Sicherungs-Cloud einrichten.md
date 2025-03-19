@@ -14,7 +14,7 @@ Freigabelink z.B.: https://kim.nl.tab.digital/s/tUbHHrEdGltSRgx
 
 Wahl: BackupCloud: NextCloud
 Unterpunkt: Einstellungen für Backup-Cloud Modul "NextCloud"
-Cloud-URL: https://mydomain.de z.B.: https://kim.nl.tab.digital OHNE /s/ oder /
+Cloud-URL: <https://mydomain.de> z.B.: <https://kim.nl.tab.digital> OHNE /s/ oder /
 Benutzername: dein shared token, also z.B.: tUbHHrEdGltSRgx
 Passwort: kann leergelassen oder irgendetwas eingetragen werden, spielt keine Rolle
 

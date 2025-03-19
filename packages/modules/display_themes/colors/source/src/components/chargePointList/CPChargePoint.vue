@@ -1,11 +1,12 @@
 <template>
-	<WBWidget v-if="!configmode" :variable-width="true">
+	<WBWidget>
 		<template #title>
 			<span :style="cpNameStyle">
 				<span class="fa-solid fa-charging-station">&nbsp;</span>
 				{{ props.chargepoint.name }}</span
 			>
 		</template>
+
 		<template #buttons>
 			<DisplayButton
 				color="var(--color-cp0)"
@@ -16,7 +17,7 @@
 			>
 		</template>
 		<!-- Chargepoint info -->
-		<div class="grid12">
+		<div class="subgrid">
 			<!-- Status information -->
 			<InfoItem heading="Status:" class="grid-col-4 grid-left">
 				<span :style="{ color: statusColor }">
@@ -67,132 +68,27 @@
 
 		<!-- Car information-->
 		<template #footer>
-			<h3
-				class="d-flex justify-content-left align-items-center"
-				@click="openSettings"
-			>
-				<i class="fa-solid fa-sm fa-car me-3" />
-				{{ chargepoint.vehicleName }}
-				<span
-					v-if="chargepoint.hasPriority"
-					class="ms-2 me-0 fa-solid fa-xs fa-star ps-1"
-				/>
-				<span
-					v-if="chargepoint.etActive"
-					class="ms-2 me-0 fa-solid fa-xs fa-coins ps-0"
-				/>
-			</h3>
-			<div class="grid12">
-				<!-- Car info -->
-				<InfoItem
-					v-if="chargepoint.isSocConfigured"
-					heading="Ladestand:"
-					class="grid-col-4 grid-left"
-				>
-					<BatterySymbol :soc="soc" class="me-2" />
-				</InfoItem>
-				<InfoItem
-					v-if="chargepoint.isSocConfigured"
-					heading="Reichweite:"
-					class="grid-col-4"
-				>
-					{{
-						vehicles[props.chargepoint.connectedVehicle]
-							? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
-							: 0
-					}}
-					km
-				</InfoItem>
-				<InfoItem heading="Zeitplan:" class="grid-col-4 grid-right">
-					<span
-						v-if="chargepoint.timedCharging"
-						class="me-1 fa-solid fa-xs fa-clock ps-1"
-					/>
-					{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
-				</InfoItem>
-
-				<!-- ET Information -->
-				<InfoItem
-					v-if="etData.active"
-					heading="Preisladen:"
-					class="grid-col-4 grid-left"
-				>
-					<!-- <SwitchInput v-model="cp.etActive" /> -->
-					{{ cp.etActive ? 'Ja' : 'Nein' }}
-				</InfoItem>
-				<InfoItem v-if="etData.active" heading="max. Preis:" class="grid-col-4">
-					<span type="button"
-						>{{
-							props.chargepoint.etActive
-								? (Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(
-										1,
-									) + ' ct'
-								: '-'
-						}}
-					</span>
-				</InfoItem>
-				<InfoItem
-					v-if="etData.active"
-					heading="akt. Preis:"
-					class="grid-col-4 grid-right"
-				>
-					<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
-				</InfoItem>
-
-				<!-- Chargemode buttons -->
-				<RadioBarInput
-					:id="'chargemode-' + chargepoint.name"
-					v-model="chargeMode"
-					class="chargemodes mt-3 mb-3"
-					:options="
-						Object.keys(chargemodes).map((v) => {
-							return {
-								text: chargemodes[v].name,
-								value: v,
-								color: chargemodes[v].color,
-								icon: chargemodes[v].icon,
-								active: chargemodes[v].mode == chargepoint.chargeMode,
-							}
-						})
-					"
-				/>
-			</div>
+			<CPVehicle :chargepoint="props.chargepoint" />
 		</template>
 	</WBWidget>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { Modal } from 'bootstrap'
+import { computed } from 'vue'
+import { Modal, Tab } from 'bootstrap'
 import { displayConfig, unlockDisplay } from '@/assets/js/model'
-import { type ChargePoint, vehicles, chargePoints } from './model'
-import { chargemodes } from '@/assets/js/themeConfig'
+import { type ChargePoint } from './model'
 import WBWidget from '@/components/shared/WBWidget.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
-import BatterySymbol from '@/components/shared/BatterySymbol.vue'
 import FormatWatt from '@/components/shared/FormatWatt.vue'
 import FormatWattH from '../shared/FormatWattH.vue'
-import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import DisplayButton from '@/components/shared/DisplayButton.vue'
-import { etData } from '../priceChart/model'
+import CPVehicle from './CPVehicle.vue'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
-const cp = ref(props.chargepoint)
 // computed
-const chargeMode = computed({
-	get() {
-		return props.chargepoint.chargeMode
-	},
-	set(newMode) {
-		if (!displayConfig.locked) {
-			chargePoints[props.chargepoint.id].chargeMode = newMode
-		} else {
-			unlockDisplay()
-		}
-	},
-})
 const chargeAmpereString = computed(() => {
 	return (
 		(Math.round(props.chargepoint.current * 10) / 10).toLocaleString(
@@ -257,22 +153,9 @@ const statusIcon = computed(() => {
 	return 'fa ' + icon
 })
 
-const soc = computed(() => {
-	return props.chargepoint.soc
-})
 const cpNameStyle = computed(() => {
 	return { color: props.chargepoint.color }
 	// return { color: 'var(--color-fg)' }
-})
-const currentPriceStyle = computed(() => {
-	return props.chargepoint.etMaxPrice >= +currentPrice.value
-		? { color: 'var(--color-charging)' }
-		: { color: 'var(--color-menu)' }
-})
-const configmode = ref(false)
-const currentPrice = computed(() => {
-	const [p] = etData.etPriceList.values()
-	return (Math.round(p * 10) / 10).toFixed(1)
 })
 function openSettings() {
 	if (displayConfig.locked) {
@@ -280,15 +163,34 @@ function openSettings() {
 	} else {
 		const settingspage = new Modal('#settingspage')
 		settingspage.toggle()
+		let chargePanelName = ''
+		switch (props.chargepoint.chargeMode) {
+			case 'instant_charging':
+				chargePanelName = '#inSettings'
+				break
+			case 'pv_charging':
+				chargePanelName = '#phvSettings'
+				break
+			case 'scheduled_charging':
+				chargePanelName = '#scSettings'
+				break
+			default:
+				chargePanelName = '#chSettings'
+		}
+		const tabToActivate = document.querySelector(
+			chargePanelName + props.chargepoint.id,
+		)
+		if (tabToActivate) {
+			var tab = new Tab(tabToActivate)
+			tab.show()
+		} else {
+			console.error('no element found')
+		}
 	}
 }
 </script>
 
 <style scoped>
-.fa-star {
-	color: var(--color-evu);
-}
-
 .fa-clock {
 	color: var(--color-battery);
 }
@@ -313,32 +215,7 @@ function openSettings() {
 	color: var(--color-menu);
 }
 
-.socEditor {
-	border: 1px solid var(--color-menu);
-	justify-self: stretch;
-}
-
 .targetCurrent {
 	color: var(--color-menu);
-}
-
-.priceEditor {
-	border: 1px solid var(--color-menu);
-	justify-self: stretch;
-}
-
-.chargemodes {
-	grid-column: 1 / 13;
-	justify-self: center;
-}
-
-.chargeinfo {
-	display: grid;
-	grid-template-columns: repeat(12, auto);
-	justify-content: space-between;
-}
-
-.settingsbutton {
-	border-radius: 30%;
 }
 </style>

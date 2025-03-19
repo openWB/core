@@ -52,7 +52,7 @@ export class ChargePoint {
 	private _instantMaxEnergy = 0
 	private _pvFeedInLimit = false
 	private _pvMinCurrent = 0
-	private _pvMaxSoc = 0
+	private _pvMaxSoc = 101
 	private _pvMinSoc = 0
 	private _pvMinSocCurrent = 0
 	private _etActive = false
@@ -245,7 +245,6 @@ export class ChargePoint {
 		return vehicles[this.connectedVehicle].etMaxPrice ?? 0
 	}
 	set etMaxPrice(newPrice: number) {
-		console.log('Setting et max price needs to be implemented')
 		updateServer('cpEtMaxPrice', Math.round(newPrice * 10) / 1000000, this.id)
 	}
 	toPowerItem(): PowerItem {
@@ -351,22 +350,29 @@ export interface ChargeTimePlan {
 	time: Array<string>
 	current: number
 }
-export interface ChargeSchedule {
-	name: string
-	active: boolean
-	timed: boolean
-	time: string
-	current: number
-	limit: {
-		selected: string
-		amount: number
-		soc_limit: number
-		soc_scheduled: number
+export class ChargeSchedule {
+	name = 'Schedule'
+	private _active = false
+	timed = false
+	time = ''
+	current = 6
+	limit = {
+		selected: '',
+		amount: 0,
+		soc_limit: 0,
+		soc_scheduled: 0,
 	}
-	frequency: {
-		once: Array<Date>
-		selected: string
-		weekly: boolean[]
+	frequency = {
+		once: <Array<Date>>[],
+		selected: '',
+		weekly: <boolean[]>[],
+	}
+	get active() {
+		return this._active
+	}
+	set active(val: boolean) {
+		console.log('set active')
+		this._active = val
 	}
 }
 export interface ChargeTemplate {

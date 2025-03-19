@@ -1,19 +1,14 @@
 """Allgemeine Einstellungen
 """
 from dataclasses import dataclass, field
-from enum import Enum
 import logging
 import random
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from control import data
 from control.bat_all import BatConsiderationMode
 from control.chargemode import Chargemode
-from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
-from modules.ripple_control_receivers.gpio.config import GpioRcr
-from modules.ripple_control_receivers.gpio.ripple_control_receiver import create_ripple_control_receiver
 
 log = logging.getLogger(__name__)
 
@@ -93,7 +88,7 @@ def time_charging_factory() -> TimeCharging:
 @dataclass
 class ChargemodeConfig:
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
-    phase_switch_delay: int = field(default=7, metadata={
+    phase_switch_delay: int = field(default=5, metadata={
         "topic": "chargemode_config/phase_switch_delay"})
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     retry_failed_phase_switches: bool = field(
@@ -109,42 +104,6 @@ class ChargemodeConfig:
 
 def chargemode_config_factory() -> ChargemodeConfig:
     return ChargemodeConfig()
-
-
-@dataclass
-class RippleControlReceiverGet:
-    fault_state: int = field(default=0, metadata={
-                             "topic": "ripple_control_receiver/get/fault_state"})
-    fault_str: str = field(default=NO_ERROR, metadata={
-                           "topic": "ripple_control_receiver/get/fault_str"})
-    override_value: float = field(default=100, metadata={
-        "topic": "ripple_control_receiver/get/override_value"})
-
-
-def rcr_get_factory() -> RippleControlReceiverGet:
-    return RippleControlReceiverGet()
-
-
-def gpio_rcr_factory() -> ConfigurableRcr:
-    return create_ripple_control_receiver(GpioRcr())
-
-
-class OverrideReference(Enum):
-    EVU = "evu"
-    CHARGEPOINT = "chargepoint"
-
-
-@dataclass
-class RippleControlReceiver:
-    get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
-    module: Optional[Dict] = field(default=None, metadata={
-        "topic": "ripple_control_receiver/module"})
-    override_reference: OverrideReference = field(default=OverrideReference.CHARGEPOINT, metadata={
-        "topic": "ripple_control_receiver/override_reference"})
-
-
-def ripple_control_receiver_factory() -> RippleControlReceiver:
-    return RippleControlReceiver()
 
 
 @dataclass
@@ -181,7 +140,6 @@ class GeneralData:
     mqtt_bridge: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
-    ripple_control_receiver: RippleControlReceiver = field(default_factory=ripple_control_receiver_factory)
 
 
 class General:
@@ -190,7 +148,6 @@ class General:
 
     def __init__(self):
         self.data: GeneralData = GeneralData()
-        self.ripple_control_receiver: ConfigurableRcr = None
 
     def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.

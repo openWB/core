@@ -30,7 +30,10 @@ function buttonClicked() {
 <style scoped>
 .displaybutton {
 	border: 0.1px solid var(--color-frame);
-	padding: 8px;
+	padding-left: 8px;
+	padding-right: 8px;
+	padding-top: 6px;
+	padding-bottom: 6px;
 	align-self: top;
 	box-shadow: 1px 3px black;
 	font-weight: bold;

@@ -25,9 +25,6 @@ const noAutarchyCalculation = [
 let gridCounters: string[] = []
 
 export function processDayGraphMessages(topic: string, message: string) {
-	//const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
-	//const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
-	//const itemNames = JSON.parse(message).itemNames
 	const {
 		entries: inputTable,
 		names: itemNames2,
@@ -119,15 +116,20 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	})
 	// Devices
 	currentItem.devices = 0
+	let shEnergyToBeExtractedFromHouse = 0
 	Object.entries(currentRow.sh).forEach(([id, values]) => {
 		if (id != 'all') {
 			currentItem[id] = values.power_imported ?? 0
-			currentItem.devices += values.power_imported ?? 0
 			if (!historicSummary.keys().includes(id)) {
 				historicSummary.addItem(id)
 				historicSummary.items[id].showInGraph = shDevices.get(
 					+id.slice(2),
 				)!.showInGraph
+			}
+			if (shDevices.get(+id.slice(2))?.countAsHouse) {
+				shEnergyToBeExtractedFromHouse += currentItem[id]
+			} else {
+				currentItem.devices += values.power_imported ?? 0
 			}
 		}
 	})
@@ -135,7 +137,8 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.selfUsage = Math.max(0, currentItem.pv - currentItem.evuOut)
 	// House
 	if (currentRow.hc && currentRow.hc.all) {
-		currentItem.house = currentRow.hc.all.power_imported // (seems this is now centrally computed) - currentItem.devices
+		currentItem.house =
+			currentRow.hc.all.power_imported - shEnergyToBeExtractedFromHouse
 	} else {
 		currentItem.house =
 			currentItem.evuIn +

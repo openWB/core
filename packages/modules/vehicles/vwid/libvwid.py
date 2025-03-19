@@ -5,11 +5,12 @@
 # Jon Petter Skagmo, 2021
 
 import secrets
-import lxml.html
 import logging
-# import aiohttp
-# import asyncio
 import json
+
+from helpermodules.utils.error_handling import ImportErrorContext
+with ImportErrorContext():
+    import lxml.html
 
 # Constants
 LOGIN_BASE = "https://emea.bff.cariad.digital/user-login/v1"

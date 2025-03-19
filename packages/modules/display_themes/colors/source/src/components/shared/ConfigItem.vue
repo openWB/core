@@ -1,23 +1,21 @@
 <template>
-	<div class="configitem subgrid">
-		<span class="d-flex align-items-baseline m-0 p-0 grid-col-4 scaled">
-			<i
-				v-if="props.icon"
-				class="fa-solid fa-sm m-0 p-0 me-2 item-icon"
-				:class="props.icon"
-				:style="{
-					color: props.iconcolor ? props.iconcolor : 'var(--color-charging)',
-				}"
-			/>
-			{{ title }}</span
-		>
-		<div
-			class="ms-1 mb-2 p-0 pt-2 d-flex justify-content-stretch align-items-center grid-col-4"
-		>
-			<span class="justify-content-stretch d-flex">
-				<slot />
-			</span>
-		</div>
+	<span class="d-flex align-items-baseline m-0 p-0 scaled">
+		<i
+			v-if="props.icon"
+			class="fa-solid fa-sm m-0 p-0 me-2 item-icon"
+			:class="props.icon"
+			:style="{
+				color: props.iconcolor ? props.iconcolor : 'var(--color-charging)',
+			}"
+		/>
+		{{ title }}</span
+	>
+	<div
+		class="ms-1 mb-2 p-0 pt-2 d-flex justify-content-stretch align-items-center"
+	>
+		<span class="justify-content-stretch d-flex">
+			<slot />
+		</span>
 	</div>
 </template>
 
@@ -54,7 +52,7 @@ const props = defineProps<{
 .configitem {
 	font-size: var(--font-settings);
 
-	align-items: center;
+	align-items: baseline;
 	justify-content: space-between;
 }
 </style>

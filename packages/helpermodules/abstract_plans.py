@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 
 def once_factory() -> List:
@@ -62,6 +62,8 @@ class TimeframePlan(PlanBase):
 @dataclass
 class ScheduledChargingPlan(PlanBase):
     current: int = 14
+    dc_current: float = 145
+    id: Optional[int] = None
     name: str = "neuer Zielladen-Plan"
     limit: ScheduledLimit = field(default_factory=scheduled_limit_factory)
     time: str = "07:00"  # ToDo: aktuelle Zeit verwenden
@@ -71,9 +73,11 @@ class ScheduledChargingPlan(PlanBase):
 class TimeChargingPlan(TimeframePlan):
     name: str = "neuer Zeitladen-Plan"
     current: int = 16
+    dc_current: float = 145
+    id: Optional[int] = None
     limit: Limit = field(default_factory=limit_factory)
 
 
 @dataclass
 class AutolockPlan(TimeframePlan):
-    name: str = "neuer Autolock-Plan"
+    name: str = "neuer Plan für Sperren nach Uhrzeit"

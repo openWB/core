@@ -104,3 +104,10 @@ def _get_preferenced_chargepoint(valid_chargepoints: List[Chargepoint]) -> List:
     except Exception:
         log.exception("Fehler im Algorithmus-Modul")
         return preferenced_chargepoints
+
+
+def get_chargepoints_by_chargemodes(modes) -> List[Chargepoint]:
+    chargepoints: List[Chargepoint] = []
+    for mode in modes:
+        chargepoints.extend(get_chargepoints_by_mode(mode))
+    return chargepoints
