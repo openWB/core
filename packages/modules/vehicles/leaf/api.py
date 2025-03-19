@@ -63,7 +63,7 @@ async def _fetch_soc(username, password, region, vehicle) -> CarState:
         log.info(e)
         soc_range = CarState(0.0, 0.0)
     return soc_range
-    
+
 
 # main entry - _fetch_soc needs to be run async
 def fetch_soc(user_id: str, password: str, region: str, vehicle: int) -> CarState:
