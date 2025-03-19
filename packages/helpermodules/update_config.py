@@ -1,6 +1,7 @@
 from dataclasses import asdict
 import datetime
 import glob
+import importlib
 import json
 import logging
 from pathlib import Path
@@ -14,7 +15,7 @@ import dataclass_utils
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
 from helpermodules import hardware_configuration
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.constants import NO_ERROR
 from helpermodules.hardware_configuration import (
     get_hardware_configuration_setting,
@@ -41,7 +42,7 @@ from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
-from modules.ripple_control_receivers.gpio.config import GpioRcr
+from modules.io_actions.controllable_consumers.ripple_control_receiver.config import RippleControlReceiverSetup
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 from modules.devices.good_we.good_we.version import GoodWeVersion
 
@@ -51,7 +52,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 75
+    DATASTORE_VERSION = 76
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -150,6 +151,8 @@ class UpdateConfig:
         "^openWB/command/max_id/device$",
         "^openWB/command/max_id/ev_template$",
         "^openWB/command/max_id/hierarchy$",
+        "^openWB/command/max_id/io_action$",
+        "^openWB/command/max_id/io_device$",
         "^openWB/command/max_id/mqtt_bridge$",
         "^openWB/command/max_id/vehicle$",
         "^openWB/command/[A-Za-z0-9_]+/error$",
@@ -203,12 +206,6 @@ class UpdateConfig:
         "^openWB/general/notifications/stop_charging$",
         "^openWB/general/notifications/plug$",
         "^openWB/general/notifications/smart_home$",
-        "^openWB/general/ripple_control_receiver/configured$",
-        "^openWB/general/ripple_control_receiver/module$",
-        "^openWB/general/ripple_control_receiver/get/fault_state$",
-        "^openWB/general/ripple_control_receiver/get/fault_str$",
-        "^openWB/general/ripple_control_receiver/get/override_value$",
-        "^openWB/general/ripple_control_receiver/override_reference$",
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
         "^openWB/general/chargemode_config/pv_charging/bat_mode$",
@@ -247,6 +244,13 @@ class UpdateConfig:
         "^openWB/internal_chargepoint/[0-1]/data/set_current$",
         "^openWB/internal_chargepoint/[0-1]/data/phases_to_use$",
         "^openWB/internal_chargepoint/[0-1]/data/parent_cp$",
+
+        "^openWB/io/states/[0-9]+/get/digital_input$",
+        "^openWB/io/states/[0-9]+/get/analog_input$",
+        "^openWB/io/states/[0-9]+/set/digital_output$",
+        "^openWB/io/states/[0-9]+/set/analog_output$",
+        "^openWB/io/action/[0-9]+/config$",
+        "^openWB/io/action/[0-9]+/timestamp$",
 
         "^openWB/set/log/request",
         "^openWB/set/log/data",
@@ -412,8 +416,9 @@ class UpdateConfig:
         "^openWB/system/configurable/devices_components$",
         "^openWB/system/configurable/electricity_tariffs$",
         "^openWB/system/configurable/display_themes$",
+        "^openWB/system/configurable/io_actions$",
+        "^openWB/system/configurable/io_devices$",
         "^openWB/system/configurable/monitoring$",
-        "^openWB/system/configurable/ripple_control_receivers$",
         "^openWB/system/configurable/soc_modules$",
         "^openWB/system/configurable/web_themes$",
         "^openWB/system/current_branch",
@@ -432,6 +437,7 @@ class UpdateConfig:
         "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
         "^openWB/system/device/[0-9]+/config$",
         "^openWB/system/device/module_update_completed$",
+        "^openWB/system/io/[0-9]+/config$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
@@ -504,7 +510,6 @@ class UpdateConfig:
         ("openWB/general/prices/grid", Prices().grid),
         ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
-        ("openWB/general/ripple_control_receiver/module", NO_MODULE),
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
@@ -557,7 +562,7 @@ class UpdateConfig:
 
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
-        InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
+        BrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
         try:
             # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
             self.__solve_breaking_changes()
@@ -1325,11 +1330,11 @@ class UpdateConfig:
             convert_file(file)
         self.__update_topic("openWB/system/datastore_version", 36)
 
-    def upgrade_datastore_36(self) -> None:
-        if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured", False):
-            Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
-        hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
-        self.__update_topic("openWB/system/datastore_version", 37)
+    # def upgrade_datastore_36(self) -> None:
+    #     if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured", False):
+    #         Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
+    #     hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
+    #     self.__update_topic("openWB/system/datastore_version", 37)
 
     def upgrade_datastore_37(self) -> None:
         def collect_names(topic: str, payload) -> None:
@@ -1960,3 +1965,46 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 75)
+
+    def upgrade_datastore_75(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/ripple_control_receiver/module" == topic:
+                payload = decode_payload(payload)
+                if payload["type"] is not None:
+                    if payload["type"] == "gpio":
+                        dev = importlib.import_module(".io_devices.add_on.api", "modules")
+                    else:
+                        dev = importlib.import_module(".io_devices."+payload["type"]+".api", "modules")
+                    io_device = dev.device_descriptor.configuration_factory()
+
+                    action = RippleControlReceiverSetup()
+                    for cp_topic in self.all_received_topics.keys():
+                        if re.search("openWB/chargepoint/[0-9]+/config", cp_topic) is not None:
+                            action.configuration.devices.append([f"cp{int(get_index(cp_topic))}"])
+                    action.configuration.io_device = 0
+
+                    if payload["type"] == "dimm_kit":
+                        io_device.configuration.host = payload["configuration"]["ip_address"]
+                        io_device.configuration.port = payload["configuration"]["port"]
+                        io_device.configuration.modbus_id = payload["configuration"]["modbus_id"]
+                        # Wenn mindestens ein Kontakt offen ist, wird die Ladung gesperrt. Wenn beide Kontakte
+                        # geschlossen sind, darf geladen werden.
+                        action.configuration.input_pattern = [
+                            {"value": 0, "input_matrix": {"DI1": False, "DI2": False}},
+                            {"value": 0, "input_matrix": {"DI1": False, "DI2": True}},
+                            {"value": 0, "input_matrix": {"DI1": True, "DI2": False}},
+                            {"value": 1, "input_matrix": {"DI1": True, "DI2": True}}]
+                    elif payload["type"] == "gpio":
+                        io_device.configuration.host = "localhost"
+                        # Wenn mindestens ein Kontakt geschlossen ist, wird die Ladung gesperrt. Wenn beide Kontakt
+                        # offen sind, darf geladen werden.
+                        action.configuration.input_pattern = [
+                            {"value": 1, "input_matrix": {"RSE1": False, "RSE2": False}},
+                            {"value": 0, "input_matrix": {"RSE1": False, "RSE2": True}},
+                            {"value": 0, "input_matrix": {"RSE1": True, "RSE2": False}},
+                            {"value": 0, "input_matrix": {"RSE1": True, "RSE2": True}}]
+
+                    return {'openWB/system/io/0/config': dataclass_utils.asdict(io_device),
+                            'openWB/io/action/0/config': dataclass_utils.asdict(action)}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 76)
