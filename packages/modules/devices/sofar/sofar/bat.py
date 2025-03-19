@@ -38,11 +38,11 @@ class SofarBat(AbstractBat):
         # 0x0696 Bat_charge_total LSB UInt32 0,1 kWh
         # 0x0697 Bat_charge_total UInt32 0,1 kWh
         imported = client.read_holding_registers(
-            0x0696, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+            0x0696, ModbusDataType.UINT_32, unit=self.__modbus_id) * 0.001
         # 0x069A Bat_discharge_total LSB UInt32 0,1 kWh
         # 0x069B Bat:discharge_total UInt32 0,1 kWh
         exported = client.read_holding_registers(
-            0x069A, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+            0x069A, ModbusDataType.UINT_32, unit=self.__modbus_id) * 0.001
 
         bat_state = BatState(
             power=power,

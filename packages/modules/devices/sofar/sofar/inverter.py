@@ -35,7 +35,7 @@ class SofarInverter(AbstractInverter):
         # 0x0686 PV_Generation_Total UInt32 0,1 kW LSB
         # 0x0687 PV_Generation_Total UInt32 0,1 kW
         exported = client.read_holding_registers(0x0686, ModbusDataType.UINT_32, wordorder=Endian.Little,
-                                                 unit=self.__modbus_id) * 0.01
+                                                 unit=self.__modbus_id) * 0.001
 
         inverter_state = InverterState(
             power=power,

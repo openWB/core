@@ -49,11 +49,11 @@ class SofarCounter(AbstractCounter):
         # 0x0692 Energy_Selling_Total UInt32 in kwH accuracy 0,01 LSB
         # 0x0693 Energy_Selling_Total UInt32 in kwH accuracy 0,01
         exported = client.read_holding_registers(0x0692, ModbusDataType.UINT_32,
-                                                 wordorder=Endian.Little, unit=self.__modbus_id) * 0.01
+                                                 wordorder=Endian.Little, unit=self.__modbus_id) * 0.001
         # 0x068E Energy_Purchase_Total UInt32 in kwH accuracy 0,01 LSB
         # 0x068F Energy_Purchase_Total UInt32 in kwH accuracy 0,01
         imported = client.read_holding_registers(0x068E, ModbusDataType.UINT_32,
-                                                 wordorder=Endian.Little, unit=self.__modbus_id) * 0.01
+                                                 wordorder=Endian.Little, unit=self.__modbus_id) * 0.001
 
         counter_state = CounterState(
             imported=imported,
