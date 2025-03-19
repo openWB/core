@@ -3,8 +3,8 @@ from typing import Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
-from modules.common.abstract_device import AbstractCounter
-from modules.common.component_state import CounterState
+from modules.common.abstract_device import AbstractInverter
+from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
@@ -13,7 +13,7 @@ from modules.common.store import get_counter_value_store
 from modules.devices.janitza.janitza.config import JanitzaInverterSetup
 
 
-class JanitzaCounter(AbstractCounter):
+class JanitzaInverter(AbstractInverter):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, JanitzaInverterSetup],
@@ -29,14 +29,13 @@ class JanitzaCounter(AbstractCounter):
 
     def update(self):
         power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * -1
-
         _, exported = self.sim_counter.sim_count(power)
 
-        counter_state = CounterState(
+        inverter_state = InverterState(
             power=power,
             exported=exported
         )
-        self.store.set(counter_state)
+        self.store.set(inverter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=JanitzaInverterSetup)
