@@ -106,7 +106,7 @@ def test_set_required_current_to_max(phases: int,
     [
         pytest.param(None, 6, 6, id="Kein Soll-Strom aus der EVSE ausgelesen"),
         pytest.param(13, 13, 13, id="Auto lädt mit Soll-Stromstärke"),
-        pytest.param(12.5, 12.5, 12.5, id="Auto lädt mit 0.5A Abweichung von der Soll-Stromstärke"),
+        pytest.param(12.5, 12.5, 12.0, id="Auto lädt mit 0.5A Abweichung von der Soll-Stromstärke"),
         pytest.param(11.8, 11.8, 10.600000000000001, id="Auto lädt mit mehr als Soll-Stromstärke"),
         pytest.param(14.2, 14.2, 15.399999999999999, id="Auto lädt mit weniger als Soll-Stromstärke"),
         pytest.param(15, 15, 16,

@@ -8,6 +8,7 @@
   * [SoC BMW & Mini](https://github.com/openWB/core/wiki/SoC-BMW-Mini)
   * [SoC OVMS](https://github.com/openWB/core/wiki/SoC-OVMS)
   * [SoC VWId](https://github.com/openWB/core/wiki/SoC-VWId)
+  * [WiCAN OBD2-Dongle mit manuellem SoC](https://github.com/openWB/core/wiki/WiCAN)
 * [Lademodi](https://github.com/openWB/core/wiki/Lademodi)
 * Zähler
   * [Grundsätzliches zu Zählern](https://github.com/openWB/core/wiki/Grundsätzliches-zu-Zählern)

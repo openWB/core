@@ -51,7 +51,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 73
+    DATASTORE_VERSION = 75
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -85,19 +85,22 @@ class UpdateConfig:
         "^openWB/chargepoint/template/[0-9]+$",
         "^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$",
         "^openWB/chargepoint/[0-9]+/config$",
-        "^openWB/chargepoint/[0-9]+/control_parameter/submode$",
         "^openWB/chargepoint/[0-9]+/control_parameter/chargemode$",
         "^openWB/chargepoint/[0-9]+/control_parameter/current_plan$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/failed_phase_switches$",
         "^openWB/chargepoint/[0-9]+/control_parameter/imported_at_plan_start$",
         "^openWB/chargepoint/[0-9]+/control_parameter/imported_instant_charging$",
         "^openWB/chargepoint/[0-9]+/control_parameter/limit$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/min_current$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/phases$",
         "^openWB/chargepoint/[0-9]+/control_parameter/prio$",
         "^openWB/chargepoint/[0-9]+/control_parameter/required_current$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/required_currents$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/state$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/submode$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_charge_start$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_last_phase_switch$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_switch_on_off$",
-        "^openWB/chargepoint/[0-9]+/control_parameter/used_amount_instant_charging$",
-        "^openWB/chargepoint/[0-9]+/control_parameter/phases$",
-        "^openWB/chargepoint/[0-9]+/control_parameter/state$",
         "^openWB/chargepoint/[0-9]+/get/charge_state$",
         "^openWB/chargepoint/[0-9]+/get/currents$",
         "^openWB/chargepoint/[0-9]+/get/evse_current$",
@@ -470,7 +473,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve_active", True),
         ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
-        ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 50),
+        ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 0),
         ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
         ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
@@ -1934,3 +1937,26 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 73)
+
+    def upgrade_datastore_73(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # add manufacturer and model to components
+            if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config", topic) is not None:
+                config_payload = decode_payload(payload)
+                if "info" not in config_payload:
+                    config_payload.update({"info": {"manufacturer": None, "model": None}})
+                    return {topic: config_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 74)
+
+    def upgrade_datastore_74(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                # update firmware of Sungrow
+                if payload.get("type") == "solax":
+                    if "version" not in payload["configuration"]:
+                        payload["configuration"].update({"version": "g3"})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 75)

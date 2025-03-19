@@ -136,20 +136,15 @@ class SurplusControlled:
         genutzten Soll-Strom hochgeregelt werden. Wenn Fahrzeuge entgegen der Norm mehr Ladeleistung beziehen, als
         freigegeben, wird entsprechend weniger freigegeben, da sonst uU die untere Grenze für die Abschaltschwelle
         nicht erreicht wird.
-        Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen. Wenn das
-        Auto nur in 1A-Schritten regeln kann, rundet es und lädt immer etwas mehr oder weniger als Soll-Strom. Schlägt
-        man den EVSE-Strom auf, pendelt die Regelung um diesen 1A-Schritt."""
-        MAX_DEVIATION = 1.1
+        Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen."""
         evse_current = chargepoint.data.get.evse_current
         if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
-            formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
-            offset = formatted_evse_current - max(chargepoint.data.get.currents)
-            if abs(offset) >= MAX_DEVIATION:
-                current_with_offset = chargepoint.data.set.current + offset
-                current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
-                if current != chargepoint.data.set.current:
-                    log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
-                chargepoint.data.set.current = current
+            offset = evse_current - max(chargepoint.data.get.currents)
+            current_with_offset = chargepoint.data.set.current + offset
+            current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
+            if current != chargepoint.data.set.current:
+                log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
+            chargepoint.data.set.current = current
 
     def check_submode_pv_charging(self) -> None:
         evu_counter = data.data.counter_all_data.get_evu_counter()
@@ -160,8 +155,7 @@ class SurplusControlled:
             control_parameter = cp.data.control_parameter
             if cp.data.set.charging_ev_data.chargemode_changed or cp.data.set.charging_ev_data.submode_changed:
                 if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
-                    if (cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False and
-                            phase_switch_necessary() is False):
+                    if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
                         threshold = evu_counter.calc_switch_off_threshold(cp)[0]
                         if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:
                             control_parameter.required_currents = [0]*3

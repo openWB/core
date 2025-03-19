@@ -293,7 +293,12 @@ def _pub_configurable_chargepoints() -> None:
             return chargepoints
 
         path_list = Path(_get_packages_path()/"modules"/"chargepoints").glob('**/chargepoint_module.py')
-        Pub().pub("openWB/set/system/configurable/chargepoints", create_chargepoints_list(path_list))
+        cp_list = create_chargepoints_list(path_list)
+        # Nach Umbennnung der "Externen openWB" zu "Secondary openWB" soll der Eintrag weiterhin an zweiter Stelle
+        # stehen
+        cp_list.remove({'value': 'external_openwb', 'text': 'Secondary openWB'})
+        cp_list.insert(1, {'value': 'external_openwb', 'text': 'Secondary openWB'})
+        Pub().pub("openWB/set/system/configurable/chargepoints", cp_list)
 
         path_list = Path(_get_packages_path()/"modules" /
                          "chargepoints/internal_openwb").glob('**/chargepoint_module.py')
