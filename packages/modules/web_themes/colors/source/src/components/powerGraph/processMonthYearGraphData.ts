@@ -56,6 +56,7 @@ export function processMonthGraphMessages(topic: string, message: string) {
 	// reloadMonthGraph(topic, message)
 }
 export function processYearGraphMessages(topic: string, message: string) {
+	console.log("process data")
 	//const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
 	//const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
 	const {
