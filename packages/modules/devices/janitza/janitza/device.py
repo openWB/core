@@ -36,7 +36,7 @@ def create_device(device_config: Janitza):
         device_config=device_config,
         component_factory=ComponentFactoryByType(
             counter=create_counter_component,
-            counter=create_inverter_component
+            inverter=create_inverter_component
         ),
         component_updater=MultiComponentUpdater(update_components)
     )
