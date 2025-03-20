@@ -3,20 +3,20 @@ from typing import Dict, Optional, Union
 from modules.common.io_setup import IoDeviceSetup
 
 
-class DigitalInputMapping(Enum):
-    RSE1 = 24
-    RSE2 = 21
-    nurPV = 31
-    SofortLa = 32
-    Stop = 33
-    MinPV = 36
-    Standby = 40
+class DigitalInputPinMapping(Enum):
+    RSE1 = 24  # Raspberry Pi GPIO 8
+    RSE2 = 21  # Raspberry Pi GPIO 9
+    nurPV = 31  # Raspberry Pi GPIO 6
+    SofortLa = 32  # Raspberry Pi GPIO 12
+    Stop = 33  # Raspberry Pi GPIO 13
+    MinPV = 36  # Raspberry Pi GPIO 16
+    Standby = 40  # Raspberry Pi GPIO 21
 
 
-class DigitalOutputMapping(Enum):
-    LED1 = 18
-    LED2 = 16
-    LED3 = 7
+class DigitalOutputPinMapping(Enum):
+    LED1 = 18  # Raspberry Pi GPIO 24
+    LED2 = 16  # Raspberry Pi GPIO 23
+    LED3 = 7  # Raspberry Pi GPIO 4
 
 
 class AddOnConfiguration:
@@ -26,12 +26,12 @@ class AddOnConfiguration:
 
 def init_input():
     return {"analog": {},
-            "digital": {pin.name: False for pin in DigitalInputMapping}}
+            "digital": {pin.name: False for pin in DigitalInputPinMapping}}
 
 
 def init_output():
     return {"analog": {},
-            "digital": {pin.name: False for pin in DigitalOutputMapping}}
+            "digital": {pin.name: False for pin in DigitalOutputPinMapping}}
 
 
 class AddOn(IoDeviceSetup[AddOnConfiguration]):
