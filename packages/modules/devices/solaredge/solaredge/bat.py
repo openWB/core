@@ -135,7 +135,7 @@ class SolaredgeBat(AbstractBat):
             values = self._read_registers(registers_to_read, unit)
             soc = values[f"Battery{self.battery_index}StateOfEnergy"]
             backup_reserve = values["StorageBackupReserved"]
-            discharge_limit = int(values["RemoteControlCommandDischargeLimit"])
+            discharge_limit = values["RemoteControlCommandDischargeLimit"]
 
             if self.last_mode == 'limited':
                 if backup_reserve > soc:
@@ -149,7 +149,7 @@ class SolaredgeBat(AbstractBat):
                     }
                     self._write_registers(values_to_write, unit)
                     self.last_mode = None
-                elif discharge_limit not in range(power_limit-10, power_limit+10):
+                elif int(discharge_limit) not in range(power_limit-10, power_limit+10):
                     log.debug(f"Speichersteuerung aktiv, Discharge-Limit {power_limit} W.")
                     values_to_write = {
                         "RemoteControlCommandDischargeLimit": int(min(power_limit, 5000))
