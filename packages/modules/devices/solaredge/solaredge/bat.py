@@ -149,7 +149,7 @@ class SolaredgeBat(AbstractBat):
                     }
                     self._write_registers(values_to_write, unit)
                     self.last_mode = None
-                elif discharge_limit not in range (power_limit-10, power_limit+10):
+                elif discharge_limit not in range(power_limit-10, power_limit+10):
                     log.debug(f"Speichersteuerung aktiv, Discharge-Limit {power_limit} W.")
                     values_to_write = {
                         "RemoteControlCommandDischargeLimit": int(min(power_limit, 5000))
