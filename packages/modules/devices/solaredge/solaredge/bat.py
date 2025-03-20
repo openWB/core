@@ -81,15 +81,15 @@ class SolaredgeBat(AbstractBat):
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         """
         Die Steuerung bei SolarEdge basiert auf folgenden Einstellungen:
-        Zunächst muss der Storage Control Mode gesetzt werden:
+        Zunaechst muss der Storage Control Mode gesetzt werden:
         1 - Maximize Self Consumption FW < 4.20.36
         2 - Time of Use (Steuerung durch SolarEdge Profile) FW >= 4.20.36
-        4 - Remote Control (Für Steuerung durch openWB)
+        4 - Remote Control (Fuer Steuerung durch openWB)
         Dann der Remote Control Command Mode und Default Mode:
         7 - Maximize self-consumption
-        anschließend das DischargLimit setzen.
+        anschliessend das DischargLimit setzen.
 
-        todo: Firmware Version aus Register 40044 als String(16) auslesen und gegen Version 4.20.36 prüfen.
+        todo: Firmware Version aus Register 40044 als String(16) auslesen und gegen Version 4.20.36 pruefen.
         """
         unit = self.component_config.configuration.modbus_id
         PowerLimitMode = data.data.bat_all_data.data.config.power_limit_mode
@@ -101,6 +101,8 @@ class SolaredgeBat(AbstractBat):
             Daher erfolgt im Modus "Immer" der Speichersteuerung gar keine Steuerung.
             """
             return
+
+        self.inverter_firmware = self.
 
         if power_limit is None:
             # Keine Ladung mit Speichersteuerung.
@@ -149,7 +151,7 @@ class SolaredgeBat(AbstractBat):
                     }
                     self._write_registers(values_to_write, unit)
                     self.last_mode = None
-                elif int(discharge_limit) not in range(power_limit-10, power_limit+10):
+                elif int(discharge_limit) not in range(int(power_limit)-10, int(power_limit)+10):
                     log.debug(f"Speichersteuerung aktiv, Discharge-Limit {power_limit} W.")
                     values_to_write = {
                         "RemoteControlCommandDischargeLimit": int(min(power_limit, 5000))
