@@ -102,8 +102,6 @@ class SolaredgeBat(AbstractBat):
             """
             return
 
-        self.inverter_firmware = self.
-
         if power_limit is None:
             # Keine Ladung mit Speichersteuerung.
             if self.last_mode is not None:
