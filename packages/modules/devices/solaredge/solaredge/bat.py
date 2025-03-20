@@ -27,8 +27,10 @@ class SolaredgeBat(AbstractBat):
     REGISTERS = {
         "Battery1StateOfEnergy": (0xe184, ModbusDataType.FLOAT_32,),  # Mirror: 0xf584
         "Battery1InstantaneousPower": (0xe174, ModbusDataType.FLOAT_32,),  # Mirror: 0xf574
+        "Battery1Status": (0xe186, ModbusDataType.UINT_32,),
         "Battery2StateOfEnergy": (0xe284, ModbusDataType.FLOAT_32,),
         "Battery2InstantaneousPower": (0xe274, ModbusDataType.FLOAT_32,),
+        "Battery2Status": (0xe286, ModbusDataType.UINT_32,),
         "StorageControlMode": (0xe004, ModbusDataType.UINT_16,),
         "StorageBackupReserved": (0xe008, ModbusDataType.FLOAT_32,),
         "StorageChargeDischargeDefaultMode": (0xe00a, ModbusDataType.UINT_16,),
@@ -76,24 +78,19 @@ class SolaredgeBat(AbstractBat):
         log.debug(f"Bat {self.__tcp_client.address}: {bat_state}")
         return bat_state
 
-    """
-    Die Steuerung bei SolarEdge basiert auf folgenden Einstellungen:
-
-    Zunächst muss der Storage Control Mode gesetzt werden:
-    1 - Maximize Self Consumption FW < 4.20.36
-    2 - Time of Use (Steuerung durch SolarEdge Profile) FW >= 4.20.36
-    4 - Remote Control (Steuerung durch openWB)
-
-    Dann der Remote Control Command Mode und Default Mode:
-    1 - Charge excess PV power only.
-    7 - Maximize self-consumption
-
-    Im Remote Control Command Mode 1 wird nur geladen, das Entladen ist gesperrt.
-    Im Remote Control Command Mode 7 kann die Speicherentladung durch das Discharge Limit begrenzt werden.
-
-    to-Do: Firmware Version aus Register 40044 als String(16) auslesen und gegen Version 4.20.36 prüfen.
-    """
     def set_power_limit(self, power_limit: Optional[int]) -> None:
+        """
+        Die Steuerung bei SolarEdge basiert auf folgenden Einstellungen:
+        Zunächst muss der Storage Control Mode gesetzt werden:
+        1 - Maximize Self Consumption FW < 4.20.36
+        2 - Time of Use (Steuerung durch SolarEdge Profile) FW >= 4.20.36
+        4 - Remote Control (Für Steuerung durch openWB)
+        Dann der Remote Control Command Mode und Default Mode:
+        7 - Maximize self-consumption
+        anschließend das DischargLimit setzen.
+
+        todo: Firmware Version aus Register 40044 als String(16) auslesen und gegen Version 4.20.36 prüfen.
+        """
         unit = self.component_config.configuration.modbus_id
         PowerLimitMode = data.data.bat_all_data.data.config.power_limit_mode
 
@@ -105,22 +102,10 @@ class SolaredgeBat(AbstractBat):
             """
             return
 
-        """
-        SolarEdge entlaedt den Speicher immer nur bis zur Backup-Reserve.
-        Bei Systemen ohne Backup-Modul arbeitet sie als SoC-Reserve.
-        Eine Steuerung macht nur Sinn, wenn der SoC vom Speicher hoeher als die SoC-Reserve ist.
-        """
-        registers_to_read = [
-            f"Battery{self.battery_index}StateOfEnergy",
-            "StorageBackupReserved",
-        ]
-        values = self._read_registers(registers_to_read, unit)
-        soc = values[f"Battery{self.battery_index}StateOfEnergy"]
-        backup_reserve = values["StorageBackupReserved"]
-
         if power_limit is None:
+            # Keine Ladung mit Speichersteuerung.
             if self.last_mode is not None:
-                # Keine Ladung mit Speichersteuerung aktiv, Steuerung deaktivieren.
+                # Steuerung deaktivieren.
                 log.debug("Keine Speichersteuerung gefordert, Steuerung deaktivieren.")
                 values_to_write = {
                     "RemoteControlCommandDischargeLimit": 5000,
@@ -130,42 +115,29 @@ class SolaredgeBat(AbstractBat):
                 }
                 self._write_registers(values_to_write, unit)
                 self.last_mode = None
+            # Steuerung bereits inaktiv.
             return
-        elif power_limit == 0:
-            if self.last_mode != 'stop' and backup_reserve < soc:
-                # Speichersteuerung aktivieren, Speicher-Entladung sperren.
-                log.debug("Speichersteuerung aktivieren. Speicher-Entladung sperren.")
-                values_to_write = {
-                    "StorageControlMode": 4,
-                    "StorageChargeDischargeDefaultMode": 1,
-                    "RemoteControlCommandMode": 1,
-                }
-                self._write_registers(values_to_write, unit)
-                self.last_mode = 'stop'
-            elif self.last_mode == 'stop' and backup_reserve > soc:
-                # Speichersteuerung deaktivieren, SoC-Reserve unterschritten.
-                log.debug("Speichersteuerung deaktivieren. SoC-Reserve unterschritten.")
-                values_to_write = {
-                    "RemoteControlCommandDischargeLimit": 5000,
-                    "StorageChargeDischargeDefaultMode": 0,
-                    "RemoteControlCommandMode": 0,
-                    "StorageControlMode": 2,
-                }
-                self._write_registers(values_to_write, unit)
-                self.last_mode = None
-        elif power_limit > 0:
-            if self.last_mode != 'limited' and backup_reserve < soc:
-                # Speichersteuerung aktivieren, Speicher-Entladung steuern.
-                log.debug("Speichersteuerung aktivieren. Speicher-Entladung steuern.")
-                values_to_write = {
-                    "StorageControlMode": 4,
-                    "StorageChargeDischargeDefaultMode": 7,
-                    "RemoteControlCommandMode": 7,
-                    "RemoteControlCommandDischargeLimit": int(min(power_limit, 5000))
-                }
-                self._write_registers(values_to_write, unit)
-                self.last_mode = 'limited'
-            elif self.last_mode == 'limited':
+
+        elif power_limit >= 0:
+            """
+            Ladung mit Speichersteuerung.
+            SolarEdge entlaedt den Speicher immer nur bis zur Backup-Reserve.
+            Bei Systemen ohne Backup-Modul arbeitet sie als SoC-Reserve.
+            Steuerung beenden, wenn der SoC vom Speicher die SoC-Reserve unterschreitet.
+
+            todo: Ggf. nicht fuer alle Systeme korrekt. Alternative BatteryStatus pruefen.
+            """
+            registers_to_read = [
+                f"Battery{self.battery_index}StateOfEnergy",
+                "StorageBackupReserved",
+                "RemoteControlCommandDischargeLimit",
+            ]
+            values = self._read_registers(registers_to_read, unit)
+            soc = values[f"Battery{self.battery_index}StateOfEnergy"]
+            backup_reserve = values["StorageBackupReserved"]
+            discharge_limit = int(values["RemoteControlCommandDischargeLimit"])
+
+            if self.last_mode == 'limited':
                 if backup_reserve > soc:
                     # Speichersteuerung deaktivieren, SoC-Reserve unterschritten.
                     log.debug("Speichersteuerung deaktivieren. SoC-Reserve unterschritten.")
@@ -177,12 +149,23 @@ class SolaredgeBat(AbstractBat):
                     }
                     self._write_registers(values_to_write, unit)
                     self.last_mode = None
-                else:
-                    log.debug("Speichersteuerung aktiv, Discharge-Limit gesetzt.")
+                elif discharge_limit not in range (power_limit-10, power_limit+10):
+                    log.debug(f"Speichersteuerung aktiv, Discharge-Limit {power_limit} W.")
                     values_to_write = {
                         "RemoteControlCommandDischargeLimit": int(min(power_limit, 5000))
                     }
                     self._write_registers(values_to_write, unit)
+            elif self.last_mode != 'limited' and backup_reserve < soc:
+                # Speichersteuerung aktivieren, Speicher-Entladung steuern.
+                log.debug(f"Speichersteuerung aktivieren. Discharge-Limit: {power_limit} W.")
+                values_to_write = {
+                    "StorageControlMode": 4,
+                    "StorageChargeDischargeDefaultMode": 7,
+                    "RemoteControlCommandMode": 7,
+                    "RemoteControlCommandDischargeLimit": int(min(power_limit, 5000))
+                }
+                self._write_registers(values_to_write, unit)
+                self.last_mode = 'limited'
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
         values = {}
