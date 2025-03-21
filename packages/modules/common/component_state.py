@@ -108,11 +108,13 @@ class InverterState:
         self,
         exported: float,
         power: float,
+        imported: float = 0,  # simulated import counter to properly calculate PV energy when bat is charged from AC
         currents: Optional[List[Optional[float]]] = None,
         dc_power: Optional[float] = None
     ):
         """Args:
             exported: total energy in Wh
+            imported: total energy in Wh
             power: actual power in W
             currents: actual currents for 3 phases in A
             dc_power: dc power in W
@@ -125,6 +127,7 @@ class InverterState:
         self.currents = currents
         self.power = power
         self.exported = exported
+        self.imported = imported
         self.dc_power = dc_power
 
 
