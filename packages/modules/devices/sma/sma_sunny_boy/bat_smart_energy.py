@@ -60,7 +60,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             "Battery_DischargedEnergy"
         ]
 
-        if self.Inverter_Type is None:  # Only read Inverter_Type if not already set
+        if self.inverter_type is None:  # Only read Inverter_Type if not already set
             registers_to_read.append("Inverter_Type")
 
         values = self._read_registers(registers_to_read, unit)
