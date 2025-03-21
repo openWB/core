@@ -42,22 +42,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useQuasar } from 'quasar';
 import EnergyFlowChart from './charts/energyFlowChart/EnergyFlowChart.vue';
 import HistoryChart from './charts/historyChart/HistoryChart.vue';
+import { useLocalDataStore } from 'src/stores/localData-store';
 
 defineOptions({
   name: 'ChartCarousel',
 });
 const $q = useQuasar();
-
-const legendVisible = ref(!$q.platform.is.mobile);
+const localDataStore = useLocalDataStore();
 
 const toggleLegend = () => {
-  legendVisible.value = !legendVisible.value;
+  localDataStore.toggleLegendVisibility();
 };
-
+const legendVisible = computed(() => localDataStore.legendVisible);
 const fullscreen = ref(false);
 const chartCarouselItems = [
   {

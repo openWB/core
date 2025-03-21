@@ -165,3 +165,14 @@ export interface BatteryConfiguration {
   id: number;
   configuration: object;
 }
+
+export interface CounterConfiguration {
+  name: string;
+  info: {
+    manufacturer: string;
+    model: string;
+  };
+  type: string;
+  id: number;
+  configuration: object;
+}
