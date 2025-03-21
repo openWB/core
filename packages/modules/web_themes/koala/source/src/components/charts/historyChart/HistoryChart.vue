@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { Line as ChartjsLine } from 'vue-chartjs';
 import {
@@ -27,8 +27,12 @@ import {
   LegendItem,
   LegendElement,
   ChartTypeRegistry,
+  ChartDataset,
+  ChartType,
 } from 'chart.js';
 import { useMqttStore } from 'src/stores/mqtt-store';
+import { useLocalDataStore } from 'src/stores/localData-store';
+import { GraphDataPoint } from 'src/stores/mqtt-store-model';
 import 'chartjs-adapter-luxon';
 import type {
   HistoryChartTooltipItem,
@@ -48,65 +52,22 @@ Chart.register(
 
 const legendDisplay = computed(() => props.showLegend);
 const mqttStore = useMqttStore();
+const localDataStore = useLocalDataStore();
 const $q = useQuasar();
 const props = defineProps<{
   showLegend: boolean;
 }>();
 
 const chartRef = ref<ChartComponentRef | null>(null);
-const hiddenDatasets = ref<string[]>([]);
 
-// on mount hook to preserve legend item state (hidden/shown) on card swipe / page reload
-onMounted(() => {
-  loadSavedHiddenDatasets();
-});
-
-const loadSavedHiddenDatasets = (): void => {
-  const savedHiddenDatasets = localStorage.getItem(
-    'historyChartHiddenDatasets',
-  );
-  if (savedHiddenDatasets) {
-    hiddenDatasets.value = JSON.parse(savedHiddenDatasets);
-  }
-};
-
-const updateChartLegend = (chart?: Chart): void => {
-  if (!chartRef.value?.chart) return;
-  chart = chartRef.value.chart;
-  if (chart.options.plugins && chart.options.plugins.legend) {
-    chart.options.plugins.legend.onClick = handleLegendClick;
-  }
-  applyHiddenDatasetsToChart(chart);
-};
-
-// Custom legend click handler to toggle dataset visibility
-const handleLegendClick = (
-  e: ChartEvent,
-  legendItem: LegendItem,
-  legend: LegendElement<keyof ChartTypeRegistry>,
+const applyHiddenDatasetsToChart = <TType extends ChartType, TData>(
+  chart: Chart<TType, TData>,
 ): void => {
-  const index = legendItem.datasetIndex!;
-  const chartInstance = legend.chart;
-  // Toggle visibility
-  if (chartInstance.isDatasetVisible(index)) {
-    chartInstance.hide(index);
-    hiddenDatasets.value.push(legendItem.text);
-  } else {
-    chartInstance.show(index);
-    hiddenDatasets.value = hiddenDatasets.value.filter(
-      (item) => item !== legendItem.text,
-    );
-  }
-  localStorage.setItem(
-    'historyChartHiddenDatasets',
-    JSON.stringify(hiddenDatasets.value),
-  );
-  chartInstance.update();
-};
-
-const applyHiddenDatasetsToChart = (chart: Chart): void => {
-  chart.data.datasets.forEach((dataset, index) => {
-    if (hiddenDatasets.value.includes(dataset.label as string)) {
+  chart.data.datasets.forEach((dataset: ChartDataset<TType, TData>, index) => {
+    if (
+      typeof dataset.label === 'string' &&
+      localDataStore.isDatasetHidden(dataset.label)
+    ) {
       chart.hide(index);
     }
   });
@@ -117,13 +78,13 @@ watch(
   () => chartRef.value?.chart,
   (chart) => {
     if (chart) {
-      updateChartLegend(chart);
+      applyHiddenDatasetsToChart(chart);
     }
   },
   { immediate: true },
 );
 
-const selectedData = computed(() => {
+const selectedData = computed((): GraphDataPoint[] => {
   const data = mqttStore.chartData;
   const currentTime = Math.floor(Date.now() / 1000);
   return data.filter((item) => item.timestamp > currentTime - chartRange.value);
@@ -132,10 +93,10 @@ const selectedData = computed(() => {
 const chargePointIds = computed(() => mqttStore.chargePointIds);
 const chargePointNames = computed(() => mqttStore.chargePointName);
 
-const meterName = computed(() => {
+const gridMeterName = computed(() => {
   const gridId = mqttStore.getGridId;
   if (gridId !== undefined) {
-    return mqttStore.getCounterName(gridId);
+    return mqttStore.getComponentName(gridId);
   }
   return 'Zähler';
 });
@@ -153,7 +114,7 @@ const chargePointDatasets = computed(() =>
     backgroundColor: 'rgba(71, 102, 181, 0.2)',
     data: selectedData.value.map((item) => ({
       x: item.timestamp * 1000,
-      y: item[`cp${cpId}-power`] as number,
+      y: item[`cp${cpId}-power`] || 0,
     })),
     borderWidth: 2,
     pointRadius: 0,
@@ -167,7 +128,7 @@ const chargePointDatasets = computed(() =>
 const vehicleDatasets = computed(() =>
   vehicles.value
     .map((vehicle) => {
-      const socKey = `ev${vehicle.id}-soc`;
+      const socKey = `ev${vehicle.id}-soc` as keyof GraphDataPoint;
       if (selectedData.value.some((item) => socKey in item)) {
         return {
           label: `${vehicle.name} SoC`,
@@ -180,7 +141,7 @@ const vehicleDatasets = computed(() =>
           pointHitRadius: 5,
           data: selectedData.value.map((item) => ({
             x: item.timestamp * 1000,
-            y: item[socKey as keyof typeof item] as number,
+            y: Number(item[socKey] ?? 0),
           })),
           fill: false,
           yAxisID: 'y2',
@@ -193,12 +154,11 @@ const vehicleDatasets = computed(() =>
         dataset !== undefined,
     ),
 );
-
 const lineChartData = computed(() => {
   return {
     datasets: [
       {
-        label: meterName.value,
+        label: gridMeterName.value,
         unit: 'kW',
         borderColor: '#a33c42',
         backgroundColor: 'rgba(239,182,188, 0.2)',
@@ -220,7 +180,7 @@ const lineChartData = computed(() => {
         backgroundColor: 'rgba(148, 154, 161, 0.2)',
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
-          y: item['house-power'] as number,
+          y: item['house-power'],
         })),
         borderWidth: 2,
         pointRadius: 0,
@@ -236,7 +196,7 @@ const lineChartData = computed(() => {
         backgroundColor: 'rgba(144, 238, 144, 0.2)',
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
-          y: item['pv-all'] as number,
+          y: item['pv-all'],
         })),
         borderWidth: 2,
         pointRadius: 0,
@@ -252,7 +212,7 @@ const lineChartData = computed(() => {
         backgroundColor: 'rgba(181, 166, 71, 0.2)',
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
-          y: item['bat-all-power'] as number,
+          y: item['bat-all-power'],
         })),
         borderWidth: 2,
         pointRadius: 0,
@@ -272,7 +232,7 @@ const lineChartData = computed(() => {
         pointHitRadius: 5,
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
-          y: item['bat-all-soc'] as number,
+          y: item['bat-all-soc'],
         })),
         fill: false,
         yAxisID: 'y2',
@@ -295,6 +255,25 @@ const chartOptions = computed(() => ({
       labels: {
         boxWidth: 19,
         boxHeight: 0.1,
+      },
+      onClick: (
+        e: ChartEvent,
+        legendItem: LegendItem,
+        legend: LegendElement<keyof ChartTypeRegistry>,
+      ) => {
+        const index = legendItem.datasetIndex!;
+        const chartInstance = legend.chart;
+        const datasetName = legendItem.text;
+
+        // Toggle visibility using the store
+        localDataStore.toggleDataset(datasetName);
+
+        // Update chart visibility
+        if (localDataStore.isDatasetHidden(datasetName)) {
+          chartInstance.hide(index);
+        } else {
+          chartInstance.show(index);
+        }
       },
     },
     tooltip: {

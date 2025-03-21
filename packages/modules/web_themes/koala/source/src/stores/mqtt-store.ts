@@ -2250,13 +2250,13 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param counterId counter ID
    * @returns string
    */
-  const getCounterName = computed(() => {
-    return (counterId: number): string => {
+  const getComponentName = computed(() => {
+    return (componentId: number): string => {
       const configurations = getWildcardValues.value(
-        `openWB/system/device/+/component/${counterId}/config`,
+        `openWB/system/device/+/component/${componentId}/config`,
       ) as { [key: string]: CounterConfiguration };
       if (Object.keys(configurations).length === 0) {
-        return `Zähler ${counterId}`;
+        return `Zähler ${componentId}`;
       }
       return Object.values(configurations)[0].name;
     };
@@ -2473,7 +2473,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryMode,
     // Grid data
     getGridId,
-    getCounterName,
+    getComponentName,
     getGridPower,
     // Home data
     getHomePower,
