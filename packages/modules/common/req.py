@@ -1,9 +1,29 @@
-
 import copy
 import logging
 from requests import Session
+import urllib3
+from functools import wraps
+import warnings
 
 log = logging.getLogger(__name__)
+
+
+def disable_insecure_request_warning(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if kwargs.get('verify') is False:
+            # store the original filters to restore them after the request
+            original_filters = warnings.filters[:]
+            # disable the warning for this request
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            try:
+                return func(*args, **kwargs)
+            finally:
+                # restore the original filters
+                warnings.filters = original_filters
+        else:
+            return func(*args, **kwargs)
+    return wrapper
 
 
 class CustomSession(Session):
@@ -11,6 +31,7 @@ class CustomSession(Session):
         super().__init__(*args, **kwargs)
         self.default_timeout = 5
 
+    @disable_insecure_request_warning
     def request(self, method, url, *args, **kwargs):
         kwargs.setdefault('timeout', self.default_timeout)
         return super().request(method, url, *args, **kwargs)
