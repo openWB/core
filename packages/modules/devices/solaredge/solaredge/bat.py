@@ -47,7 +47,6 @@ class SolaredgeBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.last_mode = 'undefined'
         self.battery_index = 1  # Nach Umsetzung des PR 2236, hier entfernen und unten als battery_index ersetzen.
         self.soc_reserve = 10  # SoC-Grenze bis zu der der Speicher entladen wird. In Config aufnehmen.
 
@@ -118,7 +117,6 @@ class SolaredgeBat(AbstractBat):
                     "StorageControlMode": 2,
                 }
                 self._write_registers(values_to_write, unit)
-                self.last_mode = None
             else:
                 # Steuerung bereits inaktiv.
                 return
@@ -149,7 +147,6 @@ class SolaredgeBat(AbstractBat):
                         "StorageControlMode": 2,
                     }
                     self._write_registers(values_to_write, unit)
-                    self.last_mode = None
                 elif discharge_limit not in range(int(power_limit)-10, int(power_limit)+10):
                     # DischargeLimit nur setzen, bei Abweichung von mehr als 10W.
                     log.debug(f"Speichersteuerung aktiv, Discharge-Limit {int(power_limit)}W.")
@@ -168,7 +165,6 @@ class SolaredgeBat(AbstractBat):
                         "RemoteControlCommandDischargeLimit": int(min(power_limit, 5000))
                     }
                     self._write_registers(values_to_write, unit)
-                    self.last_mode = 'limited'
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
         values = {}
