@@ -107,7 +107,7 @@ class SolaredgeBat(AbstractBat):
                 "StorageControlMode",
             ]
             values = self._read_registers(registers_to_read, unit)
-            if values["StorageControlMode"] ==  4:
+            if values["StorageControlMode"] == 4:
                 # Steuerung deaktivieren.
                 log.debug("Keine Speichersteuerung gefordert, Steuerung deaktivieren.")
                 values_to_write = {
@@ -136,7 +136,7 @@ class SolaredgeBat(AbstractBat):
             soc = int(values[f"Battery{self.battery_index}StateOfEnergy"])
             discharge_limit = int(values["RemoteControlCommandDischargeLimit"])
 
-            if values["StorageControlMode"] ==  4:  # Speichersteuerung aktiv.
+            if values["StorageControlMode"] == 4:  # Speichersteuerung aktiv.
                 if self.soc_reserve > soc:
                     # Speichersteuerung deaktivieren, SoC-Reserve unterschritten.
                     log.debug("Speichersteuerung deaktivieren. SoC-Reserve unterschritten.")
