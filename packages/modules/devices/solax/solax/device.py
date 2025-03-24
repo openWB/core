@@ -16,13 +16,13 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Solax):
     def create_bat_component(component_config: SolaxBatSetup):
-        return SolaxBat(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        return SolaxBat(device_config, component_config, client)
 
     def create_counter_component(component_config: SolaxCounterSetup):
-        return SolaxCounter(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        return SolaxCounter(device_config, component_config, client)
 
     def create_inverter_component(component_config: SolaxInverterSetup):
-        return SolaxInverter(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        return SolaxInverter(device_config, component_config, client)
 
     def update_components(components: Iterable[Union[SolaxBat, SolaxCounter, SolaxInverter]]):
         with client:

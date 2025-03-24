@@ -335,7 +335,7 @@ class BatAll:
                 power_limit = min(self._max_bat_power_hybrid_system(
                     data.data.bat_data[f"bat{bat_component.component_config.id}"])[0], remaining_power_limit)
                 remaining_power_limit -= power_limit
-                remaining_power_limit = min(remaining_power_limit, 0)
+                remaining_power_limit = max(remaining_power_limit, 0)
 
             data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
 

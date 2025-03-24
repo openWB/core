@@ -335,7 +335,7 @@ class Counter:
                 control_parameter.timestamp_switch_on_off = None
                 self.data.set.reserved_surplus -= pv_config.switch_on_threshold*control_parameter.phases
                 msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
-                control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
 
                 if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
                     feed_in_yield = pv_config.feed_in_yield
