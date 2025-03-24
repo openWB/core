@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import logging
 
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 try:
     class OcppMixin:
         def _get_formatted_time(self: OptionalProtocol) -> str:
-            return datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         def _process_call(self: OptionalProtocol,
                           chargebox_id: str,
