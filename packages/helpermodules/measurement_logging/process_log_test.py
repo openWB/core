@@ -16,9 +16,9 @@ def test_get_totals(daily_log_sample, daily_log_totals):
     assert totals == daily_log_totals
 
 
-def test_analyse_percentage(daily_log_entry_kw):
+def test_analyse_percentage(daily_log_entry_kw_percentage):
     # setup
-    expected = deepcopy(daily_log_entry_kw)
+    expected = deepcopy(daily_log_entry_kw_percentage)
     expected.update({"energy_source":  {'bat': 0.2398, 'cp': 0.0, 'grid': 0.6504, 'pv': 0.1098}})
     expected["cp"]["all"].update({
         "energy_imported_bat": 0.23,
@@ -32,7 +32,7 @@ def test_analyse_percentage(daily_log_entry_kw):
         "energy_imported_pv": 0.001})
 
     # execution
-    entry = analyse_percentage(daily_log_entry_kw)
+    entry = analyse_percentage(daily_log_entry_kw_percentage)
 
     # evaluation
     assert entry == expected

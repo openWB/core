@@ -106,22 +106,6 @@ class Chargepoint(ChargepointRfidMixin):
                     message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
         return state, message
 
-    def _is_ripple_control_receiver_inactive(self) -> Tuple[bool, Optional[str]]:
-        """ prüft, dass der Rundsteuerempfängerkontakt nicht geschlossen ist.
-        """
-        state = True
-        message = None
-        general_data = data.data.general_data.data
-        if general_data.ripple_control_receiver.module:
-            if general_data.ripple_control_receiver.get.override_value == 0:
-                state = False
-                message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
-            elif general_data.ripple_control_receiver.get.fault_state == 2:
-                state = False
-                message = ("Ladepunkt gesperrt, da der Rundsteuerempfänger ein Problem meldet. "
-                           "Bitte im Status des RSE nachsehen.")
-        return state, message
-
     def _is_loadmanagement_available(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob Lastmanagement verfügbar ist. Wenn keine Werte vom EVU-Zähler empfangen werden, darf nicht geladen
         werden.
@@ -150,14 +134,14 @@ class Chargepoint(ChargepointRfidMixin):
             if data.data.optional_data.data.rfid.active:
                 if self.data.get.rfid is None and self.data.set.rfid is None:
                     state = False
-                    message = ("Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per ID-Tag "
-                               "freigeschaltet werden muss.")
+                    message = ("Keine Ladung, da der Ladepunkt durch Sperren nach Uhrzeit gesperrt ist und erst "
+                               "per ID-Tag freigeschaltet werden muss.")
                 else:
                     state = True
                     message = None
             else:
                 state = False
-                message = "Keine Ladung, da Autolock aktiv ist."
+                message = "Keine Ladung, da Sperren nach Uhrzeit aktiv ist."
         return state, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
@@ -191,15 +175,13 @@ class Chargepoint(ChargepointRfidMixin):
         try:
             charging_possible, message = self._is_grid_protection_inactive()
             if charging_possible:
-                charging_possible, message = self._is_ripple_control_receiver_inactive()
+                charging_possible, message = self._is_loadmanagement_available()
                 if charging_possible:
-                    charging_possible, message = self._is_loadmanagement_available()
+                    charging_possible, message = self._is_manual_lock_inactive()
                     if charging_possible:
-                        charging_possible, message = self._is_manual_lock_inactive()
+                        charging_possible, message = self._is_ev_plugged()
                         if charging_possible:
-                            charging_possible, message = self._is_ev_plugged()
-                            if charging_possible:
-                                charging_possible, message = self._is_autolock_inactive()
+                            charging_possible, message = self._is_autolock_inactive()
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
@@ -465,7 +447,9 @@ class Chargepoint(ChargepointRfidMixin):
                     if self._is_phase_switch_required():
                         # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                         if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
-                                self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):
+                                (self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES or
+                                 (self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES and
+                                  self.data.get.charge_state is False))):
                             log.debug(
                                 f"Lp {self.num}: Ladung aktiv halten "
                                 f"{charging_ev.ev_template.data.keep_charge_active_duration}s")
