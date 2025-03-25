@@ -4,6 +4,7 @@ import requests
 import os
 import re
 from datetime import datetime, timedelta
+from typing import Optional
 import base64
 import hashlib
 from modules.common.store import RAMDISK_PATH
@@ -90,7 +91,7 @@ class PolestarAuth:
             log.error("_save_token_to_ramdisk:error saving token store %s:%s", self.token_file, e)
 
     # auth step 3: get token
-    def get_auth_token(self) -> str or None:
+    def get_auth_token(self) -> Optional[str]:
         # first try to load token from ramdisk
         self._load_token_from_ramdisk()
 
@@ -159,7 +160,7 @@ class PolestarAuth:
         return self.access_token
 
     # auth step 2: get code
-    def _get_auth_code(self) -> str or None:
+    def _get_auth_code(self) -> Optional[str]:
         self.resume_path = self._get_auth_resumePath()
         if self.resume_path is None:
             return None
@@ -216,7 +217,7 @@ class PolestarAuth:
         return code
 
     # auth step 1: get resumePath
-    def _get_auth_resumePath(self) -> str or None:
+    def _get_auth_resumePath(self) -> Optional[str]:
         # Get Resume Path
         params = {
             "response_type": "code",
