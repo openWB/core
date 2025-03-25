@@ -34,7 +34,7 @@ from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -781,7 +781,7 @@ class Chargepoint(ChargepointRfidMixin):
         def __get_payload(client, userdata, msg):
             received_topics.append(msg.topic)
         received_topics = []
-        InternalBrokerClient("processBrokerBranch", on_connect, __get_payload).start_finite_loop()
+        BrokerClient("processBrokerBranch", on_connect, __get_payload).start_finite_loop()
         for topic in received_topics:
             Pub().pub(topic, "")
         self.data.set.charge_template = copy.deepcopy(charge_template)

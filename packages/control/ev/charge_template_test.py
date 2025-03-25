@@ -187,9 +187,9 @@ def test_calculate_duration(selected: str, phases: int, expected_duration: float
         pytest.param([1500, 2000, 1000], 2, id="3rd plan"),
         pytest.param([None]*3, 0, id="no plan"),
     ])
-def test_sscheduled_charging_recent_plan(end_time_mock,
-                                         expected_plan_num: Optional[int],
-                                         monkeypatch):
+def test_scheduled_charging_recent_plan(end_time_mock,
+                                        expected_plan_num: Optional[int],
+                                        monkeypatch):
     # setup
     calculate_duration_mock = Mock(return_value=(100, 3000, 3, 500))
     monkeypatch.setattr(ChargeTemplate, "_calc_remaining_time", calculate_duration_mock)

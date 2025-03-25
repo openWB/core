@@ -508,7 +508,7 @@ class ChargeTemplate:
                                  + ".")
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
                 if timecheck.is_list_valid(hour_list):
-                    message = self.SCHEDULED_CHARGING_CHEAP_HOUR
+                    message = self.SCHEDULED_CHARGING_CHEAP_HOUR.format(hours_message)
                     current = plan_current
                     submode = "instant_charging"
                 elif ((limit.selected == "soc" and soc <= limit.soc_limit) or
@@ -525,7 +525,7 @@ class ChargeTemplate:
                     message = self.SCHEDULED_REACHED_LIMIT_SOC
                 else:
                     now = datetime.datetime.today()
-                    start_time = now + datetime.timedelta(seconds=plan_data.remaining_time)
+                    start_time = now + datetime.timedelta(seconds=selected_plan.remaining_time)
                     if start_time.year == now.year and start_time.month == now.month and start_time.day == now.day:
                         message = self.SCHEDULED_CHARGING_USE_PV.format(
                             f"um {start_time.strftime('%-H:%M')} Uhr")
