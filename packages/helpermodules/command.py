@@ -23,7 +23,7 @@ from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
@@ -57,7 +57,10 @@ class Command:
                ("chargepoint_template", "chargepoint/template", 0),
                ("device", "system/device", -1),
                ("ev_template", "vehicle/template/ev_template", 0),
-               ("vehicle", "vehicle", 0)]
+               ("vehicle", "vehicle", 0),
+               ("io_action", "io/action", -1),
+               ("io_device", "system/io", -1),
+               ]
 
     def __init__(self, event_command_completed: threading.Event):
         try:
@@ -105,7 +108,7 @@ class Command:
             # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained
             # Topics empfangen, was zu doppelten Meldungen im Protokoll führt.
             time.sleep(1)
-            self.internal_broker_client = InternalBrokerClient("command", self.on_connect, self.on_message)
+            self.internal_broker_client = BrokerClient("command", self.on_connect, self.on_message)
             self.internal_broker_client.start_infinite_loop()
         except Exception:
             log.exception("Fehler im Command-Modul")
@@ -168,6 +171,63 @@ class Command:
             pub_user_message(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_device}\'.',
+                MessageType.ERROR)
+
+    def addIoAction(self, connection_id: str, payload: dict) -> None:
+        new_id = self.max_id_io_action + 1
+        dev = importlib.import_module(f".io_actions.{'.'.join(payload['data']['type'])}.api",
+                                      "modules")
+        descriptor = dev.device_descriptor.configuration_factory()
+        device_default = dataclass_utils.asdict(descriptor)
+        device_default["id"] = new_id
+        Pub().pub(f'openWB/set/io/action/{new_id}/config', device_default)
+        self.max_id_io_action = new_id
+        Pub().pub("openWB/set/command/max_id/io_action", self.max_id_io_action)
+        pub_user_message(
+            payload, connection_id,
+            f'Neue IO-Aktion vom Typ \'{" / ".join(payload["data"]["type"])}\' mit ID \'{new_id}\' hinzugefügt.',
+            MessageType.SUCCESS)
+
+    def removeIoAction(self, connection_id: str, payload: dict) -> None:
+        if self.max_id_io_action >= payload["data"]["id"]:
+            ProcessBrokerBranch(f'io/action/{payload["data"]["id"]}/').remove_topics()
+            pub_user_message(payload, connection_id, f'IO-Aktion mit ID \'{payload["data"]["id"]}\' gelöscht.',
+                             MessageType.SUCCESS)
+        else:
+            pub_user_message(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_io_action}\'.',
+                MessageType.ERROR)
+
+    def addIoDevice(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neues Io-Device erstellt werden soll.
+        """
+        new_id = self.max_id_io_device + 1
+        dev = importlib.import_module(".io_devices."+payload["data"]["type"]+".api", "modules")
+        descriptor = dev.device_descriptor.configuration_factory()
+        device_default = dataclass_utils.asdict(descriptor)
+        device_default["id"] = new_id
+        Pub().pub(f'openWB/set/system/io/{new_id}/config', device_default)
+        self.max_id_io_device = new_id
+        Pub().pub("openWB/set/command/max_id/io_device", self.max_id_io_device)
+        pub_user_message(
+            payload, connection_id,
+            f'Neues IO-Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
+            MessageType.SUCCESS)
+
+    def removeIoDevice(self, connection_id: str, payload: dict) -> None:
+        """ löscht ein Io-Device.
+        """
+        if self.max_id_io_device >= payload["data"]["id"]:
+            ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
+            pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
+                             MessageType.SUCCESS)
+        else:
+            pub_user_message(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_io_device}\'.',
                 MessageType.ERROR)
 
     def addChargepoint(self, connection_id: str, payload: dict) -> None:
@@ -255,7 +315,7 @@ class Command:
             return None
 
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
-        """ löscht ein Chargepoint.
+        """ löscht ein Ladepunkt.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
             pub_user_message(
@@ -711,26 +771,26 @@ class Command:
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
         ''' fordert einen Authentifizierungscode für MSAL (Microsoft Authentication Library)
         an um Onedrive Backup zu ermöglichen'''
-        cloudbackupconfig = SubData.system_data["system"].backup_cloud
-        if cloudbackupconfig is None:
+        cloud_backup_config = SubData.system_data["system"].backup_cloud
+        if cloud_backup_config is None:
             pub_user_message(payload, connection_id,
                              "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
                              "und erneut versuchen.<br />", MessageType.WARNING)
             return
-        result = generateMSALAuthCode(cloudbackupconfig.config)
+        result = generateMSALAuthCode(cloud_backup_config.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
 
     # ToDo: move to module commands if implemented
     def retrieveMSALTokens(self, connection_id: str, payload: dict) -> None:
         """ holt die Tokens für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
         """
-        cloudbackupconfig = SubData.system_data["system"].backup_cloud
-        if cloudbackupconfig is None:
+        cloud_backup_config = SubData.system_data["system"].backup_cloud
+        if cloud_backup_config is None:
             pub_user_message(payload, connection_id,
                              "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
                              "und erneut versuchen.<br />", MessageType.WARNING)
             return
-        result = retrieveMSALTokens(cloudbackupconfig.config)
+        result = retrieveMSALTokens(cloud_backup_config.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
 
     def factoryReset(self, connection_id: str, payload: dict) -> None:
@@ -806,18 +866,18 @@ class ProcessBrokerBranch:
 
     def get_payload(self):
         self.payload: str
-        InternalBrokerClient("processBrokerBranch", self.on_connect, self.__get_payload).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.on_connect, self.__get_payload).start_finite_loop()
         return json.loads(self.payload)
 
     def remove_topics(self):
         """ löscht einen Topic-Zweig auf dem Broker. Payload "" löscht nur ein einzelnes Topic.
         """
-        InternalBrokerClient("processBrokerBranch", self.on_connect, self.__on_message_rm).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_rm).start_finite_loop()
 
     def get_max_id(self) -> List[str]:
         try:
             self.received_topics = []
-            InternalBrokerClient("processBrokerBranch", self.on_connect, self.__on_message_max_id).start_finite_loop()
+            BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_max_id).start_finite_loop()
             return self.received_topics
         except Exception:
             log.exception("Fehler im Command-Modul")
@@ -827,8 +887,8 @@ class ProcessBrokerBranch:
         try:
             self.name = name
             self.mqtt_bridge_exists = False
-            InternalBrokerClient("processBrokerBranch", self.on_connect,
-                                 self.__on_message_mqtt_bridge_exists).start_finite_loop()
+            BrokerClient("processBrokerBranch", self.on_connect,
+                         self.__on_message_mqtt_bridge_exists).start_finite_loop()
             return self.mqtt_bridge_exists
         except Exception:
             log.exception("Fehler im Command-Modul")
@@ -837,7 +897,7 @@ class ProcessBrokerBranch:
     def get_cloud_id(self):
         try:
             self.ids = []
-            InternalBrokerClient("processBrokerBranch", self.on_connect, self.__on_message_cloud_id).start_finite_loop()
+            BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_cloud_id).start_finite_loop()
             return self.ids
         except Exception:
             log.exception("Fehler im Command-Modul")
