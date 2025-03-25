@@ -44,6 +44,8 @@ def create_device(device_config: Huawei):
         if HuaweiType(device_config.configuration.type) == HuaweiType.SDongle:
             client = ModbusTcpClient_(device_config.configuration.ip_address,
                                       device_config.configuration.port, sleep_after_connect=7)
+        if HuaweiType(device_config.configuration.type) == HuaweiType.HuaweiKit:
+            client = ModbusTcpClient_("192.168.193.126", 8899)
         else:
             client = ModbusTcpClient_(device_config.configuration.ip_address,
                                       device_config.configuration.port)
