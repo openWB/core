@@ -1057,11 +1057,11 @@
 			<script>
 				function clearPriceForm() {
 					$("#maxPriceBox").val(0);
-					window.electricityPricechart.destroy();
+					window.electricityPriceChart.destroy();
 				}
 
 				function updatePriceChart() {
-					window.electricityPricechart.destroy();
+					window.electricityPriceChart.destroy();
 					loadElectricityPriceChart();
 				}
 
@@ -1244,13 +1244,13 @@
 				// some helper functions
 				'helperFunctions.js?ver=20240314',
 				// functions for processing messages
-				'processAllMqttMsg.js?ver=20240415',
+				'processAllMqttMsg.js?ver=20250326',
 				// respective Chart.js definition live
-				'livechart.js?ver=20240425',
+				'livechart.js?ver=20250326',
 				// respective Chart.js definition price based charging
-				'electricityPriceChart.js?ver=20240108',
+				'electricityPriceChart.js?ver=20250326',
 				// functions performing mqtt and start mqtt-service
-				'setupMqttServices.js?ver=20240415',
+				'setupMqttServices.js?ver=20250326',
 			];
 			scriptsToLoad.forEach(function (src) {
 				var script = document.createElement('script');
