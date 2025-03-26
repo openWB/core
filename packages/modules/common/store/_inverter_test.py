@@ -37,7 +37,7 @@ cases = [
 ]
 
 
-@ pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
+@pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_fix_hybrid_values(params):
     # setup
     data.data.counter_all_data.data.get.hierarchy = params.hierarchy

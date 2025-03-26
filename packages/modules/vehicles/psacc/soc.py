@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
-import logging
-
 from modules.common.abstract_device import DeviceDescriptor
 from modules.vehicles.psacc.config import PSACCVehicleSoc
-from modules.vehicles.json.soc import create_vehicle as create_vehicle_json
+from modules.vehicles.json.soc import create_vehicle
 
-log = logging.getLogger(__name__)
-
-
-def create_vehicle(vehicle_config: PSACCVehicleSoc, vehicle: int):
-    return create_vehicle_json(vehicle_config, vehicle)
-
+__all__ = ['create_vehicle', 'device_descriptor']  # declare as exported
 
 device_descriptor = DeviceDescriptor(configuration_factory=PSACCVehicleSoc)

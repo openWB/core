@@ -528,8 +528,7 @@
 							</div>
 							<div class="et et-configured hide">
 								<div class="charge-point-charge-mode-options mb-0 hide">
-									<div
-										class="chargemode-options chargemode-option-instant_charging chargemode-option-scheduled_charging">
+									<div class="chargemode-options chargemode-option-instant_charging chargemode-option-scheduled_charging">
 										<div class="form-row mb-1">
 											<div class="col">
 												<i class="fas fa-coins"></i>
@@ -544,7 +543,7 @@
 															data-on="Ja" data-off="Nein" data-onstyle="success"
 															data-offstyle="danger" data-size="sm" data-style="w-100">
 													</div>
-													<div class="col-3">
+													<div class="col-3 chargemode-options chargemode-option-instant_charging">
 														<button type="button"
 															class="charge-point-max-price-button btn btn-sm btn-secondary btn-block"
 															data-max-price="">
@@ -1058,11 +1057,11 @@
 			<script>
 				function clearPriceForm() {
 					$("#maxPriceBox").val(0);
-					window.electricityPricechart.destroy();
+					window.electricityPriceChart.destroy();
 				}
 
 				function updatePriceChart() {
-					window.electricityPricechart.destroy();
+					window.electricityPriceChart.destroy();
 					loadElectricityPriceChart();
 				}
 
@@ -1245,13 +1244,13 @@
 				// some helper functions
 				'helperFunctions.js?ver=20240314',
 				// functions for processing messages
-				'processAllMqttMsg.js?ver=20240415',
+				'processAllMqttMsg.js?ver=20250326',
 				// respective Chart.js definition live
-				'livechart.js?ver=20240425',
+				'livechart.js?ver=20250326',
 				// respective Chart.js definition price based charging
-				'electricityPriceChart.js?ver=20240108',
+				'electricityPriceChart.js?ver=20250326',
 				// functions performing mqtt and start mqtt-service
-				'setupMqttServices.js?ver=20240415',
+				'setupMqttServices.js?ver=20250326',
 			];
 			scriptsToLoad.forEach(function (src) {
 				var script = document.createElement('script');

@@ -3,10 +3,9 @@ from typing import List
 from unittest.mock import Mock
 import pytest
 
-from control.algorithm import additional_current
 from control.algorithm.integration_test.conftest import ParamsExpectedSetCurrent, assert_expected_current
 from control.chargemode import Chargemode
-from control import data
+from control import data, loadmanagement
 from control.algorithm.algorithm import Algorithm
 from control.limiting_value import LimitingValue
 from dataclass_utils.factories import currents_list_factory
@@ -63,8 +62,6 @@ def test_start_instant_charging(all_cp_instant_charging_1p, all_cp_not_charging,
     data.data.counter_data["counter0"].data.set.raw_power_left = 21310
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16, 12, 14]
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
 
     # execution
     Algorithm().calc_current()
@@ -123,7 +120,7 @@ def test_instant_charging_limit(params: ParamsLimit, all_cp_instant_charging_1p,
     data.data.counter_data["counter0"].data.set.raw_currents_left = params.raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = params.raw_currents_left_counter6
     mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mockget_component_name_by_id)
     # execution
     Algorithm().calc_current()
 
@@ -200,7 +197,7 @@ def test_control_parameter_instant_charging(params: ParamsControlParameter, all_
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32]*3
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16]*3
     mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mockget_component_name_by_id)
 
     # execution
     Algorithm().calc_current()

@@ -53,7 +53,7 @@ class BydParser(HTMLParser):
     values = {"SOC:": 0, "Power:": 0}
     armed = None
 
-    @ staticmethod
+    @staticmethod
     def parse(html: str):
         parser = BydParser()
         parser.feed(html)

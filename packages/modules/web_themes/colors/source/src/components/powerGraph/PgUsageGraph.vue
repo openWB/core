@@ -39,7 +39,7 @@ const props = defineProps<{
 
 //state
 const keys = computed(() => {
-	if (globalConfig.showInverters) {
+	if (!globalConfig.showInverters) {
 		return [
 			['house', 'charging', 'devices', 'batIn'],
 			['charging', 'devices', 'batIn', 'house'],
@@ -82,7 +82,9 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 
 // computed:
 const draw = computed(() => {
-	const graph = select('g#pgUsageGraph')
+	const graph: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+		select('g#pgUsageGraph')
+
 	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
 		drawBarGraph(graph)
 	} else {
@@ -139,23 +141,18 @@ const keysToUse = computed(() => {
 		const pattern = /cp\d+/
 		let additionalKeys: string[] = []
 		if (graphData.data.length > 0) {
-			additionalKeys = Object.keys(graphData.data[0]).reduce(
-				(list: string[], element: string) => {
-					if (element.match(pattern)) {
-						list.push(element)
-					}
-					return list
-				},
-				[],
+			additionalKeys = Object.keys(graphData.data[0]).filter((itemKey) =>
+				itemKey.match(pattern),
 			)
 		}
 		additionalKeys.forEach((key, i) => {
 			k.splice(idx + i, 0, key)
-			colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
+			colors[key] =
+				chargePoints[+key.slice(2)]?.color ?? 'var(--color-charging)'
 		})
-		if (globalConfig.showInverters) {
+		/* 	if (globalConfig.showInverters) {
 			k.push('evuOut')
-		}
+		} */
 		return k
 	}
 })
@@ -190,7 +187,7 @@ const yAxisGenerator = computed(() => {
 			(d == 0 ? '' : Math.round(d * 10) / 10).toLocaleString(undefined),
 		)
 })
-function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+function drawGraph(graph: Selection<SVGGElement, unknown, HTMLElement, never>) {
 	const area0 = area()
 		.x((d, i) => xScale.value(graphData.data[i].date))
 		.y(yScale.value(0))
@@ -203,7 +200,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	if (globalConfig.showAnimations) {
 		if (animateUsageGraph) {
 			graph.selectAll('*').remove()
-			paths = graph
+			const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+			paths = canvas
 				.selectAll('.usageareas')
 				.data(stackedSeries.value as [number, number][][])
 				.enter()
@@ -219,7 +217,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			usageGraphIsInitialized()
 		} else {
 			graph.selectAll('*').remove()
-			graph
+			const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+			canvas
 				.selectAll('.usageareas')
 
 				.data(stackedSeries.value as [number, number][][])
@@ -230,7 +229,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 		}
 	} else {
 		graph.selectAll('*').remove()
-		graph
+		const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+		canvas
 			.selectAll('.usageareas')
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
@@ -239,7 +239,9 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.attr('fill', (d, i: number) => colors[keysToUse.value[i]])
 	}
 }
-function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+function drawBarGraph(
+	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
+) {
 	if (animateUsageGraph) {
 		graph.selectAll('*').remove()
 		rects = graph

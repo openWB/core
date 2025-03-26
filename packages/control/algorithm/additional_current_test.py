@@ -1,4 +1,3 @@
-from unittest.mock import Mock
 import pytest
 
 from control.algorithm import additional_current
@@ -14,15 +13,15 @@ from control.loadmanagement import LimitingValue
     "set_current, limit, expected_msg",
     [pytest.param(7, None, None, id="unverändert"),
      pytest.param(
-        6, LimitingValue.CURRENT,
+        6, LimitingValue.CURRENT.value.format('Garage'),
         f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden{LimitingValue.CURRENT.value.format('Garage')}",
          id="begrenzt durch Strom"),
      pytest.param(
-        6, LimitingValue.POWER,
+        6, LimitingValue.POWER.value.format('Garage'),
         f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden{LimitingValue.POWER.value.format('Garage')}",
          id="begrenzt durch Leistung"),
      pytest.param(
-        6, LimitingValue.UNBALANCED_LOAD,
+        6, LimitingValue.UNBALANCED_LOAD.value.format('Garage'),
         f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
         f"{LimitingValue.UNBALANCED_LOAD.value.format('Garage')}",
         id="begrenzt durch Schieflast"),
@@ -34,11 +33,9 @@ def test_set_loadmangement_message(set_current, limit, expected_msg, monkeypatch
     cp1 = Chargepoint(1, None)
     cp1.data = ChargepointData(set=Set(current=set_current),
                                control_parameter=ControlParameter(required_currents=[8]*3))
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
 
     # execution
-    additional_current.AdditionalCurrent()._set_loadmangement_message(7, limit, cp1, Mock())
+    additional_current.AdditionalCurrent()._set_loadmangement_message(7, limit, cp1)
 
     # evaluation
     assert cp1.data.get.state_str == expected_msg

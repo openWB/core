@@ -32,14 +32,19 @@ class SungrowInverter(AbstractInverter):
         if self.device_config.configuration.version in (Version.SH, Version.SH_winet_dongle):
             power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -1
+            dc_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
+                                                              wordorder=Endian.Little, unit=unit) * -1
         else:
             power = self.__tcp_client.read_input_registers(5030, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -1
+            dc_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
+                                                              wordorder=Endian.Little, unit=unit) * -1
 
         _, exported = self.sim_counter.sim_count(power)
 
         inverter_state = InverterState(
             power=power,
+            dc_power=dc_power,
             exported=exported
         )
         self.store.set(inverter_state)

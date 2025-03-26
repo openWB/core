@@ -31,7 +31,7 @@ from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev.ev import Ev
 from control import phase_switch
-from control.chargepoint.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -106,22 +106,6 @@ class Chargepoint(ChargepointRfidMixin):
                     message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
         return state, message
 
-    def _is_ripple_control_receiver_inactive(self) -> Tuple[bool, Optional[str]]:
-        """ prüft, dass der Rundsteuerempfängerkontakt nicht geschlossen ist.
-        """
-        state = True
-        message = None
-        general_data = data.data.general_data.data
-        if general_data.ripple_control_receiver.module:
-            if general_data.ripple_control_receiver.get.override_value == 0:
-                state = False
-                message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
-            elif general_data.ripple_control_receiver.get.fault_state == 2:
-                state = False
-                message = ("Ladepunkt gesperrt, da der Rundsteuerempfänger ein Problem meldet. "
-                           "Bitte im Status des RSE nachsehen.")
-        return state, message
-
     def _is_loadmanagement_available(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob Lastmanagement verfügbar ist. Wenn keine Werte vom EVU-Zähler empfangen werden, darf nicht geladen
         werden.
@@ -150,14 +134,14 @@ class Chargepoint(ChargepointRfidMixin):
             if data.data.optional_data.data.rfid.active:
                 if self.data.get.rfid is None and self.data.set.rfid is None:
                     state = False
-                    message = ("Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per ID-Tag "
-                               "freigeschaltet werden muss.")
+                    message = ("Keine Ladung, da der Ladepunkt durch Sperren nach Uhrzeit gesperrt ist und erst "
+                               "per ID-Tag freigeschaltet werden muss.")
                 else:
                     state = True
                     message = None
             else:
                 state = False
-                message = "Keine Ladung, da Autolock aktiv ist."
+                message = "Keine Ladung, da Sperren nach Uhrzeit aktiv ist."
         return state, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
@@ -191,15 +175,13 @@ class Chargepoint(ChargepointRfidMixin):
         try:
             charging_possible, message = self._is_grid_protection_inactive()
             if charging_possible:
-                charging_possible, message = self._is_ripple_control_receiver_inactive()
+                charging_possible, message = self._is_loadmanagement_available()
                 if charging_possible:
-                    charging_possible, message = self._is_loadmanagement_available()
+                    charging_possible, message = self._is_manual_lock_inactive()
                     if charging_possible:
-                        charging_possible, message = self._is_manual_lock_inactive()
+                        charging_possible, message = self._is_ev_plugged()
                         if charging_possible:
-                            charging_possible, message = self._is_ev_plugged()
-                            if charging_possible:
-                                charging_possible, message = self._is_autolock_inactive()
+                            charging_possible, message = self._is_autolock_inactive()
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
@@ -357,19 +339,20 @@ class Chargepoint(ChargepointRfidMixin):
         phase_switch_required = False
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
         # nicht zwischendurch eine neue Umschaltung getriggert werden.
-        if ((self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED or
+        if ((((self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED or
                 self.data.control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
-            # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
-            (self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
-                # Vorgegebene Phasenzahl hat sich geändert
-             self.check_deviating_contactor_states(self.data.set.phases_to_use,
-                                                   self.data.control_parameter.phases) and
+                # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
+            self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use)) or
+                # Vorgegebene Phasenzahl hat sich geändert und es wird geladen
+             (self.check_deviating_contactor_states(self.data.set.phases_to_use,
+                                                    self.data.control_parameter.phases) and
+                self.data.control_parameter.state in CHARGING_STATES)) and
                 # Wenn ein Soll-Strom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
-             ((self.data.set.current != 0 and self.data.get.charge_state) or
-              (self.data.set.current != 0 and self.data.set.current_prev == 0) or
-              self.data.set.current == 0))):
+            ((self.data.set.current != 0 and self.data.get.charge_state) or
+             (self.data.set.current != 0 and self.data.set.current_prev == 0) or
+             self.data.set.current == 0)):
             phase_switch_required = True
         if (self.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
             (self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
@@ -383,9 +366,7 @@ class Chargepoint(ChargepointRfidMixin):
             # Umschaltung fehlgeschlagen
             if self.data.set.phases_to_use != self.data.get.phases_in_use:
                 if data.data.general_data.data.chargemode_config.retry_failed_phase_switches:
-                    if self.data.control_parameter.failed_phase_switches <= self.MAX_FAILED_PHASE_SWITCHES:
-                        self.data.control_parameter.failed_phase_switches += 1
-                    else:
+                    if self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES:
                         phase_switch_required = False
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. Die "
@@ -396,6 +377,7 @@ class Chargepoint(ChargepointRfidMixin):
                         "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
                         "Ladeeinstellungen deaktiviert wurde. Die aktuelle "
                         "Phasenzahl wird bis zum Abstecken beibehalten.")
+                self.data.control_parameter.failed_phase_switches += 1
         return phase_switch_required
 
     STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
@@ -465,7 +447,9 @@ class Chargepoint(ChargepointRfidMixin):
                     if self._is_phase_switch_required():
                         # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                         if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
-                                self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):
+                                (self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES or
+                                 (self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES and
+                                  self.data.get.charge_state is False))):
                             log.debug(
                                 f"Lp {self.num}: Ladung aktiv halten "
                                 f"{charging_ev.ev_template.data.keep_charge_active_duration}s")
@@ -518,8 +502,10 @@ class Chargepoint(ChargepointRfidMixin):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use or self.data.set.phases_to_use
-        elif (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
-                                   self.data.get.phases_in_use == 0)):
+        elif self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
+            phases = self.data.set.phases_to_use
+            log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
+        elif chargemode == 0:
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
@@ -537,9 +523,6 @@ class Chargepoint(ChargepointRfidMixin):
                         # phases_target
                         phases = self.data.config.connected_phases
             log.debug(f"Phasenzahl Lademodus: {phases}")
-        elif self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
-            phases = self.data.set.phases_to_use
-            log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
         else:
             if chargemode == 0:
                 phases = self.data.control_parameter.phases
@@ -829,11 +812,19 @@ class Chargepoint(ChargepointRfidMixin):
             control_parameter.submode == Chargemode.PV_CHARGING and
             data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value,
                                                          control_parameter.submode) == 0)
+        if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
+                self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
+                (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
+                 self.data.control_parameter.failed_phase_switches == 1)):
+            failed_phase_switches_reached = True
+        else:
+            failed_phase_switches_reached = False
         return (self.cp_ev_support_phase_switch() and
                 self.data.get.charge_state and
                 (pv_auto_switch or scheduled_auto_switch) and
-                control_parameter.state == ChargepointState.CHARGING_ALLOWED or
-                control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY)
+                (control_parameter.state == ChargepointState.CHARGING_ALLOWED or
+                control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY) and
+                failed_phase_switches_reached is False)
 
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and

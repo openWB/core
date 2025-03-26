@@ -17,23 +17,24 @@ function processSmarthomeConfigMessages(topic: string, message: string) {
 		// console.warn('Smarthome: Missing index in ' + topic)
 		return
 	}
-	if (!(index in shDevices)) {
+	if (!shDevices.has(index)) {
 		// console.warn('Invalid sh device id received: ' + index)
 		addShDevice(index)
 	}
+	const dev = shDevices.get(index)!
 	if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_configured$/i,
 		)
 	) {
-		shDevices[index].configured = message != '0'
+		dev.configured = message != '0'
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_name$/i,
 		)
 	) {
-		shDevices[index].name = message.toString()
-		shDevices[index].icon = message.toString()
+		dev.name = message.toString()
+		dev.icon = message.toString()
 
 		masterData['sh' + index].name = message.toString()
 		masterData['sh' + index].icon = message.toString()
@@ -42,25 +43,25 @@ function processSmarthomeConfigMessages(topic: string, message: string) {
 			/^openWB\/LegacySmarthome\/config\/set\/Devices\/[0-9]+\/mode$/i,
 		)
 	) {
-		shDevices[index].isAutomatic = message == '0'
+		dev.isAutomatic = message == '0'
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_canSwitch$/i,
 		)
 	) {
-		shDevices[index].canSwitch = message == '1'
+		dev.canSwitch = message == '1'
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_homeConsumtion$/i,
 		)
 	) {
-		shDevices[index].countAsHouse = message == '1'
+		dev.countAsHouse = message == '1'
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_temperatur_configured$/i,
 		)
 	) {
-		shDevices[index].tempConfigured = +message
+		dev.tempConfigured = +message
 	} else {
 		// console.warn('Ignored Smarthome config message: ' + topic)
 	}
@@ -72,12 +73,13 @@ function processSmarthomeDeviceMessages(topic: string, message: string) {
 		console.warn('Smarthome: Missing index in ' + topic)
 		return
 	}
-	if (!(index in shDevices)) {
+	if (!shDevices.has(index)) {
 		// console.warn('Invalid sh device id received: ' + index)
 		addShDevice(index)
 	}
+	const dev = shDevices.get(index)!
 	if (topic.match(/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/Watt$/i)) {
-		shDevices[index].power = +message
+		dev.power = +message
 		updateShSummary('power')
 	} else if (topic.match(/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/Wh$/i)) {
 		//shDevices[index].energy = +message
@@ -85,43 +87,43 @@ function processSmarthomeDeviceMessages(topic: string, message: string) {
 	} else if (
 		topic.match(/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/RunningTimeToday$/i)
 	) {
-		shDevices[index].runningTime = +message
+		dev.runningTime = +message
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/TemperatureSensor0$/i,
 		)
 	) {
-		shDevices[index].temp[0] = +message
+		dev.temp[0] = +message
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/TemperatureSensor1$/i,
 		)
 	) {
-		shDevices[index].temp[1] = +message
+		dev.temp[1] = +message
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/TemperatureSensor2$/i,
 		)
 	) {
-		shDevices[index].temp[2] = +message
+		dev.temp[2] = +message
 	} else if (
 		topic.match(/^openWB\/LegacySmartHome\/Devices\/[0-9]+\/Status$/i)
 	) {
 		switch (+message) {
 			case 10:
-				shDevices[index].status = 'off'
+				dev.status = 'off'
 				break
 			case 11:
-				shDevices[index].status = 'on'
+				dev.status = 'on'
 				break
 			case 20:
-				shDevices[index].status = 'detection'
+				dev.status = 'detection'
 				break
 			case 30:
-				shDevices[index].status = 'timeout'
+				dev.status = 'timeout'
 				break
 			default:
-				shDevices[index].status = 'off'
+				dev.status = 'off'
 		}
 	} else {
 		// console.warn('Ignored Smarthome device message: ' + topic)
@@ -131,12 +133,12 @@ function processSmarthomeDeviceMessages(topic: string, message: string) {
 function updateShSummary(cat: string) {
 	switch (cat) {
 		case 'power':
-			usageSummary['devices'].power = Object.values(shDevices)
+			usageSummary['devices'].power = [...shDevices.values()]
 				.filter((dev) => dev.configured && !dev.countAsHouse)
 				.reduce((sum, consumer) => sum + consumer.power, 0)
 			break
 		case 'energy':
-			usageSummary['devices'].energy = Object.values(shDevices)
+			usageSummary['devices'].energy = [...shDevices.values()]
 				.filter((dev) => dev.configured && !dev.countAsHouse)
 				.reduce((sum, consumer) => sum + consumer.energy, 0)
 			break
@@ -156,6 +158,6 @@ function getIndex(topic: string): number | undefined {
 			return undefined
 		}
 	} catch (e) {
-		console.warn('Parser error in getIndex for topic ' + topic)
+		console.warn('Parser error in getIndex for topic ' + topic + ' : ' + e)
 	}
 }

@@ -1,5 +1,5 @@
 <template>
-	<div class="instantsettings mt-5 grid12">
+	<div class="instantsettings">
 		<!-- Ampere -->
 		<ConfigItem title="Stromstärke" icon="fa-bolt" :fullwidth="true">
 			<RangeInput
@@ -89,7 +89,10 @@ const energyLimit = computed({
 
 <style scoped>
 .instantsettings {
+	display: grid;
 	justify-content: center;
+	align-items: center;
+	grid-template-columns: auto auto;
 	grid-gap: 20px;
 }
 .chargeConfigSelect {

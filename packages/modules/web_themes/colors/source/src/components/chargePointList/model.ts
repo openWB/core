@@ -247,7 +247,12 @@ export class ChargePoint {
 		return vehicles[this.connectedVehicle].etMaxPrice ?? 0
 	}
 	set etMaxPrice(newPrice: number) {
-		updateServer('cpEtMaxPrice', Math.round(newPrice * 10) / 1000000, this.id)
+		updateServer(
+			'cpEtMaxPrice',
+			Math.ceil(newPrice * 1000) / 100000000,
+			this.id,
+		)
+		//updateServer('cpEtMaxPrice', newPrice  / 100000, this.id)
 	}
 	toPowerItem(): PowerItem {
 		return {
@@ -274,6 +279,8 @@ export class Vehicle {
 		this.id = index
 	}
 	private _chargeTemplateId = 0
+	isSocConfigured = false
+	isSocManual = false
 	get chargeTemplateId() {
 		return this._chargeTemplateId
 	}

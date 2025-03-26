@@ -11,7 +11,10 @@ from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
+from modules.common.abstract_io import AbstractIoDevice
 from modules.common.fault_state_level import FaultStateLevel
+from modules.io_actions.controllable_consumers.dimming.api import Dimming
+from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +70,26 @@ class Process:
                         target=bat_component.set_power_limit,
                         args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
                         name=f"set power limit {bat_component.component_config.id}"))
-
+            for action in data.data.io_actions.actions.values():
+                if isinstance(action, DimmingDirectControl):
+                    for d in action.config.configuration.devices:
+                        if d["type"] == "io":
+                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
+                                action.dimming_via_direct_control() is not None
+                            )
+                if isinstance(action, Dimming):
+                    for d in action.config.configuration.devices:
+                        if d["type"] == "io":
+                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
+                                action.dimming_active()
+                            )
+            for io in data.data.system_data.values():
+                if isinstance(io, AbstractIoDevice):
+                    modules_threads.append(
+                        threading.Thread(
+                            target=io.write,
+                            args=(None, data.data.io_states[f"io_states{io.config.id}"].data.set.digital_output,),
+                            name=f"set output io{io.config.id}"))
             if modules_threads:
                 joined_thread_handler(modules_threads, 3)
         except Exception:

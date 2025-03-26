@@ -29,6 +29,7 @@ from helpermodules.pub import Pub
 from helpermodules.utils import exit_after
 from modules import configuration, loadvars, update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
+from modules.internal_chargepoint_handler.gpio import InternalGpioHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
@@ -219,6 +220,8 @@ try:
     event_jobs_running = threading.Event()
     event_jobs_running.set()
     event_update_soc = threading.Event()
+    event_restart_gpio = threading.Event()
+    gpio = InternalGpioHandler(event_restart_gpio)
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc(event_update_soc)
     set = setdata.SetData(event_ev_template, event_charge_template,
@@ -234,7 +237,7 @@ try:
                           event_update_config_completed,
                           event_update_soc,
                           event_soc,
-                          event_jobs_running, event_modbus_server)
+                          event_jobs_running, event_modbus_server, event_restart_gpio)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
@@ -243,8 +246,11 @@ try:
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
     if rfid.keyboards_detected:
-        t_rfid = Thread(target=rfid.run, args=(), name="Internal Chargepoint")
+        t_rfid = Thread(target=rfid.run, args=(), name="Internal RFID")
         t_rfid.start()
+
+    t_gpio = Thread(target=gpio.loop, args=(), name="Internal GPIO")
+    t_gpio.start()
 
     t_sub.start()
     t_set.start()
