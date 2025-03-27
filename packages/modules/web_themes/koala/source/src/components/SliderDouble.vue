@@ -1,13 +1,14 @@
 <template>
   <div class="my-card">
-    <div class="relative-position" style="height: 40px">
+    <div class="slider-container">
       <!-- For SoC mode -->
-      <div v-if="displayMode === 'soc'">
+      <div v-if="props.limitMode !== 'amount'">
         <q-slider
-          v-model="currentCharge"
+          v-model="currentValue"
           :min="0"
           :max="100"
           color="green-7"
+          class="current-slider"
           track-size="1.5em"
           thumb-size="0px"
           readonly
@@ -15,31 +16,31 @@
           @touchstart.stop
           @touchmove.stop
           @touchend.stop
-          style="position: absolute; width: 100%; z-index: 1"
         />
         <q-slider
-          v-model="targetCharge"
+          v-model="targetValue"
           :min="0"
           :max="100"
           color="light-green-5"
           inner-track-color="blue-grey-2"
+          class="target-slider"
           track-size="1.5em"
           :thumb-size="props.readonly ? '0' : '2em'"
           :readonly="props.readonly"
           @touchstart.stop
           @touchmove.stop
           @touchend.stop
-          style="position: absolute; width: 100%"
         />
       </div>
 
       <!-- For Energy Amount mode -->
-      <div v-else-if="displayMode === 'energy'">
+      <div v-else>
         <q-slider
-          v-model="currentEnergy"
+          v-model="currentValue"
           :min="0"
-          :max="targetEnergy"
+          :max="targetValue"
           color="green-7"
+          class="current-slider"
           track-size="1.5em"
           thumb-size="0px"
           readonly
@@ -47,33 +48,37 @@
           @touchstart.stop
           @touchmove.stop
           @touchend.stop
-          style="position: absolute; width: 100%; z-index: 1"
         />
       </div>
     </div>
 
     <div class="row justify-between no-wrap">
       <div class="col">
-        <div>{{ displayMode === 'soc' ? 'Ladestand' : 'Geladen' }}</div>
+        <div>{{ props.limitMode !== 'amount' ? 'Ladestand' : 'Geladen' }}</div>
         <div>
           {{
-            displayMode === 'soc'
-              ? currentCharge + '%'
-              : formatEnergy(currentEnergy)
+            props.limitMode !== 'amount'
+              ? currentValue + '%'
+              : formatEnergy(currentValue)
           }}
         </div>
       </div>
-      <div v-if="showTargetTime" class="col text-center">
+      <div
+        v-if="props.chargeMode === 'scheduled_charging'"
+        class="col text-center"
+      >
         <div>Zielzeit</div>
-        <div>{{ targetTime }}</div>
+        <div>{{ props.targetTime }}</div>
       </div>
       <div class="col text-right">
-        <div>{{ displayMode === 'soc' ? 'Ladeziel' : 'Energieziel' }}</div>
+        <div>
+          {{ props.limitMode !== 'amount' ? 'Ladeziel' : 'Energieziel' }}
+        </div>
         <div>
           {{
-            displayMode === 'soc'
-              ? targetCharge + '%'
-              : formatEnergy(targetEnergy)
+            props.limitMode !== 'amount'
+              ? targetValue + '%'
+              : formatEnergy(targetValue)
           }}
         </div>
       </div>
@@ -123,19 +128,16 @@ const props = defineProps({
   },
 });
 
-const showTargetTime = computed(
-  () => props.chargeMode === 'scheduled_charging',
+// Unified current and target values that adapt based on the limitMode
+const currentValue = computed(() =>
+  props.limitMode === 'amount'
+    ? props.currentEnergyCharged
+    : props.connectedVehicleSoc,
 );
 
-const displayMode = computed(() => {
-  return props.limitMode === 'amount' ? 'energy' : 'soc';
-});
-
-const currentCharge = computed(() => props.connectedVehicleSoc);
-const targetCharge = computed(() => props.targetSoc);
-
-const currentEnergy = computed(() => props.currentEnergyCharged);
-const targetEnergy = computed(() => props.targetEnergyAmount);
+const targetValue = computed(() =>
+  props.limitMode === 'amount' ? props.targetEnergyAmount : props.targetSoc,
+);
 
 const formatEnergy = (value: number) => {
   if (value >= 1000) {
@@ -150,5 +152,21 @@ const formatEnergy = (value: number) => {
 .my-card {
   width: 100%;
   max-width: 300px;
+}
+
+.slider-container {
+  position: relative;
+  height: 40px;
+}
+
+.current-slider {
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+}
+
+.target-slider {
+  position: absolute;
+  width: 100%;
 }
 </style>

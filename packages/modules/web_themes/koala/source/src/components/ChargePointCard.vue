@@ -4,22 +4,22 @@
       <div class="row items-center text-h6 text-bold">
         <div class="col flex items-center">
           {{ name }}
-          <ChargePointLock :charge-point-id="Number(props.chargePointId)" />
+          <ChargePointLock :charge-point-id="props.chargePointId" />
           <ChargePointStateIcon
             :charge-point-id="Number(props.chargePointId)"
           />
         </div>
         <q-icon name="settings" size="sm" @click="settingsVisible = true" />
       </div>
-      <ChargePointFaultMessage :charge-point-id="Number(props.chargePointId)" />
-      <ChargePointStateMessage :charge-point-id="Number(props.chargePointId)" />
+      <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
+      <ChargePointStateMessage :charge-point-id="props.chargePointId" />
       <div class="row items-center q-mt-sm">
         <ChargePointVehicleSelect
           :charge-point-id="Number(props.chargePointId)"
         />
-        <ChargePointPriority :charge-point-id="Number(props.chargePointId)" />
+        <ChargePointPriority :charge-point-id="props.chargePointId" />
       </div>
-      <ChargePointModeButtons :charge-point-id="Number(props.chargePointId)" />
+      <ChargePointModeButtons :charge-point-id="props.chargePointId" />
       <div class="row q-mt-sm">
         <div class="col">
           <div class="text-subtitle2">Leistung</div>
@@ -197,10 +197,7 @@ const targetSoc = computed<number | undefined>(() => {
 });
 
 const showSocTargetSlider = computed(() => {
-  return (
-    chargeMode.value !== undefined &&
-    !['stop', 'standby'].includes(chargeMode.value)
-  );
+  return chargeMode.value !== undefined && !'stop'.includes(chargeMode.value);
 });
 
 const targetTime = computed(() => {
