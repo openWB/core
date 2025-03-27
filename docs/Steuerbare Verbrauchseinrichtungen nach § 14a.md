@@ -1,6 +1,6 @@
 Der Gesetzgeber sieht verschiedene Möglichkeiten für steuerbare Verbrauchseinrichtungen vor. Für jede steuerbare Verbrauchseinrichtung kann eine andere Option angemeldet werden. Bei der Konfiguration muss deshalb auch immer der/die Ladepunkte angegeben werden, für die die IO-Aktion angewendet werden soll.
 
-### Dimmen per HEMS
+### Dimmen per EMS
 
 Beim Dimmen wird eine maximale Bezugsleistung für alle steuerbaren Verbrauchseinrichtungen nach einer vorgegebene Formel ermittelt. Das Ergebnis dieser Formel muss bei der IO-Aktion `Dimmen` in der Einstellung `maximale Bezugsleistung` eingetragen werden. ACHTUNG: Die openWB kann aktuell nur die Ladepunkte berücksichtigen. Sind noch weitere steuerbare Verbraucher angemeldet, können diese über einen digitalen Ausgang angebunden werden. Da openWB die Leistung dieser Geräte nicht kennt, werden 4,2kW angenommen. Muss der Verbraucher seine Leistung begrenzen, wird der Ausgang auf 0V gesetzt. Für die korrekte Ermittlung der maximalen Bezugsleistung ist der Betreiber, nicht openWB oder die software2 verantwortlich.
 Vorhandener Überschuss kann zusätzlich zur maximalen Bezugsleistung verwendet werden.
