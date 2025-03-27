@@ -206,7 +206,7 @@ class MigrateData:
                         elif row[7] == "3":
                             chargemode = "stop"
                         elif row[7] == "4":
-                            chargemode = "standby"
+                            chargemode = "eco_charging"
                         elif row[7] == "7":
                             chargemode = "scheduled_charging"
                         else:

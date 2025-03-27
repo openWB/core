@@ -1,6 +1,6 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
-import DashBoardCard from "@/components/DashBoardCard.vue";
+import DashboardCard from "@/components/DashboardCard.vue";
 import SparkLine from "@/components/SparkLine.vue";
 
 /* fontawesome */
@@ -12,7 +12,7 @@ library.add(fasCarBattery);
 
 export default {
   name: "BatteryCard",
-  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
+  components: { DashboardCard, SparkLine, FontAwesomeIcon },
   props: {},
   data() {
     return {
@@ -23,7 +23,7 @@ export default {
 </script>
 
 <template>
-  <dash-board-card
+  <dashboard-card
     v-if="mqttStore.getBatteryConfigured"
     color="warning"
   >
@@ -43,5 +43,5 @@ export default {
       :data="mqttStore.getBatteryPowerChartData"
       :soc-data="mqttStore.getBatterySocChartData"
     />
-  </dash-board-card>
+  </dashboard-card>
 </template>

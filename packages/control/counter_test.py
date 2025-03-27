@@ -140,7 +140,7 @@ def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixtur
     cp.data.control_parameter.phases = 1
     cp.data.control_parameter.state = params.state
     cp.data.control_parameter.timestamp_switch_on_off = params.timestamp_switch_on_off
-    ev.data.charge_template = ChargeTemplate(0)
+    ev.data.charge_template = ChargeTemplate()
     ev.data.charge_template.data.chargemode.pv_charging.feed_in_limit = params.feed_in_limit
     cp.data.set.charging_ev_data = ev
     mock_calc_switch_on_power = Mock(return_value=[params.surplus, params.threshold])
