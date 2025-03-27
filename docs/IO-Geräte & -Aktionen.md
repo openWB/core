@@ -25,6 +25,6 @@ Die AddOn-Platine stellt 7 Eingänge und 3 Ausgänge zur Verfügung. WICHTIG: In
 
 ## IO-Aktionen
 
-### Steuerbare Verbrauchseinrichtungen: Dimmen per HEMS, Dimmung per Direkt-Steuerung, RSE
+### Steuerbare Verbrauchseinrichtungen: Dimmen per EMS, Dimmung per Direkt-Steuerung, RSE
 
 Ausführliche Informationen findest Du im gesonderten Wiki-Beitrag [Steuerbare Verbrauchseinrichtungen](https://github.com/openWB/core/wiki/Steuerbare-Verbrauchseinrichtungen)
