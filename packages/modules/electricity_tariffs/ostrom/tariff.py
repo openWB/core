@@ -2,6 +2,8 @@
 from base64 import b64encode
 from datetime import datetime, timezone, timedelta
 from urllib.parse import quote
+from urllib3 import Retry
+from requests.adapters import HTTPAdapter
 from typing import Dict
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
@@ -11,7 +13,10 @@ from modules.electricity_tariffs.ostrom.config import OstromTariff
 
 
 def fetch_prices(config: OstromTariffConfiguration) -> Dict[int, float]:
-    access_token = req.get_http_session().post(
+    session = req.get_http_session()
+    retries = Retry(total=3, allowed_methods=frozenset({'GET', 'POST'}))
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+    access_token = session.post(
         url="https://auth.production.ostrom-api.io/oauth2/token",
         data={"grant_type": "client_credentials"},
         headers={
@@ -27,7 +32,7 @@ def fetch_prices(config: OstromTariffConfiguration) -> Dict[int, float]:
         zip = f"&zip={config.zip}"
     else:
         zip = ""
-    raw_prices = req.get_http_session().get(
+    raw_prices = session.get(
         url="https://production.ostrom-api.io/spot-prices?" +
             f"startDate={startDate}&endDate={endDate}&resolution=HOUR{zip}",
         headers={
