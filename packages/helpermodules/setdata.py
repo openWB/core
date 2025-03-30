@@ -546,6 +546,7 @@ class SetData:
                         "/set/perform_control_pilot_interruption" in msg.topic or
                         "/set/perform_phase_switch" in msg.topic or
                         "/set/ocpp_transaction_active" in msg.topic or
+                        "/get/charge_state_prev" in msg.topic or
                         "/set/plug_state_prev" in msg.topic):
                     self._validate_value(msg, bool)
                 elif "/set/autolock_state" in msg.topic:

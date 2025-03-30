@@ -90,6 +90,7 @@ def connected_vehicle_factory() -> ConnectedVehicle:
 @dataclass
 class Get:
     charge_state: bool = False
+    charge_state_prev: bool = False
     charging_current: Optional[float] = 0
     charging_power: Optional[float] = 0
     charging_voltage: Optional[float] = 0
