@@ -18,5 +18,8 @@ class MqttBat(AbstractBat):
         # ob der Speicher die Funktion bietet
         pass
 
+    def power_limit_controlable(self) -> bool:
+        return True
+
 
 component_descriptor = ComponentDescriptor(configuration_factory=MqttBatSetup)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import Optional
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -28,6 +29,18 @@ class SampleBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        # Wenn der Speicher die Steuerung der Ladeleistung unterstützt, muss bei Übergabe einer Zahl auf aktive
+        # Speichersteurung umgeschaltet werden, sodass der Speicher mit der übergebenen Leistung lädt/entlädt. Wird
+        # None übergeben, muss der Speicher die Null-Punkt-Ausregelung selbst übernehmen.
+        self.client.write_registers(reg, power_limit)
+        # Wenn der Speicher keine Steuerung der Ladeleistung unterstützt
+        pass
+
+    def power_limit_controlable(self) -> bool:
+        # Wenn der Speicher die Steuerung der Ladeleistung unterstützt, muss True zurückgegeben werden.
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SampleBatSetup)
