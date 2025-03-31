@@ -57,43 +57,45 @@
     v-model="limitEnergy.value"
     class="q-mt-md"
   />
-  <div class="text-subtitle2 q-mt-sm q-mr-sm">
-    Preisgrenze für strompreisbasiertes Laden
-  </div>
-  <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-    <!-- <q-btn-group class="col"> -->
-    <q-btn
-      v-if="maxPrice.value"
-      icon="remove"
-      color="grey"
-      size="sm"
-      class="col q-mr-sm"
-      @click="maxPrice.value = maxPrice.value - 0.01"
-    />
-    <q-btn
-      v-if="maxPrice.value"
-      icon="add"
-      color="grey"
-      size="sm"
-      class="col"
-      @click="maxPrice.value = maxPrice.value + 0.01"
-    />
-    <!-- </q-btn-group> -->
-    <div class="col-5 text-right">
-      {{
-        maxPrice.value?.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }) + ' ct/kWh'
-      }}
+  <div v-if="etConfigured">
+    <div class="text-subtitle2 q-mt-sm q-mr-sm">
+      Preisgrenze für strompreisbasiertes Laden
     </div>
+    <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
+      <!-- <q-btn-group class="col"> -->
+      <q-btn
+        v-if="maxPrice.value"
+        icon="remove"
+        color="grey"
+        size="sm"
+        class="col q-mr-sm"
+        @click="maxPrice.value = maxPrice.value - 0.01"
+      />
+      <q-btn
+        v-if="maxPrice.value"
+        icon="add"
+        color="grey"
+        size="sm"
+        class="col"
+        @click="maxPrice.value = maxPrice.value + 0.01"
+      />
+      <!-- </q-btn-group> -->
+      <div class="col-5 text-right">
+        {{
+          maxPrice.value?.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) + ' ct/kWh'
+        }}
+      </div>
+    </div>
+    <q-field filled class="q-mt-sm">
+      <ElectricityTariffChart
+        :modelValue="maxPrice.value"
+        @update:modelValue="maxPrice.value = $event"
+      />
+    </q-field>
   </div>
-  <q-field filled class="q-mt-sm">
-    <ElectricityTariffChart
-      :modelValue="maxPrice.value"
-      @update:modelValue="maxPrice.value = $event"
-    />
-  </q-field>
 </template>
 
 <script setup lang="ts">
@@ -140,6 +142,10 @@ const limitEnergy = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargeLimitEnergy(
     props.chargePointId,
   ),
+);
+
+const etConfigured = computed(() =>
+  mqttStore.etProviderConfigured,
 );
 
 const maxPrice = computed(() =>

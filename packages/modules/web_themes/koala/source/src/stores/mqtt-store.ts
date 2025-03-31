@@ -464,7 +464,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       }
       const path = objectPath.split('.');
       for (let i = 0; i < path.length; i++) {
-        if (topicObject[path[i]] == undefined) {
+        if (! Object.hasOwn(topicObject, path[i])) {
           console.error('path not found', topicObject, path[i]);
           return defaultValue;
         }
@@ -2356,6 +2356,13 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /* electricity tariff provider */
+  const etProviderConfigured = computed(() => {
+    return (
+      (getValue.value('openWB/optional/et/provider', 'type', null) as object) ||
+      undefined
+    ) !== undefined;
+  });
+
   const etPrices = computed(() => {
     return getValue.value('openWB/optional/et/get/prices', undefined, {}) as {
       [key: string]: number;
@@ -2463,6 +2470,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     getPvPower,
     // Chart data
     chartData,
+    // electricity tariff provider
+    etProviderConfigured,
     etPrices,
   };
 });
