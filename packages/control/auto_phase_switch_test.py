@@ -5,6 +5,7 @@ from unittest.mock import Mock
 from control.chargepoint.control_parameter import ControlParameter
 from control.counter import Counter, CounterData, Set
 
+from control.limiting_value import LoadmanagementLimit
 from control.pv_all import PvAll
 from control.bat_all import BatAll
 from control.general import General
@@ -137,7 +138,7 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
                                                                 params.get_power,
                                                                 32,
                                                                 3,
-                                                                None)
+                                                                LoadmanagementLimit(None,  None))
 
     # evaluation
     assert phases_to_use == params.expected_phases_to_use
