@@ -1,11 +1,12 @@
 <template>
   <div class="my-card">
-    <div class="relative-position" style="height: 40px">
+    <div class="slider-container">
       <q-slider
-        v-model="currentCharge"
+        :model-value="currentValue"
         :min="0"
-        :max="100"
+        :max="maxValue"
         color="green-7"
+        class="current-slider"
         track-size="1.5em"
         thumb-size="0px"
         readonly
@@ -13,49 +14,67 @@
         @touchstart.stop
         @touchmove.stop
         @touchend.stop
-        style="position: absolute; width: 100%; z-index: 1"
       />
       <q-slider
-        v-model="targetCharge"
+        v-if="props.limitMode == 'soc'"
+        v-model="target"
         :min="0"
         :max="100"
         color="light-green-5"
         inner-track-color="blue-grey-2"
+        class="target-slider"
         track-size="1.5em"
         :thumb-size="props.readonly ? '0' : '2em'"
         :readonly="props.readonly"
         @touchstart.stop
         @touchmove.stop
         @touchend.stop
-        style="position: absolute; width: 100%"
       />
     </div>
-
     <div class="row justify-between no-wrap">
       <div class="col">
-        <div>Ladestand</div>
-        <div>{{ currentCharge }}%</div>
+        <div>{{ props.limitMode == 'soc' ? 'Ladestand' : 'Geladen' }}</div>
+        <div>
+          {{
+            props.limitMode == 'soc'
+              ? currentValue + '%'
+              : formatEnergy(currentValue)
+          }}
+        </div>
       </div>
-      <div v-if="showTargetTime" class="col text-center">
+      <div
+        v-if="props.targetTime"
+        class="col text-center"
+      >
         <div>Zielzeit</div>
-        <div>{{ targetTime }}</div>
+        <div>{{ props.targetTime }}</div>
       </div>
       <div class="col text-right">
-        <div>Ladeziel</div>
-        <div>{{ targetCharge }}%</div>
+        <div>
+          {{ props.limitMode == 'soc' ? 'Ladeziel' : 'Energieziel' }}
+        </div>
+        <div>
+          {{
+            props.limitMode == 'soc'
+              ? target + '%'
+              : formatEnergy(target)
+          }}
+        </div>
       </div>
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
 import { computed } from 'vue';
-
 defineOptions({
   name: 'SliderQuasar',
 });
-
+const emit = defineEmits(['update:modelValue']);
 const props = defineProps({
+  modelValue: {
+    type: Number,
+    required: true,
+  },
   readonly: {
     type: Boolean,
     default: false,
@@ -64,30 +83,58 @@ const props = defineProps({
     type: String,
     default: '',
   },
-  connectedVehicleSoc: {
-    type: Number,
-    default: 0,
+  limitMode: {
+    type: String,
+    default: 'soc',
   },
-  targetSoc: {
+  currentValue: {
     type: Number,
     default: 0,
   },
   targetTime: {
     type: String,
-    default: 'keine',
+    required: false,
+    default: undefined,
   },
 });
-
-const showTargetTime = computed(
-  () => props.chargeMode === 'scheduled_charging',
-);
-const currentCharge = computed(() => props.connectedVehicleSoc);
-const targetCharge = computed(() => props.targetSoc);
+const target = computed({
+  get: () => props.modelValue,
+  set: (value) => {
+    if (!props.readonly) {
+      emit('update:modelValue', value);
+    }
+  },
+});
+const maxValue = computed(() => {
+  if (props.limitMode == 'soc') {
+    return 100;
+  }
+  return target.value;
+});
+const formatEnergy = (value: number) => {
+  if (value >= 1000) {
+    return (value / 1000).toFixed(2) + ' kWh';
+  } else {
+    return value.toFixed(0) + ' Wh';
+  }
+};
 </script>
-
 <style scoped>
 .my-card {
   width: 100%;
   max-width: 300px;
+}
+.slider-container {
+  position: relative;
+  height: 40px;
+}
+.current-slider {
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+}
+.target-slider {
+  position: absolute;
+  width: 100%;
 }
 </style>

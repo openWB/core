@@ -19,6 +19,7 @@ import type {
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
   BatteryConfiguration,
+  CounterConfiguration,
   ThemeConfiguration,
 } from './mqtt-store-model';
 
@@ -2245,6 +2246,23 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the power meter(counter) name identified by the Grid ID
+   * @param counterId counter ID
+   * @returns string
+   */
+  const getComponentName = computed(() => {
+    return (componentId: number): string => {
+      const configurations = getWildcardValues.value(
+        `openWB/system/device/+/component/${componentId}/config`,
+      ) as { [key: string]: CounterConfiguration };
+      if (Object.keys(configurations).length === 0) {
+        return `Zähler ${componentId}`;
+      }
+      return Object.values(configurations)[0].name;
+    };
+  });
+
+  /**
    * Get grid power identified from root of component hierarchy
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined
@@ -2462,6 +2480,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryMode,
     // Grid data
     getGridId,
+    getComponentName,
     getGridPower,
     // Home data
     getHomePower,
