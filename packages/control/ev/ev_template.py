@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 class EvTemplateData:
     dc_min_current: int = 0
     dc_max_current: int = 0
+    id: int = 0
     name: str = "Fahrzeug-Profil"
     max_current_multi_phases: int = 16
     max_phases: int = 3
@@ -33,4 +34,3 @@ class EvTemplate:
 
     data: EvTemplateData = field(default_factory=ev_template_data_factory, metadata={
                                  "topic": "config"})
-    et_num: int = 0

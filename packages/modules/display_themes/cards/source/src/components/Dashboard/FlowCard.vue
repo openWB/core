@@ -1,11 +1,13 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
-import DashBoardCard from "@/components/DashBoardCard.vue";
+import DashboardCard from "@/components/DashboardCard.vue";
+import ChargeModeModal from "../ChargePoints/ChargeModeModal.vue";
 
 export default {
   name: "DashboardFlowCard",
   components: {
-    DashBoardCard,
+    DashboardCard,
+    ChargeModeModal,
   },
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
@@ -24,6 +26,8 @@ export default {
         numRows: 4,
         numColumns: 3,
       },
+      modalChargeModeSettingsVisible: false,
+      modalChargePointId: 0,
     };
   },
   computed: {
@@ -241,7 +245,7 @@ export default {
             row: 0,
             column: 0,
           },
-          label: ["EVU", this.gridPower.textValue],
+          label: ["EVU", this.absoluteValue(this.gridPower).textValue],
           icon: "icons/owbGrid.svg",
         });
       }
@@ -262,7 +266,7 @@ export default {
             row: 0,
             column: 2,
           },
-          label: ["Haus", this.homePower.textValue],
+          label: ["Haus", this.absoluteValue(this.homePower).textValue],
           icon: "icons/owbHouse.svg",
         });
       }
@@ -283,7 +287,7 @@ export default {
             row: 1,
             column: 0,
           },
-          label: ["PV", this.pvPower.textValue],
+          label: ["PV", this.absoluteValue(this.pvPower).textValue],
           icon: "icons/owbPV.svg",
         });
       }
@@ -304,7 +308,7 @@ export default {
             row: 1,
             column: 2,
           },
-          label: ["Speicher", this.batteryPower.textValue],
+          label: ["Speicher", this.absoluteValue(this.batteryPower).textValue],
           soc: this.batterySoc,
           icon: "icons/owbBattery.svg",
         });
@@ -329,7 +333,7 @@ export default {
               row: 2,
               column: this.connectedChargePoints.length > 1 ? 0 : 1,
             },
-            label: [this.chargePoint1Name, this.chargePoint1Power.textValue],
+            label: [this.chargePoint1Name, this.absoluteValue(this.chargePoint1Power).textValue],
             icon: "icons/owbChargePoint.svg",
           });
           if (
@@ -342,7 +346,9 @@ export default {
               class: {
                 base: "vehicle",
                 valueLabel:
-                  "fill-" + this.chargePoint1ConnectedVehicleChargeMode.class,
+                  "fill-" + this.chargePoint1ConnectedVehicleChargeMode?.class,
+                animated: this.chargePoint1Discharging,
+                animatedReverse: this.chargePoint1Charging,
               },
               position: {
                 row: 3,
@@ -350,10 +356,13 @@ export default {
               },
               label: [
                 this.chargePoint1ConnectedVehicleName || "---",
-                this.chargePoint1ConnectedVehicleChargeMode.label || "---",
+                this.chargePoint1ConnectedVehicleChargeMode?.label || "---",
               ],
               soc: this.chargePoint1ConnectedVehicleSoc,
               icon: "icons/owbVehicle.svg",
+              clicked: () => {
+                this.selectChargeMode(this.connectedChargePoints[0]);
+              },
             });
           }
           if (this.connectedChargePoints.length > 1) {
@@ -370,7 +379,7 @@ export default {
                 row: 2,
                 column: this.connectedChargePoints.length > 2 ? 1 : 2,
               },
-              label: [this.chargePoint2Name, this.chargePoint2Power.textValue],
+              label: [this.chargePoint2Name, this.absoluteValue(this.chargePoint2Power).textValue],
               icon: "icons/owbChargePoint.svg",
             });
             if (
@@ -383,7 +392,9 @@ export default {
                 class: {
                   base: "vehicle",
                   valueLabel:
-                    "fill-" + this.chargePoint2ConnectedVehicleChargeMode.class,
+                    "fill-" + this.chargePoint2ConnectedVehicleChargeMode?.class,
+                  animated: this.chargePoint2Discharging,
+                  animatedReverse: this.chargePoint2Charging,
                 },
                 position: {
                   row: 3,
@@ -391,7 +402,7 @@ export default {
                 },
                 label: [
                   this.chargePoint2ConnectedVehicleName || "---",
-                  this.chargePoint2ConnectedVehicleChargeMode.label || "---",
+                  this.chargePoint2ConnectedVehicleChargeMode?.label || "---",
                 ],
                 soc: this.chargePoint2ConnectedVehicleSoc,
                 icon: "icons/owbVehicle.svg",
@@ -411,7 +422,7 @@ export default {
                   row: 2,
                   column: 2,
                 },
-                label: [this.chargePoint3Name, this.chargePoint3Power.textValue],
+                label: [this.chargePoint3Name, this.absoluteValue(this.chargePoint3Power).textValue],
                 icon: "icons/owbChargePoint.svg",
               });
               if (
@@ -424,7 +435,9 @@ export default {
                   class: {
                     base: "vehicle",
                     valueLabel:
-                      "fill-" + this.chargePoint3ConnectedVehicleChargeMode.class,
+                      "fill-" + this.chargePoint3ConnectedVehicleChargeMode?.class,
+                    animated: this.chargePoint3Discharging,
+                    animatedReverse: this.chargePoint3Charging,
                   },
                   position: {
                     row: 3,
@@ -432,7 +445,7 @@ export default {
                   },
                   label: [
                     this.chargePoint3ConnectedVehicleName || "---",
-                    this.chargePoint3ConnectedVehicleChargeMode.label || "---",
+                    this.chargePoint3ConnectedVehicleChargeMode?.label || "---",
                   ],
                   soc: this.chargePoint3ConnectedVehicleSoc,
                   icon: "icons/owbVehicle.svg",
@@ -454,7 +467,7 @@ export default {
               row: 2,
               column: 1,
             },
-            label: ["Ladepunkte", this.chargePointSumPower.textValue],
+            label: ["Ladepunkte", this.absoluteValue(this.chargePointSumPower).textValue],
             icon: "icons/owbChargePoint.svg",
           })
         }
@@ -470,7 +483,31 @@ export default {
       return components;
     },
   },
+  watch: {
+    changesLocked(newValue, oldValue) {
+      // hide all modals if lock is kicking in
+      if (oldValue !== true && newValue === true) {
+        this.modalChargeModeSettingsVisible = false;
+      }
+    },
+  },
   methods: {
+    absoluteValue(valueObject) {
+      // check for leading minus sign and remove it
+      // energy direction is indicated by animated flow line
+      // process object properties "textValue", "value" and "scaledValue" and return the modified valueObject
+      let newValueObject = { ...valueObject };
+      if (newValueObject.textValue) {
+        newValueObject.textValue = newValueObject.textValue.replace("-", "");
+      }
+      if (newValueObject.value) {
+        newValueObject.value = Math.abs(newValueObject.value);
+      }
+      if (newValueObject.scaledValue) {
+        newValueObject.scaledValue = Math.abs(newValueObject.scaledValue);
+      }
+      return newValueObject;
+    },
     setSvgNumRows(numRows) {
       this.svgSize.numRows = numRows;
     },
@@ -523,12 +560,22 @@ export default {
       }
       this.$refs[elementId][0]?.beginElement();
     },
+    selectChargeMode(chargePointId) {
+      if (!this.changesLocked) {
+        this.modalChargePointId = chargePointId;
+        this.modalChargeModeSettingsVisible = true;
+      }
+    },
   },
 };
 </script>
 
 <template>
-  <dash-board-card color="primary">
+  <charge-mode-modal
+    v-model="modalChargeModeSettingsVisible"
+    :charge-point-id="modalChargePointId"
+  />
+  <dashboard-card color="primary">
     <template #headerLeft>
       Übersicht - Energiefluss
     </template>
@@ -556,7 +603,8 @@ export default {
                 component.class.base !== 'vehicle'
                   ? `M ${calcFlowLineAnchorX(component.position.column)}, ` +
                     `${calcRowY(component.position.row)} ${calcColumnX(1)}, ${calcRowY(1)}`
-                  : ''
+                  : `M ${calcFlowLineAnchorX(component.position.column)}, ` +
+                    `${calcRowY(component.position.row)} ${calcFlowLineAnchorX(component.position.column)}, ${calcRowY(component.position.row - 1)}`
               "
             />
           </g>
@@ -579,7 +627,7 @@ export default {
               :key="component.id"
               :class="component.class.base"
               :transform="`translate(${calcColumnX(component.position.column)}, ${calcRowY(component.position.row)})`"
-              @click="beginAnimation(`animate-label-${component.id}`)"
+              @click="beginAnimation(`animate-label-${component.id}`); component.clicked ? component.clicked() : null"
             >
               <defs>
                 <clipPath
@@ -691,7 +739,7 @@ export default {
         </svg>
       </div>
     </i-container>
-  </dash-board-card>
+  </dashboard-card>
 </template>
 
 <style scoped>
@@ -745,6 +793,11 @@ path.animatedReverse.battery {
 path.animated.charge-point,
 path.animatedReverse.charge-point {
   stroke: var(--color--primary);
+}
+
+path.animated.vehicle,
+path.animatedReverse.vehicle {
+  stroke: var(--color--teal);
 }
 
 circle {
