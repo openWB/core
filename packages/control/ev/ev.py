@@ -8,7 +8,6 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 """
 from dataclasses import dataclass, field
 import logging
-import re
 from typing import List, Optional, Tuple
 
 from control import data
@@ -17,7 +16,7 @@ from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev_template import EvTemplate
-from control.limiting_value import LimitingValue
+from control.limiting_value import LimitingValue, LoadmanagementLimit
 from dataclass_utils.factories import empty_list_factory
 from helpermodules import timecheck
 from helpermodules.constants import NO_ERROR
@@ -294,7 +293,7 @@ class Ev:
                                        get_currents: List[float],
                                        get_power: float,
                                        max_current_cp: int,
-                                       limit: LimitingValue) -> Tuple[bool, Optional[str]]:
+                                       limit: LoadmanagementLimit) -> Tuple[bool, Optional[str]]:
         # Manche EV laden mit 6.1A bei 6A Soll-Strom
         min_current = (max(control_parameter.min_current, control_parameter.required_current) +
                        self.ev_template.data.nominal_difference)
@@ -309,9 +308,7 @@ class Ev:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
-        unblanced_load_limit_reached = (
-            limit is not None and
-            re.search(re.escape(LimitingValue.UNBALANCED_LOAD.value).replace(r'\{\}', r'.+'), limit))
+        unblanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
         condition_1_to_3 = (((max(get_currents) > max_current and
                             all_surplus > required_surplus) or unblanced_load_limit_reached) and
                             phases_in_use == 1)
@@ -335,7 +332,7 @@ class Ev:
                           get_power: float,
                           max_current_cp: int,
                           max_phases: int,
-                          limit: LimitingValue) -> Tuple[int, float, Optional[str]]:
+                          limit: LoadmanagementLimit) -> Tuple[int, float, Optional[str]]:
         message = None
         timestamp_last_phase_switch = control_parameter.timestamp_last_phase_switch
         current = control_parameter.required_current

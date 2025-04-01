@@ -572,9 +572,10 @@ class SetData:
                 elif "/control_parameter/failed_phase_switches" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
                 elif ("/control_parameter/submode" in msg.topic or
-                        "/control_parameter/limit" in msg.topic or
                         "/control_parameter/chargemode" in msg.topic):
                     self._validate_value(msg, str)
+                elif "/control_parameter/limit" in msg.topic:
+                    self._validate_value(msg, "json")
                 elif "/control_parameter/prio" in msg.topic:
                     self._validate_value(msg, bool)
                 elif "/control_parameter/current_plan" in msg.topic:
