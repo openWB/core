@@ -34,13 +34,6 @@ class SofarCounter(AbstractCounter):
                 client.read_holding_registers(0x04A9, ModbusDataType.INT_16, unit=self.__modbus_id) * -10]
         except Exception:
             powers = None
-        try:
-            voltages = [
-                client.read_holding_registers(0x048D, ModbusDataType.UINT_16, unit=self.__modbus_id) * 0.1,
-                client.read_holding_registers(0x0498, ModbusDataType.UINT_16, unit=self.__modbus_id) * 0.1,
-                client.read_holding_registers(0x04A3, ModbusDataType.UINT_16, unit=self.__modbus_id) * 0.1]
-        except Exception:
-            voltages = [230, 230, 230]
         # 0x0692 Energy_Selling_Total UInt32 in kwH accuracy 0,01 LSB
         # 0x0693 Energy_Selling_Total UInt32 in kwH accuracy 0,01
         exported = client.read_holding_registers(0x0692, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
@@ -53,8 +46,7 @@ class SofarCounter(AbstractCounter):
             exported=exported,
             power=power,
             powers=powers,
-            frequency=frequency,
-            voltages=voltages,
+            frequency=frequency
         )
         self.store.set(counter_state)
 
