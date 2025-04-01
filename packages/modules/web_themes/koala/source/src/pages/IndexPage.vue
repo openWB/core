@@ -16,9 +16,9 @@
       <q-tab name="batteries" title="Speicher">
         <q-icon name="battery_full" size="md" color="primary" />
       </q-tab>
-      <q-tab name="smart-home" title="SmartHome">
+      <!-- <q-tab name="smart-home" title="SmartHome">
         <q-icon name="home" size="md" color="primary" />
-      </q-tab>
+      </q-tab> -->
     </q-tabs>
     <!-- Tab Panels -->
     <q-tab-panels v-model="tab" class="col">
@@ -35,9 +35,9 @@
         <BatteryInformation />
       </q-tab-panel>
       <!-- Smart Home -->
-      <q-tab-panel name="smart-home" class="">
+      <!-- <q-tab-panel name="smart-home" class="">
         <SmartHomeInformation />
-      </q-tab-panel>
+      </q-tab-panel> -->
     </q-tab-panels>
   </q-page>
 </template>
@@ -48,7 +48,7 @@ import ChartCarousel from 'src/components/ChartCarousel.vue';
 import ChargePointInformation from 'src/components/ChargePointInformation.vue';
 import BatteryInformation from 'src/components/BatteryInformation.vue';
 import VehicleInformation from 'src/components/VehicleInformation.vue';
-import SmartHomeInformation from 'src/components/SmartHomeInformation.vue';
+// import SmartHomeInformation from 'src/components/SmartHomeInformation.vue';
 
 defineOptions({
   name: 'IndexPage',
