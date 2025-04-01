@@ -18,6 +18,7 @@ from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from control.ev.charge_template import ChargeTemplate, ChargeTemplateData
 from control.ev import ev
 from control.ev.ev_template import EvTemplate, EvTemplateData
+from control.limiting_value import LoadmanagementLimit
 from control.optional_data import Ocpp
 from helpermodules import graph, system
 from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
@@ -457,7 +458,12 @@ class SubData:
                     elif re.search("/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         self.process_chargepoint_config_topic(var, msg)
                     elif re.search("/chargepoint/[0-9]+/control_parameter/", msg.topic) is not None:
-                        self.set_json_payload_class(var["cp"+index].chargepoint.data.control_parameter, msg)
+                        if re.search("/chargepoint/[0-9]+/control_parameter/limit", msg.topic) is not None:
+                            payload = decode_payload(msg.payload)
+                            var["cp"+index].chargepoint.data.control_parameter.limit = dataclass_from_dict(
+                                LoadmanagementLimit, payload)
+                        else:
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.control_parameter, msg)
             elif re.search("/chargepoint/get/", msg.topic) is not None:
                 self.set_json_payload_class(self.cp_all_data.data.get, msg)
         except Exception:

@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from enum import Enum
+from typing import Optional
 
 
 class LimitingValue(Enum):
@@ -11,3 +13,13 @@ class LimitingValue(Enum):
                                "reduziert wird.")
     CONTROLLABLE_CONSUMERS_ERROR = (", da aufgrund eines Fehlers im IO-Gerät {} die steuerbaren Verbraucher nicht "
                                     "gesteuert werden können. Bitte prüfe die Status-Seite.")
+
+
+@dataclass
+class LoadmanagementLimit:
+    message: Optional[str]
+    limiting_value: Optional[LimitingValue]
+
+
+def loadmanagement_limit_factory() -> LoadmanagementLimit:
+    return LoadmanagementLimit(None, None)
