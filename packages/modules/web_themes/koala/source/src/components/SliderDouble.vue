@@ -33,47 +33,48 @@
     </div>
     <div class="row justify-between no-wrap">
       <div class="col">
-        <div>{{ props.limitMode == 'soc' ? 'Ladestand' : 'Geladen' }}</div>
+        <div>{{ props.limitMode == 'amount' ? 'Geladen' : 'Ladestand' }}</div>
         <div>
           {{
-            props.limitMode == 'soc'
-              ? currentValue + '%'
-              : formatEnergy(currentValue)
+            props.limitMode == 'amount'
+              ? formatEnergy(currentValue)
+              : currentValue + '%'
           }}
         </div>
       </div>
-      <div
-        v-if="props.targetTime"
-        class="col text-center"
-      >
+      <div v-if="props.targetTime" class="col text-center">
         <div>Zielzeit</div>
         <div>{{ props.targetTime }}</div>
       </div>
-      <div class="col text-right">
+      <div
+        v-if="targetSet"
+        class="col text-right"
+      >
         <div>
           {{ props.limitMode == 'soc' ? 'Ladeziel' : 'Energieziel' }}
         </div>
         <div>
-          {{
-            props.limitMode == 'soc'
-              ? target + '%'
-              : formatEnergy(target)
-          }}
+          {{ props.limitMode == 'soc' ? target + '%' : formatEnergy(target) }}
         </div>
       </div>
     </div>
   </div>
 </template>
+
 <script setup lang="ts">
 import { computed } from 'vue';
+
 defineOptions({
-  name: 'SliderQuasar',
+  name: 'SliderDouble',
 });
+
 const emit = defineEmits(['update:modelValue']);
+
 const props = defineProps({
   modelValue: {
     type: Number,
-    required: true,
+    required: false,
+    default: -1,
   },
   readonly: {
     type: Boolean,
@@ -97,6 +98,7 @@ const props = defineProps({
     default: undefined,
   },
 });
+
 const target = computed({
   get: () => props.modelValue,
   set: (value) => {
@@ -105,12 +107,18 @@ const target = computed({
     }
   },
 });
+
+const targetSet = computed(() => {
+  return target.value >= 0 && props.limitMode !== 'none';
+});
+
 const maxValue = computed(() => {
-  if (props.limitMode == 'soc') {
+  if (['soc', 'none'].includes(props.limitMode)) {
     return 100;
   }
   return target.value;
 });
+
 const formatEnergy = (value: number) => {
   if (value >= 1000) {
     return (value / 1000).toFixed(2) + ' kWh';
@@ -119,20 +127,24 @@ const formatEnergy = (value: number) => {
   }
 };
 </script>
+
 <style scoped>
 .my-card {
   width: 100%;
   max-width: 300px;
 }
+
 .slider-container {
   position: relative;
   height: 40px;
 }
+
 .current-slider {
   position: absolute;
   width: 100%;
   z-index: 1;
 }
+
 .target-slider {
   position: absolute;
   width: 100%;

@@ -64,10 +64,13 @@ import ChargePointStateMessage from './ChargePointStateMessage.vue';
 import ChargePointFaultMessage from './ChargePointFaultMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
+
 const mqttStore = useMqttStore();
+
 const props = defineProps<{
   chargePointId: number;
 }>();
+
 const limitMode = computed(() => {
   switch (chargeMode.value) {
     case 'instant_charging':
@@ -86,37 +89,46 @@ const limitMode = computed(() => {
       return 'soc';
   }
 });
+
 const settingsVisible = ref<boolean>(false);
+
 const name = computed(() => mqttStore.chargePointName(props.chargePointId));
+
 const power = computed(() =>
   mqttStore.chargePointPower(props.chargePointId, 'textValue'),
 );
+
 const energyChargedPlugged = computed(() =>
   mqttStore.chargePointEnergyChargedPlugged(props.chargePointId, 'textValue'),
 );
+
 const phaseNumber = computed(() =>
   mqttStore.chargePointPhaseNumber(props.chargePointId),
 );
+
 const chargingCurrent = computed(() =>
   mqttStore.chargePointChargingCurrent(props.chargePointId),
 );
+
 const currentValue = computed(() => {
-  if (limitMode.value === 'soc') {
-    return Math.round(
-      mqttStore.chargePointConnectedVehicleSoc(props.chargePointId).value?.soc ??
-      0,
-    );
-  } else {
+  if (limitMode.value === 'amount') {
     return mqttStore.chargePointEnergyChargedPlugged(
       props.chargePointId,
       'value',
     ) as number;
+  } else {
+    return Math.round(
+      mqttStore.chargePointConnectedVehicleSoc(props.chargePointId).value
+        ?.soc ?? 0,
+    );
   }
 });
+
 const chargeMode = computed(
   () =>
     mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value,
 );
+
 const target = computed(() => {
   switch (chargeMode.value) {
     case 'scheduled_charging':
@@ -128,41 +140,43 @@ const target = computed(() => {
           props.chargePointId,
         ).value;
       return instantLimitMode === 'soc'
-        ? mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
+        ? (mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
             props.chargePointId,
-          ).value ?? 0
+          ).value ?? 0)
         : (mqttStore.chargePointConnectedVehicleInstantChargeLimitEnergy(
-          props.chargePointId,
-        ).value ?? 0) * 1000;
+            props.chargePointId,
+          ).value ?? 0) * 1000;
     case 'pv_charging':
       const pvLimitMode = mqttStore.chargePointConnectedVehiclePvChargeLimit(
         props.chargePointId,
       ).value;
       return pvLimitMode === 'soc'
-        ? mqttStore.chargePointConnectedVehiclePvChargeLimitSoC(
+        ? (mqttStore.chargePointConnectedVehiclePvChargeLimitSoC(
             props.chargePointId,
-          ).value ?? 0
+          ).value ?? 0)
         : (mqttStore.chargePointConnectedVehiclePvChargeLimitEnergy(
-          props.chargePointId,
-        ).value ?? 0) * 1000;
+            props.chargePointId,
+          ).value ?? 0) * 1000;
     case 'eco_charging':
       const ecoLimitMode = mqttStore.chargePointConnectedVehicleEcoChargeLimit(
         props.chargePointId,
       ).value;
       return ecoLimitMode === 'soc'
-        ? mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(
+        ? (mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(
             props.chargePointId,
-          ).value ?? 0
+          ).value ?? 0)
         : (mqttStore.chargePointConnectedVehicleEcoChargeLimitEnergy(
-          props.chargePointId,
-        ).value ?? 0) * 1000;
+            props.chargePointId,
+          ).value ?? 0) * 1000;
     default:
-      return 0;
+      return undefined;
   }
 });
+
 const showSocTargetSlider = computed(() => {
-  return chargeMode.value !== undefined && !'stop'.includes(chargeMode.value) && limitMode.value !== 'none';
+  return true;
 });
+
 const targetTime = computed(() => {
   const target = mqttStore.vehicleScheduledChargingTarget(
     props.chargePointId,

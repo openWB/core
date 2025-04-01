@@ -144,9 +144,7 @@ const limitEnergy = computed(() =>
   ),
 );
 
-const etConfigured = computed(() =>
-  mqttStore.etProviderConfigured,
-);
+const etConfigured = computed(() => mqttStore.etProviderConfigured);
 
 const maxPrice = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargeMaxPrice(props.chargePointId),
