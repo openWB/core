@@ -1,0 +1,265 @@
+// Quasar SCSS (& Sass) Variables
+// --------------------------------------------------
+// To customize the look and feel of this app, you can override
+// the Sass/SCSS variables found in Quasar's source Sass/SCSS files.
+// Check documentation for full list of Quasar variables
+// Your own variables (that are declared here) and Quasar's own
+// ones will be available out of the box in your .vue/.scss/.sass files
+// It's highly recommended to change the default colors
+// to match your app's branding.
+// Tip: Use the "Theme Builder" on Quasar's documentation website.
+// Import SASS color module
+@use 'sass:color' as color;
+// Default colors
+// $primary: #1976D2;
+// $secondary: #26A69A;
+// $accent: #9C27B0;
+// $dark: #1D1D1D;
+// $dark-page: #121212;
+// $positive: #21BA45;
+// $negative: #C10015;
+// $info: #31CCEC;
+// $warning: #F2C037;
+/////////////////////////////////////////////////////////////////////
+// Default Light Theme Base Colors
+$primary: #5c93d1;
+$secondary: #d2d2d7;
+$accent: #546e7a;
+$positive: #66bd7a;
+$negative: #db4f5f;
+$info: #7dc5d4;
+$warning: #d98e44;
+$background-1: #e3e3ec;
+$background-2: #eeeef3;
+$brown-text: #524f57;
+$white: #ffffff;
+$grey: #9e9e9e; // Quasar's default grey
+$toggle-off: #e0e0e0;
+$battery: #ba7128;
+// Light theme (default)
+:root {
+  --q-primary: #{$primary};
+  --q-secondary: #{$secondary};
+  --q-accent: #{$accent};
+  --q-positive: #{$positive};
+  --q-negative: #{$negative};
+  --q-info: #{$info};
+  --q-warning: #{$warning};
+  --q-background-1: #{$background-1};
+  --q-background-2: #{$background-2};
+  --q-brown-text: #{$brown-text};
+  --q-white: #{$white};
+  --q-grey: #{$grey};
+  --q-carousel-control: #{$primary};
+  --q-toggle-off: #{$toggle-off};
+  --q-flow-home-stroke: #{$grey};
+  --q-battery: #{$battery};
+  // Main background
+  background-color: var(--q-background-1);
+  // Text color
+  color: var(--q-brown-text);
+  .theme-text {
+    color: var(--q-brown-text) !important;
+  }
+  .deselected {
+    color: var(--q-grey) !important;
+  }
+  // Header colors
+  .q-header {
+    background-color: var(--q-background-2);
+    color: var(--q-brown-text);
+  }
+  // Drawer background
+  .q-drawer {
+    background-color: var(--q-background-2);
+  }
+  // Tab panel background
+  .q-tab-panels {
+    background-color: var(--q-background-2);
+  }
+  // Tab CSS
+  .q-tab {
+    background-color: var(--q-background-2);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border: 1px solid var(--q-secondary);
+  }
+  // Tab icon color
+  .q-tab-icon {
+    color: var(--q-primary);
+  }
+  // Tab active background color
+  .q-tab--active {
+    background-color: color.scale($secondary, $lightness: -2%);
+  }
+  // Carousel control arrows and buttons
+  .q-carousel__control {
+    .q-btn {
+      &:before {
+        box-shadow: none;
+      }
+      .q-icon {
+        color: var(--q-primary);
+        &:before {
+          color: var(--q-primary);
+          box-shadow: none;
+        }
+      }
+    }
+  }
+  // Slide container background
+  .q-carousel__slide {
+    background-color: var(--q-background-2);
+  }
+  // Slide background
+  .q-card {
+    background-color: var(--q-secondary);
+  }
+  // Expansion item (expand arrow)
+  .q-expansion-item__toggle-icon {
+    color: var(--q-white);
+  }
+  // List background color, for menus etc
+  .q-list {
+    background-color: var(--q-background-2);
+  }
+  // Toggle button color in off position
+  .q-toggle__thumb:after {
+    background: var(--q-toggle-off);
+  }
+  // Toggle button color in on position
+  .q-toggle__inner--truthy .q-toggle__thumb:after {
+    background-color: currentColor;
+  }
+}
+// Dark Theme Base Colors
+$dark-page: #000000; // This overrides Quasar's default dark page color
+$dark-primary: #3874db;
+$dark-secondary: #28293d;
+$dark-accent: #546e7a;
+$dark-positive: #3e8f5e;
+$dark-negative: #c54d57;
+$dark-info: #4b89aa;
+$dark-warning: #d98e44;
+$dark-background-1: #030627;
+$dark-background-2: #010322;
+$dark-list: rgb(40, 42, 62);
+$dark-carousel: #8b8f9f;
+$dark-tab-icon: #d7d9e0;
+// Dark theme
+.body--dark {
+  --q-primary: #{$dark-primary};
+  --q-secondary: #{$dark-secondary};
+  --q-accent: #{$dark-accent};
+  --q-positive: #{$dark-positive};
+  --q-negative: #{$dark-negative};
+  --q-info: #{$dark-info};
+  --q-warning: #{$dark-warning};
+  --q-background-1: #{$dark-background-1};
+  --q-background-2: #{$dark-background-2};
+  --q-white: #{$white};
+  --q-grey: #{$grey};
+  --q-carousel-control: #{$dark-carousel};
+  --q-toggle-off: #{$toggle-off};
+  --q-list: #{$dark-list};
+  --q-tab-icon: #{$dark-tab-icon};
+  --q-flow-home-stroke: #{$grey};
+  --q-battery: #{$dark-warning};
+  // Main background
+  background-color: $dark-page;
+  // Text color
+  color: var(--q-white);
+  .theme-text {
+    color: var(--q-white) !important;
+  }
+  .deselected {
+    color: var(--q-grey) !important;
+  }
+  // Header colors
+  .q-header {
+    background-color: var(--q-background-2);
+    color: var(--q-white);
+  }
+  // Drawer background
+  .q-drawer {
+    background-color: var(--q-list);
+  }
+  // Tab icon color
+  .q-tab {
+    .q-icon {
+      color: var(--q-tab-icon) !important;
+    }
+  }
+  // Tab panel background
+  .q-tab-panels {
+    background-color: var(--q-background-2);
+  }
+  // Tab CSS
+  .q-tab {
+    background-color: var(--q-background-2);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border: 1px solid var(--q-secondary);
+  }
+  // Tab active background color
+  .q-tab--active {
+    background-color: color.scale($dark-secondary, $lightness: 10%);
+  }
+  // Carousel control arrows and buttons
+  .q-carousel__control {
+    .q-btn {
+      &:before {
+        box-shadow: none;
+      }
+      .q-icon {
+        color: var(--q-carousel-control);
+        &:before {
+          color: var(--q-carousel-control);
+          box-shadow: none;
+        }
+      }
+    }
+  }
+  // Slide container background
+  .q-carousel__slide {
+    background-color: var(--q-background-2);
+    color: var(--q-white);
+  }
+  // Slide background
+  .q-card {
+    background-color: var(--q-secondary);
+    color: var(--q-white);
+  }
+  // Input field text label color
+  .q-field__label {
+    color: var(--q-white);
+  }
+  // Input field icon color
+  .q-field__control {
+    .q-field__native::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+  }
+  // Input field placeholder text color
+  .q-placeholder {
+    color: var(--q-white);
+  }
+  // List background color, for menus etc
+  .q-list {
+    background-color: var(--q-list);
+  }
+  // Menu text color
+  .q-menu {
+    .q-item__section {
+      color: var(--q-white) !important;
+    }
+  }
+  // Toggle button color in off position
+  .q-toggle__thumb:after {
+    background: var(--q-toggle-off);
+  }
+  // Toggle button color in on position
+  .q-toggle__inner--truthy .q-toggle__thumb:after {
+    background-color: currentColor;
+  }
+}
