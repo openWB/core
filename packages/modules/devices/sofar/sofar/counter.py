@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from typing import Dict, Union
-from pymodbus.constants import Endian
 
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractCounter
@@ -24,8 +23,7 @@ class SofarCounter(AbstractCounter):
     def update(self, client: ModbusTcpClient_):
         # 0x0485 ActivePower_output_total Int16 in kW accuracy 0,01 discharge + charge -
         # 0x0488 ActivePower_PCC_total Int16 0,01 kW
-        power = client.read_holding_registers(0x0488, ModbusDataType.INT_16, wordorder=Endian.Little,
-                                              unit=self.__modbus_id) * -10
+        power = client.read_holding_registers(0x0488, ModbusDataType.INT_16, unit=self.__modbus_id) * -10
         # 0x0484 Frequency_Grid UInt16 in Hz accuracy 0,01
         frequency = client.read_holding_registers(
             0x0484, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
@@ -41,19 +39,14 @@ class SofarCounter(AbstractCounter):
                 client.read_holding_registers(0x048D, ModbusDataType.UINT_16, unit=self.__modbus_id) * 0.1,
                 client.read_holding_registers(0x0498, ModbusDataType.UINT_16, unit=self.__modbus_id) * 0.1,
                 client.read_holding_registers(0x04A3, ModbusDataType.UINT_16, unit=self.__modbus_id) * 0.1]
-            for voltage in voltages:
-                if voltage < 1:
-                    voltage = 230
         except Exception:
             voltages = [230, 230, 230]
         # 0x0692 Energy_Selling_Total UInt32 in kwH accuracy 0,01 LSB
         # 0x0693 Energy_Selling_Total UInt32 in kwH accuracy 0,01
-        exported = client.read_holding_registers(0x0692, ModbusDataType.UINT_32,
-                                                 wordorder=Endian.Little, unit=self.__modbus_id) * 0.001
+        exported = client.read_holding_registers(0x0692, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
         # 0x068E Energy_Purchase_Total UInt32 in kwH accuracy 0,01 LSB
         # 0x068F Energy_Purchase_Total UInt32 in kwH accuracy 0,01
-        imported = client.read_holding_registers(0x068E, ModbusDataType.UINT_32,
-                                                 wordorder=Endian.Little, unit=self.__modbus_id) * 0.001
+        imported = client.read_holding_registers(0x068E, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
 
         counter_state = CounterState(
             imported=imported,

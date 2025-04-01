@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from typing import Dict, Union
-from pymodbus.constants import Endian
 
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractInverter
@@ -34,8 +33,7 @@ class SofarInverter(AbstractInverter):
         # 0x05C4 Power_PV_Total UInt16 in kW accuracy 0,1
         # 0x0686 PV_Generation_Total UInt32 0,1 kW LSB
         # 0x0687 PV_Generation_Total UInt32 0,1 kW
-        exported = client.read_holding_registers(0x0686, ModbusDataType.UINT_32, wordorder=Endian.Little,
-                                                 unit=self.__modbus_id) * 0.001
+        exported = client.read_holding_registers(0x0686, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
 
         inverter_state = InverterState(
             power=power,
