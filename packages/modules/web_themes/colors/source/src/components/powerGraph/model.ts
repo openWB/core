@@ -172,7 +172,7 @@ export const dayGraph = reactive({
 			graphData.waitForData = true
 			sendCommand({
 				command: 'getDailyLog',
-				data: { day: dateString },
+				data: { date: dateString, day: dateString },
 			})
 		}
 	},
@@ -208,7 +208,7 @@ export const monthGraph = reactive({
 		graphData.waitForData = true
 		sendCommand({
 			command: 'getMonthlyLog',
-			data: { month: dateString },
+			data: { date: dateString, month: dateString },
 		})
 	},
 	deactivate() {
@@ -256,7 +256,7 @@ export const yearGraph = reactive({
 		graphData.waitForData = true
 		sendCommand({
 			command: 'getYearlyLog',
-			data: { year: dateString },
+			data: { date: dateString, year: dateString },
 		})
 	},
 	deactivate() {
@@ -360,7 +360,9 @@ export function updateEnergyValues(
 				historicSummary.items.evuOut.energy += values.energy_exported
 			}
 		})
-		historicSummary.items.pv.energy = totals.pv.all.energy_exported
+		if (Object.entries(totals.pv).length > 0) {
+			historicSummary.items.pv.energy = totals.pv.all.energy_exported
+		}
 		if (totals.bat.all) {
 			historicSummary.items.batIn.energy = totals.bat.all.energy_imported
 			historicSummary.items.batOut.energy = totals.bat.all.energy_exported

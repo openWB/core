@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass, field
+import datetime
 import logging
 import traceback
 from typing import Dict, Optional, Tuple
@@ -149,7 +150,7 @@ class ChargeTemplate:
                 if plan is not None:
                     current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                     if self.data.et.active and data.data.optional_data.et_provider_available():
-                        if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
+                        if not data.data.optional_data.et_charging_allowed(self.data.et.max_price):
                             return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.id
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
                         return current, "time_charging", message, plan.id
@@ -195,7 +196,7 @@ class ChargeTemplate:
             else:
                 current = instant_charging.dc_current
             if self.data.et.active and data.data.optional_data.et_provider_available():
-                if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
+                if not data.data.optional_data.et_charging_allowed(self.data.et.max_price):
                     return 0, "stop", self.CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
                 return current, "instant_charging", message
@@ -381,7 +382,7 @@ class ChargeTemplate:
                                                 "für Zielladen bereits erreicht wurde.")
     SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
     SCHEDULED_CHARGING_NO_DATE_PENDING = "Kein Zielladen, da kein Ziel-Termin ansteht."
-    SCHEDULED_CHARGING_USE_PV = ("Kein Zielladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, "
+    SCHEDULED_CHARGING_USE_PV = ("Laden startet {}. Falls vorhanden, "
                                  "wird mit Überschuss geladen.")
     SCHEDULED_CHARGING_MAX_CURRENT = ("Zielladen mit {}A. Der Ladestrom wurde erhöht, um den Zieltermin zu erreichen. "
                                       "Es wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen.")
@@ -389,9 +390,9 @@ class ChargeTemplate:
     SCHEDULED_CHARGING_LIMITED_BY_AMOUNT = '{}kWh geladene Energie'
     SCHEDULED_CHARGING_IN_TIME = ('Zielladen mit mindestens {}A, um {} um {} zu erreichen. Falls vorhanden wird '
                                   'zusätzlich EVU-Überschuss geladen.')
-    SCHEDULED_CHARGING_CHEAP_HOUR = "Zielladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
+    SCHEDULED_CHARGING_CHEAP_HOUR = "Zielladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist. {}"
     SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Zielladen ausstehend, da jetzt kein günstiger Zeitpunkt zum preisbasierten "
-                                         "Laden ist. Falls vorhanden, wird mit Überschuss geladen.")
+                                         "Laden ist. {} Falls vorhanden, wird mit Überschuss geladen.")
 
     def scheduled_charging_calc_current(self,
                                         plan_data: Optional[SelectedPlan],
@@ -447,14 +448,17 @@ class ChargeTemplate:
             # ist.
             if self.data.et.active and data.data.optional_data.et_provider_available():
                 hour_list = data.data.optional_data.et_get_loading_hours(plan_data.duration, plan_data.remaining_time)
-                log.debug(f"Günstige Ladezeiten: {hour_list}")
+                hours_message = ("Geladen wird zu folgenden Uhrzeiten: " +
+                                 ", ".join([datetime.datetime.fromtimestamp(hour).strftime('%-H:%M')
+                                           for hour in sorted(hour_list)])
+                                 + ".")
                 if timecheck.is_list_valid(hour_list):
-                    message = self.SCHEDULED_CHARGING_CHEAP_HOUR
+                    message = self.SCHEDULED_CHARGING_CHEAP_HOUR.format(hours_message)
                     current = plan_data.available_current
                     submode = "instant_charging"
                 elif ((limit.selected == "soc" and soc <= limit.soc_limit) or
                       (limit.selected == "amount" and used_amount < limit.amount)):
-                    message = self.SCHEDULED_CHARGING_EXPENSIVE_HOUR
+                    message = self.SCHEDULED_CHARGING_EXPENSIVE_HOUR.format(hours_message)
                     current = min_current
                     submode = "pv_charging"
                     phases = control_parameter_phases
@@ -465,7 +469,14 @@ class ChargeTemplate:
                 if limit.selected == "soc" and soc >= limit.soc_limit:
                     message = self.SCHEDULED_REACHED_LIMIT_SOC
                 else:
-                    message = self.SCHEDULED_CHARGING_USE_PV
+                    now = datetime.datetime.today()
+                    start_time = now + datetime.timedelta(seconds=plan_data.remaining_time)
+                    if start_time.year == now.year and start_time.month == now.month and start_time.day == now.day:
+                        message = self.SCHEDULED_CHARGING_USE_PV.format(
+                            f"um {start_time.strftime('%-H:%M')} Uhr")
+                    else:
+                        message = self.SCHEDULED_CHARGING_USE_PV.format(
+                            f"am {start_time.strftime('%d.%m')} um {start_time.strftime('%-H:%M')} Uhr")
                     current = min_current
                     submode = "pv_charging"
                     phases = control_parameter_phases

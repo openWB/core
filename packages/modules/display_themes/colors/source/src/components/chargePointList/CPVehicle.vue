@@ -1,6 +1,6 @@
 <template>
 	<div class="vehicleinfo justify-content-left">
-		<div class="titleline  mb-3">
+		<div class="titleline mb-3">
 			<DisplayButton @click="openSettings('#chSettings')">
 				<div
 					class="carname d-flex justify-content-left align-items-center px-2"
@@ -42,74 +42,74 @@
 			/>
 		</div>
 		<!-- Car info -->
-		 <div class="infoline">
-		<InfoItem
-			v-if="chargepoint.isSocConfigured"
-			heading="Ladestand:"
-			class="grid-col-4 grid-left"
-		>
-			<BatterySymbol :soc="soc" class="me-2" />
-			<DisplayButton v-if="chargepoint.isSocManual" @click="editSoc = !editSoc">
-				<i
-					class="fa-solid fa-sm fas fa-edit py-0 px-3 mt-3"
-					:style="{ color: 'var(--color-fg)' }"
+		<div class="infoline">
+			<InfoItem
+				v-if="chargepoint.isSocConfigured"
+				heading="Ladestand:"
+				class="grid-col-4 grid-left"
+			>
+				<BatterySymbol :soc="soc" class="me-2" />
+				<DisplayButton v-if="chargepoint.isSocManual" @click="startSocEditor">
+					<i
+						class="fa-solid fa-sm fas fa-edit py-0 px-3 mt-3"
+						:style="{ color: 'var(--color-fg)' }"
+					/>
+				</DisplayButton>
+			</InfoItem>
+			<InfoItem
+				v-if="chargepoint.isSocConfigured"
+				heading="Reichweite:"
+				class="grid-col-4"
+			>
+				{{
+					vehicles[props.chargepoint.connectedVehicle]
+						? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
+						: 0
+				}}
+				km
+			</InfoItem>
+			<InfoItem heading="Zeitplan:" class="grid-col-4 grid-right">
+				<span
+					v-if="chargepoint.timedCharging"
+					class="me-1 fa-solid fa-xs fa-clock ps-1"
 				/>
-			</DisplayButton>
-		</InfoItem>
-		<InfoItem
-			v-if="chargepoint.isSocConfigured"
-			heading="Reichweite:"
-			class="grid-col-4"
-		>
-			{{
-				vehicles[props.chargepoint.connectedVehicle]
-					? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
-					: 0
-			}}
-			km
-		</InfoItem>
-		<InfoItem heading="Zeitplan:" class="grid-col-4 grid-right">
-			<span
-				v-if="chargepoint.timedCharging"
-				class="me-1 fa-solid fa-xs fa-clock ps-1"
-			/>
-			{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
-		</InfoItem>
-</div>
-<div class="infoline">
-		<!-- ET Information -->
-		<InfoItem
-			v-if="etData.active"
-			heading="Preisladen:"
-			class="grid-col-4 grid-left"
-		>
-			<SwitchInput v-model="cp.etActive" />
-			<!--{{ cp.etActive ? 'Ja' : 'Nein' }}-->
-		</InfoItem>
+				{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
+			</InfoItem>
+		</div>
+		<div class="infoline">
+			<!-- ET Information -->
+			<InfoItem
+				v-if="etData.active"
+				heading="Preisladen:"
+				class="grid-col-4 grid-left"
+			>
+				<SwitchInput v-model="cp.etActive" />
+				<!--{{ cp.etActive ? 'Ja' : 'Nein' }}-->
+			</InfoItem>
 
-		<InfoItem v-if="etData.active" heading="max. Preis:" class="grid-col-4">
-			<DisplayButton v-if="cp.etActive" @click="openSettings('#prSettings')">
-				<span class="maxprice"
-					>{{
-						props.chargepoint.etActive
-							? (Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(
-									1,
-								) + ' ct'
-							: '-'
-					}}
-				</span>
-			</DisplayButton>
-			<span v-else>-</span>
-		</InfoItem>
+			<InfoItem v-if="etData.active" heading="max. Preis:" class="grid-col-4">
+				<DisplayButton v-if="cp.etActive" @click="openSettings('#prSettings')">
+					<span class="maxprice"
+						>{{
+							props.chargepoint.etActive
+								? (Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(
+										1,
+									) + ' ct'
+								: '-'
+						}}
+					</span>
+				</DisplayButton>
+				<span v-else>-</span>
+			</InfoItem>
 
-		<InfoItem
-			v-if="etData.active"
-			heading="akt. Preis:"
-			class="grid-col-4 grid-right"
-		>
-			<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
-		</InfoItem>
-</div>
+			<InfoItem
+				v-if="etData.active"
+				heading="akt. Preis:"
+				class="grid-col-4 grid-right"
+			>
+				<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
+			</InfoItem>
+		</div>
 		<!-- Chargemode buttons -->
 		<RadioBarInput
 			:id="'chargemode-' + chargepoint.name"
@@ -179,6 +179,7 @@ const chargeMode = computed({
 		}
 	},
 })
+
 const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return (Math.round(p * 10) / 10).toFixed(1)
@@ -186,37 +187,43 @@ const currentPrice = computed(() => {
 function openSettings(target: string = '') {
 	if (displayConfig.locked) {
 		unlockDisplay()
-	}
-	const settingspage = new Modal('#settingspage')
-	settingspage.toggle()
-	let chargePanelName = target
-	if (target == '') {
-		switch (props.chargepoint.chargeMode) {
-			case 'instant_charging':
-				chargePanelName = '#inSettings'
-				break
-			case 'pv_charging':
-				chargePanelName = '#phvSettings'
-				break
-			case 'scheduled_charging':
-				chargePanelName = '#scSettings'
-				break
-			default:
-				chargePanelName = '#chSettings'
+	} else {
+		const settingspage = new Modal('#settingspage')
+		settingspage.toggle()
+		let chargePanelName = target
+		if (target == '') {
+			switch (props.chargepoint.chargeMode) {
+				case 'instant_charging':
+					chargePanelName = '#inSettings'
+					break
+				case 'pv_charging':
+					chargePanelName = '#phvSettings'
+					break
+				case 'scheduled_charging':
+					chargePanelName = '#scSettings'
+					break
+				default:
+					chargePanelName = '#chSettings'
+			}
+		}
+		const tabToActivate = document.querySelector(
+			chargePanelName + props.chargepoint.id,
+		)
+		if (tabToActivate) {
+			var tab = new Tab(tabToActivate)
+			tab.show()
+		} else {
+			console.error('no element found')
 		}
 	}
-
-	const tabToActivate = document.querySelector(
-		chargePanelName + props.chargepoint.id,
-	)
-	if (tabToActivate) {
-		var tab = new Tab(tabToActivate)
-		tab.show()
+}
+function startSocEditor() {
+	if (displayConfig.locked) {
+		unlockDisplay()
 	} else {
-		console.error('no element found')
+		editSoc.value = !editSoc.value
 	}
 }
-
 const currentPriceStyle = computed(() => {
 	return props.chargepoint.etMaxPrice >= +currentPrice.value
 		? { color: 'var(--color-charging)' }
@@ -225,11 +232,11 @@ const currentPriceStyle = computed(() => {
 </script>
 <style scoped>
 .titleline {
-	display:flex;
+	display: flex;
 	justify-content: left;
 }
 .infoline {
-	display:flex;
+	display: flex;
 	justify-content: space-between;
 	flex-direction: row;
 }
@@ -262,7 +269,7 @@ const currentPriceStyle = computed(() => {
 	justify-self: stretch;
 }
 .vehicleinfo {
-	display:flex;
+	display: flex;
 	flex-direction: column;
 }
 </style>

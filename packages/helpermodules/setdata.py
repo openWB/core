@@ -11,7 +11,7 @@ import paho.mqtt.client as mqtt
 
 import logging
 from helpermodules import hardware_configuration, subdata
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub, pub_single
 from helpermodules.utils.topic_parser import (decode_payload, get_index, get_index_position, get_second_index,
                                               get_second_index_position)
@@ -41,7 +41,7 @@ class SetData:
         self.heartbeat = False
 
     def set_data(self):
-        self.internal_broker_client = InternalBrokerClient("mqttset", self.on_connect, self.on_message)
+        self.internal_broker_client = BrokerClient("mqttset", self.on_connect, self.on_message)
         self.event_subdata_initialized.wait()
         log.debug("Subdata initialization completed. Starting setdata loop to broker.")
         self.internal_broker_client.start_infinite_loop()
@@ -84,6 +84,8 @@ class SetData:
                 self.process_bat_topic(msg)
             elif "openWB/set/general/" in msg.topic:
                 self.process_general_topic(msg)
+            elif ("openWB/set/io/" in msg.topic or "openWB/set/internal_io/" in msg.topic):
+                self.process_io_topic(msg)
             elif "openWB/set/optional/" in msg.topic:
                 self.process_optional_topic(msg)
             elif "openWB/set/counter/" in msg.topic:
@@ -570,9 +572,10 @@ class SetData:
                 elif "/control_parameter/failed_phase_switches" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
                 elif ("/control_parameter/submode" in msg.topic or
-                        "/control_parameter/limit" in msg.topic or
                         "/control_parameter/chargemode" in msg.topic):
                     self._validate_value(msg, str)
+                elif "/control_parameter/limit" in msg.topic:
+                    self._validate_value(msg, "json")
                 elif "/control_parameter/prio" in msg.topic:
                     self._validate_value(msg, bool)
                 elif "/control_parameter/current_plan" in msg.topic:
@@ -822,22 +825,42 @@ class SetData:
                   "openWB/set/general/prices/grid" in msg.topic or
                   "openWB/set/general/prices/pv" in msg.topic):
                 self._validate_value(msg, float, [(0, 99.99)])
-            elif ("openWB/set/general/range_unit" in msg.topic or
-                  "openWB/set/general/ripple_control_receiver/override_reference" in msg.topic):
+            elif "openWB/set/general/range_unit" in msg.topic:
                 self._validate_value(msg, str)
-            elif "openWB/set/general/ripple_control_receiver/configured" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/general/ripple_control_receiver/get/override_value" in msg.topic:
-                self._validate_value(msg, float)
-            elif "openWB/set/general/ripple_control_receiver/get/fault_state" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
-            elif "openWB/set/general/ripple_control_receiver/get/fault_str" in msg.topic:
-                self._validate_value(msg, str)
-            elif ("openWB/set/general/web_theme" in msg.topic or
-                  "openWB/set/general/ripple_control_receiver/module" in msg.topic):
+            elif "openWB/set/general/web_theme" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("openWB/set/general/charge_log_data_config" in msg.topic):
                 self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_io_topic(self, msg: mqtt.MQTTMessage):
+        """ Handler für die Allgemeinen-Topics
+
+         Parameters
+        ----------
+
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if "config" in msg.topic:
+                self._validate_value(msg, "json")
+            elif ("get/digital_input" in msg.topic or
+                  "get/analog_input" in msg.topic or
+                  "get/digital_output" in msg.topic or
+                  "get/analog_output" in msg.topic or
+                  "set/digital_output" in msg.topic or
+                  "set/analog_output" in msg.topic):
+                self._validate_value(msg, "json")
+            elif "get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
+            elif "/timestamp" in msg.topic:
+                self._validate_value(msg, float)
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -1070,6 +1093,9 @@ class SetData:
                     self._validate_value(msg, bool)
                 else:
                     self.__unknown_topic(msg)
+            elif "io" in msg.topic:
+                if "/config" in msg.topic:
+                    self._validate_value(msg, "json")
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 # log.error("Unbekanntes set-Topic: "+str(msg.topic)+", "+

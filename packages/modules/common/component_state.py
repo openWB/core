@@ -108,11 +108,13 @@ class InverterState:
         self,
         exported: float,
         power: float,
+        imported: float = 0,  # simulated import counter to properly calculate PV energy when bat is charged from AC
         currents: Optional[List[Optional[float]]] = None,
         dc_power: Optional[float] = None
     ):
         """Args:
             exported: total energy in Wh
+            imported: total energy in Wh
             power: actual power in W
             currents: actual currents for 3 phases in A
             dc_power: dc power in W
@@ -125,6 +127,7 @@ class InverterState:
         self.currents = currents
         self.power = power
         self.exported = exported
+        self.imported = imported
         self.dc_power = dc_power
 
 
@@ -141,6 +144,9 @@ class CarState:
         if soc_timestamp is None:
             self.soc_timestamp = timecheck.create_timestamp()
         else:
+            if soc_timestamp > 1e10:  # Convert soc_timestamp to seconds if it is in milliseconds
+                log.debug(f'Zeitstempel {soc_timestamp} ist in ms, wird in s gewandelt. Modul sollte angepasst werden.')
+                soc_timestamp /= 1000
             self.soc_timestamp = soc_timestamp
 
 
@@ -204,6 +210,14 @@ class TariffState:
 
 
 @auto_str
-class RcrState:
-    def __init__(self, override_value: float) -> None:
-        self.override_value = override_value
+class IoState:
+    """JSON erlaubt nur Zeichenketten als Schlüssel für Objekte"""
+
+    def __init__(self, analog_input: Dict[str, float] = None,
+                 digital_input: Dict[str, bool] = None,
+                 analog_output: Dict[str, float] = None,
+                 digital_output: Dict[str, bool] = None) -> None:
+        self.analog_input = analog_input
+        self.digital_input = digital_input
+        self.analog_output = analog_output
+        self.digital_output = digital_output
