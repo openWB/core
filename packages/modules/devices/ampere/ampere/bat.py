@@ -25,7 +25,7 @@ class AmpereBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, client: ModbusTcpClient_) -> None:
-        power = client.read_input_registers(535, ModbusDataType.INT_16, unit=self.modbus_id)
+        power = client.read_input_registers(535, ModbusDataType.INT_16, unit=self.modbus_id) * -1
         soc = client.read_input_registers(1339, ModbusDataType.UINT_16, unit=self.modbus_id)
 
         imported, exported = self.sim_counter.sim_count(power)
