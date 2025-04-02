@@ -628,6 +628,10 @@ class SetData:
         elif ("/get/evse_current" in msg.topic or
               "/get/max_evse_current" in msg.topic):
             self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
+        elif ("/get/version" in msg.topic or
+              "/get/current_branch" in msg.topic or
+              "/get/current_commit" in msg.topic):
+            self._validate_value(msg, str)
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
             self._validate_value(msg, float)
