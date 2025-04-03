@@ -11,6 +11,7 @@ from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState, CHARGING_STATES
 from control.counter import ControlRangeState, Counter
+from control.limiting_value import LoadmanagementLimit
 from control.loadmanagement import LimitingValue, Loadmanagement
 
 
@@ -82,16 +83,16 @@ class SurplusControlled:
 
     def _set_loadmangement_message(self,
                                    current: float,
-                                   limit: LimitingValue,
+                                   limit: LoadmanagementLimit,
                                    chargepoint: Chargepoint) -> None:
         # Strom muss an diesem Zähler geändert werden
         if (current != chargepoint.data.set.current and
                 # Strom erreicht nicht die vorgegebene Stromstärke
                 current != max(chargepoint.data.control_parameter.required_currents) and
                 # im PV-Laden wird der Strom immer durch die Leistung begrenzt
-                limit != LimitingValue.POWER):
+                limit.limiting_value != LimitingValue.POWER):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
-                                          f"{limit}")
+                                          f"{limit.message}")
 
     # tested
     def filter_by_feed_in_limit(self, chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:

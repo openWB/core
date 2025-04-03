@@ -1,3 +1,4 @@
+import datetime
 from typing import Dict, NamedTuple, Optional, Tuple
 from unittest.mock import Mock
 
@@ -244,7 +245,8 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
                      ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(16), 3),
                      id="few minutes too late, but didn't miss for today"),
         pytest.param(SelectedPlan(remaining_time=301, duration=3600), 79, 0, "soc",
-                     (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV, 3), id="too early, use pv"),
+                     (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV.format("um 8:45 Uhr"), 3),
+                     id="too early, use pv"),
     ])
 def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          soc: int,
@@ -279,8 +281,10 @@ def test_scheduled_charging_calc_current_no_plans():
 @pytest.mark.parametrize(
     "loading_hour, expected",
     [
-        pytest.param(True, (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_CHEAP_HOUR, 3)),
-        pytest.param(False, (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR, 3)),
+        pytest.param(True, (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_CHEAP_HOUR.format(
+            "Geladen wird zu folgenden Uhrzeiten: 8:00."), 3)),
+        pytest.param(False, (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR.format(
+            "Geladen wird zu folgenden Uhrzeiten: 8:00."), 3)),
     ])
 def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expected, monkeypatch):
     # setup
@@ -289,10 +293,10 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
     plan.limit.selected = "soc"
     ct.data.chargemode.scheduled_charging.plans = {"0": plan}
     ct.data.et.active = True
-    mock_et_get_loading_hours = Mock(return_value=[])
+    # für Github-Test keinen Zeitstempel verwenden
+    mock_et_get_loading_hours = Mock(return_value=[datetime.datetime(
+        year=2022, month=5, day=16, hour=8, minute=0).timestamp()])
     monkeypatch.setattr(data.data.optional_data, "et_get_loading_hours", mock_et_get_loading_hours)
-    mock_et_provider_available = Mock(return_value=True)
-    monkeypatch.setattr(data.data.optional_data, "et_provider_available", mock_et_provider_available)
     mock_is_list_valid = Mock(return_value=loading_hour)
     monkeypatch.setattr(timecheck, "is_list_valid", mock_is_list_valid)
 

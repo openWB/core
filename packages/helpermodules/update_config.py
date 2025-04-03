@@ -10,6 +10,7 @@ import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
+from control.limiting_value import LoadmanagementLimit
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -52,7 +53,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 76
+    DATASTORE_VERSION = 77
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -2006,5 +2007,12 @@ class UpdateConfig:
 
                     return {'openWB/system/io/0/config': dataclass_utils.asdict(io_device),
                             'openWB/io/action/0/config': dataclass_utils.asdict(action)}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 76)
+
+    def upgrade_datastore_76(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/[0-9]+/control_parameter/limit", topic) is not None:
+                return {topic: dataclass_utils.asdict(LoadmanagementLimit(None,  None))}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 76)

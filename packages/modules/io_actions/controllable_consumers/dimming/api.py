@@ -21,17 +21,17 @@ class Dimming(AbstractIoAction):
             if len(input_matrix_list):
                 if pattern["value"]:
                     self.dimming_input, self.dimming_value = input_matrix_list[0]
-                    control_command_log.info(f"Dimmen per HEMS: Eingang {self.dimming_input} wird überwacht.")
+                    control_command_log.info(f"Dimmen per EMS: Eingang {self.dimming_input} wird überwacht.")
                 if pattern["value"] is False:
                     self.no_dimming_input, self.no_dimming_value = input_matrix_list[0]
             else:
-                control_command_log.warning("Dimmen per HEMS: Kein Eingang zum Überwachen konfiguriert.")
+                control_command_log.warning("Dimmen per EMS: Kein Eingang zum Überwachen konfiguriert.")
 
         fixed_import_power = 0
         for device in self.config.configuration.devices:
             if device["type"] != "cp":
                 fixed_import_power += 4200
-        log.debug(f"Dimmen per HEMS: Fest vergebene Mindestleistung: {fixed_import_power}W")
+        log.debug(f"Dimmen per EMS: Fest vergebene Mindestleistung: {fixed_import_power}W")
         if fixed_import_power != self.config.configuration.fixed_import_power:
             self.config.configuration.fixed_import_power = fixed_import_power
             Pub().pub(f"openWB/set/io/action/{self.config.id}/config", asdict(self.config))

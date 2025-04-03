@@ -1,3 +1,4 @@
+from enum import Enum
 import inspect
 from inspect import FullArgSpec, isclass
 import typing
@@ -45,11 +46,15 @@ def _get_argument_value(arg_spec: FullArgSpec, index: int, parameters: dict):
 
 
 def _dataclass_from_dict_recurse(value, requested_type: Type[T]):
-    return dataclass_from_dict(requested_type, value) \
-        if isinstance(value, dict) and not (
+    if isinstance(value, dict) and not (
             _is_optional_of_dict(requested_type) or
-            issubclass(requested_type if isclass(requested_type) else type(bool), dict)) \
-        else value
+            issubclass(requested_type if isclass(requested_type) else type(bool), dict)):
+        return dataclass_from_dict(requested_type, value)
+    else:
+        if isinstance(requested_type, type) and issubclass(requested_type, Enum):
+            return requested_type(value)
+        else:
+            return value
 
 
 def _is_optional_of_dict(requested_type):

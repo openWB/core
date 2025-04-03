@@ -2,6 +2,7 @@ import logging
 from modules.common import req
 import time
 from modules.vehicles.polestar.auth import PolestarAuth
+from typing import Optional, Dict
 from modules.common.component_state import CarState
 
 
@@ -15,7 +16,7 @@ class PolestarApi:
         self.vin = vin
         self.client_session = req.get_http_session()
 
-    def query_params(self, params: dict, url='https://pc-api.polestar.com/eu-north-1/mystar-v2/') -> dict or None:
+    def query_params(self, params: dict, url='https://pc-api.polestar.com/eu-north-1/mystar-v2/') -> Optional[Dict]:
         access_token = self.auth.get_auth_token()
         if access_token is None:
             raise Exception("query_params error:could not get auth token")
@@ -43,7 +44,7 @@ class PolestarApi:
 
         return result_data
 
-    def get_battery_data(self) -> dict or None:
+    def get_battery_data(self) -> Optional[Dict]:
         params = {
             "query": "query carTelematics($vin: String!) { carTelematics(vin: $vin) { "
             + "battery { batteryChargeLevelPercentage  estimatedDistanceToEmptyKm } } }",

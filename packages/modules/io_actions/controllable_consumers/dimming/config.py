@@ -17,7 +17,7 @@ class DimmingConfig:
 
 class DimmingSetup:
     def __init__(self,
-                 name: str = "Dimmen per HEMS",
+                 name: str = "Dimmen per EMS",
                  type: str = "dimming",
                  id: int = 0,
                  configuration: DimmingConfig = None):

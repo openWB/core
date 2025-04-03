@@ -137,7 +137,7 @@ chmod 666 "$LOGFILE"
 	# check group membership
 	echo "Group membership..."
 	# ToDo: remove sudo group membership if possible
-	for group in "input" "dialout" "gpio" "sudo"; do
+	for group in "input" "dialout" "gpio" "sudo" "video"; do
 		if ! groups openwb | grep --quiet "$group"; then
 			if getent group | cut -d: -f1 | grep --quiet "$group"; then
 				sudo usermod -G "$group" -a openwb
