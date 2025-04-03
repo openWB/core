@@ -27,7 +27,6 @@
 				<i class="fa-solid fa-charging-station" />
 			</a>
 			<a
-				v-if="chargepoint.chargeMode == 'instant_charging'"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#instantSettings' + cpid"
@@ -35,7 +34,6 @@
 				<i class="fa-solid fa-lg fa-bolt" />
 			</a>
 			<a
-				v-if="chargepoint.chargeMode == 'pv_charging'"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#pvSettings' + cpid"
@@ -43,7 +41,6 @@
 				<i class="fa-solid fa-solar-panel me-1" />
 			</a>
 			<a
-				v-if="chargepoint.chargeMode == 'scheduled_charging'"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#scheduledSettings' + cpid"
@@ -51,28 +48,27 @@
 				<i class="fa-solid fa-bullseye me-1" />
 			</a>
 			<a
-				v-if="chargepoint.timedCharging"
 				class="nav-link"
 				data-bs-toggle="tab"
-				:data-bs-target="'#timeSettings' + cpid"
+				:data-bs-target="'#ecoSettings' + cpid"
 			>
-				<i class="fa-solid fa-clock" />
+				<i class="fa-solid fa-coins" />
 			</a>
-			<a
+			<!-- 	<a
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#carSettings' + cpid"
 			>
 				<i class="fa-solid fa-rectangle-list" />
-			</a>
-			<a
+			</a> -->
+			<!-- <a
 				v-if="etData.active && cp.etActive"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#priceChart' + cpid"
 			>
 				<i class="fa-solid fa-chart-line" />
-			</a>
+			</a> -->
 		</nav>
 
 		<!-- Tab panes -->
@@ -118,22 +114,19 @@
 			>
 				<CPConfigScheduled
 					v-if="chargeTemplate != undefined"
-					:charge-template-id="cp.chargeTemplate"
+					:charge-template-id="cp.chargeTemplate?.id ?? 0"
 				/>
 			</div>
 			<div
-				:id="'timeSettings' + cpid"
+				:id="'ecoSettings' + cpid"
 				class="tab-pane"
 				role="tabpanel"
-				aria-labelledby="time-tab"
+				aria-labelledby="eco-tab"
 			>
-				<CPConfigTimed
-					v-if="chargeTemplate != undefined"
-					:charge-template-id="cp.chargeTemplate"
-				/>
+				<CPConfigEco v-if="chargeTemplate != undefined" :chargepoint="cp" />
 			</div>
 
-			<div
+			<!-- 	<div
 				:id="'carSettings' + cpid"
 				class="tab-pane"
 				role="tabpanel"
@@ -143,8 +136,8 @@
 					v-if="vehicles[cp.connectedVehicle] != undefined"
 					:vehicle-id="cp.connectedVehicle"
 				/>
-			</div>
-			<div
+			</div> -->
+			<!-- 		<div
 				:id="'priceChart' + cpid"
 				class="tab-pane"
 				role="tabpanel"
@@ -154,7 +147,7 @@
 					v-if="vehicles[cp.connectedVehicle] != undefined"
 					:chargepoint="cp"
 				/>
-			</div>
+			</div> -->
 		</div>
 	</div>
 </template>
@@ -166,11 +159,11 @@ import ConfigItem from '../../shared/ConfigItem.vue'
 import CPConfigInstant from './CPConfigInstant.vue'
 import CPConfigPv from './CPConfigPv.vue'
 import CPConfigScheduled from './CPConfigScheduled.vue'
-import CPConfigTimed from './CPConfigTimed.vue'
-import CPConfigVehicle from './CPConfigVehicle.vue'
+import CPConfigEco from './CPConfigEco.vue'
+//import CPConfigVehicle from './CPConfigVehicle.vue'
 import CPChargeConfig from './CPChargeConfig.vue'
-import PriceChart from '@/components/priceChart/PriceChart.vue'
-import { etData } from '@/components/priceChart/model'
+//import PriceChart from '@/components/priceChart/PriceChart.vue'
+// import { etData } from '@/components/priceChart/model'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
@@ -180,7 +173,7 @@ const cp = props.chargepoint
 
 // computed
 const chargeTemplate = computed(() => {
-	return chargeTemplates[cp.chargeTemplate]
+	return cp.chargeTemplate?.id ?? 0
 })
 const cpid = computed(() => {
 	return cp.id
