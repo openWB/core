@@ -196,6 +196,7 @@ body>.container-fluid {
 	--font-verysmall: 0.7rem;
 	--font-extralarge: 1.7rem;
 	--font-settings: 16px;
+	--font-settings-button: 14px;
 }
 
 /* Theme color sets */
@@ -314,7 +315,11 @@ body>.container-fluid {
 	gap: .2em;
 	justify-items: center;
 }
-.grid-col-3 {
+.grid-col-1 {
+	grid-column: span 1;
+}.grid-col-2 {
+	grid-column: span 2;
+}.grid-col-3 {
 	grid-column: span 3;
 }
 .grid-col-4 {
