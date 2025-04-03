@@ -90,7 +90,6 @@ def connected_vehicle_factory() -> ConnectedVehicle:
 @dataclass
 class Get:
     charge_state: bool = False
-    charge_state_prev: bool = False
     charging_current: Optional[float] = 0
     charging_power: Optional[float] = 0
     charging_voltage: Optional[float] = 0
@@ -147,6 +146,7 @@ class Set:
     target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
     ocpp_transaction_id: Optional[int] = None
+    charge_state_prev: bool = False
 
 
 @dataclass

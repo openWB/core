@@ -282,10 +282,10 @@ class Chargepoint(ChargepointRfidMixin):
                       self.data.set.plug_time)
 
     def remember_previous_values(self):
-        self.data.get.charge_state_prev = self.data.get.charge_state
+        self.data.set.charge_state_prev = self.data.get.charge_state
         self.data.set.plug_state_prev = self.data.get.plug_state
         self.data.set.current_prev = self.data.set.current
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/get/charge_state_prev", self.data.get.charge_state_prev)
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charge_state_prev", self.data.set.charge_state_prev)
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/current_prev", self.data.set.current_prev)
 
@@ -427,8 +427,8 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
                     if self._is_phase_switch_required() is False:
                         self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
-        except Exception as e:
-            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num) + ", error=" + str(e))
+        except Exception:
+            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
     def initiate_phase_switch(self):
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
@@ -707,11 +707,11 @@ class Chargepoint(ChargepointRfidMixin):
                     self._pub_configured_ev(ev_list)
             try:
                 # check für charging stop or charging interruption, if so force a soc query for the ev
-                if self.data.get.charge_state_prev and self.data.get.charge_state is False:
+                if self.data.set.charge_state_prev and self.data.get.charge_state is False:
                     Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
-                    log.debug(f"SoC-Abfrage nach Ladeunterbrechung, cp{self.num}, ev{self.data.config.ev}")
-            except Exception as e:
-                log.exception(f"Fehler bei Ladestop,cp{self.num}, err={e}")
+                    log.info(f"SoC-Abfrage nach Ladeunterbrechung, cp{self.num}, ev{self.data.config.ev}")
+            except Exception:
+                log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
             # OCPP Start Transaction nach Anstecken
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
