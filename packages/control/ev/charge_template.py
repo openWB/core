@@ -149,7 +149,7 @@ class ChargeTemplate:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
                     current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
-                    if self.data.et.active and data.data.optional_data.et_provider_available():
+                    if self.data.et.active:
                         if not data.data.optional_data.et_charging_allowed(self.data.et.max_price):
                             return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.id
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
@@ -195,7 +195,7 @@ class ChargeTemplate:
                 current = instant_charging.current
             else:
                 current = instant_charging.dc_current
-            if self.data.et.active and data.data.optional_data.et_provider_available():
+            if self.data.et.active:
                 if not data.data.optional_data.et_charging_allowed(self.data.et.max_price):
                     return 0, "stop", self.CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
@@ -446,7 +446,7 @@ class ChargeTemplate:
         else:
             # Wenn dynamische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
-            if self.data.et.active and data.data.optional_data.et_provider_available():
+            if self.data.et.active:
                 hour_list = data.data.optional_data.et_get_loading_hours(plan_data.duration, plan_data.remaining_time)
                 hours_message = ("Geladen wird zu folgenden Uhrzeiten: " +
                                  ", ".join([datetime.datetime.fromtimestamp(hour).strftime('%-H:%M')
