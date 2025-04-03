@@ -51,7 +51,9 @@ class SolaredgeBat(AbstractBat):
 
     def get_values(self) -> Tuple[float, float]:
         unit = self.component_config.configuration.modbus_id
-
+        # Use 1 as fallback if battery_index is not set
+        battery_index = getattr(self.component_config.configuration, "battery_index", 1)
+        
         # Define base registers for Battery 1 in hex
         base_soc_reg = 0xE184  # Battery 1 SoC
         base_power_reg = 0xE174  # Battery 1 Power
