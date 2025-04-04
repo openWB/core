@@ -11,6 +11,7 @@ from modules.common.modbus import ModbusDataType
 from modules.common.store import get_inverter_value_store
 from modules.devices.solaredge.solaredge.config import SolaredgeInverterSetup
 from modules.devices.solaredge.solaredge.scale import create_scaled_reader
+from modules.common.simcount import SimCounter
 
 
 class SolaredgeInverter(AbstractInverter):
@@ -31,6 +32,7 @@ class SolaredgeInverter(AbstractInverter):
         self._read_scaled_uint32 = create_scaled_reader(
             self.__tcp_client, self.component_config.configuration.modbus_id, ModbusDataType.UINT_32
         )
+        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="Wechselrichter")
 
     def update(self) -> None:
         self.store.set(self.read_state())
@@ -51,11 +53,14 @@ class SolaredgeInverter(AbstractInverter):
         # Wenn bei Hybrid-Systemen der Speicher aus dem Netz geladen wird, ist die DC-Leistung negativ.
         dc_power = self._read_scaled_int16(40100, 1)[0] * -1
 
+        imported, _ = self.sim_counter.sim_count(power)
+
         return InverterState(
             power=power,
             exported=exported,
             currents=currents,
-            dc_power=dc_power
+            dc_power=dc_power,
+            imported=imported,
         )
 
 
