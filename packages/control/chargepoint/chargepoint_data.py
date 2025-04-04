@@ -146,6 +146,7 @@ class Set:
     target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
     ocpp_transaction_id: Optional[int] = None
+    charge_state_prev: bool = False
 
 
 @dataclass
