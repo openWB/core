@@ -1,5 +1,5 @@
 import { computed, reactive } from 'vue'
-import { updateServer } from '@/assets/js/sendMessages'
+import { updateChargeTemplate, updateServer } from '@/assets/js/sendMessages'
 import { ChargeMode, type PowerItem } from '@/assets/js/types'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { masterData } from '@/assets/js/model'
@@ -19,7 +19,7 @@ export class ChargePoint {
 	isCharging = false
 	private _isLocked = false
 	private _connectedVehicle = 0
-	chargeTemplate = 0
+	chargeTemplate: ChargeTemplate | null = null
 	evTemplate = 0
 	private _chargeMode = ChargeMode.pv_charging
 	private _hasPriority = false
@@ -52,11 +52,22 @@ export class ChargePoint {
 	private _instantTargetCurrent = 0
 	private _instantTargetSoc = 0
 	private _instantMaxEnergy = 0
+	private _instantTargetPhases = 0
 	private _pvFeedInLimit = false
 	private _pvMinCurrent = 0
 	private _pvMaxSoc = 0
 	private _pvMinSoc = 0
 	private _pvMinSocCurrent = 0
+	private _pvMinSocPhases = 1
+	private _pvChargeLimitMode = ''
+	private _pvTargetSoc = 0
+	private _pvMaxEnergy = 0
+	private _pvTargetPhases = 0
+	private _ecoMinCurrent = 0
+	private _ecoTargetPhases = 0
+	private _ecoChargeLimitMode = ''
+	private _ecoTargetSoc = 0
+	private _ecoMaxEnergy = 0
 	private _etActive = false
 	private _etMaxPrice = 20
 
@@ -96,97 +107,128 @@ export class ChargePoint {
 		}
 	}
 	get chargeMode() {
-		return this._chargeMode
+		return this.chargeTemplate?.chargemode.selected ?? ChargeMode.stop
 	}
 	set chargeMode(cm: ChargeMode) {
-		this._chargeMode = cm
-		updateServer('chargeMode', cm, this.id)
+		console.log('set mode')
+		if (this.chargeTemplate) {
+			console.log('active')
+			this.chargeTemplate.chargemode.selected = cm
+			updateChargeTemplate(this.id)
+		}
 	}
-	updateChargeMode(cm: ChargeMode) {
+	/* updateChargeMode(cm: ChargeMode) {
 		this._chargeMode = cm
-	}
+	} */
 	get hasPriority() {
-		return this._hasPriority
+		return this.chargeTemplate?.prio ?? false
 	}
 	set hasPriority(prio: boolean) {
-		this._hasPriority = prio
-		updateServer('cpPriority', prio, this.id)
+		if (this.chargeTemplate) {
+			this.chargeTemplate.prio = prio
+			updateServer('cpPriority', prio, this.id)
+		}
 	}
-	updateCpPriority(prio: boolean) {
+	/* updateCpPriority(prio: boolean) {
 		this._hasPriority = prio
-	}
+	} */
 	get timedCharging() {
-		if (chargeTemplates[this.chargeTemplate]) {
-			return chargeTemplates[this.chargeTemplate].time_charging.active
+		if (this.chargeTemplate) {
+			return this.chargeTemplate.time_charging.active
 		} else {
 			return false
 		}
 	}
 	set timedCharging(setting: boolean) {
 		// chargeTemplates[this.chargeTemplate].time_charging.active = false
-		chargeTemplates[this.chargeTemplate].time_charging.active = setting
-		updateServer('cpTimedCharging', setting, this.chargeTemplate)
+		this.chargeTemplate!.time_charging.active = setting
+		updateServer('cpTimedCharging', setting, this.id)
 	}
 	get instantTargetCurrent() {
-		return this._instantTargetCurrent
+		return this.chargeTemplate?.chargemode.instant_charging.current ?? 0
 	}
 	set instantTargetCurrent(current: number) {
-		this._instantTargetCurrent = current
-		updateServer('cpInstantTargetCurrent', current, this.id)
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.instant_charging.current = current
+			updateChargeTemplate(this.id)
+		}
 	}
-	updateInstantTargetCurrent(current: number) {
+	/* updateInstantTargetCurrent(current: number) {
 		this._instantTargetCurrent = current
 	}
+	 */
 	get instantChargeLimitMode() {
-		return this._instantChargeLimitMode
+		return (
+			this.chargeTemplate?.chargemode.instant_charging.limit.selected ?? 'none'
+		)
 	}
 	set instantChargeLimitMode(mode: string) {
-		this._instantChargeLimitMode = mode
-		updateServer('cpInstantChargeLimitMode', mode, this.id)
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.instant_charging.limit.selected = mode
+			updateChargeTemplate(this.id)
+		}
 	}
-	updateInstantChargeLimitMode(mode: string) {
+	/* updateInstantChargeLimitMode(mode: string) {
 		this._instantChargeLimitMode = mode
-	}
+	} */
 	get instantTargetSoc() {
-		return this._instantTargetSoc
+		return this.chargeTemplate?.chargemode.instant_charging.limit.soc ?? 0
 	}
 	set instantTargetSoc(soc: number) {
-		this._instantTargetSoc = soc
-		updateServer('cpInstantTargetSoc', soc, this.id)
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.instant_charging.limit.soc = soc
+			updateChargeTemplate(this.id)
+		}
 	}
-	updateInstantTargetSoc(soc: number) {
+	/* updateInstantTargetSoc(soc: number) {
 		this._instantTargetSoc = soc
-	}
+	} */
 	get instantMaxEnergy() {
-		return this._instantMaxEnergy
+		return this.chargeTemplate?.chargemode.instant_charging.limit.amount ?? 0
 	}
 	set instantMaxEnergy(max: number) {
-		this._instantMaxEnergy = max
-		updateServer('cpInstantMaxEnergy', max, this.id)
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.instant_charging.limit.amount = max
+			updateChargeTemplate(this.id)
+		}
 	}
-	updateInstantMaxEnergy(max: number) {
+	/* updateInstantMaxEnergy(max: number) {
 		this._instantMaxEnergy = max
+	} */
+	get instantTargetPhases() {
+		return this.chargeTemplate?.chargemode.instant_charging.phases_to_use ?? 0
 	}
+	set instantTargetPhases(phases: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.instant_charging.phases_to_use = phases
+			updateChargeTemplate(this.id)
+		}
+	}
+
 	get pvFeedInLimit() {
-		return this._pvFeedInLimit
+		return this.chargeTemplate?.chargemode.pv_charging.feed_in_limit ?? false
 	}
 	set pvFeedInLimit(setting: boolean) {
-		this._pvFeedInLimit = setting
-		updateServer('cpPvFeedInLimit', setting, this.id)
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.pv_charging.feed_in_limit = setting
+			updateChargeTemplate(this.id)
+		}
 	}
-	updatePvFeedInLimit(setting: boolean) {
+	/* updatePvFeedInLimit(setting: boolean) {
 		this._pvFeedInLimit = setting
-	}
+	} */
 	get pvMinCurrent() {
-		return this._pvMinCurrent
+		return this.chargeTemplate?.chargemode.pv_charging.min_current ?? 0
 	}
 	set pvMinCurrent(min: number) {
-		this._pvMinCurrent = min
-		updateServer('cpPvMinCurrent', min, this.id)
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.pv_charging.min_current = min
+			updateChargeTemplate(this.id)
+		}
 	}
-	updatePvMinCurrent(min: number) {
+	/* updatePvMinCurrent(min: number) {
 		this._pvMinCurrent = min
-	}
+	} */
 	get pvMaxSoc() {
 		return this._pvMaxSoc
 	}
@@ -198,24 +240,135 @@ export class ChargePoint {
 		this._pvMaxSoc = max
 	}
 	get pvMinSoc() {
-		return this._pvMinSoc
+		return this.chargeTemplate?.chargemode.pv_charging.min_soc ?? 0
 	}
 	set pvMinSoc(min: number) {
-		this._pvMinSoc = min
-		updateServer('cpPvMinSoc', min, this.id)
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.pv_charging.min_soc = min
+			updateChargeTemplate(this.id)
+		}
 	}
-	updatePvMinSoc(min: number) {
+	/* updatePvMinSoc(min: number) {
 		this._pvMinSoc = min
-	}
+	} */
 	get pvMinSocCurrent() {
-		return this._pvMinSocCurrent
+		return this.chargeTemplate?.chargemode.pv_charging.min_soc_current ?? 0
 	}
 	set pvMinSocCurrent(a: number) {
-		this._pvMinSocCurrent = a
-		updateServer('cpPvMinSocCurrent', a, this.id)
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.pv_charging.min_soc_current = a
+			updateChargeTemplate(this.id)
+		}
 	}
-	updatePvMinSocCurrent(a: number) {
-		this._pvMinSocCurrent = a
+	set pvMinSocPhases(n: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.pv_charging.phases_to_use_min_soc = n
+			updateChargeTemplate(this.id)
+		}
+	}
+	get pvMinSocPhases() {
+		return (
+			this.chargeTemplate?.chargemode.pv_charging.phases_to_use_min_soc ?? 0
+		)
+	}
+	get pvChargeLimitMode() {
+		return this.chargeTemplate?.chargemode.pv_charging.limit.selected ?? 'none'
+	}
+	set pvChargeLimitMode(mode: string) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.pv_charging.limit.selected = mode
+			updateChargeTemplate(this.id)
+		}
+	}
+	get pvTargetSoc() {
+		return this.chargeTemplate?.chargemode.pv_charging.limit.soc ?? 0
+	}
+	set pvTargetSoc(soc: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.pv_charging.limit.soc = soc
+			updateChargeTemplate(this.id)
+		}
+	}
+	get pvMaxEnergy() {
+		return this.chargeTemplate?.chargemode.pv_charging.limit.amount ?? 0
+	}
+	set pvMaxEnergy(max: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.pv_charging.limit.amount = max
+			updateChargeTemplate(this.id)
+		}
+	}
+	get pvTargetPhases() {
+		return this.chargeTemplate?.chargemode.pv_charging.phases_to_use ?? 0
+	}
+	set pvTargetPhases(phases: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.pv_charging.phases_to_use = phases
+			updateChargeTemplate(this.id)
+		}
+	}
+	get ecoMinCurrent() {
+		return this.chargeTemplate?.chargemode.eco_charging.current ?? 0
+	}
+	set ecoMinCurrent(min: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.eco_charging.current = min
+			updateChargeTemplate(this.id)
+		}
+	}
+	get ecoTargetPhases() {
+		return this.chargeTemplate?.chargemode.eco_charging.phases_to_use ?? 0
+	}
+	set ecoTargetPhases(phases: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.eco_charging.phases_to_use = phases
+			updateChargeTemplate(this.id)
+		}
+	}
+	get ecoChargeLimitMode() {
+		return this.chargeTemplate?.chargemode.eco_charging.limit.selected ?? 'none'
+	}
+	set ecoChargeLimitMode(mode: string) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.eco_charging.limit.selected = mode
+			updateChargeTemplate(this.id)
+		}
+	}
+	get ecoTargetSoc() {
+		return this.chargeTemplate?.chargemode.eco_charging.limit.soc ?? 0
+	}
+	set ecoTargetSoc(soc: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.eco_charging.limit.soc = soc
+			updateChargeTemplate(this.id)
+		}
+	}
+	get ecoMaxEnergy() {
+		return this.chargeTemplate?.chargemode.eco_charging.limit.amount ?? 0
+	}
+	set ecoMaxEnergy(max: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.eco_charging.limit.amount = max
+			updateChargeTemplate(this.id)
+		}
+	}
+	get etMaxPrice() {
+		return (
+			(this.chargeTemplate?.chargemode.eco_charging.max_price ?? 0) * 100000
+		)
+	}
+	set etMaxPrice(newPrice: number) {
+		if (this.chargeTemplate) {
+			this.chargeTemplate.chargemode.eco_charging.max_price =
+				Math.ceil(newPrice * 1000) / 100000000
+			updateChargeTemplate(this.id)
+		}
+	}
+	get etActive() {
+		return (
+			this.chargeTemplate &&
+			this.chargeTemplate.chargemode.selected == ChargeMode.eco_charging
+		)
 	}
 	get realCurrent() {
 		switch (this.phasesInUse) {
@@ -230,29 +383,6 @@ export class ChargePoint {
 			default:
 				return 0
 		}
-	}
-	get etActive() {
-		if (vehicles[this.connectedVehicle]) {
-			return vehicles[this.connectedVehicle].etActive
-		} else {
-			return false
-		}
-	}
-	set etActive(val) {
-		if (vehicles[this.connectedVehicle]) {
-			vehicles[this.connectedVehicle].etActive = val
-		}
-	}
-	get etMaxPrice() {
-		return vehicles[this.connectedVehicle].etMaxPrice ?? 0
-	}
-	set etMaxPrice(newPrice: number) {
-		updateServer(
-			'cpEtMaxPrice',
-			Math.ceil(newPrice * 1000) / 100000000,
-			this.id,
-		)
-		//updateServer('cpEtMaxPrice', newPrice  / 100000, this.id)
 	}
 	toPowerItem(): PowerItem {
 		return {
@@ -279,8 +409,6 @@ export class Vehicle {
 		this.id = index
 	}
 	private _chargeTemplateId = 0
-	isSocConfigured = false
-	isSocManual = false
 	get chargeTemplateId() {
 		return this._chargeTemplateId
 	}
@@ -301,25 +429,6 @@ export class Vehicle {
 	}
 	updateEvTemplateId(id: number) {
 		this._evTemplateId = id
-	}
-	get etActive() {
-		if (chargeTemplates[this.chargeTemplateId]) {
-			return chargeTemplates[this.chargeTemplateId].et.active
-		} else {
-			return false
-		}
-	}
-	set etActive(val) {
-		if (chargeTemplates[this.chargeTemplateId]) {
-			updateServer('priceCharging', val, this.chargeTemplateId)
-		}
-	}
-	get etMaxPrice() {
-		if (chargeTemplates[this.chargeTemplateId]) {
-			if (chargeTemplates[this.chargeTemplateId].et.active) {
-				return chargeTemplates[this.chargeTemplateId].et.max_price * 100000
-			}
-		}
 	}
 	get chargepoint(): ChargePoint | undefined {
 		for (const cp of Object.values(chargePoints)) {
@@ -374,34 +483,55 @@ export interface ChargeSchedule {
 	}
 }
 export interface ChargeTemplate {
+	id: number
 	name: string
 	prio: boolean
+	load_default: boolean
+	time_charging: {
+		active: boolean
+		plans: object
+	}
 	chargemode: {
 		selected: ChargeMode
-		instant_charging: {
+		eco_charging: {
 			current: number
+			dc_current: number
 			limit: {
 				selected: string
 				soc: number
 				amount: number
 			}
+			max_price: number
+			phases_to_use: number
 		}
 		pv_charging: {
+			dc_min_current: number
+			dc_min_soc_current: number
 			feed_in_limit: boolean
+			limit: {
+				selected: string
+				amount: number
+				soc: number
+			}
 			min_current: number
-			max_soc: number
-			min_soc: number
 			min_soc_current: number
+			min_soc: number
+			phases_to_use: number
+			phases_to_use_min_soc: number
 		}
-	}
-	time_charging: {
-		active: boolean
-	}
-	disable_after_unplug: boolean
-	load_default: boolean
-	et: {
-		active: boolean
-		max_price: number
+		scheduled_charging: {
+			plans: object
+		}
+		instant_charging: {
+			current: number
+			dc_current: number
+			limit: {
+				selected: string
+				soc: number
+				amount: number
+			}
+			phases_to_use: number
+		}
 	}
 }
 export interface EvTemplate {
@@ -494,3 +624,8 @@ export const topVehicles = computed(() => {
 	}
 	return result
 })
+export const chargeLimitModes = [
+	{ name: 'keine', id: 'none' },
+	{ name: 'Ladestand', id: 'soc' },
+	{ name: 'Energie', id: 'amount' },
+]
