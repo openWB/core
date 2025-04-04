@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 try:
     class OcppMixin:
         def _get_formatted_time(self: OptionalProtocol) -> str:
-            return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            return datetime.now(timezone.utc).isoformat()
 
         def _process_call(self: OptionalProtocol,
                           chargebox_id: str,
