@@ -3,6 +3,7 @@
 from logging import getLogger
 from typing import Union
 from modules.vehicles.vwid import libvwid
+from modules.vehicles.vwid import libskoda
 import aiohttp
 from asyncio import new_event_loop, set_event_loop
 from time import time, mktime
@@ -33,7 +34,7 @@ class api:
         self.su = socUtils()
         pass
 
-    # async method, called from sync fetch_soc, required because libvwid expects async environment
+    # async method, called from sync fetch_soc, required because libvwid/libskoda expect async environment
     async def _fetch_soc(self,
                          conf: VWId,
                          vehicle: int) -> Union[int, float, str]:
@@ -45,8 +46,28 @@ class api:
         self.accessTokenFile = str(RAMDISK_PATH) + '/soc_vwid_accessToken_vh_' + str(vehicle)
         self.accessToken_old = {}
 
+        brand = self.vin[:3]
+        log.info("brand = " + brand)
+        if brand == "WVW":
+            self.brand = "vwid"
+        elif brand == "SMB":
+            self.brand = "skoda"
+        else:
+            log.error("Brand " + brand + " is not one of WVW, SMB")
+            self.soc = 0
+            self.range = 0.0
+            self.soc_ts = ""
+            self.soc_tsX = time()
+            return self.soc, self.range, self.soc_ts, self.soc_tsX
+
         async with aiohttp.ClientSession() as self.session:
-            self.w = libvwid.vwid(self.session)
+            if self.brand == "vwid":
+                self.w = libvwid.vwid(self.session)
+            elif self.brand == "":
+                self.w = libskoda.vwid(self.session)
+            else:
+                log.error("Brand " + self.brand + " is not one of vwid, skoda")
+
             self.w.set_vin(self.vin)
             self.w.set_credentials(self.user_id, self.password)
             self.w.set_jobs(['charging'])
@@ -83,16 +104,33 @@ class api:
                               + dumps(self.data['userCapabilities']['capabilitiesStatus']['error'],
                                       ensure_ascii=False, indent=4))
 
-                if self.su.keys_exist(self.data, 'charging', 'batteryStatus'):
-                    log.debug("batteryStatus: \n" +
-                              dumps(self.data['charging']['batteryStatus'],
-                                    ensure_ascii=False, indent=4))
+                if self.brand == "vwid":
+                    if self.su.keys_exist(self.data, 'charging', 'batteryStatus'):
+                        log.debug("batteryStatus: \n" +
+                                  dumps(self.data['charging']['batteryStatus'],
+                                        ensure_ascii=False, indent=4))
+                elif self.brand == "skoda":
+                    if self.su.keys_exist(self.data, 'primaryEngineRange'):
+                        log.debug("batteryStatus: \n" +
+                                  dumps(self.data['primaryEngineRange'],
+                                        ensure_ascii=False, indent=4))
+                else:
+                    log.error("Brand " + self.brand + " is not one of vwid, skoda")
 
                 try:
-                    self.soc = int(self.data['charging']['batteryStatus']['value']['currentSOC_pct'])
-                    self.range = float(self.data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'])
-                    soc_tsZ = self.data['charging']['batteryStatus']['value']['carCapturedTimestamp']
-                    soc_tsdtZ = datetime.strptime(soc_tsZ, ts_fmt + "Z")
+                    if self.brand == "vwid":
+                        self.soc = int(self.data['charging']['batteryStatus']['value']['currentSOC_pct'])
+                        self.range = float(self.data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'])
+                        soc_tsZ = self.data['charging']['batteryStatus']['value']['carCapturedTimestamp']
+                        soc_tsdtZ = datetime.strptime(soc_tsZ, ts_fmt + "Z")
+                    elif self.brand == "skoda":
+                        self.soc = int(self.data['primaryEngineRange']['currentSoCInPercent'])
+                        self.range = float(self.data['primaryEngineRange']['remainingRangeInKm'])
+                        soc_tsZ = self.data['carCapturedTimestamp']
+                        soc_tsdtZ = datetime.strptime(soc_tsZ, ts_fmt + ".%fZ")
+                    else:
+                        raise "Brand " + self.brand + " is not one of vwid, skoda"
+
                     soc_tsdtL = utc2local(soc_tsdtZ)
                     self.soc_tsX = datetime.timestamp(soc_tsdtL)
                     self.soc_ts = datetime.strftime(soc_tsdtL, ts_fmt)
