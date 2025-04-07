@@ -136,9 +136,9 @@ class SunnyBoySmartEnergyBat(AbstractBat):
 
     def _encode_value(self, value: Union[int, float], data_type: ModbusDataType) -> list:
         builder = pymodbus.payload.BinaryPayloadBuilder(
-                byteorder=pymodbus.constants.Endian.Big,
-                wordorder=pymodbus.constants.Endian.Big
-            )
+            byteorder=pymodbus.constants.Endian.Big,
+            wordorder=pymodbus.constants.Endian.Big
+        )
         encode_methods = {
             ModbusDataType.UINT_32: builder.add_32bit_uint,
             ModbusDataType.INT_32: builder.add_32bit_int,
@@ -152,6 +152,9 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             raise ValueError(f"Unsupported data type: {data_type}")
 
         return builder.to_registers()
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SmaSunnyBoySmartEnergyBatSetup)
