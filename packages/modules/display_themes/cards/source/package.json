@@ -39,8 +39,8 @@
     "prettier": "^3.5.3",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "sass": "^1.86.3",
-    "vite": "^5.4.17",
+    "vite": "^6.2.5",
     "vite-plugin-node-polyfills": "^0.23.0",
-    "vitest": "^2.1.9"
+    "vitest": "^3.1.1"
   }
 }
