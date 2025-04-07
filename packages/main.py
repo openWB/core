@@ -87,7 +87,6 @@ class HandlerAlgorithm:
                 update_daily_yields(totals)
                 update_pv_monthly_yearly_yields()
                 data.data.general_data.grid_protection()
-                data.data.optional_data.et_get_prices()
                 data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
         except KeyboardInterrupt:
@@ -154,6 +153,7 @@ class HandlerAlgorithm:
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 for cp in data.data.cp_data.values():
                     calculate_charge_cost(cp)
+            data.data.optional_data.et_get_prices()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
