@@ -63,7 +63,7 @@ class api:
         async with aiohttp.ClientSession() as self.session:
             if self.brand == "vwid":
                 self.w = libvwid.vwid(self.session)
-            elif self.brand == "":
+            elif self.brand == "skoda":
                 self.w = libskoda.vwid(self.session)
             else:
                 log.error("Brand " + self.brand + " is not one of vwid, skoda")
