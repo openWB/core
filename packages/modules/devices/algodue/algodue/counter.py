@@ -30,11 +30,13 @@ class AlgodueCounter(AbstractCounter):
     def update(self):
         with self.__tcp_client:
 
-            frequency = self.__tcp_client.read_input_registers(0x1038, ModbusDataType.FLOAT_32, unit=self.id)
-            currents = self.__tcp_client.read_input_registers(0x100E, [ModbusDataType.FLOAT_32]*3, unit=self.id)
-            powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+            frequency = self.__tcp_client.read_input_registers(0x1038, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+            currents = self.__tcp_client.read_input_registers(
+                0x100E, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+            powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
             power = sum(powers)
-            voltages = self.__tcp_client.read_input_registers(0x1000, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+            voltages = self.__tcp_client.read_input_registers(
+                0x1000, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
 
         imported, exported = self.sim_counter.sim_count(power)
 
@@ -51,3 +53,37 @@ class AlgodueCounter(AbstractCounter):
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=AlgodueCounterSetup)
+
+# serial_chars = self.client.read_holding_registers(0x500, [ModbusDataType.UINT_8]*10, unit=self.id)
+# model_id = self.client.read_holding_registers(0x505, ModbusDataType.UINT_16, unit=self.id)
+# model_string = "unknown"
+# if model_id == 0x03:
+#     model_string = "6 A, 3 phases, 4 wires"
+# elif model_id == 0x08:
+#     model_string = "80 A, 3 phases, 4 wires"
+# elif model_id == 0x0c:
+#     model_string = "80 A, 1 phase, 2 wires"
+# elif model_id == 0x10:
+#     model_string = "40 A, 1 phase, 2 wires"
+# elif model_id == 0x12:
+#     model_string = "63 A, 3 phases, 4 wires"
+
+# type_id = self.client.read_holding_registers(0x506, ModbusDataType.UINT_16, unit=self.id)
+# type_string = "unknown"
+# if type_id == 0x00:
+#     type_string = "NO MID, RESET"
+# elif type_id == 0x01:
+#     type_string = "MID"
+# elif type_id == 0x02:
+#     type_string = "NO MID"
+# elif type_id == 0x03:
+#     type_string = "NO MID, Wiring selection"
+# elif type_id == 0x05:
+#     type_string = "MID no varh"
+# elif type_id == 0x09:
+#     type_string = "MID Wiring selection"
+# elif type_id == 0x0a:
+#     type_string = "MID no varh, Wiring selection"
+# elif type_id == 0x0b:
+#     type_string = "NO MID, RESET, Wiring selection"
+# meterinfo = "Algodue UEM " + model_string + ", " + type_string
