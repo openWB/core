@@ -346,6 +346,6 @@ def get_controllable_bat_components() -> List:
         if isinstance(value, AbstractDevice):
             for comp_value in value.components.values():
                 if "bat" in comp_value.component_config.type:
-                    if "set_power_limit" in type(comp_value).__dict__:
+                    if comp_value.power_limit_controllable():
                         bat_components.append(comp_value)
     return bat_components
