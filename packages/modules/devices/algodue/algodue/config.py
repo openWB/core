@@ -14,7 +14,7 @@ class AlgodueConfiguration:
 class Algodue:
     def __init__(self,
                  name: str = "Algodue",
-                 type: str = "Algodue",
+                 type: str = "algodue",
                  id: int = 0,
                  configuration: AlgodueConfiguration = None) -> None:
         self.name = name
