@@ -1,6 +1,6 @@
 <template>
   <div
-    class="row q-mt-sm q-pa-sm bg-primary text-white no-wrap"
+    class="row q-mt-sm q-pa-sm bg-primary text-white no-wrap message-text"
     color="primary"
     style="border-radius: 10px"
   >
@@ -23,3 +23,9 @@ const message = computed(() =>
   mqttStore.chargePointStateMessage(props.chargePointId),
 );
 </script>
+
+<style scoped>
+.message-text {
+  overflow-y: auto;
+}
+</style>
