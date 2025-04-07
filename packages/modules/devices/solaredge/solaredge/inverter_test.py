@@ -26,6 +26,7 @@ def test_read_state():
         power=-1415.2,
         exported=8980404,
         currents=[6.16, 0, 0],
-        dc_power=-1436.8000000000002
+        dc_power=-1436.8000000000002,
+        imported=100,
     )
     )
