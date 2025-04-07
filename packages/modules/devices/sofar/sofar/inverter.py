@@ -22,7 +22,7 @@ class SofarInverter(AbstractInverter):
 
     def update(self, client: ModbusTcpClient_) -> None:
         # 0x05C4 Power_PV_Total UINT16 in kW accuracy 0,1
-        power = client.read_holding_registers(0x05C4, ModbusDataType.UINT_16, unit=self.__modbus_id) / -10
+        power = client.read_holding_registers(0x05C4, ModbusDataType.UINT_16, unit=self.__modbus_id) * -100
         exported = client.read_holding_registers(0x0686, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
 
         inverter_state = InverterState(
