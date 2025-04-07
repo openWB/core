@@ -94,5 +94,8 @@ class SungrowBat(AbstractBat):
             power_value = int(min(power_limit, 5000))
             self.__tcp_client.write_registers(13051, [power_value], data_type=ModbusDataType.UINT_16, unit=unit)
 
+    def power_limit_controllable(self) -> bool:
+        return True
+
 
 component_descriptor = ComponentDescriptor(configuration_factory=SungrowBatSetup)
