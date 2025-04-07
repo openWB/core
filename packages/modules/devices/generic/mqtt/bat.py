@@ -19,7 +19,7 @@ class MqttBat(AbstractBat):
         pass
 
     def power_limit_controllable(self) -> bool:
-        return True
+        return self.component_config.configuration.power_limit_controllable
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=MqttBatSetup)
