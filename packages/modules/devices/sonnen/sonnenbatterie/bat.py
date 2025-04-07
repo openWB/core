@@ -165,7 +165,7 @@ class SonnenbatterieBat(AbstractBat):
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         if self.__device_variant != 3:
-            raise ValueError("Leistungsvorgabe wird nur für Variante 3 unterstützt!")
+            raise ValueError("Leistungsvorgabe wird nur für Variante 'JSON-API v2' unterstützt!")
         operating_mode = self.__get_json_api_v2_configurations()["EM_OperatingMode"]
         log.debug(f"Betriebsmodus: aktuell: {operating_mode}")
         if power_limit is None:
@@ -180,6 +180,10 @@ class SonnenbatterieBat(AbstractBat):
                 self.__set_json_api_v2_configurations({"EM_OperatingMode": "1"})
             log.debug(f"Setze Leistungsvorgabe auf: {power_limit}")
             self.__set_json_api_v2_setpoint(power_limit)
+
+    def power_limit_controllable(self) -> bool:
+        # Leistungsvorgabe ist nur für Variante 3 (JSON-API v2) möglich
+        return self.__device_variant == 3
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SonnenbatterieBatSetup)
