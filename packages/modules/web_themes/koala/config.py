@@ -6,9 +6,12 @@ from modules.common.abstract_device import DeviceDescriptor
 @auto_str
 class KoalaWebThemeConfiguration:
     def __init__(self,
-                 history_chart_range: int = 3600) -> None:
+                 history_chart_range: int = 3600,
+                 card_view_breakpoint: int = 4,
+                 table_search_input_field: bool = False) -> None:
         self.history_chart_range = history_chart_range
-
+        self.card_view_breakpoint = card_view_breakpoint
+        self.table_search_input_field = table_search_input_field
 
 @auto_str
 class KoalaWebTheme:

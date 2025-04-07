@@ -44,6 +44,7 @@
         :current-value="currentValue"
         :target-time="targetTime"
       />
+      <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>
   <!-- //////////////////////  Settings popup dialog   //////////////////// -->
