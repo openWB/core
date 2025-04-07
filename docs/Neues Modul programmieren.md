@@ -35,7 +35,7 @@ Bei Hybrid-Systemen erfolgt die Verrechnung von Speicher-und PV-Leistung automat
 
 #### Schnittstelle für die Speicher-Steuerung
 
-Ob ein Speicher die aktive Speichersteuerung unterstützt, wird in der Methode `power_limit_controlable` implementiert. Ist diese Methode nicht im Speicher implementiert, wird die Methode aus der geerbten Klasse `AbstractBat` aufgerufen und die Steuerbarkeit auf `False` gesetzt. Bei Speichern, die eine aktive Steuerung unterstützen, kann mit der Methode `set_power_limit` die Speicherleistung gesetzt werden. Als Variable wird die Speicherleistung in Watt oder `None` übergeben, dann wird der Speicher nicht mehr aktiv von der openWB gesteuert und soll selbst anhand des EVU-Punktes regeln.
+Ob ein Speicher die aktive Speichersteuerung unterstützt, wird in der Methode `power_limit_controllable` implementiert. Ist diese Methode nicht im Speicher implementiert, wird die Methode aus der geerbten Klasse `AbstractBat` aufgerufen und die Steuerbarkeit auf `False` gesetzt. Bei Speichern, die eine aktive Steuerung unterstützen, kann mit der Methode `set_power_limit` die Speicherleistung gesetzt werden. Als Variable wird die Speicherleistung in Watt oder `None` übergeben, dann wird der Speicher nicht mehr aktiv von der openWB gesteuert und soll selbst anhand des EVU-Punktes regeln.
 
 ### Neues Fahrzeug programmieren
 

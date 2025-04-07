@@ -18,7 +18,7 @@ class MqttBat(AbstractBat):
         # ob der Speicher die Funktion bietet
         pass
 
-    def power_limit_controlable(self) -> bool:
+    def power_limit_controllable(self) -> bool:
         return True
 
 

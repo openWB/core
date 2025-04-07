@@ -30,7 +30,7 @@ class AbstractBat:
         # power limit None heißt, auf maximale Speicherleistung setzen = Speicher-Begrenzung aufheben
         pass
 
-    def power_limit_controlable(self) -> bool:
+    def power_limit_controllable(self) -> bool:
         return False
 
 

@@ -38,7 +38,7 @@ class SampleBat(AbstractBat):
         # Wenn der Speicher keine Steuerung der Ladeleistung unterstützt
         pass
 
-    def power_limit_controlable(self) -> bool:
+    def power_limit_controllable(self) -> bool:
         # Wenn der Speicher die Steuerung der Ladeleistung unterstützt, muss True zurückgegeben werden.
         return True
 
