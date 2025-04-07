@@ -50,10 +50,10 @@ class api:
         log.info("brand = " + brand)
         if brand == "WVW":
             self.brand = "vwid"
-        elif brand == "SMB":
+        elif brand == "TMB":
             self.brand = "skoda"
         else:
-            log.error("Brand " + brand + " is not one of WVW, SMB")
+            log.error("Brand " + brand + " is not one of WVW, TMB")
             self.soc = 0
             self.range = 0.0
             self.soc_ts = ""
