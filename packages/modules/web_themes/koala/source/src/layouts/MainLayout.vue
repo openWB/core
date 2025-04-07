@@ -143,7 +143,7 @@ const setTheme = (mode: 'light' | 'dark' | 'auto') => {
     $q.dark.set(mode === 'dark');
     localStorage.setItem('theme', mode);
   }
-}
+};
 
 onMounted(() => {
   const savedTheme = localStorage.getItem('theme');

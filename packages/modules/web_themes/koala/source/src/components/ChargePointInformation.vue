@@ -126,15 +126,21 @@ const filter = ref('');
 
 const chargePointIds = computed(() => mqttStore.chargePointIds);
 
-const cardViewBreakpoint = computed( ()=> mqttStore.themeConfiguration?.card_view_breakpoint || 4);
-const searchInputVisible = computed(() => mqttStore.themeConfiguration?.table_search_input_field);
+const cardViewBreakpoint = computed(
+  () => mqttStore.themeConfiguration?.card_view_breakpoint || 4,
+);
+const searchInputVisible = computed(
+  () => mqttStore.themeConfiguration?.table_search_input_field,
+);
 
 const { chargeModes } = useChargeModes();
 
 const rows = computed(() => {
   return chargePointIds.value.map((id) => {
     const chargePointName = mqttStore.chargePointName(id);
-    const vehicleName = mqttStore.chargePointConnectedVehicleInfo(id).value?.name || 'Kein Fahrzeug' ;
+    const vehicleName =
+      mqttStore.chargePointConnectedVehicleInfo(id).value?.name ||
+      'Kein Fahrzeug';
     const plugState = mqttStore.chargePointPlugState(id) ? 'Ja' : 'Nein';
     const chargeModeValue =
       mqttStore.chargePointConnectedVehicleChargeMode(id).value;
