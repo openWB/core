@@ -73,17 +73,14 @@ Bei Problemen zunächst bitte diese Schritte durchführen:
 
         Diese Zeile zeigt folgende Information:
 
-        `2023-02-12 11:57:14       - Timestamp des SOC-Abrufs`
-
-        `INFO                      - Debug Level INFO`
-
-        `soc_vwid                  - SOC-Modul`
-
-        `Lp1                       - Ladepunkt`
-
-        `SOC: 61%                  - SOC Stand`
-
-        `@2023-02-12T11:53:20      - Timestamp des Updates vom EV zum VW Cloud-Server`
+    ```text
+    2023-02-12 11:57:14       - Timestamp des SOC-Abrufs
+    INFO                      - Debug Level INFO
+    soc_vwid                  - SOC-Modul
+    Lp1                       - Ladepunkt
+    SOC: 61%                  - SOC Stand
+    @2023-02-12T11:53:20      - Timestamp des Updates vom EV zum VW Cloud-Server
+    ```
 
 8. Falls diese Schritte nicht zum Erfolg führen, das Problem im [Support Thema](https://forum.openwb.de/viewtopic.php?t=4803) posten mit Angabe relevanter Daten
     - oWB SW Version
