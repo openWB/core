@@ -11,6 +11,7 @@ Das OVMS SoC-Modul ist in openWB 1.x und 2.x vefügbar.
 Das SoC-Modul OVMS wird wie folgt im Fahrzeug konfiguriert:
 
 ## Konfiguration in openWB 1.x
+
 Die Konfiguration des SoC-Moduls erfolgt in Einstellungen - Modulkonfiguration - Ladepunkte:
 
 ![1](SoC-OVMS-19-settings-1.PNG)
