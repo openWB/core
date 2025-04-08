@@ -1,8 +1,10 @@
 # SoC-Modul OVMS
 
 Das OVMS-Modul im Fahrzeug sendet je nach Ausführung die Daten über Mobilnetz und/oder WLAN an den OVMS-Server (z.B. ovms.dexters-web.de).<br>
-Die OVMS Smartphone-Apps (Android/ios) verbinden sich mit dem gewählten OVMS-Server.<br>
-Das SoC-Modul holt die Daten auch vom OVMS Server.<br>
+Die OVMS Smartphone-Apps (Android/ios) verbinden sich mit dem gewählten OVMS-Server.
+
+Das SoC-Modul holt die Daten auch vom OVMS Server.
+
 
 Das OVMS SoC-Modul ist in openWB 1.x und 2.x vefügbar.
 
