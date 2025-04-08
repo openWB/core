@@ -161,7 +161,7 @@ class api:
 
                     else:
                         log.debug("Old refreshToken expires on " + self.expOld_dt + ", keep it")
-                else:
+                elif self.refreshTokenNew != initialToken:
                     self.store_refreshToken = True   # no old refreshToken, store new refreshToken anyway
 
                 if self.store_refreshToken:          # refreshToken needs to be stored in config json
