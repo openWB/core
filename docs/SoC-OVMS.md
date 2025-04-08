@@ -35,6 +35,7 @@ Nach den allgemeinen Einstellungen ist in den speziellen Einstellungen des SoC-M
 - Abfrage-Intervall wenn geladen wird.
 
 ## Hinweise
+
 Nach Neustart bzw. Änderung der LP-Konfiguration werden im EV-Soc-Log Fehler ausgegeben (permission oder fehlende Datei).
 
     Diese Fehler sind normal und können ignoriert werden. Leider wird im Debug Mode 0 keine Positiv-Meldung ausgegeben.
