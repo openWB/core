@@ -4,6 +4,7 @@ Das SoC-Modul VWId gibt es in openWB 1.x und 2.x
 Die Konfiguration ist in beiden Varianten sehr ähnlich:
 
 ## Konfiguration in openWB 1.x
+
 Die Konfiguration in openWB 1.x erfolgt im Bereich Einstellungen - Modulkonfiguration - Ladepunkte:
 
 ![Allgemeine Konfiguration-1x](SoC-VWId-19-settings-1.PNG) 
