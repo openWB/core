@@ -94,6 +94,7 @@ Bei Problemen zunächst bitte diese Schritte durchführen:
     - relevante Abschnitte der Logs, vor allem Fehlermeldungen, als CODE-blocks (</>).
 
 Das SoC-Log mit evtl. Fehlermeldungen kann wie folgt eingesehen werden:
-  - openWB 1.x (Status - EV SoC Log)
-  - openWB 2.x (Einstellungen - System - Fehlersuche)
+
+- openWB 1.x (Status - EV SoC Log)
+- openWB 2.x (Einstellungen - System - Fehlersuche)
 
