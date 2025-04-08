@@ -46,6 +46,7 @@ class api:
         self.accessTokenFile = str(RAMDISK_PATH) + '/soc_vwid_accessToken_vh_' + str(vehicle)
         self.accessToken_old = {}
 
+        # derive brand from VIN
         brand = self.vin[:3]
         log.info("brand = " + brand)
         if brand == "WVW":
