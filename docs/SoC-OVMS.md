@@ -56,7 +56,7 @@ INFO                      - Debug Level INFO
 soc_ovms                  - SOC-Modul
 Lp1                       - Ladepunkt
 SOC: 61%                  - SOC Stand
-@2023-02-12T11:53:20      - Timestamp des Updates vom EV zum VW Cloud-Server
+@2023-02-12T11:53:20      - Timestamp des Updates vom EV zum OVMS Cloud-Server
 ```
 
 Falls diese Schritte nicht zum Erfolg führen, das Problem im [Support-Seite im openWB Forum](https://forum.openwb.de/viewtopic.php?t=9278) posten mit Angabe relevanter Daten
