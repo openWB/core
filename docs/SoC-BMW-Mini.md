@@ -40,27 +40,26 @@ Falls das nicht auf Anhieb klappt, muss es wiederholt werden.
 
 Nach Neustart bzw. Änderung der LP-Konfiguration werden im EV-Soc-Log Fehler ausgegeben (permission oder fehlende Datei).
 
-    Diese Fehler sind normal und können ignoriert werden. Leider wird im Debug Mode 0 keine Positiv-Meldung ausgegeben.
-    Empfehlung:
-    - In Einstellungen - System - Fehlersuche bzw. Debugging dies einstellen: Debug Mode 1/Regelwerte bzw. Info
-    - dann einen manuellen SOC-Abruf durchführen (im Dashboard auf Kreispfeil klicken).
-    - danach sollte im EV-SOC-Log eine Zeile ähnlich dieser kommen:
+Diese Fehler sind normal und können ignoriert werden. Leider wird im Debug Mode 0 keine Positiv-Meldung ausgegeben.
 
-        `2023-02-12 11:57:14 INFO:soc_bmwbc:Lp1 SOC: 61%@2023-02-12T11:53:20`
+Empfehlung:
 
-        Diese Zeile zeigt folgende Information:
+- In Einstellungen - System - Fehlersuche bzw. Debugging dies einstellen: Debug Mode 1/Regelwerte bzw. Info
+- dann einen manuellen SOC-Abruf durchführen (im Dashboard auf Kreispfeil klicken).
+- danach sollte im EV-SOC-Log eine Zeile ähnlich dieser kommen:
 
-        `2023-02-12 11:57:14       - Timestamp des SOC-Abrufs`
+    `2023-02-12 11:57:14 INFO:soc_bmwbc:Lp1 SOC: 61%@2023-02-12T11:53:20`
 
-        `INFO                      - Debug Level INFO`
+Diese Zeile zeigt folgende Information:
 
-        `soc_bmwbc                 - SOC-Modul`
-
-        `Lp1                       - Ladepunkt`
-
-        `SOC: 61%                  - SOC Stand`
-
-        `@2023-02-12T11:53:20      - Timestamp des Updates vom EV zum VW Cloud-Server`
+```text
+2023-02-12 11:57:14       - Timestamp des SOC-Abrufs
+INFO                      - Debug Level INFO
+soc_bmwbc                 - SOC-Modul
+Lp1                       - Ladepunkt
+SOC: 61%                  - SOC Stand
+@2023-02-12T11:53:20      - Timestamp des Updates vom EV zum VW Cloud-Server
+```
 
 Falls diese Schritte nicht zum Erfolg führen, das Problem im [Support-Seite im openWB Forum](https://forum.openwb.de/viewtopic.php?t=4870) posten mit Angabe relevanter Daten
 
