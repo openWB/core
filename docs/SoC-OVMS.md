@@ -47,7 +47,7 @@ Empfehlung:
 - dann einen manuellen SOC-Abruf durchführen (im Dashboard auf Kreispfeil klicken).
 - danach sollte im EV-SOC-Log eine Zeile ähnlich dieser kommen:
 
-        `2023-02-12 11:57:14 INFO:soc_ovms:Lp1 SOC: 61%@2023-02-12T11:53:20`
+    `2023-02-12 11:57:14 INFO:soc_ovms:Lp1 SOC: 61%@2023-02-12T11:53:20`
 
 Diese Zeile zeigt folgende Information:
 
