@@ -38,11 +38,13 @@ Nach den allgemeinen Einstellungen ist in den speziellen Einstellungen des SoC-M
 
 Nach Neustart bzw. Änderung der LP-Konfiguration werden im EV-Soc-Log Fehler ausgegeben (permission oder fehlende Datei).
 
-    Diese Fehler sind normal und können ignoriert werden. Leider wird im Debug Mode 0 keine Positiv-Meldung ausgegeben.
-    Empfehlung:
-    - In Einstellungen - System - Fehlersuche bzw. Debugging dies einstellen: Debug Mode 1/Regelwerte bzw. Info
-    - dann einen manuellen SOC-Abruf durchführen (im Dashboard auf Kreispfeil klicken).
-    - danach sollte im EV-SOC-Log eine Zeile ähnlich dieser kommen:
+Diese Fehler sind normal und können ignoriert werden. Leider wird im Debug Mode 0 keine Positiv-Meldung ausgegeben.
+
+Empfehlung:
+
+- In Einstellungen - System - Fehlersuche bzw. Debugging dies einstellen: Debug Mode 1/Regelwerte bzw. Info
+- dann einen manuellen SOC-Abruf durchführen (im Dashboard auf Kreispfeil klicken).
+- danach sollte im EV-SOC-Log eine Zeile ähnlich dieser kommen:
 
         `2023-02-12 11:57:14 INFO:soc_ovms:Lp1 SOC: 61%@2023-02-12T11:53:20`
 
