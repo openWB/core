@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+import logging
+from typing import Dict, Union, Optional
 
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
@@ -10,11 +11,27 @@ from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
+import pymodbus
+
+
+log = logging.getLogger(__name__)
 
 
 class SunnyBoySmartEnergyBat(AbstractBat):
     SMA_UINT32_NAN = 0xFFFFFFFF  # SMA uses this value to represent NaN
     SMA_UINT_64_NAN = 0xFFFFFFFFFFFFFFFF  # SMA uses this value to represent NaN
+
+    # Define all possible registers with their data types
+    REGISTERS = {
+        "Battery_SoC": (30845, ModbusDataType.UINT_32),
+        "Battery_ChargePower": (31393, ModbusDataType.INT_32),
+        "Battery_DischargePower": (31395, ModbusDataType.INT_32),
+        "Battery_ChargedEnergy": (31397, ModbusDataType.UINT_64),
+        "Battery_DischargedEnergy": (31401, ModbusDataType.UINT_64),
+        "Inverter_Type": (30053, ModbusDataType.UINT_32),
+        "Externe_Steuerung": (40151, ModbusDataType.UINT_32),
+        "Wirkleistungsvorgabe": (40149, ModbusDataType.UINT_32),
+    }
 
     def __init__(self,
                  device_id: int,
@@ -26,6 +43,8 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.last_mode = 'Undefined'
+        self.inverter_type = None
 
     def update(self) -> None:
         self.store.set(self.read())
@@ -33,30 +52,109 @@ class SunnyBoySmartEnergyBat(AbstractBat):
     def read(self) -> BatState:
         unit = self.component_config.configuration.modbus_id
 
-        soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.UINT_32, unit=unit)
-        current = self.__tcp_client.read_holding_registers(30843, ModbusDataType.INT_32, unit=unit)/-1000
-        voltage = self.__tcp_client.read_holding_registers(30851, ModbusDataType.INT_32, unit=unit)/100
+        registers_to_read = [
+            "Battery_SoC",
+            "Battery_ChargePower",
+            "Battery_DischargePower",
+            "Battery_ChargedEnergy",
+            "Battery_DischargedEnergy"
+        ]
 
-        if soc == self.SMA_UINT32_NAN:
+        if self.inverter_type is None:  # Only read Inverter_Type if not already set
+            registers_to_read.append("Inverter_Type")
+
+        values = self._read_registers(registers_to_read, unit)
+
+        if values["Battery_SoC"] == self.SMA_UINT32_NAN:
             # If the storage is empty and nothing is produced on the DC side, the inverter does not supply any values.
-            soc = 0
+            values["Battery_SoC"] = 0
             power = 0
         else:
-            power = current*voltage
-        exported = self.__tcp_client.read_holding_registers(31401, ModbusDataType.UINT_64, unit=3)
-        imported = self.__tcp_client.read_holding_registers(31397, ModbusDataType.UINT_64, unit=3)
+            if values["Battery_ChargePower"] > 5:
+                power = values["Battery_ChargePower"]
+            else:
+                power = values["Battery_DischargePower"] * -1
 
-        if exported == self.SMA_UINT_64_NAN or imported == self.SMA_UINT_64_NAN:
-            raise ValueError(f'Batterie lieferte nicht plausible Werte. Export: {exported}, Import: {imported}. ',
-                             'Sobald die Batterie geladen/entladen wird sollte sich dieser Wert ändern, ',
-                             'andernfalls kann ein Defekt vorliegen.')
+        if (values["Battery_ChargedEnergy"] == self.SMA_UINT_64_NAN or
+                values["Battery_DischargedEnergy"] == self.SMA_UINT_64_NAN):
+            raise ValueError(
+                f'Batterie lieferte nicht plausible Werte. Geladene Energie: {values["Battery_ChargedEnergy"]}, '
+                f'Entladene Energie: {values["Battery_DischargedEnergy"]}. ',
+                'Sobald die Batterie geladen/entladen wird sollte sich dieser Wert ändern, ',
+                'andernfalls kann ein Defekt vorliegen.'
+            )
 
-        return BatState(
+        bat_state = BatState(
             power=power,
-            soc=soc,
-            imported=imported,
-            exported=exported
+            soc=values["Battery_SoC"],
+            exported=values["Battery_DischargedEnergy"],
+            imported=values["Battery_ChargedEnergy"]
         )
+        if self.inverter_type is None:
+            self.inverter_type = values["Inverter_Type"]
+        log.debug(f"Inverter Type: {self.inverter_type}")
+        log.debug(f"Bat {self.__tcp_client.address}: {bat_state}")
+        return bat_state
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        unit = self.component_config.configuration.modbus_id
+
+        if power_limit is None:
+            if self.last_mode is not None:
+                # Kein Powerlimit gefordert, externe Steuerung war aktiv, externe Steuerung deaktivieren
+                log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
+                values_to_write = {
+                    "Externe_Steuerung": 803,
+                    "Wirkleistungsvorgabe": 0,
+                }
+                self._write_registers(values_to_write, unit)
+                self.last_mode = None
+        else:
+            # Powerlimit gefordert, externe Steuerung aktivieren, Limit setzen
+            log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung.")
+            values_to_write = {
+                "Externe_Steuerung": 802,
+                "Wirkleistungsvorgabe": power_limit
+            }
+            self._write_registers(values_to_write, unit)
+            self.last_mode = 'limited'
+
+    def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
+        values = {}
+        for key in register_names:
+            address, data_type = self.REGISTERS[key]
+            values[key] = self.__tcp_client.read_holding_registers(address, data_type, unit=unit)
+        log.debug(f"Bat raw values {self.__tcp_client.address}: {values}")
+        return values
+
+    def _write_registers(self, values_to_write: Dict[str, Union[int, float]], unit: int) -> None:
+        for key, value in values_to_write.items():
+            address, data_type = self.REGISTERS[key]
+            encoded_value = self._encode_value(value, data_type)
+            self.__tcp_client.write_registers(address, encoded_value, unit=unit)
+            log.debug(f"Neuer Wert {encoded_value} in Register {address} geschrieben.")
+
+    def _encode_value(self, value: Union[int, float], data_type: ModbusDataType) -> list:
+        builder = pymodbus.payload.BinaryPayloadBuilder(
+            byteorder=pymodbus.constants.Endian.Big,
+            wordorder=pymodbus.constants.Endian.Big
+        )
+        encode_methods = {
+            ModbusDataType.UINT_32: builder.add_32bit_uint,
+            ModbusDataType.INT_32: builder.add_32bit_int,
+            ModbusDataType.UINT_16: builder.add_16bit_uint,
+            ModbusDataType.INT_16: builder.add_16bit_int,
+        }
+
+        if data_type in encode_methods:
+            encode_methods[data_type](int(value))
+        else:
+            raise ValueError(f"Unsupported data type: {data_type}")
+
+        return builder.to_registers()
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SmaSunnyBoySmartEnergyBatSetup)
