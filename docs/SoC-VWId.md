@@ -20,6 +20,7 @@ Die Konfiguration in openWB 2.x erfolgt im Bereich Einstellungen - Konfiguration
 ![Spezielle Konfiguration-2x](SoC-VWId-20-settings-2.PNG)
 
 ## Hinweise
+
 Erfolgreich getestet u.a. für folgende Fahrzeuge: ID3, ID4, ID5, ID7, eGolf, Golf 8 GTE, Passat GTE, eUP, T7 Multivan eHybrid.
 
 Für nicht-VW Fahrzeuge (Audi, Skoda, etc.) funktioniert das Modul nicht.
