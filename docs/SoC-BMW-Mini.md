@@ -3,6 +3,7 @@
 Das Modul gibt es in openWB 1.x und 2.x; es funktioniert in beiden Systemen ähnlich.
 
 ## Konfiguration in openWB 1.x
+
 Die Konfiguration des SoC-Moduls erfolgt in Einstellungen - Modulkonfiguration - Ladepunkte:
 ![BMW-Settings 1.9-1](SoC-BMW-19-settings-1.PNG)
 ![BMW-Settings 1.9-2](SoC-BMW-19-settings-2.PNG)
