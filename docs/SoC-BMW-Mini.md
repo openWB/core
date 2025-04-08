@@ -11,6 +11,7 @@ Die Konfiguration des SoC-Moduls erfolgt in Einstellungen - Modulkonfiguration -
 ![BMW-Settings 1.9-4](SoC-BMW-19-settings-4.PNG)
 
 ## Konfiguration in openWB 2.x
+
 Die Konfiguration des SoC-Moduls erfolgt in Einstellungen - Konfiguration - Fahrzeuge:
 ![BMW-Settings 2.x-1](SoC-BMW-20-settings-1.PNG)
 ![BMW-Settings 2.x-2](SoC-BMW-20-settings-2.PNG)
