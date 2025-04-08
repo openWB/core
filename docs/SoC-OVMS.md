@@ -60,12 +60,13 @@ SOC: 61%                  - SOC Stand
 ```
 
 Falls diese Schritte nicht zum Erfolg führen, das Problem im [Support-Seite im openWB Forum](https://forum.openwb.de/viewtopic.php?t=9278) posten mit Angabe relevanter Daten
-    - oWB SW Version
-    - oWB gekauft oder selbst installiert
-    - wenn selbst installiert: welches OS(Stretch/Buster)
-    - welches Fahrzeug
-    - falls vorhanden Angaben über Firewall, VPN, etc., also Appliances, die den Internetzugang limitieren könnten
-    - relevante Abschnitte der Logs, vor allem Fehlermeldungen, als CODE-blocks (</>).
+
+- oWB SW Version
+- oWB gekauft oder selbst installiert
+- wenn selbst installiert: welches OS(Stretch/Buster)
+- welches Fahrzeug
+- falls vorhanden Angaben über Firewall, VPN, etc., also Appliances, die den Internetzugang limitieren könnten
+- relevante Abschnitte der Logs, vor allem Fehlermeldungen, als CODE-blocks (</>).
 
 Das SoC-Log mit evtl. Fehlermeldungen kann wie folgt eingesehen werden:
   - openWB 1.x (Status - EV SoC Log)
