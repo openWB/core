@@ -37,6 +37,7 @@ Nach Eingabe des Captcha-Token und Sichern der Einstellung muss der SoC für das
 Falls das nicht auf Anhieb klappt, muss es wiederholt werden.
 
 ## Hinweise
+
 Nach Neustart bzw. Änderung der LP-Konfiguration werden im EV-Soc-Log Fehler ausgegeben (permission oder fehlende Datei).
 
     Diese Fehler sind normal und können ignoriert werden. Leider wird im Debug Mode 0 keine Positiv-Meldung ausgegeben.
