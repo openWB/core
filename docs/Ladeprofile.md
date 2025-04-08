@@ -12,4 +12,4 @@ Die temporären Einstellungen werden mit dem Ladeprofil aus den Einstellungen ü
 
 * abgesteckt wird.
 * das Fahrzeug gewechselt wird. Das Lade-Profil des neuen Fahrzeugs wird geladen.
-* das Ladeprofil geändert wird und kein Fahrzeug angesteckt ist. Ist ein Fahrzeug angesteckt, gelten die temporären Einstellungen bis zum Abstecken und werden dann durch das Ladeprofil überschrieben.
+* das Ladeprofil in den Einstellungen geändert wird.
