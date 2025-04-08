@@ -63,12 +63,13 @@ Nach Neustart bzw. Änderung der LP-Konfiguration werden im EV-Soc-Log Fehler au
         `@2023-02-12T11:53:20      - Timestamp des Updates vom EV zum VW Cloud-Server`
 
 Falls diese Schritte nicht zum Erfolg führen, das Problem im [Support-Seite im openWB Forum](https://forum.openwb.de/viewtopic.php?t=4870) posten mit Angabe relevanter Daten
-    - oWB SW Version
-    - oWB gekauft oder selbst installiert
-    - wenn selbst installiert: welches OS(Stretch/Buster)
-    - welches Fahrzeug
-    - falls vorhanden Angaben über Firewall, VPN, etc., also Appliances, die den Internetzugang limitieren könnten
-    - relevante Abschnitte der Logs, vor allem Fehlermeldungen, als CODE-blocks (</>).
+
+- oWB SW Version
+- oWB gekauft oder selbst installiert
+- wenn selbst installiert: welches OS(Stretch/Buster)
+- welches Fahrzeug
+- falls vorhanden Angaben über Firewall, VPN, etc., also Appliances, die den Internetzugang limitieren könnten
+- relevante Abschnitte der Logs, vor allem Fehlermeldungen, als CODE-blocks (</>).
 
 Das SoC-Log mit evtl. Fehlermeldungen kann wie folgt eingesehen werden:
   - openWB 1.x (Status - EV SoC Log)
