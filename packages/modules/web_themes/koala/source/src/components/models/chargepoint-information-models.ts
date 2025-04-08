@@ -1,19 +1,12 @@
-export type QTableColumn = {
-  name: string;
-  label: string;
-  field: string | ((row: Record<string, unknown>) => unknown);
-  required?: boolean;
-  align?: 'left' | 'right' | 'center';
-  sortable?: boolean;
-  sort?: (
-    a: unknown,
-    b: unknown,
-    rowA: Record<string, unknown>,
-    rowB: Record<string, unknown>,
-  ) => number;
-  format?: (val: unknown, row: Record<string, unknown>) => unknown;
-  style?: string | ((row: Record<string, unknown>) => string);
-  classes?: string | ((row: Record<string, unknown>) => string);
-  headerStyle?: string;
-  headerClasses?: string;
-};
+import { BaseRow } from './base-table-models';
+
+export interface ChargePointRow extends BaseRow {
+  id: number;
+  name: string | undefined;
+  vehicle: string;
+  plugged: string;
+  mode: string | undefined;
+  soc: string;
+  power: string | number | object | undefined;
+  charged: string | number | object | undefined;
+}

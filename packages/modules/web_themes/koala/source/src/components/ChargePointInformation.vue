@@ -9,85 +9,55 @@
       </template>
     </BaseCarousel>
 
-    <div v-else class="q-pa-md">
-      <q-table
-        class="sticky-header-table"
-        :rows="rows"
-        :columns="mobile ? columnsMobile : columns"
-        row-key="id"
-        :filter="filter"
-        virtual-scroll
-        :virtual-scroll-item-size="48"
-        :virtual-scroll-sticky-size-start="48"
-        :style="{ height: mobile ? '35vh' : '40vh' }"
-        @row-click="onRowClick"
-        binary-state-sort
-        :pagination="{ rowsPerPage: 0 }"
-        hide-bottom
-      >
-        <template v-slot:top v-if="searchInputVisible">
-          <div class="row full-width items-center q-mb-sm">
-            <div class="col">
-              <q-input
-                v-model="filter"
-                dense
-                outlined
-                color="white"
-                placeholder="Suchen..."
-                class="search-field white-outline-input"
-                input-class="text-white"
+    <BaseTable
+      v-else
+      :rows="rows"
+      :columns="mobile ? columnsMobile : columns"
+      :search-input-visible="searchInputVisible"
+      :table-height="mobile ? '35vh' : '40vh'"
+      v-model:filter="filter"
+      :columns-to-search="['vehicle', 'name']"
+      @row-click="onRowClick($event as ChargePointRow)"
+    >
+      <template v-slot:body-cell-plugged="props">
+        <q-td :props="props">
+          <ChargePointStateIcon :charge-point-id="props.row.id" />
+        </q-td>
+      </template>
+    </BaseTable>
+
+    <!-- ChargePointCard Dialog -->
+    <q-dialog
+      v-model="modalChargePointCardVisible"
+      transition-show="fade"
+      transition-hide="fade"
+      :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
+    >
+      <div class="dialog-content">
+        <ChargePointCard
+          v-if="selectedChargePointId !== null"
+          :charge-point-id="selectedChargePointId"
+        >
+          <template #card-footer>
+            <div class="card-footer">
+              <q-btn
+                color="primary"
+                flat
+                no-caps
+                v-close-popup
+                class="close-button"
+                size="md"
+                >Schließen</q-btn
               >
-                <template v-slot:append>
-                  <q-icon name="search" color="white" />
-                </template>
-              </q-input>
             </div>
-          </div>
-        </template>
-        <template v-slot:body-cell-plugged="props">
-          <q-td :props="props">
-            <ChargePointStateIcon :charge-point-id="props.row.id" />
-          </q-td>
-        </template>
-      </q-table>
-      <!-- ChargePointCard -->
-      <q-dialog
-        v-model="dialogVisible"
-        transition-show="fade"
-        transition-hide="fade"
-        :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
-      >
-        <div class="dialog-content">
-          <ChargePointCard
-            v-if="selectedChargePointId !== null"
-            :charge-point-id="selectedChargePointId"
-          >
-            <template #card-footer>
-              <div class="card-footer">
-                <q-btn
-                  color="primary"
-                  flat
-                  no-caps
-                  v-close-popup
-                  class="close-button"
-                  size="md"
-                  >Schließen</q-btn
-                >
-              </div>
-            </template>
-          </ChargePointCard>
-        </div>
-      </q-dialog>
-    </div>
+          </template>
+        </ChargePointCard>
+      </div>
+    </q-dialog>
   </div>
 </template>
 
 <style scoped>
-.search-field {
-  width: 100%;
-  max-width: 18em;
-}
-
 .dialog-content {
   width: auto;
   max-width: 24em;
@@ -108,34 +78,31 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useQuasar, Platform } from 'quasar';
+import { useQuasar, Platform, QTableColumn } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
+import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointCard from 'src/components/ChargePointCard.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import { useChargeModes } from 'src/composables/useChargeModes';
-import { QTableColumn } from 'src/components/models/chargepoint-information-models';
+import { ChargePointRow } from 'src/components/models/chargepoint-information-models';
 
 const $q = useQuasar();
 const mobile = computed(() => Platform.is.mobile);
-
 const mqttStore = useMqttStore();
 const selectedChargePointId = ref<number | null>(null);
-const dialogVisible = ref(false);
+const modalChargePointCardVisible = ref(false);
 const filter = ref('');
-
 const chargePointIds = computed(() => mqttStore.chargePointIds);
-
 const cardViewBreakpoint = computed(
   () => mqttStore.themeConfiguration?.card_view_breakpoint || 4,
 );
 const searchInputVisible = computed(
   () => mqttStore.themeConfiguration?.table_search_input_field,
 );
-
 const { chargeModes } = useChargeModes();
 
-const rows = computed(() => {
+const rows = computed<ChargePointRow[]>(() => {
   return chargePointIds.value.map((id) => {
     const chargePointName = mqttStore.chargePointName(id);
     const vehicleName =
@@ -228,6 +195,7 @@ const columns: QTableColumn[] = [
     headerStyle: 'font-weight: bold',
   },
 ];
+
 const columnsMobile = computed((): QTableColumn[] => {
   return [
     {
@@ -257,8 +225,8 @@ const columnsMobile = computed((): QTableColumn[] => {
   ];
 });
 
-const onRowClick = (evt: Event, row: { id: number }) => {
+const onRowClick = (row: ChargePointRow) => {
   selectedChargePointId.value = row.id;
-  dialogVisible.value = true;
+  modalChargePointCardVisible.value = true;
 };
 </script>
