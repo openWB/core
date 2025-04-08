@@ -12,6 +12,7 @@ Die Konfiguration in openWB 1.x erfolgt im Bereich Einstellungen - Modulkonfigur
 ![Spezielle Konfiguration-1x](SoC-VWId-19-settings-2.PNG)
 
 ## Konfiguration in openWB 2.x
+
 Die Konfiguration in openWB 2.x erfolgt im Bereich Einstellungen - Konfiguration - Fahrzeuge:
 
 ![Allgemeine Konfiguration-2x](SoC-VWId-20-settings-1.PNG) 
