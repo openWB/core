@@ -18,6 +18,7 @@ Die Konfiguration des SoC-Moduls erfolgt in Einstellungen - Modulkonfiguration -
 ![2](SoC-OVMS-19-settings-2.PNG)
 
 ## Konfiguration in openWB 2.x
+
 Die Konfiguration des SoC-Moduls erfolgt in Einstellungen - Konfiguration - Fahrzeuge:
 
 ![SoC-OVMS-Einstellungen](SoC-OVMS-Settings.png)
