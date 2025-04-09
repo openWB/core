@@ -434,7 +434,7 @@ def analyse_percentage(entry):
                 entry["cp"][key][f"energy_imported_{source}"] = calc_energy_imported_by_source(
                     entry["cp"][key]["energy_imported"], entry["energy_source"][source])
             for counter in entry["counter"].values():
-                if counter["exported"] == 0:
+                if counter["grid"] is False:
                     counter[f"energy_imported_{source}"] = calc_energy_imported_by_source(
                         counter["energy_imported"], entry["energy_source"][source])
 
