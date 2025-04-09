@@ -194,5 +194,8 @@ class SolaredgeBat(AbstractBat):
 
         return builder.to_registers()
 
+    def power_limit_controllable(self) -> bool:
+        return True
+
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolaredgeBatSetup)
