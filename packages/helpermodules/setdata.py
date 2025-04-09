@@ -1077,6 +1077,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "openWB/set/system/mqtt/valid_partner_ids" == msg.topic:
                 self._validate_value(msg, str, collection=list)
+            elif "openWB/set/system/secondary_auto_update" == msg.topic:
+                self._validate_value(msg, bool)
             elif "configurable" in msg.topic:
                 self._validate_value(msg, None)
             elif "device" in msg.topic:

@@ -687,7 +687,7 @@ class Command:
                        hostname=SubData.cp_data[payload["data"]["chargepoint"]
                                                 ].chargepoint.chargepoint_module.config.configuration.ip_address)
 
-    def chargepointUpdate(self, payload: dict) -> None:
+    def secondaryChargepointUpdate(self, payload: dict) -> None:
         pub.pub_single("openWB/set/command/primary/todo",
                        {"command": "systemUpdate", "data": {}},
                        hostname=SubData.cp_data[payload["data"]["chargepoint"]
@@ -744,7 +744,7 @@ class Command:
                             cp.chargepoint.chargepoint_module.get.version == "Release"
                         ):
                             time.sleep(2)
-                            self.chargepointUpdate({"data": {"chargepoint": cp}})
+                            self.secondaryChargepointUpdate({"data": {"chargepoint": cp}})
             except Exception:
                 log.error("Fehler im command Modul")
 
