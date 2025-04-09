@@ -291,7 +291,7 @@ class ChargeTemplate:
                 sub_mode = "stop"
                 message = self.AMOUNT_REACHED
             elif data.data.optional_data.et_provider_available():
-                if data.data.optional_data.et_price_lower_than_limit(eco_charging.max_price):
+                if data.data.optional_data.et_charging_allowed(eco_charging.max_price):
                     sub_mode = "instant_charging"
                     message = self.CHARGING_PRICE_LOW
                 else:
