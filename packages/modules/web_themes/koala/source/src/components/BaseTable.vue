@@ -88,14 +88,17 @@ const customFilterMethod: FilterFunction = (rows, terms, cols) => {
     return rows;
   }
   const lowerTerms = terms.toLowerCase();
-  const columnsToSearch = props.columnsToSearch ||
-    cols.map(col => typeof col.field === 'string' ? col.field : '');
-  return rows.filter(row => {
-    return columnsToSearch.some(field => {
+  const columnsToSearch =
+    props.columnsToSearch ||
+    cols.map((col) => (typeof col.field === 'string' ? col.field : ''));
+  return rows.filter((row) => {
+    return columnsToSearch.some((field) => {
       const val = row[field as keyof typeof row];
-      return val !== null &&
-             val !== undefined &&
-             String(val).toLowerCase().includes(lowerTerms);
+      return (
+        val !== null &&
+        val !== undefined &&
+        String(val).toLowerCase().includes(lowerTerms)
+      );
     });
   });
 };
