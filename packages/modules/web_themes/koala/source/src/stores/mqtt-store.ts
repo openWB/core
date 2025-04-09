@@ -1462,6 +1462,49 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get or set the manual SoC for a vehicle connected to a charge point
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const chargePointConnectedVehicleSocManual = (chargePointId: number) => {
+    return computed({
+      get() {
+        const vehicleInfo =
+          chargePointConnectedVehicleInfo(chargePointId).value;
+        if (!vehicleInfo) {
+          console.warn('No vehicle connected to charge point', chargePointId);
+          return;
+        }
+        const vehicleId = vehicleInfo.id;
+        const topic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
+        const socState = getValue.value(topic) as
+          | { soc_start: number; manual_soc: number | null }
+          | undefined;
+        return socState?.manual_soc ?? socState?.soc_start ?? 0;
+      },
+      set(newValue: number) {
+        const vehicleInfo =
+          chargePointConnectedVehicleInfo(chargePointId).value;
+        if (!vehicleInfo) {
+          console.warn('No vehicle connected to charge point', chargePointId);
+          return;
+        }
+        const vehicleId = vehicleInfo.id;
+        doPublish(
+          `openWB/set/vehicle/${vehicleId}/soc_module/calculated_soc_state/manual_soc`,
+          newValue,
+        );
+        // Also update the charge point connected vehicle soc
+        const cpTopic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`;
+        const cpSoc = getValue.value(cpTopic) as { soc?: number };
+        if (cpSoc && cpSoc.soc !== undefined) {
+          updateTopic(cpTopic, newValue, 'soc', true);
+        }
+      },
+    });
+  };
+
+  /**
    * Get the charge point connected vehicle charge template index identified by the charge point id
    * @param chargePointId charge point id
    * @returns number
@@ -2468,6 +2511,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleScheduledChargingPlanSocScheduled,
     vehicleScheduledChargingPlanPhases,
     vehicleScheduledChargingPlanPhasesPv,
+    chargePointConnectedVehicleSocManual,
     // Battery data
     batteryConfigured,
     batteryIds,
