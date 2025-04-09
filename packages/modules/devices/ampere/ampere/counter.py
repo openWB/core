@@ -31,7 +31,7 @@ class AmpereCounter(AbstractCounter):
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
-            currents=powers,
+            powers=powers,
             imported=imported,
             exported=exported,
             power=power

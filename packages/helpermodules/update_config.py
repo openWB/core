@@ -10,6 +10,8 @@ import re
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
+
+from control.limiting_value import LoadmanagementLimit
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -53,7 +55,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 79
+    DATASTORE_VERSION = 80
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -2004,6 +2006,13 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 76)
 
     def upgrade_datastore_76(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/[0-9]+/control_parameter/limit", topic) is not None:
+                return {topic: dataclass_utils.asdict(LoadmanagementLimit(None,  None))}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 77)
+
+    def upgrade_datastore_77(self) -> None:
         def upgrade(topic: str, payload) -> None:
             def get_new_phases_to_use(topic) -> int:
                 return min(max_phases_ev, decode_payload(self.all_received_topics[topic]))
@@ -2080,9 +2089,9 @@ class UpdateConfig:
                         topics.update({evt_topic: ev_template})
                 return topics
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 77)
+        self.__update_topic("openWB/system/datastore_version", 78)
 
-    def upgrade_datastore_77(self) -> None:
+    def upgrade_datastore_78(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
                     re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
@@ -2091,9 +2100,9 @@ class UpdateConfig:
                 payload.update({"id": index})
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 78)
+        self.__update_topic("openWB/system/datastore_version", 79)
 
-    def upgrade_datastore_78(self) -> None:
+    def upgrade_datastore_79(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
                 topics = {}
@@ -2109,4 +2118,4 @@ class UpdateConfig:
                              decode_payload(template_payload)})
                 return topics
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 79)
+        self.__update_topic("openWB/system/datastore_version", 80)

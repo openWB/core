@@ -38,8 +38,8 @@ class Optional(OcppMixin):
         if self.mon_module is not None:
             self.mon_module.stop_monitoring()
 
-    def et_provider_available(self) -> bool:
-        return self.et_module is not None and self.data.et.get.fault_state != 2
+    def _et_provider_available(self) -> bool:
+        return self.et_module is not None
 
     def et_charging_allowed(self, max_price: float):
         """ prüft, ob der aktuelle Strompreis niedriger oder gleich der festgelegten Preisgrenze ist.
@@ -50,10 +50,13 @@ class Optional(OcppMixin):
         False: Preis liegt darüber
         """
         try:
-            if self.et_get_current_price() <= max_price:
-                return True
+            if self._et_provider_available():
+                if self.et_get_current_price() <= max_price:
+                    return True
+                else:
+                    return False
             else:
-                return False
+                return True
         except KeyError:
             log.exception("Fehler beim strompreisbasierten Laden")
             self.et_get_prices()
@@ -62,7 +65,10 @@ class Optional(OcppMixin):
             return False
 
     def et_get_current_price(self):
-        return self.data.et.get.prices[str(int(create_unix_timestamp_current_full_hour()))]
+        if self._et_provider_available():
+            return self.data.et.get.prices[str(int(create_unix_timestamp_current_full_hour()))]
+        else:
+            raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """
@@ -75,6 +81,8 @@ class Optional(OcppMixin):
         ------
         list: Key des Dictionary (Unix-Sekunden der günstigen Stunden)
         """
+        if self._et_provider_available() is False:
+            raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
             prices = self.data.et.get.prices
             prices_in_scheduled_time = {}

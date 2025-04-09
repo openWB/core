@@ -66,7 +66,7 @@ log = logging.getLogger(__name__)
 class Chargepoint(ChargepointRfidMixin):
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
-    MAX_FAILED_PHASE_SWITCHES = 3
+    MAX_FAILED_PHASE_SWITCHES = 2
 
     def __init__(self, index: int, event: Optional[threading.Event]):
         try:
