@@ -471,9 +471,15 @@ class CounterAll:
 
         # Falls EVU-Zähler fehlt, zuerst hinzufügen.
         check_and_add(ComponentType.COUNTER, data.data.counter_data)
-        check_and_add(ComponentType.BAT, data.data.bat_data)
-        check_and_add(ComponentType.CHARGEPOINT, data.data.cp_data)
-        check_and_add(ComponentType.INVERTER, data.data.pv_data)
+        try:
+            self.get_id_evu_counter()
+            check_and_add(ComponentType.BAT, data.data.bat_data)
+            check_and_add(ComponentType.CHARGEPOINT, data.data.cp_data)
+            check_and_add(ComponentType.INVERTER, data.data.pv_data)
+        except TypeError:
+            pub_system_message({}, ("Es konnte kein Zähler gefunden werden, der als EVU-Zähler an die Spitze des "
+                               "Lastmanagements gesetzt werden kann. Bitte zuerst einen EVU-Zähler hinzufügen."),
+                               MessageType.ERROR)
 
 
 def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:

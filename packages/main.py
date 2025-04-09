@@ -29,6 +29,7 @@ from helpermodules.pub import Pub
 from helpermodules.utils import exit_after
 from modules import configuration, loadvars, update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
+from modules.internal_chargepoint_handler.gpio import InternalGpioHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
@@ -86,7 +87,6 @@ class HandlerAlgorithm:
                 update_daily_yields(totals)
                 update_pv_monthly_yearly_yields()
                 data.data.general_data.grid_protection()
-                data.data.optional_data.et_get_prices()
                 data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
         except KeyboardInterrupt:
@@ -118,6 +118,7 @@ class HandlerAlgorithm:
             if sub.internal_chargepoint_data["global_data"].configured:
                 if not general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat:
                     log.error("Heartbeat für Internen Ladepunkt nicht zurückgesetzt.")
+                    general_internal_chargepoint_handler.event_stop.set()
                     general_internal_chargepoint_handler.event_start.set()
                 else:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
@@ -152,6 +153,7 @@ class HandlerAlgorithm:
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 for cp in data.data.cp_data.values():
                     calculate_charge_cost(cp)
+            data.data.optional_data.et_get_prices()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -212,6 +214,8 @@ try:
     event_jobs_running = threading.Event()
     event_jobs_running.set()
     event_update_soc = threading.Event()
+    event_restart_gpio = threading.Event()
+    gpio = InternalGpioHandler(event_restart_gpio)
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc(event_update_soc)
     set = setdata.SetData(event_ev_template, event_charge_template,
@@ -227,7 +231,7 @@ try:
                           event_update_config_completed,
                           event_update_soc,
                           event_soc,
-                          event_jobs_running, event_modbus_server)
+                          event_jobs_running, event_modbus_server, event_restart_gpio)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
@@ -236,8 +240,11 @@ try:
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
     if rfid.keyboards_detected:
-        t_rfid = Thread(target=rfid.run, args=(), name="Internal Chargepoint")
+        t_rfid = Thread(target=rfid.run, args=(), name="Internal RFID")
         t_rfid.start()
+
+    t_gpio = Thread(target=gpio.loop, args=(), name="Internal GPIO")
+    t_gpio.start()
 
     t_sub.start()
     t_set.start()

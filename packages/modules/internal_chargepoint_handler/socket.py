@@ -2,13 +2,15 @@ from enum import IntEnum
 import functools
 import logging
 import time
-from typing import Callable, Tuple
-from helpermodules.hardware_configuration import get_hardware_configuration_setting
+from typing import Callable
 
+from helpermodules.hardware_configuration import get_hardware_configuration_setting
+from helpermodules.logger import ModifyLoglevelContext
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.internal_chargepoint_handler.chargepoint_module import ChargepointModule
 from modules.internal_chargepoint_handler.clients import ClientHandler
+
 
 log = logging.getLogger(__name__)
 
@@ -52,40 +54,38 @@ class Socket(ChargepointModule):
                  parent_cp: int,
                  hierarchy_id: int) -> None:
         self.socket_max_current = get_hardware_configuration_setting("max_c_socket")
-        log.debug(f"Konfiguration als Buchse mit maximal {self.socket_max_current}A Ladestrom je Phase.")
+        with ModifyLoglevelContext(log, logging.DEBUG):
+            log.info(f"Konfiguration als Buchse mit maximal {self.socket_max_current}A Ladestrom je Phase.")
         super().__init__(local_charge_point_num, client_handler, parent_hostname, parent_cp, hierarchy_id)
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            try:
+            with self.client_error_context:
                 actor = ActorState(GPIO.input(19))
-            except Exception:
-                log.error("Error getting actor status! Using default 'opened'.")
-                actor = ActorState.OPENED
 
-            if actor == ActorState.CLOSED or self.chargepoint_state.plug_state is False:
-                if current == self.set_current_evse:
-                    return
-            else:
-                current = 0
-            super().set_current(min(current, self.socket_max_current))
+                if actor == ActorState.CLOSED:
+                    if current == self.set_current_evse:
+                        return
+                else:
+                    current = 0
+                super().set_current(min(current, self.socket_max_current))
+                if actor == ActorState.OPENED and self.chargepoint_state.plug_state is True:
+                    raise ValueError("Buchse hat nicht verriegelt, obwohl ein Fahrzeug angesteckt ist.")
 
-    def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> Tuple[ChargepointState, float]:
-        try:
+    def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
+        with self.client_error_context:
             actor = ActorState(GPIO.input(19))
-        except Exception:
-            log.error("Error getting actor status! Using default 'opened'.")
-            actor = ActorState.OPENED
-        log.debug("Actor: "+str(actor))
-        self.chargepoint_state, self.set_current_evse = super().get_values(phase_switch_cp_active, last_tag)
-        if phase_switch_cp_active:
-            log.debug("Keine Actor-Bewegung, da CP-Unterbrechung oder Phasenumschaltung aktiv.")
-        else:
-            if self.chargepoint_state.plug_state is True and actor == ActorState.OPENED:
-                self.__close_actor()
-            if self.chargepoint_state.plug_state is False and actor == ActorState.CLOSED:
-                self.__open_actor()
-        return self.chargepoint_state, self.set_current_evse
+            log.debug("Actor: "+str(actor))
+            self.chargepoint_state = super().get_values(phase_switch_cp_active, last_tag)
+            self.chargepoint_state.max_evse_current = self.socket_max_current
+            if phase_switch_cp_active:
+                log.debug("Keine Actor-Bewegung, da CP-Unterbrechung oder Phasenumschaltung aktiv.")
+            else:
+                if self.chargepoint_state.plug_state is True and actor == ActorState.OPENED:
+                    self.__close_actor()
+                if self.chargepoint_state.plug_state is False and actor == ActorState.CLOSED:
+                    self.__open_actor()
+            return self.chargepoint_state
 
     def __open_actor(self):
         self.__set_actor(open=True)

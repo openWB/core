@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-import logging
+from logging import getLogger
 from typing import Union
-import asyncio
+from asyncio import new_event_loop, set_event_loop
+from time import mktime
+from datetime import datetime
 from json import loads, dumps
 from modules.vehicles.ovms.config import OVMS
 from helpermodules.pub import Pub
@@ -12,11 +14,13 @@ from copy import deepcopy
 TOKEN_CMD = "/api/token"
 STATUS_CMD = "/api/status"
 OVMS_APPL_LABEL = "application"
-OVMS_APPL_VALUE = "owb-ovms"
+OVMS_APPL_VALUE = "owb-ovms-2.x-vh"
 OVMS_PURPOSE_LABEL = "purpose"
 OVMS_PURPOSE_VALUE = "get soc"
+date_fmt = '%Y-%m-%d %H:%M:%S'
 
-log = logging.getLogger(__name__)
+
+log = getLogger(__name__)
 
 
 # store soc module configuration
@@ -26,6 +30,12 @@ def write_config(topic: str, config: dict):
         Pub().pub(topic, config)
     except Exception as e:
         log.exception('Token mqtt write exception ' + str(e))
+
+
+def utc2local(utc):
+    epoch = mktime(utc.timetuple())
+    offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
+    return utc + offset
 
 
 class api:
@@ -41,7 +51,7 @@ class api:
             "password": self.password
         }
         form_data = {
-            OVMS_APPL_LABEL: OVMS_APPL_VALUE,
+            OVMS_APPL_LABEL: self.ovms_appl_value,
             OVMS_PURPOSE_LABEL: OVMS_PURPOSE_VALUE
         }
         try:
@@ -82,7 +92,8 @@ class api:
                       str(status_code) + ", full_tokenlist=\n" +
                       dumps(full_tokenlist, indent=4))
             obsolete_tokenlist = list(filter(lambda token:
-                                             token[OVMS_APPL_LABEL] == OVMS_APPL_VALUE and token["token"] != self.token,
+                                             token[OVMS_APPL_LABEL] == self.ovms_appl_value
+                                             and token["token"] != self.token,
                                              full_tokenlist))
             if len(obsolete_tokenlist) > 0:
                 log.debug("cleanup_token obsolete_tokenlist=\n" + dumps(obsolete_tokenlist, indent=4))
@@ -128,13 +139,24 @@ class api:
                          conf: OVMS,
                          vehicle: int) -> Union[int, float, str, float, float]:
         self.config_topic = "openWB/set/vehicle/" + vehicle + "/soc_module/config"
+        self.server_url = conf.configuration.server_url
         self.user_id = conf.configuration.user_id
         self.password = conf.configuration.password
         self.vehicleId = conf.configuration.vehicleId
         self.vehicle = vehicle
+        self.ovms_appl_value = OVMS_APPL_VALUE + str(self.vehicle)
         self.config = deepcopy(conf)
+        self.confDict = self.config.__dict__
+        self.confDict["configuration"] = self.config.configuration.__dict__
+        log.debug("self.confDict2=" + dumps(self.confDict, indent=4))
 
-        tokenstr = self.config.configuration.token
+        if 'token' in self.confDict['configuration']:
+            tokenstr = self.confDict['configuration']['token']
+            log.debug("read tokenstr (" + str(tokenstr) + ") from configuration")
+        else:
+            tokenstr = ""
+            log.debug("init tokenstr to (" + str(tokenstr) + ")")
+        log.debug("tokenstr=" + str(tokenstr))
 
         if tokenstr is None or tokenstr == "":
             self.token = self.create_token()
@@ -148,9 +170,6 @@ class api:
             self.token = self.create_token()
         else:
             log.debug("_fetch_soc using token=" + self.token)
-
-        self.confDict = self.config.__dict__
-        self.confDict["configuration"] = self.config.configuration.__dict__
 
         self.cleanup_token()
 
@@ -171,16 +190,22 @@ class api:
         self.kms = float(statusDict['odometer']) / 10
         self.vehicle12v = statusDict['vehicle12v']
         self.soc_ts = statusDict['m_msgtime_s']
+        self.soc_tsdt = datetime.strptime(self.soc_ts, date_fmt)
+        self.soc_tsdtL = utc2local(self.soc_tsdt)
+        self.soc_tsX = datetime.timestamp(self.soc_tsdtL)
 
-        return int(float(self.soc)), float(self.range), self.soc_ts
+        log.info("soc=" + self.soc + ", range=" + self.range + ", soc_ts=" + str(self.soc_tsdtL))
+        log.debug("statusDict=\n" + dumps(statusDict, indent=4))
+
+        return int(float(self.soc)), float(self.range), self.soc_tsX
 
 
 # sync function
 def fetch_soc(conf: OVMS, vehicle: int) -> Union[int, float, str]:
 
     # prepare and call async method
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    loop = new_event_loop()
+    set_event_loop(loop)
 
     # get soc, range from server
     a = api()

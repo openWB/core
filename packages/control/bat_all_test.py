@@ -157,7 +157,7 @@ cases = [
 ]
 
 
-@ pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
+@pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypatch):
     # setup
     b_all = BatAll()

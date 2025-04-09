@@ -12,6 +12,7 @@ from modules.common.modbus import ModbusDataType
 from modules.common.store import get_inverter_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoyInverterSetup
 from modules.devices.sma.sma_sunny_boy.inv_version import SmaInverterVersion
+from modules.common.simcount import SimCounter
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ log = logging.getLogger(__name__)
 class SmaSunnyBoyInverter(AbstractInverter):
 
     SMA_INT32_NAN = -0x80000000  # SMA uses this value to represent NaN
+    SMA_UINT32_NAN = 0xFFFFFFFF  # SMA uses this value to represent NaN
     SMA_NAN = -0xC000
 
     def __init__(self,
@@ -29,6 +31,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
         self.tcp_client = tcp_client
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="Wechselrichter")
 
     def update(self) -> None:
         self.store.set(self.read())
@@ -68,10 +71,20 @@ class SmaSunnyBoyInverter(AbstractInverter):
         if power_total == self.SMA_INT32_NAN or power_total == self.SMA_NAN:
             power_total = 0
 
+        if energy == self.SMA_UINT32_NAN:
+            raise ValueError(
+                f'Wechselrichter lieferte nicht plausiblen Zählerstand: {energy}. '
+                'Sobald PV Ertrag vorhanden ist sollte sich dieser Wert ändern, '
+                'andernfalls kann ein Defekt vorliegen.'
+            )
+
+        imported, _ = self.sim_counter.sim_count(power_total * -1)
+
         inverter_state = InverterState(
             power=power_total * -1,
             dc_power=dc_power * -1,
-            exported=energy
+            exported=energy,
+            imported=imported
         )
         log.debug("WR {}: {}".format(self.tcp_client.address, inverter_state))
         return inverter_state

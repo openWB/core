@@ -35,13 +35,12 @@ export class ShDevice {
 	}
 }
 
-export const shDevices: { [key: number]: ShDevice } = reactive({})
-
+//export const shDevices: { [key: number]: ShDevice } = reactive({})
+export const shDevices = reactive(new Map<number, ShDevice>())
 export function addShDevice(shIndex: number) {
 	if (!(shIndex in shDevices)) {
-		shDevices[shIndex] = new ShDevice(shIndex)
-		shDevices[shIndex].color =
-			'var(--color-sh' + Object.values(shDevices).length + ')'
+		shDevices.set(shIndex, new ShDevice(shIndex))
+		shDevices.get(shIndex)!.color = 'var(--color-sh' + shDevices.size + ')'
 		// console.info('Added sh device ' + shIndex)
 	} else {
 		console.info('Duplicate sh device message: ' + shIndex)

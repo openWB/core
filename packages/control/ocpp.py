@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import logging
 
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 try:
     class OcppMixin:
         def _get_formatted_time(self: OptionalProtocol) -> str:
-            return datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            return datetime.now(timezone.utc).isoformat()
 
         def _process_call(self: OptionalProtocol,
                           chargebox_id: str,
@@ -56,6 +56,7 @@ try:
                     firmware_version=data.data.system_data["system"].data["version"],
                     meter_serial_number=serial_number
                 ))
+                log.debug(f"BootNotification für Chargebox ID: {chargebox_id} gesendet.")
             except Exception as e:
                 fault_state.from_exception(e)
 

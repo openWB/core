@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.chargemode import Chargemode
-from control.ev import Ev
+from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
@@ -120,7 +120,8 @@ class Counter:
         if self.data.get.fault_state == FaultStateLevel.ERROR:
             if self.data.set.error_timer is None:
                 self.data.set.error_timer = timecheck.create_timestamp()
-            if timecheck.check_timestamp(self.data.set.error_timer, self.MAX_EVU_ERROR_DURATION) is False:
+                return True
+            elif timecheck.check_timestamp(self.data.set.error_timer, self.MAX_EVU_ERROR_DURATION) is False:
                 for cp in connected_cps:
                     if self.num == data.data.counter_all_data.get_id_evu_counter():
                         data.data.cp_data[cp].set_state_and_log(
@@ -243,13 +244,7 @@ class Counter:
         control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
         control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
         control_range_center = control_range_high - (control_range_high - control_range_low) / 2
-        control_range_state = self.get_control_range_state(0)
-        if control_range_state == ControlRangeState.BELOW:
-            range_offset = abs(control_range_center)
-        elif control_range_state == ControlRangeState.ABOVE:
-            range_offset = - abs(control_range_center)
-        else:
-            range_offset = 0
+        range_offset = control_range_center
         log.debug(f"Anpassen des Regelbereichs {range_offset}W")
         return range_offset
 
@@ -340,7 +335,7 @@ class Counter:
                 control_parameter.timestamp_switch_on_off = None
                 self.data.set.reserved_surplus -= pv_config.switch_on_threshold*control_parameter.phases
                 msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
-                control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
 
                 if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
                     feed_in_yield = pv_config.feed_in_yield
@@ -498,6 +493,7 @@ class Counter:
                 else:
                     evu_counter.data.set.released_surplus -= (pv_config.switch_on_threshold
                                                               * chargepoint.data.control_parameter.phases)
+                chargepoint.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 

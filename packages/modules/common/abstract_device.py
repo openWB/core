@@ -30,6 +30,9 @@ class AbstractBat:
         # power limit None heißt, auf maximale Speicherleistung setzen = Speicher-Begrenzung aufheben
         pass
 
+    def power_limit_controllable(self) -> bool:
+        return False
+
 
 class AbstractCounter:
     @abstractmethod
@@ -48,6 +51,11 @@ class AbstractInverter:
 
     @abstractmethod
     def update(self, *kwargs) -> None:
+        pass
+
+    @abstractmethod
+    def set_power_limit(self, power_limit: float) -> None:
+        # power_limit in Werten zwischen 0 und 1
         pass
 
 

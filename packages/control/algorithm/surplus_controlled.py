@@ -10,8 +10,8 @@ from control.algorithm.filter_chargepoints import (get_chargepoints_by_chargemod
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState, CHARGING_STATES
-from modules.common.utils.component_parser import get_component_name_by_id
 from control.counter import ControlRangeState, Counter
+from control.limiting_value import LoadmanagementLimit
 from control.loadmanagement import LimitingValue, Loadmanagement
 
 
@@ -38,7 +38,8 @@ class SurplusControlled:
                 for cp in preferenced_cps_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
-            self._fix_deviating_evse_current(cp)
+            if cp.data.control_parameter.state in CHARGING_STATES:
+                self._fix_deviating_evse_current(cp)
 
     def _set(self,
              chargepoints: List[Chargepoint],
@@ -52,12 +53,13 @@ class SurplusControlled:
             missing_currents, counts = common.get_missing_currents_left(chargepoints)
             available_currents, limit = Loadmanagement().get_available_currents_surplus(missing_currents,
                                                                                         counter,
-                                                                                        feed_in_yield)
+                                                                                        cp,
+                                                                                        feed_in=feed_in_yield)
             cp.data.control_parameter.limit = limit
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
             if counter.get_control_range_state(feed_in_yield) == ControlRangeState.MIDDLE:
                 pv_charging = data.data.general_data.data.chargemode_config.pv_charging
-                dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.set_current_prev
+                dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.data.set.current_prev
                 # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
                 # nachregeln, auch wenn der Regelbereich eingehalten wird. Sonst würde zB nicht berücksichtigt werden,
                 # wenn noch ein Fahrzeug dazu kommmt.
@@ -65,12 +67,12 @@ class SurplusControlled:
                     current = available_for_cp
                 else:
                     # Nicht mehr freigeben, wie das Lastmanagement vorgibt
-                    current = min(cp.set_current_prev - cp.data.set.target_current, available_for_cp)
+                    current = min(cp.data.set.current_prev - cp.data.set.target_current, available_for_cp)
             else:
                 current = available_for_cp
 
             current = common.get_current_to_set(cp.data.set.current, current, cp.data.set.target_current)
-            self._set_loadmangement_message(current, limit, cp, counter)
+            self._set_loadmangement_message(current, limit, cp)
             limited_current = self._limit_adjust_current(cp, current)
             common.set_current_counterdiff(
                 cp.data.control_parameter.min_current,
@@ -81,17 +83,16 @@ class SurplusControlled:
 
     def _set_loadmangement_message(self,
                                    current: float,
-                                   limit: LimitingValue,
-                                   chargepoint: Chargepoint,
-                                   counter: Counter) -> None:
+                                   limit: LoadmanagementLimit,
+                                   chargepoint: Chargepoint) -> None:
         # Strom muss an diesem Zähler geändert werden
         if (current != chargepoint.data.set.current and
                 # Strom erreicht nicht die vorgegebene Stromstärke
                 current != max(chargepoint.data.control_parameter.required_currents) and
                 # im PV-Laden wird der Strom immer durch die Leistung begrenzt
-                limit != LimitingValue.POWER):
+                limit.limiting_value != LimitingValue.POWER):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
-                                          f"{limit.value.format(get_component_name_by_id(counter.num))}")
+                                          f"{limit.message}")
 
     # tested
     def filter_by_feed_in_limit(self, chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:
@@ -109,7 +110,7 @@ class SurplusControlled:
             MAX_CURRENT = 30
         msg = None
         nominal_difference = chargepoint.data.set.charging_ev_data.ev_template.data.nominal_difference
-        if chargepoint.data.set.charging_ev_data.chargemode_changed:
+        if chargepoint.data.set.charging_ev_data.chargemode_changed or chargepoint.data.get.charge_state is False:
             return new_current
         else:
             # Um max. +/- 5A pro Zyklus regeln
@@ -135,14 +136,11 @@ class SurplusControlled:
         genutzten Soll-Strom hochgeregelt werden. Wenn Fahrzeuge entgegen der Norm mehr Ladeleistung beziehen, als
         freigegeben, wird entsprechend weniger freigegeben, da sonst uU die untere Grenze für die Abschaltschwelle
         nicht erreicht wird.
-        Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen. Wenn das
-        Auto nur in 1A-Schritten regeln kann, rundet es und lädt immer etwas mehr oder weniger als Soll-Strom. Schlägt
-        man den EVSE-Strom auf, pendelt die Regelung um diesen 1A-Schritt."""
+        Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen."""
         evse_current = chargepoint.data.get.evse_current
-        if evse_current and chargepoint.data.set.current != chargepoint.set_current_prev:
-            formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
-            current_with_offset = chargepoint.data.set.current + \
-                formatted_evse_current - max(chargepoint.data.get.currents)
+        if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
+            offset = evse_current - max(chargepoint.data.get.currents)
+            current_with_offset = chargepoint.data.set.current + offset
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
             if current != chargepoint.data.set.current:
                 log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
@@ -157,8 +155,7 @@ class SurplusControlled:
             control_parameter = cp.data.control_parameter
             if cp.data.set.charging_ev_data.chargemode_changed or cp.data.set.charging_ev_data.submode_changed:
                 if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
-                    if (cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False and
-                            phase_switch_necessary() is False):
+                    if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
                         threshold = evu_counter.calc_switch_off_threshold(cp)[0]
                         if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:
                             control_parameter.required_currents = [0]*3

@@ -170,7 +170,7 @@ const statusColor = computed(() => {
 const modeStyle = computed(() => {
 	switch (props.chargepoint.chargeMode) {
 		case 'stop':
-			return { 'background-color': 'var(--fg)' }
+			return { 'background-color': 'var(--color-input)' }
 		default:
 			return {
 				'background-color': chargemodes[props.chargepoint.chargeMode].color,

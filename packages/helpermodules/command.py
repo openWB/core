@@ -16,11 +16,14 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 # ToDo: move to module commands if implemented
+from control.ev.charge_template import get_new_charge_template
+from control.ev.ev_template import EvTemplateData
 from helpermodules import pub
+from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
@@ -28,7 +31,8 @@ from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
-from control import bat, bridge, data, ev, counter, counter_all, pv
+from control import bat, bridge, data, counter, counter_all, pv
+from control.ev import ev
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
@@ -53,7 +57,10 @@ class Command:
                ("chargepoint_template", "chargepoint/template", 0),
                ("device", "system/device", -1),
                ("ev_template", "vehicle/template/ev_template", 0),
-               ("vehicle", "vehicle", 0)]
+               ("vehicle", "vehicle", 0),
+               ("io_action", "io/action", -1),
+               ("io_device", "system/io", -1),
+               ]
 
     def __init__(self, event_command_completed: threading.Event):
         try:
@@ -101,7 +108,7 @@ class Command:
             # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained
             # Topics empfangen, was zu doppelten Meldungen im Protokoll führt.
             time.sleep(1)
-            self.internal_broker_client = InternalBrokerClient("command", self.on_connect, self.on_message)
+            self.internal_broker_client = BrokerClient("command", self.on_connect, self.on_message)
             self.internal_broker_client.start_infinite_loop()
         except Exception:
             log.exception("Fehler im Command-Modul")
@@ -166,6 +173,63 @@ class Command:
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_device}\'.',
                 MessageType.ERROR)
 
+    def addIoAction(self, connection_id: str, payload: dict) -> None:
+        new_id = self.max_id_io_action + 1
+        dev = importlib.import_module(f".io_actions.{'.'.join(payload['data']['type'])}.api",
+                                      "modules")
+        descriptor = dev.device_descriptor.configuration_factory()
+        device_default = dataclass_utils.asdict(descriptor)
+        device_default["id"] = new_id
+        Pub().pub(f'openWB/set/io/action/{new_id}/config', device_default)
+        self.max_id_io_action = new_id
+        Pub().pub("openWB/set/command/max_id/io_action", self.max_id_io_action)
+        pub_user_message(
+            payload, connection_id,
+            f'Neue IO-Aktion vom Typ \'{" / ".join(payload["data"]["type"])}\' mit ID \'{new_id}\' hinzugefügt.',
+            MessageType.SUCCESS)
+
+    def removeIoAction(self, connection_id: str, payload: dict) -> None:
+        if self.max_id_io_action >= payload["data"]["id"]:
+            ProcessBrokerBranch(f'io/action/{payload["data"]["id"]}/').remove_topics()
+            pub_user_message(payload, connection_id, f'IO-Aktion mit ID \'{payload["data"]["id"]}\' gelöscht.',
+                             MessageType.SUCCESS)
+        else:
+            pub_user_message(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_io_action}\'.',
+                MessageType.ERROR)
+
+    def addIoDevice(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neues Io-Device erstellt werden soll.
+        """
+        new_id = self.max_id_io_device + 1
+        dev = importlib.import_module(".io_devices."+payload["data"]["type"]+".api", "modules")
+        descriptor = dev.device_descriptor.configuration_factory()
+        device_default = dataclass_utils.asdict(descriptor)
+        device_default["id"] = new_id
+        Pub().pub(f'openWB/set/system/io/{new_id}/config', device_default)
+        self.max_id_io_device = new_id
+        Pub().pub("openWB/set/command/max_id/io_device", self.max_id_io_device)
+        pub_user_message(
+            payload, connection_id,
+            f'Neues IO-Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
+            MessageType.SUCCESS)
+
+    def removeIoDevice(self, connection_id: str, payload: dict) -> None:
+        """ löscht ein Io-Device.
+        """
+        if self.max_id_io_device >= payload["data"]["id"]:
+            ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
+            pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
+                             MessageType.SUCCESS)
+        else:
+            pub_user_message(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_io_device}\'.',
+                MessageType.ERROR)
+
     def addChargepoint(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Chargepoint erstellt werden soll.
         """
@@ -192,7 +256,7 @@ class Command:
         if check_num_msg is not None:
             pub_user_message(
                 payload, connection_id, f"{check_num_msg} Wenn Sie weitere Ladepunkte anbinden wollen, müssen Sie "
-                "diese als externe Ladepunkte anbinden. Die externen Ladepunkte in den Steuerungsmodus 'secondary'"
+                "diese als secondary openWB anbinden. Die weiteren Ladepunkte in den Steuerungsmodus 'secondary'"
                 " versetzen.", MessageType.ERROR)
             return
         chargepoint_config["id"] = new_id
@@ -217,7 +281,7 @@ class Command:
             else:
                 pub_user_message(payload, connection_id,
                                  "Bitte zuerst einen EVU-Zähler konfigurieren oder in den Steuerungsmodus 'secondary' "
-                                 "umschalten, wenn die openWB als externer Ladepunkt betrieben werden soll.",
+                                 "umschalten.",
                                  MessageType.ERROR)
 
     MAX_NUM_OF_DUOS_REACHED = ("Es können maximal zwei interne Ladepunkte für eine openWB Series 1/2 Duo konfiguriert "
@@ -251,7 +315,7 @@ class Command:
             return None
 
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
-        """ löscht ein Chargepoint.
+        """ löscht ein Ladepunkt.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
             pub_user_message(
@@ -307,7 +371,7 @@ class Command:
         Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
             payload, connection_id,
-            f'Neuer Autolock-Plan mit ID \'{new_id}\' zu Profil '
+            f'Neuer Plan für Sperren nach Uhrzeit mit ID \'{new_id}\' zu Profil '
             f'\'{payload["data"]["template"]}\' hinzugefügt.',
             MessageType.SUCCESS)
 
@@ -325,7 +389,7 @@ class Command:
             "")
         pub_user_message(
             payload, connection_id,
-            f'Autolock-Plan mit ID \'{payload["data"]["plan"]}\' vom Profil '
+            f'Plan für Sperren nach Uhrzeit mit ID \'{payload["data"]["plan"]}\' vom Profil '
             f'\'{payload["data"]["template"]}\' gelöscht.',
             MessageType.SUCCESS)
 
@@ -333,7 +397,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Lade-Profil erstellt werden soll.
         """
         new_id = self.max_id_charge_template + 1
-        charge_template_default = ev.get_new_charge_template()
+        charge_template_default = get_new_charge_template()
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
                   str(new_id), charge_template_default)
         self.max_id_charge_template = new_id
@@ -362,11 +426,12 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_scheduled_plan + 1
-        charge_template_default = dataclass_utils.asdict(ev.ScheduledChargingPlan())
+        charge_template_default = ScheduledChargingPlan()
+        charge_template_default.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/chargemode/scheduled_charging/plans/{new_id}',
-            charge_template_default)
+            dataclass_utils.asdict(charge_template_default))
         self.max_id_charge_template_scheduled_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
@@ -398,11 +463,12 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_time_charging_plan + 1
-        time_charging_plan_default = dataclass_utils.asdict(ev.TimeChargingPlan())
+        time_charging_plan_default = TimeChargingPlan()
+        time_charging_plan_default.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/time_charging/plans/{new_id}',
-            time_charging_plan_default)
+            dataclass_utils.asdict(time_charging_plan_default))
         self.max_id_charge_template_time_charging_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
@@ -483,7 +549,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Fahrzeug-Profil erstellt werden soll.
         """
         new_id = self.max_id_ev_template + 1
-        ev_template_default = dataclass_utils.asdict(ev.EvTemplateData())
+        ev_template_default = dataclass_utils.asdict(EvTemplateData())
         Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
         self.max_id_ev_template = new_id
         Pub().pub("openWB/set/command/max_id/ev_template", new_id)
@@ -552,16 +618,16 @@ class Command:
         Pub().pub(f'openWB/set/log/{connection_id}/data', chargelog.get_log_data(payload["data"]))
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(f'openWB/set/log/daily/{payload["data"]["day"]}',
-                  get_daily_log(payload["data"]["day"]))
+        Pub().pub(f'openWB/set/log/daily/{payload["data"]["date"]}',
+                  get_daily_log(payload["data"]["date"]))
 
     def getMonthlyLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(f'openWB/set/log/monthly/{payload["data"]["month"]}',
-                  get_monthly_log(payload["data"]["month"]))
+        Pub().pub(f'openWB/set/log/monthly/{payload["data"]["date"]}',
+                  get_monthly_log(payload["data"]["date"]))
 
     def getYearlyLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(f'openWB/set/log/yearly/{payload["data"]["year"]}',
-                  get_yearly_log(payload["data"]["year"]))
+        Pub().pub(f'openWB/set/log/yearly/{payload["data"]["date"]}',
+                  get_yearly_log(payload["data"]["date"]))
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
@@ -705,26 +771,26 @@ class Command:
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
         ''' fordert einen Authentifizierungscode für MSAL (Microsoft Authentication Library)
         an um Onedrive Backup zu ermöglichen'''
-        cloudbackupconfig = SubData.system_data["system"].backup_cloud
-        if cloudbackupconfig is None:
+        cloud_backup_config = SubData.system_data["system"].backup_cloud
+        if cloud_backup_config is None:
             pub_user_message(payload, connection_id,
                              "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
                              "und erneut versuchen.<br />", MessageType.WARNING)
             return
-        result = generateMSALAuthCode(cloudbackupconfig.config)
+        result = generateMSALAuthCode(cloud_backup_config.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
 
     # ToDo: move to module commands if implemented
     def retrieveMSALTokens(self, connection_id: str, payload: dict) -> None:
         """ holt die Tokens für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
         """
-        cloudbackupconfig = SubData.system_data["system"].backup_cloud
-        if cloudbackupconfig is None:
+        cloud_backup_config = SubData.system_data["system"].backup_cloud
+        if cloud_backup_config is None:
             pub_user_message(payload, connection_id,
                              "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
                              "und erneut versuchen.<br />", MessageType.WARNING)
             return
-        result = retrieveMSALTokens(cloudbackupconfig.config)
+        result = retrieveMSALTokens(cloud_backup_config.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
 
     def factoryReset(self, connection_id: str, payload: dict) -> None:
@@ -741,6 +807,16 @@ class Command:
         migrate_data.validate_ids()
         migrate_data.migrate()
         pub_user_message(payload, connection_id, "Datenübernahme abgeschlossen.", MessageType.SUCCESS)
+
+    def removeCloudBridge(self, connection_id: str, payload: dict):
+        received_id = ProcessBrokerBranch("system/mqtt/bridge/").get_cloud_id()
+        if received_id:
+            Pub().pub("openWB/set/command/removeMqttBridge/todo", {
+                "command": "removeMqttBridge",
+                "data": {
+                    "bridge": int(received_id[0])
+                }
+            })
 
 
 class ErrorHandlingContext:
@@ -790,18 +866,18 @@ class ProcessBrokerBranch:
 
     def get_payload(self):
         self.payload: str
-        InternalBrokerClient("processBrokerBranch", self.on_connect, self.__get_payload).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.on_connect, self.__get_payload).start_finite_loop()
         return json.loads(self.payload)
 
     def remove_topics(self):
         """ löscht einen Topic-Zweig auf dem Broker. Payload "" löscht nur ein einzelnes Topic.
         """
-        InternalBrokerClient("processBrokerBranch", self.on_connect, self.__on_message_rm).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_rm).start_finite_loop()
 
     def get_max_id(self) -> List[str]:
         try:
             self.received_topics = []
-            InternalBrokerClient("processBrokerBranch", self.on_connect, self.__on_message_max_id).start_finite_loop()
+            BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_max_id).start_finite_loop()
             return self.received_topics
         except Exception:
             log.exception("Fehler im Command-Modul")
@@ -811,12 +887,21 @@ class ProcessBrokerBranch:
         try:
             self.name = name
             self.mqtt_bridge_exists = False
-            InternalBrokerClient("processBrokerBranch", self.on_connect,
-                                 self.__on_message_mqtt_bridge_exists).start_finite_loop()
+            BrokerClient("processBrokerBranch", self.on_connect,
+                         self.__on_message_mqtt_bridge_exists).start_finite_loop()
             return self.mqtt_bridge_exists
         except Exception:
             log.exception("Fehler im Command-Modul")
             return self.mqtt_bridge_exists
+
+    def get_cloud_id(self):
+        try:
+            self.ids = []
+            BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_cloud_id).start_finite_loop()
+            return self.ids
+        except Exception:
+            log.exception("Fehler im Command-Modul")
+            return []
 
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
@@ -873,5 +958,13 @@ class ProcessBrokerBranch:
         try:
             if decode_payload(msg.payload)["name"] == self.name:
                 self.mqtt_bridge_exists = True
+        except Exception:
+            log.exception("Fehler in ProcessBrokerBranch")
+
+    def __on_message_cloud_id(self, client, userdata, msg):
+        try:
+            if decode_payload(msg.payload)['remote']['is_openwb_cloud']:
+                id = msg.topic.replace("openWB/"+self.topic_str, "")
+                self.ids.append(id)
         except Exception:
             log.exception("Fehler in ProcessBrokerBranch")

@@ -50,9 +50,16 @@ def exists_hardware_configuration_setting(name: str) -> bool:
 
 
 def get_serial_number() -> Optional[str]:
+    # Inhalt der Datei snnumber:
+    # Seriennummer vorhanden: snnumber=sn1234
+    # keine Seriennummer: snnumber= oder Datei nicht vorhanden
     try:
         with open("/home/openwb/snnumber", "r") as file:
-            return file.read().replace("snnumber=", "").replace("\n", "")
+            serial_number = file.read().replace("snnumber=", "").replace("\n", "")
+            if serial_number == "":
+                return None
+            else:
+                return serial_number
     except FileNotFoundError:
         return None
 

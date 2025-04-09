@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 
-from control.ev import Ev
+from control.ev.ev import Ev
 from helpermodules.utils._thread_handler import is_thread_alive, thread_handler
 from modules.common.abstract_chargepoint import AbstractChargepoint
 

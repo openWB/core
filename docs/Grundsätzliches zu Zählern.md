@@ -1,6 +1,6 @@
 openWB benötigt zum erfolgreichen PV-Überschussladen die entsprechenden Zählerwerte am EVU-Punkt (EVU=Elektrizitätsversorgungsunternehmen), sprich dem Übergang ins öffentliche Netz. An dieser Stelle muss die Gesamtleistung saldierend erfasst werden. Für eine phasenbasierte Leistungsüberwachung sind auch die einzelnen Ströme und/oder Leistungen der drei Phasen notwendig. Bei einem Zähler im Hausverbrauchs-Zweig muss die Konfiguration wie [hier](https://github.com/openWB/core/wiki/Hausverbrauchs-Zähler) beschrieben erfolgen.
 
-Im einfachsten Fall geschieht dies durch Kauf und Einbau eines [EVU-Kits](##EVU-Kit). Sollten schon digital auslesbare Zähler vorhanden sein, so besteht die Möglichkeit diese Werte an openWB weiterzuleiten, auch mit Hilfe von Hausautomationsservern.
+Im einfachsten Fall geschieht dies durch Kauf und Einbau eines [EVU-Kits](#evu-kit). Sollten schon digital auslesbare Zähler vorhanden sein, so besteht die Möglichkeit diese Werte an openWB weiterzuleiten, auch mit Hilfe von Hausautomationsservern.
 
 Es gibt viele verschiedene Möglichkeiten, Zähler als auch Wechselrichter in das openWB-System einzufügen.  Die Struktur der Zähler muss dann im  [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dem System bekanntgegeben werden. Hier können auch [virtuelle Zähler](##Virtuelle Zähler)  hinzugefügt werden, welche openWB-intern die untergeordneten Zähler verrechnen.
 
@@ -13,7 +13,7 @@ Der Zähler kommuniziert mit der openWB über Ethernet. Die Kits sind so vorkonf
 
 ## MQTT
 
-openWB hat einen MQTT-Broker integriert, welcher unter Port 1883 (ohne Verschlüsselung) und Port 8883 (mit Verschlüsselung) erreichbar ist. Benutzerauthentifizierung ist deaktiviert und auch nicht aktivierbar. Ein Zähler, welcher die benötigten Daten liefert muss sich mit diesem Broker verbinden und dort die Werte unter den entsprechenden Topics publishen.
+openWB hat einen MQTT-Broker integriert, welcher unter Port 1883 (ohne Verschlüsselung) und Port 8883 (mit Verschlüsselung) erreichbar ist. Benutzerauthentifizierung ist deaktiviert und auch nicht aktivierbar. Ein Zähler, welcher die benötigten Daten liefert muss sich mit diesem Broker verbinden und dort die Werte unter den entsprechenden Topics veröffentlichen.
 
 Folgende Werte können dem MQTT-Zähler übergeben werden. Die ID ist individuell und wird beim Anlegen der MQTT-Komponente angezeigt.
 Die folgenden Topics sind für einen reibungslosen Betrieb unbedingt erforderlich:
@@ -57,10 +57,10 @@ Die Netzfrequenz, Spannungen, Leistungen und Leistungsfaktoren jeder Phase werde
 ## Huawei Wechselrichter mit DTSU666-H 250A und SDongle
 
 Huawei Wechselrichter werden, in der Betriebsart mit Aufzeichnung des Hausverbraucht mit dem _DTSU666-H 250A_ Stromzähler direkt am EVU-Punkt betrieben. Die Kommunikation zwischen Zähler und Wechselrichter findet über RS485 statt. Sofern der Wechselrichter mit dem optionalen SmartDongle FE ausgestattet ist, können über diesen Daten des Wechselrichter ausgelesen werden.
-Die Schnittstelle am Dongle ist Modbus-TCP. Dies muss mit Installer-Account am Wechselrichter auf "Unrestrictet" gestellt werden, damit die Daten extern abgerufen werden können.
+Die Schnittstelle am Dongle ist Modbus-TCP. Dies muss mit Installer-Account am Wechselrichter auf "Unrestricted" gestellt werden, damit die Daten extern abgerufen werden können.
 
 Der Huawei-Wechselrichter kann direkt über die openWB ausgelesen werden.
-Eine weitere Möglichkeit des Datenabrufs wird im [openWB-Forum](https://openwb.de/forum/viewtopic.php?t=7029) entwickelt und ist auf [Github](https://github.com/AlexanderMetzger/huawei_openwb_bridge) sowie der [Homepage des Entwicklers](https://lebensraum-wohnraum.de/openwb-kommunikation-mit-dem-huawei-wechselrichter-sun-2000/) zu finden. Hierbei wird das Image auf die SD-karte eines Raspberry-Zero gespiegelt und der Raspberry mit dem Config-WLAN des Wechselrichters verbunden. Die Skripte ziehen sich die entsprechenden Werte in Echtzeit vom Wechselrichter und publishen diese auf die [MQTT](#MQTT) Schnittstelle der openWB. Der Zähler in der openWB muss dementsprechend als MQTT-Zähler eingerichtet sein.
+Eine weitere Möglichkeit des Datenabrufs wird im [openWB-Forum](https://openwb.de/forum/viewtopic.php?t=7029) entwickelt und ist auf [Github](https://github.com/AlexanderMetzger/huawei_openwb_bridge) sowie der [Homepage des Entwicklers](https://lebensraum-wohnraum.de/openwb-kommunikation-mit-dem-huawei-wechselrichter-sun-2000/) zu finden. Hierbei wird das Image auf die SD-karte eines Raspberry-Zero gespiegelt und der Raspberry mit dem Config-WLAN des Wechselrichters verbunden. Die Skripte ziehen sich die entsprechenden Werte in Echtzeit vom Wechselrichter und veröffentlichen diese auf die [MQTT](#mqtt) Schnittstelle der openWB. Der Zähler in der openWB muss dementsprechend als MQTT-Zähler eingerichtet sein.
 
 ### Solaranzeige
 
@@ -69,7 +69,7 @@ Dieses Projekt unterstützt aktuell (Stand 2024-02) mehr Wechselrichter als open
 Die Software ist originär dafür vorgesehen auf einen Raspberry per Image installiert zu werden und nach wenigen Konfigurationsschritten lauffähig zu sein. Es gibt auch schon Portierungen für [Docker](https://github.com/DeBaschdi/docker.solaranzeige).
 Solaranzeige kann mit vielen Wechselrichtern kommunizieren und auch teilweise die angeschlossenen Zähler auslesen. Eine zeitbasierte Datenbank (InfluxDb), Datenweitergabe über einen MQTT-Client sowie eine Visualisierung mit Grafana sind direkt integriert. Es kann aber auch bereits existierende Infrastruktur verwendet werden.
 In dem Projekt wird (mit Stand von 2021) auch die Möglichkeit dokumentiert die Daten direkt an openWB weiterzuleiten. Dann kann jedoch kein weiterer MQTT-Broker bedient werden.
-Alternativ können die Zählerwerte an eine Hausautomationsserver weitergegeben, dort ggf. vorzeichenkorrigiert und dann über einen zweiten MQTT-Client zur openWB geschickt werden.
+Alternativ können die Zählerwerte an eine Hausautomationsserver weitergegeben, dort ggf. mit korrigiertem Vorzeichen und dann über einen zweiten MQTT-Client zur openWB geschickt werden.
 
 ## Virtuelle Zähler
 

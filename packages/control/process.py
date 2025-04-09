@@ -11,7 +11,10 @@ from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
+from modules.common.abstract_io import AbstractIoDevice
 from modules.common.fault_state_level import FaultStateLevel
+from modules.io_actions.controllable_consumers.dimming.api import Dimming
+from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +30,6 @@ class Process:
             for cp in data.data.cp_data.values():
                 try:
                     control_parameter = cp.data.control_parameter
-                    cp.remember_previous_values()
                     if cp.data.set.charging_ev != -1:
                         # Ladelog-Daten müssen vor dem Setzen des Stroms gesammelt werden,
                         # damit bei Phasenumschaltungs-empfindlichen EV sicher noch nicht geladen wurde.
@@ -35,8 +37,9 @@ class Process:
                         cp.initiate_control_pilot_interruption()
                         cp.initiate_phase_switch()
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
-                            control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                            control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
                         self._update_state(cp)
+                        cp.set_timestamp_charge_start()
                     else:
                         # LP, an denen nicht geladen werden darf
                         if cp.data.set.charging_ev_prev != -1:
@@ -58,6 +61,7 @@ class Process:
                     if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NO_ERROR:
                         cp.chargepoint_module.fault_state.store_error()
                     modules_threads.append(self._start_charging(cp))
+                    cp.remember_previous_values()
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
             for bat_component in get_controllable_bat_components():
@@ -66,7 +70,26 @@ class Process:
                         target=bat_component.set_power_limit,
                         args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
                         name=f"set power limit {bat_component.component_config.id}"))
-
+            for action in data.data.io_actions.actions.values():
+                if isinstance(action, DimmingDirectControl):
+                    for d in action.config.configuration.devices:
+                        if d["type"] == "io":
+                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
+                                action.dimming_via_direct_control() is None  # active output (True) if no dimming
+                            )
+                if isinstance(action, Dimming):
+                    for d in action.config.configuration.devices:
+                        if d["type"] == "io":
+                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
+                                not action.dimming_active()  # active output (True) if no dimming
+                            )
+            for io in data.data.system_data.values():
+                if isinstance(io, AbstractIoDevice):
+                    modules_threads.append(
+                        threading.Thread(
+                            target=io.write,
+                            args=(None, data.data.io_states[f"io_states{io.config.id}"].data.set.digital_output,),
+                            name=f"set output io{io.config.id}"))
             if modules_threads:
                 joined_thread_handler(modules_threads, 3)
         except Exception:
@@ -100,8 +123,7 @@ class Process:
                 "LP"+str(chargepoint.num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
         # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
-        if (chargepoint.data.control_parameter.timestamp_perform_phase_switch is not None or
-                chargepoint.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH):
+        if chargepoint.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
             current = 0
 
         chargepoint.data.set.current = current

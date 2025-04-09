@@ -83,6 +83,9 @@ updateFile "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" "/etc/ap
 # http api site (https only)
 echo "apache http api ssl site..."
 updateFile "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2/sites-available/http-api-ssl.conf"
+# proplus site 
+echo "apache pro plus site..."
+updateFile "${OPENWBBASEDIR}/data/config/apache/apache-proplus.conf" "/etc/apache2/sites-available/apache-proplus.conf"
 
 # disable apache default ssl site
 disableSite default-ssl
@@ -96,6 +99,24 @@ if [[ $httpApiEnabled == "true" ]]; then
 else
 	echo "http api is disabled"
 	disableSite http-api-ssl
+fi
+
+# check for pro+
+echo "Pro+ setup..."
+if lsusb | grep -q 'RTL8153'; then
+	echo "second network for pro plus detected"
+	# enable pro+ specific configurations
+	enableModule proxy_http
+	# enableModule proxy_fcgi
+	# enableModule proxy_ajp
+	enableSite apache-proplus
+else
+	echo "no second network for pro plus detected"
+	# disable all pro+ specific configurations
+	disableModule proxy_http
+	# disableModule proxy_fcgi
+	# disableModule proxy_ajp
+	disableSite apache-proplus
 fi
 
 # restart apache if required

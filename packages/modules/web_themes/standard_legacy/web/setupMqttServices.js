@@ -12,6 +12,7 @@
 
 // add topics here which should be subscribed before any other topics
 var topicsToSubscribeFirst = [
+	["openWB/general/web_theme", 0], // theme configuration
 	["openWB/counter/get/hierarchy", 0] // hierarchy of all counters and charge points
 ];
 
@@ -80,7 +81,6 @@ var topicsToSubscribe = [
 	["openWB/optional/dc_charging", 1], // dc charging is configured
 
 	// graph topics
-	["openWB/graph/config/duration", 1], // maximum duration to display in landing page
 	["openWB/graph/alllivevaluesJson1", 1],
 	["openWB/graph/alllivevaluesJson2", 1],
 	["openWB/graph/alllivevaluesJson3", 1],
@@ -98,7 +98,6 @@ var topicsToSubscribe = [
 	["openWB/graph/alllivevaluesJson15", 1],
 	["openWB/graph/alllivevaluesJson16", 1],
 	["openWB/graph/lastlivevaluesJson", 1],
-
 ];
 
 // holds number of topics flagged 1 initially
