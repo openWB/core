@@ -131,6 +131,66 @@ $battery: #ba7128;
   .q-toggle__inner--truthy .q-toggle__thumb:after {
     background-color: currentColor;
   }
+  // Search input border color for table view
+  .white-outline-input.q-field--outlined .q-field__control:before {
+    border-color: var(--q-white) !important;
+  }
+  // Table styling
+  .sticky-header-table {
+    /* height or max-height is important */
+    height: 310px;
+
+    .q-table__top,
+    .q-table__bottom,
+    thead tr:first-child th {
+      background-color: var(--q-primary);
+      color: var(--q-white);
+      font-size: 0.9rem;
+    }
+
+    thead tr th {
+      position: sticky;
+      z-index: 1;
+    }
+
+    thead tr:first-child th {
+      top: 0;
+    }
+
+    /* this is when the loading indicator appears */
+    &.q-table--loading thead tr:last-child th {
+      /* height of all previous header rows */
+      top: 48px;
+    }
+
+    /* prevent scrolling behind sticky top row on focus */
+    tbody {
+      /* height of all previous header rows */
+      scroll-margin-top: 48px;
+      background-color: var(--q-secondary);
+      color: var(--q-brown-text);
+    }
+
+    tbody tr,
+    .q-table__middle,
+    .q-table__grid-content
+      .q-virtual-scroll
+      .q-virtual-scroll--vertical
+      scroll {
+      background-color: var(--q-secondary);
+    }
+
+    tbody tr:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    // Scrollbar styling for tables - Light Theme
+    .q-table__middle.q-virtual-scroll {
+      // Firefox
+      scrollbar-width: thin;
+      scrollbar-color: var(--q-primary) var(--q-secondary);
+    }
+  }
 }
 // Dark Theme Base Colors
 $dark-page: #000000; // This overrides Quasar's default dark page color
@@ -261,5 +321,59 @@ $dark-tab-icon: #d7d9e0;
   // Toggle button color in on position
   .q-toggle__inner--truthy .q-toggle__thumb:after {
     background-color: currentColor;
+  }
+
+  // Table styling - Dark Theme
+  .sticky-header-table {
+    /* height or max-height is important */
+    height: 310px;
+
+    .q-table__top,
+    .q-table__bottom,
+    thead tr:first-child th {
+      background-color: var(--q-primary);
+      color: var(--q-white);
+      font-size: 0.9rem;
+    }
+
+    thead tr th {
+      position: sticky;
+      z-index: 1;
+    }
+
+    thead tr:first-child th {
+      top: 0;
+    }
+
+    /* this is when the loading indicator appears */
+    &.q-table--loading thead tr:last-child th {
+      /* height of all previous header rows */
+      top: 48px;
+    }
+
+    /* prevent scrolling behind sticky top row on focus */
+    tbody {
+      /* height of all previous header rows */
+      scroll-margin-top: 48px;
+      background-color: var(--q-secondary);
+      color: var(--q-white);
+    }
+
+    tbody tr,
+    .q-table__middle,
+    .q-table__grid-content {
+      background-color: var(--q-secondary);
+    }
+
+    tbody tr:hover {
+      background-color: rgba(255, 255, 255, 0.07);
+    }
+
+    // Scrollbar styling for tables - Dark Theme
+    .q-table__middle.q-virtual-scroll {
+      // Firefox
+      scrollbar-width: thin;
+      scrollbar-color: var(--q-primary) var(--q-secondary);
+    }
   }
 }

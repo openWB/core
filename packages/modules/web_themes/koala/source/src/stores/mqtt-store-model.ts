@@ -1,5 +1,7 @@
 export interface ThemeConfiguration {
   history_chart_range: number;
+  card_view_breakpoint: number;
+  table_search_input_field: boolean;
 }
 
 export interface ConnectionOptions {

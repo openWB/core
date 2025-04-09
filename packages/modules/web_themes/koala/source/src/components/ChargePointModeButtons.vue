@@ -47,22 +47,15 @@
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { computed } from 'vue';
 import { Platform } from 'quasar';
+import { useChargeModes } from 'src/composables/useChargeModes';
 
 const props = defineProps<{
   chargePointId: number;
 }>();
 
 const isMobile = computed(() => Platform.is.mobile);
-
+const { chargeModes } = useChargeModes();
 const mqttStore = useMqttStore();
-
-const chargeModes = [
-  { value: 'instant_charging', label: 'Sofort', color: 'negative' },
-  { value: 'pv_charging', label: 'PV', color: 'positive' },
-  { value: 'scheduled_charging', label: 'Ziel', color: 'primary' },
-  { value: 'eco_charging', label: 'Eco', color: 'secondary' },
-  { value: 'stop', label: 'Stop', color: 'light' },
-];
 
 const chargeMode = computed(() =>
   mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId),

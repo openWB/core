@@ -46,10 +46,7 @@
         <div>Zielzeit</div>
         <div>{{ props.targetTime }}</div>
       </div>
-      <div
-        v-if="targetSet"
-        class="col text-right"
-      >
+      <div v-if="targetSet" class="col text-right">
         <div>
           {{ props.limitMode == 'soc' ? 'Ladeziel' : 'Energieziel' }}
         </div>
