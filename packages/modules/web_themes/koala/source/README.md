@@ -1,6 +1,6 @@
-# openWB standard web theme (openwb-standard-web-theme)
+# openWB Koala web theme (openwb-koala-web-theme)
 
-Standard web theme for openWB
+Koala web theme for openWB
 
 ## Install the dependencies
 
