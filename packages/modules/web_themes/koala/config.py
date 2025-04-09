@@ -13,6 +13,7 @@ class KoalaWebThemeConfiguration:
         self.card_view_breakpoint = card_view_breakpoint
         self.table_search_input_field = table_search_input_field
 
+
 @auto_str
 class KoalaWebTheme:
     def __init__(self,
