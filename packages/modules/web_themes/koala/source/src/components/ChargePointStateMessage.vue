@@ -26,6 +26,7 @@ const message = computed(() =>
 
 <style scoped>
 .message-text {
+  overflow-x: auto;
   overflow-y: auto;
 }
 </style>
