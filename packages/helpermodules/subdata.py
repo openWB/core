@@ -116,12 +116,7 @@ class SubData:
         """ subscribe topics
         """
         client.subscribe([
-            ("openWB/vehicle/set/#", 2),
-            ("openWB/vehicle/template/#", 2),
-            ("openWB/vehicle/+/+", 2),
-            ("openWB/vehicle/+/get/#", 2),
-            ("openWB/vehicle/+/soc_module/config", 2),
-            ("openWB/vehicle/+/set/#", 2),
+            ("openWB/vehicle/#", 2),
             ("openWB/chargepoint/#", 2),
             ("openWB/pv/#", 2),
             ("openWB/bat/#", 2),
@@ -336,22 +331,24 @@ class SubData:
         """
         try:
             index = get_index(msg.topic)
-            if decode_payload(msg.payload) == "" and re.search("/vehicle/template/charge_template/[0-9]+$",
-                                                               msg.topic) is not None:
-                if "ct"+index in var:
-                    var.pop("ct"+index)
+            if re.search("/vehicle/template/charge_template/[0-9]+$",
+                         msg.topic) is not None:
+                if decode_payload(msg.payload) == "":
+                    if "ct"+index in var:
+                        var.pop("ct"+index)
+                else:
+                    # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
+                    for vehicle in self.ev_data.values():
+                        if vehicle.data.charge_template == int(index):
+                            for cp in self.cp_data.values():
+                                if ((cp.chargepoint.data.set.charging_ev != -1 and
+                                        cp.chargepoint.data.set.charging_ev == vehicle.num) or
+                                        cp.chargepoint.data.config.ev == vehicle.num):
+                                    cp.chargepoint.update_charge_template(var["ct"+index])
             else:
                 if "ct"+index not in var:
                     var["ct"+index] = ChargeTemplate()
                 self.process_charge_template_topic(var["ct"+index], msg)
-                # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
-                for vehicle in self.ev_data.values():
-                    if vehicle.data.charge_template == int(index):
-                        for cp in self.cp_data.values():
-                            if ((cp.chargepoint.data.set.charging_ev != -1 and
-                                    cp.chargepoint.data.set.charging_ev == vehicle.num) or
-                                    cp.chargepoint.data.config.ev == vehicle.num):
-                                cp.chargepoint.update_charge_template(var["ct"+index])
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
