@@ -10,9 +10,9 @@
       <q-tab name="charge-points" title="Ladepunkte">
         <q-icon name="ev_station" size="md" color="primary" />
       </q-tab>
-      <q-tab name="vehicles" title="Fahrzeuge">
+      <!-- <q-tab name="vehicles" title="Fahrzeuge">
         <q-icon name="directions_car" size="md" color="primary" />
-      </q-tab>
+      </q-tab> -->
       <q-tab name="batteries" title="Speicher">
         <q-icon name="battery_full" size="md" color="primary" />
       </q-tab>
@@ -27,9 +27,9 @@
         <ChargePointInformation />
       </q-tab-panel>
       <!-- Vehicles -->
-      <q-tab-panel name="vehicles" class="q-pa-none column">
+      <!-- <q-tab-panel name="vehicles" class="q-pa-none column">
         <VehicleInformation />
-      </q-tab-panel>
+      </q-tab-panel> -->
       <!-- Batteries -->
       <q-tab-panel name="batteries" class="">
         <BatteryInformation />
@@ -47,7 +47,7 @@ import { ref } from 'vue';
 import ChartCarousel from 'src/components/ChartCarousel.vue';
 import ChargePointInformation from 'src/components/ChargePointInformation.vue';
 import BatteryInformation from 'src/components/BatteryInformation.vue';
-import VehicleInformation from 'src/components/VehicleInformation.vue';
+// import VehicleInformation from 'src/components/VehicleInformation.vue';
 // import SmartHomeInformation from 'src/components/SmartHomeInformation.vue';
 
 defineOptions({
