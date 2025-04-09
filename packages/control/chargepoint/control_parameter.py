@@ -13,7 +13,8 @@ class ControlParameter:
                                         "topic": "control_parameter/chargemode"})
     current_plan: Optional[str] = field(default=None, metadata={"topic": "control_parameter/current_plan"})
     failed_phase_switches: int = field(default=0, metadata={"topic": "control_parameter/failed_phase_switches"})
-    limit: Optional[LoadmanagementLimit] = field(default=None, metadata={"topic": "control_parameter/limit"})
+    limit: Optional[LoadmanagementLimit] = field(default_factory=loadmanagement_limit_factory, metadata={
+                                                 "topic": "control_parameter/limit"})
     min_current: int = field(default=6, metadata={"topic": "control_parameter/min_current"})
     phases: int = field(default=0, metadata={"topic": "control_parameter/phases"})
     prio: bool = field(default=False, metadata={"topic": "control_parameter/prio"})
