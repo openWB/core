@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -13,14 +12,19 @@ from modules.devices.fronius.fronius.config import FroniusBatSetup
 from modules.devices.fronius.fronius.config import FroniusConfiguration
 
 
+class KwargsDict(TypedDict):
+    device_config: FroniusConfiguration
+    device_id: int
+
+
 class FroniusBat(AbstractBat):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, FroniusBatSetup],
-                 device_config: FroniusConfiguration) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(FroniusBatSetup, component_config)
-        self.device_config = device_config
+    def __init__(self, component_config: FroniusBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.device_config: FroniusConfiguration = self.kwargs['device_config']
+        self.__device_id: int = self.kwargs['device_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

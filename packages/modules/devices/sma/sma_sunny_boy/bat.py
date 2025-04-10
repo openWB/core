@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -14,15 +13,19 @@ from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoyBatSetup
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    client: ModbusTcpClient_
+
+
 class SunnyBoyBat(AbstractBat):
     SMA_UINT_64_NAN = 0xFFFFFFFFFFFFFFFF  # SMA uses this value to represent NaN
 
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, SmaSunnyBoyBatSetup],
-                 tcp_client: ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(SmaSunnyBoyBatSetup, component_config)
-        self.__tcp_client = tcp_client
+    def __init__(self, component_config: SmaSunnyBoyBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

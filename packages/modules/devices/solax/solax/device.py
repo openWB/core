@@ -3,7 +3,6 @@ import logging
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.solax.solax.bat import SolaxBat
@@ -18,20 +17,19 @@ def create_device(device_config: Solax):
     client = None
 
     def create_bat_component(component_config: SolaxBatSetup):
-        return SolaxBat(device_config, component_config, client)
+        return SolaxBat(component_config, device_config=device_config, client=client)
 
     def create_counter_component(component_config: SolaxCounterSetup):
-        return SolaxCounter(device_config, component_config, client)
+        return SolaxCounter(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: SolaxInverterSetup):
-        return SolaxInverter(device_config, component_config, client)
+        return SolaxInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SolaxBat, SolaxCounter, SolaxInverter]]):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

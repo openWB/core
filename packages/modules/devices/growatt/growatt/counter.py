@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -12,20 +11,25 @@ from modules.devices.growatt.growatt.config import GrowattCounterSetup
 from modules.devices.growatt.growatt.version import GrowattVersion
 
 
+class KwargsDict(TypedDict):
+    modbus_id: int
+    version: GrowattVersion
+    client: ModbusTcpClient_
+
+
 class GrowattCounter(AbstractCounter):
-    def __init__(self,
-                 component_config: Union[Dict, GrowattCounterSetup],
-                 modbus_id: int,
-                 version: GrowattVersion,
-                 client: ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(GrowattCounterSetup, component_config)
-        self.__modbus_id = modbus_id
-        self.version = version
-        self.client = client
+    def __init__(self, component_config: GrowattCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__modbus_id: int = self.kwargs['modbus_id']
+        self.version: GrowattVersion = self.kwargs['version']
+        self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self):
+    def update(self) -> None:
         if self.version == GrowattVersion.max_series:
             power_in = self.client.read_input_registers(1021, ModbusDataType.UINT_32, unit=self.__modbus_id) * 0.1
             power_out = self.client.read_input_registers(1029, ModbusDataType.UINT_32, unit=self.__modbus_id) * -0.1

@@ -4,7 +4,6 @@ from typing import Iterable, Union, List
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.solaredge.solaredge.bat import SolaredgeBat
 from modules.devices.solaredge.solaredge.counter import SolaredgeCounter
@@ -49,12 +48,12 @@ def create_device(device_config: Solaredge):
 
     def create_bat_component(component_config: SolaredgeBatSetup):
         nonlocal client
-        return SolaredgeBat(device_config.id, component_config, client)
+        return SolaredgeBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SolaredgeCounterSetup):
         nonlocal client, device
         synergy_units = get_synergy_units(component_config)
-        counter = SolaredgeCounter(device_config.id, component_config, client)
+        counter = SolaredgeCounter(component_config, client=client)
         # neue Komponente wird erst nach Instanziierung device.components hinzugefügt
         components = list(device.components.values())
         components.append(counter)
@@ -63,12 +62,12 @@ def create_device(device_config: Solaredge):
 
     def create_inverter_component(component_config: SolaredgeInverterSetup):
         nonlocal client
-        return SolaredgeInverter(device_config.id, component_config, client)
+        return SolaredgeInverter(component_config, client=client, device_id=device_config.id)
 
     def create_external_inverter_component(component_config: SolaredgeExternalInverterSetup):
         nonlocal client, device
         synergy_units = get_synergy_units(component_config)
-        external_inverter = SolaredgeExternalInverter(device_config.id, component_config, client)
+        external_inverter = SolaredgeExternalInverter(component_config, client=client)
         components = list(device.components.values())
         components.append(external_inverter)
         set_component_registers(components, synergy_units, component_config.configuration.modbus_id)
@@ -78,8 +77,7 @@ def create_device(device_config: Solaredge):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def get_synergy_units(component_config: Union[SolaredgeBatSetup,
                                                   SolaredgeCounterSetup,

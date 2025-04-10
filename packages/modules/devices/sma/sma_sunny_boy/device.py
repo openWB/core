@@ -3,7 +3,6 @@ import logging
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.sma.sma_sunny_boy.bat import SunnyBoyBat
@@ -31,29 +30,29 @@ def create_device(device_config: SmaSunnyBoy):
 
     def create_bat_component(component_config: SmaSunnyBoyBatSetup):
         nonlocal client
-        return SunnyBoyBat(device_config.id, component_config, client)
+        return SunnyBoyBat(component_config, device_id=device_config.id, client=client)
 
     def create_bat_smart_energy_component(component_config: SmaSunnyBoySmartEnergyBatSetup):
         nonlocal client
-        return SunnyBoySmartEnergyBat(device_config.id, component_config, client)
+        return SunnyBoySmartEnergyBat(component_config, client=client)
 
     def create_bat_tesvolt_component(component_config: SmaTesvoltBatSetup):
-        return TesvoltBat(device_config.id, component_config, client)
+        nonlocal client
+        return TesvoltBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SmaSunnyBoyCounterSetup):
         nonlocal client
-        return SmaSunnyBoyCounter(device_config.id, component_config, client)
+        return SmaSunnyBoyCounter(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: SmaSunnyBoyInverterSetup):
         nonlocal client
-        return SmaSunnyBoyInverter(device_config.id, component_config, client)
+        return SmaSunnyBoyInverter(component_config, client=client, device_id=device_config.id)
 
     def update_components(components: Iterable[sma_modbus_tcp_component_classes]):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

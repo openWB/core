@@ -3,7 +3,6 @@ import logging
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.sigenergy.sigenergy.bat import SigenergyBat
@@ -24,22 +23,21 @@ def create_device(device_config: Sigenergy):
 
     def create_bat_component(component_config: SigenergyBatSetup):
         nonlocal client
-        return SigenergyBat(device_config.id, component_config, client)
+        return SigenergyBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SigenergyCounterSetup):
         nonlocal client
-        return SigenergyCounter(device_config.id, component_config, client)
+        return SigenergyCounter(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: SigenergyInverterSetup):
         nonlocal client
-        return SigenergyInverter(device_config.id, component_config, client)
+        return SigenergyInverter(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[SigenergyBat, SigenergyCounter, SigenergyInverter]]):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

@@ -22,13 +22,19 @@ def create_device(device_config: HTTP):
     session = None
 
     def create_bat_component(component_config: HttpBatSetup):
-        return HttpBat(device_config.id, component_config, device_config.configuration.url)
+        return HttpBat(component_config=component_config,
+                       device_id=device_config.id,
+                       url=device_config.configuration.url)
 
     def create_counter_component(component_config: HttpCounterSetup):
-        return HttpCounter(device_config.id, component_config, device_config.configuration.url)
+        return HttpCounter(component_config=component_config,
+                           device_id=device_config.id,
+                           url=device_config.configuration.url)
 
     def create_inverter_component(component_config: HttpInverterSetup):
-        return HttpInverter(device_config.id, component_config, device_config.configuration.url)
+        return HttpInverter(component_config=component_config,
+                            device_id=device_config.id,
+                            url=device_config.configuration.url)
 
     def initializer():
         nonlocal session

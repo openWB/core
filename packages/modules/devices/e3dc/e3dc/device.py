@@ -4,8 +4,7 @@ from typing import List, Union, Iterable
 
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_device import (ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater,
-                                                SingleComponentUpdateContext)
+from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common import modbus
 from modules.devices.e3dc.e3dc.bat import E3dcBat, read_bat
 from modules.devices.e3dc.e3dc.inverter import E3dcInverter, read_inverter
@@ -29,39 +28,38 @@ def create_device(device_config: E3dc) -> ConfigurableDevice:
 
     def create_bat_component(component_config: E3dcBatSetup) -> E3dcBat:
         nonlocal client
-        return E3dcBat(device_config.id,
-                       component_config,
-                       device_config.configuration.modbus_id,
-                       client)
+        return E3dcBat(component_config=component_config,
+                       device_id=device_config.id,
+                       modbus_id=device_config.configuration.modbus_id,
+                       client=client)
 
     def create_counter_component(component_config: E3dcCounterSetup) -> E3dcCounter:
         nonlocal client
-        return E3dcCounter(device_config.id,
-                           component_config,
-                           device_config.configuration.modbus_id,
-                           client)
+        return E3dcCounter(component_config=component_config,
+                           device_id=device_config.id,
+                           modbus_id=device_config.configuration.modbus_id,
+                           client=client)
 
     def create_inverter_component(component_config: E3dcInverterSetup) -> E3dcInverter:
         nonlocal client
-        return E3dcInverter(device_config.id,
-                            component_config,
-                            device_config.configuration.modbus_id,
-                            client)
+        return E3dcInverter(component_config=component_config,
+                            device_id=device_config.id,
+                            modbus_id=device_config.configuration.modbus_id,
+                            client=client)
 
     def create_external_inverter_component(component_config: E3dcExternalInverterSetup) -> E3dcExternalInverter:
         nonlocal client
-        return E3dcExternalInverter(device_config.id,
-                                    component_config,
-                                    device_config.configuration.modbus_id,
-                                    client)
+        return E3dcExternalInverter(component_config=component_config,
+                                    device_id=device_config.id,
+                                    modbus_id=device_config.configuration.modbus_id,
+                                    client=client)
 
     def update_components(components: Iterable[Union[E3dcBat, E3dcCounter, E3dcInverter,
                                                      E3dcExternalInverter]]) -> None:
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

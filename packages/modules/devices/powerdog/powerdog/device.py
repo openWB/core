@@ -4,7 +4,6 @@ from typing import Iterable, Union
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.powerdog.powerdog.config import Powerdog, PowerdogCounterSetup, PowerdogInverterSetup
 from modules.devices.powerdog.powerdog.counter import PowerdogCounter
@@ -18,11 +17,17 @@ def create_device(device_config: Powerdog):
 
     def create_counter_component(component_config: PowerdogCounterSetup):
         nonlocal client
-        return PowerdogCounter(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        return PowerdogCounter(component_config,
+                               device_id=device_config.id,
+                               client=client,
+                               modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: PowerdogInverterSetup):
         nonlocal client
-        return PowerdogInverter(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        return PowerdogInverter(component_config,
+                                device_id=device_config.id,
+                                client=client,
+                                modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[PowerdogCounter, PowerdogInverter]]):
         nonlocal client
@@ -30,8 +35,7 @@ def create_device(device_config: Powerdog):
             if len(components) == 1:
                 for component in components:
                     if isinstance(component, PowerdogInverter):
-                        with SingleComponentUpdateContext(component.fault_state):
-                            component.update()
+                        component.update()
                     else:
                         raise Exception(
                             "Wenn ein EVU-Zähler konfiguriert wurde, muss immer auch ein WR konfiguriert sein.")

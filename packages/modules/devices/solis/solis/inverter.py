@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -11,14 +10,21 @@ from modules.devices.solis.solis.config import SolisInverterSetup
 from modules.devices.solis.solis.version import SolisVersion
 
 
+class KwargsDict(TypedDict):
+    client: ModbusTcpClient_
+    version: SolisVersion
+
+
 class SolisInverter:
-    def __init__(self, component_config: Union[Dict, SolisInverterSetup],
-                 version: SolisVersion, client: ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(SolisInverterSetup, component_config)
+    def __init__(self, component_config: SolisInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.client: ModbusTcpClient_ = self.kwargs['client']
+        self.version: SolisVersion = self.kwargs['version']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.version = version
-        self.client = client
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id

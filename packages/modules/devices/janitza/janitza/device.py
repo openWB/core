@@ -5,10 +5,9 @@ from typing import Iterable, Union
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
-from modules.devices.janitza.janitza.counter import JanitzaCounter
-from modules.devices.janitza.janitza.inverter import JanitzaInverter
+from modules.devices.janitza.janitza import counter
 from modules.devices.janitza.janitza.config import Janitza, JanitzaCounterSetup, JanitzaInverterSetup
+from modules.devices.janitza.janitza.inverter import JanitzaInverter
 
 log = logging.getLogger(__name__)
 
@@ -18,20 +17,19 @@ def create_device(device_config: Janitza):
 
     def create_counter_component(component_config: JanitzaCounterSetup):
         nonlocal client
-        return JanitzaCounter(device_config.id, component_config, client,
-                              device_config.configuration.modbus_id)
+        return counter.JanitzaCounter(component_config, device_id=device_config.id, tcp_client=client,
+                                      modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: JanitzaInverterSetup):
         nonlocal client
-        return JanitzaInverter(device_config.id, component_config, client,
-                               device_config.configuration.modbus_id)
+        return JanitzaInverter(component_config, device_id=device_config.id, tcp_client=client,
+                               modbus_id=device_config.configuration.modbus_id)
 
-    def update_components(components: Iterable[Union[JanitzaCounter, JanitzaInverter]]):
+    def update_components(components: Iterable[Union[counter.JanitzaCounter, JanitzaInverter]]):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

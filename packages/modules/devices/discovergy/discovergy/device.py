@@ -21,10 +21,10 @@ def create_device(device_config: Discovergy):
     session = None
 
     def create_counter_component(component_config: DiscovergyCounterSetup):
-        return counter.DiscovergyCounter(component_config)
+        return counter.DiscovergyCounter(component_config=component_config)
 
     def create_inverter_component(component_config: DiscovergyInverterSetup):
-        return inverter.DiscovergyInverter(component_config)
+        return inverter.DiscovergyInverter(component_config=component_config)
 
     def initializer():
         nonlocal session

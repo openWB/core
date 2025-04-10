@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from dataclass_utils import dataclass_from_dict
+from typing import TypedDict, Any
+
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -9,18 +10,24 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.varta.varta.config import VartaInverterSetup
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    modbus_id: int
+    client: ModbusTcpClient_
+
+
 class VartaInverter:
-    def __init__(self, device_id: int,
-                 component_config: VartaInverterSetup,
-                 modbus_id: int,
-                 client: ModbusTcpClient_) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(VartaInverterSetup, component_config)
-        self.__modbus_id = modbus_id
+    def __init__(self, component_config: VartaInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__modbus_id: int = self.kwargs['modbus_id']
+        self.client: ModbusTcpClient_ = self.kwargs['client']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.client = client
 
     def update(self):
         power = self.client.read_holding_registers(1102, ModbusDataType.UINT_16, unit=self.__modbus_id) * -1
