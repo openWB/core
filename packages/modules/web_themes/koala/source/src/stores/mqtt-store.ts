@@ -1471,11 +1471,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         const vehicleInfo =
           chargePointConnectedVehicleInfo(chargePointId).value;
-        if (!vehicleInfo) {
-          console.warn('No vehicle connected to charge point', chargePointId);
-          return;
-        }
-        const vehicleId = vehicleInfo.id;
+        const vehicleId = vehicleInfo?.id;
         const topic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
         const socState = getValue.value(topic) as
           | { soc_start: number; manual_soc: number | null }
