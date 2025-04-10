@@ -24,8 +24,8 @@ def create_vehicle(vehicle_config: LeafSoc, vehicle: int):
             vehicle)
     return ConfigurableVehicle(vehicle_config=vehicle_config,
                                component_updater=updater,
-                               vehicle=vehicle,
-                               calc_while_charging=False)
+                               vehicle=vehicle)
+#                               calc_while_charging=False)
 
 
 def leaf_update(user_id: str, password: str, region: str, vehicle: int):
