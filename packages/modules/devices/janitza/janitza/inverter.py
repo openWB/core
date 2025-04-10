@@ -13,7 +13,7 @@ from modules.devices.janitza.janitza.config import JanitzaInverterSetup
 
 class KwargsDict(TypedDict):
     device_id: int
-    client: modbus.ModbusTcpClient_
+    tcp_client: modbus.ModbusTcpClient_
     modbus_id: int
 
 
@@ -24,7 +24,7 @@ class JanitzaInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_counter_value_store(self.component_config.id)
