@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from typing import Any, Optional, TypedDict
+import logging
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieInverterSetup
 from modules.common.store import get_inverter_value_store
 from modules.common.simcount import SimCounter
@@ -7,12 +9,6 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.component_state import InverterState
 from modules.common.abstract_device import AbstractInverter
 from modules.common import req
-from typing import Any, TypedDict
-from typing import Dict, Optional, Union
-import logging
-<< << << < HEAD
-== == == =
->>>>>> > upstream/master
 
 
 log = logging.getLogger(__name__)
