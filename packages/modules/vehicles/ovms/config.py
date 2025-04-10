@@ -20,7 +20,9 @@ class OVMS:
     def __init__(self,
                  name: str = "OVMS",
                  type: str = "ovms",
+                 official: bool = False,
                  configuration: OVMSConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or OVMSConfiguration()
