@@ -62,7 +62,7 @@ def create_device(device_config: Solaredge):
 
     def create_inverter_component(component_config: SolaredgeInverterSetup):
         nonlocal client
-        return SolaredgeInverter(component_config, client=client)
+        return SolaredgeInverter(component_config, client=client, device_id=device_config.id)
 
     def create_external_inverter_component(component_config: SolaredgeExternalInverterSetup):
         nonlocal client, device

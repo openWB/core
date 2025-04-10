@@ -15,6 +15,7 @@ from modules.common.simcount import SimCounter
 
 class KwargsDict(TypedDict):
     client: modbus.ModbusTcpClient_
+    device_id: int
 
 
 class SolaredgeInverter(AbstractInverter):
@@ -37,7 +38,7 @@ class SolaredgeInverter(AbstractInverter):
         self._read_scaled_uint32 = create_scaled_reader(
             self.__tcp_client, self.component_config.configuration.modbus_id, ModbusDataType.UINT_32
         )
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="Wechselrichter")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
 
     def update(self) -> None:
         self.store.set(self.read_state())

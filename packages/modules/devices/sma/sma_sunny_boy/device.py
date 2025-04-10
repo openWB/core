@@ -37,6 +37,7 @@ def create_device(device_config: SmaSunnyBoy):
         return SunnyBoySmartEnergyBat(component_config, client=client)
 
     def create_bat_tesvolt_component(component_config: SmaTesvoltBatSetup):
+        nonlocal client
         return TesvoltBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SmaSunnyBoyCounterSetup):
@@ -45,7 +46,7 @@ def create_device(device_config: SmaSunnyBoy):
 
     def create_inverter_component(component_config: SmaSunnyBoyInverterSetup):
         nonlocal client
-        return SmaSunnyBoyInverter(component_config, client=client)
+        return SmaSunnyBoyInverter(component_config, client=client, device_id=device_config.id)
 
     def update_components(components: Iterable[sma_modbus_tcp_component_classes]):
         nonlocal client

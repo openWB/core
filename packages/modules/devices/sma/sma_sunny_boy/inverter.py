@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 
 class KwargsDict(TypedDict):
     client: modbus.ModbusTcpClient_
+    device_id: int
 
 
 class SmaSunnyBoyInverter(AbstractInverter):
@@ -36,7 +37,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
         self.tcp_client = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="Wechselrichter")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
 
     def update(self) -> None:
         self.store.set(self.read())
