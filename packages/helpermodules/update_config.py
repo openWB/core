@@ -2015,4 +2015,4 @@ class UpdateConfig:
             if re.search("openWB/chargepoint/[0-9]+/control_parameter/limit", topic) is not None:
                 return {topic: dataclass_utils.asdict(LoadmanagementLimit(None,  None))}
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 76)
+        self.__update_topic("openWB/system/datastore_version", 77)
