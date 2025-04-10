@@ -331,24 +331,22 @@ class SubData:
         """
         try:
             index = get_index(msg.topic)
-            if re.search("/vehicle/template/charge_template/[0-9]+$",
-                         msg.topic) is not None:
+            if re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
                 if decode_payload(msg.payload) == "":
                     if "ct"+index in var:
                         var.pop("ct"+index)
-                else:
-                    # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
-                    for vehicle in self.ev_data.values():
-                        if vehicle.data.charge_template == int(index):
-                            for cp in self.cp_data.values():
-                                if ((cp.chargepoint.data.set.charging_ev != -1 and
-                                        cp.chargepoint.data.set.charging_ev == vehicle.num) or
-                                        cp.chargepoint.data.config.ev == vehicle.num):
-                                    cp.chargepoint.update_charge_template(var["ct"+index])
-            else:
-                if "ct"+index not in var:
-                    var["ct"+index] = ChargeTemplate()
-                self.process_charge_template_topic(var["ct"+index], msg)
+            if "ct"+index not in var:
+                var["ct"+index] = ChargeTemplate()
+            self.process_charge_template_topic(var["ct"+index], msg)
+            if re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
+                # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
+                for vehicle in self.ev_data.values():
+                    if vehicle.data.charge_template == int(index):
+                        for cp in self.cp_data.values():
+                            if ((cp.chargepoint.data.set.charging_ev != -1 and
+                                    cp.chargepoint.data.set.charging_ev == vehicle.num) or
+                                    cp.chargepoint.data.config.ev == vehicle.num):
+                                cp.chargepoint.update_charge_template(var["ct"+index])
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
