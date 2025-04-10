@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any
+from typing import Optional, TypedDict, Any
 
 from modules.common import req
 from modules.common.abstract_device import AbstractCounter
@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
+    api_v2_token: str
     device_id: int
     device_address: str
     device_variant: int
@@ -29,13 +30,16 @@ class SonnenbatterieCounter(AbstractCounter):
         self.__device_id: int = self.kwargs['device_id']
         self.__device_address: str = self.kwargs['device_address']
         self.__device_variant: int = self.kwargs['device_variant']
+        self.__api_v2_token: Optional[str] = self.kwargs.get('api_v2_token')
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def __read_variant_1(self, api: str = "v1"):
         return req.get_http_session().get(
-            "http://" + self.__device_address + "/api/" + api + "/status", timeout=5
+            "http://" + self.__device_address + "/api/" + api + "/status",
+            timeout=5,
+            headers={"Auth-Token": self.__api_v2_token} if api == "v2" else None
         ).json()
 
     def __update_variant_1(self, api: str = "v1") -> CounterState:

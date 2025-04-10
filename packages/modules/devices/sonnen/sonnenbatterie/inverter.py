@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
+from typing import Any, Optional, TypedDict
 import logging
-from typing import Any, TypedDict
-
-from modules.common import req
-from modules.common.abstract_device import AbstractInverter
-from modules.common.component_state import InverterState
-from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.simcount import SimCounter
-from modules.common.store import get_inverter_value_store
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieInverterSetup
+from modules.common.store import get_inverter_value_store
+from modules.common.simcount import SimCounter
+from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.component_type import ComponentDescriptor
+from modules.common.component_state import InverterState
+from modules.common.abstract_device import AbstractInverter
+from modules.common import req
+
 
 log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
+    api_v2_token: str
     device_id: int
     device_address: str
     device_variant: int
@@ -29,13 +30,16 @@ class SonnenbatterieInverter(AbstractInverter):
         self.__device_id: int = self.kwargs['device_id']
         self.__device_address: str = self.kwargs['device_address']
         self.__device_variant: int = self.kwargs['device_variant']
+        self.__api_v2_token: Optional[str] = self.kwargs.get('api_v2_token')
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def __read_variant_1(self, api: str = "v1"):
         return req.get_http_session().get(
-            "http://" + self.__device_address + "/api/" + api + "/status", timeout=5
+            "http://" + self.__device_address + "/api/" + api + "/status",
+            timeout=5,
+            headers={"Auth-Token": self.__api_v2_token} if api == "v2" else None
         ).json()
 
     def __update_variant_1(self, api: str = "v1") -> InverterState:
