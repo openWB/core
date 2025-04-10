@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
-
-from dataclass_utils import dataclass_from_dict
+from typing import TypedDict, Any
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -13,16 +11,21 @@ from modules.common.store import get_counter_value_store
 from modules.devices.janitza.janitza.config import JanitzaInverterSetup
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    client: modbus.ModbusTcpClient_
+    modbus_id: int
+
+
 class JanitzaInverter(AbstractInverter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, JanitzaInverterSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
-                 modbus_id: int) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(JanitzaInverterSetup, component_config)
-        self.__tcp_client = tcp_client
-        self.__modbus_id = modbus_id
+    def __init__(self, component_config: JanitzaInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
+        self.__modbus_id: int = self.kwargs['modbus_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

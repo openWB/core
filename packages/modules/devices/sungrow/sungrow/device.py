@@ -4,7 +4,6 @@ from typing import Iterable, Union
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.sungrow.sungrow.bat import SungrowBat
 from modules.devices.sungrow.sungrow.config import Sungrow, SungrowBatSetup, SungrowCounterSetup, SungrowInverterSetup
@@ -19,31 +18,28 @@ def create_device(device_config: Sungrow):
 
     def create_bat_component(component_config: SungrowBatSetup):
         nonlocal client
-        return SungrowBat(device_config, component_config, client)
+        return SungrowBat(component_config, device_config=device_config, client=client)
 
     def create_counter_component(component_config: SungrowCounterSetup):
         nonlocal client
-        return SungrowCounter(device_config, component_config, client)
+        return SungrowCounter(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: SungrowInverterSetup):
         nonlocal client
-        return SungrowInverter(device_config, component_config, client)
+        return SungrowInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SungrowBat, SungrowCounter, SungrowInverter]]):
         nonlocal client
         with client:
             for component in components:
                 if isinstance(component, SungrowInverter):
-                    with SingleComponentUpdateContext(component.fault_state):
-                        pv_power = component.update()
+                    pv_power = component.update()
             for component in components:
                 if isinstance(component, SungrowCounter):
-                    with SingleComponentUpdateContext(component.fault_state):
-                        component.update(pv_power)
+                    component.update(pv_power)
             for component in components:
                 if isinstance(component, SungrowBat):
-                    with SingleComponentUpdateContext(component.fault_state):
-                        component.update()
+                    component.update()
 
     def initializer():
         nonlocal client

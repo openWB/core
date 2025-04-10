@@ -24,31 +24,40 @@ def create_device(device_config: Varta):
     client = None
 
     def create_bat_api_component(component_config: VartaBatApiSetup):
-        return VartaBatApi(device_config.id, component_config, device_config.configuration.ip_address)
+        return VartaBatApi(component_config,
+                           device_id=device_config.id,
+                           ip_address=device_config.configuration.ip_address)
 
     def create_bat_modbus_component(component_config: VartaBatModbusSetup):
         nonlocal client
-        return VartaBatModbus(device_config.id, component_config, device_config.configuration.modbus_id, client)
+        return VartaBatModbus(component_config,
+                              device_id=device_config.id,
+                              modbus_id=device_config.configuration.modbus_id,
+                              client=client)
 
     def create_counter_component(component_config: VartaCounterSetup):
         nonlocal client
-        return VartaCounter(device_config.id, component_config, device_config.configuration.modbus_id, client)
+        return VartaCounter(component_config,
+                            device_id=device_config.id,
+                            modbus_id=device_config.configuration.modbus_id,
+                            client=client)
 
     def create_inverter_component(component_config: VartaInverterSetup):
         nonlocal client
-        return VartaInverter(device_config.id, component_config, device_config.configuration.modbus_id, client)
+        return VartaInverter(component_config,
+                             device_id=device_config.id,
+                             modbus_id=device_config.configuration.modbus_id,
+                             client=client)
 
     def update_components(components: Iterable[Union[VartaBatApi, VartaBatModbus, VartaCounter, VartaInverter]]):
         nonlocal client
         with client:
             for component in components:
                 if isinstance(component, (VartaBatModbus, VartaCounter, VartaInverter)):
-                    with SingleComponentUpdateContext(component.fault_state):
-                        component.update()
+                    component.update()
         for component in components:
             if isinstance(component, (VartaBatApi)):
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

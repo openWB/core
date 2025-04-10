@@ -17,10 +17,10 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: SolarWorld):
     def create_counter_component(component_config: SolarWorldCounterSetup):
-        return SolarWorldCounter(device_config.id, component_config)
+        return SolarWorldCounter(component_config, device_id=device_config.id)
 
     def create_inverter_component(component_config: SolarWorldInverterSetup):
-        return SolarWorldInverter(device_config.id, component_config)
+        return SolarWorldInverter(component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[Union[SolarWorldCounter, SolarWorldInverter]]):
         response = req.get_http_session().get("http://"+str(device_config.configuration.ip_address) +

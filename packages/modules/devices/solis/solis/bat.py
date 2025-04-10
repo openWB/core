@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
-from dataclass_utils import dataclass_from_dict
+from typing import TypedDict, Any
+
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -12,12 +13,19 @@ from modules.devices.solis.solis.config import SolisBatSetup
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    client: ModbusTcpClient_
+
+
 class SolisBat(AbstractBat):
-    def __init__(self, component_config: SolisBatSetup, client: ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(SolisBatSetup, component_config)
+    def __init__(self, component_config: SolisBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.client = client
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id

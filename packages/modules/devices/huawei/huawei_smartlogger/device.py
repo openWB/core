@@ -3,7 +3,6 @@ import logging
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common import modbus
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.huawei.huawei_smartlogger import counter
@@ -27,22 +26,21 @@ def create_device(device_config: Huawei_Smartlogger):
 
     def create_bat_component(component_config: Huawei_SmartloggerBatSetup):
         nonlocal client
-        return bat.Huawei_SmartloggerBat(device_config.id, component_config, client)
+        return bat.Huawei_SmartloggerBat(component_config, device_id=device_config.id, tcp_client=client)
 
     def create_counter_component(component_config: Huawei_SmartloggerCounterSetup):
         nonlocal client
-        return counter.Huawei_SmartloggerCounter(device_config.id, component_config, client)
+        return counter.Huawei_SmartloggerCounter(component_config, device_id=device_config.id, tcp_client=client)
 
     def create_inverter_component(component_config: Huawei_SmartloggerInverterSetup):
         nonlocal client
-        return inverter.Huawei_SmartloggerInverter(device_config.id, component_config, client)
+        return inverter.Huawei_SmartloggerInverter(component_config, device_id=device_config.id, tcp_client=client)
 
     def update_components(components: Iterable[huawei_smartlogger_component_classes]):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

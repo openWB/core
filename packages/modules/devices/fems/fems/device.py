@@ -17,18 +17,16 @@ def create_device(device_config: Fems):
 
     def create_bat_component(component_config: FemsBatSetup):
         nonlocal session
-        return bat.FemsBat(device_config.configuration.ip_address,
-                           component_config, session)
+        return bat.FemsBat(component_config, ip_address=device_config.configuration.ip_address, session=session)
 
     def create_counter_component(component_config: FemsCounterSetup):
         nonlocal session
-        return counter.FemsCounter(device_config.configuration.ip_address,
-                                   component_config, session)
+        return counter.FemsCounter(component_config, ip_address=device_config.configuration.ip_address, session=session)
 
     def create_inverter_component(component_config: FemsInverterSetup):
         nonlocal session
-        return inverter.FemsInverter(device_config.configuration.ip_address,
-                                     component_config, session)
+        return inverter.FemsInverter(component_config, ip_address=device_config.configuration.ip_address,
+                                     session=session)
 
     def update_components(components: Iterable[Union[bat.FemsBat, counter.FemsCounter, inverter.FemsInverter]]):
         for component in components:

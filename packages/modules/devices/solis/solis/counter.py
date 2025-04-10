@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from dataclass_utils import dataclass_from_dict
+from typing import Any, TypedDict
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -9,14 +9,23 @@ from modules.devices.solis.solis.config import SolisCounterSetup
 from modules.devices.solis.solis.version import SolisVersion
 
 
+class KwargsDict(TypedDict):
+    client: ModbusTcpClient_
+    version: SolisVersion
+
+
 class SolisCounter:
-    def __init__(self, component_config: SolisCounterSetup,
-                 version: SolisVersion, client: ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(SolisCounterSetup, component_config)
+    def __init__(self, component_config: SolisCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.client: ModbusTcpClient_ = self.kwargs['client']
+        self.version: SolisVersion = self.kwargs['version']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.version = version
-        self.client = client
+        self.version = self.kwargs['version']
+        self.client = self.kwargs['client']
 
     def update(self):
         unit = self.component_config.configuration.modbus_id

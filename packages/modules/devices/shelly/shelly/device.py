@@ -30,19 +30,25 @@ def get_device_generation(address: str) -> int:
 
 def create_device(device_config: Shelly) -> ConfigurableDevice:
     def create_counter_component(component_config: ShellyCounterSetup) -> ShellyCounter:
-        return ShellyCounter(device_config.id, component_config, device_config.configuration.ip_address,
-                             device_config.configuration.factor,
-                             get_device_generation(device_config.configuration.ip_address))
+        return ShellyCounter(component_config,
+                             device_id=device_config.id,
+                             ip_address=device_config.configuration.ip_address,
+                             factor=device_config.configuration.factor,
+                             generation=get_device_generation(device_config.configuration.ip_address))
 
     def create_inverter_component(component_config: ShellyInverterSetup) -> ShellyInverter:
-        return ShellyInverter(device_config.id, component_config, device_config.configuration.ip_address,
-                              device_config.configuration.factor,
-                              get_device_generation(device_config.configuration.ip_address))
+        return ShellyInverter(component_config,
+                              device_id=device_config.id,
+                              ip_address=device_config.configuration.ip_address,
+                              factor=device_config.configuration.factor,
+                              generation=get_device_generation(device_config.configuration.ip_address))
 
     def create_bat_component(component_config: ShellyBatSetup) -> ShellyBat:
-        return ShellyBat(device_config.id, component_config, device_config.configuration.ip_address,
-                         device_config.configuration.factor,
-                         get_device_generation(device_config.configuration.ip_address))
+        return ShellyBat(component_config,
+                         device_id=device_config.id,
+                         ip_address=device_config.configuration.ip_address,
+                         factor=device_config.configuration.factor,
+                         generation=get_device_generation(device_config.configuration.ip_address))
 
     return ConfigurableDevice(
         device_config=device_config,

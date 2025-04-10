@@ -4,7 +4,6 @@ from typing import Iterable, Union
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.studer.studer.bat import StuderBat
 from modules.devices.studer.studer.config import Studer, StuderBatSetup, StuderInverterSetup
@@ -18,18 +17,17 @@ def create_device(device_config: Studer):
 
     def create_bat_component(component_config: StuderBatSetup):
         nonlocal client
-        return StuderBat(component_config, client)
+        return StuderBat(component_config, client=client)
 
     def create_inverter_component(component_config: StuderInverterSetup):
         nonlocal client
-        return StuderInverter(component_config, client)
+        return StuderInverter(component_config, client=client)
 
     def update_components(components: Iterable[Union[StuderBat, StuderInverter]]):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

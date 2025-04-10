@@ -4,7 +4,6 @@ from typing import Iterable, Union
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.openwb.openwb_bat_kit.bat import BatKit
 from modules.devices.openwb.openwb_evu_kit.counter import EvuKit
@@ -20,23 +19,22 @@ def create_device(device_config: EvuKitSetup):
 
     def create_bat_component(component_config: EvuKitBatSetup):
         nonlocal client
-        return BatKit(device_config.id, component_config, client)
+        return BatKit(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: EvuKitCounterSetup):
         nonlocal client
-        return EvuKit(device_config.id, component_config, client)
+        return EvuKit(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: EvuKitInverterSetup):
         nonlocal client
-        return PvKit(device_config.id, component_config, client)
+        return PvKit(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[BatKit, EvuKit, PvKit]]):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
-                    time.sleep(0.2)
+                component.update()
+                time.sleep(0.2)
 
     def initializer():
         nonlocal client

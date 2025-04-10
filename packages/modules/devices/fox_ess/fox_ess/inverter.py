@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
@@ -11,12 +10,19 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.fox_ess.fox_ess.config import FoxEssInverterSetup
 
 
+class KwargsDict(TypedDict):
+    client: ModbusTcpClient_
+
+
 class FoxEssInverter(AbstractInverter):
-    def __init__(self, component_config: Union[Dict, FoxEssInverterSetup], client: ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(FoxEssInverterSetup, component_config)
+    def __init__(self, component_config: FoxEssInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.client = client
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id

@@ -3,7 +3,6 @@ import logging
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.openwb.openwb_flex.bat import BatKitFlex
@@ -24,24 +23,24 @@ def create_device(device_config: Flex):
 
     def create_bat_component(component_config: BatKitFlexSetup):
         nonlocal client
-        return BatKitFlex(device_config.id, component_config, client)
+        return BatKitFlex(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: EvuKitFlexSetup):
         nonlocal client
-        return EvuKitFlex(device_config.id, component_config, client)
+        return EvuKitFlex(component_config, device_id=device_config.id, client=client)
 
     def create_consumption_counter_component(component_config: ConsumptionCounterFlexSetup):
         nonlocal client
-        return ConsumptionCounterFlex(device_config.id, component_config, client)
+        return ConsumptionCounterFlex(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: PvKitFlexSetup):
         nonlocal client
-        return PvKitFlex(device_config.id, component_config, client)
+        return PvKitFlex(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[BatKitFlex, ConsumptionCounterFlex, EvuKitFlex, PvKitFlex]]):
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state):
-                component.update()
+
+            component.update()
 
     def initializer():
         nonlocal client

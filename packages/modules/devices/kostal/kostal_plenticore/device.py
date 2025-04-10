@@ -52,16 +52,13 @@ def create_device(device_config: KostalPlenticore):
     reader = None
 
     def create_bat_component(component_config: KostalPlenticoreBatSetup):
-        nonlocal client
-        return KostalPlenticoreBat(device_config.id, component_config, client)
+        return KostalPlenticoreBat(component_config, device_id=device_config.id)
 
     def create_counter_component(component_config: KostalPlenticoreCounterSetup):
-        nonlocal client
-        return KostalPlenticoreCounter(device_config.id, component_config, client)
+        return KostalPlenticoreCounter(component_config, device_id=device_config.id)
 
     def create_inverter_component(component_config: KostalPlenticoreInverterSetup):
-        nonlocal client
-        return KostalPlenticoreInverter(component_config, client)
+        return KostalPlenticoreInverter(component_config)
 
     def update_components(
         components: Iterable[Union[KostalPlenticoreBat, KostalPlenticoreCounter, KostalPlenticoreInverter]]

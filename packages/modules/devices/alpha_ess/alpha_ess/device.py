@@ -7,7 +7,6 @@ from modules.devices.alpha_ess.alpha_ess.config import (
     AlphaEss, AlphaEssBatSetup, AlphaEssCounterSetup, AlphaEssInverterSetup)
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.devices.alpha_ess.alpha_ess import bat
 from modules.devices.alpha_ess.alpha_ess import counter
 from modules.devices.alpha_ess.alpha_ess import inverter
@@ -23,34 +22,31 @@ def create_device(device_config: AlphaEss):
 
     def create_bat_component(component_config: AlphaEssBatSetup):
         nonlocal client
-        return bat.AlphaEssBat(device_config.id,
-                               component_config,
-                               client,
-                               device_config.configuration,
-                               device_config.configuration.modbus_id)
+        return bat.AlphaEssBat(component_config,
+                               device_id=device_config.id,
+                               tcp_client=client,
+                               modbus_id=device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: AlphaEssCounterSetup):
         nonlocal client
-        return counter.AlphaEssCounter(device_config.id,
-                                       component_config,
-                                       client,
-                                       device_config.configuration,
-                                       device_config.configuration.modbus_id)
+        return counter.AlphaEssCounter(component_config,
+                                       tcp_client=client,
+                                       device_config=device_config.configuration,
+                                       modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: AlphaEssInverterSetup):
         nonlocal client
-        return inverter.AlphaEssInverter(device_config.id,
-                                         component_config,
-                                         client,
-                                         device_config.configuration,
-                                         device_config.configuration.modbus_id)
+        return inverter.AlphaEssInverter(component_config=component_config,
+                                         device_id=device_config.id,
+                                         tcp_client=client,
+                                         device_config=device_config.configuration,
+                                         modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[alpha_ess_component_classes]]):
         nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def initializer():
         nonlocal client

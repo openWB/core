@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 
 from requests import Session
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -14,18 +13,28 @@ from modules.devices.generic.http.api import create_request_function
 from modules.devices.generic.http.config import HttpBatSetup
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    url: str
+
+
 class HttpBat(AbstractBat):
-    def __init__(self, device_id: int, component_config: Union[Dict, HttpBatSetup], url: str) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(HttpBatSetup, component_config)
+    def __init__(self, component_config: HttpBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-        self.__get_power = create_request_function(url, self.component_config.configuration.power_path)
-        self.__get_imported = create_request_function(url, self.component_config.configuration.imported_path)
-        self.__get_exported = create_request_function(url, self.component_config.configuration.exported_path)
-        self.__get_soc = create_request_function(url, self.component_config.configuration.soc_path)
+        self.__get_power = create_request_function(self.kwargs['url'], self.component_config.configuration.power_path)
+        self.__get_imported = create_request_function(
+            self.kwargs['url'], self.component_config.configuration.imported_path)
+        self.__get_exported = create_request_function(
+            self.kwargs['url'], self.component_config.configuration.exported_path)
+        self.__get_soc = create_request_function(self.kwargs['url'], self.component_config.configuration.soc_path)
 
     def update(self, session: Session) -> None:
         power = self.__get_power(session)
