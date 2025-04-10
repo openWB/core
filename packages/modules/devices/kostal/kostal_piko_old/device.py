@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: KostalPikoOld):
     def create_inverter_component(component_config: KostalPikoOldInverterSetup):
-        return KostalPikoOldInverter(device_config.id, component_config)
+        return KostalPikoOldInverter(component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[KostalPikoOldInverter]):
         response = req.get_http_session().get(device_config.configuration.url, verify=False, auth=(

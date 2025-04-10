@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 import logging
-from dataclass_utils import dataclass_from_dict
+from typing import TypedDict, Any
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -14,18 +13,24 @@ from modules.devices.deye.deye.device_type import DeviceType
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    client: ModbusTcpClient_
+
+
 class DeyeBat(AbstractBat):
-    def __init__(self, device_id: int,
-                 component_config: DeyeBatSetup,
-                 client: ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(DeyeBatSetup, component_config)
+    def __init__(self, component_config: DeyeBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.__device_id = device_id
-        self.client = client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.device_type = DeviceType(self.client.read_holding_registers(
-            0, ModbusDataType.INT_16, unit=component_config.configuration.modbus_id))
+            0, ModbusDataType.INT_16, unit=self.component_config.configuration.modbus_id))
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
@@ -35,9 +40,7 @@ class DeyeBat(AbstractBat):
             soc = self.client.read_holding_registers(184, ModbusDataType.INT_16, unit=unit)
 
             if self.device_type == DeviceType.SINGLE_PHASE_HYBRID:
-                # 516: Geladen in kWh * 0,1
                 imported = self.client.read_holding_registers(72, ModbusDataType.UINT_16, unit=unit) * 100
-                # 518: Entladen in kWh * 0,1
                 exported = self.client.read_holding_registers(74, ModbusDataType.UINT_16, unit=unit) * 100
 
             elif self.device_type == DeviceType.SINGLE_PHASE_STRING:
@@ -49,9 +52,7 @@ class DeyeBat(AbstractBat):
             if self.device_type == DeviceType.THREE_PHASE_HV:
                 power = power * 10
             soc = self.client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
-            # 516: Geladen in kWh * 0,1
             imported = self.client.read_holding_registers(516, ModbusDataType.UINT_16, unit=unit) * 100
-            # 518: Entladen in kWh * 0,1
             exported = self.client.read_holding_registers(518, ModbusDataType.UINT_16, unit=unit) * 100
 
         bat_state = BatState(

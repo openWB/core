@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-import logging
-from typing import Dict, Union, Optional
-
-from dataclass_utils import dataclass_from_dict
-from modules.common.abstract_device import AbstractBat
-from modules.common.component_state import BatState
-from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.modbus import ModbusTcpClient_, ModbusDataType
-from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
-from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
 import pymodbus
+from typing import TypedDict, Any, Dict, Union, Optional
+import logging
+
+from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
+from modules.common.store import get_bat_value_store
+from modules.common.modbus import ModbusTcpClient_, ModbusDataType
+from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.component_type import ComponentDescriptor
+from modules.common.component_state import BatState
+from modules.common.abstract_device import AbstractBat
 
 
 log = logging.getLogger(__name__)
+
+
+class KwargsDict(TypedDict):
+    client: ModbusTcpClient_
 
 
 class SunnyBoySmartEnergyBat(AbstractBat):
@@ -33,14 +35,12 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         "Wirkleistungsvorgabe": (40149, ModbusDataType.UINT_32),
     }
 
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, SmaSunnyBoySmartEnergyBatSetup],
-                 tcp_client: ModbusTcpClient_) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(SmaSunnyBoySmartEnergyBatSetup, component_config)
-        self.__tcp_client = tcp_client
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+    def __init__(self, component_config: SmaSunnyBoySmartEnergyBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'

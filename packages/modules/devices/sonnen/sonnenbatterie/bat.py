@@ -1,32 +1,37 @@
 #!/usr/bin/env python3
+from typing import Any, TypedDict, Dict, Optional
 import logging
-from typing import Dict, Optional, Union
 
-from dataclass_utils import dataclass_from_dict
-from modules.common import req
-from modules.common.abstract_device import AbstractBat
-from modules.common.component_state import BatState
-from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieBatSetup
+from modules.common.store import get_bat_value_store
+from modules.common.simcount import SimCounter
+from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.component_type import ComponentDescriptor
+from modules.common.component_state import BatState
+from modules.common.abstract_device import AbstractBat
+from modules.common import req
+
 
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    api_v2_token: str
+    device_id: int
+    device_address: str
+    device_variant: int
+
+
 class SonnenbatterieBat(AbstractBat):
-    def __init__(self,
-                 device_id: int,
-                 device_address: str,
-                 device_variant: int,
-                 api_v2_token: Optional[str],
-                 component_config: Union[Dict, SonnenbatterieBatSetup]) -> None:
-        self.__device_id = device_id
-        self.__device_address = device_address
-        self.__device_variant = device_variant
-        self.__api_v2_token = api_v2_token
-        self.component_config = dataclass_from_dict(SonnenbatterieBatSetup, component_config)
+    def __init__(self, component_config: SonnenbatterieBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__device_address: str = self.kwargs['device_address']
+        self.__device_variant: int = self.kwargs['device_variant']
+        self.__api_v2_token: Optional[str] = self.kwargs.get('api_v2_token')
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

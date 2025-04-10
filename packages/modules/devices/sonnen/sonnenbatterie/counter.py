@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Optional, Union
+from typing import Optional, TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -15,18 +14,23 @@ from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieCounterSe
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    api_v2_token: str
+    device_id: int
+    device_address: str
+    device_variant: int
+
+
 class SonnenbatterieCounter(AbstractCounter):
-    def __init__(self,
-                 device_id: int,
-                 device_address: str,
-                 device_variant: int,
-                 api_v2_token: Optional[str],
-                 component_config: Union[Dict, SonnenbatterieCounterSetup]) -> None:
-        self.__device_id = device_id
-        self.__device_address = device_address
-        self.__device_variant = device_variant
-        self.__api_v2_token = api_v2_token
-        self.component_config = dataclass_from_dict(SonnenbatterieCounterSetup, component_config)
+    def __init__(self, component_config: SonnenbatterieCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__device_address: str = self.kwargs['device_address']
+        self.__device_variant: int = self.kwargs['device_variant']
+        self.__api_v2_token: Optional[str] = self.kwargs.get('api_v2_token')
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

@@ -1,32 +1,40 @@
 #!/usr/bin/env python3
-import logging
-from typing import Dict, Optional, Union
-
-from dataclass_utils import dataclass_from_dict
-from modules.common import req
-from modules.common.abstract_device import AbstractInverter
-from modules.common.component_state import InverterState
-from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.simcount import SimCounter
-from modules.common.store import get_inverter_value_store
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieInverterSetup
+from modules.common.store import get_inverter_value_store
+from modules.common.simcount import SimCounter
+from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.component_type import ComponentDescriptor
+from modules.common.component_state import InverterState
+from modules.common.abstract_device import AbstractInverter
+from modules.common import req
+from typing import Any, TypedDict
+from typing import Dict, Optional, Union
+import logging
+<< << << < HEAD
+== == == =
+>>>>>> > upstream/master
+
 
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    api_v2_token: str
+    device_id: int
+    device_address: str
+    device_variant: int
+
+
 class SonnenbatterieInverter(AbstractInverter):
-    def __init__(self,
-                 device_id: int,
-                 device_address: str,
-                 device_variant: Optional[int],
-                 api_v2_token: str,
-                 component_config: Union[Dict, SonnenbatterieInverterSetup]) -> None:
-        self.__device_id = device_id
-        self.__device_address = device_address
-        self.__device_variant = device_variant
-        self.__api_v2_token = api_v2_token
-        self.component_config = dataclass_from_dict(SonnenbatterieInverterSetup, component_config)
+    def __init__(self, component_config: SonnenbatterieInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__device_address: str = self.kwargs['device_address']
+        self.__device_variant: int = self.kwargs['device_variant']
+        self.__api_v2_token: Optional[str] = self.kwargs.get('api_v2_token')
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
