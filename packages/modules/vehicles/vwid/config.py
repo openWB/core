@@ -20,7 +20,9 @@ class VWId:
     def __init__(self,
                  name: str = "VWId",
                  type: str = "vwid",
+                 official: bool = False,
                  configuration: VWIdConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or VWIdConfiguration()

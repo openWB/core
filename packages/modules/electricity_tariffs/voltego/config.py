@@ -25,7 +25,9 @@ class VoltegoTariff:
     def __init__(self,
                  name: str = "Voltego",
                  type: str = "voltego",
+                 official: bool = True,
                  configuration: VoltegoTariffConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or VoltegoTariffConfiguration()

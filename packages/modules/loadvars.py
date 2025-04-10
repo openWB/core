@@ -8,7 +8,7 @@ from modules.utils import wait_for_module_update_completed
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
 from modules.common.store import update_values
-from modules.common.utils.component_parser import get_component_obj_by_id
+from modules.common.utils.component_parser import get_finished_component_obj_by_id
 from helpermodules.utils import joined_thread_handler
 
 log = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class Loadvars:
                             args=(chargepoint.chargepoint_module,),
                             name=f"update values cp{chargepoint.chargepoint_module.config.id}"))
                 else:
-                    component = get_component_obj_by_id(element["id"], not_finished_threads)
+                    component = get_finished_component_obj_by_id(element["id"], not_finished_threads)
                     if component is None:
                         continue
                     modules_threads.append(threading.Thread(target=update_values, args=(

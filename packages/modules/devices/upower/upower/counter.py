@@ -17,29 +17,32 @@ class UPowerCounter(AbstractCounter):
     def __init__(self,
                  component_config: Union[Dict, UPowerCounterSetup],
                  version: UPowerVersion,
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: ModbusTcpClient_,
+                 device_id: int) -> None:
         self.component_config = dataclass_from_dict(UPowerCounterSetup, component_config)
         self.__modbus_id = modbus_id
         self.version = version
+        self.client = client
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
 
-    def update(self, client: ModbusTcpClient_):
+    def update(self):
         if self.version == UPowerVersion.GEN_1:
-            power = client.read_holding_registers(1000, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
-            frequency = client.read_holding_registers(11015, ModbusDataType.UINT_16, unit=self.__modbus_id)
+            power = self.client.read_holding_registers(1000, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
+            frequency = self.client.read_holding_registers(11015, ModbusDataType.UINT_16, unit=self.__modbus_id)
 
-            powers = [-value for value in client.read_holding_registers(
+            powers = [-value for value in self.client.read_holding_registers(
                 10994, [ModbusDataType.INT_32] * 3, unit=self.__modbus_id)]
-            exported = client.read_holding_registers(31102, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
-            imported = client.read_holding_registers(31104, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+            exported = self.client.read_holding_registers(31102, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+            imported = self.client.read_holding_registers(31104, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
         else:
-            power = client.read_holding_registers(1219, ModbusDataType.INT_16, unit=self.__modbus_id) * -10
-            frequency = client.read_holding_registers(
+            power = self.client.read_holding_registers(1219, ModbusDataType.INT_16, unit=self.__modbus_id) * -10
+            frequency = self.client.read_holding_registers(
                 1759, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
 
-            powers = [-10 * value for value in client.read_holding_registers(
+            powers = [-10 * value for value in self.client.read_holding_registers(
                 1750, [ModbusDataType.INT_16] * 3, unit=self.__modbus_id
             )]
             imported, exported = self.sim_counter.sim_count(power)

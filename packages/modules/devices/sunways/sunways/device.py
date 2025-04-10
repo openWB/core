@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 def create_device(device_config: Sunways):
     def create_inverter_component(component_config: SunwaysInverterSetup):
         return SunwaysInverter(component_config,
-                               device_config.configuration.ip_address,
-                               device_config.configuration.password)
+                               ip_address=device_config.configuration.ip_address,
+                               password=device_config.configuration.password)
 
     return ConfigurableDevice(
         device_config=device_config,
