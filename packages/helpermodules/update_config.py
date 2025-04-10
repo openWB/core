@@ -2076,8 +2076,8 @@ class UpdateConfig:
                     payload = decode_payload(payload)
                     if payload.get("type") == "mqtt":
                         pub_system_message(
-                            {}, "Die Topics für MQTT-Komponenten und MQTT-Ladepunkte wurden angepasst. Bitte aktualsiere "
-                            "die Topics in Deinen angebundenen Systemen.", MessageType.WARNING)
+                            {}, "Die Topics für MQTT-Komponenten und MQTT-Ladepunkte wurden angepasst. Bitte "
+                            "aktualsiere die Topics in Deinen angebundenen Systemen.", MessageType.WARNING)
                         # Nachricht nur einmal senden
                         break
         self._loop_all_received_topics(upgrade)

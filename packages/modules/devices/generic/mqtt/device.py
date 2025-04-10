@@ -2,7 +2,7 @@
 from typing import Iterable, Union
 import logging
 
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_type import type_to_topic_mapping
@@ -33,7 +33,7 @@ def create_device(device_config: Mqtt):
             received_topics.update({message.topic: decode_payload(message.payload)})
 
         received_topics = {}
-        InternalBrokerClient(f"subscribeMqttDevice{device_config.id}", on_connect, on_message).start_finite_loop()
+        BrokerClient(f"subscribeMqttDevice{device_config.id}", on_connect, on_message).start_finite_loop()
 
         if received_topics:
             log.debug(f"Empfange MQTT Daten für Gerät {device_config.id}: {received_topics}")

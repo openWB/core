@@ -1,6 +1,6 @@
 import logging
 
-from helpermodules.broker import InternalBrokerClient
+from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload
 from modules.chargepoints.mqtt.config import Mqtt
@@ -33,8 +33,8 @@ class ChargepointModule(AbstractChargepoint):
                 received_topics.update({message.topic: decode_payload(message.payload)})
 
             received_topics = {}
-            InternalBrokerClient(f"subscribeMqttChargepoint{self.config.id}",
-                                 on_connect, on_message).start_finite_loop()
+            BrokerClient(f"subscribeMqttChargepoint{self.config.id}",
+                         on_connect, on_message).start_finite_loop()
 
             if received_topics:
                 log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")
