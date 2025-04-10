@@ -27,17 +27,18 @@ class E3dcBat(AbstractBat):
     def __init__(self,
                  device_id: int,
                  component_config: E3dcBatSetup,
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: modbus.ModbusTcpClient_) -> None:
         self.component_config = component_config
         self.__modbus_id = modbus_id
+        self.client = client
         # bat
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, client: modbus.ModbusTcpClient_) -> None:
-
-        soc, power = read_bat(client, self.__modbus_id)
+    def update(self) -> None:
+        soc, power = read_bat(self.client, self.__modbus_id)
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,

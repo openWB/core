@@ -19,7 +19,10 @@ alpha_ess_component_classes = Union[bat.AlphaEssBat, counter.AlphaEssCounter, in
 
 
 def create_device(device_config: AlphaEss):
+    client = None
+
     def create_bat_component(component_config: AlphaEssBatSetup):
+        nonlocal client
         return bat.AlphaEssBat(device_config.id,
                                component_config,
                                client,
@@ -27,6 +30,7 @@ def create_device(device_config: AlphaEss):
                                device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: AlphaEssCounterSetup):
+        nonlocal client
         return counter.AlphaEssCounter(device_config.id,
                                        component_config,
                                        client,
@@ -34,6 +38,7 @@ def create_device(device_config: AlphaEss):
                                        device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: AlphaEssInverterSetup):
+        nonlocal client
         return inverter.AlphaEssInverter(device_config.id,
                                          component_config,
                                          client,
@@ -41,21 +46,23 @@ def create_device(device_config: AlphaEss):
                                          device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[alpha_ess_component_classes]]):
+        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    try:
+    def initializer():
+        nonlocal client
         if device_config.configuration.source == 0:
             client = modbus.ModbusTcpClient_("192.168.193.125", 8899)
         else:
             client = modbus.ModbusTcpClient_(
                 device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

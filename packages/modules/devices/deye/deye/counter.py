@@ -12,9 +12,7 @@ from modules.devices.deye.deye.device_type import DeviceType
 
 
 class DeyeCounter(AbstractCounter):
-    def __init__(self, device_id: int,
-                 component_config: DeyeCounterSetup,
-                 client: ModbusTcpClient_) -> None:
+    def __init__(self, device_id: int, component_config: DeyeCounterSetup, client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(DeyeCounterSetup, component_config)
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

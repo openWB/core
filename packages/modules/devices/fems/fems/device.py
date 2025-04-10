@@ -13,15 +13,20 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Fems):
+    session = None
+
     def create_bat_component(component_config: FemsBatSetup):
+        nonlocal session
         return bat.FemsBat(device_config.configuration.ip_address,
                            component_config, session)
 
     def create_counter_component(component_config: FemsCounterSetup):
+        nonlocal session
         return counter.FemsCounter(device_config.configuration.ip_address,
                                    component_config, session)
 
     def create_inverter_component(component_config: FemsInverterSetup):
+        nonlocal session
         return inverter.FemsInverter(device_config.configuration.ip_address,
                                      component_config, session)
 
@@ -29,11 +34,14 @@ def create_device(device_config: Fems):
         for component in components:
             component.update()
 
-    session = req.get_http_session()
-    session.auth = ("x", device_config.configuration.password)
+    def initializer():
+        nonlocal session
+        session = req.get_http_session()
+        session.auth = ("x", device_config.configuration.password)
 
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

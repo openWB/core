@@ -14,24 +14,26 @@ from modules.devices.azzurro_zcs.azzurro_zcs.config import ZCSBatSetup
 class ZCSBat(AbstractBat):
     def __init__(self,
                  component_config: Union[Dict, ZCSBatSetup],
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: ModbusTcpClient_) -> None:
         self.__modbus_id = modbus_id
         self.component_config = dataclass_from_dict(ZCSBatSetup, component_config)
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
-        # 0x020D Battery charge-discharge power Int16 -10-10 kW accury 0,01 kW pos charge, neg discharge
+    def update(self) -> None:
+        # 0x020D Battery charge-discharge power Int16 -10-10 kW accuracy 0,01 kW pos charge, neg discharge
         # 0x020E Battery voltage Cell UInt16 0-100 V accuracy 0,1 V
         # 0x020F Battery charge-discharge current Int -100-100 A accuracy 0,01A
-        power = client.read_input_registers(0x020D, ModbusDataType.INT_16, unit=self.__modbus_id)
+        power = self.client.read_input_registers(0x020D, ModbusDataType.INT_16, unit=self.__modbus_id)
         # 0x0210 SoC UInt16 0-100 %
-        soc = client.read_input_registers(0x0210, ModbusDataType.UINT_16, unit=self.__modbus_id)
+        soc = self.client.read_input_registers(0x0210, ModbusDataType.UINT_16, unit=self.__modbus_id)
         # 0x0227 Total energy charging battery low UInt16 in kWh LSB
-        imported = client.read_input_registers(
+        imported = self.client.read_input_registers(
             0x0227, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
         # 0x0229 Total energy discharging battery low UInt16 in kWh LSB
-        exported = client.read_input_registers(
+        exported = self.client.read_input_registers(
             0x0229, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
 
         bat_state = BatState(
