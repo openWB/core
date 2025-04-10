@@ -16,6 +16,8 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Huawei):
+    client = None
+
     def create_bat_component(component_config: HuaweiBatSetup):
         return HuaweiBat(device_config.id,
                          component_config,
@@ -35,12 +37,14 @@ def create_device(device_config: Huawei):
                               HuaweiType(device_config.configuration.type))
 
     def update_components(components: Iterable[Union[HuaweiBat, HuaweiCounter, HuaweiInverter]]):
+        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
-                    component.update(client)
+                    component.update()
 
-    try:
+    def initializer():
+        nonlocal client
         if HuaweiType(device_config.configuration.type) == HuaweiType.SDongle:
             client = ModbusTcpClient_(device_config.configuration.ip_address,
                                       device_config.configuration.port, sleep_after_connect=7)
@@ -49,10 +53,10 @@ def create_device(device_config: Huawei):
         else:
             client = ModbusTcpClient_(device_config.configuration.ip_address,
                                       device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

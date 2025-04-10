@@ -16,17 +16,19 @@ class AmpereInverter(AbstractInverter):
     def __init__(self,
                  device_id: int,
                  component_config: Union[Dict, AmpereInverterSetup],
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(AmpereInverterSetup, component_config)
         self.modbus_id = modbus_id
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = client
 
-    def update(self, client: ModbusTcpClient_) -> None:
-        pv1_power = client.read_holding_registers(519, ModbusDataType.INT_16, unit=self.modbus_id) * -1
-        pv2_power = client.read_holding_registers(522, ModbusDataType.INT_16, unit=self.modbus_id) * -1
+    def update(self) -> None:
+        pv1_power = self.client.read_holding_registers(519, ModbusDataType.INT_16, unit=self.modbus_id) * -1
+        pv2_power = self.client.read_holding_registers(522, ModbusDataType.INT_16, unit=self.modbus_id) * -1
 
         power = pv1_power + pv2_power
 

@@ -44,15 +44,17 @@ class E3dcCounter(AbstractCounter):
     def __init__(self,
                  device_id: int,
                  component_config: E3dcCounterSetup,
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: modbus.ModbusTcpClient_) -> None:
         self.component_config = component_config
         self.__modbus_id = modbus_id
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
+        self.client = client
+        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="evu")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, client: modbus.ModbusTcpClient_) -> None:
-        power, powers = read_counter(client, self.__modbus_id)
+    def update(self) -> None:
+        power, powers = read_counter(self.client, self.__modbus_id)
         imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             imported=imported,
@@ -61,7 +63,6 @@ class E3dcCounter(AbstractCounter):
             power=power
         )
         self.store.set(counter_state)
-        log.debug("Update completed successfully")
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=E3dcCounterSetup)

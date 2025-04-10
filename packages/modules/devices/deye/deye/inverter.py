@@ -14,7 +14,8 @@ from modules.devices.deye.deye.device_type import DeviceType
 
 
 class DeyeInverter(AbstractInverter):
-    def __init__(self, device_id: int,
+    def __init__(self,
+                 device_id: int,
                  component_config: Union[Dict, DeyeInverterSetup],
                  client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(DeyeInverterSetup, component_config)

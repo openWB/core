@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Sample):
+    session = None
+
     def create_bat_component(component_config: SampleBatSetup):
         return SampleBat(device_config.id, component_config, device_config.configuration.ip_address)
 
@@ -24,14 +26,19 @@ def create_device(device_config: Sample):
     def create_inverter_component(component_config: SampleInverterSetup):
         return SampleInverter(device_config.id, component_config, device_config.configuration.ip_address)
 
+    def initializer():
+        nonlocal session
+        session = req.get_http_session()
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
             inverter=create_inverter_component,
         ),
-        component_updater=IndependentComponentUpdater(lambda component: component.update())
+        component_updater=IndependentComponentUpdater(lambda component: component.update(session))
     )
 
 
