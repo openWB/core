@@ -77,12 +77,12 @@ const vehicleName = computed(() => {
 
 const socInputValue = ref<number>(0);
 
-function getManualSocValue() {
+const getManualSocValue = () => {
   const storeValue =
     mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId).value ??
     0;
   socInputValue.value = storeValue;
-}
+};
 
 onMounted(() => {
   getManualSocValue();
@@ -109,13 +109,13 @@ const decrementSoc = () => {
   }
 };
 
-function confirmChanges() {
+const confirmChanges = () => {
   mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId).value =
     socInputValue.value;
-}
+};
 
-function cancelChanges() {
+const cancelChanges = () => {
   // Reset to store value
   getManualSocValue();
-}
+};
 </script>
