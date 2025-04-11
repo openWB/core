@@ -31,13 +31,13 @@
       </q-card-section>
       <q-card-actions align="center" class="q-mt-md">
         <q-btn
-          label="Cancel"
+          label="Abbrechen"
           color="negative"
           v-close-popup
           @click="cancelChanges"
         />
         <q-btn
-          label="Confirm"
+          label="Bestätigen"
           color="primary"
           v-close-popup
           @click="confirmChanges"
@@ -77,10 +77,13 @@ const vehicleName = computed(() => {
 
 const socInputValue = ref<number>(0);
 
-const getManualSocValue = () => {
-  const storeValue =
-    mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId).value ??
-    0;
+const getManualSocValue = async () => {
+  const vehicleInfo = mqttStore.chargePointConnectedVehicleInfo(props.chargePointId).value;
+  const vehicleId = vehicleInfo?.id;
+  const socTopic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
+  mqttStore.subscribe(socTopic);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  const storeValue = mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId).value ?? 0;
   socInputValue.value = storeValue;
 };
 

@@ -44,7 +44,7 @@
         :current-value="currentValue"
         :target-time="targetTime"
       >
-        <template v-slot:update-soc-icon>
+        <template v-if="vehicleSocType === 'manual'" v-slot:update-soc-icon>
           <q-icon
             name="edit"
             size="xs"
@@ -204,6 +204,8 @@ const targetTime = computed(() => {
   }
   return target.time;
 });
+
+const vehicleSocType = computed(() => mqttStore.chargePointConnectedVehicleSocType(props.chargePointId))?.value;
 </script>
 <style lang="scss" scoped>
 .card-width {

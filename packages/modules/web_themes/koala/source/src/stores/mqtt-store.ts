@@ -1515,6 +1515,22 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+ * Get the charge point connected vehicle SoC type identified by the charge point id
+ * @param chargePointId charge point id
+ * @returns string | null | undefined
+ */
+const chargePointConnectedVehicleSocType = (chargePointId: number) => {
+  return computed(() => {
+    const vehicleId = chargePointConnectedVehicleInfo(chargePointId).value?.id;
+    if (!vehicleId) return undefined;
+    const socConfig = getValue.value(
+      `openWB/vehicle/${vehicleId}/soc_module/config`,
+    ) as { type: string } | null;
+    return socConfig?.type;
+  });
+};
+
+  /**
    * Get or set the charge point connected vehicle charge template identified by the charge point id
    * @param chargePointId charge point id
    * @returns object | undefined
@@ -2507,6 +2523,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleScheduledChargingPlanSocScheduled,
     vehicleScheduledChargingPlanPhases,
     vehicleScheduledChargingPlanPhasesPv,
+    chargePointConnectedVehicleSocType,
     chargePointConnectedVehicleSocManual,
     // Battery data
     batteryConfigured,
