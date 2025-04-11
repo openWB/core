@@ -770,7 +770,8 @@ class Chargepoint(ChargepointRfidMixin):
                       " verwendet.")
             charging_ev = ev_list["ev0"]
             vehicle = 0
-        if self.data.set.charging_ev != vehicle and self.data.set.charging_ev_prev != vehicle:
+        if (self.data.set.charging_ev != -1 and self.data.set.charging_ev != vehicle and
+                self.data.set.charging_ev_prev != 1 and self.data.set.charging_ev_prev != vehicle):
             Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
             log.debug("SoC nach EV-Wechsel")
             self.update_charge_template(charging_ev.charge_template)
