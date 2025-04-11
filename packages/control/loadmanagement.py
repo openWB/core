@@ -15,7 +15,6 @@ log = logging.getLogger(__name__)
 class Loadmanagement:
     def get_available_currents(self,
                                missing_currents: List[float],
-                               cp_voltages: List[float],
                                counter: Counter,
                                cp: Chargepoint,
                                feed_in: int = 0) -> Tuple[List[float], LoadmanagementLimit]:
@@ -36,7 +35,7 @@ class Loadmanagement:
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, cp_voltages, counter.data.set.raw_power_left, feed_in)
+            counter, available_currents, cp.data.get.voltages, counter.data.set.raw_power_left, feed_in)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
