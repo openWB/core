@@ -91,6 +91,8 @@ function cellStyle(key: number) {
 
 .heading {
 	color: var(--color-battery);
+	font-size: var(--font-settings);
+	font-weight: bold;
 }
 
 .left {

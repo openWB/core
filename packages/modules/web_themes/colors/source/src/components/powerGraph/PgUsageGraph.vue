@@ -141,18 +141,23 @@ const keysToUse = computed(() => {
 		const pattern = /cp\d+/
 		let additionalKeys: string[] = []
 		if (graphData.data.length > 0) {
-			additionalKeys = Object.keys(graphData.data[0]).filter((itemKey) =>
-				itemKey.match(pattern),
+			additionalKeys = Object.keys(graphData.data[0]).reduce(
+				(list: string[], element: string) => {
+					if (element.match(pattern)) {
+						list.push(element)
+					}
+					return list
+				},
+				[],
 			)
 		}
 		additionalKeys.forEach((key, i) => {
 			k.splice(idx + i, 0, key)
-			colors[key] =
-				chargePoints[+key.slice(2)]?.color ?? 'var(--color-charging)'
+			colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
 		})
-		/* 	if (globalConfig.showInverters) {
+		if (globalConfig.showInverters) {
 			k.push('evuOut')
-		} */
+		}
 		return k
 	}
 })

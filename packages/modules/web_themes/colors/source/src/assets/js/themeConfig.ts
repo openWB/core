@@ -362,7 +362,7 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 	pv_charging: {
 		mode: ChargeMode.pv_charging,
 		name: 'PV',
-		color: 'var(--color-pv',
+		color: 'var(--color-pv)',
 		icon: 'fa-solar-panel',
 	},
 	scheduled_charging: {
@@ -371,11 +371,11 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 		color: 'var(--color-battery)',
 		icon: 'fa-bullseye',
 	},
-	standby: {
-		mode: ChargeMode.standby,
-		name: 'Standby',
-		color: 'var(--color-axis',
-		icon: 'fa-pause',
+	eco_charging: {
+		mode: ChargeMode.eco_charging,
+		name: 'Eco',
+		color: 'var(--color-devices)',
+		icon: 'fa-coins',
 	},
 	stop: {
 		mode: ChargeMode.stop,

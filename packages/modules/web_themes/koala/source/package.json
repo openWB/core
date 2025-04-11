@@ -1,0 +1,58 @@
+{
+  "name": "openwb-koala-web-theme",
+  "version": "0.0.1",
+  "description": "Koala web theme for openWB software2",
+  "productName": "openWB",
+  "author": "openWB <info@openwb.de>",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "lint": "eslint --ext .js,.ts,.vue ./",
+    "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore",
+    "test:unit": "vitest run --root src/",
+    "dev": "quasar dev",
+    "build": "quasar build"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.16.12",
+    "chart.js": "^4.4.8",
+    "chartjs-adapter-luxon": "^1.3.1",
+    "chartjs-plugin-annotation": "^3.1.0",
+    "chartjs-plugin-zoom": "^2.2.0",
+    "luxon": "^3.5.0",
+    "mqtt": "^5.10.1",
+    "pinia": "^2.2.4",
+    "quasar": "^2.17.0",
+    "register-service-worker": "^1.7.2",
+    "vue": "^3.5.11",
+    "vue-chartjs": "^5.3.2",
+    "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^2.0.0-beta.12",
+    "@types/node": "^20.16.10",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-vue": "^9.28.0",
+    "prettier": "^3.3.3",
+    "typescript": "~5.5.4",
+    "vite-plugin-checker": "^0.8.0",
+    "vitest": "^2.1.2",
+    "vue-tsc": "^2.1.6",
+    "workbox-build": "^7.1.1",
+    "workbox-cacheable-response": "^7.1.0",
+    "workbox-core": "^7.1.0",
+    "workbox-expiration": "^7.1.0",
+    "workbox-precaching": "^7.1.0",
+    "workbox-routing": "^7.1.0",
+    "workbox-strategies": "^7.1.0"
+  },
+  "engines": {
+    "node": "^24 || ^22 || ^20 || ^18",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  }
+}

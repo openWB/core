@@ -6,6 +6,7 @@ from control.chargepoint.control_parameter import ControlParameter
 from control.counter import Counter, CounterData, Set
 
 from control.limiting_value import LoadmanagementLimit
+from control.ev.charge_template import ChargeTemplate
 from control.pv_all import PvAll
 from control.bat_all import BatAll
 from control.general import General
@@ -132,7 +133,8 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     control_parameter.state = params.state
 
     # execution
-    phases_to_use, current, message = vehicle.auto_phase_switch(control_parameter,
+    phases_to_use, current, message = vehicle.auto_phase_switch(ChargeTemplate(),
+                                                                control_parameter,
                                                                 0,
                                                                 params.get_currents,
                                                                 params.get_power,

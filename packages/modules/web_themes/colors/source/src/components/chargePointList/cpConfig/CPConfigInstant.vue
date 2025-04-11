@@ -13,18 +13,27 @@
 				unit="A"
 			/>
 		</ConfigItem>
+		<ConfigItem title="Anzahl Phasen" icon="fa-plug" :fullwidth="true">
+			<RadioInput
+				v-model="cp.instantTargetPhases"
+				:options="[
+					['Eine', 1],
+					['Alle', 3],
+				]"
+			/>
+		</ConfigItem>
 		<hr v-if="cp.instantChargeLimitMode != 'none'" />
 		<!-- Limit Mode -->
 		<ConfigItem title="Begrenzung" icon="fa-hand" :fullwidth="true">
 			<RadioInput
 				v-model="cp.instantChargeLimitMode"
-				:options="instantChargeLimitModes.map((e) => [e.name, e.id])"
+				:options="chargeLimitModes.map((e) => [e.name, e.id])"
 			/>
 		</ConfigItem>
 		<!-- Max SoC -->
 		<ConfigItem
 			v-if="cp.instantChargeLimitMode == 'soc'"
-			title="Maximaler SoC"
+			title="Maximaler Ladestand"
 			icon="fa-sliders"
 			:fullwidth="true"
 		>
@@ -60,7 +69,7 @@
 <script setup lang="ts">
 // import { eventBus } from '@/main.js'
 import { computed, ref } from 'vue'
-import type { ChargePoint } from '../model'
+import { type ChargePoint, chargeLimitModes } from '../model'
 import ConfigItem from '../../shared/ConfigItem.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
@@ -68,11 +77,6 @@ const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
 const cp = ref(props.chargepoint)
-const instantChargeLimitModes = [
-	{ name: 'keine', id: 'none' },
-	{ name: 'EV-SoC', id: 'soc' },
-	{ name: 'Energiemenge', id: 'amount' },
-]
 const energyLimit = computed({
 	get() {
 		return cp.value.instantMaxEnergy / 1000
@@ -91,5 +95,7 @@ const energyLimit = computed({
 }
 .heading {
 	color: var(--color-charging);
+	font-size: var(--font-settings);
+	font-weight: bold;
 }
 </style>
