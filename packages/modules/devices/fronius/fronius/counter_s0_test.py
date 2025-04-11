@@ -22,8 +22,9 @@ def test_update(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, 
     component_config = FroniusS0CounterSetup()
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
-    counter = counter_s0.FroniusS0Counter(
-        0, component_config,  dataclass_from_dict(FroniusConfiguration, device_config))
+    counter = counter_s0.FroniusS0Counter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    counter.initialize()
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)

@@ -25,13 +25,13 @@ JsonComponent = Union[JsonBat, JsonCounter, JsonInverter]
 
 def create_device(device_config: Json):
     def create_bat(component_config: JsonBatSetup) -> JsonBat:
-        return JsonBat(device_config.id, component_config)
+        return JsonBat(component_config=component_config, device_id=device_config.id)
 
     def create_counter(component_config: JsonCounterSetup) -> JsonCounter:
-        return JsonCounter(device_config.id, component_config)
+        return JsonCounter(component_config=component_config, device_id=device_config.id)
 
     def create_inverter(component_config: JsonInverterSetup) -> JsonInverter:
-        return JsonInverter(device_config.id, component_config)
+        return JsonInverter(component_config=component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[JsonComponent]):
         response = req.get_http_session().get(device_config.configuration.url, timeout=5).json()
