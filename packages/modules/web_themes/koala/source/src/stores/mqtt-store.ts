@@ -24,6 +24,7 @@ import type {
   VehicleActivePlan,
   TimeChargingPlan,
   VehicleChargeTarget,
+  CalculatedSocState,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -1477,9 +1478,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleInfo(chargePointId).value;
         const vehicleId = vehicleInfo?.id;
         const topic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
-        const socState = getValue.value(topic) as
-          | { soc_start: number; manual_soc: number | null }
-          | undefined;
+        const socState = getValue.value(topic) as CalculatedSocState | undefined;
         return socState?.manual_soc ?? socState?.soc_start ?? 0;
       },
       set(newValue: number) {

@@ -49,7 +49,7 @@
 
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref } from 'vue';
 
 const mqttStore = useMqttStore();
 
@@ -66,7 +66,6 @@ const visible = computed({
   get: () => props.socDialogVisible,
   set: (value) => {
     emit('update:socDialogVisible', value);
-    if (value) getManualSocValue();
   },
 });
 
@@ -75,30 +74,16 @@ const vehicleName = computed(() => {
     ?.name;
 });
 
-const socInputValue = ref<number>(0);
+const socValue = ref<number | undefined>(undefined);
 
-const getManualSocValue = async () => {
-  const vehicleInfo = mqttStore.chargePointConnectedVehicleInfo(props.chargePointId).value;
-  const vehicleId = vehicleInfo?.id;
-  const socTopic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
-  mqttStore.subscribe(socTopic);
-  await new Promise(resolve => setTimeout(resolve, 100));
-  const storeValue = mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId).value ?? 0;
-  socInputValue.value = storeValue;
-};
-
-onMounted(() => {
-  getManualSocValue();
-});
-
-watch(
-  () => visible.value,
-  (isOpen) => {
-    if (isOpen) {
-      getManualSocValue();
-    }
+const socInputValue = computed({
+  get: () => {
+    return socValue.value ?? mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId).value ?? 0;
   },
-);
+  set: (newValue: number) => {
+    socValue.value = newValue;
+  },
+});
 
 const incrementSoc = () => {
   if (socInputValue.value < 100) {
@@ -118,7 +103,7 @@ const confirmChanges = () => {
 };
 
 const cancelChanges = () => {
-  // Reset to store value
-  getManualSocValue();
+  // Reset temporary soc value
+  socValue.value = undefined;
 };
 </script>
