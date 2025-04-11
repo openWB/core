@@ -144,6 +144,38 @@ export interface ScheduledChargingPlan {
   };
 }
 
+export interface TimeChargingPlan {
+  id: number;
+  name: string;
+  active: boolean;
+  frequency: {
+    selected: 'weekly' | 'daily' | 'once';
+    once: [string, string];
+    weekly: [boolean, boolean, boolean, boolean, boolean, boolean, boolean];
+  };
+  time: [string, string];
+  current: number;
+  dc_current: number;
+  limit: {
+    selected: 'none' | 'soc' | 'amount';
+    amount: number;
+    soc: number;
+  };
+  phases_to_use: number;
+}
+
+export interface VehicleActivePlan {
+  id: number | undefined;
+  type: string;
+  plan?: ScheduledChargingPlan | TimeChargingPlan;
+}
+
+export interface VehicleChargeTarget {
+  time?: string;
+  limit_mode?: string;
+  limit?: number;
+}
+
 export interface GraphDataPoint {
   timestamp: number;
   time: string;
