@@ -10,6 +10,7 @@ from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_internal_chargepoint_value_store, get_chargepoint_value_store
 from modules.internal_chargepoint_handler.clients import ClientHandler
+from helpermodules.subdata import SubData
 
 log = logging.getLogger(__name__)
 
@@ -54,6 +55,9 @@ class ChargepointModule(AbstractChargepoint):
                 self._client.evse_client.activate_precise_current()
             self._precise_current = self._client.evse_client.is_precise_current_active()
         self.max_evse_current = self._client.evse_client.get_max_current()
+        self.version = SubData.system_data["system"].data["version"]
+        self.current_branch = SubData.system_data["system"].data["current_branch"]
+        self.current_commit = SubData.system_data["system"].data["current_commit"]
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
@@ -116,7 +120,10 @@ class ChargepointModule(AbstractChargepoint):
                 rfid=last_tag,
                 evse_current=self.set_current_evse,
                 serial_number=serial_number,
-                max_evse_current=self.max_evse_current
+                max_evse_current=self.max_evse_current,
+                version=self.version,
+                current_branch=self.current_branch,
+                current_commit=self.current_commit
             )
         if self.client_error_context.error_counter_exceeded():
             chargepoint_state = ChargepointState()
