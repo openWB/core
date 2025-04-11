@@ -176,6 +176,12 @@ export interface VehicleChargeTarget {
   limit?: number;
 }
 
+export interface CalculatedSocState {
+  imported_start: number;
+  manual_soc?: number;
+  soc_start: number;
+}
+
 export interface GraphDataPoint {
   timestamp: number;
   time: string;

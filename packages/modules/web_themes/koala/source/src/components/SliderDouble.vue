@@ -40,6 +40,7 @@
               ? formatEnergy(currentValue)
               : currentValue + '%'
           }}
+          <slot name="update-soc-icon"></slot>
         </div>
       </div>
       <div v-if="props.targetTime" class="col text-center">

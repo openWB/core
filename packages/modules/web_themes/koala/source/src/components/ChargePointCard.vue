@@ -43,7 +43,18 @@
         :limit-mode="limitMode"
         :current-value="currentValue"
         :target-time="vehicleTarget.time"
-      />
+      >
+        <template v-if="vehicleSocType === 'manual'" v-slot:update-soc-icon>
+          <q-icon
+            name="edit"
+            size="xs"
+            class="q-ml-xs cursor-pointer"
+            @click="socInputVisible = true"
+          >
+            <q-tooltip>SoC eingeben</q-tooltip>
+          </q-icon>
+        </template>
+      </SliderDouble>
       <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>
@@ -51,6 +62,10 @@
   <ChargePointSettings
     :chargePointId="props.chargePointId"
     v-model="settingsVisible"
+  />
+  <ChargePointManualSocDialog
+    :chargePointId="props.chargePointId"
+    v-model:socDialogVisible="socInputVisible"
   />
 </template>
 <script setup lang="ts">
@@ -65,6 +80,7 @@ import ChargePointStateMessage from './ChargePointStateMessage.vue';
 import ChargePointFaultMessage from './ChargePointFaultMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
+import ChargePointManualSocDialog from './ChargePointManualSocDialog.vue';
 
 const mqttStore = useMqttStore();
 
@@ -95,6 +111,7 @@ const limitMode = computed(() => {
 
 const settingsVisible = ref<boolean>(false);
 
+const socInputVisible = ref<boolean>(false);
 const name = computed(() => mqttStore.chargePointName(props.chargePointId));
 
 const power = computed(() =>
@@ -182,6 +199,8 @@ const showSocTargetSlider = computed(() => {
 const vehicleTarget = computed(() => {
   return mqttStore.vehicleChargeTarget(props.chargePointId).value;
 });
+
+const vehicleSocType = computed(() => mqttStore.chargePointConnectedVehicleSocType(props.chargePointId))?.value;
 </script>
 <style lang="scss" scoped>
 .card-width {
