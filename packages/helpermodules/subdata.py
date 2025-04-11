@@ -904,9 +904,11 @@ class SubData:
                 self.set_json_payload(var["system"].data["backup_cloud"], msg)
             elif ("openWB/system/dataprotection_acknowledged" == msg.topic and
                     decode_payload(msg.payload) is False):
-                Pub().pub("openWB/set/command/removeCloudBridge/todo", {
-                    "command": "removeCloudBridge"
-                })
+                if self.event_subdata_initialized.is_set():
+                    Pub().pub("openWB/set/command/removeCloudBridge/todo",
+                              {"command": "removeCloudBridge"})
+                else:
+                    log.debug("skipping data protection message on startup")
             elif re.search("^.+/io/[0-9]+/config$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
