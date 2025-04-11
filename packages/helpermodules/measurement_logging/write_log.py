@@ -24,6 +24,11 @@ log = logging.getLogger(__name__)
 #         {
 #             "timestamp": int,
 #             "date": str,
+#             "prices": {
+#                 "grid": Preis für Netzbezug,
+#                 "pv": Preis für PV-Strom,
+#                 "bat": Preis für Speicherstrom
+#             }
 #             "cp": {
 #                 "cp1": {
 #                     "imported": Zählerstand in Wh,
@@ -190,6 +195,16 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
     else:
         date = timecheck.create_timestamp_YYYYMMDD()
     current_timestamp = int(timecheck.create_timestamp())
+
+    prices = data.data.general_data.data.prices
+    if data.data.optional_data.et_module is not None:
+        grid_price = data.data.optional_data.et_get_current_price()
+    else:
+        grid_price = prices.grid
+    prices_dict = {"grid": grid_price,
+                   "pv": prices.pv,
+                   "bat": prices.bat}
+
     cp_dict = {}
     for cp in data.data.cp_data:
         try:
@@ -252,6 +267,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
     new_entry = {
         "timestamp": current_timestamp,
         "date": date,
+        "prices": prices_dict,
         "cp": cp_dict,
         "ev": ev_dict,
         "counter": counter_dict,
