@@ -5,6 +5,7 @@
 *.log.lock
 .DS_Store
 .ftp*
+.quasar/
 .vite
 .vimrc
 .vscode/*
