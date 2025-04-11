@@ -499,7 +499,7 @@ class ChargeTemplate:
         else:
             # Wenn dynamische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
-            if plan.et_active and data.data.optional_data.et_provider_available():
+            if plan.et_active:
                 hour_list = data.data.optional_data.et_get_loading_hours(
                     selected_plan.duration, selected_plan.remaining_time)
                 hours_message = ("Geladen wird zu folgenden Uhrzeiten: " +

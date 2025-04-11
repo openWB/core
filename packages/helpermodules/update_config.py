@@ -10,6 +10,8 @@ import re
 import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
+
+from control.limiting_value import LoadmanagementLimit
 import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -53,7 +55,9 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 79
+
+    DATASTORE_VERSION = 82
+
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
@@ -138,6 +142,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/energy_to_charge$",
         "^openWB/chargepoint/[0-9]+/set/manual_lock$",
+        "^openWB/chargepoint/[0-9]+/set/charge_state_prev$",
         "^openWB/chargepoint/[0-9]+/set/plug_state_prev$",
         "^openWB/chargepoint/[0-9]+/set/plug_time$",
         "^openWB/chargepoint/[0-9]+/set/rfid$",
@@ -250,6 +255,23 @@ class UpdateConfig:
         "^openWB/io/states/[0-9]+/set/analog_output$",
         "^openWB/io/action/[0-9]+/config$",
         "^openWB/io/action/[0-9]+/timestamp$",
+
+        "^openWB/mqtt/bat/[0-9]+/get/power$",
+        "^openWB/mqtt/bat/[0-9]+/get/soc$",
+        "^openWB/mqtt/bat/[0-9]+/get/imported$",
+        "^openWB/mqtt/bat/[0-9]+/get/exported$",
+        "^openWB/mqtt/counter/[0-9]+/get/currents$",
+        "^openWB/mqtt/counter/[0-9]+/get/imported$",
+        "^openWB/mqtt/counter/[0-9]+/get/exported$",
+        "^openWB/mqtt/counter/[0-9]+/get/power$",
+        "^openWB/mqtt/counter/[0-9]+/get/frequency$",
+        "^openWB/mqtt/counter/[0-9]+/get/power_factors$",
+        "^openWB/mqtt/counter/[0-9]+/get/powers$",
+        "^openWB/mqtt/counter/[0-9]+/get/voltages$",
+        "^openWB/mqtt/inverter/[0-9]+/get/currents$",
+        "^openWB/mqtt/inverter/[0-9]+/get/power$",
+        "^openWB/mqtt/inverter/[0-9]+/get/exported$",
+        "^openWB/mqtt/inverter/[0-9]+/get/dc_power$",
 
         "^openWB/set/log/request",
         "^openWB/set/log/data",
@@ -2004,6 +2026,88 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 76)
 
     def upgrade_datastore_76(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/[0-9]+/control_parameter/limit", topic) is not None:
+                return {topic: dataclass_utils.asdict(LoadmanagementLimit(None,  None))}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 77)
+
+    def upgrade_datastore_77(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # add "official" flag to selected backup cloud
+            if re.search("openWB/system/backup_cloud/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "nextcloud":
+                    configuration_payload.update({"official": True})
+                    return {topic: configuration_payload}
+            # add "official" flag to selected electricity tariff provider
+            if re.search("openWB/optional/et/provider", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                official_providers = ["awattar", "energycharts", "rabot", "tibber", "voltego"]
+                if configuration_payload.get("type") in official_providers:
+                    configuration_payload.update({"official": True})
+                    return {topic: configuration_payload}
+            # add "official" flag to selected monitoring module
+            if re.search("openWB/optional/monitoring/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "zabbix":
+                    configuration_payload.update({"official": True})
+                    return {topic: configuration_payload}
+            # add "official" flag to selected vehicle modules
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                official_vehicle_modules = ["http", "json", "manual", "mqtt", "tronity"]
+                if configuration_payload.get("type") in official_vehicle_modules:
+                    configuration_payload.update({"official": True})
+                    return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 78)
+
+    def upgrade_datastore_78(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            for topic, payload in self.all_received_topics.items():
+                if (re.search("openWB/system/device/[0-9]+", topic) is not None or
+                        re.search("openWB/chargepoint/[0-9]+/config", topic) is not None):
+                    payload = decode_payload(payload)
+                    if payload.get("type") == "mqtt":
+                        pub_system_message(
+                            {}, "Die Topics für MQTT-Komponenten und MQTT-Ladepunkte wurden angepasst. Bitte "
+                            "aktualisiere die Topics in Deinen angebundenen (Smarthome-)Systemen.", MessageType.WARNING)
+                        # Nachricht nur einmal senden
+                        break
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 79)
+
+    def upgrade_datastore_79(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
+                    re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                payload.update({"id": index})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 80)
+
+    def upgrade_datastore_80(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
+                topics = {}
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                charge_template_id = decode_payload(
+                    self.all_received_topics[f'openWB/vehicle/{payload["ev"]}/charge_template'])
+                for template_topic, template_payload in self.all_received_topics.items():
+                    if f'openWB/vehicle/template/charge_template/{charge_template_id}' in template_topic:
+                        topics.update(
+                            {template_topic.replace(f'openWB/vehicle/template/charge_template/{charge_template_id}',
+                                                    f"openWB/chargepoint/{index}/set/charge_template"):
+                             decode_payload(template_payload)})
+                return topics
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 81)
+
+    def upgrade_datastore_81(self) -> None:
         def upgrade(topic: str, payload) -> None:
             def get_new_phases_to_use(topic) -> int:
                 return min(max_phases_ev, decode_payload(self.all_received_topics[topic]))
@@ -2080,33 +2184,4 @@ class UpdateConfig:
                         topics.update({evt_topic: ev_template})
                 return topics
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 77)
-
-    def upgrade_datastore_77(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
-                    re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
-                payload = decode_payload(payload)
-                index = get_index(topic)
-                payload.update({"id": index})
-                Pub().pub(topic, payload)
-        self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 78)
-
-    def upgrade_datastore_78(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
-                topics = {}
-                payload = decode_payload(payload)
-                index = get_index(topic)
-                charge_template_id = decode_payload(
-                    self.all_received_topics[f'openWB/vehicle/{payload["ev"]}/charge_template'])
-                for template_topic, template_payload in self.all_received_topics.items():
-                    if f'openWB/vehicle/template/charge_template/{charge_template_id}' in template_topic:
-                        topics.update(
-                            {template_topic.replace(f'openWB/vehicle/template/charge_template/{charge_template_id}',
-                                                    f"openWB/chargepoint/{index}/set/charge_template"):
-                             decode_payload(template_payload)})
-                return topics
-        self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 79)
+        self.__update_topic("openWB/system/datastore_version", 82)

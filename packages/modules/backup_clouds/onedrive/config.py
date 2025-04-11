@@ -24,7 +24,9 @@ class OneDriveBackupCloud:
     def __init__(self,
                  name: str = "OneDrive",
                  type: str = "onedrive",
+                 official: bool = False,
                  configuration: OneDriveBackupCloudConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or OneDriveBackupCloudConfiguration()

@@ -2,7 +2,8 @@ import logging
 
 from control.algorithm import common
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT
-from control.loadmanagement import LimitingValue, Loadmanagement
+from control.limiting_value import LoadmanagementLimit
+from control.loadmanagement import Loadmanagement
 from control.chargepoint.chargepoint import Chargepoint
 from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging)
@@ -28,7 +29,7 @@ class AdditionalCurrent:
                     missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)
                     available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter, cp)
                     log.debug(f"cp {cp.num} available currents {available_currents} missing currents "
-                              f"{missing_currents} limit {limit}")
+                              f"{missing_currents} limit {limit.message}")
                     cp.data.control_parameter.limit = limit
                     available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
                     current = common.get_current_to_set(
@@ -46,7 +47,7 @@ class AdditionalCurrent:
     # tested
     def _set_loadmangement_message(self,
                                    current: float,
-                                   limit: LimitingValue,
+                                   limit: LoadmanagementLimit,
                                    chargepoint: Chargepoint) -> None:
         # Strom muss an diesem Zähler geändert werden
         log.debug(
@@ -57,4 +58,4 @@ class AdditionalCurrent:
                 round(current, 2) != round(max(
                     chargepoint.data.control_parameter.required_currents), 2)):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
-                                          f"{limit}")
+                                          f"{limit.message}")

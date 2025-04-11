@@ -66,7 +66,7 @@ log = logging.getLogger(__name__)
 class Chargepoint(ChargepointRfidMixin):
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
-    MAX_FAILED_PHASE_SWITCHES = 3
+    MAX_FAILED_PHASE_SWITCHES = 2
 
     def __init__(self, index: int, event: Optional[threading.Event]):
         try:
@@ -289,9 +289,11 @@ class Chargepoint(ChargepointRfidMixin):
                       self.data.set.plug_time)
 
     def remember_previous_values(self):
+        self.data.set.charge_state_prev = self.data.get.charge_state
         self.data.set.plug_state_prev = self.data.get.plug_state
         self.data.set.current_prev = self.data.set.current
         self.data.set.ev_prev = self.data.config.ev
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charge_state_prev", self.data.set.charge_state_prev)
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/current_prev", self.data.set.current_prev)
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ev_prev", self.data.set.ev_prev)
@@ -721,6 +723,14 @@ class Chargepoint(ChargepointRfidMixin):
                     if self.data.set.charge_template.data.id != ev_list[
                             f"ev{self.data.config.ev}"].charge_template.data.id:
                         self.update_charge_template(ev_list[f"ev{self.data.config.ev}"].charge_template)
+            try:
+                # check für charging stop or charging interruption, if so force a soc query for the ev
+                if self.data.set.charge_state_prev and self.data.get.charge_state is False:
+                    Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
+                    log.info(f"SoC-Abfrage nach Ladeunterbrechung, cp{self.num}, ev{self.data.config.ev}")
+            except Exception:
+                log.exception(f"Fehler bei Ladestop,cp{self.num}")
+
             # OCPP Start Transaction nach Anstecken
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):

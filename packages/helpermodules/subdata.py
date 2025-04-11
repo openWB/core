@@ -18,6 +18,7 @@ from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from control.ev.charge_template import ChargeTemplate, ChargeTemplateData
 from control.ev import ev
 from control.ev.ev_template import EvTemplate, EvTemplateData
+from control.limiting_value import LoadmanagementLimit
 from control.optional_data import Ocpp
 from helpermodules import graph, system
 from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
@@ -335,14 +336,14 @@ class SubData:
         """
         try:
             index = get_index(msg.topic)
-            if decode_payload(msg.payload) == "" and re.search("/vehicle/template/charge_template/[0-9]+$",
-                                                               msg.topic) is not None:
-                if "ct"+index in var:
-                    var.pop("ct"+index)
-            else:
-                if "ct"+index not in var:
-                    var["ct"+index] = ChargeTemplate()
-                self.process_charge_template_topic(var["ct"+index], msg)
+            if re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
+                if decode_payload(msg.payload) == "":
+                    if "ct"+index in var:
+                        var.pop("ct"+index)
+            if "ct"+index not in var:
+                var["ct"+index] = ChargeTemplate()
+            self.process_charge_template_topic(var["ct"+index], msg)
+            if re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
                 # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
                 for vehicle in self.ev_data.values():
                     if vehicle.data.charge_template == int(index):
@@ -477,7 +478,12 @@ class SubData:
                     elif re.search("/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         self.process_chargepoint_config_topic(var, msg)
                     elif re.search("/chargepoint/[0-9]+/control_parameter/", msg.topic) is not None:
-                        self.set_json_payload_class(var["cp"+index].chargepoint.data.control_parameter, msg)
+                        if re.search("/chargepoint/[0-9]+/control_parameter/limit", msg.topic) is not None:
+                            payload = decode_payload(msg.payload)
+                            var["cp"+index].chargepoint.data.control_parameter.limit = dataclass_from_dict(
+                                LoadmanagementLimit, payload)
+                        else:
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.control_parameter, msg)
             elif re.search("/chargepoint/get/", msg.topic) is not None:
                 self.set_json_payload_class(self.cp_all_data.data.get, msg)
         except Exception:
@@ -910,9 +916,11 @@ class SubData:
                 self.set_json_payload(var["system"].data["backup_cloud"], msg)
             elif ("openWB/system/dataprotection_acknowledged" == msg.topic and
                     decode_payload(msg.payload) is False):
-                Pub().pub("openWB/set/command/removeCloudBridge/todo", {
-                    "command": "removeCloudBridge"
-                })
+                if self.event_subdata_initialized.is_set():
+                    Pub().pub("openWB/set/command/removeCloudBridge/todo",
+                              {"command": "removeCloudBridge"})
+                else:
+                    log.debug("skipping data protection message on startup")
             elif re.search("^.+/io/[0-9]+/config$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":

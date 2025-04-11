@@ -42,7 +42,7 @@
         :charge-mode="chargeMode"
         :limit-mode="limitMode"
         :current-value="currentValue"
-        :target-time="targetTime"
+        :target-time="vehicleTarget.time"
       >
         <template v-if="vehicleSocType === 'manual'" v-slot:update-soc-icon>
           <q-icon
@@ -102,6 +102,8 @@ const limitMode = computed(() => {
       return mqttStore.chargePointConnectedVehicleEcoChargeLimit(
         props.chargePointId,
       ).value;
+    case 'scheduled_charging':
+      return vehicleTarget.value.limit_mode;
     default:
       return 'soc';
   }
@@ -150,8 +152,7 @@ const chargeMode = computed(
 const target = computed(() => {
   switch (chargeMode.value) {
     case 'scheduled_charging':
-      return mqttStore.vehicleScheduledChargingTarget(props.chargePointId).value
-        ?.soc;
+      return vehicleTarget.value.limit;
     case 'instant_charging':
       const instantLimitMode =
         mqttStore.chargePointConnectedVehicleInstantChargeLimit(
@@ -195,14 +196,8 @@ const showSocTargetSlider = computed(() => {
   return true;
 });
 
-const targetTime = computed(() => {
-  const target = mqttStore.vehicleScheduledChargingTarget(
-    props.chargePointId,
-  ).value;
-  if (!target || !target.time || chargeMode.value !== 'scheduled_charging') {
-    return undefined;
-  }
-  return target.time;
+const vehicleTarget = computed(() => {
+  return mqttStore.vehicleChargeTarget(props.chargePointId).value;
 });
 
 const vehicleSocType = computed(() => mqttStore.chargePointConnectedVehicleSocType(props.chargePointId))?.value;

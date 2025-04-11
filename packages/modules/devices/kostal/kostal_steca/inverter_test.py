@@ -14,7 +14,8 @@ from modules.devices.kostal.kostal_steca.inverter import KostalStecaInverter
                          ])
 def test_get_values(measurements_file, expected_power, requests_mock):
     # setup
-    inverter = KostalStecaInverter(KostalStecaInverterSetup(), SAMPLE_IP)
+    inverter = KostalStecaInverter(KostalStecaInverterSetup(), ip_address=SAMPLE_IP)
+    inverter.initialize()
 
     with open("packages/modules/devices/kostal/kostal_steca/"+measurements_file, "r") as f:
         measurements_sample = f.read()
