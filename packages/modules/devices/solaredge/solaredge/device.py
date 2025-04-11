@@ -4,7 +4,6 @@ from typing import Iterable, Union, List
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.solaredge.solaredge.bat import SolaredgeBat
 from modules.devices.solaredge.solaredge.counter import SolaredgeCounter
@@ -45,13 +44,16 @@ def set_component_registers(components: Iterable[solaredge_component_classes],
 
 
 def create_device(device_config: Solaredge):
+    client = None
+
     def create_bat_component(component_config: SolaredgeBatSetup):
-        return SolaredgeBat(device_config.id, component_config, client)
+        nonlocal client
+        return SolaredgeBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SolaredgeCounterSetup):
-        nonlocal device
+        nonlocal client, device
         synergy_units = get_synergy_units(component_config)
-        counter = SolaredgeCounter(device_config.id, component_config, client)
+        counter = SolaredgeCounter(component_config, client=client)
         # neue Komponente wird erst nach Instanziierung device.components hinzugefügt
         components = list(device.components.values())
         components.append(counter)
@@ -59,60 +61,61 @@ def create_device(device_config: Solaredge):
         return counter
 
     def create_inverter_component(component_config: SolaredgeInverterSetup):
-        return SolaredgeInverter(device_config.id, component_config, client)
+        nonlocal client
+        return SolaredgeInverter(component_config, client=client, device_id=device_config.id)
 
     def create_external_inverter_component(component_config: SolaredgeExternalInverterSetup):
-        nonlocal device
+        nonlocal client, device
         synergy_units = get_synergy_units(component_config)
-        external_inverter = SolaredgeExternalInverter(device_config.id, component_config, client)
+        external_inverter = SolaredgeExternalInverter(component_config, client=client)
         components = list(device.components.values())
         components.append(external_inverter)
         set_component_registers(components, synergy_units, component_config.configuration.modbus_id)
         return external_inverter
 
     def update_components(components: Iterable[Union[SolaredgeBat, SolaredgeCounter, SolaredgeInverter]]):
+        nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+                component.update()
 
     def get_synergy_units(component_config: Union[SolaredgeBatSetup,
                                                   SolaredgeCounterSetup,
                                                   SolaredgeInverterSetup,
                                                   SolaredgeExternalInverterSetup]) -> None:
-        try:
-            if client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
-                                             unit=component_config.configuration.modbus_id
-                                             ) == synergy_unit_identifier:
-                # Snyergy-Units vom Haupt-WR des angeschlossenen Meters ermitteln. Es kann mehrere Haupt-WR mit
-                # unterschiedlichen Modbus-IDs im Verbund geben.
-                log.debug("Synergy Units supported")
-                synergy_units = int(client.read_holding_registers(
-                    40129, modbus.ModbusDataType.UINT_16,
-                    unit=component_config.configuration.modbus_id)) or 1
-                log.debug(
-                    f"Synergy Units detected for Modbus ID {component_config.configuration.modbus_id}: {synergy_units}")
-            else:
-                synergy_units = 1
-        except Exception:
+        nonlocal client
+        if client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
+                                         unit=component_config.configuration.modbus_id
+                                         ) == synergy_unit_identifier:
+            # Snyergy-Units vom Haupt-WR des angeschlossenen Meters ermitteln. Es kann mehrere Haupt-WR mit
+            # unterschiedlichen Modbus-IDs im Verbund geben.
+            log.debug("Synergy Units supported")
+            synergy_units = int(client.read_holding_registers(
+                40129, modbus.ModbusDataType.UINT_16,
+                unit=component_config.configuration.modbus_id)) or 1
+            log.debug(
+                f"Synergy Units detected for Modbus ID {component_config.configuration.modbus_id}: {synergy_units}")
+        else:
             synergy_units = 1
         return synergy_units
-    try:
+
+    def initializer():
+        nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address,
                                          device_config.configuration.port,
                                          reconnect_delay=reconnect_delay)
-        device = ConfigurableDevice(
-            device_config=device_config,
-            component_factory=ComponentFactoryByType(
-                bat=create_bat_component,
-                counter=create_counter_component,
-                external_inverter=create_external_inverter_component,
-                inverter=create_inverter_component,
-            ),
-            component_updater=MultiComponentUpdater(update_components)
-        )
-    except Exception:
-        log.exception("Fehler in create_device")
+
+    device = ConfigurableDevice(
+        device_config=device_config,
+        initializer=initializer,
+        component_factory=ComponentFactoryByType(
+            bat=create_bat_component,
+            counter=create_counter_component,
+            external_inverter=create_external_inverter_component,
+            inverter=create_inverter_component,
+        ),
+        component_updater=MultiComponentUpdater(update_components)
+    )
     return device
 
 

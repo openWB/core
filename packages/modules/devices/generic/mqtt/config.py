@@ -22,8 +22,8 @@ class Mqtt:
 
 
 class MqttBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, power_limit_controllable: bool = False):
+        self.power_limit_controllable = power_limit_controllable
 
 
 class MqttBatSetup(ComponentSetup[MqttBatConfiguration]):

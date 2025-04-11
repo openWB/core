@@ -15,3 +15,16 @@ def currents_list_factory() -> List[float]:
 
 def voltages_list_factory() -> List[float]:
     return [230.0]*3
+
+
+def empty_io_pattern_factory():
+    return [
+        {
+            "value": True,  # dimmen
+            "input_matrix": {}
+        },
+        {
+            "value": False,  # unbeschränkt
+            "input_matrix": {}
+        }
+    ]

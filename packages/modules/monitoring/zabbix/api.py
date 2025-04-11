@@ -26,6 +26,7 @@ def create_config(config: Zabbix):
         key_file.write(config.configuration.psk_key)
     with open(CONFIG_PATH, "r+") as config_file:
         lines = config_file.readlines()
+        set_value(lines, "Server", config.configuration.destination_host)
         set_value(lines, "ServerActive", config.configuration.destination_host)
         set_value(lines, "Hostname", config.configuration.hostname)
         set_value(lines, "TLSConnect", "psk")

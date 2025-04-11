@@ -1,7 +1,8 @@
+from enum import Enum
 import inspect
-from inspect import FullArgSpec
+from inspect import FullArgSpec, isclass
 import typing
-from typing import TypeVar, Type, Union
+from typing import TypeVar, Type, Union, get_origin
 
 T = TypeVar('T')
 
@@ -15,7 +16,14 @@ def dataclass_from_dict(cls: Type[T], args: Union[dict, T]) -> T:
 
     In case the supplied `args` is already of the desired type, `args` is returned unchanged
     """
-    if isinstance(args, cls):
+    if isclass(cls):
+        if isinstance(args, cls):
+            return args
+    elif get_origin(cls):
+        # Generische Typen wie Dict[int, float]
+        if isinstance(args, get_origin(cls)):
+            return args
+    elif isinstance(args, type(cls)):
         return args
     arg_spec = inspect.getfullargspec(cls.__init__)
     return cls(*[_get_argument_value(arg_spec, index, args) for index in range(1, len(arg_spec.args))])
@@ -38,11 +46,15 @@ def _get_argument_value(arg_spec: FullArgSpec, index: int, parameters: dict):
 
 
 def _dataclass_from_dict_recurse(value, requested_type: Type[T]):
-    return dataclass_from_dict(requested_type, value) \
-        if isinstance(value, dict) and not (
+    if isinstance(value, dict) and not (
             _is_optional_of_dict(requested_type) or
-            issubclass(requested_type, dict)) \
-        else value
+            issubclass(requested_type if isclass(requested_type) else type(bool), dict)):
+        return dataclass_from_dict(requested_type, value)
+    else:
+        if isinstance(requested_type, type) and issubclass(requested_type, Enum):
+            return requested_type(value)
+        else:
+            return value
 
 
 def _is_optional_of_dict(requested_type):

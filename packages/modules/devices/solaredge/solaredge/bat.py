@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Tuple, Union
+from typing import Any, Tuple, TypedDict
 
 from pymodbus.constants import Endian
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -20,14 +19,19 @@ log = logging.getLogger(__name__)
 FLOAT32_UNSUPPORTED = -0xffffff00000000000000000000000000
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    client: modbus.ModbusTcpClient_
+
+
 class SolaredgeBat(AbstractBat):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, SolaredgeBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(SolaredgeBatSetup, component_config)
-        self.__tcp_client = tcp_client
+    def __init__(self, component_config: SolaredgeBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

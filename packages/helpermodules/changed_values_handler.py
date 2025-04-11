@@ -1,4 +1,4 @@
-from dataclasses import asdict, fields, is_dataclass
+from dataclasses import fields, is_dataclass
 from enum import Enum
 import logging
 import threading
@@ -6,6 +6,7 @@ from typing import Dict, List, Tuple
 from control import data
 
 from control.data import Data
+from dataclass_utils._dataclass_asdict import asdict
 from helpermodules.pub import Pub
 
 

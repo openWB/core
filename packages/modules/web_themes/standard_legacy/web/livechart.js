@@ -28,7 +28,6 @@ var smartHomeBgColor = style.getPropertyValue('--smartHomeDeviceBgCol');
 
 var initialRead = 0;
 var graphLoaded = 0;
-var maxDisplayLength;
 var all1 = 0;
 var all2 = 0;
 var all3 = 0;
@@ -471,11 +470,9 @@ function initDataset(datasetId) {
 }
 
 function truncateData(data) {
-	if (typeof maxDisplayLength !== "undefined") {
-		var limit = Date.now() - maxDisplayLength;
-		while (data[0].timestamp < limit) {
-			data.shift();
-		}
+	var limit = Date.now() - themeConfiguration.history_chart_range;
+	while (data[0].timestamp < limit) {
+		data.shift();
 	}
 }
 
@@ -559,10 +556,6 @@ function checkGraphLoad() {
 
 function forceGraphLoad() {
 	if (graphLoaded == 0) {
-		if (typeof maxDisplayLength === "undefined") {
-			console.warn("setting graph duration to default of 30 minutes");
-			maxDisplayLength = 30 * 60 * 1000;  // 30 minutes in milliseconds
-		}
 		checkGraphLoad();
 	}
 } // end forceGraphLoad

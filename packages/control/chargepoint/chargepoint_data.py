@@ -107,6 +107,7 @@ class Get:
     phases_in_use: int = 0
     plug_state: bool = False
     power: float = 0
+    powers: List[float] = field(default_factory=currents_list_factory)
     rfid_timestamp: Optional[float] = None
     rfid: Optional[int] = None
     serial_number: Optional[str] = None
@@ -145,6 +146,7 @@ class Set:
     target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
     ocpp_transaction_id: Optional[int] = None
+    charge_state_prev: bool = False
 
 
 @dataclass

@@ -110,11 +110,13 @@ class InverterState:
         self,
         exported: float,
         power: float,
+        imported: float = 0,  # simulated import counter to properly calculate PV energy when bat is charged from AC
         currents: Optional[List[Optional[float]]] = None,
         dc_power: Optional[float] = None
     ):
         """Args:
             exported: total energy in Wh
+            imported: total energy in Wh
             power: actual power in W
             currents: actual currents for 3 phases in A
             dc_power: dc power in W
@@ -127,6 +129,7 @@ class InverterState:
         self.currents = currents
         self.power = power
         self.exported = exported
+        self.imported = imported
         self.dc_power = dc_power
 
 
@@ -209,14 +212,23 @@ class TariffState:
 
 
 @auto_str
-class RcrState:
-    def __init__(self, override_value: float) -> None:
-        self.override_value = override_value
-
-
 class EvseState:
     def __init__(self, plug_state: bool, charge_state: bool, set_current: int, max_current: int) -> None:
         self.plug_state = plug_state
         self.charge_state = charge_state
         self.set_current = set_current
         self.max_current = max_current
+
+
+@auto_str
+class IoState:
+    """JSON erlaubt nur Zeichenketten als Schlüssel für Objekte"""
+
+    def __init__(self, analog_input: Dict[str, float] = None,
+                 digital_input: Dict[str, bool] = None,
+                 analog_output: Dict[str, float] = None,
+                 digital_output: Dict[str, bool] = None) -> None:
+        self.analog_input = analog_input
+        self.digital_input = digital_input
+        self.analog_output = analog_output
+        self.digital_output = digital_output

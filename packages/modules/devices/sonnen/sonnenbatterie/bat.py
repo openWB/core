@@ -1,30 +1,37 @@
 #!/usr/bin/env python3
+from typing import Any, TypedDict, Dict, Optional
 import logging
-from typing import Dict, Union
 
-from dataclass_utils import dataclass_from_dict
-from modules.common import req
-from modules.common.abstract_device import AbstractBat
-from modules.common.component_state import BatState
-from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieBatSetup
+from modules.common.store import get_bat_value_store
+from modules.common.simcount import SimCounter
+from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.component_type import ComponentDescriptor
+from modules.common.component_state import BatState
+from modules.common.abstract_device import AbstractBat
+from modules.common import req
+
 
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    api_v2_token: str
+    device_id: int
+    device_address: str
+    device_variant: int
+
+
 class SonnenbatterieBat(AbstractBat):
-    def __init__(self,
-                 device_id: int,
-                 device_address: str,
-                 device_variant: int,
-                 component_config: Union[Dict, SonnenbatterieBatSetup]) -> None:
-        self.__device_id = device_id
-        self.__device_address = device_address
-        self.__device_variant = device_variant
-        self.component_config = dataclass_from_dict(SonnenbatterieBatSetup, component_config)
+    def __init__(self, component_config: SonnenbatterieBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__device_address: str = self.kwargs['device_address']
+        self.__device_variant: int = self.kwargs['device_variant']
+        self.__api_v2_token: Optional[str] = self.kwargs.get('api_v2_token')
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
@@ -45,9 +52,11 @@ class SonnenbatterieBat(AbstractBat):
             soc=battery_soc
         )
 
-    def __read_variant_1(self, api: str = "v1"):
+    def __read_variant_1(self, api: str = "v1", target: str = "status") -> Dict:
         return req.get_http_session().get(
-            "http://" + self.__device_address + "/api/" + api + "/status", timeout=5
+            f"http://{self.__device_address}/api/{api}/{target}",
+            timeout=5,
+            headers={"Auth-Token": self.__api_v2_token} if api == "v2" else None
         ).json()
 
     def __update_variant_1(self, api: str = "v1") -> BatState:
@@ -101,6 +110,32 @@ class SonnenbatterieBat(AbstractBat):
             exported=exported
         )
 
+    def __get_json_api_v2_configurations(self) -> Dict:
+        if self.__device_variant != 3:
+            raise ValueError("JSON API v2 wird nur für Variante 3 unterstützt!")
+        return self.__read_variant_1("v2", "configurations")
+
+    def __set_json_api_v2_configurations(self, configuration: Dict) -> None:
+        if self.__device_variant != 3:
+            raise ValueError("JSON API v2 wird nur für Variante 3 unterstützt!")
+        req.get_http_session().put(
+            f"http://{self.__device_address}/api/v2/configurations",
+            json=configuration,
+            headers={"Auth-Token": self.__api_v2_token}
+        )
+
+    def __set_json_api_v2_setpoint(self, power_limit: int) -> None:
+        if self.__device_variant != 3:
+            raise ValueError("JSON API v2 wird nur für Variante 3 unterstützt!")
+        command = "charge"
+        if power_limit < 0:
+            command = "discharge"
+            power_limit = -power_limit
+        req.get_http_session().post(
+            f"http://{self.__device_address}/api/v2/setpoint/{command}/{power_limit}",
+            headers={"Auth-Token": self.__api_v2_token, "Content-Type": "application/json"}
+        )
+
     def __read_variant_2_element(self, element: str) -> str:
         response = req.get_http_session().get(
             'http://' + self.__device_address + ':7979/rest/devices/battery/' + element,
@@ -132,6 +167,28 @@ class SonnenbatterieBat(AbstractBat):
         else:
             raise ValueError("Unbekannte Variante: " + str(self.__device_variant))
         self.store.set(state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        if self.__device_variant != 3:
+            raise ValueError("Leistungsvorgabe wird nur für Variante 'JSON-API v2' unterstützt!")
+        operating_mode = self.__get_json_api_v2_configurations()["EM_OperatingMode"]
+        log.debug(f"Betriebsmodus: aktuell: {operating_mode}")
+        if power_limit is None:
+            # Keine Leistungsvorgabe, Betriebsmodus "Eigenverbrauch" aktivieren
+            if operating_mode == "1":
+                log.debug("Keine Leistungsvorgabe, aktiviere normale Steuerung durch den Speicher")
+                self.__set_json_api_v2_configurations({"EM_OperatingMode": "2"})
+        else:
+            # Leistungsvorgabe, Betriebsmodus "Manuell" aktivieren
+            if operating_mode == "2":
+                log.debug(f"Leistungsvorgabe: {power_limit}, aktiviere manuelle Steuerung durch openWB")
+                self.__set_json_api_v2_configurations({"EM_OperatingMode": "1"})
+            log.debug(f"Setze Leistungsvorgabe auf: {power_limit}")
+            self.__set_json_api_v2_setpoint(power_limit)
+
+    def power_limit_controllable(self) -> bool:
+        # Leistungsvorgabe ist nur für Variante 3 (JSON-API v2) möglich
+        return self.__device_variant == 3
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SonnenbatterieBatSetup)

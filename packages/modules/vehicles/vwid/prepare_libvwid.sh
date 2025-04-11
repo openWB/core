@@ -1,3 +1,4 @@
+#!/bin/bash
 echo "downloading libvwid.py  from github to libvwid.org"
 curl -sS -o libvwid.org https://raw.githubusercontent.com/skagmo/ha_vwid/main/custom_components/vwid/libvwid.py
 
@@ -19,7 +20,7 @@ s/ $//
 
 echo "checking libvwid.mod for flake8 issues"
 flake8 libvwid.mod > libvwid.flake8
-l=`wc -l libvwid.flake8 | awk '{print $1}'`
+l=$(wc -l libvwid.flake8 | awk '{print $1}')
 if [ $l -eq 0 ]
 then
 	echo "libvwid is flake8 clean"

@@ -22,7 +22,9 @@ class AiwaysVehicleSoc:
     def __init__(self,
                  name: str = "Aiways",
                  type: str = "aiways",
+                 official: bool = False,
                  configuration: AiwaysVehicleSocConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or AiwaysVehicleSocConfiguration()

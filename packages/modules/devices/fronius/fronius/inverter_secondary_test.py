@@ -7,7 +7,9 @@ from modules.devices.fronius.fronius.inverter_secondary import FroniusSecondaryI
 
 
 def test_update(monkeypatch, mock_simcount):
-    wr = FroniusSecondaryInverter(0, FroniusSecondaryInverterSetup(FroniusSecondaryInverterConfiguration(id=1)))
+    wr = FroniusSecondaryInverter(FroniusSecondaryInverterSetup(
+        FroniusSecondaryInverterConfiguration(id=1)), device_id=0)
+    wr.initialize()
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)

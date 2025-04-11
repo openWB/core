@@ -63,7 +63,7 @@ log = logging.getLogger(__name__)
 class Chargepoint(ChargepointRfidMixin):
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
-    MAX_FAILED_PHASE_SWITCHES = 3
+    MAX_FAILED_PHASE_SWITCHES = 2
 
     def __init__(self, index: int, event: Optional[threading.Event]):
         try:
@@ -104,22 +104,6 @@ class Chargepoint(ChargepointRfidMixin):
                 else:
                     state = False
                     message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
-        return state, message
-
-    def _is_ripple_control_receiver_inactive(self) -> Tuple[bool, Optional[str]]:
-        """ prüft, dass der Rundsteuerempfängerkontakt nicht geschlossen ist.
-        """
-        state = True
-        message = None
-        general_data = data.data.general_data.data
-        if general_data.ripple_control_receiver.module:
-            if general_data.ripple_control_receiver.get.override_value == 0:
-                state = False
-                message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
-            elif general_data.ripple_control_receiver.get.fault_state == 2:
-                state = False
-                message = ("Ladepunkt gesperrt, da der Rundsteuerempfänger ein Problem meldet. "
-                           "Bitte im Status des RSE nachsehen.")
         return state, message
 
     def _is_loadmanagement_available(self) -> Tuple[bool, Optional[str]]:
@@ -191,15 +175,13 @@ class Chargepoint(ChargepointRfidMixin):
         try:
             charging_possible, message = self._is_grid_protection_inactive()
             if charging_possible:
-                charging_possible, message = self._is_ripple_control_receiver_inactive()
+                charging_possible, message = self._is_loadmanagement_available()
                 if charging_possible:
-                    charging_possible, message = self._is_loadmanagement_available()
+                    charging_possible, message = self._is_manual_lock_inactive()
                     if charging_possible:
-                        charging_possible, message = self._is_manual_lock_inactive()
+                        charging_possible, message = self._is_ev_plugged()
                         if charging_possible:
-                            charging_possible, message = self._is_ev_plugged()
-                            if charging_possible:
-                                charging_possible, message = self._is_autolock_inactive()
+                            charging_possible, message = self._is_autolock_inactive()
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
@@ -300,8 +282,10 @@ class Chargepoint(ChargepointRfidMixin):
                       self.data.set.plug_time)
 
     def remember_previous_values(self):
+        self.data.set.charge_state_prev = self.data.get.charge_state
         self.data.set.plug_state_prev = self.data.get.plug_state
         self.data.set.current_prev = self.data.set.current
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charge_state_prev", self.data.set.charge_state_prev)
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/current_prev", self.data.set.current_prev)
 
@@ -721,6 +705,14 @@ class Chargepoint(ChargepointRfidMixin):
                     self._pub_connected_vehicle(ev_list[f"ev{vehicle}"])
                 else:
                     self._pub_configured_ev(ev_list)
+            try:
+                # check für charging stop or charging interruption, if so force a soc query for the ev
+                if self.data.set.charge_state_prev and self.data.get.charge_state is False:
+                    Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
+                    log.info(f"SoC-Abfrage nach Ladeunterbrechung, cp{self.num}, ev{self.data.config.ev}")
+            except Exception:
+                log.exception(f"Fehler bei Ladestop,cp{self.num}")
+
             # OCPP Start Transaction nach Anstecken
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):
