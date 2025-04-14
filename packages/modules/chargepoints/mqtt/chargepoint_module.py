@@ -27,7 +27,7 @@ class ChargepointModule(AbstractChargepoint):
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             def on_connect(client, userdata, flags, rc):
-                client.subscribe(f"openWB/mqtt/chargepoint/{self.config.id}/#")
+                client.subscribe(f"openWB/mqtt/chargepoint/{self.config.id}/get/#")
 
             def on_message(client, userdata, message):
                 received_topics.update({message.topic: decode_payload(message.payload)})
@@ -62,7 +62,9 @@ class ChargepointModule(AbstractChargepoint):
                 )
                 self.store.set(chargepoint_state)
             else:
-                raise Exception(f"Keine MQTT Daten für Gerät {self.config.id} empfangen")
+                raise Exception(f"Keine MQTT Daten für Ladepunkt {self.config.name} empfangen oder es werden veraltete "
+                                "Topics verwendet. Diese funktionieren mit Einschränkungen trotz dieser Fehlermeldung. "
+                                "Bitte die Doku in den Einstellungen beachten.")
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/phases_to_use", phases_to_use)
