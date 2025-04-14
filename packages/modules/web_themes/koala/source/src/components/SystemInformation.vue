@@ -11,7 +11,7 @@
     </p>
     <p>
       Vehicle List:
-      {{ mqttStore.vehicleList() }}
+      {{ mqttStore.vehicleList }}
     </p>
   </div>
 </template>

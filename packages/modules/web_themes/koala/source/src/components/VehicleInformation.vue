@@ -15,7 +15,7 @@ import VehicleCard from 'src/components/VehicleCard.vue';
 
 const mqttStore = useMqttStore();
 
-const vehicles = computed(() => mqttStore.vehicleList());
+const vehicles = computed(() => mqttStore.vehicleList);
 
 const vehicleIds = computed(() => vehicles.value.map((vehicle) => vehicle.id));
 </script>
