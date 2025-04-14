@@ -20,7 +20,13 @@
               hide-spinner
             >
               <template v-slot:prepend>
-                <q-btn round flat dense icon="remove" @click="socInputValue--" />
+                <q-btn
+                  round
+                  flat
+                  dense
+                  icon="remove"
+                  @click="socInputValue--"
+                />
               </template>
               <template v-slot:append>
                 <q-btn round flat dense icon="add" @click="socInputValue++" />
@@ -78,7 +84,12 @@ const socValue = ref<number | undefined>(undefined);
 
 const socInputValue = computed({
   get: () => {
-    return socValue.value ?? mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId).value ?? 0;
+    return (
+      socValue.value ??
+      mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId)
+        .value ??
+      0
+    );
   },
   set: (newValue: number) => {
     // limit new value to 0-100

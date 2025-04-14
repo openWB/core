@@ -200,7 +200,9 @@ const vehicleTarget = computed(() => {
   return mqttStore.vehicleChargeTarget(props.chargePointId).value;
 });
 
-const vehicleSocType = computed(() => mqttStore.chargePointConnectedVehicleSocType(props.chargePointId))?.value;
+const vehicleSocType = computed(() =>
+  mqttStore.chargePointConnectedVehicleSocType(props.chargePointId),
+)?.value;
 </script>
 <style lang="scss" scoped>
 .card-width {

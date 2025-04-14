@@ -1478,7 +1478,9 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleInfo(chargePointId).value;
         const vehicleId = vehicleInfo?.id;
         const topic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
-        const socState = getValue.value(topic) as CalculatedSocState | undefined;
+        const socState = getValue.value(topic) as
+          | CalculatedSocState
+          | undefined;
         return socState?.manual_soc ?? socState?.soc_start ?? 0;
       },
       set(newValue: number) {
@@ -1504,13 +1506,14 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-  * Get the charge point connected vehicle SoC type identified by the charge point id
-  * @param chargePointId charge point id
-  * @returns string | null | undefined
-  */
+   * Get the charge point connected vehicle SoC type identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns string | null | undefined
+   */
   const chargePointConnectedVehicleSocType = (chargePointId: number) => {
     return computed(() => {
-      const vehicleId = chargePointConnectedVehicleInfo(chargePointId).value?.id;
+      const vehicleId =
+        chargePointConnectedVehicleInfo(chargePointId).value?.id;
       if (!vehicleId) return undefined;
       const socConfig = getValue.value(
         `openWB/vehicle/${vehicleId}/soc_module/config`,
