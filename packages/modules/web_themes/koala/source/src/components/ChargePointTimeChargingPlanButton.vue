@@ -114,16 +114,19 @@ const formattedDateRange = computed(() => {
   const sameYear = startDate.getFullYear() === endDate.getFullYear();
   const sameMonth = startDate.getMonth() === endDate.getMonth() && sameYear;
   const sameDay = startDate.getDay() === endDate.getDay() && sameMonth;
-  return `${sameDay ? '' : startDate.toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: !sameMonth ? 'numeric' : undefined,
-    year: !sameYear ? 'numeric' : undefined,
-  }) + (sameMonth ? '.-' : '-')}${endDate.toLocaleDateString(undefined, {
+  return `${
+    sameDay
+      ? ''
+      : startDate.toLocaleDateString(undefined, {
           day: 'numeric',
-          month: 'numeric',
-          year: 'numeric',
-        })
-  }`;
+          month: !sameMonth ? 'numeric' : undefined,
+          year: !sameYear ? 'numeric' : undefined,
+        }) + (sameMonth ? '.-' : '-')
+  }${endDate.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+  })}`;
 });
 </script>
 

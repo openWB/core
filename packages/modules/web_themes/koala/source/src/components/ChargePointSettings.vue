@@ -19,7 +19,7 @@
             <ChargePointLock :charge-point-id="props.chargePointId" dense />
           </div>
         </div>
-        <q-separator class="q-mt-sm"/>
+        <q-separator class="q-mt-sm" />
         <div class="row items-center q-mt-sm">
           <div>
             <div class="text-subtitle2 q-mr-sm">Fahrzeug</div>
@@ -66,7 +66,9 @@
         <!-- /////////////////  time charging settings /////////////////// -->
         <div v-if="chargeMode.value !== 'stop'">
           <q-separator class="q-my-sm" />
-          <ChargePointTimeChargingPlans :charge-point-id="props.chargePointId" />
+          <ChargePointTimeChargingPlans
+            :charge-point-id="props.chargePointId"
+          />
         </div>
       </q-card-section>
       <q-card-actions align="right">

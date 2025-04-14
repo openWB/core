@@ -9,15 +9,15 @@
         </div>
       </q-card-section>
       <q-card-section class="q-py-none">
-        <div class="row justify-center items-center q-ma-none q-pa-none">
+        <div class="row justify-center items-center">
           <div class="col-6 col-sm-8 col-md-6">
             <q-input
               v-model.number="socInputValue"
               type="text"
               inputmode="numeric"
-              class="text-center"
               suffix="%"
               hide-spinner
+              input-class="text-right"
             >
               <template v-slot:prepend>
                 <q-btn
@@ -32,6 +32,19 @@
                 <q-btn round flat dense icon="add" @click="socInputValue++" />
               </template>
             </q-input>
+          </div>
+        </div>
+        <div class="row justify-center items-center q-mt-md">
+          <div class="col q-px-md">
+            <q-slider
+              v-model.number="socInputValue"
+              :min="0"
+              :max="100"
+              :step="1"
+              :markers="10"
+              :marker-labels="socSliderMarker"
+              color="primary"
+            />
           </div>
         </div>
       </q-card-section>
@@ -96,6 +109,12 @@ const socInputValue = computed({
     socValue.value = Math.min(Math.max(0, newValue), 100);
   },
 });
+
+const socSliderMarker = {
+  0: '0%',
+  50: '50%',
+  100: '100%',
+};
 
 const confirmChanges = () => {
   mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId).value =
