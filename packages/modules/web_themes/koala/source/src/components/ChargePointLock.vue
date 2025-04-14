@@ -12,6 +12,7 @@
     checked-icon="lock"
     unchecked-icon="lock_open"
     size="lg"
+    :dense="props.dense"
   />
 </template>
 
@@ -24,6 +25,10 @@ const props = defineProps({
     required: true,
   },
   readonly: {
+    type: Boolean,
+    default: false,
+  },
+  dense: {
     type: Boolean,
     default: false,
   },

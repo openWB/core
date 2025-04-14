@@ -1,14 +1,14 @@
 <template>
   <q-icon
     v-if="props.readonly"
-    :name="priority ? icon.on : icon.off"
-    :color="priority ? 'warning' : ''"
+    :name="timeChargingEnabled ? icon.on : icon.off"
+    :color="timeChargingEnabled ? 'primary' : ''"
     size="sm"
   />
   <q-toggle
     v-else
-    v-model="priority"
-    :color="priority ? 'primary' : ''"
+    v-model="timeChargingEnabled"
+    :color="timeChargingEnabled ? 'primary' : ''"
     :checked-icon="icon.on"
     :unchecked-icon="icon.off"
     size="lg"
@@ -35,13 +35,13 @@ const props = defineProps({
 });
 
 const icon = {
-  off: 'star_border',
-  on: 'star',
+  off: 'alarm_off',
+  on: 'alarm',
 };
 
 const mqttStore = useMqttStore();
 
-const priority = mqttStore.chargePointConnectedVehiclePriority(
+const timeChargingEnabled = mqttStore.chargePointConnectedVehicleTimeCharging(
   props.chargePointId,
 );
 </script>

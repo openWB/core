@@ -1,6 +1,14 @@
 <template>
+  <div class="row items-center q-ma-none q-pa-none no-wrap">
+    <div class="col row items-center">
+      <div class="col text-subtitle2">Zeitladen</div>
+      <div class="col">
+        <ChargePointTimeCharging :charge-point-id="props.chargePointId" dense />
+      </div>
+    </div>
+  </div>
   <div class="row justify-between items-center">
-    <div class="text-subtitle2 q-mr-sm q-mt-md">Termine Zielladen:</div>
+    <div class="text-subtitle2">Termine Zeitladen:</div>
   </div>
   <div
     v-if="plans.value.length === 0"
@@ -9,11 +17,11 @@
     style="border-radius: 10px"
   >
     <q-icon name="info" size="sm" class="q-mr-xs" />
-    Keine Ladeziele festgelegt.
+    Keine Zeitpläne vorhanden.
   </div>
   <div v-else>
     <div v-for="(plan, index) in plans.value" :key="index" class="row q-mt-sm">
-      <ChargePointScheduledPlanButton
+      <ChargePointTimeChargingPlanButton
         class="full-width"
         :charge-point-id="props.chargePointId"
         :plan="plan"
@@ -24,8 +32,9 @@
 
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-import ChargePointScheduledPlanButton from './ChargePointScheduledPlanButton.vue';
 import { computed } from 'vue';
+import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
+import ChargePointTimeChargingPlanButton from './ChargePointTimeChargingPlanButton.vue';
 
 const props = defineProps<{
   chargePointId: number;
@@ -34,7 +43,7 @@ const props = defineProps<{
 const mqttStore = useMqttStore();
 
 const plans = computed(() =>
-  mqttStore.vehicleScheduledChargingPlans(props.chargePointId),
+  mqttStore.vehicleTimeChargingPlans(props.chargePointId),
 );
 </script>
 

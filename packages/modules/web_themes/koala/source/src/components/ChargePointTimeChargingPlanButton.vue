@@ -28,7 +28,7 @@
             "
           />
           <div v-if="plan.frequency.selected === 'once'">
-            {{ formattedDate }}
+            {{ formattedDateRange }}
           </div>
           <div v-if="plan.frequency.selected === 'weekly'">
             {{ selectedWeekDays }}
@@ -37,22 +37,17 @@
         </div>
         <div>
           <q-icon name="schedule" size="sm" />
-          <div>{{ plan.time }}</div>
+          <div>{{ plan.time[0] }}-{{ plan.time[1] }}</div>
         </div>
-        <div>
+        <div v-if="plan.limit.selected !== 'none'">
           <q-icon
             :name="plan.limit.selected === 'soc' ? 'battery_full' : 'bolt'"
             size="sm"
           />
-          <div v-if="plan.limit.selected === 'soc'">
-            {{ plan.limit.soc_scheduled }}%
-          </div>
+          <div v-if="plan.limit.selected === 'soc'">{{ plan.limit.soc }}%</div>
           <div v-if="plan.limit.selected === 'amount'">
             {{ plan.limit.amount ? plan.limit.amount / 1000 : '' }}kWh
           </div>
-        </div>
-        <div>
-          <q-icon v-if="planEtActive.value" name="bar_chart" size="sm" />
         </div>
       </div>
     </div>
@@ -62,11 +57,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
+import { type TimeChargingPlan } from '../stores/mqtt-store-model';
 
 const props = defineProps<{
   chargePointId: number;
-  plan: ScheduledChargingPlan;
+  plan: TimeChargingPlan;
 }>();
 
 const mqttStore = useMqttStore();
@@ -74,17 +69,7 @@ const mqttStore = useMqttStore();
 const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 const planActive = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanActive(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
-const planEtActive = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanEtActive(
-    props.chargePointId,
-    props.plan.id,
-  ),
+  mqttStore.vehicleTimeChargingPlanActive(props.chargePointId, props.plan.id),
 );
 
 const selectedWeekDays = computed(() => {
@@ -122,14 +107,23 @@ const selectedWeekDays = computed(() => {
   return planDays.join(', ');
 });
 
-const formattedDate = computed(() => {
+const formattedDateRange = computed(() => {
   if (props.plan.frequency.once === undefined) return '-';
-  const date = new Date(props.plan.frequency.once);
-  return date.toLocaleDateString(undefined, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  const startDate = new Date(props.plan.frequency.once[0]);
+  const endDate = new Date(props.plan.frequency.once[1]);
+  const sameYear = startDate.getFullYear() === endDate.getFullYear();
+  const sameMonth = startDate.getMonth() === endDate.getMonth() && sameYear;
+  const sameDay = startDate.getDay() === endDate.getDay() && sameMonth;
+  return `${sameDay ? '' : startDate.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: !sameMonth ? 'numeric' : undefined,
+    year: !sameYear ? 'numeric' : undefined,
+  }) + (sameMonth ? '.-' : '-')}${endDate.toLocaleDateString(undefined, {
+          day: 'numeric',
+          month: 'numeric',
+          year: 'numeric',
+        })
+  }`;
 });
 </script>
 
