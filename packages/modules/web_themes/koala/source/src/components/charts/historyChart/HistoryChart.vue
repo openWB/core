@@ -101,7 +101,7 @@ const gridMeterName = computed(() => {
   return 'Zähler';
 });
 
-const vehicles = computed(() => mqttStore.vehicleList());
+const vehicles = computed(() => mqttStore.vehicleList);
 const chartRange = computed(
   () => mqttStore.themeConfiguration?.history_chart_range || 3600,
 );

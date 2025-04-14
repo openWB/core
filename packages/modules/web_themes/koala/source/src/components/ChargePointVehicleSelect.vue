@@ -29,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const props = defineProps({
@@ -48,7 +49,7 @@ const connectedVehicle = mqttStore.chargePointConnectedVehicleInfo(
   props.chargePointId,
 );
 
-const vehicles = mqttStore.vehicleList();
+const vehicles = computed(() => mqttStore.vehicleList);
 </script>
 
 <style scoped>

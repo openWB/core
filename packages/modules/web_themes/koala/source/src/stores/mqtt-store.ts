@@ -1775,7 +1775,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Get a list of all vehicles
    * @returns Vehicle[]
    */
-  const vehicleList = () => {
+  const vehicleList = computed(() => {
     const list = getWildcardValues.value('openWB/vehicle/+/name');
     // generate an array of objects, containing vehicle index and name
     return Object.keys(list).map((key) => {
@@ -1785,7 +1785,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         name: list[key],
       } as Vehicle;
     });
-  };
+  });
 
   /**
    * Get scheduled charging plan/s data identified by the charge point id

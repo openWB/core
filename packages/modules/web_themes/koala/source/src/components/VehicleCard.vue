@@ -21,7 +21,7 @@ const props = defineProps<{
 const mqttStore = useMqttStore();
 
 const vehicle = computed(() => {
-  return mqttStore.vehicleList().find((v) => v.id === props.vehicleId);
+  return mqttStore.vehicleList.find((v) => v.id === props.vehicleId);
 });
 </script>
 
