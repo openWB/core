@@ -849,6 +849,18 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * trigger a force SOC update for the connected vehicle
+   */
+  const chargePointConnectedVehicleForceSocUpdate = (chargePointId: number) => {
+    const vehicleId = chargePointConnectedVehicleInfo(chargePointId).value?.id;
+    if (vehicleId !== undefined) {
+      const topic = `openWB/set/vehicle/${vehicleId}/get/force_soc_update`;
+      console.log(topic);
+      sendTopicToBroker(topic, 1);
+    }
+  };
+
+  /**
    * Get the charge point connected vehicle info identified by the charge point id
    * @param chargePointId charge point id
    * @returns ChargePointConnectedVehicleInfo
@@ -2495,6 +2507,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointFaultState,
     chargePointFaultMessage,
     chargePointConnectedVehicleInfo,
+    chargePointConnectedVehicleForceSocUpdate,
     chargePointConnectedVehicleChargeMode,
     chargePointConnectedVehicleInstantChargeCurrent,
     chargePointConnectedVehicleInstantChargePhases,

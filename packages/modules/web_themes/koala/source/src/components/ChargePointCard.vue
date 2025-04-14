@@ -44,14 +44,24 @@
         :current-value="currentValue"
         :target-time="vehicleTarget.time"
       >
-        <template v-if="vehicleSocType === 'manual'" v-slot:update-soc-icon>
+        <template #update-soc-icon>
           <q-icon
+            v-if="vehicleSocType === 'manual'"
             name="edit"
             size="xs"
             class="q-ml-xs cursor-pointer"
             @click="socInputVisible = true"
           >
             <q-tooltip>SoC eingeben</q-tooltip>
+          </q-icon>
+          <q-icon
+            v-else-if="vehicleSocType !== undefined"
+            name="refresh"
+            size="xs"
+            class="q-ml-xs cursor-pointer"
+            @click="refreshSoc"
+          >
+            <q-tooltip>SoC aktualisieren</q-tooltip>
           </q-icon>
         </template>
       </SliderDouble>
@@ -81,8 +91,11 @@ import ChargePointFaultMessage from './ChargePointFaultMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
 import ChargePointManualSocDialog from './ChargePointManualSocDialog.vue';
+import { useQuasar } from 'quasar';
 
 const mqttStore = useMqttStore();
+
+const $q = useQuasar();
 
 const props = defineProps<{
   chargePointId: number;
@@ -203,6 +216,14 @@ const vehicleTarget = computed(() => {
 const vehicleSocType = computed(() =>
   mqttStore.chargePointConnectedVehicleSocType(props.chargePointId),
 )?.value;
+
+const refreshSoc = () => {
+  mqttStore.chargePointConnectedVehicleForceSocUpdate(props.chargePointId);
+  $q.notify({
+    type: 'positive',
+    message: 'SoC Update angefordert.',
+  });
+};
 </script>
 <style lang="scss" scoped>
 .card-width {
