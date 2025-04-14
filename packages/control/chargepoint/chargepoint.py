@@ -223,7 +223,7 @@ class Chargepoint(ChargepointRfidMixin):
                     log.debug("/set/manual_lock True")
                 # Ev wurde noch nicht aktualisiert.
                 # Ladeprofil aus den Einstellungen laden.
-                self.update_charge_template(self.data.set.charging_ev_data.charge_template)
+                self.update_charge_template(data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template)
                 chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
                 self.data.set.charging_ev_prev = -1
                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev",
