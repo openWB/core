@@ -15,6 +15,8 @@ import type {
   ValueObject,
   ChargePointConnectedVehicleInfo,
   Vehicle,
+  vehicleInfo,
+  vehicleSocModule,
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
@@ -1843,6 +1845,42 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get vehicle manufacturer and model info identified by the vehicle id
+   * @param vehicleId vehicle id
+   * @returns vehicleInfo
+   */
+  const vehicleInfo = computed(() => {
+    return (vehicleId: number | undefined) => {
+      return getValue.value(`openWB/vehicle/${vehicleId}/info`) as vehicleInfo;
+    };
+  });
+
+  /**
+   * Get vehicle SoC module name identified by the vehicle id
+   * @param vehicleId vehicle id
+   * @returns string
+   */
+  const vehicleSocModuleName = computed(() => {
+    return (vehicleId: number | undefined) => {
+      const socModule = getValue.value(
+        `openWB/vehicle/${vehicleId}/soc_module/config`,
+      ) as vehicleSocModule;
+      return socModule?.name;
+    };
+  });
+
+  /**
+   * Get vehicle SoC value identified by the vehicle id
+   * @param vehicleId vehicle id
+   * @returns number | null
+   */
+  const vehicleSocValue = computed(() => {
+    return (vehicleId: number | undefined) => {
+      return getValue.value(`openWB/vehicle/${vehicleId}/get/soc`) as number | null;
+    };
+  });
+
+  /**
    * Get scheduled charging plan/s data identified by the charge point id
    * @param chargePointId charge point id
    * @returns ScheduledChargingPlan[] | undefined
@@ -2535,6 +2573,9 @@ export const useMqttStore = defineStore('mqtt', () => {
     // vehicle data
     vehicleList,
     chargePointConnectedVehicleConfig,
+    vehicleInfo,
+    vehicleSocModuleName,
+    vehicleSocValue,
     chargePointConnectedVehicleSoc,
     vehicleActivePlan,
     vehicleChargeTarget,
