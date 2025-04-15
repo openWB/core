@@ -13,7 +13,9 @@ class HttpSocSetup():
     def __init__(self,
                  name: str = "HTTP SOC Module",
                  type: str = "http",
+                 official: bool = True,
                  configuration: HttpSocConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or HttpSocConfiguration()

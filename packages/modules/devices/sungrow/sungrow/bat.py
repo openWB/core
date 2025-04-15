@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union, Optional
+from typing import Any, Optional, TypedDict
 
-from dataclass_utils import dataclass_from_dict
-from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.modbus import ModbusDataType, Endian
+from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.sungrow.config import SungrowBatSetup, Sungrow
@@ -18,14 +16,19 @@ from modules.devices.sungrow.sungrow.firmware import Firmware
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    client: ModbusTcpClient_
+    device_config: Sungrow
+
+
 class SungrowBat(AbstractBat):
-    def __init__(self,
-                 device_config: Union[Dict, Sungrow],
-                 component_config: Union[Dict, SungrowBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.device_config = device_config
-        self.component_config = dataclass_from_dict(SungrowBatSetup, component_config)
-        self.__tcp_client = tcp_client
+    def __init__(self, component_config: SungrowBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.device_config: Sungrow = self.kwargs['device_config']
+        self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

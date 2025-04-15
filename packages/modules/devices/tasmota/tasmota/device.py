@@ -11,10 +11,10 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Tasmota):
     def create_counter_component(component_config: TasmotaCounterSetup):
-        return TasmotaCounter(device_config.id,
-                              component_config,
-                              device_config.configuration.ip_address,
-                              int(device_config.configuration.phase))
+        return TasmotaCounter(component_config,
+                              device_id=device_config.id,
+                              ip_address=device_config.configuration.ip_address,
+                              phase=int(device_config.configuration.phase))
 
     return ConfigurableDevice(
         device_config=device_config,

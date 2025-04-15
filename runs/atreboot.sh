@@ -374,7 +374,7 @@ chmod 666 "$LOGFILE"
 	# check for python dependencies
 	if ((hasInet == 1)); then
 		echo "install required python packages with 'pip3'..."
-		if pip3 install -r "${OPENWBBASEDIR}/requirements.txt"; then
+		if pip3 install --upgrade --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
 			echo "done"
 		else
 			echo "failed!"
@@ -398,8 +398,8 @@ chmod 666 "$LOGFILE"
 	fi
 
 	# set restore dir permissions to allow file upload for apache
-	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
-	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
+	sudo chgrp -R www-data "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
+	sudo chmod -R g+w "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
 
 	# cleanup some folders
 	folder="${OPENWBBASEDIR}/data/data_migration/var"
