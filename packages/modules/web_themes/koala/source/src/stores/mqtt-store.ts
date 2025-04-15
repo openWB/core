@@ -672,8 +672,10 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const chargePointPlugState = computed(() => {
     return (chargePointId: number) => {
-      return getValue.value(
-        `openWB/chargepoint/${chargePointId}/get/plug_state`,
+      return (
+        (getValue.value(
+          `openWB/chargepoint/${chargePointId}/get/plug_state`,
+        ) as boolean) || false
       );
     };
   });
@@ -685,8 +687,10 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const chargePointChargeState = computed(() => {
     return (chargePointId: number) => {
-      return getValue.value(
-        `openWB/chargepoint/${chargePointId}/get/charge_state`,
+      return (
+        (getValue.value(
+          `openWB/chargepoint/${chargePointId}/get/charge_state`,
+        ) as boolean) || false
       );
     };
   });
@@ -1883,6 +1887,32 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get vehicle state identified by the vehicle id
+   * @param vehicleId vehicle id
+   * @returns ChargePointInfo[]
+   */
+  const vehicleConnectionState = computed(() => {
+    return (vehicleId: number) => {
+      const connectedVehicles = getWildcardValues.value(
+        'openWB/chargepoint/+/get/connected_vehicle/info',
+      );
+      // find the vehicle id in the connected vehicles
+      const vehicleInfo = Object.entries(connectedVehicles)
+        .filter(([, connectedVehicle]) => connectedVehicle.id === vehicleId)
+        .map(([topic]) => {
+          const chargePointId = parseInt(topic.split('/')[2]); // Extrahiere die Charge-Point-ID
+          return {
+            id: chargePointId,
+            name: chargePointName.value(chargePointId),
+            plugged: chargePointPlugState.value(chargePointId),
+            charging: chargePointChargeState.value(chargePointId),
+          };
+        });
+      return vehicleInfo;
+    };
+  });
+
+  /**
    * Get scheduled charging plan/s data identified by the charge point id
    * @param chargePointId charge point id
    * @returns ScheduledChargingPlan[] | undefined
@@ -2576,6 +2606,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleList,
     chargePointConnectedVehicleConfig,
     vehicleInfo,
+    vehicleConnectionState,
     vehicleSocModuleName,
     vehicleSocValue,
     chargePointConnectedVehicleSoc,
