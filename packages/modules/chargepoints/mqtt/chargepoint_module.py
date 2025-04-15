@@ -62,9 +62,8 @@ class ChargepointModule(AbstractChargepoint):
                 )
                 self.store.set(chargepoint_state)
             else:
-                raise Exception(f"Keine MQTT Daten für Ladepunkt {self.config.name} empfangen oder es werden veraltete "
-                                "Topics verwendet. Diese funktionieren mit Einschränkungen trotz dieser Fehlermeldung. "
-                                "Bitte die Doku in den Einstellungen beachten.")
+                self.fault_state.warning(f"Keine MQTT-Daten für Ladepunkt {self.config.name} empfangen oder es werden "
+                                         "veraltete, abwärtskompatible Topics verwendet. Bitte die Doku in den Einstellungen beachten.")
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/phases_to_use", phases_to_use)
