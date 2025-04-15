@@ -23,16 +23,16 @@ batterx_component_classes = Union[bat.BatterXBat, counter.BatterXCounter,
 
 def create_device(device_config: BatterX):
     def create_bat_component(component_config: BatterXBatSetup):
-        return bat.BatterXBat(device_config.id, component_config)
+        return bat.BatterXBat(component_config=component_config, device_id=device_config.id)
 
     def create_counter_component(component_config: BatterXCounterSetup):
-        return counter.BatterXCounter(device_config.id, component_config)
+        return counter.BatterXCounter(component_config=component_config, device_id=device_config.id)
 
     def create_inverter_component(component_config: BatterXInverterSetup):
-        return inverter.BatterXInverter(device_config.id, component_config)
+        return inverter.BatterXInverter(component_config=component_config, device_id=device_config.id)
 
     def create_external_inverter_component(component_config: BatterXExternalInverterSetup):
-        return external_inverter.BatterXExternalInverter(device_config.id, component_config)
+        return external_inverter.BatterXExternalInverter(component_config=component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[batterx_component_classes]):
         resp_json = req.get_http_session().get(

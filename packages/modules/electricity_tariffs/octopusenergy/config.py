@@ -15,7 +15,9 @@ class OctopusEnergyTariff:
     def __init__(self,
                  name: str = "Octopus Energy Deutschland",
                  type: str = "octopusenergy",
+                 official: bool = False,
                  configuration: OctopusEnergyTariffConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or OctopusEnergyTariffConfiguration()

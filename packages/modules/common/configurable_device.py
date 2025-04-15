@@ -1,10 +1,11 @@
 import inspect
+import logging
 from typing import TypeVar, Generic, Dict, Any, Callable, Iterable, List
 
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext, MultiComponentUpdateContext
-from modules.common.fault_state import FaultState
+from modules.common.fault_state import ComponentInfo, FaultState
 
 T_DEVICE_CONFIG = TypeVar("T_DEVICE_CONFIG")
 T_COMPONENT = TypeVar("T_COMPONENT")
@@ -13,14 +14,16 @@ T_COMPONENT_CONFIG = TypeVar("T_COMPONENT_CONFIG")
 ComponentUpdater = Callable[[Iterable[T_COMPONENT]], None]
 ComponentFactory = Callable[[T_COMPONENT_CONFIG], T_COMPONENT]
 
+log = logging.getLogger(__name__)
+
 
 class IndependentComponentUpdater(Generic[T_COMPONENT]):
     def __init__(self, updater: Callable[[T_COMPONENT], None]):
         self.__updater = updater
 
-    def __call__(self, components: Iterable[T_COMPONENT]) -> None:
+    def __call__(self, components: Iterable[T_COMPONENT], error_handler: Callable) -> None:
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state):
+            with SingleComponentUpdateContext(component.fault_state, error_handler):
                 self.__updater(component)
 
 
@@ -28,9 +31,9 @@ class MultiComponentUpdater:
     def __init__(self, updater: Callable[[List[T_COMPONENT]], None]):
         self.__updater = updater
 
-    def __call__(self, components: Iterable[T_COMPONENT]) -> None:
+    def __call__(self, components: Iterable[T_COMPONENT], error_handler: Callable) -> None:
         components_list = list(components)
-        with MultiComponentUpdateContext(components_list):
+        with MultiComponentUpdateContext(components_list, error_handler):
             if not components:
                 raise FaultState.warning("Keine Komponenten konfiguriert")
             self.__updater(components_list)
@@ -62,14 +65,36 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
     def __init__(self,
                  device_config: T_DEVICE_CONFIG,
                  component_factory: ComponentFactory[Any, T_COMPONENT],
-                 component_updater: ComponentUpdater[T_COMPONENT]) -> None:
+                 component_updater: ComponentUpdater[T_COMPONENT],
+                 initializer: Callable = lambda: None) -> None:
+        self.__initializer = initializer
         self.__component_factory = component_factory
         self.__component_updater = component_updater
         self.device_config = device_config
         self.components: Dict[str, T_COMPONENT] = {}
 
+        try:
+            self.__initializer()
+        except Exception:
+            log.exception(f"Initialisierung von Gerät {self.device_config.name} fehlgeschlagen")
+
+    def error_handler(self):
+        self.__initializer()
+        for component in self.components.values():
+            component.initialize()
+
     def add_component(self, component_config: T_COMPONENT_CONFIG) -> None:
-        self.components["component" + str(component_config.id)] = self.__component_factory(component_config)
+        with SingleComponentUpdateContext(FaultState(ComponentInfo.from_component_config(component_config)),
+                                          self.__initializer):
+            component = self.__component_factory(component_config)
+            component.initialized = False
+            self.components["component" + str(component_config.id)] = component
+            component.initialize()
+            component.initialized = True
 
     def update(self):
-        self.__component_updater(self.components.values())
+        initialized_components = []
+        for component in self.components.values():
+            if hasattr(component, "initialized") and component.initialized:
+                initialized_components.append(component)
+        self.__component_updater(initialized_components, self.error_handler)

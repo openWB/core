@@ -26,7 +26,9 @@ class JsonSocSetup():
     def __init__(self,
                  name: str = "JSON",
                  type: str = "json",
+                 official: bool = True,
                  configuration: JsonSocConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or JsonSocConfiguration()

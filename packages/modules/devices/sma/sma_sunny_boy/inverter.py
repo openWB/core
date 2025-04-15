@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
+from typing import Any, TypedDict
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -17,6 +16,11 @@ from modules.common.simcount import SimCounter
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    client: modbus.ModbusTcpClient_
+    device_id: int
+
+
 class SmaSunnyBoyInverter(AbstractInverter):
 
     SMA_INT32_NAN = -0x80000000  # SMA uses this value to represent NaN
@@ -24,14 +28,16 @@ class SmaSunnyBoyInverter(AbstractInverter):
     SMA_NAN = -0xC000
 
     def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, SmaSunnyBoyInverterSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.component_config = dataclass_from_dict(SmaSunnyBoyInverterSetup, component_config)
-        self.tcp_client = tcp_client
+                 component_config: SmaSunnyBoyInverterSetup,
+                 **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.tcp_client = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="Wechselrichter")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
 
     def update(self) -> None:
         self.store.set(self.read())

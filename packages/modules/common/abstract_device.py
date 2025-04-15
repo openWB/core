@@ -18,7 +18,12 @@ class AbstractDevice:
 
 class AbstractBat:
     @abstractmethod
-    def __init__(self, *kwargs) -> None:
+    def __init__(self, component_config, **kwargs) -> None:
+        self.component_config = component_config
+        self.kwargs = kwargs
+
+    @abstractmethod
+    def initializer(self):
         pass
 
     @abstractmethod
@@ -30,10 +35,18 @@ class AbstractBat:
         # power limit None heißt, auf maximale Speicherleistung setzen = Speicher-Begrenzung aufheben
         pass
 
+    def power_limit_controllable(self) -> bool:
+        return False
+
 
 class AbstractCounter:
     @abstractmethod
-    def __init__(self, *kwargs) -> None:
+    def __init__(self, component_config, **kwargs) -> None:
+        self.component_config = component_config
+        self.kwargs = kwargs
+
+    @abstractmethod
+    def initializer(self):
         pass
 
     @abstractmethod
@@ -43,7 +56,12 @@ class AbstractCounter:
 
 class AbstractInverter:
     @abstractmethod
-    def __init__(self, *kwargs) -> None:
+    def __init__(self, component_config, **kwargs) -> None:
+        self.component_config = component_config
+        self.kwargs = kwargs
+
+    @abstractmethod
+    def initializer(self):
         pass
 
     @abstractmethod

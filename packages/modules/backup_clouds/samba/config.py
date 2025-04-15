@@ -19,7 +19,9 @@ class SambaBackupCloud:
     def __init__(self,
                  name: str = "Samba",
                  type: str = "samba",
+                 official: bool = False,
                  configuration: SambaBackupCloudConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or SambaBackupCloudConfiguration()

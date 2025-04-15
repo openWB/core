@@ -23,7 +23,9 @@ class EVCCVehicleSoc:
     def __init__(self,
                  name: str = "EVCC",
                  type: str = "evcc",
+                 official: bool = False,
                  configuration: EVCCVehicleSocConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or EVCCVehicleSocConfiguration()

@@ -1,6 +1,27 @@
 # SoC-Modul VWId
 
-Erfolgreich getestet: ID3, ID4, eGolf, Golf 8 GTE, Passat GTE, eUP, T7 Multivan eHybrid.
+Das SoC-Modul VWId gibt es in openWB 1.x und 2.x
+Die Konfiguration ist in beiden Varianten sehr ähnlich:
+
+## Konfiguration in openWB 1.x
+
+Die Konfiguration in openWB 1.x erfolgt im Bereich Einstellungen - Modulkonfiguration - Ladepunkte:
+
+![Allgemeine Konfiguration-1x](SoC-VWId-19-settings-1.PNG) 
+
+![Spezielle Konfiguration-1x](SoC-VWId-19-settings-2.PNG)
+
+## Konfiguration in openWB 2.x
+
+Die Konfiguration in openWB 2.x erfolgt im Bereich Einstellungen - Konfiguration - Fahrzeuge:
+
+![Allgemeine Konfiguration-2x](SoC-VWId-20-settings-1.PNG) 
+
+![Spezielle Konfiguration-2x](SoC-VWId-20-settings-2.PNG)
+
+## Hinweise
+
+Erfolgreich getestet u.a. für folgende Fahrzeuge: ID3, ID4, ID5, ID7, eGolf, Golf 8 GTE, Passat GTE, eUP, T7 Multivan eHybrid.
 
 Für nicht-VW Fahrzeuge (Audi, Skoda, etc.) funktioniert das Modul nicht.
 
@@ -52,17 +73,14 @@ Bei Problemen zunächst bitte diese Schritte durchführen:
 
         Diese Zeile zeigt folgende Information:
 
-        `2023-02-12 11:57:14       - Timestamp des SOC-Abrufs`
-
-        `INFO                      - Debug Level INFO`
-
-        `soc_vwid                  - SOC-Modul`
-
-        `Lp1                       - Ladepunkt`
-
-        `SOC: 61%                  - SOC Stand`
-
-        `@2023-02-12T11:53:20      - Timestamp des Updates vom EV zum VW Cloud-Server`
+    ```text
+    2023-02-12 11:57:14       - Timestamp des SOC-Abrufs
+    INFO                      - Debug Level INFO
+    soc_vwid                  - SOC-Modul
+    Lp1                       - Ladepunkt
+    SOC: 61%                  - SOC Stand
+    @2023-02-12T11:53:20      - Timestamp des Updates vom EV zum VW Cloud-Server
+    ```
 
 8. Falls diese Schritte nicht zum Erfolg führen, das Problem im [Support Thema](https://forum.openwb.de/viewtopic.php?t=4803) posten mit Angabe relevanter Daten
     - oWB SW Version
@@ -71,3 +89,9 @@ Bei Problemen zunächst bitte diese Schritte durchführen:
     - welches Fahrzeug
     - falls vorhanden Angaben über Firewall, VPN, etc., also Appliances, die den Internetzugang limitieren könnten
     - relevante Abschnitte der Logs, vor allem Fehlermeldungen, als CODE-blocks (</>).
+
+Das SoC-Log mit evtl. Fehlermeldungen kann wie folgt eingesehen werden:
+
+- openWB 1.x (Status - EV SoC Log)
+- openWB 2.x (Einstellungen - System - Fehlersuche)
+

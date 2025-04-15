@@ -32,7 +32,9 @@ class FixedHoursTariff:
     def __init__(self,
                  name: str = "Feste Tarifstunden (z.b. §14a EnWG Modul3)",
                  type: str = "fixed_hours",
+                 official: bool = False,
                  configuration: FixedHoursTariffConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or FixedHoursTariffConfiguration()

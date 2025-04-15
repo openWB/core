@@ -18,7 +18,8 @@ def test_parse_html(sample_file_name, expected_inverter_state, monkeypatch):
     sample = (Path(__file__).parent / sample_file_name).read_text()
     mock_inverter_value_store = Mock()
     monkeypatch.setattr(inverter, 'get_inverter_value_store', Mock(return_value=mock_inverter_value_store))
-    inv = inverter.KostalPikoOldInverter(0, KostalPikoOldInverterSetup())
+    inv = inverter.KostalPikoOldInverter(KostalPikoOldInverterSetup(), device_id=0)
+    inv.initialize()
 
     # execution
     inv.update(sample)
