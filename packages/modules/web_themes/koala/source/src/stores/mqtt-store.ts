@@ -1870,7 +1870,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get vehicle SoC module name identified by the vehicle id
+   * Get vehicle SoC value identified by the vehicle id
    * @param vehicleId vehicle id
    * @returns number | null
    */

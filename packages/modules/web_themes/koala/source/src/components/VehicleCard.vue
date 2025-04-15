@@ -19,7 +19,7 @@
       <div class="row q-mt-sm">
         <div class="col">
           <div class="text-subtitle2">SoC Modul:</div>
-          {{ vehicleSocModule || 'keine' }}
+          {{ vehicleSocModule || 'nicht konfiguriert' }}
         </div>
       </div>
       <div v-if="vehicleSocValue !== null">
