@@ -1850,7 +1850,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns vehicleInfo
    */
   const vehicleInfo = computed(() => {
-    return (vehicleId: number | undefined) => {
+    return (vehicleId: number) => {
       return getValue.value(`openWB/vehicle/${vehicleId}/info`) as vehicleInfo;
     };
   });
@@ -1861,7 +1861,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns string
    */
   const vehicleSocModuleName = computed(() => {
-    return (vehicleId: number | undefined) => {
+    return (vehicleId: number) => {
       const socModule = getValue.value(
         `openWB/vehicle/${vehicleId}/soc_module/config`,
       ) as vehicleSocModule;
@@ -1875,8 +1875,10 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns number | null
    */
   const vehicleSocValue = computed(() => {
-    return (vehicleId: number | undefined) => {
-      return getValue.value(`openWB/vehicle/${vehicleId}/get/soc`) as number | null;
+    return (vehicleId: number) => {
+      return getValue.value(`openWB/vehicle/${vehicleId}/get/soc`) as
+        | number
+        | undefined;
     };
   });
 

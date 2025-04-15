@@ -59,40 +59,39 @@
     v-model="limitEnergy.value"
     class="q-mt-md"
   />
-
-  <SliderStandard
-    title="Mindest-SoC für das Fahrzeug"
-    :min="0"
-    :max="100"
-    :step="5"
-    unit="%"
-    :off-value-left="0"
-    v-model="pvMinSoc.value"
-    class="q-mt-md"
-  />
-
-  <SliderStandard
-    title="Mindest-SoC-Strom"
-    :min="6"
-    :max="32"
-    unit="A"
-    v-model="pvMinSocCurrent.value"
-    class="q-mt-md"
-  />
-
-  <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Mindest-SoC</div>
-  <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-    <q-btn-group class="col">
-      <q-btn
-        v-for="option in phaseOptionsMinSoc"
-        :key="option.value"
-        :color="numPhasesMinSoc.value === option.value ? 'primary' : 'grey'"
-        :label="option.label"
-        size="sm"
-        class="col"
-        @click="numPhasesMinSoc.value = option.value"
-      />
-    </q-btn-group>
+  <div v-if="vehicleSocType !== undefined">
+    <SliderStandard
+      title="Mindest-SoC für das Fahrzeug"
+      :min="0"
+      :max="100"
+      :step="5"
+      unit="%"
+      :off-value-left="0"
+      v-model="pvMinSoc.value"
+      class="q-mt-md"
+    />
+    <SliderStandard
+      title="Mindest-SoC-Strom"
+      :min="6"
+      :max="32"
+      unit="A"
+      v-model="pvMinSocCurrent.value"
+      class="q-mt-md"
+    />
+    <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Mindest-SoC</div>
+    <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
+      <q-btn-group class="col">
+        <q-btn
+          v-for="option in phaseOptionsMinSoc"
+          :key="option.value"
+          :color="numPhasesMinSoc.value === option.value ? 'primary' : 'grey'"
+          :label="option.label"
+          size="sm"
+          class="col"
+          @click="numPhasesMinSoc.value = option.value"
+        />
+      </q-btn-group>
+    </div>
   </div>
 
   <div class="row items-center justify-between q-ma-none q-pa-none no-wrap">
@@ -115,11 +114,21 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-const limitModes = [
-  { value: 'none', label: 'keine', color: 'primary' },
-  { value: 'soc', label: 'EV-SoC', color: 'primary' },
-  { value: 'amount', label: 'Energiemenge', color: 'primary' },
-];
+const limitModes = computed(() => {
+  let modes = [
+    { value: 'none', label: 'keine', color: 'primary' },
+    { value: 'soc', label: 'EV-SoC', color: 'primary' },
+    { value: 'amount', label: 'Energiemenge', color: 'primary' },
+  ];
+  if (vehicleSocType.value === undefined) {
+    modes = modes.filter((mode) => mode.value !== 'soc');
+  }
+  return modes;
+});
+
+const vehicleSocType = computed(() =>
+  mqttStore.chargePointConnectedVehicleSocType(props.chargePointId),
+)?.value;
 
 const phaseOptions = [
   { value: 1, label: '1' },

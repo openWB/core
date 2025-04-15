@@ -16,25 +16,26 @@
           {{ vehicleInfo?.model || 'keine Angabe' }}
         </div>
       </div>
-      <div class="row q-mt-sm">
+      <div v-if="vehicleSocModule !== undefined" class="row q-mt-sm">
         <div class="col">
           <div class="text-subtitle2">SoC Modul:</div>
-          {{ vehicleSocModule || 'nicht konfiguriert' }}
+          {{ vehicleSocModule }}
         </div>
       </div>
       <div v-if="vehicleSocValue !== null">
         <div class="slider-container">
           <q-slider
-          :model-value="vehicleSocValue"
-          color="green-7"
-          class="current-slider q-mt-sm"
-          track-size="1.5em"
-          thumb-size="0px"
-          :min="0"
-          :max="100"
-        />
+            :model-value="vehicleSocValue"
+            color="green-7"
+            track-size="1.5em"
+            thumb-size="0px"
+            :min="0"
+            :max="100"
+            :markers="10"
+            readonly
+          />
         </div>
-        <div class="row q-mt-sm">Ladestand: {{ vehicleSocValue }}%</div>
+        <div>Ladestand: {{ vehicleSocValue }}%</div>
       </div>
     </q-card-section>
   </q-card>
@@ -45,7 +46,7 @@ import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const props = defineProps<{
-  vehicleId: number | undefined;
+  vehicleId: number;
 }>();
 
 const mqttStore = useMqttStore();

@@ -85,7 +85,7 @@ import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointCard from 'src/components/ChargePointCard.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import { useChargeModes } from 'src/composables/useChargeModes';
-import { ChargePointRow } from 'src/components/models/chargepoint-information-models';
+import { ChargePointRow } from 'src/components/models/charge-point-information-models';
 
 const $q = useQuasar();
 const mobile = computed(() => Platform.is.mobile);
@@ -164,7 +164,7 @@ const columns: QTableColumn[] = [
   },
   {
     name: 'mode',
-    label: 'Mode',
+    label: 'Lademodus',
     field: 'mode',
     sortable: true,
     align: 'left',
@@ -175,7 +175,7 @@ const columns: QTableColumn[] = [
     label: 'Ladestand',
     field: 'soc',
     sortable: true,
-    align: 'left',
+    align: 'right',
     headerStyle: 'font-weight: bold',
   },
   {
@@ -183,7 +183,7 @@ const columns: QTableColumn[] = [
     label: 'Leistung',
     field: 'power',
     sortable: true,
-    align: 'left',
+    align: 'right',
     headerStyle: 'font-weight: bold',
   },
   {
@@ -191,7 +191,7 @@ const columns: QTableColumn[] = [
     label: 'Geladen',
     field: 'charged',
     sortable: true,
-    align: 'left',
+    align: 'right',
     headerStyle: 'font-weight: bold',
   },
 ];

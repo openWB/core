@@ -171,42 +171,71 @@ const target = computed(() => {
         mqttStore.chargePointConnectedVehicleInstantChargeLimit(
           props.chargePointId,
         ).value;
-      return instantLimitMode === 'soc'
-        ? (mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
-            props.chargePointId,
-          ).value ?? 0)
-        : (mqttStore.chargePointConnectedVehicleInstantChargeLimitEnergy(
-            props.chargePointId,
-          ).value ?? 0) * 1000;
+      switch (instantLimitMode) {
+        case 'soc':
+          return (
+            mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
+              props.chargePointId,
+            ).value ?? 0
+          );
+        case 'amount':
+          return (
+            (mqttStore.chargePointConnectedVehicleInstantChargeLimitEnergy(
+              props.chargePointId,
+            ).value ?? 0) * 1000
+          );
+      }
     case 'pv_charging':
       const pvLimitMode = mqttStore.chargePointConnectedVehiclePvChargeLimit(
         props.chargePointId,
       ).value;
-      return pvLimitMode === 'soc'
-        ? (mqttStore.chargePointConnectedVehiclePvChargeLimitSoC(
-            props.chargePointId,
-          ).value ?? 0)
-        : (mqttStore.chargePointConnectedVehiclePvChargeLimitEnergy(
-            props.chargePointId,
-          ).value ?? 0) * 1000;
+      switch (pvLimitMode) {
+        case 'soc':
+          return (
+            mqttStore.chargePointConnectedVehiclePvChargeLimitSoC(
+              props.chargePointId,
+            ).value ?? 0
+          );
+        case 'amount':
+          return (
+            (mqttStore.chargePointConnectedVehiclePvChargeLimitEnergy(
+              props.chargePointId,
+            ).value ?? 0) * 1000
+          );
+      }
     case 'eco_charging':
       const ecoLimitMode = mqttStore.chargePointConnectedVehicleEcoChargeLimit(
         props.chargePointId,
       ).value;
-      return ecoLimitMode === 'soc'
-        ? (mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(
-            props.chargePointId,
-          ).value ?? 0)
-        : (mqttStore.chargePointConnectedVehicleEcoChargeLimitEnergy(
-            props.chargePointId,
-          ).value ?? 0) * 1000;
+      switch (ecoLimitMode) {
+        case 'soc':
+          return (
+            mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(
+              props.chargePointId,
+            ).value ?? 0
+          );
+        case 'amount':
+          return (
+            (mqttStore.chargePointConnectedVehicleEcoChargeLimitEnergy(
+              props.chargePointId,
+            ).value ?? 0) * 1000
+          );
+      }
     default:
       return undefined;
   }
 });
 
 const showSocTargetSlider = computed(() => {
-  return true;
+  if (target.value && target.value > 999) {
+    // we have a energy based target
+    return true;
+  }
+  if (vehicleSocType.value !== undefined) {
+    // we have a soc module defined
+    return true;
+  }
+  return false;
 });
 
 const vehicleTarget = computed(() => {

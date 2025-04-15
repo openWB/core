@@ -1,10 +1,11 @@
 <template>
-  <div class="my-card">
+  <div class="double-slider-container">
     <div class="slider-container">
       <q-slider
         :model-value="currentValue"
         :min="0"
         :max="maxValue"
+        :markers="props.limitMode == 'amount' ? 10000 : 10"
         color="green-7"
         class="current-slider"
         track-size="1.5em"
@@ -52,7 +53,7 @@
           {{ props.limitMode == 'soc' ? 'Ladeziel' : 'Energieziel' }}
         </div>
         <div>
-          {{ props.limitMode == 'soc' ? target + '%' : formatEnergy(target) }}
+          {{ props.limitMode == 'soc' ? target + '%' : target / 1000 + ' kWh' }}
         </div>
       </div>
     </div>
@@ -127,11 +128,6 @@ const formatEnergy = (value: number) => {
 </script>
 
 <style scoped>
-.my-card {
-  width: 100%;
-  max-width: 300px;
-}
-
 .slider-container {
   position: relative;
   height: 40px;

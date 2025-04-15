@@ -110,11 +110,21 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-const limitModes = [
-  { value: 'none', label: 'keine', color: 'primary' },
-  { value: 'soc', label: 'EV-SoC', color: 'primary' },
-  { value: 'amount', label: 'Energiemenge', color: 'primary' },
-];
+const limitModes = computed(() => {
+  let modes = [
+    { value: 'none', label: 'keine', color: 'primary' },
+    { value: 'soc', label: 'EV-SoC', color: 'primary' },
+    { value: 'amount', label: 'Energiemenge', color: 'primary' },
+  ];
+  if (vehicleSocType.value === undefined) {
+    modes = modes.filter((mode) => mode.value !== 'soc');
+  }
+  return modes;
+});
+
+const vehicleSocType = computed(() =>
+  mqttStore.chargePointConnectedVehicleSocType(props.chargePointId),
+)?.value;
 
 const phaseOptions = [
   { value: 1, label: '1' },
