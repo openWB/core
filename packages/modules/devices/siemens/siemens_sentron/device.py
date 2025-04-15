@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable
+from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.siemens.siemens_sentron.config import SiemensSentron, SiemensSentronCounterSetup
-from modules.devices.siemens.siemens_sentron.counter import SiemensSentronCounter
+from modules.devices.siemens.siemens_sentron.config import (SiemensSentron, SiemensSentronCounterSetup,
+                                                            SiemensSentronInverterSetup, SiemensSentronBatSetup)
+from modules.devices.siemens.siemens_sentron import counter, inverter, bat
 
 log = logging.getLogger(__name__)
 
@@ -16,9 +17,21 @@ def create_device(device_config: SiemensSentron):
 
     def create_counter_component(component_config: SiemensSentronCounterSetup):
         nonlocal client
-        return SiemensSentronCounter(component_config, client=client, modbus_id=device_config.configuration.modbus_id)
+        return counter.SiemensSentronCounter(component_config, client=client,
+                                             modbus_id=device_config.configuration.modbus_id)
 
-    def update_components(components: Iterable[SiemensSentronCounter]):
+    def create_inverter_component(component_config: SiemensSentronInverterSetup):
+        nonlocal client
+        return inverter.SiemensSentronInverter(component_config, client=client,
+                                               modbus_id=device_config.configuration.modbus_id)
+
+    def create_bat_component(component_config: SiemensSentronBatSetup):
+        nonlocal client
+        return bat.SiemensSentronBat(component_config, client=client,
+                                     modbus_id=device_config.configuration.modbus_id)
+
+    def update_components(components: Iterable[Union[counter.SiemensSentronCounter, inverter.SiemensSentronInverter,
+                                                     bat.SiemensSentronBat]]):
         nonlocal client
         with client:
             for component in components:
@@ -33,6 +46,8 @@ def create_device(device_config: SiemensSentron):
         initializer=initializer,
         component_factory=ComponentFactoryByType(
             counter=create_counter_component,
+            inverter=create_inverter_component,
+            bat=create_bat_component
         ),
         component_updater=MultiComponentUpdater(update_components)
     )
