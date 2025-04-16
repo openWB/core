@@ -33,6 +33,11 @@ class InternalChargepointValueStore(ValueStore[ChargepointState]):
                       "/get/evse_current", self.state.evse_current, 2)
         pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) +
                       "/get/max_evse_current", self.state.max_evse_current, 2)
+        pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) + "/get/version", self.state.version)
+        pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) +
+                      "/get/current_branch", self.state.current_branch)
+        pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) +
+                      "/get/current_commit", self.state.current_commit)
 
 
 def get_internal_chargepoint_value_store(id: int) -> ValueStore[ChargepointState]:
