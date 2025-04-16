@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" Modul zum Auslesen von sonnenBatterie Speichern.
+""" Modul zum Auslesen von SonnenBatterie Speichern.
 """
 import logging
 
@@ -34,10 +34,10 @@ def create_device(device_config: SonnenBatterie):
                                      device_api_v2_token=device_config.configuration.api_v2_token)
 
     def create_consumption_counter_component(component_config: SonnenbatterieConsumptionCounterSetup):
-        return SonnenbatterieConsumptionCounter(device_config.configuration.ip_address,
-                                                device_config.configuration.variant,
-                                                device_config.configuration.api_v2_token,
-                                                component_config)
+        return SonnenbatterieConsumptionCounter(component_config,
+                                                device_address=device_config.configuration.ip_address,
+                                                device_variant=device_config.configuration.variant,
+                                                device_api_v2_token=device_config.configuration.api_v2_token)
 
     def create_inverter_component(component_config: SonnenbatterieInverterSetup):
         return SonnenbatterieInverter(component_config,
