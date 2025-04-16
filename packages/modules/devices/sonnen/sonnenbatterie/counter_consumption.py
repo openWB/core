@@ -7,7 +7,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 
-from modules.devices.sonnen.sonnenbatterie.api import JsonApi
+from modules.devices.sonnen.sonnenbatterie.api import JsonApi, JsonApiVersion
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieConsumptionCounterSetup
 
 log = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class SonnenbatterieConsumptionCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.api = JsonApi(host=self.__device_address,
-                           api_version="v2",
+                           api_version=JsonApiVersion.V2,
                            auth_token=self.__api_v2_token)
 
     def update(self) -> None:

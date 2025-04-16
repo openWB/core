@@ -8,7 +8,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 
-from modules.devices.sonnen.sonnenbatterie.api import JsonApi, RestApi1, RestApi2
+from modules.devices.sonnen.sonnenbatterie.api import JsonApi, JsonApiVersion, RestApi1, RestApi2
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieBatSetup
 
 
@@ -43,7 +43,7 @@ class SonnenbatterieBat(AbstractBat):
             self.api = RestApi2(host=self.__device_address)
         else:
             self.api = JsonApi(host=self.__device_address,
-                               api_version="v2" if self.__device_variant == 3 else "v1",
+                               api_version=JsonApiVersion.V2 if self.__device_variant == 3 else JsonApiVersion.V1,
                                auth_token=self.__api_v2_token if self.__device_variant == 3 else None)
 
     def update(self) -> None:

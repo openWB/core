@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Optional
+from enum import Enum
+from typing import Dict, List, Optional, TypedDict
 from modules.common import req
 from modules.common.component_state import BatState, CounterState, InverterState
 from modules.common.simcount import SimCounter
@@ -17,7 +18,7 @@ class RestApi1():
         """
         return False
 
-    def read(self, device_endpoint: str = 'battery') -> dict:
+    def __read(self, device_endpoint: str = 'battery') -> dict:
         """
         Reads data from the Sonnenbatterie REST API.
         Args:
@@ -35,7 +36,7 @@ class RestApi1():
         Returns:
             BatState: The updated battery state.
         """
-        battery_state = self.read(device_endpoint="battery")
+        battery_state = self.__read(device_endpoint="battery")
         battery_soc = int(battery_state["M05"])
         battery_export_power = int(battery_state["M34"])
         battery_import_power = int(battery_state["M35"])
@@ -59,7 +60,7 @@ class RestApi2():
         """
         return False
 
-    def read_element(self, device: str, element: str) -> str:
+    def __read_element(self, device: str, element: str) -> str:
         """
         Reads a specific element from the Sonnenbatterie REST API v2.
         Args:
@@ -80,7 +81,7 @@ class RestApi2():
         Returns:
             InverterState: The updated inverter state.
         """
-        pv_power = -int(float(self.read_element(device="battery", element="M03")))
+        pv_power = -int(float(self.__read_element(device="battery", element="M03")))
         _, exported = sim_counter.sim_count(pv_power)
         return InverterState(exported=exported,
                              power=pv_power)
@@ -91,8 +92,8 @@ class RestApi2():
         Returns:
             CounterState: The updated grid counter state.
         """
-        grid_import_power = -int(float(self.read_element(device="battery", element="M39")))
-        grid_export_power = -int(float(self.read_element(device="battery", element="M38")))
+        grid_import_power = -int(float(self.__read_element(device="battery", element="M39")))
+        grid_export_power = -int(float(self.__read_element(device="battery", element="M38")))
         grid_power = grid_import_power - grid_export_power
         imported, exported = sim_counter.sim_count(grid_power)
         return CounterState(power=grid_power,
@@ -105,9 +106,9 @@ class RestApi2():
         Returns:
             BatState: The updated battery state.
         """
-        battery_soc = int(float(self.read_element(device="battery", element="M05")))
-        battery_export_power = int(float(self.read_element(device="battery", element="M01")))
-        battery_import_power = int(float(self.read_element(device="battery", element="M02")))
+        battery_soc = int(float(self.__read_element(device="battery", element="M05")))
+        battery_export_power = int(float(self.__read_element(device="battery", element="M01")))
+        battery_import_power = int(float(self.__read_element(device="battery", element="M02")))
         battery_power = battery_import_power - battery_export_power
         imported, exported = sim_counter.sim_count(battery_power)
         return BatState(power=battery_power,
@@ -116,14 +117,157 @@ class RestApi2():
                         exported=exported)
 
 
+class JsonApiVersion(Enum):
+    V1 = "v1"
+    V2 = "v2"
+
+
 class JsonApi():
-    def __init__(self, host: str, api_version: str = "v1", auth_token: Optional[str] = None) -> None:
+    class PowerMeterDirection(Enum):
+        PRODUCTION = "production"
+        CONSUMPTION = "consumption"
+
+    class StatusDict(TypedDict):
+        Apparent_output: int
+        BackupBuffer: str
+        BatteryCharging: bool
+        BatteryDischarging: bool
+        Consumption_Avg: int
+        Consumption_W: int
+        Fac: float
+        FlowConsumptionBattery: bool
+        FlowConsumptionGrid: bool
+        FlowConsumptionProduction: bool
+        FlowGridBattery: bool
+        FlowProductionBattery: bool
+        FlowProductionGrid: bool
+        GridFeedIn_W: int
+        IsSystemInstalled: int
+        OperatingMode: str
+        Pac_total_W: int
+        Production_W: int
+        RSOC: int
+        RemainingCapacity_Wh: int
+        Sac1: int
+        Sac2: int
+        Sac3: int
+        SystemStatus: str
+        Timestamp: str
+        USOC: int
+        Uac: float
+        Ubat: float
+
+    class ChannelDict(TypedDict):
+        a_l1: int
+        a_l2: int
+        a_l3: int
+        channel: int
+        deviceid: int
+        direction: str
+        error: int
+        kwh_exported: float
+        kwh_imported: float
+        v_l1_l2: float
+        v_l1_n: float
+        v_l2_l3: float
+        v_l2_n: float
+        v_l3_l1: float
+        v_l3_n: float
+        va_total: float
+        var_total: float
+        w_l1: float
+        w_l2: float
+        w_l3: float
+        w_total: float
+
+    def __init__(self,
+                 host: str,
+                 api_version: JsonApiVersion = JsonApiVersion.V1,
+                 auth_token: Optional[str] = None) -> None:
         self.host = host
         self.api_version = api_version
         self.auth_token = auth_token
-        if self.api_version == "v2" and self.auth_token is None:
+        if self.api_version == JsonApiVersion.V2 and self.auth_token is None:
             raise ValueError("API v2 requires an auth_token.")
-        self.headers = {"auth-token": auth_token} if api_version == "v2" else {}
+        self.headers = {"auth-token": auth_token} if api_version == JsonApiVersion.V2 else {}
+
+    def __read(self, endpoint: str = "status") -> Dict:
+        """
+        Reads data from the Sonnenbatterie JSON API.
+        Args:
+            endpoint (str): The endpoint to fetch data from. Defaults to "status".
+        Returns:
+            Dict: The JSON response from the API as a dictionary.
+        """
+        return req.get_http_session().get(
+            f"http://{self.host}/api/{self.api_version.value}/{endpoint}",
+            timeout=5,
+            headers=self.headers
+        ).json()
+
+    def __read_status(self) -> StatusDict:
+        """
+        Reads the status data from the JSON API.
+        Returns:
+            StatusDict: The status data as a dictionary.
+        """
+        return self.__read(endpoint="status")
+
+    def __read_power_meter(self, direction: Optional[PowerMeterDirection] = None) -> List[ChannelDict]:
+        """
+        Reads the power meter data from the JSON API.
+        Args:
+            direction (Optional[PowerMeterDirection]): The direction of the power meter data.
+                If None, all data is returned. Defaults to None.
+        Returns:
+            List[ChannelDict]: The power meter data as a list of dictionaries.
+        """
+        data = self.__read(endpoint="powermeter")
+        if direction is not None:
+            data = [item for item in data if item["direction"] == direction.value]
+            if len(data) == 0:
+                raise ValueError(f"No data found for direction: {direction.value}")
+        return data
+
+    def __counter_state_from_channel(self, channel: ChannelDict, inverted: bool = False) -> CounterState:
+        """
+        Converts a channel dictionary to a CounterState object.
+        Args:
+            channel (ChannelDict): The channel data as a dictionary.
+        Returns:
+            CounterState: The converted CounterState object.
+        """
+        return CounterState(power=-channel["w_total"] if inverted else channel["w_total"],
+                            powers=[-channel[f"w_l{phase}"] for phase in range(1, 4)] if inverted else
+                            [channel[f"w_l{phase}"] for phase in range(1, 4)],
+                            currents=[-channel[f"a_l{phase}"] for phase in range(1, 4)] if inverted else
+                            [channel[f"a_l{phase}"] for phase in range(1, 4)],
+                            voltages=[channel[f"v_l{phase}_n"] for phase in range(1, 4)],
+                            imported=channel["kwh_exported"] if inverted else channel["kwh_imported"],
+                            exported=channel["kwh_imported"] if inverted else channel["kwh_exported"])
+
+    def __get_configurations(self) -> Dict:
+        if self.api_version != JsonApiVersion.V2:
+            raise ValueError("Diese Methode erfordert die JSON API v2!")
+        return self.__read(endpoint="configurations")
+
+    def __set_configurations(self, configuration: Dict) -> None:
+        if self.api_version != JsonApiVersion.V2:
+            raise ValueError("Diese Methode erfordert die JSON API v2!")
+        req.get_http_session().put(f"http://{self.host}/api/v2/configurations",
+                                   json=configuration,
+                                   headers={"Auth-Token": self.auth_token})
+
+    def __update_set_point(self, power_limit: int) -> None:
+        if self.api_version != JsonApiVersion.V2:
+            raise ValueError("Diese Methode erfordert die JSON API v2!")
+        command = "charge"
+        if power_limit < 0:
+            command = "discharge"
+            power_limit = -power_limit
+        req.get_http_session().post(f"http://{self.host}/api/v2/setpoint/{command}/{power_limit}",
+                                    headers={"Auth-Token": self.auth_token,
+                                             "Content-Type": "application/json"})
 
     def power_limit_controllable(self) -> bool:
         """
@@ -131,111 +275,30 @@ class JsonApi():
         Returns:
             bool: True if controllable, False otherwise.
         """
-        return self.api_version == "v2" and self.auth_token is not None
+        return self.api_version == JsonApiVersion.V2 and self.auth_token is not None
 
-    def read(self, endpoint: str = "status") -> Dict:
+    def update_battery(self, sim_counter: SimCounter) -> BatState:
         """
-        Reads data from the Sonnenbatterie JSON API.
-
-        Args:
-            endpoint (str): The endpoint to fetch data from. Defaults to "status".
-
+        Updates the battery state by reading data from the JSON API.
         Returns:
-            Dict: The JSON response from the API as a dictionary.
+            InverterState: The updated battery state.
         """
-        return req.get_http_session().get(
-            f"http://{self.host}/api/{self.api_version}/{endpoint}",
-            timeout=5,
-            headers=self.headers
-        ).json()
-
-    def update_inverter(self, sim_counter: SimCounter) -> InverterState:
-        """
-        Updates the inverter state by reading data from the JSON API.
-        Returns:
-            InverterState: The updated inverter state.
-        example data:
-        {
-            "Apparent_output": 225,
-            "BackupBuffer": "0",
-            "BatteryCharging": false,
-            "BatteryDischarging": false,
-            "Consumption_Avg": 2114,
-            "Consumption_W": 2101,
-            "Fac": 49.97200393676758,
-            "FlowConsumptionBattery": false,
-            "FlowConsumptionGrid": true,
-            "FlowConsumptionProduction": false,
-            "FlowGridBattery": false,
-            "FlowProductionBattery": false,
-            "FlowProductionGrid": false,
-            "GridFeedIn_W": -2106,
-            "IsSystemInstalled": 1,
-            "OperatingMode": "2",
-            "Pac_total_W": -5,
-            "Production_W": 0,
-            "RSOC": 6,
-            "RemainingCapacity_Wh": 2377,
-            "Sac1": 75,
-            "Sac2": 75,
-            "Sac3": 75,
-            "SystemStatus": "OnGrid",
-            "Timestamp": "2021-12-13 07:54:48",
-            "USOC": 0,
-            "Uac": 231,
-            "Ubat": 48,
-            "dischargeNotAllowed": true,
-            "generator_autostart": false,
-            "NVM_REINIT_STATUS": 0
-        }
-        """
-        inverter_state = self.read(endpoint="status")
-        pv_power = -inverter_state["Production_W"]
-        _, exported = sim_counter.sim_count(pv_power)
-        return InverterState(exported=exported,
-                             power=pv_power)
+        battery_state = self.__read_status()
+        battery_power = -battery_state["Pac_total_W"]
+        battery_soc = battery_state["USOC"]
+        imported, exported = sim_counter.sim_count(battery_power)
+        return BatState(power=battery_power,
+                        soc=battery_soc,
+                        imported=imported,
+                        exported=exported)
 
     def update_grid_counter(self, sim_counter: SimCounter) -> CounterState:
         """
         Updates the grid counter state by reading data from the JSON API.
         Returns:
             CounterState: The updated grid counter state.
-        example data:
-        {
-            "Apparent_output": 225,
-            "BackupBuffer": "0",
-            "BatteryCharging": false,
-            "BatteryDischarging": false,
-            "Consumption_Avg": 2114,
-            "Consumption_W": 2101,
-            "Fac": 49.97200393676758,
-            "FlowConsumptionBattery": false,
-            "FlowConsumptionGrid": true,
-            "FlowConsumptionProduction": false,
-            "FlowGridBattery": false,
-            "FlowProductionBattery": false,
-            "FlowProductionGrid": false,
-            "GridFeedIn_W": -2106,
-            "IsSystemInstalled": 1,
-            "OperatingMode": "2",
-            "Pac_total_W": -5,
-            "Production_W": 0,
-            "RSOC": 6,
-            "RemainingCapacity_Wh": 2377,
-            "Sac1": 75,
-            "Sac2": 75,
-            "Sac3": 75,
-            "SystemStatus": "OnGrid",
-            "Timestamp": "2021-12-13 07:54:48",
-            "USOC": 0,
-            "Uac": 231,
-            "Ubat": 48,
-            "dischargeNotAllowed": true,
-            "generator_autostart": false,
-            "NVM_REINIT_STATUS": 0
-        }
         """
-        counter_state = self.read(endpoint="status")
+        counter_state = self.__read_status()
         grid_power = -counter_state["GridFeedIn_W"]
         grid_voltage = counter_state["Uac"]
         grid_frequency = counter_state["Fac"]
@@ -246,153 +309,42 @@ class JsonApi():
                             imported=imported,
                             exported=exported)
 
+    def update_inverter(self, sim_counter: SimCounter) -> InverterState:
+        """
+        Updates the inverter state by reading data from the JSON API.
+        Returns:
+            InverterState: The updated inverter state.
+        """
+        if self.api_version == JsonApiVersion.V1:
+            inverter_state = self.__read_status()
+            pv_power = -inverter_state["Production_W"]
+            _, exported = sim_counter.sim_count(pv_power)
+            return InverterState(exported=exported,
+                                 power=pv_power)
+        else:
+            return self.__counter_state_from_channel(
+                self.__read_power_meter(direction=self.PowerMeterDirection.PRODUCTION)[0],
+                inverted=True)
+
     def update_consumption_counter(self) -> CounterState:
         """
         Updates the consumption counter state by reading data from the JSON API.
         Returns:
             CounterState: The updated consumption counter state.
-        example data:
-        [
-            {
-                "a_l1": 0,
-                "a_l2": 0,
-                "a_l3": 0,
-                "channel": 1,
-                "deviceid": 4,
-                "direction": "production",
-                "error": -1,
-                "kwh_exported": 0,
-                "kwh_imported": 0,
-                "v_l1_l2": 0,
-                "v_l1_n": 0,
-                "v_l2_l3": 0,
-                "v_l2_n": 0,
-                "v_l3_l1": 0,
-                "v_l3_n": 0,
-                "va_total": 0,
-                "var_total": 0,
-                "w_l1": 0,
-                "w_l2": 0,
-                "w_l3": 0,
-                "w_total": 0
-            },
-            {
-                "a_l1": 0,
-                "a_l2": 0,
-                "a_l3": 0,
-                "channel": 2,
-                "deviceid": 4,
-                "direction": "consumption",
-                "error": -1,
-                "kwh_exported": 0,
-                "kwh_imported": 0,
-                "v_l1_l2": 0,
-                "v_l1_n": 0,
-                "v_l2_l3": 0,
-                "v_l2_n": 0,
-                "v_l3_l1": 0,
-                "v_l3_n": 0,
-                "va_total": 0,
-                "var_total": 0,
-                "w_l1": 0,
-                "w_l2": 0,
-                "w_l3": 0,
-                "w_total": 0
-            }
-        ]
         """
-        result = self.read(endpoint="powermeter")
-        for channel in result:
-            if channel["direction"] == "consumption":
-                return CounterState(power=channel["w_total"],
-                                    powers=[channel[f"w_l{phase}"] for phase in range(1, 4)],
-                                    currents=[channel[f"a_l{phase}"] for phase in range(1, 4)],
-                                    voltages=[channel[f"v_l{phase}_n"] for phase in range(1, 4)],
-                                    imported=channel["kwh_imported"],
-                                    exported=channel["kwh_exported"])
-        raise ValueError("No consumption data found in the response.")
-
-    def update_battery(self, sim_counter: SimCounter) -> BatState:
-        """
-        Updates the battery state by reading data from the JSON API.
-        Returns:
-            InverterState: The updated battery state.
-        example data:
-        {
-            "Apparent_output": 225,
-            "BackupBuffer": "0",
-            "BatteryCharging": false,
-            "BatteryDischarging": false,
-            "Consumption_Avg": 2114,
-            "Consumption_W": 2101,
-            "Fac": 49.97200393676758,
-            "FlowConsumptionBattery": false,
-            "FlowConsumptionGrid": true,
-            "FlowConsumptionProduction": false,
-            "FlowGridBattery": false,
-            "FlowProductionBattery": false,
-            "FlowProductionGrid": false,
-            "GridFeedIn_W": -2106,
-            "IsSystemInstalled": 1,
-            "OperatingMode": "2",
-            "Pac_total_W": -5,
-            "Production_W": 0,
-            "RSOC": 6,
-            "RemainingCapacity_Wh": 2377,
-            "Sac1": 75,
-            "Sac2": 75,
-            "Sac3": 75,
-            "SystemStatus": "OnGrid",
-            "Timestamp": "2021-12-13 07:54:48",
-            "USOC": 0,
-            "Uac": 231,
-            "Ubat": 48,
-            "dischargeNotAllowed": true,
-            "generator_autostart": false
-        }
-        """
-        battery_state = self.read(endpoint="status")
-        battery_power = -battery_state["Pac_total_W"]
-        battery_soc = battery_state["USOC"]
-        imported, exported = sim_counter.sim_count(battery_power)
-        return BatState(power=battery_power,
-                        soc=battery_soc,
-                        imported=imported,
-                        exported=exported)
-
-    def get_configurations(self) -> Dict:
-        if self.api_version != "v2":
-            raise ValueError("Diese Methode erfordert die JSON API v2!")
-        return self.read(endpoint="configurations")
-
-    def set_configurations(self, configuration: Dict) -> None:
-        if self.api_version != "v2":
-            raise ValueError("Diese Methode erfordert die JSON API v2!")
-        req.get_http_session().put(f"http://{self.host}/api/v2/configurations",
-                                   json=configuration,
-                                   headers={"Auth-Token": self.auth_token})
-
-    def update_set_point(self, power_limit: int) -> None:
-        if self.api_version != "v2":
-            raise ValueError("Diese Methode erfordert die JSON API v2!")
-        command = "charge"
-        if power_limit < 0:
-            command = "discharge"
-            power_limit = -power_limit
-        req.get_http_session().post(f"http://{self.host}/api/v2/setpoint/{command}/{power_limit}",
-                                    headers={"Auth-Token": self.auth_token,
-                                             "Content-Type": "application/json"})
+        return self.__counter_state_from_channel(
+            self.__read_power_meter(direction=self.PowerMeterDirection.CONSUMPTION)[0])
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         if self.power_limit_controllable() is False:
             raise ValueError("Leistungsvorgabe wird nur für 'JSON-API v2' unterstützt!")
-        operating_mode = self.get_configurations()["EM_OperatingMode"]
+        operating_mode = self.__get_configurations()["EM_OperatingMode"]
         if power_limit is None:
             # Keine Leistungsvorgabe, Betriebsmodus "Eigenverbrauch" aktivieren
             if operating_mode == "1":
-                self.set_configurations({"EM_OperatingMode": "2"})
+                self.__set_configurations({"EM_OperatingMode": "2"})
         else:
             # Leistungsvorgabe, Betriebsmodus "Manuell" aktivieren
             if operating_mode == "2":
-                self.set_configurations({"EM_OperatingMode": "1"})
-            self.update_set_point(power_limit)
+                self.__set_configurations({"EM_OperatingMode": "1"})
+            self.__update_set_point(power_limit)
