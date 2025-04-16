@@ -35,7 +35,7 @@ class Loadmanagement:
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, counter.data.set.raw_power_left, feed_in)
+            counter, available_currents, cp.data.get.voltages, counter.data.set.raw_power_left, feed_in)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -47,6 +47,7 @@ class Loadmanagement:
 
     def get_available_currents_surplus(self,
                                        missing_currents: List[float],
+                                       cp_voltages: List[float],
                                        counter: Counter,
                                        cp: Chargepoint,
                                        feed_in: int = 0) -> Tuple[List[float], LoadmanagementLimit]:
@@ -60,7 +61,7 @@ class Loadmanagement:
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, counter.data.set.surplus_power_left, feed_in)
+            counter, available_currents, cp_voltages, counter.data.set.surplus_power_left, feed_in)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -93,6 +94,7 @@ class Loadmanagement:
     def _limit_by_power(self,
                         counter: Counter,
                         available_currents: List[float],
+                        cp_voltages: List[float],
                         raw_power_left: Optional[float],
                         feed_in: Optional[float]) -> Tuple[List[float], LoadmanagementLimit]:
         currents = available_currents.copy()
@@ -101,10 +103,10 @@ class Loadmanagement:
             if feed_in:
                 raw_power_left = raw_power_left - feed_in
                 log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {raw_power_left}W")
-            if sum(available_currents)*230 > raw_power_left:
+            if sum([c * v for c, v in zip(available_currents, cp_voltages)]) > raw_power_left:
                 for i in range(0, 3):
                     # Am meisten belastete Phase trägt am meisten zur Leistungsreduktion bei.
-                    currents[i] = available_currents[i] / sum(available_currents) * raw_power_left / 230
+                    currents[i] = available_currents[i] / sum(available_currents) * raw_power_left / cp_voltages[i]
                 log.debug(f"Leistungsüberschreitung auf {raw_power_left}W korrigieren: {available_currents}")
                 limit = LoadmanagementLimit(LimitingValue.POWER.value.format(get_component_name_by_id(counter.num)),
                                             LimitingValue.POWER)

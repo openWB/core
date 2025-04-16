@@ -30,7 +30,7 @@ def test_limit_by_power(available_currents: List[float],
     counter_name_mock = Mock(return_value=COUNTER_NAME)
     monkeypatch.setattr(loadmanagement, "get_component_name_by_id", counter_name_mock)
     # evaluation
-    currents = Loadmanagement()._limit_by_power(Counter(0), available_currents, raw_power_left, None)
+    currents = Loadmanagement()._limit_by_power(Counter(0), available_currents, [230]*3, raw_power_left, None)
 
     # assertion
     assert currents == expected_currents
