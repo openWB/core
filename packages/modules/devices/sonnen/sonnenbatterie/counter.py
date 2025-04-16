@@ -35,14 +35,14 @@ class SonnenbatterieCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def __read_variant_1(self, api: str = "v1"):
+    def __read_json_api(self, api_version: str = "v1"):
         return req.get_http_session().get(
-            "http://" + self.__device_address + "/api/" + api + "/status",
+            "http://" + self.__device_address + "/api/" + api_version + "/status",
             timeout=5,
-            headers={"Auth-Token": self.__api_v2_token} if api == "v2" else None
+            headers={"Auth-Token": self.__api_v2_token} if api_version == "v2" else None
         ).json()
 
-    def __update_variant_1(self, api: str = "v1") -> CounterState:
+    def __update_json_api(self, api_version: str = "v1") -> CounterState:
         # Auslesen einer Sonnenbatterie 8 oder 10 über die integrierte JSON-API v1/v2 des Batteriesystems
         '''
         example data:
@@ -80,7 +80,7 @@ class SonnenbatterieCounter(AbstractCounter):
             "NVM_REINIT_STATUS": 0
         }
         '''
-        counter_state = self.__read_variant_1(api)
+        counter_state = self.__read_json_api(api_version=api_version)
         grid_power = -counter_state["GridFeedIn_W"]
         log.debug('EVU Leistung: ' + str(grid_power))
         # Es wird nur eine Spannung ausgegeben
@@ -97,17 +97,17 @@ class SonnenbatterieCounter(AbstractCounter):
             exported=exported,
         )
 
-    def __read_variant_2_element(self, element: str) -> str:
+    def __read_rest_api_2(self, element: str) -> str:
         response = req.get_http_session().get(
             'http://' + self.__device_address + ':7979/rest/devices/battery/' + element,
             timeout=5)
         response.encoding = 'utf-8'
         return response.text.strip(" \n\r")
 
-    def __update_variant_2(self) -> CounterState:
+    def __update_rest_api_2(self) -> CounterState:
         # Auslesen einer Sonnenbatterie Eco 6 über die integrierte REST-API des Batteriesystems
-        grid_import_power = int(float(self.__read_variant_2_element("M39")))
-        grid_export_power = int(float(self.__read_variant_2_element("M38")))
+        grid_import_power = int(float(self.__read_rest_api_2(element="M39")))
+        grid_export_power = int(float(self.__read_rest_api_2(element="M38")))
         grid_power = grid_import_power - grid_export_power
         imported, exported = self.sim_counter.sim_count(grid_power)
         return CounterState(
@@ -121,13 +121,13 @@ class SonnenbatterieCounter(AbstractCounter):
         if self.__device_variant == 0:
             log.debug("Die Variante '0' bietet keine EVU Daten!")
         elif self.__device_variant == 1:
-            state = self.__update_variant_1()
+            state = self.__update_json_api(api_version="v1")
         elif self.__device_variant == 2:
-            state = self.__update_variant_2()
+            state = self.__update_rest_api_2()
         elif self.__device_variant == 3:
-            state = self.__update_variant_1("v2")
+            state = self.__update_json_api(api_version="v2")
         else:
-            raise ValueError("Unbekannte Variante: " + str(self.__device_variant))
+            raise ValueError("Unbekannte API: " + str(self.__device_variant))
         self.store.set(state)
 
 
