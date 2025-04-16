@@ -86,6 +86,8 @@ class SetData:
                 self.process_general_topic(msg)
             elif ("openWB/set/io/" in msg.topic or "openWB/set/internal_io/" in msg.topic):
                 self.process_io_topic(msg)
+            elif "openWB/set/mqtt/" in msg.topic:
+                self.process_mqtt_topic(msg)
             elif "openWB/set/optional/" in msg.topic:
                 self.process_optional_topic(msg)
             elif "openWB/set/counter/" in msg.topic:
@@ -866,6 +868,16 @@ class SetData:
                 self.__unknown_topic(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_mqtt_topic(self, msg: mqtt.MQTTMessage):
+        if "openWB/set/mqtt/chargepoint/" in msg.topic:
+            self.process_chargepoint_get_topics(msg)
+        elif "openWB/set/mqtt/counter/" in msg.topic:
+            self.process_counter_topic(msg)
+        elif "openWB/set/mqtt/bat/" in msg.topic:
+            self.process_bat_topic(msg)
+        elif "openWB/set/mqtt/pv/" in msg.topic:
+            self.process_pv_topic(msg)
 
     def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics

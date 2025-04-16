@@ -21,6 +21,21 @@ class ChargepointModule(AbstractChargepoint):
         self.store = get_chargepoint_value_store(self.config.id)
         self.fault_state = FaultState(ComponentInfo(self.config.id, "Ladepunkt", "chargepoint"))
 
+        def on_connect(client, userdata, flags, rc):
+            client.subscribe(f"openWB/mqtt/chargepoint/{self.config.id}/#")
+
+        def on_message(client, userdata, message):
+            received_topics.update({message.topic: decode_payload(message.payload)})
+
+        received_topics = {}
+        BrokerClient(f"subscribeMqttChargepointInit{self.config.id}",
+                     on_connect, on_message).start_finite_loop()
+        for topic, value in received_topics.items():
+            if "/set/phases_to_use" in topic:
+                break
+        else:
+            Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/phases_to_use", 0)
+
     def set_current(self, current: float) -> None:
         Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/current", current)
 
@@ -62,9 +77,9 @@ class ChargepointModule(AbstractChargepoint):
                 )
                 self.store.set(chargepoint_state)
             else:
-                raise Exception(f"Keine MQTT Daten für Ladepunkt {self.config.name} empfangen oder es werden veraltete "
-                                "Topics verwendet. Diese funktionieren mit Einschränkungen trotz dieser Fehlermeldung. "
-                                "Bitte die Doku in den Einstellungen beachten.")
+                self.fault_state.warning(f"Keine MQTT-Daten für Ladepunkt {self.config.name} empfangen oder es werden "
+                                         "veraltete, abwärtskompatible Topics verwendet. Bitte die Doku in den "
+                                         "Einstellungen beachten.")
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/phases_to_use", phases_to_use)
