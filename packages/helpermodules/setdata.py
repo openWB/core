@@ -944,7 +944,7 @@ class SetData:
             elif "/module" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/config/max_currents" in msg.topic:
-                self._validate_value(msg, int, [(7, 1500)], collection=list)
+                self._validate_value(msg, int, [(6, 1500)], collection=list)
             elif ("/config/max_total_power" in msg.topic or
                   "/config/max_power_errorcase" in msg.topic):
                 self._validate_value(msg, int, [(0,  float("inf"))])
