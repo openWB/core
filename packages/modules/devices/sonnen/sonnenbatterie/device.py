@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" Modul zum Auslesen von sonnenBatterie Speichern.
+""" Modul zum Auslesen von SonnenBatterie Speichern.
 """
 import logging
 
