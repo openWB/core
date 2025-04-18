@@ -245,15 +245,15 @@ class JsonApi():
                                 powers=[channel[f"w_l{phase}"] for phase in range(1, 4)],
                                 currents=[channel[f"a_l{phase}"] for phase in range(1, 4)],
                                 voltages=[channel[f"v_l{phase}_n"] for phase in range(1, 4)],
-                                imported=channel["kwh_imported"],
-                                exported=channel["kwh_exported"])
+                                imported=channel["kwh_imported"] * 1000,
+                                exported=channel["kwh_exported"] * 1000)
         elif channel["direction"] == self.PowerMeterDirection.PRODUCTION.value:
             return InverterState(power=-channel["w_total"],
                                  # powers=[-channel[f"w_l{phase}"] for phase in range(1, 4)],
                                  # currents=[-channel[f"a_l{phase}"] for phase in range(1, 4)],
                                  # voltages=[channel[f"v_l{phase}_n"] for phase in range(1, 4)],
-                                 # imported=channel["kwh_exported"]
-                                 exported=channel["kwh_imported"])
+                                 # imported=channel["kwh_exported"] * 1000,
+                                 exported=channel["kwh_imported"] * 1000)
         else:
             raise ValueError(f"Unknown direction: {channel['direction']}")
 
