@@ -5,7 +5,6 @@ from typing import Any, TypedDict, Dict, Union, Optional
 from pymodbus.constants import Endian
 
 from control import data
-from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
