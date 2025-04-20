@@ -333,17 +333,23 @@ class JsonApi():
             return InverterState(exported=exported,
                                  power=pv_power)
         else:
-            return self.__state_from_channel(
+            inverter_state = self.__state_from_channel(
                 self.__read_power_meter(direction=self.PowerMeterDirection.PRODUCTION)[0])
+            # meter value is updated way too slow, so we use a sim counter to get the exported energy
+            _, inverter_state.exported = sim_counter.sim_count(inverter_state.power)
+            return inverter_state
 
-    def update_consumption_counter(self) -> CounterState:
+    def update_consumption_counter(self, sim_counter: SimCounter) -> CounterState:
         """
         Updates the consumption counter state by reading data from the JSON API.
         Returns:
             CounterState: The updated consumption counter state.
         """
-        return self.__state_from_channel(
+        counter_state = self.__state_from_channel(
             self.__read_power_meter(direction=self.PowerMeterDirection.CONSUMPTION)[0])
+        # meter value is updated way too slow, so we use a sim counter to get the im-/exported energy
+        counter_state.imported, counter_state.exported = sim_counter.sim_count(counter_state.power)
+        return counter_state
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         if self.power_limit_controllable() is False:

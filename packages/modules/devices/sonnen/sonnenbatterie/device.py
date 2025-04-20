@@ -35,6 +35,7 @@ def create_device(device_config: SonnenBatterie):
 
     def create_consumption_counter_component(component_config: SonnenbatterieConsumptionCounterSetup):
         return SonnenbatterieConsumptionCounter(component_config,
+                                                device_id=device_config.id,
                                                 device_address=device_config.configuration.ip_address,
                                                 device_variant=device_config.configuration.variant,
                                                 device_api_v2_token=device_config.configuration.api_v2_token)
