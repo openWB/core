@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
-
-from pymodbus.constants import Endian
-
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -11,6 +8,8 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.thermia.thermia.config import ThermiaCounterSetup
+from pymodbus.constants import Endian
+
 
 class KwargsDict(TypedDict):
     device_id: int
