@@ -38,7 +38,7 @@ class ThermiaCounter(AbstractCounter):
             currents = [(val / 100) for val in self.client.read_input_registers(
                 69, [ModbusDataType.INT_16] * 3, unit=self.component_config.configuration.modbus_id)]
             imported = self.client.read_input_registers(
-                83, ModbusDataType.INT_32, wordorder=Endian.Little, 
+                83, ModbusDataType.INT_32, wordorder=Endian.Little,
                 unit=self.component_config.configuration.modbus_id) * 100
             exported = 0
 

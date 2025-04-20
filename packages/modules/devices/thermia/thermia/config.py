@@ -3,6 +3,7 @@ from helpermodules.auto_str import auto_str
 from modules.common.component_setup import ComponentSetup
 from ..vendor import vendor_descriptor
 
+
 @auto_str
 class ThermiaConfiguration:
     def __init__(self, ip_address: Optional[str] = None, port: int = 502):
