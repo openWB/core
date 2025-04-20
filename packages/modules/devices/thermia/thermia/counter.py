@@ -30,19 +30,17 @@ class ThermiaCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        #power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
-        #imported, exported = self.sim_counter.sim_count(power)
-
-        with self.__tcp_client:
-            voltages = [val / 100 for val in self.__tcp_client.read_input_registers(
-                72, [ModbusDataType.INT_16] * 3, unit=self.__modbus_id)]
-            powers = [val / 1 for val in self.__tcp_client.read_input_registers(
-                78, [ModbusDataType.INT_16] * 3, unit=self.__modbus_id)]
+        with self.client:
+            voltages = [val / 100 for val in self.client.read_input_registers(
+                72, [ModbusDataType.INT_16] * 3, unit=self.component_config.configuration.modbus_id)]
+            powers = [val / 1 for val in self.client.read_input_registers(
+                78, [ModbusDataType.INT_16] * 3, unit=self.component_config.configuration.modbus_id)]
             power = sum(powers)
-            currents = [(val / 100) for val in self.__tcp_client.read_input_registers(
-                69, [ModbusDataType.INT_16] * 3, unit=self.__modbus_id)]
-            imported = [val / 10 for val in self.__tcp_client.read_input_registers(
-                83, [ModbusDataType.INT_32], wordorder=Endian.Little, unit=self.__modbus_id)]
+            currents = [(val / 100) for val in self.client.read_input_registers(
+                69, [ModbusDataType.INT_16] * 3, unit=self.component_config.configuration.modbus_id)]
+            imported = self.client.read_input_registers(
+                83, ModbusDataType.INT_32, wordorder=Endian.Little, 
+                unit=self.component_config.configuration.modbus_id) * 100
             exported = 0
 
         counter_state = CounterState(
