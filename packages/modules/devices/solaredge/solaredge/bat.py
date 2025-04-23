@@ -65,6 +65,7 @@ class SolaredgeBat(AbstractBat):
         # SoC Reserve muss in Configurtion erst noch umgesetzt werden, solange wird Default-Wert 10 genutzt:
         self.soc_reserve_configured = getattr(self.component_config.configuration, "soc_reserve", 10)
         self.StorageControlMode_Read = DEFAULT_CONTROL_MODE
+        self.last_mode = 'undefined'
 
     def update(self) -> None:
         self.store.set(self.read_state())
@@ -109,7 +110,7 @@ class SolaredgeBat(AbstractBat):
             log.warning("PowerLimitMode not found, assuming 'no_limit'")
             PowerLimitMode = 'no_limit'
 
-        if PowerLimitMode == 'no_limit':
+        if PowerLimitMode == 'no_limit' and self.last_mode != 'limited':
             """
             Keine Speichersteuerung, andere Steuerungen zulassen (SolarEdge One, ioBroker, Node-Red etc.).
             Falls andere Steuerungen vorhanden sind, sollten diese nicht beeinflusst werden,
@@ -137,6 +138,7 @@ class SolaredgeBat(AbstractBat):
                     "StorageControlMode": self.StorageControlMode_Read,
                 }
                 self._write_registers(values_to_write, unit)
+                self.last_mode = None
             return
 
         elif power_limit >= 0:
@@ -177,6 +179,7 @@ class SolaredgeBat(AbstractBat):
                         "StorageControlMode": self.StorageControlMode_Read,
                     }
                     self._write_registers(values_to_write, unit)
+                    self.last_mode = None
                 elif discharge_limit not in range(int(power_limit) - 10, int(power_limit) + 10):
                     # DischargeLimit nur bei Abweichung von mehr als 10W, um Konflikte bei 2 Speichern zu verhindern.
                     log.debug(f"Speichersteuerung aktiv, Discharge-Limit {int(power_limit)}W.")
@@ -196,6 +199,7 @@ class SolaredgeBat(AbstractBat):
                         "RemoteControlCommandDischargeLimit": int(min(power_limit, MAX_DISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
+                    self.last_mode = 'limited'
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
         values = {}
