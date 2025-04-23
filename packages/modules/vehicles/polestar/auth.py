@@ -4,7 +4,6 @@ import requests
 import os
 import re
 from datetime import datetime, timedelta
-from typing import Optional
 import base64
 import hashlib
 from modules.common.store import RAMDISK_PATH
@@ -91,7 +90,7 @@ class PolestarAuth:
             log.error("_save_token_to_ramdisk:error saving token store %s:%s", self.token_file, e)
 
     # auth step 3: get token
-    def get_auth_token(self) -> Optional[str]:
+    def get_auth_token(self) -> str or None:
         # first try to load token from ramdisk
         self._load_token_from_ramdisk()
 
@@ -160,7 +159,7 @@ class PolestarAuth:
         return self.access_token
 
     # auth step 2: get code
-    def _get_auth_code(self) -> Optional[str]:
+    def _get_auth_code(self) -> str or None:
         self.resume_path = self._get_auth_resumePath()
         if self.resume_path is None:
             return None
@@ -177,7 +176,7 @@ class PolestarAuth:
         log.info("_get_auth_code:attempting to get new code")
         try:
             result = self.client_session.post(
-                BASE_URL+f"/as/{self.resume_path}/resume/as/authorization.ping",
+                BASE_URL + f"{self.resume_path}",
                 params=params,
                 data=data
             )
@@ -203,7 +202,8 @@ class PolestarAuth:
                 log.info("_get_auth_code:accept terms and conditions for uid %s", uid)
                 data = {"pf.submit": True, "subject": uid}
                 result = self.client_session.post(
-                    BASE_URL+f"/as/{self.resume_path}/resume/as/authorization.ping",
+                    
+                    BASE_URL + f"{self.resume_path}",    
                     data=data,
                 )
             m = re.search(r"code=(.+)", result.request.path_url)
@@ -217,7 +217,7 @@ class PolestarAuth:
         return code
 
     # auth step 1: get resumePath
-    def _get_auth_resumePath(self) -> Optional[str]:
+    def _get_auth_resumePath(self) -> str or None:
         # Get Resume Path
         params = {
             "response_type": "code",
@@ -239,7 +239,7 @@ class PolestarAuth:
         if result.status_code != 200:
             log.error("_get_auth_resumePath:get response:%d", result.status_code)
             return None
-        m = re.search(r"resumePath=([^&]+)", result.url)
+        m = re.search(r'(?:url|action):\s*"(.+)"', result.text)
         if m is not None:
             resume_path = m.group(1)
             log.info("_get_auth_resumePath:got resumePath %s", resume_path)
