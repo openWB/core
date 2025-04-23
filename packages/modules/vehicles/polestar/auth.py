@@ -1,4 +1,4 @@
-import logging
+0import logging
 import json
 import requests
 import os
@@ -201,9 +201,8 @@ class PolestarAuth:
                 uid = m.group(1)
                 log.info("_get_auth_code:accept terms and conditions for uid %s", uid)
                 data = {"pf.submit": True, "subject": uid}
-                result = self.client_session.post(
-                    
-                    BASE_URL + f"{self.resume_path}",    
+                result = self.client_session.post(                    
+                    BASE_URL + f"{self.resume_path}",
                     data=data,
                 )
             m = re.search(r"code=(.+)", result.request.path_url)
