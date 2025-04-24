@@ -51,10 +51,6 @@ class SolaredgeBat(AbstractBat):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
-        # Validate kwargs
-        if 'device_id' not in self.kwargs or 'client' not in self.kwargs:
-            raise ValueError("device_id and client must be provided in kwargs")
-        
         self.__device_id: int = self.kwargs['device_id']
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
