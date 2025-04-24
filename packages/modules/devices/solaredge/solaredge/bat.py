@@ -37,11 +37,6 @@ class KwargsDict(TypedDict):
     client: modbus.ModbusTcpClient_
 
 
-class KwargsDict(TypedDict):
-    device_id: int
-    client: modbus.ModbusTcpClient_
-
-
 class SolaredgeBat(AbstractBat):
     # Define all possible registers with their data types
     REGISTERS = {
