@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Tuple, Union
+from typing import Tuple, TypedDict, Any
 
 from requests import Session
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -18,14 +17,19 @@ from modules.devices.fronius.fronius.config import FroniusSmCounterSetup
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    device_config: FroniusConfiguration
+
+
 class FroniusSmCounter(AbstractCounter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, FroniusSmCounterSetup],
-                 device_config: FroniusConfiguration) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(FroniusSmCounterSetup, component_config)
-        self.device_config = device_config
+    def __init__(self, component_config: FroniusSmCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.device_config: FroniusConfiguration = self.kwargs['device_config']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

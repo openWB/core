@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
 
-from dataclass_utils import dataclass_from_dict
+from typing import Any, TypedDict
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -12,21 +11,30 @@ from modules.common.store import get_bat_value_store
 from modules.devices.ampere.ampere.config import AmpereBatSetup
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    modbus_id: int
+    client: ModbusTcpClient_
+
+
 class AmpereBat(AbstractBat):
     def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, AmpereBatSetup],
-                 modbus_id: int) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(AmpereBatSetup, component_config)
-        self.modbus_id = modbus_id
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+                 component_config: AmpereBatSetup,
+                 **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        device_id: int = self.kwargs['device_id']
+        self.modbus_id: int = self.kwargs['modbus_id']
+        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.client = self.kwargs['client']
 
-    def update(self, client: ModbusTcpClient_) -> None:
-        power = client.read_input_registers(535, ModbusDataType.INT_16, unit=self.modbus_id)
-        soc = client.read_input_registers(1339, ModbusDataType.UINT_16, unit=self.modbus_id)
+    def update(self) -> None:
+        power = self.client.read_input_registers(535, ModbusDataType.INT_16, unit=self.modbus_id) * -1
+        soc = self.client.read_input_registers(1339, ModbusDataType.UINT_16, unit=self.modbus_id)
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(

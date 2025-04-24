@@ -618,16 +618,16 @@ class Command:
         Pub().pub(f'openWB/set/log/{connection_id}/data', chargelog.get_log_data(payload["data"]))
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(f'openWB/set/log/daily/{payload["data"]["day"]}',
-                  get_daily_log(payload["data"]["day"]))
+        Pub().pub(f'openWB/set/log/daily/{payload["data"]["date"]}',
+                  get_daily_log(payload["data"]["date"]))
 
     def getMonthlyLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(f'openWB/set/log/monthly/{payload["data"]["month"]}',
-                  get_monthly_log(payload["data"]["month"]))
+        Pub().pub(f'openWB/set/log/monthly/{payload["data"]["date"]}',
+                  get_monthly_log(payload["data"]["date"]))
 
     def getYearlyLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(f'openWB/set/log/yearly/{payload["data"]["year"]}',
-                  get_yearly_log(payload["data"]["year"]))
+        Pub().pub(f'openWB/set/log/yearly/{payload["data"]["date"]}',
+                  get_yearly_log(payload["data"]["date"]))
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]

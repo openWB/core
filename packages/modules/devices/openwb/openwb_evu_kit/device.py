@@ -4,7 +4,6 @@ from typing import Iterable, Union
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.openwb.openwb_bat_kit.bat import BatKit
 from modules.devices.openwb.openwb_evu_kit.counter import EvuKit
@@ -16,28 +15,34 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: EvuKitSetup):
+    client = None
+
     def create_bat_component(component_config: EvuKitBatSetup):
-        return BatKit(device_config.id, component_config, client)
+        nonlocal client
+        return BatKit(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: EvuKitCounterSetup):
-        return EvuKit(device_config.id, component_config, client)
+        nonlocal client
+        return EvuKit(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: EvuKitInverterSetup):
-        return PvKit(device_config.id, component_config, client)
+        nonlocal client
+        return PvKit(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[BatKit, EvuKit, PvKit]]):
+        nonlocal client
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
-                    time.sleep(0.2)
+                component.update()
+                time.sleep(0.2)
 
-    try:
+    def initializer():
+        nonlocal client
         client = modbus.ModbusTcpClient_("192.168.193.15", 8899)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

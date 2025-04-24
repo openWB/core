@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 import logging
+
 from typing import Any, TypedDict, Dict, Union, Optional
+
 
 from pymodbus.constants import Endian
 import pymodbus
 
+
 from control import data
+
+
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -25,6 +30,11 @@ DEFAULT_CONTROL_MODE = 1  # Control Mode Max Eigenverbrauch
 REMOTE_CONTROL_MODE = 4  # Control Mode Remotesteuerung
 DEFAULT_COMMAND_MODE = 0  # Command Mode ohne Steuerung
 ACTIVE_COMMAND_MODE = 7  # Command Mode Max Eigenverbrauch bei Steuerung
+
+
+class KwargsDict(TypedDict):
+    device_id: int
+    client: modbus.ModbusTcpClient_
 
 
 class KwargsDict(TypedDict):

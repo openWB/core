@@ -157,7 +157,7 @@ cases = [
 ]
 
 
-@ pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
+@pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypatch):
     # setup
     b_all = BatAll()
@@ -225,7 +225,7 @@ def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
     monkeypatch.setattr(bat_all, "get_chargepoints_by_chargemodes", get_chargepoints_by_chargemodes_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
-    get_controllable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2))])
+    get_controllable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2), device_id=0)])
     monkeypatch.setattr(bat_all, "get_controllable_bat_components", get_controllable_bat_components_mock)
 
     data.data.bat_all_data.get_power_limit()

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from typing import Dict, Union
-# from pymodbus.constants import Endian
 
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractInverter
@@ -17,20 +16,22 @@ class UPowerInverter(AbstractInverter):
     def __init__(self,
                  component_config: Union[Dict, UPowerInverterSetup],
                  version: UPowerVersion,
-                 modbus_id: int) -> None:
+                 modbus_id: int,
+                 client: ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(UPowerInverterSetup, component_config)
         self.__modbus_id = modbus_id
         self.version = version
+        self.client = client
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         if self.version == UPowerVersion.GEN_1:
-            power = client.read_holding_registers(11028, ModbusDataType.UINT_32, unit=self.__modbus_id) * -1
-            exported = client.read_holding_registers(11020, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+            power = self.client.read_holding_registers(11028, ModbusDataType.UINT_32, unit=self.__modbus_id) * -1
+            exported = self.client.read_holding_registers(11020, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
         else:
-            power = client.read_holding_registers(1220, ModbusDataType.UINT_16, unit=self.__modbus_id) * -1
-            exported = client.read_holding_registers(1006, ModbusDataType.UINT_32, unit=self.__modbus_id) * 10
+            power = self.client.read_holding_registers(1220, ModbusDataType.UINT_16, unit=self.__modbus_id) * -1
+            exported = self.client.read_holding_registers(1006, ModbusDataType.UINT_32, unit=self.__modbus_id) * 10
 
         inverter_state = InverterState(
             power=power,

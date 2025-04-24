@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, Dict, Union, TypedDict
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -11,10 +10,17 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.sma.sma_webbox.config import SmaWebboxInverterSetup
 
 
+class KwargsDict(TypedDict):
+    ip_address: str
+
+
 class SmaWebboxInverter(AbstractInverter):
-    def __init__(self, device_address: str, component_config: Union[Dict, SmaWebboxInverterSetup]) -> None:
-        self.__device_address = device_address
-        self.component_config = dataclass_from_dict(SmaWebboxInverterSetup, component_config)
+    def __init__(self, component_config: Union[Dict, SmaWebboxInverterSetup], **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.ip_address: str = self.kwargs['ip_address']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
@@ -23,8 +29,7 @@ class SmaWebboxInverter(AbstractInverter):
 
     def read(self) -> InverterState:
         data = {'RPC': '{"version": "1.0","proc": "GetPlantOverview","id": "1","format": "JSON"}'}
-        response = req.get_http_session().post(
-            'http://' + self.__device_address + '/rpc', data=data, timeout=3).json()
+        response = req.get_http_session().post(f'http://{self.ip_address}/rpc', data=data, timeout=3).json()
 
         return InverterState(
             exported=float(response["result"]["overview"][2]["value"]) * 1000,

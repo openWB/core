@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: BYD):
     def create_bat_component(component_config: BYDBatSetup):
-        return bat.BYDBat(component_config, device_config)
+        return bat.BYDBat(component_config=component_config, device_config=device_config)
 
     return ConfigurableDevice(
         device_config=device_config,

@@ -8,6 +8,7 @@ from modules.common.store._broker import pub_to_broker
 class IoValueStoreBroker(ValueStore[IoState]):
     def __init__(self, num: int) -> None:
         self.num = num
+        self.state = IoState()
 
     def set(self, state: IoState) -> None:
         self.state = state

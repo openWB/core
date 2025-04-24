@@ -52,9 +52,10 @@ def create_io(config: IoLan):
                     pin.value, 1, unit=config.configuration.modbus_id
                 ) for pin in DigitalOutputMapping})
 
-    def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, int]]) -> None:
+    def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]) -> None:
         for i, value in digital_output.items():
-            client.write_single_coil(DigitalOutputMapping[i].value, value, unit=config.configuration.modbus_id)
+            client.write_single_coil(DigitalOutputMapping[i].value, 1 if value is True else 0,
+                                     unit=config.configuration.modbus_id)
 
     version = False
     client = ModbusTcpClient_(config.configuration.host, config.configuration.port)

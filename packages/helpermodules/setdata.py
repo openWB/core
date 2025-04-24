@@ -86,6 +86,8 @@ class SetData:
                 self.process_general_topic(msg)
             elif ("openWB/set/io/" in msg.topic or "openWB/set/internal_io/" in msg.topic):
                 self.process_io_topic(msg)
+            elif "openWB/set/mqtt/" in msg.topic:
+                self.process_mqtt_topic(msg)
             elif "openWB/set/optional/" in msg.topic:
                 self.process_optional_topic(msg)
             elif "openWB/set/counter/" in msg.topic:
@@ -546,6 +548,7 @@ class SetData:
                         "/set/perform_control_pilot_interruption" in msg.topic or
                         "/set/perform_phase_switch" in msg.topic or
                         "/set/ocpp_transaction_active" in msg.topic or
+                        "/set/charge_state_prev" in msg.topic or
                         "/set/plug_state_prev" in msg.topic):
                     self._validate_value(msg, bool)
                 elif "/set/autolock_state" in msg.topic:
@@ -572,9 +575,10 @@ class SetData:
                 elif "/control_parameter/failed_phase_switches" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
                 elif ("/control_parameter/submode" in msg.topic or
-                        "/control_parameter/limit" in msg.topic or
                         "/control_parameter/chargemode" in msg.topic):
                     self._validate_value(msg, str)
+                elif "/control_parameter/limit" in msg.topic:
+                    self._validate_value(msg, "json")
                 elif "/control_parameter/prio" in msg.topic:
                     self._validate_value(msg, bool)
                 elif "/control_parameter/current_plan" in msg.topic:
@@ -865,6 +869,16 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
+    def process_mqtt_topic(self, msg: mqtt.MQTTMessage):
+        if "openWB/set/mqtt/chargepoint/" in msg.topic:
+            self.process_chargepoint_get_topics(msg)
+        elif "openWB/set/mqtt/counter/" in msg.topic:
+            self.process_counter_topic(msg)
+        elif "openWB/set/mqtt/bat/" in msg.topic:
+            self.process_bat_topic(msg)
+        elif "openWB/set/mqtt/pv/" in msg.topic:
+            self.process_pv_topic(msg)
+
     def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
 
@@ -942,7 +956,7 @@ class SetData:
             elif "/module" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/config/max_currents" in msg.topic:
-                self._validate_value(msg, int, [(7, 1500)], collection=list)
+                self._validate_value(msg, int, [(6, 1500)], collection=list)
             elif ("/config/max_total_power" in msg.topic or
                   "/config/max_power_errorcase" in msg.topic):
                 self._validate_value(msg, int, [(0,  float("inf"))])

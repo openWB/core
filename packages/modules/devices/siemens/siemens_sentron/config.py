@@ -36,3 +36,31 @@ class SiemensSentronCounterSetup(ComponentSetup[SiemensSentronCounterConfigurati
                  id: int = 0,
                  configuration: SiemensSentronCounterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or SiemensSentronCounterConfiguration())
+
+
+class SiemensSentronInverterConfiguration:
+    def __init__(self):
+        pass
+
+
+class SiemensSentronInverterSetup(ComponentSetup[SiemensSentronInverterConfiguration]):
+    def __init__(self,
+                 name: str = "Siemens Sentron PV-Zähler",
+                 type: str = "inverter",
+                 id: int = 0,
+                 configuration: SiemensSentronInverterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or SiemensSentronInverterConfiguration())
+
+
+class SiemensSentronBatConfiguration:
+    def __init__(self):
+        pass
+
+
+class SiemensSentronBatSetup(ComponentSetup[SiemensSentronBatConfiguration]):
+    def __init__(self,
+                 name: str = "Siemens Sentron Speicher-Zähler",
+                 type: str = "bat",
+                 id: int = 0,
+                 configuration: SiemensSentronBatConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or SiemensSentronBatConfiguration())
