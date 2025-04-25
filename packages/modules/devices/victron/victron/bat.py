@@ -62,15 +62,15 @@ class VictronBat(AbstractBat):
             if self.last_mode != 'stop':
                 # ESS Mode 3 für externe Steuerung und L1 auf 0 setzen, was ist bei 3 phasigen Victrons?
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_registers(37, [0], data_type=ModbusDataType.INT_16, unit=unit)
                 self.last_mode = 'stop'
+            self.__tcp_client.write_registers(37, [0], data_type=ModbusDataType.INT_16, unit=unit)
         elif power_limit > 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             if self.last_mode != 'discharge':
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'discharge'
             # Die maximale Entladeleistung begrenzen auf 3600W, für Test
-            power_value = int(min(power_limit, 3600))
+            power_value = int(min(power_limit, 3600)) *-1
             self.__tcp_client.write_registers(37, [power_value], data_type=ModbusDataType.INT_16, unit=unit)
 
     def power_limit_controllable(self) -> bool:
