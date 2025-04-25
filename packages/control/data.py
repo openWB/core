@@ -413,7 +413,7 @@ class Data:
                                 break
                     if stop:
                         break
-                self.pv_all_data = copy.deepcopy(SubData.pv_all_data)
+            self.pv_all_data = copy.deepcopy(SubData.pv_all_data)
             self.bat_data.clear()
             for bat in SubData.bat_data:
                 stop = False
@@ -426,7 +426,7 @@ class Data:
                                 break
                     if stop:
                         break
-                self.bat_all_data = copy.deepcopy(SubData.bat_all_data)
+            self.bat_all_data = copy.deepcopy(SubData.bat_all_data)
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
