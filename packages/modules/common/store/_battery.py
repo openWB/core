@@ -38,7 +38,18 @@ class BatteryValueStoreBroker(ValueStore[BatState]):
             raise FaultState.from_exception(e)
 
 
+class PurgeBatteryState:
+    def __init__(self, delegate: LoggingValueStore) -> None:
+        self.delegate = delegate
+
+    def set(self, state: BatState) -> None:
+        self.delegate.set(state)
+
+    def update(self) -> None:
+        self.delegate.update()
+
+
 def get_bat_value_store(component_num: int) -> ValueStore[BatState]:
-    return LoggingValueStore(
+    return PurgeBatteryState(LoggingValueStore(
         (BatteryValueStoreRamdisk if compatibility.is_ramdisk_in_use() else BatteryValueStoreBroker)(component_num)
-    )
+    ))

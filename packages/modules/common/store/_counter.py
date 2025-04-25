@@ -113,11 +113,11 @@ class PurgeCounterState:
                         self.imported += chargepoint_state.imported
                     else:
                         component = get_component_obj_by_id(element['id'])
-                        add_current_power(component.store.delegate.state)
+                        add_current_power(component.store.delegate.delegate.state)
                         if element["type"] == ComponentType.INVERTER.value:
-                            add_exported(component.store.delegate.state)
+                            add_exported(component.store.delegate.delegate.state)
                         else:
-                            add_imported_exported(component.store.delegate.state)
+                            add_imported_exported(component.store.delegate.delegate.state)
                 except Exception:
                     log.exception(f"Fehler beim Hinzufügen der Werte für Element {element}")
 
