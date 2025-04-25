@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import Any, TypedDict
+import logging
+from typing import Any, Optional, TypedDict
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
@@ -11,6 +12,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.victron.victron.config import VictronBatSetup
 
+log = logging.getLogger(__name__)
 
 class KwargsDict(TypedDict):
     device_id: int
@@ -28,6 +30,7 @@ class VictronBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.last_mode = 'Undefined'
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
@@ -43,6 +46,35 @@ class VictronBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        unit = self.component_config.configuration.modbus_id
+        log.debug(f'last_mode: {self.last_mode}')
+
+        if power_limit is None:
+            log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
+            if self.last_mode is not None:
+                # ESS Mode 1 für Selbstregelung mit Phasenkompensation, alternativ ESS Mode 2?
+                self.__tcp_client.write_registers(2902, [0], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = None
+        elif power_limit == 0:
+            log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
+            if self.last_mode != 'stop':
+                # ESS Mode 3 für externe Steuerung und L1 auf 0 setzen, was ist bei 3 phasigen Victrons?
+                self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_registers(37, [0], data_type=ModbusDataType.INT_16, unit=unit)
+                self.last_mode = 'stop'
+        elif power_limit > 0:
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
+            if self.last_mode != 'discharge':
+                self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = 'discharge'
+            # Die maximale Entladeleistung begrenzen auf 3600W, für Test
+            power_value = int(min(power_limit, 3600))
+            self.__tcp_client.write_registers(37, [power_value], data_type=ModbusDataType.INT_16, unit=unit)
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=VictronBatSetup)
