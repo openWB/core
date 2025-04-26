@@ -53,8 +53,10 @@ class VictronBat(AbstractBat):
         # Zu Debugzwecken
         ess_mode = self.__tcp_client.read_holding_registers(2902, ModbusDataType.UINT_16, unit=unit)
         ess_min_soc = self.__tcp_client.read_holding_registers(2901, ModbusDataType.UINT_16, unit=unit)
+        dynamic_ess_mode = self.__tcp_client.read_holding_registers(5400, ModbusDataType.UINT_16, unit=unit)
         log.debug(f"Aktueller ESS Mode: {ess_mode}")
         log.debug(f"Aktueller ESS Minimum SoC: {ess_min_soc}")
+        log.debug(f"Aktueller Dynamic ESS Mode: {dynamic_ess_mode}")
         log.debug(f'last_mode: {self.last_mode}')
 
         if power_limit is None:
