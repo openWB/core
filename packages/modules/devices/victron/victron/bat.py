@@ -65,14 +65,14 @@ class VictronBat(AbstractBat):
                 # ESS Mode 1 für Selbstregelung mit Phasenkompensation setzen
                 self.__tcp_client.write_registers(2902, [0], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
-        elif power_limit >= 0:
+        elif power_limit >= 0 and self.last_mode != 'discharge':
+            # ESS Mode 3 für externe Steuerung und auf L1 wird entladen
+            self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=unit)
+            self.__tcp_client.write_registers(38, [0], data_type=ModbusDataType.UINT_16, unit=unit)
+            self.__tcp_client.write_registers(39, [0], data_type=ModbusDataType.UINT_16, unit=unit)
+            self.last_mode = 'discharge'
+        elif power_limit >= 0 and self.last_mode == 'discharge':
             log.debug("Aktive Batteriesteuerung. Batterie wird mit {power_limit}W entladen")
-            if self.last_mode != 'discharge':
-                # ESS Mode 3 für externe Steuerung und auf L1 wird entladen
-                self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_registers(38, [0], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_registers(39, [0], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.last_mode = 'discharge'
             # Die maximale Entladeleistung begrenzen auf 3000W, für Test
             power_value = int(min(power_limit, 3000)) *-1
             self.__tcp_client.write_registers(37, [power_value], data_type=ModbusDataType.INT_16, unit=unit)
