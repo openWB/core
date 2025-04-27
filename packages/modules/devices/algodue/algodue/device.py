@@ -18,7 +18,7 @@ def create_device(device_config: Algodue):
     def create_counter_component(component_config: AlgodueCounterSetup):
         nonlocal client
         return counter.AlgodueCounter(component_config=component_config, device_id=device_config.id,
-                                           tcp_client=client, modbus_id=device_config.configuration.modbus_id)
+                                      tcp_client=client, modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[counter.AlgodueCounter]):
         with client:
