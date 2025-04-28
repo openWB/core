@@ -1,8 +1,4 @@
-<<<<<<< HEAD:web/settings/assets/vendor-fortawesome-9c5ed7ee.js
-import{g as Qt,d as jt,j as S,w as u1,h as Se}from"./vendor-253b919f.js";/*!
-=======
 import{g as Qt,d as Rt,j as S,w as u2,h as Se}from"./vendor-253b919f.js";/*!
->>>>>>> upstream/master:web/settings/assets/vendor-fortawesome-43a719ab.js
  * Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com
  * License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
  * Copyright 2024 Fonticons, Inc.
