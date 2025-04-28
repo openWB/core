@@ -35,7 +35,7 @@ class MultiComponentUpdater:
         components_list = list(components)
         with MultiComponentUpdateContext(components_list, error_handler):
             if not components:
-                raise FaultState.warning("Keine Komponenten konfiguriert")
+                raise Exception("Keine Komponenten konfiguriert oder Initialisierung fehlgeschlagen")
             self.__updater(components_list)
 
 
