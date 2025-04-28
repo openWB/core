@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any
+from typing import Dict, TypedDict, Any
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
@@ -11,13 +11,14 @@ from modules.common.modbus import ModbusDataType
 from modules.common.store import get_inverter_value_store
 from modules.devices.solaredge.solaredge.config import SolaredgeExternalInverterSetup
 from modules.devices.solaredge.solaredge.scale import create_scaled_reader
-from modules.devices.solaredge.solaredge.meter import SolaredgeMeterRegisters
+from modules.devices.solaredge.solaredge.meter import SolaredgeMeterRegisters, set_component_registers
 
 log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
     client: modbus.ModbusTcpClient_
+    components: Dict
 
 
 class SolaredgeExternalInverter(AbstractInverter):
@@ -32,6 +33,11 @@ class SolaredgeExternalInverter(AbstractInverter):
         self.registers = SolaredgeMeterRegisters(self.component_config.configuration.meter_id)
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+
+        components = list(self.kwargs['components'].values())
+        components.append(self)
+        set_component_registers(self.component_config, self.__tcp_client, components)
+
         self._read_scaled_int16 = create_scaled_reader(
             self.__tcp_client, self.component_config.configuration.modbus_id, ModbusDataType.INT_16
         )

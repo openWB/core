@@ -82,10 +82,7 @@ class FaultState(Exception):
         self.fault_state = FaultStateLevel.NO_ERROR
 
     def from_exception(self, exception: Optional[Exception] = None) -> None:
-        if exception is None:
-            self.fault_str = NO_ERROR
-            self.fault_state = FaultStateLevel.NO_ERROR
-        elif isinstance(exception, FaultState):
+        if isinstance(exception, FaultState):
             self.fault_str = exception.fault_str
             self.fault_state = exception.fault_state
         else:

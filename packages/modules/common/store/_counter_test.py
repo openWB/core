@@ -14,7 +14,9 @@ from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.common.component_state import BatState, ChargepointState, CounterState, InverterState
 from modules.common.store import _counter
 from modules.common.store._api import LoggingValueStore
+from modules.common.store._battery import BatteryValueStoreBroker, PurgeBatteryState
 from modules.common.store._counter import PurgeCounterState
+from modules.common.store._inverter import InverterValueStoreBroker, PurgeInverterState
 from modules.devices.generic.mqtt.bat import MqttBat
 from modules.devices.generic.mqtt.counter import MqttCounter
 from modules.devices.generic.mqtt.inverter import MqttInverter
@@ -71,36 +73,40 @@ def mock_data_nested():
 
 mock_comp_obj_inv_bat = [
     Mock(spec=MqttBat,
-         store=Mock(spec=LoggingValueStore,
+         store=Mock(spec=PurgeBatteryState,
                     delegate=Mock(spec=LoggingValueStore,
-                                  state=BatState(power=223,
-                                                 exported=200,
-                                                 imported=100)))),
+                                  delegate=Mock(spec=BatteryValueStoreBroker,
+                                                state=BatState(power=223,
+                                                               exported=200,
+                                                               imported=100))))),
     Mock(spec=MqttInverter,
-         store=Mock(spec=LoggingValueStore,
+         store=Mock(spec=PurgeInverterState,
                     delegate=Mock(spec=LoggingValueStore,
-                                  state=InverterState(power=5786,
-                                                      exported=2000))))]
+                                  delegate=Mock(spec=InverterValueStoreBroker,
+                                                state=InverterState(power=5786,
+                                                                    exported=2000)))))]
 
 mock_comp_obj_counter_inv_bat = [Mock(spec=MqttCounter,
-                                      store=Mock(spec=LoggingValueStore,
-                                                 delegate=Mock(
-                                                     spec=LoggingValueStore,
-                                                     state=CounterState(power=13359,
-                                                                        exported=0,
-                                                                        imported=0,
-                                                                        currents=[19.36]*3)))),
+                                      store=Mock(spec=_counter.PurgeCounterState,
+                                                 delegate=Mock(spec=LoggingValueStore,
+                                                               delegate=Mock(spec=_counter.CounterValueStoreBroker,
+                                                                             state=CounterState(power=13359,
+                                                                                                exported=0,
+                                                                                                imported=0,
+                                                                                                currents=[19.36]*3))))),
                                  Mock(spec=MqttBat,
-                                      store=Mock(spec=LoggingValueStore,
+                                      store=Mock(spec=PurgeBatteryState,
                                                  delegate=Mock(spec=LoggingValueStore,
-                                                               state=BatState(power=223,
-                                                                              exported=200,
-                                                                              imported=100)))),
+                                                               delegate=Mock(spec=BatteryValueStoreBroker,
+                                                                             state=BatState(power=223,
+                                                                                            exported=200,
+                                                                                            imported=100))))),
                                  Mock(spec=MqttInverter,
-                                      store=Mock(spec=LoggingValueStore,
+                                      store=Mock(spec=PurgeInverterState,
                                                  delegate=Mock(spec=LoggingValueStore,
-                                                               state=InverterState(power=5786,
-                                                                                   exported=2000))))
+                                                               delegate=Mock(spec=InverterValueStoreBroker,
+                                                                             state=InverterState(power=5786,
+                                                                                                 exported=2000)))))
                                  ]
 
 Params = NamedTuple("Params", [("name", str), ("mock_comp", Mock),

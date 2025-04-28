@@ -57,7 +57,7 @@ class SonnenbatterieConsumptionCounterConfiguration:
         pass
 
 
-class SonnenbatterieConsumptionCounterSetup(ComponentSetup[SonnenbatterieCounterConfiguration]):
+class SonnenbatterieConsumptionCounterSetup(ComponentSetup[SonnenbatterieConsumptionCounterConfiguration]):
     def __init__(self,
                  name: str = "SonnenBatterie Verbrauchs-Zähler",
                  type: str = "counter_consumption",
