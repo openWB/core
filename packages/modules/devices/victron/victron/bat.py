@@ -52,15 +52,9 @@ class VictronBat(AbstractBat):
 
         # Zu Debugzwecken kann später gelöscht werden
         ess_mode = self.__tcp_client.read_holding_registers(2902, ModbusDataType.UINT_16, unit=modbus_id)
-        ess_min_soc = self.__tcp_client.read_holding_registers(2901, ModbusDataType.UINT_16, unit=modbus_id)
         dynamic_ess_mode = self.__tcp_client.read_holding_registers(5400, ModbusDataType.UINT_16, unit=modbus_id)
-        #ess_charge_flag = self.__tcp_client.read_holding_registers(38, ModbusDataType.UINT_16, unit=modbus_id)
-        #ess_feedin_flag = self.__tcp_client.read_holding_registers(39, ModbusDataType.UINT_16, unit=modbus_id)
         log.debug(f"Aktueller ESS Mode: {ess_mode}")
-        log.debug(f"Aktueller ESS Minimum SoC: {ess_min_soc}")
         log.debug(f"Aktueller Dynamic ESS Mode: {dynamic_ess_mode}")
-        #log.debug(f"Aktuelles ESS Charge Flag: {ess_charge_flag}")
-        #log.debug(f"Aktuelles ESS Feed-In Flag: {ess_feedin_flag}")
         log.debug(f"Aktuelles power_limit: {power_limit}")
         log.debug(f'last_mode: {self.last_mode}')
 
@@ -69,22 +63,20 @@ class VictronBat(AbstractBat):
             if self.last_mode is not None:
                 # ESS Mode 1 für Selbstregelung mit Phasenkompensation setzen
                 self.__tcp_client.write_registers(2902, [1], data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.__tcp_client.write_registers(38, [0], data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = None
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 # ESS Mode 3 für externe Steuerung und keine Entladung
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=modbus_id)
-                self.__tcp_client.write_registers(38, [0], data_type=ModbusDataType.UINT_16, unit=modbus_id)
-                self.__tcp_client.write_registers(39, [1], data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.__tcp_client.write_registers(38, [1], data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = 'stop'
-            # self.__tcp_client.write_registers(37, [0], data_type=ModbusDataType.INT_16, unit=modbus_id)
         elif power_limit > 0:
             if self.last_mode != 'discharge':
                 # ESS Mode 3 für externe Steuerung und auf L1 wird entladen
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_registers(38, [0], data_type=ModbusDataType.UINT_16, unit=modbus_id)
-                self.__tcp_client.write_registers(39, [0], data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = 'discharge'
             # Die maximale Entladeleistung begrenzen auf 3000W, für Test
             power_value = int(min(power_limit, 3000)) * -1
