@@ -58,6 +58,12 @@ class VictronBat(AbstractBat):
         log.debug(f"Aktuelles power_limit: {power_limit}")
         log.debug(f'last_mode: {self.last_mode}')
 
+        # Check Dynamic ESS Mode
+        dynamic_ess_mode = self.__tcp_client.read_holding_registers(5400, ModbusDataType.UINT_16, unit=modbus_id)
+        if dynamic_ess_mode == 1:
+            log.debug("Dynamic ESS Mode ist aktiv, daher erfolgt keine Regelung des Speichers durch openWB")
+            return
+
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
