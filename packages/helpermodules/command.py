@@ -168,7 +168,7 @@ class Command:
             pub_user_message(payload, connection_id, f'Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_device}\'.',
                 MessageType.ERROR)
@@ -194,7 +194,7 @@ class Command:
             pub_user_message(payload, connection_id, f'IO-Aktion mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_io_action}\'.',
@@ -224,7 +224,7 @@ class Command:
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_io_device}\'.',
@@ -329,7 +329,7 @@ class Command:
         """ löscht ein Ladepunkt.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
@@ -422,8 +422,8 @@ class Command:
         """ löscht ein Lade-Profil.
         """
         if self.max_id_charge_template < payload["data"]["id"]:
-            pub_user_message(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
-                             MessageType.ERROR)
+            log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
+                      MessageType.ERROR)
         if payload["data"]["id"] > 0:
             ProcessBrokerBranch(f'vehicle/template/charge_template/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(
@@ -457,7 +457,7 @@ class Command:
         """ löscht einen Zielladen-Plan.
         """
         if self.max_id_charge_template_scheduled_plan < payload["data"]["plan"]:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_charge_template_scheduled_plan}\'.', MessageType.ERROR)
@@ -493,8 +493,8 @@ class Command:
         """ löscht einen Zeitladen-Plan.
         """
         if self.max_id_charge_template_time_charging_plan < payload["data"]["plan"]:
-            pub_user_message(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
-                             MessageType.ERROR)
+            log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
+                      MessageType.ERROR)
         Pub().pub(
             f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/time_charging/plans/{payload["data"]["plan"]}',
@@ -549,8 +549,8 @@ class Command:
         """ löscht eine Komponente.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
-            pub_user_message(payload, connection_id,
-                             "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
+            log.error(payload, connection_id,
+                      "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         branch = f'system/device/{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
         ProcessBrokerBranch(branch).remove_topics()
         pub_user_message(
@@ -573,8 +573,8 @@ class Command:
         """ löscht ein Fahrzeug-Profil.
         """
         if self.max_id_ev_template < payload["data"]["id"]:
-            pub_user_message(payload, connection_id,
-                             "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
+            log.error(payload, connection_id,
+                      "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         if payload["data"]["id"] > 0:
             ProcessBrokerBranch(f'vehicle/template/ev_template/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(
@@ -607,8 +607,8 @@ class Command:
         """ löscht ein Vehicle.
         """
         if self.max_id_vehicle < payload["data"]["id"]:
-            pub_user_message(payload, connection_id,
-                             "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
+            log.error(payload, connection_id,
+                      "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         if payload["data"]["id"] > 0:
             Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
             ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
@@ -683,9 +683,9 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Bridge mit ID \'{payload["data"]["bridge"]}\' gelöscht.', MessageType.SUCCESS)
         else:
-            pub_user_message(payload, connection_id,
-                             f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
-                             f'ID \'{self.max_id_mqtt_bridge}\'.', MessageType.ERROR)
+            log.error(payload, connection_id,
+                      f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
+                      f'ID \'{self.max_id_mqtt_bridge}\'.', MessageType.ERROR)
 
     def chargepointReboot(self, connection_id: str, payload: dict) -> None:
         pub.pub_single("openWB/set/command/primary/todo",
