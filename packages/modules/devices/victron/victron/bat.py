@@ -89,13 +89,9 @@ class VictronBat(AbstractBat):
             log.debug(f"Int power_limit: {power_limit}")
             power_value = int(min(power_limit, 5000)) * -1
             log.debug(f"Errechneter power_value: {power_value}")
-
-            # Validate power_value range
-            if not -32768 <= power_value <= 32767:
-                raise ValueError(f"power_value {power_value} is out of range for INT_16")            
             
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen")
-            self.__tcp_client.write_registers(37, [power_value], data_type=ModbusDataType.INT_16, unit=modbus_id)
+            self.__tcp_client.write_registers(96, [power_value], data_type=ModbusDataType.INT_32, unit=modbus_id)
 
     def power_limit_controllable(self) -> bool:
         return True
