@@ -68,8 +68,8 @@ class VictronBat(AbstractBat):
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 # ESS Mode 1 für Selbstregelung mit Phasenkompensation setzen
-                self.__tcp_client.write_registers(2902, [1], data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_registers(38, [0], data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.__tcp_client.write_registers(2902, [1], data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = None
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
