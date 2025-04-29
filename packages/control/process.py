@@ -54,10 +54,12 @@ class Process:
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",
                                   cp.data.get.state_str)
                     else:
-                        Pub().pub(
-                            f"openWB/set/chargepoint/{cp.num}/get/state_str",
-                            "Ladevorgang wurde gestartet... (bei Problemen: Prüfe bitte zuerst in den Einstellungen"
-                            " 'Ladeeinstellungen' und 'Konfiguration'.)")
+                        if cp.data.get.charge_state:
+                            Pub().pub(
+                                f"openWB/set/chargepoint/{cp.num}/get/state_str", "Lädt... ")
+                        else:
+                            Pub().pub(
+                                f"openWB/set/chargepoint/{cp.num}/get/state_str", "Ladevorgang wird gestartet... ")
                     if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NO_ERROR:
                         cp.chargepoint_module.fault_state.store_error()
                     modules_threads.append(self._start_charging(cp))
