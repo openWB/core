@@ -24,8 +24,9 @@ class Solaredge:
 
 
 class SolaredgeBatConfiguration:
-    def __init__(self, modbus_id: int = 1):
+    def __init__(self, modbus_id: int = 1, battery_index: int = 1):
         self.modbus_id = modbus_id
+        self.battery_index = battery_index
 
 
 class SolaredgeBatSetup(ComponentSetup[SolaredgeBatConfiguration]):
