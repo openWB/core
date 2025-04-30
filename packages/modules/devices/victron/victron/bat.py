@@ -87,7 +87,7 @@ class VictronBat(AbstractBat):
             # Die maximale Entladeleistung begrenzen auf 5000W, für Test
             power_value = int(min(power_limit, 5000)) * -1
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen")
-            self.__tcp_client.write_registers(37, [power_value], data_type=ModbusDataType.UINT_16, unit=228)
+            self.__tcp_client.write_registers(37, [power_value & 0xFFFF], data_type=ModbusDataType.INT_16, unit=228)
 
     def power_limit_controllable(self) -> bool:
         return True
