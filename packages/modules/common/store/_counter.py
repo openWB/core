@@ -1,5 +1,6 @@
 import logging
 from operator import add
+from typing import Optional
 
 from control import data
 from helpermodules import compatibility
@@ -7,6 +8,7 @@ from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultState
+from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
@@ -53,9 +55,13 @@ class CounterValueStoreBroker(ValueStore[CounterState]):
 
 class PurgeCounterState:
 
-    def __init__(self, delegate: LoggingValueStore, add_child_values: bool = False) -> None:
+    def __init__(self,
+                 delegate: LoggingValueStore,
+                 add_child_values: bool = False,
+                 simcounter: Optional[SimCounter] = None) -> None:
         self.delegate = delegate
         self.add_child_values = add_child_values
+        self.sim_counter = simcounter
 
     def set(self, state: CounterState) -> None:
         self.delegate.set(state)
@@ -69,8 +75,6 @@ class PurgeCounterState:
         if self.add_child_values:
             self.currents = state.currents if state.currents else [0.0]*3
             self.power = state.power
-            self.imported = state.imported
-            self.exported = state.exported
             self.incomplete_currents = False
 
             def add_current_power(element):
@@ -84,13 +88,6 @@ class PurgeCounterState:
                     self.currents = [0, 0, 0]
                     self.incomplete_currents = True
                 self.power += element.power
-
-            def add_imported_exported(element):
-                self.imported += element.imported
-                self.exported += element.exported
-
-            def add_exported(element):
-                self.exported += element.exported
 
             counter_all = data.data.counter_all_data
             elements = counter_all.get_elements_for_downstream_calculation(self.delegate.delegate.num)
@@ -110,30 +107,28 @@ class PurgeCounterState:
                                            f" {chargepoint.data.config.name} an die Phasen des EVU Zählers "
                                            "angegeben werden.")
                         self.power += chargepoint_state.power
-                        self.imported += chargepoint_state.imported
                     else:
                         component = get_component_obj_by_id(element['id'])
                         add_current_power(component.store.delegate.delegate.state)
-                        if element["type"] == ComponentType.INVERTER.value:
-                            add_exported(component.store.delegate.delegate.state)
-                        else:
-                            add_imported_exported(component.store.delegate.delegate.state)
                 except Exception:
                     log.exception(f"Fehler beim Hinzufügen der Werte für Element {element}")
 
+            imported, exported = self.sim_counter.sim_count(self.power)
             if self.incomplete_currents:
                 self.currents = None
             return CounterState(currents=self.currents,
                                 power=self.power,
-                                exported=self.exported,
-                                imported=self.imported)
+                                exported=exported,
+                                imported=imported)
         else:
             return state
 
 
-def get_counter_value_store(component_num: int, add_child_values: bool = False) -> PurgeCounterState:
+def get_counter_value_store(component_num: int,
+                            add_child_values: bool = False,
+                            simcounter: Optional[SimCounter] = None) -> PurgeCounterState:
     if compatibility.is_ramdisk_in_use():
         delegate = CounterValueStoreRamdisk()
     else:
         delegate = CounterValueStoreBroker(component_num)
-    return PurgeCounterState(LoggingValueStore(delegate), add_child_values)
+    return PurgeCounterState(LoggingValueStore(delegate), add_child_values, simcounter)
