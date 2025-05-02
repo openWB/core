@@ -1,7 +1,9 @@
 export interface ThemeConfiguration {
   history_chart_range: number;
-  card_view_breakpoint: number;
-  table_search_input_field: boolean;
+  chargePoint_card_view_breakpoint: number;
+  vehicle_card_view_breakpoint: number;
+  chargePoint_table_search_input_field: boolean;
+  vehicle_table_search_input_field: boolean;
 }
 
 export interface ConnectionOptions {
