@@ -54,7 +54,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 79
+    DATASTORE_VERSION = 80
 
     valid_topic = [
         "^openWB/bat/config/configured$",
@@ -2082,3 +2082,20 @@ class UpdateConfig:
                         break
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 79)
+
+    def upgrade_datastore_79(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # Simcount-Topic löschen, damit ein neuer Simcount mit dem akutellen Zählerstand des virtuellen Zählers
+            # gestartet wird. Akutell ist nur der feste Verbrauch im Simcount.
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                device_config = decode_payload(payload)
+                if device_config.get("type") == "virtual":
+                    for component_topic, component_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{device_config['id']}/component/[0-9]+/config",
+                                     component_topic):
+                            component_config = decode_payload(component_payload)
+                            if "counter" == component_config["type"]:
+                                Pub().pub((f"openWB/system/device/{device_config['id']}/component/"
+                                           f"{component_config['id']}/simulation"), "")
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 80)
