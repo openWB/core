@@ -35,6 +35,10 @@ module = type(sys)('pymodbus.payload')
 module.BinaryPayloadDecoder = Mock()
 sys.modules['pymodbus.payload'] = module
 
+module = type(sys)('pymodbus.transaction')
+module.ModbusSocketFramer = Mock()
+sys.modules['pymodbus.transaction'] = module
+
 module = type(sys)('socketserver')
 module.TCPServer = Mock()
 sys.modules['socketserver'] = module
