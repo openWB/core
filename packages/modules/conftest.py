@@ -35,6 +35,7 @@ sys.modules['pymodbus.payload'] = module
 
 module = type(sys)('pymodbus.transaction')
 module.ModbusSocketFramer = Mock()
+module.ModbusRtuFramer = Mock()
 sys.modules['pymodbus.transaction'] = module
 
 module = type(sys)('socketserver')
