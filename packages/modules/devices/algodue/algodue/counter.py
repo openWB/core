@@ -24,7 +24,6 @@ class AlgodueCounter(AbstractCounter):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
-        # return
         self.__device_id: int = self.kwargs['device_id']
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
         self.__modbus_id: int = self.kwargs['modbus_id']
