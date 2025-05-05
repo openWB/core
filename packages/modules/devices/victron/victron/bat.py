@@ -74,9 +74,20 @@ class VictronBat(AbstractBat):
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
+                # Log für Debugging, kann anschließend gelöscht werden
+                current_ess_mode = self.__tcp_client.read_holding_registers(2902, ModbusDataType.UINT_16, unit=modbus_id)
+                current_register_39 = self.__tcp_client.read_holding_registers(39, ModbusDataType.UINT_16, unit=228)
+                log.debug(f"Vor dem Schreiben: Register 2902 = {current_ess_mode}, Register 39 = {current_register_39}")
+                
                 # ESS Mode 3 für externe Steuerung und keine Entladung
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_registers(39, [1], data_type=ModbusDataType.UINT_16, unit=228)
+
+                # Log für Debugging, kann anschließend gelöscht werden
+                updated_ess_mode = self.__tcp_client.read_holding_registers(2902, ModbusDataType.UINT_16, unit=modbus_id)
+                updated_register_39 = self.__tcp_client.read_holding_registers(39, ModbusDataType.UINT_16, unit=228)
+                log.debug(f"Nach dem Schreiben: Register 2902 = {updated_ess_mode}, Register 39 = {updated_register_39}")
+                
                 self.last_mode = 'stop'
         elif power_limit > 0:
             if self.last_mode != 'discharge':
