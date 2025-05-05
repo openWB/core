@@ -16,7 +16,7 @@ def create_device(device_config: Thermia):
 
     def create_counter_component(component_config: ThermiaCounterSetup):
         nonlocal client
-        return ThermiaCounter(component_config, device_id=device_config.id, 
+        return ThermiaCounter(component_config, device_id=device_config.id,
                               client=client, modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[ThermiaCounter]]):
