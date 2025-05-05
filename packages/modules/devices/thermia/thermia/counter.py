@@ -14,6 +14,7 @@ from pymodbus.constants import Endian
 class KwargsDict(TypedDict):
     device_id: int
     client: ModbusTcpClient_
+    modbus_id: int
 
 
 class ThermiaCounter(AbstractCounter):
@@ -24,6 +25,7 @@ class ThermiaCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
+        self.modbus_id: int = self.kwargs['modbus_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
@@ -31,15 +33,15 @@ class ThermiaCounter(AbstractCounter):
     def update(self):
         with self.client:
             voltages = [val / 100 for val in self.client.read_input_registers(
-                72, [ModbusDataType.INT_16] * 3, unit=self.component_config.configuration.modbus_id)]
+                72, [ModbusDataType.INT_16] * 3, unit=self.modbus_id)]
             powers = [val / 1 for val in self.client.read_input_registers(
-                78, [ModbusDataType.INT_16] * 3, unit=self.component_config.configuration.modbus_id)]
+                78, [ModbusDataType.INT_16] * 3, unit=self.modbus_id)]
             power = sum(powers)
             currents = [(val / 100) for val in self.client.read_input_registers(
-                69, [ModbusDataType.INT_16] * 3, unit=self.component_config.configuration.modbus_id)]
+                69, [ModbusDataType.INT_16] * 3, unit=self.modbus_id)]
             imported = self.client.read_input_registers(
                 83, ModbusDataType.INT_32, wordorder=Endian.Little,
-                unit=self.component_config.configuration.modbus_id) * 100
+                unit=self.modbus_id) * 100
             exported = 0
 
         counter_state = CounterState(

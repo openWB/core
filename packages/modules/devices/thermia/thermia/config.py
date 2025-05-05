@@ -6,9 +6,10 @@ from ..vendor import vendor_descriptor
 
 @auto_str
 class ThermiaConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502, modbus_id: int = 1):
         self.ip_address = ip_address
         self.port = port
+        self.modbus_id = modbus_id
 
 
 @auto_str
@@ -27,8 +28,8 @@ class Thermia:
 
 @auto_str
 class ThermiaCounterConfiguration:
-    def __init__(self, modbus_id: int = 1):
-        self.modbus_id = modbus_id
+    def __init__(self):
+        pass
 
 
 @auto_str
