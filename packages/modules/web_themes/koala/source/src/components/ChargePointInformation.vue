@@ -24,6 +24,16 @@
         <ChargePointStateIcon :charge-point-id="row.id" />
       </q-td>
     </template>
+    <template #body-cell-timeCharging="{ row }">
+      <q-td>
+        <ChargePointTimeCharging
+          :charge-point-id="row.id"
+          :readonly="true"
+          :toolTip="true"
+          :icon-size="'xs'"
+        />
+      </q-td>
+    </template>
   </BaseTable>
 
   <!-- ChargePointCard Dialog -->
@@ -65,6 +75,7 @@ import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointCard from 'src/components/ChargePointCard.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
+import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();
@@ -98,12 +109,14 @@ const tableRowData = computed(() => {
       chargePointSoc !== undefined ? `${Math.round(chargePointSoc)}%` : '0%';
     const power = mqttStore.chargePointPower(id, 'textValue');
     const charged = mqttStore.chargePointEnergyChargedPlugged(id, 'textValue');
+    const timeCharging = mqttStore.chargePointConnectedVehicleTimeCharging(id);
     return {
       id,
       name,
       vehicle,
       plugged,
       chargeMode,
+      timeCharging,
       soc,
       power,
       charged,
@@ -117,6 +130,7 @@ const columnConfig = {
     'vehicle',
     'plugged',
     'chargeMode',
+    'timeCharging',
     'soc',
     'power',
     'charged',
@@ -126,6 +140,7 @@ const columnConfig = {
     vehicle: 'Fahrzeug',
     plugged: 'Status',
     chargeMode: 'Lademodus',
+    timeCharging: 'Zeitladen',
     soc: 'Ladestand',
     power: 'Leistung',
     charged: 'Geladen',

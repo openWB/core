@@ -3,8 +3,12 @@
     v-if="props.readonly"
     :name="timeChargingEnabled ? icon.on : icon.off"
     :color="timeChargingEnabled ? 'primary' : ''"
-    size="sm"
-  />
+    :size="props.iconSize ? props.iconSize : 'sm'"
+  >
+    <q-tooltip v-if="props.toolTip">{{
+      timeChargingEnabled ? 'Zeitladen aktiviert' : 'Zeitladen deaktiviert'
+    }}</q-tooltip>
+  </q-icon>
   <q-toggle
     v-else
     v-model="timeChargingEnabled"
@@ -29,6 +33,14 @@ const props = defineProps({
     default: false,
   },
   dense: {
+    type: Boolean,
+    default: false,
+  },
+  iconSize: {
+    type: String,
+    default: 'sm',
+  },
+  toolTip: {
     type: Boolean,
     default: false,
   },
