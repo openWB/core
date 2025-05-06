@@ -544,6 +544,7 @@ class UpdateConfig:
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/mqtt/valid_partner_ids", []),
         ("openWB/system/release_train", "master"),
+        ("openWB/system/secondary_auto_update", True),
         ("openWB/system/serial_number", get_serial_number()),
     )
     invalid_topic = (
