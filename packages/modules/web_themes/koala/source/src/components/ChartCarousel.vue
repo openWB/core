@@ -12,8 +12,8 @@
     class="full-width full-height bg-transparent carousel-height"
   >
     <q-carousel-slide
-      v-for="(chartComponent, index) in chartCarouselItems"
-      :key="index"
+      v-for="chartComponent in chartCarouselItems"
+      :key="`${chartComponent.name}-${chartComponent.name === 'HistoryChart' ? renderKey : 0}`"
       :name="chartComponent.name"
     >
       <component :is="chartComponent.component" :show-legend="legendVisible" />
@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import EnergyFlowChart from './charts/energyFlowChart/EnergyFlowChart.vue';
 import HistoryChart from './charts/historyChart/HistoryChart.vue';
@@ -53,7 +53,7 @@ defineOptions({
 });
 const $q = useQuasar();
 const localDataStore = useLocalDataStore();
-
+const renderKey = ref(0);
 const toggleLegend = () => {
   localDataStore.toggleLegendVisibility();
 };
@@ -70,6 +70,21 @@ const chartCarouselItems = [
   },
 ];
 const currentSlide = ref<string>(chartCarouselItems[0].name);
+
+watch(
+  () => fullscreen.value,
+  (isFullscreen, wasFullscreen) => {
+    // Only trigger when exiting fullscreen and current slide is HistoryChart
+    if (
+      !isFullscreen &&
+      wasFullscreen &&
+      currentSlide.value === 'HistoryChart'
+    ) {
+      // Force the chart to be recreated by changing its key
+      renderKey.value++;
+    }
+  },
+);
 </script>
 
 <style scoped>
