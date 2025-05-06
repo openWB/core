@@ -16,14 +16,14 @@ def thread_phase_switch(cp) -> None:
     Phasenumschaltung erfolgt in Threads, da diese länger als ein Zyklus dauert.
     """
     try:
-        if thread_handler(threading.Thread(
-                target=_perform_phase_switch,
-                args=(cp.chargepoint_module,
-                      cp.data.control_parameter.phases,
-                      cp.data.set.charging_ev_data,
-                      cp.data.get.charge_state),
-                name=f"phase switch cp{cp.chargepoint_module.config.id}")):
-            log.debug("Thread zur Phasenumschaltung an LP"+str(cp.num)+" gestartet.")
+        log.debug("Starte Thread zur Phasenumschaltung an LP"+str(cp.num))
+        return thread_handler(threading.Thread(
+            target=_perform_phase_switch,
+            args=(cp.chargepoint_module,
+                  cp.data.control_parameter.phases,
+                  cp.data.set.charging_ev_data,
+                  cp.data.get.charge_state),
+            name=f"phase switch cp{cp.chargepoint_module.config.id}"))
     except Exception:
         log.exception("Fehler im Phasenumschaltungs-Modul")
 
