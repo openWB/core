@@ -462,7 +462,8 @@ class Chargepoint(ChargepointRfidMixin):
                             log.debug(
                                 f"Lp {self.num}: Ladung aktiv halten "
                                 f"{charging_ev.ev_template.data.keep_charge_active_duration}s")
-                            phase_switch.thread_phase_switch(self)
+                            if phase_switch.thread_phase_switch(self) is False:
+                                return
                             log.debug("start phase switch phases_to_use " +
                                       str(self.data.set.phases_to_use) +
                                       " control_parameter phases " +

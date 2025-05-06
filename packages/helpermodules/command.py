@@ -699,6 +699,12 @@ class Command:
                        hostname=SubData.cp_data[payload["data"]["chargepoint"]
                                                 ].chargepoint.chargepoint_module.config.configuration.ip_address)
 
+    def secondaryChargepointUpdate(self, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemUpdate", "data": {}},
+                       hostname=SubData.cp_data[payload["data"]["chargepoint"]
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
+
     def systemReboot(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Neustart wird ausgeführt.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
@@ -740,6 +746,16 @@ class Command:
             run_command([
                 str(parent_file / "runs" / "update_self.sh"),
                 SubData.system_data["system"].data["current_branch"]])
+        if not SubData.general_data.data.extern and SubData.system_data["system"].data["secondary_auto_update"]:
+            for cp in SubData.cp_data.values():
+                # if chargepoint is external_openwb and not the second CP of duo and version is Release
+                if (
+                    cp.chargepoint.chargepoint_module.config.type == 'external_openwb' and
+                    cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0 and
+                    cp.chargepoint.data.get.current_branch == "Release"
+                ):
+                    time.sleep(2)
+                    self.secondaryChargepointUpdate({"data": {"chargepoint": f"cp{cp.chargepoint.num}"}})
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
         log.info("Fetch versions requested")

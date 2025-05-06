@@ -126,10 +126,14 @@ def get_rate_from_time_of_use_product(unit_rate_info: dict, hour_time: datetime)
 
 
 def process_agreement(agreement: dict, hour_time: datetime, prices: Dict[str, float]):
-    valid_from = parse_datetime(agreement['validFrom'])
-    valid_to = parse_datetime(agreement['validTo'])
+    if agreement['validTo'] is None:
+        valid = True
+    else:
+        valid_from = parse_datetime(agreement['validFrom'])
+        valid_to = parse_datetime(agreement['validTo'])
+        valid = valid_from <= hour_time <= valid_to
 
-    if valid_from <= hour_time <= valid_to:
+    if valid:
         unit_rate_info = agreement['unitRateInformation']
         timestamp = str(int(hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
         if unit_rate_info['__typename'] == 'SimpleProductUnitRateInformation':
