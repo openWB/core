@@ -90,7 +90,7 @@ class PolestarAuth:
             log.error("_save_token_to_ramdisk:error saving token store %s:%s", self.token_file, e)
 
     # auth step 3: get token
-    def get_auth_token(self) -> str or None:
+    def get_auth_token(self) -> Optional[str]:
         # first try to load token from ramdisk
         self._load_token_from_ramdisk()
 
@@ -159,7 +159,7 @@ class PolestarAuth:
         return self.access_token
 
     # auth step 2: get code
-    def _get_auth_code(self) -> str or None:
+    def _get_auth_code(self) -> Optional[str]:
         self.resume_path = self._get_auth_resumePath()
         if self.resume_path is None:
             return None
@@ -176,7 +176,7 @@ class PolestarAuth:
         log.info("_get_auth_code:attempting to get new code")
         try:
             result = self.client_session.post(
-                BASE_URL + f"{self.resume_path}",
+                f"{BASE_URL}{self.resume_path}",
                 params=params,
                 data=data
             )
@@ -202,7 +202,7 @@ class PolestarAuth:
                 log.info("_get_auth_code:accept terms and conditions for uid %s", uid)
                 data = {"pf.submit": True, "subject": uid}
                 result = self.client_session.post(
-                    BASE_URL + f"{self.resume_path}",
+                    f"{BASE_URL}{self.resume_path}",
                     data=data,
                 )
             m = re.search(r"code=(.+)", result.request.path_url)
@@ -216,7 +216,7 @@ class PolestarAuth:
         return code
 
     # auth step 1: get resumePath
-    def _get_auth_resumePath(self) -> str or None:
+    def _get_auth_resumePath(self) -> Optional[str]:
         # Get Resume Path
         params = {
             "response_type": "code",
