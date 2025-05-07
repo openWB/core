@@ -54,7 +54,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 79
+    DATASTORE_VERSION = 80
 
     valid_topic = [
         "^openWB/bat/config/configured$",
@@ -107,6 +107,8 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_switch_on_off$",
         "^openWB/chargepoint/[0-9]+/get/charge_state$",
         "^openWB/chargepoint/[0-9]+/get/currents$",
+        "^openWB/chargepoint/[0-9]+/get/current_branch$",
+        "^openWB/chargepoint/[0-9]+/get/current_commit$",
         "^openWB/chargepoint/[0-9]+/get/evse_current$",
         "^openWB/chargepoint/[0-9]+/get/fault_state$",
         "^openWB/chargepoint/[0-9]+/get/fault_str$",
@@ -122,6 +124,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/powers$",
         "^openWB/chargepoint/[0-9]+/get/power_factors$",
         "^openWB/chargepoint/[0-9]+/get/vehicle_id$",
+        "^openWB/chargepoint/[0-9]+/get/version$",
         "^openWB/chargepoint/[0-9]+/get/voltages$",
         "^openWB/chargepoint/[0-9]+/get/serial_number$",
         "^openWB/chargepoint/[0-9]+/get/soc$",
@@ -464,6 +467,7 @@ class UpdateConfig:
         "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/mqtt/valid_partner_ids$",
         "^openWB/system/release_train$",
+        "^openWB/system/secondary_auto_update$",
         "^openWB/system/time$",
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
@@ -560,6 +564,7 @@ class UpdateConfig:
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/mqtt/valid_partner_ids", []),
         ("openWB/system/release_train", "master"),
+        ("openWB/system/secondary_auto_update", True),
         ("openWB/system/serial_number", get_serial_number()),
     )
     invalid_topic = (
@@ -2082,3 +2087,20 @@ class UpdateConfig:
                         break
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 79)
+
+    def upgrade_datastore_79(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # Simcount-Topic löschen, damit ein neuer Simcount mit dem akutellen Zählerstand des virtuellen Zählers
+            # gestartet wird. Akutell ist nur der feste Verbrauch im Simcount.
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                device_config = decode_payload(payload)
+                if device_config.get("type") == "virtual":
+                    for component_topic, component_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{device_config['id']}/component/[0-9]+/config",
+                                     component_topic):
+                            component_config = decode_payload(component_payload)
+                            if "counter" == component_config["type"]:
+                                Pub().pub((f"openWB/system/device/{device_config['id']}/component/"
+                                           f"{component_config['id']}/simulation"), "")
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 80)

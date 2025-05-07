@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 class KwargsDict(TypedDict):
     device_id: int
-    address: str
+    ip_address: str
     factor: int
     generation: Optional[int]
 
@@ -27,7 +27,7 @@ class ShellyInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.address: str = self.kwargs['address']
+        self.address: str = self.kwargs['ip_address']
         self.factor: int = self.kwargs['factor']
         self.generation: Optional[int] = self.kwargs['generation']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")

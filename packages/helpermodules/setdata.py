@@ -86,6 +86,8 @@ class SetData:
                 self.process_general_topic(msg)
             elif ("openWB/set/io/" in msg.topic or "openWB/set/internal_io/" in msg.topic):
                 self.process_io_topic(msg)
+            elif "openWB/set/mqtt/" in msg.topic:
+                self.process_mqtt_topic(msg)
             elif "openWB/set/optional/" in msg.topic:
                 self.process_optional_topic(msg)
             elif "openWB/set/counter/" in msg.topic:
@@ -629,6 +631,10 @@ class SetData:
         elif ("/get/evse_current" in msg.topic or
               "/get/max_evse_current" in msg.topic):
             self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
+        elif ("/get/version" in msg.topic or
+              "/get/current_branch" in msg.topic or
+              "/get/current_commit" in msg.topic):
+            self._validate_value(msg, str)
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
             self._validate_value(msg, float)
@@ -867,6 +873,16 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
+    def process_mqtt_topic(self, msg: mqtt.MQTTMessage):
+        if "openWB/set/mqtt/chargepoint/" in msg.topic:
+            self.process_chargepoint_get_topics(msg)
+        elif "openWB/set/mqtt/counter/" in msg.topic:
+            self.process_counter_topic(msg)
+        elif "openWB/set/mqtt/bat/" in msg.topic:
+            self.process_bat_topic(msg)
+        elif "openWB/set/mqtt/pv/" in msg.topic:
+            self.process_pv_topic(msg)
+
     def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
 
@@ -944,7 +960,7 @@ class SetData:
             elif "/module" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/config/max_currents" in msg.topic:
-                self._validate_value(msg, int, [(7, 1500)], collection=list)
+                self._validate_value(msg, int, [(6, 1500)], collection=list)
             elif ("/config/max_total_power" in msg.topic or
                   "/config/max_power_errorcase" in msg.topic):
                 self._validate_value(msg, int, [(0,  float("inf"))])
@@ -1074,6 +1090,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "openWB/set/system/mqtt/valid_partner_ids" == msg.topic:
                 self._validate_value(msg, str, collection=list)
+            elif "openWB/set/system/secondary_auto_update" == msg.topic:
+                self._validate_value(msg, bool)
             elif "configurable" in msg.topic:
                 self._validate_value(msg, None)
             elif "device" in msg.topic:

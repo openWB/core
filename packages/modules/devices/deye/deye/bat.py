@@ -52,8 +52,7 @@ class DeyeBat(AbstractBat):
             if self.device_type == DeviceType.THREE_PHASE_HV:
                 power = power * 10
             soc = self.client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
-            imported = self.client.read_holding_registers(516, ModbusDataType.UINT_16, unit=unit) * 100
-            exported = self.client.read_holding_registers(518, ModbusDataType.UINT_16, unit=unit) * 100
+            imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(
             power=power,

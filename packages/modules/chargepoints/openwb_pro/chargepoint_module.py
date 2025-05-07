@@ -39,7 +39,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def set_internal_context_handlers(self, parent_cp, parent_hostname):
         self.fault_state = FaultState(ComponentInfo(
-            parent_cp,
+            self.config.id,
             "Ladepunkt "+str(self.config.id),
             "chargepoint",
             parent_id=parent_cp,

@@ -74,7 +74,8 @@ class MultiComponentUpdateContext:
         for component in self.__device_components:
             fault_state = component.fault_state
             if fault_state not in self.__ignored_components:
-                fault_state.from_exception(exception)
+                if exception:
+                    fault_state.from_exception(exception)
                 fault_state.store_error()
         delattr(MultiComponentUpdateContext.__thread_local, "active_context")
         if isinstance(exception, Exception) and self.error_handler is not None:
