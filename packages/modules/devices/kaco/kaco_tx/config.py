@@ -13,7 +13,7 @@ class KacoConfiguration:
 class Kaco:
     def __init__(self,
                  name: str = "Kaco Tx1 & Tx3 Serie",
-                 type: str = "kaco",
+                 type: str = "kaco_tx",
                  id: int = 0,
                  configuration:  KacoConfiguration = None) -> None:
         self.name = name
