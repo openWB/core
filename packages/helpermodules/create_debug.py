@@ -2,9 +2,9 @@ import os
 import time
 import logging
 from pathlib import Path
-import pprint
 from typing import Any, Optional
 import requests
+import re
 
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
@@ -12,12 +12,78 @@ import dataclass_utils
 from helpermodules import subdata
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
-from helpermodules.utils.run_command import run_command
+from helpermodules.utils.run_command import run_command, run_shell_command
 from helpermodules.utils.topic_parser import decode_payload
 from modules.common import req
 from modules.common.abstract_device import AbstractDevice
 
 log = logging.getLogger(__name__)
+
+
+def get_common_data():
+    parsed_data = ""
+    try:
+        serial_number = subdata.SubData.system_data["system"].data["serial_number"]
+    except Exception:
+        serial_number = None
+    try:
+        mac_address = subdata.SubData.system_data["system"].data["mac_address"]
+    except Exception:
+        mac_address = None
+    try:
+        ip_address = subdata.SubData.system_data["system"].data["ip_address"]
+    except Exception:
+        ip_address = None
+
+    with ErrorHandlingContext():
+        parent_file = Path(__file__).resolve().parents[2]
+        with open(f"{parent_file}/web/version", "r") as f:
+            version = f.read().strip()
+        with open(f"{parent_file}/web/lastcommit", "r") as f:
+            lastcommit = f.read().strip()
+        parsed_data += f"VERSION: {version} ({lastcommit})\n"
+    with ErrorHandlingContext():
+        if serial_number is None or serial_number == "null":
+            parsed_data += "OPENWB_SERIAL: unbekannt\n"
+        else:
+            parsed_data += f"OPENWB_SERIAL: {serial_number}\n"
+    with ErrorHandlingContext():
+        parsed_data += f"IP_ADDRESS: {ip_address}\n"
+    with ErrorHandlingContext():
+        parsed_data += f"MAC_ADDRESS: {mac_address}\n"
+    return parsed_data
+
+
+def get_hardware_data():
+    parsed_data = ""
+    temp = run_shell_command(["vcgencmd measure_temp"]).removeprefix("temp=").removesuffix("\n")
+    throttled = int(run_shell_command("vcgencmd get_throttled").removeprefix("throttled="), 16)
+    parsed_data += f"TEMPERATURE_C: {temp}"
+    mask_undervoltage = 0b0001
+    mask_temp_limit = 0b1000
+    mask_undervoltage_reboot = 0x10000
+    mask_temp_limit_reboot = 0x80000
+    if throttled & mask_temp_limit:
+        parsed_data += ", aktuell: Soft Temperature Limit"
+    else:
+        parsed_data += ", aktuell: okay"
+    if throttled & mask_temp_limit_reboot:
+        parsed_data += ", seit Reboot: Soft Temperature Limit\n"
+    else:
+        parsed_data += ", seit Reboot: okay\n"
+
+    parsed_data += "RPI_VOLTAGE: "
+    if throttled & mask_undervoltage:
+        parsed_data += "aktuell: Undervoltage (< 4.63V)"
+    else:
+        parsed_data += "aktuell: okay"
+    if throttled & mask_undervoltage_reboot:
+        parsed_data += ", seit Reboot: Undervoltage (< 4.63V)\n"
+    else:
+        parsed_data += ", seit Reboot: okay\n"
+    parsed_data += f'{get_usb_rs()}'
+    parsed_data += f'{get_rfid_reader()}\n'
+    return parsed_data
 
 
 def config_and_state():
@@ -28,50 +94,50 @@ def config_and_state():
         secondary = False
 
     with ErrorHandlingContext():
-        parent_file = Path(__file__).resolve().parents[2]
-        with open(f"{parent_file}/web/version", "r") as f:
-            version = f.read().strip()
-        with open(f"{parent_file}/web/lastcommit", "r") as f:
-            lastcommit = f.read().strip()
-        parsed_data += f"# Version\n{version}\n{lastcommit}\n\n"
-    with ErrorHandlingContext():
-        parsed_data += f"# Cloud/Brücken\n{BrokerContent().get_bridges()}"
-    with ErrorHandlingContext():
         chargemode_config = data.data.general_data.data.chargemode_config
-        parsed_data += "\n# Allgemein\n"
+    parsed_data += "## Allgemein ##\n"
+    with ErrorHandlingContext():
+        parsed_data += f"OPENWB_CLOUD: {BrokerContent().get_cloud()}"
         if secondary is False:
-            parsed_data += (f"Modus: Primary\nHausverbrauch: {data.data.counter_all_data.data.set.home_consumption}W\n"
-                            f"Phasenvorgabe: Sofortladen {chargemode_config.instant_charging.phases_to_use}, Zielladen "
-                            f"{chargemode_config.scheduled_charging.phases_to_use}, Zeitladen: "
-                            f"{chargemode_config.time_charging.phases_to_use}, PV-Laden: "
-                            f"{chargemode_config.pv_charging.phases_to_use}, Einschaltschwelle: "
-                            f"{chargemode_config.pv_charging.switch_on_threshold}W, Ausschaltschwelle: "
-                            f"{chargemode_config.pv_charging.switch_off_threshold}W\n"
-                            f"Regelintervall: {data.data.general_data.data.control_interval}s, ")
+            parsed_data += ("MODE: Primary\n"
+                            f"HOME_CONSUMPTION: {data.data.counter_all_data.data.set.home_consumption} W\n"
+                            f"PHASES_TO_USE: Sofortladen {chargemode_config.instant_charging.phases_to_use}, "
+                            f"Zielladen {chargemode_config.scheduled_charging.phases_to_use}, "
+                            f"Zeitladen: {chargemode_config.time_charging.phases_to_use}, "
+                            f"PV-Laden: {chargemode_config.pv_charging.phases_to_use}\n"
+                            f"PV_THRESHOLD: Einschaltschwelle: {chargemode_config.pv_charging.switch_on_threshold}W, "
+                            f"Ausschaltschwelle: {chargemode_config.pv_charging.switch_off_threshold}W\n"
+                            f"CONTROL_INTERVAL: {data.data.general_data.data.control_interval}s\n")
         else:
-            parsed_data += "Modus: Secondary\n"
-        parsed_data += f"Display aktiviert: {data.data.optional_data.data.int_display.active}\n"
+            parsed_data += "MODE: Secondary\n"
+        parsed_data += f"DISPLAY_ACTIVE: {data.data.optional_data.data.int_display.active}\n"
 
     if secondary is False:
         with ErrorHandlingContext():
-            pretty_hierarchy = pprint.pformat(data.data.counter_all_data.data.get.hierarchy,
-                                              indent=4, compact=True, sort_dicts=False, width=100)
-            parsed_data += f"\n# Hierarchie\n{pretty_hierarchy}\n"
+            parsed_data += f"\n## Hierarchie ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
 
     with ErrorHandlingContext():
         if secondary:
             with ErrorHandlingContext():
-                parsed_data += "\n# Ladepunkte\n"
+                parsed_data += "\n## Ladepunkte ##\n"
                 for cp in subdata.SubData.cp_data.values():
                     parsed_data += get_parsed_cp_data(cp.chargepoint)
         else:
-            parsed_data += "\n# Geräte und Komponenten\n"
+            parsed_data += "\n## Geräte und Komponenten ##\n"
             for key, value in data.data.system_data.items():
                 with ErrorHandlingContext():
                     if isinstance(value, AbstractDevice):
-                        parsed_data += f"{key}: {dataclass_utils.asdict(value.device_config)}\n"
+                        parsed_data += f"| ### {key} ###\n"
+                        parsed_data += f"| DEVICE_TYPE: {value.device_config.type}\n"
+                        parsed_data += f"| DEVICE_FN: {value.device_config.name}\n"
+                        parsed_data += ("| DEVICE_CONFIG: "
+                                        f"{dataclass_utils.asdict(value.device_config.configuration)}\n\n")
                         for comp_key, comp_value in value.components.items():
-                            parsed_data += f"{comp_key}: {dataclass_utils.asdict(comp_value.component_config)}\n"
+                            parsed_data += f"--| #### {comp_key} ####\n"
+                            parsed_data += f"--| COMPONENT_TYPE: {comp_value.component_config.type}\n"
+                            parsed_data += f"--| COMPONENT_FN: {comp_value.component_config.name}\n"
+                            parsed_data += ("--| COMPONENT_CONFIG: "
+                                            f"{dataclass_utils.asdict(comp_value.component_config.configuration)}\n")
                             if "bat" in comp_value.component_config.type:
                                 component_data = data.data.bat_data[f"bat{comp_value.component_config.id}"]
                             elif "counter" in comp_value.component_config.type:
@@ -79,32 +145,110 @@ def config_and_state():
                             elif "inverter" in comp_value.component_config.type:
                                 component_data = data.data.pv_data[f"pv{comp_value.component_config.id}"]
                             if "bat" in comp_value.component_config.type:
-                                parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, "
-                                                f"SoC: {component_data.data.get.soc}%, "
-                                                f"Fehlerstatus: {component_data.data.get.fault_str}\n")
+                                parsed_data += (f"--| BAT_POWER: {component_data.data.get.power/1000}kW\n"
+                                                f"--| BAT_SOC: {component_data.data.get.soc}%\n"
+                                                f"--| BAT_ERROR_STATUS: {component_data.data.get.fault_str}\n\n")
                             elif "inverter" in comp_value.component_config.type:
-                                parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, "
-                                                f"Fehlerstatus: {component_data.data.get.fault_str}\n")
+                                parsed_data += (f"--| INVERTER_POWER: {component_data.data.get.power/1000}kW\n"
+                                                f"--| MAX_AC_OUT: {component_data.data.config.max_ac_out/1000}kW\n"
+                                                f"--| INVERTER_ERROR_STATUS: {component_data.data.get.fault_str}\n\n")
                             else:
                                 counter_all_data = data.data.counter_all_data
                                 if counter_all_data.get_evu_counter_str() == f"counter{component_data.num}":
-                                    parsed_data += (f"{comp_key}: EVU-Zähler -> max. Leistung "
-                                                    f"{component_data.data.config.max_total_power}, "
-                                                    f"max. Ströme {component_data.data.config.max_currents}; ")
+                                    parsed_data += ("--| COUNTER_TYPE: EVU-Zähler\n"
+                                                    "--| COUNTER_MAX_POWER: "
+                                                    f"{component_data.data.config.max_total_power}\n"
+                                                    "--| COUNTER_MAX_CURRENTS: "
+                                                    f"{component_data.data.config.max_currents}\n")
                                 elif counter_all_data.data.config.home_consumption_source_id == component_data.num:
-                                    parsed_data += (f"{comp_key}: Hausverbrauchszähler -> max. Leistung "
-                                                    f"{component_data.data.config.max_total_power}, "
-                                                    f"max. Ströme {component_data.data.config.max_currents}; ")
+                                    parsed_data += ("--| COUNTER_TYPE: Hausverbrauchszähler\n"
+                                                    "--| COUNTER_MAX_POWER: "
+                                                    f"{component_data.data.config.max_total_power}\n"
+                                                    "--| COUNTER_MAX_CURRENTS: "
+                                                    f"{component_data.data.config.max_currents}\n")
                                 else:
-                                    parsed_data += f"{key}: max. Ströme {component_data.data.config.max_currents}"
-                                parsed_data += (f"Leistung: {component_data.data.get.power/1000}kW, Ströme: "
-                                                f"{component_data.data.get.currents}A, Fehlerstatus: "
-                                                f"{component_data.data.get.fault_str}\n")
+                                    parsed_data += ("--| COUNTER_TYPE: Sonstiger Zähler\nCOUNTER_MAX_CURRENTS: "
+                                                    f"{component_data.data.config.max_currents}\n")
+                                parsed_data += (f"--| COUNTER_POWER: {component_data.data.get.power/1000}kW\n"
+                                                f"--| COUNTER_CURRENTS: {component_data.data.get.currents}A\n"
+                                                f"--| COUNTER_ERROR_STATUS: {component_data.data.get.fault_str}\n\n")
             with ErrorHandlingContext():
-                parsed_data += "\n# Ladepunkte\n"
-                parsed_data += f"Ladeleistung aller Ladepunkte {data.data.cp_all_data.data.get.power / 1000}kW\n"
+                parsed_data += "\n## Gesamtleistungen ##\n"
+                evu_id = data.data.counter_all_data.get_id_evu_counter()
+                try:
+                    evu_powers = filter_log_file('mqtt', 'openWB/counter/' + str(evu_id) + '/get/power,', 5)
+                except Exception:
+                    evu_powers = "Keine Daten"
+                parsed_data += f"EVU_POWER:\n{evu_powers}\n"
+                try:
+                    bat_powers = filter_log_file('mqtt', 'openWB/bat/get/power,', 5)
+                except Exception:
+                    bat_powers = "Keine Daten"
+                parsed_data += f"BAT_ALL_POWER:\n{bat_powers}\n"
+                try:
+                    pv_powers = filter_log_file('mqtt', 'openWB/pv/get/power,', 5)
+                except Exception:
+                    pv_powers = "Keine Daten"
+                parsed_data += f"PV_ALL_POWER:\n{pv_powers}\n"
+                try:
+                    cp_powers = filter_log_file('mqtt', 'openWB/chargepoint/get/power,', 5)
+                except Exception:
+                    cp_powers = "Keine Daten"
+                parsed_data += f"CP_ALL_POWER:\n{cp_powers}\n"
+                try:
+                    home_consumption = filter_log_file('mqtt', 'openWB/counter/set/home_consumption', 5)
+                except Exception:
+                    home_consumption = "Keine Daten"
+                parsed_data += f"HOME_CONSUMPTION:\n {home_consumption}\n"
+            with ErrorHandlingContext():
+                parsed_data += "\n## Ladepunkte ##\n"
+                parsed_data += f"Ladeleistung aller Ladepunkte {data.data.cp_all_data.data.get.power / 1000}kW\n\n"
                 for cp in data.data.cp_data.values():
                     parsed_data += get_parsed_cp_data(cp)
+    return parsed_data
+
+
+def get_hierarchy(hierarchy, level=0):
+    # get friendly names of elements
+    parsed_data = ""
+    for element in hierarchy:
+        parsed_data += "-" * (level * 2) + "| "
+        if element["type"] == "cp":
+            try:
+                cp = data.data.cp_data[f"cp{element['id']}"].chargepoint_module.config
+                # parsed_data += f"{element['type']} ({element['id']}) CP: {cp.name} ({cp.id})\n"
+                parsed_data += f"{element['type']}: {cp.name} (ID: {element['id']})\n"
+            except Exception:
+                parsed_data += f"{element['type']} (ID: {element['id']})\n"
+        else:
+            try:
+                for key, value in data.data.system_data.items():
+                    with ErrorHandlingContext():
+                        if isinstance(value, AbstractDevice):
+                            for comp_key, comp_value in value.components.items():
+                                if (f"component{element['id']}" == comp_key):
+                                    parsed_data += (f"{element['type']}: {comp_value.component_config.name} "
+                                                    f"(device_type: {value.device_config.type}, ")
+                                    if "counter" in comp_value.component_config.type:
+                                        component_data = data.data.counter_data[
+                                            f"counter{comp_value.component_config.id}"]
+                                        counter_all_data = data.data.counter_all_data
+                                        if counter_all_data.get_evu_counter_str() == f"counter{component_data.num}":
+                                            counter_type = ("EVU-Zähler")
+                                        elif (counter_all_data.data.config.home_consumption_source_id ==
+                                              component_data.num):
+                                            counter_type = ("Hausverbrauchszähler")
+                                        else:
+                                            counter_type = "Sonstiger Zähler"
+                                        parsed_data += f"counter_type: {counter_type}, "
+                                    elif "inverter" in comp_value.component_config.type:
+                                        component_data = data.data.pv_data[f"pv{comp_value.component_config.id}"]
+                                        parsed_data += f"max_ac_out: {component_data.data.config.max_ac_out/1000}kW, "
+                                    parsed_data += f"ID: {element['id']})\n"
+            except Exception:
+                parsed_data += f"{element['type']} (ID: {element['id']})\n"
+        if element["children"]:
+            parsed_data += get_hierarchy(element["children"], level + 1)
     return parsed_data
 
 
@@ -115,13 +259,53 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
             ip = cp.chargepoint_module.config.configuration.ip_address
         else:
             ip = None
-        parsed_data += (f"LP{cp.num}: Typ: {cp.chargepoint_module.config.type}; IP: "
-                        f"{ip}; Stecker-Status: {cp.data.get.plug_state}, Leistung: "
-                        f"{cp.data.get.power/1000}kW, {cp.data.get.currents}A, {cp.data.get.voltages}V, Lademodus: "
-                        f"{cp.data.control_parameter.chargemode}, Submode: "
-                        f"{cp.data.control_parameter.submode}, Soll-Strom: "
-                        f"{cp.data.set.current}A, EVSE-Strom: {cp.data.get.evse_current}A, "
-                        f"Status: {cp.data.get.state_str}, Fehlerstatus: {cp.data.get.fault_str}\n")
+        if hasattr(cp.chargepoint_module.config.configuration, "mode"):
+            mode = f"CP_MODE: {cp.chargepoint_module.config.configuration.mode}\n"
+        else:
+            mode = ""
+        if hasattr(cp.data.get, "frequency"):
+            frequency = cp.data.get.frequency
+        else:
+            frequency = None
+
+        try:
+            currents = filter_log_file('mqtt', 'openWB/chargepoint/' +
+                                       str(cp.chargepoint_module.config.id) + '/get/currents')
+            voltages = filter_log_file('mqtt', 'openWB/chargepoint/' +
+                                       str(cp.chargepoint_module.config.id) + '/get/voltages')
+        except Exception:
+            currents = "Keine Daten"
+            voltages = "Keine Daten"
+
+        parsed_data += (f"### LP{cp.num} ###\n"
+                        f"CP_TYPE: {cp.chargepoint_module.config.type}\n"
+                        f"CP_FN: {cp.chargepoint_module.config.name}\n"
+                        f"{mode}"
+                        f"CP_PHASE_SWITCH_HW: {cp.data.config.auto_phase_switch_hw}\n"
+                        f"CP_CONTROL_PILOT_HW: {cp.data.config.control_pilot_interruption_hw}\n"
+                        f"CP_IP: {ip}\n"
+                        f"CP_SET_CURRENT: {cp.data.set.current} A\n"
+                        f"METER_POWER: {cp.data.get.power/1000} kW\n"
+                        f"METER_VOLTAGES: {cp.data.get.voltages} V\n"
+                        f"METER_CURRENTS: {cp.data.get.currents} A\n"
+                        f"METER_FREQUENCY: {frequency} Hz\n"
+                        f"METER_SERIAL: {cp.data.get.serial_number}\n"
+                        f"METER_IMPORTED: {cp.data.get.imported} kWh\n"
+                        f"EVSE_MAX_CURRENT: {cp.data.get.max_evse_current} A\n"
+                        f"EVSE_CURRENT: {cp.data.get.evse_current} A\n"
+                        # EVSE_MODBUS: True / False
+                        # EVSE_ID: 105 (...)
+                        # EVSE_SELFTEST: Passed / Failed
+                        f"EVSE_PLUG_STATE: {cp.data.get.plug_state}\n"
+                        f"CHARGE_MODE: {cp.data.control_parameter.chargemode}\n"
+                        f"CHARGE_SUBMODE: {cp.data.control_parameter.submode}\n"
+                        f"CHARGE_STATE: {cp.data.get.state_str}\n"
+                        # CP_SW_VERSION: 2.1.7-Patch.2
+                        # CP_FIRMWARE: 1.2.3 (bei Pro bzw. Satellit)
+                        # CP_SIGNALING_PRO: basic iec61851 iso11518
+                        f"ERROR_STATE: {cp.data.get.fault_str}\n"
+                        f"ADDITIONAL_METER_VOLTAGES: \n{voltages}"
+                        f"ADDITIONAL_METER_CURRENTS: \n{currents}\n")
         if cp.chargepoint_module.config.type == "openwb_pro":
             try:
                 parsed_data += f"{req.get_http_session().get(f'http://{ip}/connect.php', timeout=5).text}\n"
@@ -135,8 +319,26 @@ ramdisk_dir = openwb_base_dir / 'ramdisk'
 debug_file = ramdisk_dir / 'debug.log'
 
 
+def filter_log_file(log_name, pattern, num_results=10):
+    log_files = [f"{ramdisk_dir}/{log_name}.log.{i}" for i in range(5, 0, -1)]
+    print(log_files)
+    log_files.append(f"{ramdisk_dir}/{log_name}.log")
+    print(log_files)
+    lines = []
+    try:
+        for log_file in log_files:
+            if os.path.isfile(log_file):
+                with open(log_file, 'r') as file:
+                    for line in file.readlines():
+                        if pattern in line:
+                            lines.append(line)
+    except Exception as e:
+        log.exception(f"Fehler beim Lesen der Logdateien: {e}")
+    return ''.join(lines[-num_results:])
+
+
 def merge_log_files(log_name, num_lines):
-    log_files = [f"{ramdisk_dir}/{log_name}.log.{i}" for i in range(5, 1)]
+    log_files = [f"{ramdisk_dir}/{log_name}.log.{i}" for i in range(5, 0, -1)]
     log_files.append(f"{ramdisk_dir}/{log_name}.log")
 
     lines = []
@@ -148,6 +350,42 @@ def merge_log_files(log_name, num_lines):
     except Exception as e:
         log.exception(f"Fehler beim Lesen der Logdateien: {e}")
     return ''.join(lines[-num_lines:])
+
+
+def get_rfid_reader():
+    devices = ["ffff:0035"]
+    device_count = 0
+    parsed_data = "RFID_READER: "
+    for device in devices:
+        result = re.sub(re.compile(r"Bus [0-9]+ Device [0-9]+: ID [0-9a-f]+:[0-9a-f]+ "), '',
+                        run_shell_command(f"lsusb | grep {device} | tail -1"))
+        count = run_shell_command(f"lsusb | grep -c {device}")
+        device_count += int(count)
+        if int(count) > 0:
+            parsed_data += f"{int(count)}x {result}"
+    if device_count == 0:
+        parsed_data += "Kein RFID Reader gefunden"
+    elif device_count > 1:
+        parsed_data += f"Fehler: Es sind {device_count} RFID Reader gefunden worden\n"
+    return parsed_data
+
+
+def get_usb_rs():
+    devices = ["0403:6001", "1a86:55d3"]
+    device_count = 0
+    parsed_data = "USB_RS: "
+    for device in devices:
+        result = re.sub(re.compile(r"Bus [0-9]+ Device [0-9]+: ID [0-9a-f]+:[0-9a-f]+ "), '',
+                        run_shell_command(f"lsusb | grep {device} | tail -1"))
+        count = run_shell_command(f"lsusb | grep -c {device}")
+        device_count += int(count)
+        if int(count) > 0:
+            parsed_data += f"{int(count)}x {result}"
+    if device_count == 0:
+        parsed_data += "Kein USB/RS Wandler gefunden\n"
+    elif device_count > 1:
+        parsed_data += f"Fehler: Es sind {device_count} USB/RS Wandler gefunden worden\n"
+    return parsed_data
 
 
 def get_uuids():
@@ -174,37 +412,40 @@ def create_debug_log(input_data):
                   f"{input_data['installedComponents']}\n{input_data['vehicles']}\n")
         with open(debug_file, 'w+') as df:
             write_to_file(df, lambda: header)
-            write_to_file(df, lambda: f"## section: configuration and state ##\n{config_and_state()}\n")
-            write_to_file(df, lambda: f'## section: system ##\n{run_command(["uptime"])}{run_command(["free"])}\n')
-            write_to_file(df, lambda: f"## section: uuids ##\n{get_uuids()}\n")
-            write_to_file(df, lambda: f'## section: network ##\n{run_command(["ip", "-s", "address"])}\n')
-            write_to_file(df, lambda: f'## section: storage ##\n{run_command(["df", "-h"])}\n')
-            write_to_file(df, lambda: f"## section: broker essentials ##\n{broker.get_broker_essentials()}\n")
+            write_to_file(df, lambda: f'# section: system #\n{get_common_data()}'
+                                      f'KERNEL: {run_shell_command("uname -s -r -v -m -o")}\n'
+                                      f'UPTIME:{run_command(["uptime"])}{run_command(["free"])}\n')
+            write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}\n')
+            write_to_file(df, lambda: f"# section: configuration and state #\n{config_and_state()}")
+            write_to_file(df, lambda: f"# section: uuids #\n{get_uuids()}\n")
+            write_to_file(df, lambda: f'# section: network #\n{run_command(["ip", "-s", "address"])}\n')
+            write_to_file(df, lambda: f'# section: storage #\n{run_command(["df", "-h"])}\n')
+            write_to_file(df, lambda: f"# section: broker essentials #\n{broker.get_broker_essentials()}\n")
             write_to_file(
-                df, lambda: f"## section: retained log ##\n{merge_log_files('main', 500)}")
-            write_to_file(df, lambda: "## section: info log ##\n")
+                df, lambda: f"# section: retained log #\n{merge_log_files('main', 500)}")
+            write_to_file(df, lambda: "# section: info log #\n")
             Pub().pub('openWB/set/system/debug_level', 20)
             time.sleep(60)
             write_to_file(df, lambda: merge_log_files("main", 1000))
-            write_to_file(df, lambda: "## section: debug log ##\n")
+            write_to_file(df, lambda: "# section: debug log #\n")
             Pub().pub('openWB/set/system/debug_level', 10)
             time.sleep(60)
             write_to_file(df, lambda: merge_log_files("main", 2500))
             write_to_file(
                 df,
-                lambda: f'## section: internal chargepoint log ##\n{merge_log_files("internal_chargepoint", 1000)}\n')
-            write_to_file(df, lambda: f'## section: mqtt log ##\n{merge_log_files("mqtt", 1000)}\n')
-            write_to_file(df, lambda: f'## section: soc log ##\n{merge_log_files("soc", 1000)}\n')
-            write_to_file(df, lambda: f'## section: charge log ##\n{merge_log_files("chargelog", 1000)}\n')
-            write_to_file(df, lambda: f"## section: broker ##\n{broker.get_broker()}")
+                lambda: f'# section: internal chargepoint log #\n{merge_log_files("internal_chargepoint", 1000)}\n')
+            write_to_file(df, lambda: f'# section: mqtt log #\n{merge_log_files("mqtt", 1000)}\n')
+            write_to_file(df, lambda: f'# section: soc log #\n{merge_log_files("soc", 1000)}\n')
+            write_to_file(df, lambda: f'# section: charge log #\n{merge_log_files("chargelog", 1000)}\n')
+            write_to_file(df, lambda: f"# section: broker #\n{broker.get_broker()}")
 
         log.info("***** uploading debug log...")
         with open(debug_file, 'rb') as f:
             data = f.read()
-        req.get_http_session().put("https://openwb.de/tools/debug2.php",
-                                   data=data,
-                                   params={'debugemail': debug_email},
-                                   timeout=10)
+            req.get_http_session().put("https://openwb.de/tools/debug2.php",
+                                       data=data,
+                                       params={'debugemail': debug_email},
+                                       timeout=10)
 
         log.info("***** cleanup...")
         os.remove(debug_file)
@@ -216,6 +457,7 @@ def create_debug_log(input_data):
 class BrokerContent:
     def __init__(self) -> None:
         self.content = ""
+        self.count = 0
 
     def get_broker(self):
         BrokerClient("processBrokerBranch", self.__on_connect_broker, self.__get_content).start_finite_loop()
@@ -247,24 +489,31 @@ class BrokerContent:
         client.subscribe("openWB/bat/#", 2)
         client.subscribe("openWB/optional/et/provider", 2)
 
-    def get_bridges(self):
-        BrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_bridges).start_finite_loop()
-        return self.content
-
     def __on_connect_bridges(self, client, userdata, flags, rc):
         client.subscribe("openWB/system/mqtt/#", 2)
 
-    def __get_bridges(self, client, userdata, msg):
+    def get_cloud(self):
+        BrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_cloud).start_finite_loop()
+        BrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_partner).start_finite_loop()
+        self.content += f"ACTIVE_MQTT_BRIDGES: {self.count}\n"
+        return self.content
+
+    def __get_cloud(self, client, userdata, msg):
         if "openWB/system/mqtt/bridge" in msg.topic:
             payload = decode_payload(msg.payload)
-            self.content += (f"Name: {payload['name']}, aktiv: {payload['active']}, "
-                             f"openWB-Cloud: {payload['remote']['is_openwb_cloud']}")
-            if payload['remote'].get("is_openwb_cloud"):
-                self.content += (f", BN: {payload['remote']['username']}, PW: {payload['remote']['password']}, "
-                                 f"Partnerzugang: {payload['access']['partner']}")
-            self.content += "\n"
-        elif "openWB/system/mqtt/valid_partner_ids":
-            self.content += f"Partner-IDs: {decode_payload(msg.payload)}\n"
+            if payload['active']:
+                if payload['remote'].get("is_openwb_cloud"):
+                    self.content += f"BN: {payload['remote']['username']}, PW: {payload['remote']['password']}, "
+                    if payload['access']['partner']:
+                        self.content += "Partnerzugang: An\n"
+                    else:
+                        self.content += "Partnerzugang: Aus\n"
+                else:
+                    self.count += 1
+
+    def __get_partner(self, client, userdata, msg):
+        if "openWB/system/mqtt/valid_partner_ids" in msg.topic:
+            self.content += f"PARTNER_ID: {decode_payload(msg.payload)}\n"
 
 
 class ErrorHandlingContext:
