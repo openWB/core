@@ -21,6 +21,7 @@ import threading
 import traceback
 from typing import Dict, Optional, Tuple
 
+from control.algorithm.utils import get_medium_charging_current
 from control.chargelog import chargelog
 from control import data
 from control.chargemode import Chargemode
@@ -598,7 +599,8 @@ class Chargepoint(ChargepointRfidMixin):
             self.set_state_and_log("Bitte in den Ladepunkt-Einstellungen die Einstellung 'Phase 1 des Ladekabels'" +
                                    " angeben. Andernfalls wird der benötigte Strom auf allen 3 Phasen vorgehalten, " +
                                    "was ggf eine unnötige Reduktion der Ladeleistung zur Folge hat.")
-        self.data.set.required_power = sum(control_parameter.required_currents) * 230
+        self.data.set.required_power = sum(
+            [c * v for c, v in zip(control_parameter.required_currents, self.data.get.voltages)])
 
     def set_timestamp_charge_start(self):
         # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
@@ -696,7 +698,7 @@ class Chargepoint(ChargepointRfidMixin):
                             f"{self.data.control_parameter.submode}, Phasen: "
                             f"{self.data.control_parameter.phases}"
                             f", Priorität: {charging_ev.charge_template.data.prio}"
-                            f", max. Ist-Strom: {max(self.data.get.currents)}")
+                            f", mittlerer Ist-Strom: {get_medium_charging_current(self.data.get.currents)}")
                 except Exception:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
                     self.data.control_parameter.submode = "stop"
