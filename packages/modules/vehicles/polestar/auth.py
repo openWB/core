@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import base64
 import hashlib
 from modules.common.store import RAMDISK_PATH
+from typing import Optional
 
 AUTH_CLIENT_ID = 'l3oopkc_10'
 BASE_URL = 'https://polestarid.eu.polestar.com'
