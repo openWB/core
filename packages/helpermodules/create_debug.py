@@ -131,7 +131,7 @@ def config_and_state():
                         parsed_data += f"| DEVICE_TYPE: {value.device_config.type}\n"
                         parsed_data += f"| DEVICE_FN: {value.device_config.name}\n"
                         parsed_data += ("| DEVICE_CONFIG: "
-                                        f"{dataclass_utils.asdict(value.device_config.configuration)}\n\n")
+                                        f"{dataclass_utils.asdict(value.device_config.configuration)}\n")
                         for comp_key, comp_value in value.components.items():
                             parsed_data += f"--| #### {comp_key} ####\n"
                             parsed_data += f"--| COMPONENT_TYPE: {comp_value.component_config.type}\n"
