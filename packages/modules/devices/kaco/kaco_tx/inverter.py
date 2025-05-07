@@ -14,7 +14,6 @@ from modules.devices.kaco.kaco_tx.scale import create_scaled_reader
 
 class KwargsDict(TypedDict):
     client: modbus.ModbusTcpClient_
-    device_id: int
 
 
 class KacoInverter(AbstractInverter):

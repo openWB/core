@@ -10,8 +10,6 @@ from modules.devices.kaco.kaco_tx.config import (Kaco, KacoInverterSetup)
 
 log = logging.getLogger(__name__)
 
-default_unit_id = 85
-synergy_unit_identifier = 160
 reconnect_delay = 1.2
 
 
@@ -20,7 +18,7 @@ def create_device(device_config: Kaco):
 
     def create_inverter_component(component_config: KacoInverterSetup):
         nonlocal client
-        return KacoInverter(component_config, client=client, device_id=device_config.id)
+        return KacoInverter(component_config, client=client)
 
     def update_components(components: Iterable[KacoInverter]):
         nonlocal client
