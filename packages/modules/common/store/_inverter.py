@@ -52,9 +52,17 @@ class PurgeInverterState:
         self.delegate.set(state)
 
     def update(self) -> None:
-        state = self.fix_hybrid_values(self.delegate.delegate.state)
+        state = self.filter_peaks(self.delegate.delegate.state)
+        state = self.fix_hybrid_values(state)
         self.delegate.set(state)
         self.delegate.update()
+
+    def filter_peaks(self, state: InverterState) -> InverterState:
+        inverter = data.data.pv_data[f"pv{self.delegate.delegate.num}"]
+        max_ac_out = inverter.data.config.max_ac_out
+        if max_ac_out > 0 and state.power > max_ac_out:
+            state.power = max_ac_out
+        return state
 
     def fix_hybrid_values(self, state: InverterState) -> InverterState:
         children = data.data.counter_all_data.get_entry_of_element(self.delegate.delegate.num)["children"]
