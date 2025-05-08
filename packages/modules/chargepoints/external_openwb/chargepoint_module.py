@@ -1,13 +1,20 @@
+import logging
 import time
 
 from control import data
 from helpermodules import pub, timecheck
+from helpermodules.broker import BrokerClient
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
+from helpermodules.utils.topic_parser import decode_payload
 from modules.chargepoints.external_openwb.config import OpenWBSeries
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.store._chargepoint import get_chargepoint_value_store
+
+log = logging.getLogger(__name__)
 
 
 class ChargepointModule(AbstractChargepoint):
@@ -18,6 +25,7 @@ class ChargepointModule(AbstractChargepoint):
             "Ladepunkt", "chargepoint"))
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
+        self.store = get_chargepoint_value_store(self.config.id)
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
@@ -56,6 +64,49 @@ class ChargepointModule(AbstractChargepoint):
                 else:
                     pub.pub_single("openWB/set/internal_chargepoint/0/data/parent_cp", str(num), hostname=ip_address)
                     pub.pub_single("openWB/set/isss/parentCPlp1", str(num), hostname=ip_address)
+
+                def on_connect(client, userdata, flags, rc):
+                    client.subscribe(f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/#")
+
+                def on_message(client, userdata, message):
+                    received_topics.update({message.topic: decode_payload(message.payload)})
+
+                received_topics = {}
+                BrokerClient(f"subscribeSeriesChargepoint{self.config.id}",
+                             on_connect,
+                             on_message,
+                             host=self.config.configuration.ip_address,
+                             port=1883).start_finite_loop()
+
+                if received_topics:
+                    log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")
+                    topic_prefix = f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/"
+                    chargepoint_state = ChargepointState(
+                        power=received_topics.get(f"{topic_prefix}power"),
+                        phases_in_use=received_topics.get(f"{topic_prefix}phases_in_use"),
+                        imported=received_topics.get(f"{topic_prefix}imported"),
+                        exported=received_topics.get(f"{topic_prefix}exported"),
+                        serial_number=received_topics.get(f"{topic_prefix}serial_number"),
+                        powers=received_topics.get(f"{topic_prefix}powers"),
+                        voltages=received_topics.get(f"{topic_prefix}voltages"),
+                        currents=received_topics.get(f"{topic_prefix}currents"),
+                        power_factors=received_topics.get(f"{topic_prefix}power_factors"),
+                        plug_state=received_topics.get(f"{topic_prefix}plug_state"),
+                        charge_state=received_topics.get(f"{topic_prefix}charge_state"),
+                        rfid=received_topics.get(f"{topic_prefix}rfid"),
+                        rfid_timestamp=received_topics.get(f"{topic_prefix}rfid_timestamp"),
+                        frequency=received_topics.get(f"{topic_prefix}frequency"),
+                        soc=received_topics.get(f"{topic_prefix}soc"),
+                        soc_timestamp=received_topics.get(f"{topic_prefix}soc_timestamp"),
+                        vehicle_id=received_topics.get(f"{topic_prefix}vehicle_id"),
+                        evse_current=received_topics.get(f"{topic_prefix}evse_current"),
+                        max_evse_current=received_topics.get(f"{topic_prefix}max_evse_current"),
+                    )
+                    self.store.set(chargepoint_state)
+                else:
+                    self.fault_state.warning(f"Keine MQTT-Daten für Ladepunkt {self.config.name} empfangen. Noch keine "
+                                             "Daten nach dem Start oder Ladepunkt nicht erreichbar.")
+
                 self.client_error_context.reset_error_counter()
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
