@@ -460,7 +460,7 @@ def analyse_percentage_totals(entries, totals):
                         totals["cp"][key].update({f"energy_imported_{source}": 0})
                     totals["cp"][key][f"energy_imported_{source}"] += entry["cp"][key][f"energy_imported_{source}"]*1000
             for key, counter in entry["counter"].items():
-                if counter["exported"] == 0:
+                if counter["grid"] is False:
                     if totals["counter"][key].get(f"energy_imported_{source}") is None:
                         totals["counter"][key].update({f"energy_imported_{source}": 0})
                     totals["counter"][key][f"energy_imported_{source}"] += counter[f"energy_imported_{source}"]*1000
