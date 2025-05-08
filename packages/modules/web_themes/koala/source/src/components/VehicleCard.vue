@@ -71,6 +71,7 @@
         </div>
         <div>Ladestand: {{ vehicleSocValue }}%</div>
       </div>
+      <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>
 </template>

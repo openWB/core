@@ -2,10 +2,10 @@
   <div class="q-pa-md">
     <q-table
       class="sticky-header-table"
-      :rows="rows"
-      :columns="columns"
+      :rows="mappedRows"
+      :columns="mappedColumns"
       row-key="id"
-      :filter="filter"
+      :filter="filterModel"
       :filter-method="customFilterMethod"
       virtual-scroll
       :virtual-scroll-item-size="48"
@@ -48,23 +48,20 @@
   </div>
 </template>
 
-<style scoped>
-.search-field {
-  width: 100%;
-  max-width: 18em;
-}
-</style>
-
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ComputedRef } from 'vue';
 import { QTableColumn, QTableProps } from 'quasar';
-import { BaseRow } from 'src/components/models/base-table-models';
-
-type FilterFunction = NonNullable<QTableProps['filterMethod']>;
 
 const props = defineProps<{
-  rows: BaseRow[];
-  columns: QTableColumn[];
+  items: number[];
+  rowData:
+    | ((item: number) => Record<string, unknown>)
+    | ComputedRef<(item: number) => Record<string, unknown>>;
+  columnConfig: {
+    fields: string[];
+    labels?: Record<string, string>;
+  };
+  rowKey?: string;
   searchInputVisible?: boolean;
   tableHeight?: string;
   filter?: string;
@@ -72,38 +69,58 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'row-click', row: BaseRow): void;
+  (e: 'row-click', row: Record<string, unknown>): void;
   (e: 'update:filter', value: string): void;
 }>();
 
 const filterModel = computed({
   get: () => props.filter || '',
-  set: (value) => {
-    emit('update:filter', value);
-  },
+  set: (value) => emit('update:filter', value),
 });
 
-const customFilterMethod: FilterFunction = (rows, terms, cols) => {
-  if (!terms || terms.trim() === '') {
-    return rows;
-  }
+// Data can be passed to basetable as a normal function or computed property
+const rowMapperFn = computed(() =>
+  typeof props.rowData === 'function' ? props.rowData : props.rowData.value,
+);
+
+const mappedRows = computed(() => props.items.map(rowMapperFn.value));
+
+const mappedColumns = computed<QTableColumn[]>(() => {
+  return props.columnConfig.fields.map((field) => ({
+    name: field,
+    label: props.columnConfig.labels?.[field] || field,
+    field,
+    align: 'left',
+    sortable: true,
+    headerStyle: 'font-weight: bold',
+  }));
+});
+
+const customFilterMethod: NonNullable<QTableProps['filterMethod']> = (
+  rows,
+  terms,
+  cols,
+) => {
+  if (!terms || terms.trim() === '') return rows;
   const lowerTerms = terms.toLowerCase();
-  const columnsToSearch =
+  const fields =
     props.columnsToSearch ||
     cols.map((col) => (typeof col.field === 'string' ? col.field : ''));
-  return rows.filter((row) => {
-    return columnsToSearch.some((field) => {
-      const val = row[field as keyof typeof row];
-      return (
-        val !== null &&
-        val !== undefined &&
-        String(val).toLowerCase().includes(lowerTerms)
-      );
-    });
-  });
+  return rows.filter((row) =>
+    fields.some((field) => {
+      const val = row[field];
+      return val && String(val).toLowerCase().includes(lowerTerms);
+    }),
+  );
 };
 
-const onRowClick = (evt: Event, row: BaseRow) => {
+const onRowClick = (evt: Event, row: Record<string, unknown>) =>
   emit('row-click', row);
-};
 </script>
+
+<style scoped>
+.search-field {
+  width: 100%;
+  max-width: 18em;
+}
+</style>

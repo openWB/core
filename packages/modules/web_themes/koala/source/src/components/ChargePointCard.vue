@@ -8,6 +8,12 @@
           <ChargePointStateIcon
             :charge-point-id="Number(props.chargePointId)"
           />
+          <ChargePointTimeCharging
+            :charge-point-id="Number(props.chargePointId)"
+            :readonly="true"
+            :iconSize="'xs'"
+            :toolTip="true"
+          />
         </div>
         <q-icon name="settings" size="sm" @click="settingsVisible = true" />
       </div>
@@ -91,6 +97,7 @@ import ChargePointFaultMessage from './ChargePointFaultMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
 import ChargePointManualSocDialog from './ChargePointManualSocDialog.vue';
+import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import { useQuasar } from 'quasar';
 
 const mqttStore = useMqttStore();
