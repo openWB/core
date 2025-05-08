@@ -17,6 +17,7 @@ class KoalaWebThemeConfiguration:
         self.chargePoint_table_search_input_field = chargePoint_table_search_input_field
         self.vehicle_table_search_input_field = vehicle_table_search_input_field
 
+
 @auto_str
 class KoalaWebTheme:
     def __init__(self,
