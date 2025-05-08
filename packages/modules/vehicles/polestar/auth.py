@@ -4,10 +4,10 @@ import requests
 import os
 import re
 from datetime import datetime, timedelta
-from typing import Optional
 import base64
 import hashlib
 from modules.common.store import RAMDISK_PATH
+from typing import Optional
 
 AUTH_CLIENT_ID = 'l3oopkc_10'
 BASE_URL = 'https://polestarid.eu.polestar.com'
@@ -177,7 +177,7 @@ class PolestarAuth:
         log.info("_get_auth_code:attempting to get new code")
         try:
             result = self.client_session.post(
-                BASE_URL+f"/as/{self.resume_path}/resume/as/authorization.ping",
+                f"{BASE_URL}{self.resume_path}",
                 params=params,
                 data=data
             )
@@ -203,7 +203,7 @@ class PolestarAuth:
                 log.info("_get_auth_code:accept terms and conditions for uid %s", uid)
                 data = {"pf.submit": True, "subject": uid}
                 result = self.client_session.post(
-                    BASE_URL+f"/as/{self.resume_path}/resume/as/authorization.ping",
+                    f"{BASE_URL}{self.resume_path}",
                     data=data,
                 )
             m = re.search(r"code=(.+)", result.request.path_url)
@@ -239,7 +239,7 @@ class PolestarAuth:
         if result.status_code != 200:
             log.error("_get_auth_resumePath:get response:%d", result.status_code)
             return None
-        m = re.search(r"resumePath=([^&]+)", result.url)
+        m = re.search(r'(?:url|action):\s*"(.+)"', result.text)
         if m is not None:
             resume_path = m.group(1)
             log.info("_get_auth_resumePath:got resumePath %s", resume_path)
