@@ -616,6 +616,7 @@ class Chargepoint(ChargepointRfidMixin):
                  self.data.control_parameter.chargemode != self.data.set.charge_template.data.chargemode.selected)):
             self.chargemode_changed = True
             log.debug("Änderung des Lademodus")
+            self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
         else:
             self.chargemode_changed = False
 
@@ -659,7 +660,7 @@ class Chargepoint(ChargepointRfidMixin):
                         max_phase_hw,
                         self.cp_ev_support_phase_switch(),
                         self.template.data.charging_type,
-                        self.data.set.log.timestamp_start_charging,
+                        self.data.control_parameter.timestamp_chargemode_changed,
                         self.data.set.log.imported_since_plugged)
                     phases = self.get_phases_by_selected_chargemode(phases)
                     phases = self.set_phases(phases)
@@ -746,6 +747,8 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.get.imported)
                 Pub().pub("openWB/set/chargepoint/"+str(self.num) +
                           "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
+            if self.data.get.plug_state and self.data.set.plug_state_prev is False:
+                self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
             # SoC nach Anstecken aktualisieren
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.get.plug_state is False and self.data.set.plug_state_prev) or

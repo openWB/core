@@ -501,6 +501,7 @@ class SetData:
                 elif ("/control_parameter/min_current" in msg.topic or
                         "/control_parameter/timestamp_switch_on_off" in msg.topic or
                         "/control_parameter/timestamp_charge_start" in msg.topic or
+                        "/control_parameter/timestamp_chargemode_changed" in msg.topic or
                         "/control_parameter/timestamp_last_phase_switch" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
