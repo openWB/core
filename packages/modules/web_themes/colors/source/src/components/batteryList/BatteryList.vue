@@ -36,7 +36,12 @@ Hagen */
 				</span>
 			</InfoItem>
 		</div>
-		<BLBattery v-for="[key, battery] in batteries" :key="key" :bat="battery" />
+		<BLBattery
+			v-for="[key, battery] in batteries"
+			:key="key"
+			:bat="battery"
+			class="px-4"
+		/>
 	</WbWidgetFlex>
 </template>
 

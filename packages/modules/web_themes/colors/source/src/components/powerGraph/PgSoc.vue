@@ -1,34 +1,32 @@
 <template>
 	<svg x="0" :width="props.width">
-		<g>
-			<path
-				:id="'soc-' + vID"
-				.origin="autozoom"
-				class="soc-baseline"
-				:d="myline"
-				stroke="var(--color-bg)"
-				stroke-width="1"
-				fill="none"
-			/>
-			<path
-				:id="'socdashes-' + vID"
-				class="soc-dashes"
-				:d="myline"
-				:stroke="cpColor"
-				stroke-width="1"
-				:style="{ strokeDasharray: '3,3' }"
-				fill="none"
-			/>
-			<text
-				class="cpname"
-				:x="nameX"
-				:y="nameY"
-				:style="{ fill: cpColor, fontSize: 10 }"
-				:text-anchor="textPosition"
-			>
-				{{ vName }}
-			</text>
-		</g>
+		<path
+			:id="'soc-' + vID"
+			.origin="autozoom"
+			class="soc-baseline"
+			:d="myline"
+			stroke="var(--color-bg)"
+			stroke-width="1"
+			fill="none"
+		/>
+		<path
+			:id="'socdashes-' + vID"
+			class="soc-dashes"
+			:d="myline"
+			:stroke="cpColor"
+			stroke-width="1"
+			:style="{ strokeDasharray: '3,3' }"
+			fill="none"
+		/>
+		<text
+			class="cpname"
+			:x="nameX"
+			:y="nameY"
+			:style="{ fill: cpColor, fontSize: 10 }"
+			:text-anchor="textPosition"
+		>
+			{{ vName }}
+		</text>
 	</svg>
 </template>
 
@@ -77,6 +75,7 @@ const myline = computed(() => {
 							: d['soc' + topVehicles.value[1]!],
 				) ?? yScale.value(0),
 		)
+
 	let p = path(graphData.data)
 	return p ? p : ''
 })
@@ -117,11 +116,11 @@ const cpColor = computed(() => {
 const nameX = computed(() => {
 	switch (props.order) {
 		case 0:
-			return 3 // first vehicle
+			return 3
 		case 1:
-			return props.width - 3 // 2nd vehicle
+			return props.width - 3
 		case 2:
-			return props.width / 2 // battery
+			return props.width / 2
 		default:
 			return 0 // error
 	}
@@ -131,16 +130,15 @@ const nameY = computed(() => {
 	if (graphData.data.length > 0) {
 		let index: number
 		switch (props.order) {
-			case 0: // 1st vehicle
-				index = 0
+			case 0:
+				index = graphData.data.length - 1
 				return yScale.value(
 					graphData.data[index]['soc' + topVehicles.value[0]] + 2,
 				)
 			case 1:
-				index = graphData.data.length - 1
-				return Math.max(
-					12,
-					yScale.value(graphData.data[index]['soc' + topVehicles.value[1]] + 2),
+				index = 0
+				return yScale.value(
+					graphData.data[index]['soc' + topVehicles.value[1]] + 2,
 				)
 			case 2:
 				index = Math.round(graphData.data.length / 2)

@@ -103,17 +103,14 @@ const keysToUse = computed(() => {
 	if (globalConfig.showInverters) {
 		const pattern = /pv\d+/
 		if (graphData.data.length > 0) {
-			/* additionalKeys = Object.keys(graphData.data[0]).reduce(
-				(list: string[], itemKey: string) => {
-					if (itemKey.match(pattern)) {
-						list.push(itemKey)
+			additionalKeys = Object.keys(graphData.data[0]).reduce(
+				(list: string[], element: string) => {
+					if (element.match(pattern)) {
+						list.push(element)
 					}
 					return list
 				},
 				[],
-			) */
-			additionalKeys = Object.keys(graphData.data[0]).filter((itemKey) =>
-				itemKey.match(pattern),
 			)
 		}
 	}

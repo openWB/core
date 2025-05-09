@@ -7,8 +7,10 @@ export default {
     return {
       mqttStore: useMqttStore(),
       show: false,
-      countdown: undefined,
-      countdownInterval: undefined,
+      touchBlockerCountdown: undefined,
+      touchBlockerCountdownInterval: undefined,
+      defaultViewCountdown: undefined,
+      defaultViewCountdownInterval: undefined,
       events: ["mousemove", "touchmove", "wheel", "click"],
       eventHandlerSetup: false,
     };
@@ -20,25 +22,38 @@ export default {
       }
       return this.mqttStore.getDisplayStandby;
     },
+    configuredDefaultViewTimeout() {
+      if (this.mqttStore.getDefaultViewTimeout === 0 || this.mqttStore.getDefaultViewTimeout === undefined) {
+        return undefined;
+      }
+      return this.mqttStore.getDefaultViewTimeout;
+    },
     touchBlockerTimeout() {
       // show touch blocker right before the configured standby time
       return Math.max(this.configuredDisplayStandby - 3, 1);
     },
+    defaultViewTimeout() {
+      // switch to default view after the configured timeout
+      return this.configuredDefaultViewTimeout;
+    },
   },
   mounted() {
     this.setupEventHandler();
-    this.setupTimeout();
+    this.setupTouchBlockerTimeout();
+    this.setupDefaultViewTimeout();
   },
   unmounted() {
     this.clearEventHandler();
-    this.clearTimeout();
+    this.clearTouchBlockerTimeout();
+    this.clearDefaultViewTimeout();
   },
   methods: {
     handleTouchBlockerClick(event) {
       if (event === false) {
         this.show = false;
         this.setupEventHandler();
-        this.setupTimeout();
+        this.setupTouchBlockerTimeout();
+        this.setupDefaultViewTimeout();
       }
     },
     setupEventHandler() {
@@ -57,34 +72,72 @@ export default {
         this.eventHandlerSetup = false;
       }
     },
-    setupTimeout() {
-      if (this.countdownInterval === undefined) {
-        this.countdownInterval = setInterval(this.updateCountdown, 1000);
+    setupTouchBlockerTimeout() {
+      if (this.touchBlockerCountdownCountdownInterval === undefined) {
+        this.touchBlockerCountdownCountdownInterval = setInterval(this.updateTouchBlockerCountdown, 1000);
       }
     },
-    clearTimeout() {
-      if (this.countdownInterval !== undefined) {
-        clearInterval(this.countdownInterval);
-        this.countdownInterval = undefined;
+    clearTouchBlockerTimeout() {
+      if (this.touchBlockerCountdownCountdownInterval !== undefined) {
+        clearInterval(this.touchBlockerCountdownCountdownInterval);
+        this.touchBlockerCountdownCountdownInterval = undefined;
       }
     },
-    updateCountdown() {
-      if (this.countdown === undefined) {
-        this.countdown = this.touchBlockerTimeout;
+    updateTouchBlockerCountdown() {
+      if (this.touchBlockerCountdown === undefined) {
+        this.touchBlockerCountdown = this.touchBlockerTimeout;
       } else {
-        this.countdown -= 1;
-        if (this.countdown < 1) {
+        this.touchBlockerCountdown -= 1;
+        if (this.touchBlockerCountdown < 1) {
           this.showTouchBlocker();
         }
       }
     },
+    setupDefaultViewTimeout() {
+      if (
+        this.defaultViewCountdownInterval === undefined
+        && this.mqttStore.getDefaultView !== this.$route.name
+        && this.defaultViewTimeout !== undefined
+      ) {
+        this.defaultViewCountdownInterval = setInterval(this.updateDefaultViewCountdown, 1000);
+      }
+    },
+    clearDefaultViewTimeout() {
+      if (this.defaultViewCountdownInterval !== undefined) {
+        clearInterval(this.defaultViewCountdownInterval);
+        this.defaultViewCountdownInterval = undefined;
+      }
+    },
+    updateDefaultViewCountdown() {
+      if (this.defaultViewCountdown === undefined && this.defaultViewTimeout !== undefined) {
+        this.defaultViewCountdown = this.defaultViewTimeout;
+      } else {
+        if (this.$route.name === this.mqttStore.getDefaultView) {
+          this.clearDefaultViewTimeout();
+        } else {
+          this.defaultViewCountdown -= 1;
+          if (this.defaultViewCountdown < 1) {
+            this.showDefaultView();
+          }
+        }
+      }
+    },
     handleDocumentEvent() {
-      this.countdown = this.touchBlockerTimeout;
+      this.touchBlockerCountdown = this.touchBlockerTimeout;
+      this.defaultViewCountdown = this.defaultViewTimeout;
+      this.setupDefaultViewTimeout();
       this.show = false;
     },
     showTouchBlocker() {
       this.show = true;
-      this.clearTimeout();
+      this.clearTouchBlockerTimeout();
+    },
+    showDefaultView() {
+      console.log("switching to default view:", this.mqttStore.getDefaultView);
+      this.clearDefaultViewTimeout();
+      if (this.$route.name !== this.mqttStore.getDefaultView) {
+        this.$router.push({ name: this.mqttStore.getDefaultView });
+      }
     },
   },
 };

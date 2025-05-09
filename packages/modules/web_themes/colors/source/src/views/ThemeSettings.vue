@@ -21,7 +21,7 @@
 					icon="fa-adjust"
 					infotext="Hintergrundfarbe"
 				>
-					<RadioInput
+					<RadioInput2
 						v-model="globalConfig.displayMode"
 						:options="colorschemes"
 					/>
@@ -32,7 +32,7 @@
 					icon="fa-palette"
 					infotext="Für die Smart-Home-Geräte stehen mehrere Schemata zur Verfügung."
 				>
-					<RadioInput
+					<RadioInput2
 						v-model="globalConfig.smartHomeColors"
 						:options="shSchemes"
 					/>
@@ -43,7 +43,9 @@
 					icon="fa-th"
 					infotext="Verwende ein Hintergrundraster in den Grafiken"
 				>
-					<SwitchInput v-model="globalConfig.showGrid" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showGrid" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -51,7 +53,9 @@
 					icon="fa-chart-area"
 					infotext="Im Graph 'Aktuelle Leistung' können die Bögen immer die volle Länge haben, oder entsprechend des aktuellen Gesamtleistung verkürzt dargestellt werden."
 				>
-					<SwitchInput v-model="globalConfig.showRelativeArcs" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showRelativeArcs" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					v-if="globalConfig.showRelativeArcs"
@@ -85,10 +89,10 @@
 					icon="fa-clock"
 					infotext="Zeige die aktuelle Uhrzeit an. In der Menüleiste oder neben den Lade-Buttons."
 				>
-					<RadioInput
+					<RadioInput2
 						v-model="globalConfig.showClock"
 						:options="clockModes"
-					></RadioInput>
+					></RadioInput2>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -96,7 +100,7 @@
 					icon="fa-list"
 					infotext="Zeige eine einzelne Ladepunktliste statt separater Element pro Ladepunkt."
 				>
-					<RadioInput
+					<RadioInput2
 						v-model="globalConfig.shortCpList"
 						:options="shortListOptions"
 					/>
@@ -109,7 +113,9 @@
 					icon="fa-window-maximize"
 					infotext="Informationen zu Ladepunkten über den Diagrammen anzeigen."
 				>
-					<SwitchInput v-model="globalConfig.showButtonBar" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showButtonBar" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -117,7 +123,9 @@
 					icon="fa-filter"
 					infotext="Hauptseite mit Buttons zur Auswahl der Kategorie."
 				>
-					<SwitchInput v-model="globalConfig.showQuickAccess" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showQuickAccess" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -125,7 +133,9 @@
 					icon="fa-desktop"
 					infotext="Widgets immer breit machen"
 				>
-					<SwitchInput v-model="globalConfig.preferWideBoxes" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.preferWideBoxes" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -133,7 +143,9 @@
 					icon="fa-maximize"
 					infotext="Die Breite des Displays wird immer voll ausgenutzt. Dies kann in einigen Fällen zu inkorrekter Darstellung führen."
 				>
-					<SwitchInput v-model="globalConfig.fluidDisplay" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.fluidDisplay" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -141,7 +153,9 @@
 					icon="fa-film"
 					infotext="Animationen anzeigen"
 				>
-					<SwitchInput v-model="globalConfig.showAnimations" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showAnimations" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -149,7 +163,9 @@
 					icon="fa-chart-bar"
 					infotext="Zeige die Werte zusätzlich angelegter Zähler"
 				>
-					<SwitchInput v-model="globalConfig.showCounters" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showCounters" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -157,7 +173,9 @@
 					icon="fa-car"
 					infotext="Zeige alle Fahrzeuge mit Ladestand und Reichweite"
 				>
-					<SwitchInput v-model="globalConfig.showVehicles" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showVehicles" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -165,17 +183,19 @@
 					icon="fa-car"
 					infotext="Zeige das Standard-Fahrzeug in der Fahzeugliste"
 				>
-					<SwitchInput v-model="globalConfig.showStandardVehicle" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showStandardVehicle" />
+					</template>
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Wechselrichter-Details anzeigen"
 					icon="fa-solar-panel"
 					infotext="Zeige Details zu den einzelnen Wechselrichtern"
 				>
-					<SwitchInput v-model="globalConfig.showInverters" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showInverters" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -183,15 +203,21 @@
 					icon="fa-chart-area"
 					infotext="Horizontale Darstellung der Energie-Werte"
 				>
-					<SwitchInput v-model="globalConfig.alternativeEnergy" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.alternativeEnergy" />
+					</template>
 				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Preistabelle anzeigen"
 					icon="fa-car"
 					infotext="Zeige die Strompreistabelle in einer separaten Box an"
 				>
-					<SwitchInput v-model="globalConfig.showPrices" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showPrices" />
+					</template>
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
@@ -232,16 +258,22 @@
 					icon="fa-gear"
 					infotext="Erlaubt das Lesen der Einstellungen, wenn das UI in andere Applikationen eingebettet ist (z.B. HomeAssistant). Erfordert eine mit SSL verschlüsselte Verbindung über HTTPS! Experimentelles Feature."
 				>
-					<SwitchInput v-model="globalConfig.sslPrefs" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.sslPrefs" />
+					</template>
 				</ConfigItem>
+				<hr />
 				<ConfigItem
 					:fullwidth="true"
 					title="Debug-Modus"
 					icon="fa-bug-slash"
 					infotext="Kontrollausgaben in der Console sowie Anzeige von Bildschirmbreite und MQ-Viewer"
 				>
-					<SwitchInput v-model="globalConfig.debug" />
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.debug" />
+					</template>
 				</ConfigItem>
+				<hr />
 			</div>
 			<div class="grid-col-12 mb-3 me-3">
 				<button
@@ -261,7 +293,8 @@ import { globalConfig } from '@/assets/js/themeConfig'
 import SelectInput from '@/components/shared/SelectInput.vue'
 import ConfigItem from '@/components/shared/ConfigItem.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
-import RadioInput from '@/components/shared/RadioInput.vue'
+import RadioInput2 from '@/components/shared/RadioInput2.vue'
+
 import WbWidgetFlex from '@/components/shared/WbWidgetFlex.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 const emit = defineEmits(['reset-arcs'])
@@ -302,5 +335,9 @@ const shortListOptions: [string, string][] = [
 
 .closebutton {
 	justify-self: end;
+}
+
+.settingscolumn {
+	padding: 20px;
 }
 </style>
