@@ -829,7 +829,8 @@ class Chargepoint(ChargepointRfidMixin):
     def update_charge_template_scheduled_plan(self, plan: ScheduledChargingPlan) -> None:
         self._clear_template_topics(
             f"openWB/chargepoint/{self.num}/set/charge_template/chargemode/scheduled_charging/plans/{plan.id}")
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template/chargemode/scheduled_charging/plans/{plan.id}",
+        Pub().pub(f"openWB/set/chargepoint/{self.num}"
+                  f"/set/charge_template/chargemode/scheduled_charging/plans/{plan.id}",
                   dataclasses.asdict(plan))
 
     def update_charge_template_time_plan(self, plan: TimeChargingPlan) -> None:

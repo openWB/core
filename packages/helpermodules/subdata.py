@@ -346,25 +346,29 @@ class SubData:
                             if ((cp.chargepoint.data.set.charging_ev != -1 and
                                     cp.chargepoint.data.set.charging_ev == vehicle.num) or
                                     cp.chargepoint.data.config.ev == vehicle.num):
-                                # UI sendet immer alle Topics, auch nicht geänderte. Damit die temporären Topics nicht mehrfach gepbulished werden, muss das publishen der temporären Topics 1:1 erfolgen.
+                                # UI sendet immer alle Topics, auch nicht geänderte. Damit die temporären Topics nicht
+                                # mehrfach gepbulished werden, muss das publishen der temporären Topics 1:1 erfolgen.
                                 if re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
                                     if decode_payload(msg.payload) == "":
                                         Pub().pub(f"openWB/chargepoint/{cp.chargepoint.num}/charge_template", "")
                                     else:
                                         cp.chargepoint.update_bare_charge_template(var["ct"+index])
-                                elif re.search("/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+", msg.topic) is not None:
+                                elif re.search("/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/"
+                                               "plans/[0-9]+", msg.topic) is not None:
                                     plan_id = get_second_index(msg.topic)
                                     if decode_payload(msg.payload) == "":
-                                        Pub().pub(
-                                            f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template/chargemode/scheduled_charging/plans/{plan_id}", "")
+                                        Pub().pub(f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template/"
+                                                  f"chargemode/scheduled_charging/plans/{plan_id}", "")
                                     else:
                                         cp.chargepoint.update_charge_template_scheduled_plan(
                                             var["ct"+index].data.chargemode.scheduled_charging.plans[plan_id])
-                                elif re.search("/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+", msg.topic) is not None:
+                                elif re.search("/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+",
+                                               msg.topic) is not None:
                                     plan_id = get_second_index(msg.topic)
                                     if decode_payload(msg.payload) == "":
                                         Pub().pub(
-                                            f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template/time_charging/plans/{plan_id}", "")
+                                            f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template/"
+                                            f"time_charging/plans/{plan_id}", "")
                                     else:
                                         cp.chargepoint.update_charge_template_time_plan(
                                             var["ct"+index].data.time_charging.plans[plan_id])
