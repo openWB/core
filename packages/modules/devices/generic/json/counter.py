@@ -24,7 +24,10 @@ class JsonCounter(AbstractCounter):
         config = self.component_config.configuration
         self.jq_power = jq.compile(config.jq_power)
         self.jq_powers = [jq.compile(p) for p in config.jq_powers] if all(config.jq_powers) else []
+        self.jq_power_factors = [
+            jq.compile(pf) for pf in config.jq_power_factors] if all(config.jq_power_factors) else []
         self.jq_currents = [jq.compile(c) for c in config.jq_currents] if all(config.jq_currents) else []
+        self.jq_voltages = [jq.compile(v) for v in config.jq_voltages] if all(config.jq_voltages) else []
         self.jq_imported = jq.compile(config.jq_imported) if config.jq_imported else None
         self.jq_exported = jq.compile(config.jq_exported) if config.jq_exported else None
 
@@ -48,6 +51,16 @@ class JsonCounter(AbstractCounter):
             if len(self.jq_currents) == 3 else None
         )
 
+        power_factors = (
+            [float(j.input(response).first()) for j in self.jq_power_factors]
+            if len(self.jq_power_factors) == 3 else None
+        )
+
+        voltages = (
+            [float(j.input(response).first()) for j in self.jq_voltages]
+            if len(self.jq_voltages) == 3 else None
+        )
+
         if self.jq_imported is None or self.jq_exported is None:
             imported, exported = self.sim_counter.sim_count(power)
         else:
@@ -59,7 +72,9 @@ class JsonCounter(AbstractCounter):
             exported=exported,
             power=power,
             powers=powers,
-            currents=currents
+            currents=currents,
+            power_factors=power_factors,
+            voltages=voltages
         )
         self.store.set(counter_state)
 
