@@ -29,6 +29,7 @@ class JsonBat(AbstractBat):
     def update(self, response) -> None:
         config = self.component_config.configuration
 
+        currents = float(jq.compile(config.jq_currents).input(response).first())
         power = float(jq.compile(config.jq_power).input(response).first())
         if config.jq_soc != "":
             soc = float(jq.compile(config.jq_soc).input(response).first())
@@ -42,6 +43,7 @@ class JsonBat(AbstractBat):
             imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(
+            currents=currents,
             power=power,
             soc=soc,
             imported=imported,

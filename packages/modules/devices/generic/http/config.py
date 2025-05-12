@@ -25,9 +25,10 @@ class HTTP:
 
 @auto_str
 class HttpBatConfiguration:
-    def __init__(self, power_path=None, soc_path=None, imported_path=None, exported_path=None):
+    def __init__(self, power_path=None, soc_path=None, currents_path=None, imported_path=None, exported_path=None):
         self.power_path = power_path
         self.soc_path = soc_path
+        self.currents_path = currents_path
         self.imported_path = imported_path
         self.exported_path = exported_path
 

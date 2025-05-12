@@ -29,6 +29,8 @@ class HttpBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
+        self.__get_currents = create_request_function(
+            self.kwargs['url'], self.component_config.configuration.currents_path)
         self.__get_power = create_request_function(self.kwargs['url'], self.component_config.configuration.power_path)
         self.__get_imported = create_request_function(
             self.kwargs['url'], self.component_config.configuration.imported_path)
@@ -44,6 +46,7 @@ class HttpBat(AbstractBat):
             imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(
+            currents=self.__get_currents(session),
             power=power,
             exported=exported,
             imported=imported,

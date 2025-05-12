@@ -24,10 +24,12 @@ class Json:
 
 class JsonBatConfiguration:
     def __init__(self,
+                 jq_currents: Optional[str] = None,
                  jq_imported: Optional[str] = None,
                  jq_exported: Optional[str] = None,
                  jq_soc: str = "",
                  jq_power: str = ""):
+        jq_currents = jq_currents
         self.jq_imported = jq_imported
         self.jq_exported = jq_exported
         self.jq_soc = jq_soc

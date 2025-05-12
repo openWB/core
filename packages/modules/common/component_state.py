@@ -56,6 +56,7 @@ class BatState:
         exported: float = 0,
         power: float = 0,
         soc: float = 0,
+        currents: Optional[List[float]] = None,
     ):
         """Args:
             imported: total imported energy in Wh
@@ -67,6 +68,12 @@ class BatState:
         self.exported = exported
         self.power = power
         self.soc = soc
+        if _check_none(currents):
+            currents = [0.0]*3
+        else:
+            if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
+                log.debug("currents sign wrong "+str(currents))
+        self.currents = currents
 
 
 @auto_str

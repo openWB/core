@@ -7,6 +7,7 @@ from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
+from modules.common.mpm3pm import Mpm3pm
 from modules.common.sdm import Sdm120
 from modules.common.sdm import Sdm630_72
 from modules.common.simcount import SimCounter
@@ -49,7 +50,16 @@ class BatKitFlex(AbstractBat):
                 imported = self.__client.get_imported()
                 exported = self.__client.get_exported()
 
+            voltages = self.__client.get_voltages()
+            powers, power = self.__client.get_power()
+
+            if isinstance(self.__client, Mpm3pm):
+                currents = [powers[i] / voltages[i] for i in range(3)]
+            else:
+                currents = self.__client.get_currents()
+
         bat_state = BatState(
+            currents=currents,
             imported=imported,
             exported=exported,
             power=power
