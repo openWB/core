@@ -52,7 +52,7 @@ class EcoCharging:
 
 @dataclass
 class InstantCharging:
-    current: int = 10
+    current: int = 16
     dc_current: float = 145
     limit: Limit = field(default_factory=limit_factory)
     phases_to_use: int = 3
@@ -89,7 +89,7 @@ def instant_charging_factory() -> InstantCharging:
 
 @dataclass
 class Chargemode:
-    selected: str = "stop"
+    selected: str = "instant_charging"
     eco_charging: EcoCharging = field(default_factory=eco_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
