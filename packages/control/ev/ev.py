@@ -206,6 +206,8 @@ class Ev:
                 elif charge_template.data.chargemode.selected == "stop":
                     required_current, submode, tmp_message = charge_template.stop()
                     phases = control_parameter.phases or max_phases_hw
+                else:
+                    tmp_message = None
                 message = f"{message or ''} {tmp_message or ''}".strip()
             if submode == "stop" or (charge_template.data.chargemode.selected == "stop"):
                 state = False
