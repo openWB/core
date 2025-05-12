@@ -153,55 +153,65 @@ class SurplusControlled:
         evu_counter = data.data.counter_all_data.get_evu_counter()
 
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
-            def phase_switch_necessary() -> bool:
-                return cp.cp_ev_chargemode_support_phase_switch() and cp.data.get.phases_in_use != 1
-            control_parameter = cp.data.control_parameter
-            if cp.chargemode_changed or cp.submode_changed:
-                if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
-                    if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
-                        threshold = evu_counter.calc_switch_off_threshold(cp)[0]
-                        if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:
-                            control_parameter.required_currents = [0]*3
-                            control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+            try:
+                def phase_switch_necessary() -> bool:
+                    return cp.cp_ev_chargemode_support_phase_switch() and cp.data.get.phases_in_use != 1
+                control_parameter = cp.data.control_parameter
+                if cp.chargemode_changed or cp.submode_changed:
+                    if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
+                        if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
+                            threshold = evu_counter.calc_switch_off_threshold(cp)[0]
+                            if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:
+                                control_parameter.required_currents = [0]*3
+                                control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+                    else:
+                        control_parameter.required_currents = [0]*3
                 else:
-                    control_parameter.required_currents = [0]*3
-            else:
-                if ((control_parameter.state == ChargepointState.CHARGING_ALLOWED or
-                        control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
-                        phase_switch_necessary() is False):
-                    evu_counter.switch_off_check_threshold(cp)
-                if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
-                    evu_counter.switch_off_check_timer(cp)
-                if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
-                    # Wenn charge_state False und set_current > 0, will Auto nicht laden
-                    evu_counter.switch_on_timer_expired(cp)
-                if control_parameter.state not in CHARGING_STATES:
-                    control_parameter.required_currents = [0]*3
+                    if ((control_parameter.state == ChargepointState.CHARGING_ALLOWED or
+                            control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
+                            phase_switch_necessary() is False):
+                        evu_counter.switch_off_check_threshold(cp)
+                    if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
+                        evu_counter.switch_off_check_timer(cp)
+                    if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
+                        # Wenn charge_state False und set_current > 0, will Auto nicht laden
+                        evu_counter.switch_on_timer_expired(cp)
+                    if control_parameter.state not in CHARGING_STATES:
+                        control_parameter.required_currents = [0]*3
+            except Exception:
+                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
 
     def check_switch_on(self) -> None:
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
-            if (cp.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
-                    cp.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
-                data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
+            try:
+                if (cp.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
+                        cp.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
+                    data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
+            except Exception:
+                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
 
     def set_required_current_to_max(self) -> None:
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
-            charging_ev_data = cp.data.set.charging_ev_data
-            required_currents = cp.data.control_parameter.required_currents
-            control_parameter = cp.data.control_parameter
+            try:
+                charging_ev_data = cp.data.set.charging_ev_data
+                required_currents = cp.data.control_parameter.required_currents
+                control_parameter = cp.data.control_parameter
 
-            if control_parameter.phases == 1:
-                max_current = charging_ev_data.ev_template.data.max_current_single_phase
-            else:
-                max_current = charging_ev_data.ev_template.data.max_current_multi_phases
-
-            if cp.template.data.charging_type == ChargingType.AC.value:
                 if control_parameter.phases == 1:
                     max_current = charging_ev_data.ev_template.data.max_current_single_phase
                 else:
                     max_current = charging_ev_data.ev_template.data.max_current_multi_phases
-            else:
-                max_current = charging_ev_data.ev_template.data.dc_max_current
 
-            control_parameter.required_currents = [max_current if required_currents[i] != 0 else 0 for i in range(3)]
-            control_parameter.required_current = max_current
+                if cp.template.data.charging_type == ChargingType.AC.value:
+                    if control_parameter.phases == 1:
+                        max_current = charging_ev_data.ev_template.data.max_current_single_phase
+                    else:
+                        max_current = charging_ev_data.ev_template.data.max_current_multi_phases
+                else:
+                    max_current = charging_ev_data.ev_template.data.dc_max_current
+
+                control_parameter.required_currents = [
+                    max_current if required_currents[i] != 0 else 0 for i in range(3)]
+                control_parameter.required_current = max_current
+            except Exception:
+                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")

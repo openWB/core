@@ -894,7 +894,7 @@ class Chargepoint(ChargepointRfidMixin):
             control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
             control_parameter.submode == Chargemode.PV_CHARGING and
             self.data.set.charge_template.data.chargemode.scheduled_charging.plans[
-                str(self.data.get.connected_vehicle.config.current_plan)].phases_to_use_pv == 0)
+                str(self.data.control_parameter.current_plan)].phases_to_use_pv == 0)
         if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
                 self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
                 (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
