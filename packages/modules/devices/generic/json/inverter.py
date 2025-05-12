@@ -24,6 +24,7 @@ class JsonInverter(AbstractInverter):
         config = self.component_config.configuration
         self.jq_power = jq.compile(config.jq_power)
         self.jq_exported = jq.compile(config.jq_exported) if config.jq_exported else None
+        self.jq_currents = [jq.compile(c) for c in config.jq_currents] if all(config.jq_currents) else None
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
@@ -37,6 +38,11 @@ class JsonInverter(AbstractInverter):
         if power >= 0:
             power = power * -1
 
+        currents = (
+            [float(j.input(response).first()) for j in self.jq_currents]
+            if self.jq_currents is not None else None
+        )
+
         if self.jq_exported is None:
             _, exported = self.sim_counter.sim_count(power)
         else:
@@ -44,7 +50,8 @@ class JsonInverter(AbstractInverter):
 
         inverter_state = InverterState(
             power=power,
-            exported=exported
+            exported=exported,
+            currents=currents
         )
         self.store.set(inverter_state)
 
