@@ -23,11 +23,11 @@ class JsonCounter(AbstractCounter):
     def _compile_jq_filters(self) -> None:
         config = self.component_config.configuration
         self.jq_power = jq.compile(config.jq_power)
-        self.jq_powers = [jq.compile(p) for p in config.jq_powers] if all(config.jq_powers) else []
+        self.jq_powers = [jq.compile(p) for p in config.jq_powers] if all(config.jq_powers) else None
         self.jq_power_factors = [
-            jq.compile(pf) for pf in config.jq_power_factors] if all(config.jq_power_factors) else []
-        self.jq_currents = [jq.compile(c) for c in config.jq_currents] if all(config.jq_currents) else []
-        self.jq_voltages = [jq.compile(v) for v in config.jq_voltages] if all(config.jq_voltages) else []
+            jq.compile(pf) for pf in config.jq_power_factors] if all(config.jq_power_factors) else None
+        self.jq_currents = [jq.compile(c) for c in config.jq_currents] if all(config.jq_currents) else None
+        self.jq_voltages = [jq.compile(v) for v in config.jq_voltages] if all(config.jq_voltages) else None
         self.jq_imported = jq.compile(config.jq_imported) if config.jq_imported else None
         self.jq_exported = jq.compile(config.jq_exported) if config.jq_exported else None
 
@@ -43,22 +43,22 @@ class JsonCounter(AbstractCounter):
 
         powers = (
             [float(j.input(response).first()) for j in self.jq_powers]
-            if len(self.jq_powers) == 3 else None
+            if self.jq_powers is not None else None
         )
 
         currents = (
             [float(j.input(response).first()) for j in self.jq_currents]
-            if len(self.jq_currents) == 3 else None
+            if self.jq_currents is not None else None
         )
 
         power_factors = (
             [float(j.input(response).first()) for j in self.jq_power_factors]
-            if len(self.jq_power_factors) == 3 else None
+            if self.jq_power_factors is not None else None
         )
 
         voltages = (
             [float(j.input(response).first()) for j in self.jq_voltages]
-            if len(self.jq_voltages) == 3 else None
+            if self.jq_voltages is not None else None
         )
 
         if self.jq_imported is None or self.jq_exported is None:
