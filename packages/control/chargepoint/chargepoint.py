@@ -895,19 +895,22 @@ class Chargepoint(ChargepointRfidMixin):
             control_parameter.submode == Chargemode.PV_CHARGING and
             self.data.set.charge_template.data.chargemode.scheduled_charging.plans[
                 str(self.data.control_parameter.current_plan)].phases_to_use_pv == 0)
-        if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
-                self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
-                (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
-                 self.data.control_parameter.failed_phase_switches == 1)):
-            failed_phase_switches_reached = True
-        else:
-            failed_phase_switches_reached = False
-        return (self.cp_ev_support_phase_switch() and
+        if (self.cp_ev_support_phase_switch() and
                 self.data.get.charge_state and
                 (pv_auto_switch or scheduled_auto_switch) and
                 (control_parameter.state == ChargepointState.CHARGING_ALLOWED or
-                control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY) and
-                failed_phase_switches_reached is False)
+                 control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY)):
+            if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
+                    self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
+                    (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
+                     self.data.control_parameter.failed_phase_switches == 1)):
+                self.set_state_and_log(
+                    "Keine automatische Umschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
+                return False
+            else:
+                return True
+        else:
+            return False
 
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and

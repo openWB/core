@@ -30,6 +30,7 @@ class BatteryValueStoreBroker(ValueStore[BatState]):
 
     def update(self):
         try:
+            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/currents", self.state.currents, 2)
             pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/power", self.state.power, 2)
             pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/soc", self.state.soc, 0)
             pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/imported", self.state.imported, 2)

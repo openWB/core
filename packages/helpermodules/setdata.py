@@ -607,8 +607,7 @@ class SetData:
                 elif "/get/power" in msg.topic:
                     self._validate_value(msg, float)
                 elif "/get/currents" in msg.topic:
-                    self._validate_value(
-                        msg, float, collection=list)
+                    self._validate_value(msg, float, collection=list)
                 else:
                     self.__unknown_topic(msg)
             else:
@@ -657,6 +656,8 @@ class SetData:
                         "/get/daily_exported" in msg.topic or
                         "/get/daily_imported" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
+                elif "/get/currents" in msg.topic:
+                    self._validate_value(msg, float, collection=list)
                 elif "/get/soc" in msg.topic:
                     self._validate_value(msg, float, [(0, 100)])
                 elif "/get/fault_state" in msg.topic:
