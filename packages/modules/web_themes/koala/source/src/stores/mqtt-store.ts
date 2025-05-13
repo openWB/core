@@ -883,7 +883,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`,
           newValue,
           undefined,
-          true,
+          false,
         );
         sendTopicToBroker(
           `openWB/chargepoint/${chargePointId}/config/ev`,
