@@ -9,7 +9,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
-from modules.devices.generic.http.api import create_request_function
+from modules.devices.generic.http.api import create_request_function, create_request_function_array
 from modules.devices.generic.http.config import HttpBatSetup
 
 
@@ -29,8 +29,11 @@ class HttpBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-        self.__get_currents = create_request_function(
-            self.kwargs['url'], self.component_config.configuration.currents_path)
+        self.__get_currents = create_request_function_array(self.kwargs['url'], [
+            self.component_config.configuration.current_l1_path,
+            self.component_config.configuration.current_l2_path,
+            self.component_config.configuration.current_l3_path,
+        ])
         self.__get_power = create_request_function(self.kwargs['url'], self.component_config.configuration.power_path)
         self.__get_imported = create_request_function(
             self.kwargs['url'], self.component_config.configuration.imported_path)

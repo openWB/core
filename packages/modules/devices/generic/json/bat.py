@@ -29,7 +29,11 @@ class JsonBat(AbstractBat):
     def update(self, response) -> None:
         config = self.component_config.configuration
 
-        currents = float(jq.compile(config.jq_currents).input(response).first())
+        currents = [0] * 3
+        for i, c in enumerate(config.jq_currents):
+            if c is not None:
+                currents[i] = float(jq.compile(c).input(response).first())
+
         power = float(jq.compile(config.jq_power).input(response).first())
         if config.jq_soc != "":
             soc = float(jq.compile(config.jq_soc).input(response).first())
