@@ -159,8 +159,8 @@ const translateChargeMode = (mode: string) => {
       return { label: 'Zielladen', class: 'primary' };
     case 'time_charging':
       return { label: 'Zeitladen', class: 'warning' };
-    case 'standby':
-      return { label: 'Standby', class: 'secondary' };
+    case 'eco_charging':
+      return { label: 'Eco', class: 'secondary' };
     case 'stop':
       return { label: 'Stop', class: 'dark' };
     default:
