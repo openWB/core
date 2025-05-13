@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
+import datetime
 from typing import List, Optional
 
 
 def once_factory() -> List:
-    return ["2021-11-01", "2021-11-05"]  # ToDo: aktuelles Datum verwenden
+    return [datetime.datetime.today().strftime("%Y%m%d"), datetime.datetime.today().strftime("%Y%m%d")]
 
 
 def weekly_factory() -> List:
@@ -63,19 +64,23 @@ class TimeframePlan(PlanBase):
 class ScheduledChargingPlan(PlanBase):
     current: int = 14
     dc_current: float = 145
+    et_active: bool = False
     id: Optional[int] = None
     name: str = "neuer Zielladen-Plan"
     limit: ScheduledLimit = field(default_factory=scheduled_limit_factory)
+    phases_to_use: int = 0
+    phases_to_use_pv: int = 0
     time: str = "07:00"  # ToDo: aktuelle Zeit verwenden
 
 
 @dataclass
 class TimeChargingPlan(TimeframePlan):
-    name: str = "neuer Zeitladen-Plan"
     current: int = 16
     dc_current: float = 145
     id: Optional[int] = None
     limit: Limit = field(default_factory=limit_factory)
+    name: str = "neuer Zeitladen-Plan"
+    phases_to_use: int = 1
 
 
 @dataclass

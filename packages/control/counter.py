@@ -8,7 +8,6 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm.utils import get_medium_charging_current
-from control.chargemode import Chargemode
 from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
@@ -266,7 +265,7 @@ class Counter:
         control_parameter = chargepoint.data.control_parameter
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
 
-        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+        if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
             threshold = pv_config.feed_in_yield
         else:
             threshold = pv_config.switch_on_threshold*control_parameter.phases
@@ -276,7 +275,7 @@ class Counter:
         try:
             message = None
             control_parameter = chargepoint.data.control_parameter
-            feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.\
+            feed_in_limit = chargepoint.data.set.charge_template.data.chargemode.pv_charging.\
                 feed_in_limit
             pv_config = data.data.general_data.data.chargemode_config.pv_charging
             timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
@@ -326,6 +325,7 @@ class Counter:
             msg = None
             pv_config = data.data.general_data.data.chargemode_config.pv_charging
             control_parameter = chargepoint.data.control_parameter
+            charging_ev_data = chargepoint.data.set.charging_ev_data
             # Timer ist noch nicht abgelaufen
             if timecheck.check_timestamp(control_parameter.timestamp_switch_on_off,
                                          pv_config.switch_on_delay):
@@ -338,14 +338,14 @@ class Counter:
                 msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
                 control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
 
-                if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+                if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
                     feed_in_yield = pv_config.feed_in_yield
                 else:
                     feed_in_yield = 0
-                ev_template = chargepoint.data.set.charging_ev_data.ev_template
+                ev_template = charging_ev_data.ev_template
                 max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
-                if (data.data.general_data.get_phases_chargemode(Chargemode.PV_CHARGING.value,
-                                                                 control_parameter.submode) == 0 and
+                if (control_parameter.submode == "pv_charging" and
+                    chargepoint.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0 and
                         chargepoint.cp_ev_support_phase_switch() and
                         self.get_usable_surplus(feed_in_yield) > max_phases_power):
                     control_parameter.phases = ev_template.data.max_phases
@@ -386,7 +386,7 @@ class Counter:
     def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
         control_parameter = chargepoint.data.control_parameter
-        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+        if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
             # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
             # Wnn die Leistung nicht Einspeisegrenze + Einschaltschwelle erreicht, darf die Ladung nicht pulsieren.
             # Abschaltschwelle um Einschaltschwelle reduzieren.

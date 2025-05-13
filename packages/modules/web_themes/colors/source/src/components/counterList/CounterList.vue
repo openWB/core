@@ -6,7 +6,11 @@
 			>
 			<span>Zähler</span>
 		</template>
-		<div v-for="(counter, index) in counters" :key="index" class="subgrid pb-2">
+		<div
+			v-for="(counter, index) in counters"
+			:key="index"
+			class="subgrid pb-2 px-4"
+		>
 			<ClCounter :counter="counter" />
 		</div>
 	</WBWidgetFlex>

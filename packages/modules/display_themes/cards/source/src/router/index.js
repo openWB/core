@@ -10,12 +10,12 @@ const router = createRouter({
       component: WelcomeView,
     },
     {
-      path: "/DashBoard",
-      name: "dash-board",
+      path: "/Dashboard",
+      name: "dashboard",
       // route level code-splitting
-      // this generates a separate chunk (DashBoardView.[hash].js) for this route
+      // this generates a separate chunk (DashboardView.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
-      component: () => import("../views/DashBoardView.vue"),
+      component: () => import("../views/DashboardView.vue"),
     },
     {
       path: "/EnergyFlow",

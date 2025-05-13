@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Protocol
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
+from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
 from helpermodules.constants import NO_ERROR
@@ -121,6 +122,10 @@ class Get:
     voltages: List[float] = field(default_factory=voltages_list_factory)
 
 
+def charge_template_factory() -> ChargeTemplate:
+    return ChargeTemplate()
+
+
 def ev_factory() -> Ev:
     return Ev(0)
 
@@ -133,8 +138,10 @@ def log_factory() -> Log:
 class Set:
     charging_ev: int = -1
     charging_ev_prev: int = -1
+    charge_template: ChargeTemplate = field(default_factory=charge_template_factory)
     current: float = 0
     energy_to_charge: float = 0
+    ev_prev: int = 0
     loadmanagement_available: bool = True
     log: Log = field(default_factory=log_factory)
     manual_lock: bool = False
