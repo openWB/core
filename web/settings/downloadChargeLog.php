@@ -140,8 +140,7 @@ function formatChargeMode($value)
 		"pv_charging" => "PV",
 		"scheduled_charging" => "Zielladen",
 		"time_charging" => "Zeitladen",
-    "eco_charging" => "Eco",
-		"standby" => "Standby", // keep for backward compatibility!
+		"standby" => "Standby",
 		"stop" => "Stop",
 	];
 	return $chargeModeTranslations[$value] ?? $value;
