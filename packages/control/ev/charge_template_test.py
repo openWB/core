@@ -75,12 +75,12 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
 @pytest.mark.parametrize(
     "selected, current_soc, used_amount, expected",
     [
-        pytest.param("none", 0, 0, (10, "instant_charging", None, 3), id="without limit"),
-        pytest.param("soc", None, 0, (10, "instant_charging", None, 3), id="limit soc: soc not defined"),
-        pytest.param("soc", 49, 0, (10, "instant_charging", None, 3), id="limit soc: soc not reached"),
+        pytest.param("none", 0, 0, (16, "instant_charging", None, 3), id="without limit"),
+        pytest.param("soc", None, 0, (16, "instant_charging", None, 3), id="limit soc: soc not defined"),
+        pytest.param("soc", 49, 0, (16, "instant_charging", None, 3), id="limit soc: soc not reached"),
         pytest.param("soc", 50, 0, (0, "stop", ChargeTemplate.SOC_REACHED, 3),
                      id="limit soc: soc reached"),
-        pytest.param("amount", 0, 999, (10, "instant_charging", None, 3), id="limit amount: amount not reached"),
+        pytest.param("amount", 0, 999, (16, "instant_charging", None, 3), id="limit amount: amount not reached"),
         pytest.param("amount", 0, 1000, (0, "stop", ChargeTemplate.AMOUNT_REACHED, 3),
                      id="limit amount: amount reached"),
     ])
