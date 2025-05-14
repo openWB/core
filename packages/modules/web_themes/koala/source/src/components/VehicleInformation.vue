@@ -109,7 +109,6 @@ const tableRowData = computed(() => {
     const model = info?.model || 'keine Angabe';
     const soc = mqttStore.vehicleSocValue(id);
     const vehicleSocValue = soc !== undefined ? `${Math.round(soc)}%` : '–';
-    const vehicleSocModule = mqttStore.vehicleSocModuleName(id) || 'keine';
     return {
       id,
       name,
@@ -118,27 +117,18 @@ const tableRowData = computed(() => {
       plugState,
       chargeState,
       vehicleSocValue,
-      vehicleSocModule,
     };
   };
 });
 
 const columnConfig = {
-  fields: [
-    'name',
-    'manufacturer',
-    'model',
-    'plugged',
-    'vehicleSocValue',
-    'vehicleSocModule',
-  ],
+  fields: ['name', 'manufacturer', 'model', 'plugged', 'vehicleSocValue'],
   labels: {
     name: 'Fahrzeug',
     manufacturer: 'Hersteller',
     model: 'Modell',
     plugged: 'Status',
     vehicleSocValue: 'Ladestand',
-    vehicleSocModule: 'SoC Modul',
   },
 };
 
