@@ -19,13 +19,13 @@
     :columns-to-search="['vehicle', 'name']"
     @row-click="onRowClick"
   >
-    <template #body-cell-plugged="{ row }">
-      <q-td>
+    <template #body-cell-plugged="{ row, columnAlignment }">
+      <q-td :class="`text-${columnAlignment}`">
         <ChargePointStateIcon :charge-point-id="row.id" />
       </q-td>
     </template>
-    <template #body-cell-timeCharging="{ row }">
-      <q-td>
+    <template #body-cell-timeCharging="{ row, columnAlignment }">
+      <q-td :class="`text-${columnAlignment}`">
         <ChargePointTimeCharging
           :charge-point-id="row.id"
           :readonly="true"
@@ -124,6 +124,8 @@ const tableRowData = computed(() => {
   };
 });
 
+type AlignmentType = 'left' | 'right' | 'center';
+
 const columnConfig = {
   fields: [
     'name',
@@ -145,6 +147,13 @@ const columnConfig = {
     power: 'Leistung',
     charged: 'Geladen',
   },
+  alignColumns: {
+    plugged: 'center',
+    timeCharging: 'center',
+    soc: 'right',
+    power: 'right',
+    charged: 'right',
+  },
 };
 
 const columnConfigMobile = {
@@ -153,6 +162,9 @@ const columnConfigMobile = {
     name: 'Ladepunkt',
     vehicle: 'Fahrzeug',
     plugged: 'Status',
+  },
+  alignColumns: {
+    plugged: 'center' as AlignmentType,
   },
 };
 

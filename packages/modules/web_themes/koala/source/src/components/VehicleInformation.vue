@@ -19,8 +19,8 @@
     :columns-to-search="['name', 'manufacturer', 'model']"
     @row-click="onRowClick"
   >
-    <template #body-cell-plugged="{ row }">
-      <q-td>
+    <template #body-cell-plugged="{ row, columnAlignment }">
+      <q-td :class="`text-${columnAlignment}`">
         <q-icon
           :name="row.plugState ? 'power' : 'power_off'"
           size="sm"
@@ -121,6 +121,8 @@ const tableRowData = computed(() => {
   };
 });
 
+type AlignmentType = 'left' | 'right' | 'center';
+
 const columnConfig = {
   fields: ['name', 'manufacturer', 'model', 'plugged', 'vehicleSocValue'],
   labels: {
@@ -130,6 +132,10 @@ const columnConfig = {
     plugged: 'Status',
     vehicleSocValue: 'Ladestand',
   },
+  alignColumns: {
+    plugged: 'center',
+    vehicleSocValue: 'right',
+  },
 };
 
 const columnConfigMobile = {
@@ -138,6 +144,10 @@ const columnConfigMobile = {
     name: 'Fahrzeug',
     plugged: 'Status',
     vehicleSocValue: 'Ladestand',
+  },
+  alignColumns: {
+    plugged: 'center' as AlignmentType,
+    vehicleSocValue: 'right',
   },
 };
 

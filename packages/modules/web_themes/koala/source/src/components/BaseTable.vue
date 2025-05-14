@@ -40,9 +40,20 @@
       <template
         v-for="(_, name) in $slots"
         :key="name"
-        v-slot:[name]="slotData"
+        v-slot:[name]="slotProps"
       >
-        <slot :name="name" v-bind="slotData"></slot>
+        <!-- Add the column alignment to the slot props -->
+        <slot
+          :name="name"
+          v-bind="{
+            ...slotProps,
+            columnAlignment: getColumnAlignment(
+              typeof name === 'string'
+                ? name.replace('body-cell-', '')
+                : String(name),
+            ),
+          }"
+        ></slot>
       </template>
     </q-table>
   </div>
@@ -60,6 +71,7 @@ const props = defineProps<{
   columnConfig: {
     fields: string[];
     labels?: Record<string, string>;
+    align?: Record<string, 'left' | 'right' | 'center'>;
   };
   rowKey?: string;
   searchInputVisible?: boolean;
@@ -78,6 +90,10 @@ const filterModel = computed({
   set: (value) => emit('update:filter', value),
 });
 
+const getColumnAlignment = (fieldName: string): string => {
+  return props.columnConfig.align?.[fieldName] || 'left';
+};
+
 // Data can be passed to basetable as a normal function or computed property
 const rowMapperFn = computed(() =>
   typeof props.rowData === 'function' ? props.rowData : props.rowData.value,
@@ -89,8 +105,8 @@ const mappedColumns = computed<QTableColumn[]>(() => {
   return props.columnConfig.fields.map((field) => ({
     name: field,
     label: props.columnConfig.labels?.[field] || field,
+    align: props.columnConfig.align?.[field] || 'left',
     field,
-    align: 'left',
     sortable: true,
     headerStyle: 'font-weight: bold',
   }));
