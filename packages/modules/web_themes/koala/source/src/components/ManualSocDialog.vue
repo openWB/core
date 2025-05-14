@@ -10,7 +10,7 @@
       </q-card-section>
       <q-card-section class="q-py-none">
         <div class="row justify-center items-center">
-          <div class="col-6 col-sm-8 col-md-6">
+          <div class="col-6">
             <q-input
               v-model.number="socInputValue"
               type="text"
@@ -73,13 +73,19 @@ import { computed, ref } from 'vue';
 const mqttStore = useMqttStore();
 
 const props = defineProps<{
-  chargePointId: number;
+  vehicleId: number | undefined;
+  chargePointId?: number | undefined;
   socDialogVisible: boolean;
 }>();
 
 const emit = defineEmits<{
   'update:socDialogVisible': [value: boolean];
 }>();
+
+const vehicleName = computed(() => {
+  const vehicle = mqttStore.vehicleList.find((v) => v.id === props.vehicleId);
+  return vehicle?.name || '';
+});
 
 const visible = computed({
   get: () => props.socDialogVisible,
@@ -88,18 +94,13 @@ const visible = computed({
   },
 });
 
-const vehicleName = computed(() => {
-  return mqttStore.chargePointConnectedVehicleInfo(props.chargePointId).value
-    ?.name;
-});
-
 const socValue = ref<number | undefined>(undefined);
 
 const socInputValue = computed({
   get: () => {
     return (
       socValue.value ??
-      mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId)
+      mqttStore.vehicleSocManualValue(props.vehicleId, props.chargePointId)
         .value ??
       0
     );
@@ -117,7 +118,7 @@ const socSliderMarker = {
 };
 
 const confirmChanges = () => {
-  mqttStore.chargePointConnectedVehicleSocManual(props.chargePointId).value =
+  mqttStore.vehicleSocManualValue(props.vehicleId, props.chargePointId).value =
     socInputValue.value;
 };
 
