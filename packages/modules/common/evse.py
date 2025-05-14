@@ -6,12 +6,13 @@ from typing import Optional, Tuple
 from helpermodules.logger import ModifyLoglevelContext
 
 from modules.common import modbus
+from modules.common.component_state import EvseState
 from modules.common.modbus import ModbusDataType
 
 log = logging.getLogger(__name__)
 
 
-class EvseState(IntEnum):
+class EvseStatusCode(IntEnum):
     READY = (1, False, False)
     EV_PRESENT = (2, True, False)
     CHARGING = (3, True, True)
@@ -32,6 +33,19 @@ class Evse:
     def __init__(self, modbus_id: int, client: modbus.ModbusSerialClient_) -> None:
         self.client = client
         self.id = modbus_id
+        with client:
+            time.sleep(0.1)
+            self.version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
+            time.sleep(0.1)
+            self.max_current = self.client.read_holding_registers(2007, ModbusDataType.UINT_16, unit=self.id)
+            with ModifyLoglevelContext(log, logging.DEBUG):
+                log.debug(f"Firmware-Version der EVSE: {self.version}")
+            if self.version < 17:
+                self._precise_current = False
+            else:
+                if self.is_precise_current_active() is False:
+                    self.activate_precise_current()
+                self._precise_current = self.is_precise_current_active()
 
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
         time.sleep(0.1)
@@ -41,8 +55,8 @@ class Evse:
         set_current = int(set_current)
         log.debug("Gesetzte Stromstärke EVSE: "+str(set_current) +
                   ", Status: "+str(state_number)+", Modbus-ID: "+str(self.id))
-        state = EvseState(state_number)
-        if state == EvseState.FAILURE:
+        state = EvseStatusCode(state_number)
+        if state == EvseStatusCode.FAILURE:
             raise ValueError("Unbekannter Zustand der EVSE: State " +
                              str(state)+", Soll-Stromstärke: "+str(set_current))
         plugged = state.plugged
@@ -52,9 +66,15 @@ class Evse:
         return plugged, charging, set_current
 
     def get_firmware_version(self) -> int:
-        time.sleep(0.1)
-        version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
-        return version
+        return self.version
+
+    def get_evse_state(self) -> EvseState:
+        plugged, charging, set_current = self.get_plug_charge_state()
+        state = EvseState(plug_state=plugged,
+                          charge_state=charging,
+                          set_current=set_current,
+                          max_current=self.max_current)
+        return state
 
     def is_precise_current_active(self) -> bool:
         time.sleep(0.1)
@@ -92,8 +112,3 @@ class Evse:
     def set_current(self, current: int) -> None:
         time.sleep(0.1)
         self.client.write_registers(1000, current, unit=self.id)
-
-    def get_max_current(self) -> int:
-        time.sleep(0.1)
-        current = self.client.read_holding_registers(2007, ModbusDataType.UINT_16, unit=self.id)
-        return current
