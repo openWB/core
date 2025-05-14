@@ -34,14 +34,15 @@ def create_vehicle(config: EVCCVehicleSocConfiguration, stub: vehicle_pb2_grpc.V
     response = stub.New(
         vehicle_pb2.NewRequest(
             token=config.sponsor_token,
-            type=config.vehicle_type,
+            type="template",
+            template=config.vehicle_type,
             config=cast(Mapping[str, str], {
                 'User': config.user_id,
                 'Password': config.password,
                 'VIN': config.VIN  # VIN is optional, but must not be None
             })
-            )
         )
+    )
     return response.vehicle_id
 
 
