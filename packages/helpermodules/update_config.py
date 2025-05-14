@@ -2226,11 +2226,6 @@ class UpdateConfig:
                         topics.update({time_plan_topic: time_plan})
 
                 charge_template.pop("et")
-                for evt_topic, evt_payload in self.all_received_topics.items():
-                    if re.search("openWB/vehicle/template/ev_template/[0-9]+$", evt_topic) is not None:
-                        ev_template = decode_payload(evt_payload)
-                        ev_template.pop("max_phases")
-                        topics.update({evt_topic: ev_template})
                 return topics
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 83)
