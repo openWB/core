@@ -20,7 +20,7 @@ class ChargepointModule(AbstractChargepoint):
             "Ladepunkt", "chargepoint"))
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
-        self.phases_in_use = 1
+        self.old_phases_in_use = 1
         self.session = req.get_http_session()
 
     def set_current(self, current: float) -> None:
@@ -55,12 +55,11 @@ class ChargepointModule(AbstractChargepoint):
 
                 currents = [json_rsp["currentP1"], json_rsp["currentP2"], json_rsp["currentP3"]]
 
-                if currents[2] > 3:
-                    self.phases_in_use = 3
-                elif currents[1] > 3:
-                    self.phases_in_use = 2
-                elif currents[0] > 3:
-                    self.phases_in_use = 1
+                phases_in_use = sum(1 for current in currents if current > 3)
+                if phases_in_use == 0:
+                    phases_in_use = self.old_phases_in_use
+                else:
+                    self.old_phases_in_use = phases_in_use
 
                 if json_rsp.get("voltageP1"):
                     voltages = [json_rsp["voltageP1"], json_rsp["voltageP2"], json_rsp["voltageP3"]]
@@ -86,7 +85,7 @@ class ChargepointModule(AbstractChargepoint):
                     imported=json_rsp["meterReading"] * 1000,
                     plug_state=plug_state,
                     charge_state=charge_state,
-                    phases_in_use=self.phases_in_use,
+                    phases_in_use=phases_in_use,
                     voltages=voltages,
                     rfid=tag,
                     serial_number=mac,
