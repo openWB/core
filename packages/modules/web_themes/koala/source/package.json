@@ -40,7 +40,7 @@
     "prettier": "^3.3.3",
     "typescript": "~5.5.4",
     "vite-plugin-checker": "^0.8.0",
-    "vitest": "^2.1.2",
+    "vitest": "^2.1.9",
     "vue-tsc": "^2.1.6",
     "workbox-build": "^7.1.1",
     "workbox-cacheable-response": "^7.1.0",
