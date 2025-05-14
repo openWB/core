@@ -172,7 +172,7 @@ export const dayGraph = reactive({
 			graphData.waitForData = true
 			sendCommand({
 				command: 'getDailyLog',
-				data: { day: dateString },
+				data: { date: dateString },
 			})
 		}
 	},
