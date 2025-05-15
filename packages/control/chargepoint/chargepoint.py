@@ -28,7 +28,7 @@ from control import data
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
 from control.chargepoint.chargepoint_template import CpTemplate
-from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
+from control.chargepoint.control_parameter import control_parameter_factory
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev.charge_template import ChargeTemplate
@@ -248,15 +248,6 @@ class Chargepoint(ChargepointRfidMixin):
         self._reset_values_at_start()
         self._set_values_at_start()
 
-    def reset_control_parameter(self):
-        """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
-        """
-        try:
-            log.debug(f"ControlParameter an LP {self.num} zurückgesetzt.")
-            self.data.control_parameter = ControlParameter()
-        except Exception:
-            log.exception("Fehler im LP-Modul "+str(self.num))
-
     def set_control_parameter(self, submode: str, required_current: float):
         """ setzt die Regel-Parameter, die der Algorithmus verwendet.
 
@@ -430,11 +421,14 @@ class Chargepoint(ChargepointRfidMixin):
                     self.set_state_and_log(message)
                 return
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
-                if (phase_switch.phase_switch_thread_alive(self.num) is False and
-                        check_timestamp(self.data.control_parameter.timestamp_charge_start,
-                                        charging_ev.ev_template.data.keep_charge_active_duration) is False):
-                    self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
-                    if self._is_phase_switch_required() is False:
+                if check_timestamp(self.data.control_parameter.timestamp_charge_start,
+                                   charging_ev.ev_template.data.keep_charge_active_duration) is False:
+                    if self.cp_ev_chargemode_support_phase_switch():
+                        if phase_switch.phase_switch_thread_alive(self.num) is False:
+                            self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
+                            if self._is_phase_switch_required() is False:
+                                self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                    else:
                         self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
