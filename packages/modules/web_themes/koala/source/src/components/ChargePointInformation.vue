@@ -124,7 +124,7 @@ const tableRowData = computed(() => {
   };
 });
 
-type AlignmentType = 'left' | 'right' | 'center';
+//type AlignmentType = 'left' | 'right' | 'center';
 
 const columnConfig = {
   fields: [
@@ -147,7 +147,7 @@ const columnConfig = {
     power: 'Leistung',
     charged: 'Geladen',
   },
-  alignColumns: {
+  align: {
     plugged: 'center',
     timeCharging: 'center',
     soc: 'right',
@@ -163,9 +163,7 @@ const columnConfigMobile = {
     vehicle: 'Fahrzeug',
     plugged: 'Status',
   },
-  alignColumns: {
-    plugged: 'center' as AlignmentType,
-  },
+
 };
 
 const onRowClick = (row: Record<string, unknown>) => {
