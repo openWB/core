@@ -29,6 +29,8 @@ class ControlParameter:
         default=None, metadata={"topic": "control_parameter/timestamp_chargemode_changed"})
     timestamp_last_phase_switch: float = field(
         default=0, metadata={"topic": "control_parameter/timestamp_last_phase_switch"})
+    timestamp_phase_switch_buffer_start: Optional[float] = field(
+        default=None, metadata={"topic": "control_parameter/timestamp_phase_switch_buffer_start"})
     timestamp_switch_on_off: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_switch_on_off"})
 
