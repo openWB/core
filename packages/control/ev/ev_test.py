@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev import Ev
 from helpermodules import timecheck
 from modules.common.abstract_vehicle import VehicleUpdateData
@@ -54,15 +55,18 @@ def test_soc_interval_expired(check_timestamp: bool,
                      id="Puffer noch nicht abgelaufen, Puffer länger, abgelaufen"),
     ],
 )
-def test_remaining_phase_switch_time(
-        timestamp_last_phase_switch, timestamp_phase_switch_buffer_start, expected_result):
+def test_remaining_phase_switch_time(timestamp_last_phase_switch,
+                                     timestamp_phase_switch_buffer_start,
+                                     expected_result):
     # setup
     ev = Ev(0)
+    control_parameter = ControlParameter()
+    control_parameter.timestamp_last_phase_switch = timestamp_last_phase_switch
+    control_parameter.timestamp_phase_switch_buffer_start = timestamp_phase_switch_buffer_start
 
     # execution
     result = ev._remaining_phase_switch_time(
-        timestamp_last_phase_switch=timestamp_last_phase_switch,
-        timestamp_phase_switch_buffer_start=timestamp_phase_switch_buffer_start,
+        control_parameter=control_parameter,
         waiting_time=30,
         buffer=300,
     )

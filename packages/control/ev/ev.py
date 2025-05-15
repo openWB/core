@@ -400,12 +400,13 @@ class Ev:
         if control_parameter.timestamp_phase_switch_buffer_start is None:
             control_parameter.timestamp_phase_switch_buffer_start = timecheck.create_timestamp()
         # Wenn der Puffer seit der letzen Umschaltung abgelaufen ist, warte noch die Umschaltverzögerung ab. ODER
-        # Wenn der Puffer noch nicht abgelaufen ist, Wartezeit länger als Pufferzeit
-        if ((control_parameter.timestamp_last_phase_switch + buffer < control_parameter.timestamp_phase_switch_buffer_start) or
-                (buffer - (control_parameter.timestamp_phase_switch_buffer_start - control_parameter.timestamp_last_phase_switch) < waiting_time)):
+        # Wenn der Puffer noch nicht abgelaufen ist und Wartezeit länger als Pufferzeit, dann warte Wartezeit ab
+        remaining_buffer = (buffer - (control_parameter.timestamp_phase_switch_buffer_start -
+                                      control_parameter.timestamp_last_phase_switch))
+        if remaining_buffer < 0 or remaining_buffer < waiting_time:
             if timecheck.check_timestamp(control_parameter.timestamp_phase_switch_buffer_start, waiting_time):
-                remaining_time = timecheck.convert_timestamp_delta_to_time_string(control_parameter.timestamp_phase_switch_buffer_start,
-                                                                                  waiting_time)
+                remaining_time = timecheck.convert_timestamp_delta_to_time_string(
+                    control_parameter.timestamp_phase_switch_buffer_start, waiting_time)
                 log.debug(f"Warte verbleibende Wartezeit ab: {remaining_time}")
                 return False, remaining_time
             else:
