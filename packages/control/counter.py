@@ -253,11 +253,11 @@ class Counter:
         return (-self.calc_surplus() - self.data.set.released_surplus +
                 self.data.set.reserved_surplus - feed_in_yield)
 
-    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Einschaltverzögerung unterschritten."
-    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald in {} die Einschaltverzögerung abgelaufen ist."
+    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Wartezeit unterschritten."
+    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald in {} die Wartezeit abgelaufen ist."
     SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle nicht erreicht "
                               "wird.")
-    SWITCH_ON_EXPIRED = "Einschaltschwelle für die Dauer der Einschaltverzögerung überschritten."
+    SWITCH_ON_EXPIRED = "Einschaltschwelle für die Dauer der Wartezeit überschritten."
     SWITCH_ON_MAX_PHASES = "Der Überschuss ist ausreichend, um direkt mit {} Phasen zu laden."
 
     def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
@@ -354,8 +354,8 @@ class Counter:
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
-    SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
-    SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Abschaltverzögerung in {} gestoppt."
+    SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Wartezeit gestoppt."
+    SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Wartezeit in {} gestoppt."
     SWITCH_OFF_NO_STOP = ("Der Ladevorgang wird trotz fehlenden Überschusses nicht gestoppt, da in dem Fahrzeug-Profil "
                           "die Einstellung 'Ladung aktiv halten' aktiviert ist.")
     SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."

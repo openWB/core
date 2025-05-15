@@ -35,3 +35,37 @@ def test_soc_interval_expired(check_timestamp: bool,
 
     # evaluation
     assert request_soc == expected_request_soc
+
+
+@pytest.mark.parametrize(
+    "timestamp_last_phase_switch, timestamp_phase_switch_buffer_start, expected_result",
+    [
+        pytest.param(1652682881, None, (False, "30 Sek."), id="Puffer abgelaufen, Wartezeit noch nicht gestartet"),
+        pytest.param(1652682881, 1652683232, (False, "10 Sek."), id="Puffer abgelaufen, Wartezeit gestartet"),
+        pytest.param(1652682881, 1652683212, (True, None), id="Puffer abgelaufen, Wartezeit abgelaufen"),
+        pytest.param(1652682962, None, (False, "30 Sek."),
+                     id="Puffer noch nicht abgelaufen, Wartezeit länger, Wartezeit noch nicht gestartet"),
+        pytest.param(1652682962, 1652683237, (False, "15 Sek."),
+                     id="Puffer noch nicht abgelaufen, Wartezeit länger, Wartezeit gestartet"),
+        pytest.param(1652682932, 1652683220, (True, None),
+                     id="Puffer noch nicht abgelaufen, Wartezeit länger, Wartezeit abgelaufen"),
+        pytest.param(1652683132, None, (False, "3 Min."), id="Puffer noch nicht abgelaufen, Puffer länger, abwarten"),
+        pytest.param(1652682950, 1652682972, (True, None),
+                     id="Puffer noch nicht abgelaufen, Puffer länger, abgelaufen"),
+    ],
+)
+def test_remaining_phase_switch_time(
+        timestamp_last_phase_switch, timestamp_phase_switch_buffer_start, expected_result):
+    # setup
+    ev = Ev(0)
+
+    # execution
+    result = ev._remaining_phase_switch_time(
+        timestamp_last_phase_switch=timestamp_last_phase_switch,
+        timestamp_phase_switch_buffer_start=timestamp_phase_switch_buffer_start,
+        waiting_time=30,
+        buffer=300,
+    )
+
+    # evaluation
+    assert result == expected_result

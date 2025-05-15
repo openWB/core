@@ -315,7 +315,6 @@ class Ev:
                           max_phases: int,
                           limit: LoadmanagementLimit) -> Tuple[int, float, Optional[str]]:
         message = None
-        timestamp_last_phase_switch = control_parameter.timestamp_last_phase_switch
         current = control_parameter.required_current
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
@@ -334,12 +333,14 @@ class Ev:
 
             new_phase = max_phases
             new_current = control_parameter.min_current
+            waiting_time = pv_config.switch_on_delay
         else:
             direction_str = f"Umschaltung von {max_phases} auf 1"
             # Es kann einphasig mit entsprechend niedriger Leistung gestartet werden.
             required_reserved_power = 0
             new_phase = 1
             new_current = self.ev_template.data.max_current_single_phase
+            waiting_time = pv_config.switch_off_delay
 
         log.debug(
             f'Genutzter Strom: {get_medium_charging_current(get_currents)}A, Überschuss: {all_surplus}W, benötigte '
@@ -360,17 +361,21 @@ class Ev:
                     ).data.set.reserved_surplus += max(0, required_reserved_power)
                     message = self.PHASE_SWITCH_DELAY_TEXT.format(
                         direction_str,
-                        timecheck.convert_timestamp_delta_to_time_string(timestamp_last_phase_switch, delay))
+                        self._remaining_phase_switch_time(control_parameter,
+                                                          waiting_time,
+                                                          delay)[1])
                     control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
                 elif condition_msg:
                     log.debug(f"Keine Phasenumschaltung{condition_msg}")
             else:
                 if condition:
                     # Timer laufen lassen
-                    if timecheck.check_timestamp(control_parameter.timestamp_last_phase_switch, delay):
-                        message = self.PHASE_SWITCH_DELAY_TEXT.format(
-                            direction_str,
-                            timecheck.convert_timestamp_delta_to_time_string(timestamp_last_phase_switch, delay))
+                    timestamp_passed, remaining_time = self._remaining_phase_switch_time(
+                        control_parameter,
+                        waiting_time,
+                        delay)
+                    if timestamp_passed is False:
+                        message = self.PHASE_SWITCH_DELAY_TEXT.format(direction_str, remaining_time)
                     else:
                         data.data.counter_all_data.get_evu_counter(
                         ).data.set.reserved_surplus -= max(0, required_reserved_power)
@@ -387,6 +392,35 @@ class Ev:
         if message:
             log.info(f"LP {cp_num}: {message}")
         return phases_to_use, current, message
+
+    def _remaining_phase_switch_time(self, control_parameter: ControlParameter,
+                                     waiting_time: float,
+                                     buffer: float) -> float:
+
+        if control_parameter.timestamp_phase_switch_buffer_start is None:
+            control_parameter.timestamp_phase_switch_buffer_start = timecheck.create_timestamp()
+        # Wenn der Puffer seit der letzen Umschaltung abgelaufen ist, warte noch die Umschaltverzögerung ab. ODER
+        # Wenn der Puffer noch nicht abgelaufen ist, Wartezeit länger als Pufferzeit
+        if ((control_parameter.timestamp_last_phase_switch + buffer < control_parameter.timestamp_phase_switch_buffer_start) or
+                (buffer - (control_parameter.timestamp_phase_switch_buffer_start - control_parameter.timestamp_last_phase_switch) < waiting_time)):
+            if timecheck.check_timestamp(control_parameter.timestamp_phase_switch_buffer_start, waiting_time):
+                remaining_time = timecheck.convert_timestamp_delta_to_time_string(control_parameter.timestamp_phase_switch_buffer_start,
+                                                                                  waiting_time)
+                log.debug(f"Warte verbleibende Wartezeit ab: {remaining_time}")
+                return False, remaining_time
+            else:
+                control_parameter.timestamp_phase_switch_buffer_start = None
+                return True, None
+        else:
+            # Puffer noch nicht abgelaufen, verbleibende Pufferzeit ist länger als Wartezeit
+            if timecheck.check_timestamp(control_parameter.timestamp_last_phase_switch, buffer):
+                remaining_time = timecheck.convert_timestamp_delta_to_time_string(
+                    control_parameter.timestamp_last_phase_switch, buffer)
+                log.debug(f"Warte verbleibende Pufferzeit ab: {remaining_time}")
+                return False, remaining_time
+            else:
+                control_parameter.timestamp_phase_switch_buffer_start = None
+                return True, None
 
     def reset_phase_switch(self, control_parameter: ControlParameter):
         """ Zurücksetzen der Zeitstempel und reservierten Leistung.
