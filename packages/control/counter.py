@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm.utils import get_medium_charging_current
+from control.chargemode import Chargemode
 from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
@@ -344,7 +345,7 @@ class Counter:
                     feed_in_yield = 0
                 ev_template = charging_ev_data.ev_template
                 max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
-                if (control_parameter.submode == "pv_charging" and
+                if (control_parameter.submode == Chargemode.PV_CHARGING and
                     chargepoint.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0 and
                         chargepoint.cp_ev_support_phase_switch() and
                         self.get_usable_surplus(feed_in_yield) > max_phases_power):
