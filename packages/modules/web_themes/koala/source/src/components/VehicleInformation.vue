@@ -121,8 +121,6 @@ const tableRowData = computed(() => {
   };
 });
 
-//type AlignmentType = 'left' | 'right' | 'center';
-
 const columnConfig = {
   fields: ['name', 'manufacturer', 'model', 'plugged', 'vehicleSocValue'],
   labels: {
@@ -144,7 +142,7 @@ const columnConfigMobile = {
     name: 'Fahrzeug',
     plugged: 'Status',
     vehicleSocValue: 'Ladestand',
-  }
+  },
 };
 
 const onRowClick = (row: Record<string, unknown>) => {
