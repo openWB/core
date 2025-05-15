@@ -882,7 +882,9 @@ class Chargepoint(ChargepointRfidMixin):
 
     def cp_ev_chargemode_support_phase_switch(self) -> bool:
         control_parameter = self.data.control_parameter
-        pv_auto_switch = (control_parameter.chargemode == Chargemode.PV_CHARGING and
+        pv_auto_switch = ((control_parameter.chargemode == Chargemode.PV_CHARGING or
+                           control_parameter.chargemode == Chargemode.ECO_CHARGING) and
+                          control_parameter.submode == Chargemode.PV_CHARGING and
                           self.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0)
         scheduled_auto_switch = (
             control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
