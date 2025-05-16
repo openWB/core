@@ -35,14 +35,13 @@
           </div>
         </div>
       </template>
-
-      <!-- Dynamic slot for custom cell rendering -->
+      <!-- pass slots to basetable - required as basetable is wrapping q-table -->
       <template
-        v-for="(_, name) in $slots"
-        :key="name"
-        v-slot:[name]="slotData"
+        v-for="(_, slotName) in $slots"
+        :key="slotName"
+        v-slot:[slotName]="slotProps"
       >
-        <slot :name="name" v-bind="slotData"></slot>
+        <slot :name="slotName" v-bind="slotProps" />
       </template>
     </q-table>
   </div>
@@ -60,6 +59,7 @@ const props = defineProps<{
   columnConfig: {
     fields: string[];
     labels?: Record<string, string>;
+    align?: Record<string, 'left' | 'right' | 'center'>;
   };
   rowKey?: string;
   searchInputVisible?: boolean;
@@ -89,8 +89,8 @@ const mappedColumns = computed<QTableColumn[]>(() => {
   return props.columnConfig.fields.map((field) => ({
     name: field,
     label: props.columnConfig.labels?.[field] || field,
+    align: props.columnConfig.align?.[field] || 'left',
     field,
-    align: 'left',
     sortable: true,
     headerStyle: 'font-weight: bold',
   }));

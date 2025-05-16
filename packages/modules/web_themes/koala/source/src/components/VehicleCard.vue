@@ -50,41 +50,61 @@
           </q-chip>
         </div>
       </div>
-      <div v-if="vehicleSocModule !== undefined" class="row q-mt-sm">
-        <div class="col">
-          <div class="text-subtitle2">SoC Modul:</div>
-          {{ vehicleSocModule }}
-        </div>
-      </div>
       <div v-if="vehicleSocValue !== null">
-        <div class="slider-container">
-          <q-slider
-            :model-value="vehicleSocValue"
-            color="green-7"
-            track-size="1.5em"
-            thumb-size="0px"
-            :min="0"
-            :max="100"
-            :markers="10"
-            readonly
-          />
-        </div>
-        <div>Ladestand: {{ vehicleSocValue }}%</div>
+        <SliderDouble
+          class="q-mt-sm"
+          :current-value="vehicleSocValue"
+          :readonly="true"
+          :limit-mode="'none'"
+        >
+          <template #update-soc-icon>
+            <q-icon
+              v-if="vehicleSocModuleType === 'manual'"
+              name="edit"
+              size="xs"
+              class="q-ml-xs cursor-pointer"
+              @click="socInputVisible = true"
+            >
+              <q-tooltip>SoC eingeben</q-tooltip>
+            </q-icon>
+            <q-icon
+              v-else-if="vehicleSocModuleType !== undefined"
+              name="refresh"
+              size="xs"
+              class="q-ml-xs cursor-pointer"
+              @click="refreshSoc"
+            >
+              <q-tooltip>SoC aktualisieren</q-tooltip>
+            </q-icon>
+          </template>
+        </SliderDouble>
       </div>
       <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>
+
+  <!-- //////////////////////  input dialog Manual SoC   //////////////////// -->
+
+  <ManualSocDialog
+    :vehicleId="props.vehicleId"
+    v-model:socDialogVisible="socInputVisible"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
+import { useQuasar } from 'quasar';
+import SliderDouble from './SliderDouble.vue';
+import ManualSocDialog from './ManualSocDialog.vue';
 
 const props = defineProps<{
   vehicleId: number;
 }>();
 
 const mqttStore = useMqttStore();
+const $q = useQuasar();
+const socInputVisible = ref<boolean>(false);
 
 const vehicle = computed(() => {
   return mqttStore.vehicleList.find((v) => v.id === props.vehicleId);
@@ -94,8 +114,8 @@ const vehicleInfo = computed(() => {
   return mqttStore.vehicleInfo(props.vehicleId);
 });
 
-const vehicleSocModule = computed(() => {
-  return mqttStore.vehicleSocModuleName(props.vehicleId);
+const vehicleSocModuleType = computed(() => {
+  return mqttStore.vehicleSocModule(props.vehicleId)?.type;
 });
 
 const vehicleSocValue = computed(() => {
@@ -105,6 +125,14 @@ const vehicleSocValue = computed(() => {
 const vehicleState = computed(() => {
   return mqttStore.vehicleConnectionState(props.vehicleId);
 });
+
+const refreshSoc = () => {
+  mqttStore.vehicleForceSocUpdate(props.vehicleId);
+  $q.notify({
+    type: 'positive',
+    message: 'SoC Update angefordert.',
+  });
+};
 </script>
 
 <style lang="scss" scoped>
