@@ -19,29 +19,9 @@
     :columns-to-search="['name', 'manufacturer', 'model']"
     @row-click="onRowClick"
   >
-    <template #body-cell-plugged="{ row, columnAlignment }">
-      <q-td :class="`text-${columnAlignment}`">
-        <q-icon
-          :name="row.plugState ? 'power' : 'power_off'"
-          size="sm"
-          :color="
-            row.plugState
-              ? row.chargeState
-                ? 'positive'
-                : 'warning'
-              : 'negative'
-          "
-        >
-          <q-tooltip>
-            {{
-              row.plugState
-                ? row.chargeState
-                  ? 'Lädt'
-                  : 'Angesteckt, lädt nicht'
-                : 'Nicht angesteckt'
-            }}
-          </q-tooltip>
-        </q-icon>
+    <template #body-cell-plugged="props">
+      <q-td :class="`text-${props.col.align}`">
+        <ChargePointStateIcon :vehicle-id="props.row.id" />
       </q-td>
     </template>
   </BaseTable>
@@ -82,6 +62,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { Platform } from 'quasar';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
+import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
 import { columnConfig } from 'src/components/Models/table.ts';
 

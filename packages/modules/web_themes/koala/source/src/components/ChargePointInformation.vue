@@ -19,28 +19,28 @@
     :columns-to-search="['vehicle', 'name']"
     @row-click="onRowClick"
   >
-    <template #body-cell-plugged="{ row, columnAlignment }">
-      <q-td :class="`text-${columnAlignment}`">
-        <ChargePointStateIcon :charge-point-id="row.id" />
+    <template #body-cell-plugged="props">
+      <q-td :class="`text-${props.col.align}`">
+        <ChargePointStateIcon :charge-point-id="props.row.id" />
       </q-td>
     </template>
-    <template #body-cell-timeCharging="{ row, columnAlignment }">
-      <q-td :class="`text-${columnAlignment}`">
+    <template #body-cell-timeCharging="props">
+      <q-td :class="`text-${props.col.align}`">
         <ChargePointTimeCharging
-          :charge-point-id="row.id"
+          :charge-point-id="props.row.id"
           :readonly="true"
           :toolTip="true"
           :icon-size="'xs'"
         />
       </q-td>
     </template>
-    <template #body-cell-powerColumn="{ row, columnAlignment }">
-      <q-td :class="`text-${columnAlignment}`">
-        {{ row.power }}
-        <q-badge rounded color="primary" :label="row.phaseNumber">
+    <template #body-cell-powerColumn="props">
+      <q-td :class="`text-${props.col.align}`">
+        {{ props.row.power }}
+        <q-badge rounded color="primary" :label="props.row.phaseNumber">
           <q-tooltip>Phasenanzahl</q-tooltip>
         </q-badge>
-        {{ row.current }}
+        {{ props.row.current }}
       </q-td>
     </template>
   </BaseTable>

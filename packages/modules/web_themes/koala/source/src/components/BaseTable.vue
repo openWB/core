@@ -35,25 +35,13 @@
           </div>
         </div>
       </template>
-
-      <!-- Dynamic slot for custom cell rendering -->
+      <!-- pass slots to basetable - required as basetable is wrapping q-table -->
       <template
-        v-for="(_, name) in $slots"
-        :key="name"
-        v-slot:[name]="slotProps"
+        v-for="(_, slotName) in $slots"
+        :key="slotName"
+        v-slot:[slotName]="slotProps"
       >
-        <!-- Add the column alignment to the slot props -->
-        <slot
-          :name="name"
-          v-bind="{
-            ...slotProps,
-            columnAlignment: getColumnAlignment(
-              typeof name === 'string'
-                ? name.replace('body-cell-', '')
-                : String(name),
-            ),
-          }"
-        ></slot>
+        <slot :name="slotName" v-bind="slotProps" />
       </template>
     </q-table>
   </div>
@@ -89,10 +77,6 @@ const filterModel = computed({
   get: () => props.filter || '',
   set: (value) => emit('update:filter', value),
 });
-
-const getColumnAlignment = (fieldName: string): string => {
-  return props.columnConfig.align?.[fieldName] || 'left';
-};
 
 // Data can be passed to basetable as a normal function or computed property
 const rowMapperFn = computed(() =>
