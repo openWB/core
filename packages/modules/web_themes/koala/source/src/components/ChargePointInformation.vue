@@ -179,9 +179,7 @@ const columnConfigMobile: columnConfig = {
     plugged: 'Status',
   },
   align: {
-    name: 'center',
-    vehicle: 'left',
-    plugged: 'right',
+    plugged: 'center',
   },
 };
 
