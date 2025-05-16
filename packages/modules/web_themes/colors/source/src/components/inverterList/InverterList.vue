@@ -11,11 +11,7 @@
 				{{ formatWatt(sourceSummary.pv.power) }}
 			</WbBadge>
 		</template>
-		<div
-			v-for="[key, pvsystem] in pvSystems"
-			:key="key"
-			class="subgrid pb-2 px-4"
-		>
+		<div v-for="[key, pvsystem] in pvSystems" :key="key" class="subgrid pb-2">
 			<IlInverter :inverter="pvsystem" />
 		</div>
 	</WBWidgetFlex>
