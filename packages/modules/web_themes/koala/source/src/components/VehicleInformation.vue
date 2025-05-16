@@ -12,7 +12,7 @@
     v-else
     :items="vehicleIds"
     :row-data="tableRowData"
-    :column-config="mobile ? columnConfigMobile : columnConfig"
+    :column-config="mobile ? columnConfigMobile : columnConfigDesktop"
     :search-input-visible="searchInputVisible"
     :table-height="mobile ? '35vh' : '40vh'"
     v-model:filter="filter"
@@ -83,6 +83,7 @@ import { Platform } from 'quasar';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
+import { columnConfig } from 'src/components/Models/table.ts';
 
 const mqttStore = useMqttStore();
 const mobile = computed(() => Platform.is.mobile);
@@ -121,7 +122,7 @@ const tableRowData = computed(() => {
   };
 });
 
-const columnConfig = {
+const columnConfigDesktop: columnConfig = {
   fields: ['name', 'manufacturer', 'model', 'plugged', 'vehicleSocValue'],
   labels: {
     name: 'Fahrzeug',
@@ -136,12 +137,16 @@ const columnConfig = {
   },
 };
 
-const columnConfigMobile = {
+const columnConfigMobile: columnConfig = {
   fields: ['name', 'plugged', 'vehicleSocValue'],
   labels: {
     name: 'Fahrzeug',
     plugged: 'Status',
     vehicleSocValue: 'Ladestand',
+  },
+  align: {
+    plugged: 'center',
+    vehicleSocValue: 'right',
   },
 };
 
