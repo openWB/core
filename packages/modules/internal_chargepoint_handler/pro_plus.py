@@ -27,7 +27,8 @@ class ProPlus(ChargepointModule):
 
         try:
             chargepoint_state = super().request_values()
-            chargepoint_state.rfid = last_tag
+            if last_tag is not None and last_tag != "":
+                chargepoint_state.rfid = last_tag
         except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
             raise Exception("Interner Ladepunkt ist nicht erreichbar.")
 
