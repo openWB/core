@@ -11,6 +11,17 @@
     class="q-mt-md"
   />
 
+  <SliderStandard
+    v-if="dcCharging"
+    title="Minimaler DC-Dauerleistung"
+    :min="0"
+    :max="300"
+    :step="1"
+    unit="kW"
+    v-model="pvMinDCCurrent.value"
+    class="q-mt-md"
+  />
+
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group class="col">
@@ -143,6 +154,14 @@ const phaseOptionsMinSoc = [
 
 const pvMinCurrent = computed(() =>
   mqttStore.chargePointConnectedVehiclePVChargeMinCurrent(props.chargePointId),
+);
+
+const dcCharging = computed(() =>
+  mqttStore.DCChargingEnabled,
+);
+
+const pvMinDCCurrent = computed(() =>
+  mqttStore.chargePointConnectedVehiclePV_DC_ChargePower(props.chargePointId),
 );
 
 const numPhases = computed(() =>
