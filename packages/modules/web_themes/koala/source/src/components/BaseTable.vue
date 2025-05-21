@@ -107,11 +107,7 @@
           class="q-virtual-scroll--with-prev"
         >
           <q-td colspan="100%">
-            <slot name="row-expand" v-bind="rowProps">
-              <pre class="text-caption q-ma-none">{{
-                `row id ${rowProps.row.id}`
-              }}</pre>
-            </slot>
+            <slot name="row-expand" v-bind="rowProps"> </slot>
           </q-td>
         </q-tr>
       </template>

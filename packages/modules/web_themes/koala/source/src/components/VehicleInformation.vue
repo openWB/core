@@ -25,6 +25,9 @@
         <ChargePointStateIcon :vehicle-id="row.id as number" />
       </q-td>
     </template>
+    <template #row-expand="{ row }">
+      <VehicleConnectionStateIcon :vehicle-id="row.id as number" />
+    </template>
   </BaseTable>
 
   <!-- VehicleCard Dialog -->
@@ -64,7 +67,9 @@ import { Platform } from 'quasar';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
+import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
+
 import { columnConfig } from 'src/components/Models/baseTable';
 
 const mqttStore = useMqttStore();

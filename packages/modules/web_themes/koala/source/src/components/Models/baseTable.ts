@@ -1,5 +1,4 @@
 import { QTableColumn } from 'quasar';
-'';
 
 export type Align = Record<string, 'left' | 'right' | 'center'>;
 
