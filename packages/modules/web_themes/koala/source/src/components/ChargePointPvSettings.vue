@@ -156,9 +156,7 @@ const pvMinCurrent = computed(() =>
   mqttStore.chargePointConnectedVehiclePVChargeMinCurrent(props.chargePointId),
 );
 
-const dcCharging = computed(() =>
-  mqttStore.DCChargingEnabled,
-);
+const dcCharging = computed(() => mqttStore.DCChargingEnabled);
 
 const pvMinDCCurrent = computed(() =>
   mqttStore.chargePointConnectedVehiclePV_DC_ChargePower(props.chargePointId),
