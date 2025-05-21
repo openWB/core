@@ -69,8 +69,7 @@ import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
-
-import { columnConfig } from 'src/components/Models/baseTable';
+import { columnConfig } from 'src/components/Models/base-table-model';
 
 const mqttStore = useMqttStore();
 const mobile = computed(() => Platform.is.mobile);

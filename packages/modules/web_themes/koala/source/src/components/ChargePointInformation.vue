@@ -88,7 +88,7 @@ import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointCard from 'src/components/ChargePointCard.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
-import { columnConfig } from 'src/components/Models/baseTable';
+import { columnConfig } from 'src/components/Models/base-table-model';
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();

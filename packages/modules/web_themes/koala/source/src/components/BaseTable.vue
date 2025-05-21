@@ -127,7 +127,7 @@
 <script setup lang="ts">
 import { computed, ComputedRef, ref, useSlots } from 'vue';
 import type { QTableColumn, QTableProps } from 'quasar';
-import { BodySlotProps } from 'src/components/Models/baseTable';
+import { BodySlotProps } from 'src/components/Models/base-table-model';
 
 /* ------------------------------------------------------------------ props */
 const props = defineProps<{
