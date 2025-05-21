@@ -17,30 +17,33 @@
     :table-height="mobile ? '35vh' : '40vh'"
     v-model:filter="filter"
     :columns-to-search="['vehicle', 'name']"
+    :row-expandable="false"
     @row-click="onRowClick"
   >
-    <template #body-cell-plugged="props">
-      <q-td :class="`text-${props.col.align}`">
-        <ChargePointStateIcon :charge-point-id="props.row.id" />
+    <template #body-cell-plugged="{ row, col }">
+      <q-td :class="`text-${col.align}`">
+        <ChargePointStateIcon :charge-point-id="row.id as number" />
       </q-td>
     </template>
-    <template #body-cell-timeCharging="props">
-      <q-td :class="`text-${props.col.align}`">
+
+    <template #body-cell-timeCharging="{ row, col }">
+      <q-td :class="`text-${col.align}`">
         <ChargePointTimeCharging
-          :charge-point-id="props.row.id"
+          :charge-point-id="row.id as number"
           :readonly="true"
           :toolTip="true"
           :icon-size="'xs'"
         />
       </q-td>
     </template>
-    <template #body-cell-powerColumn="props">
-      <q-td :class="`text-${props.col.align}`">
-        {{ props.row.power }}
-        <q-badge rounded color="primary" :label="props.row.phaseNumber">
+
+    <template #body-cell-powerColumn="{ row, col }">
+      <q-td :class="`text-${col.align}`">
+        {{ row.power }}
+        <q-badge rounded color="primary" :label="row.phaseNumber as number">
           <q-tooltip>Phasenanzahl</q-tooltip>
         </q-badge>
-        {{ props.row.current }}
+        {{ row.current }}
       </q-td>
     </template>
   </BaseTable>
@@ -85,7 +88,7 @@ import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointCard from 'src/components/ChargePointCard.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
-import { columnConfig } from 'src/components/Models/table.ts';
+import { columnConfig } from 'src/components/Models/baseTable';
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();

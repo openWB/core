@@ -5,6 +5,7 @@
       :rows="mappedRows"
       :columns="mappedColumns"
       row-key="id"
+      v-model:expanded="expanded"
       :filter="filterModel"
       :filter-method="customFilterMethod"
       virtual-scroll
@@ -16,7 +17,8 @@
       :pagination="{ rowsPerPage: 0 }"
       hide-bottom
     >
-      <template v-slot:top v-if="searchInputVisible">
+      <!-- search field ------------------------------------------------------->
+      <template #top v-if="searchInputVisible">
         <div class="row full-width items-center q-mb-sm">
           <div class="col">
             <q-input
@@ -28,16 +30,95 @@
               class="search-field white-outline-input"
               input-class="text-white"
             >
-              <template v-slot:append>
+              <template #append>
                 <q-icon name="search" color="white" />
               </template>
             </q-input>
           </div>
         </div>
       </template>
-      <!-- pass slots to basetable - required as basetable is wrapping q-table -->
+
+      <!-- header ----------------------------------------------------------->
+      <template v-if="props.rowExpandable" #header="hdr">
+        <q-tr :props="hdr">
+          <!-- space for arrow column -->
+          <q-th auto-width :props="{ ...hdr, col: {} }" />
+
+          <!-- the other columns -->
+          <q-th v-for="c in hdr.cols" :key="c.name" :props="{ ...hdr, col: c }">
+            {{ c.label }}
+          </q-th>
+        </q-tr>
+      </template>
+
+      <!-- body ------------------------------------------------------------->
+      <template v-if="props.rowExpandable" #body="rowProps: BodySlotProps">
+        <q-tr
+          :key="`main-${rowProps.key}`"
+          :props="rowProps"
+          @click="onRowClick($event, rowProps.row)"
+          class="mouse-over"
+        >
+          <q-td auto-width>
+            <q-btn
+              dense
+              flat
+              round
+              size="sm"
+              :icon="
+                rowProps.expand ? 'keyboard_arrow_up' : 'keyboard_arrow_down'
+              "
+              @click.stop="rowProps.expand = !rowProps.expand"
+            />
+          </q-td>
+
+          <template v-for="col in rowProps.cols" :key="col.name">
+            <!-- custom body-cell slot -->
+            <template v-if="$slots[`body-cell-${col.name}`]">
+              <slot
+                :name="`body-cell-${col.name}`"
+                v-bind="{
+                  ...rowProps,
+                  col,
+                  value: getCellValue(rowProps.row, col),
+                }"
+              />
+            </template>
+
+            <!-- all other column data -->
+            <q-td
+              v-else
+              :props="{
+                ...rowProps,
+                col,
+                value: getCellValue(rowProps.row, col),
+              }"
+            >
+              {{ getCellValue(rowProps.row, col) }}
+            </q-td>
+          </template>
+        </q-tr>
+
+        <!-- expansion row -->
+        <q-tr
+          v-show="rowProps.expand"
+          :key="`xp-${rowProps.key}`"
+          :props="rowProps"
+          class="q-virtual-scroll--with-prev"
+        >
+          <q-td colspan="100%">
+            <slot name="row-expand" v-bind="rowProps">
+              <pre class="text-caption q-ma-none">{{
+                `row id ${rowProps.row.id}`
+              }}</pre>
+            </slot>
+          </q-td>
+        </q-tr>
+      </template>
+
+      <!-- forward any other slots not related to table  e.g top search field -------------------->
       <template
-        v-for="(_, slotName) in $slots"
+        v-for="slotName in forwardedSlotNames"
         :key="slotName"
         v-slot:[slotName]="slotProps"
       >
@@ -48,9 +129,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ComputedRef } from 'vue';
-import { QTableColumn, QTableProps } from 'quasar';
+import { computed, ComputedRef, ref, useSlots } from 'vue';
+import type { QTableColumn, QTableProps } from 'quasar';
+import { BodySlotProps } from 'src/components/Models/baseTable';
 
+/* ------------------------------------------------------------------ props */
 const props = defineProps<{
   items: number[];
   rowData:
@@ -66,50 +149,68 @@ const props = defineProps<{
   tableHeight?: string;
   filter?: string;
   columnsToSearch?: string[];
+  rowExpandable?: boolean;
 }>();
+
+/* ------------------------------------------------------------------ utils */
+function getCellValue(row: Record<string, unknown>, col: QTableColumn) {
+  return typeof col.field === 'function'
+    ? col.field(row)
+    : row[col.field as string];
+}
+
+/* ------------------------------------------------------------------ state */
+const expanded = ref<(string | number)[]>([]);
+const slots = useSlots();
+
+const forwardedSlotNames = computed(() => {
+  if (props.rowExpandable)
+    return Object.keys(slots).filter((n) => !n.startsWith('body'));
+  return Object.keys(slots);
+});
 
 const emit = defineEmits<{
   (e: 'row-click', row: Record<string, unknown>): void;
   (e: 'update:filter', value: string): void;
 }>();
 
+/* ---------------------------------------------------------------- helpers */
 const filterModel = computed({
   get: () => props.filter || '',
-  set: (value) => emit('update:filter', value),
+  set: (v) => emit('update:filter', v),
 });
 
-// Data can be passed to basetable as a normal function or computed property
 const rowMapperFn = computed(() =>
   typeof props.rowData === 'function' ? props.rowData : props.rowData.value,
 );
 
 const mappedRows = computed(() => props.items.map(rowMapperFn.value));
 
-const mappedColumns = computed<QTableColumn[]>(() => {
-  return props.columnConfig.fields.map((field) => ({
+const mappedColumns = computed<QTableColumn[]>(() =>
+  props.columnConfig.fields.map((field) => ({
     name: field,
     label: props.columnConfig.labels?.[field] || field,
     align: props.columnConfig.align?.[field] || 'left',
     field,
     sortable: true,
     headerStyle: 'font-weight: bold',
-  }));
-});
+  })),
+);
 
 const customFilterMethod: NonNullable<QTableProps['filterMethod']> = (
   rows,
   terms,
   cols,
 ) => {
-  if (!terms || terms.trim() === '') return rows;
-  const lowerTerms = terms.toLowerCase();
-  const fields =
+  if (!terms?.trim()) return rows;
+  const lower = terms.toLowerCase();
+  const searchFields =
     props.columnsToSearch ||
-    cols.map((col) => (typeof col.field === 'string' ? col.field : ''));
-  return rows.filter((row) =>
-    fields.some((field) => {
-      const val = row[field];
-      return val && String(val).toLowerCase().includes(lowerTerms);
+    cols.map((c) => (typeof c.field === 'string' ? c.field : ''));
+  return rows.filter((r) =>
+    searchFields.some((f) => {
+      const val = r[f];
+      return val && String(val).toLowerCase().includes(lower);
     }),
   );
 };
@@ -122,5 +223,9 @@ const onRowClick = (evt: Event, row: Record<string, unknown>) =>
 .search-field {
   width: 100%;
   max-width: 18em;
+}
+
+.mouse-over {
+  cursor: pointer;
 }
 </style>

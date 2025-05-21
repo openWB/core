@@ -17,11 +17,12 @@
     :table-height="mobile ? '35vh' : '40vh'"
     v-model:filter="filter"
     :columns-to-search="['name', 'manufacturer', 'model']"
+    :row-expandable="true"
     @row-click="onRowClick"
   >
-    <template #body-cell-plugged="props">
-      <q-td :class="`text-${props.col.align}`">
-        <ChargePointStateIcon :vehicle-id="props.row.id" />
+    <template #body-cell-plugged="{ row, col }">
+      <q-td :class="`text-${col.align}`">
+        <ChargePointStateIcon :vehicle-id="row.id as number" />
       </q-td>
     </template>
   </BaseTable>
@@ -64,7 +65,7 @@ import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
-import { columnConfig } from 'src/components/Models/table.ts';
+import { columnConfig } from 'src/components/Models/baseTable';
 
 const mqttStore = useMqttStore();
 const mobile = computed(() => Platform.is.mobile);
