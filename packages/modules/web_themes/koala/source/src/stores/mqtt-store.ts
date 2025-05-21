@@ -954,16 +954,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
-    /**
+  /**
    * Get boolean value for DC charging enabled / disabled
    * @returns boolean
    */
   const DCChargingEnabled = computed(() => {
-      return (
-        (getValue.value(
-          'openWB/optional/dc_charging',
-        ) as boolean) || 0
-      );
+    return (getValue.value('openWB/optional/dc_charging') as boolean) || 0;
   });
 
   /**
@@ -979,7 +975,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const DCCurrent =
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.instant_charging?.dc_current;
-        if (DCCurrent !== undefined)    {
+        if (DCCurrent !== undefined) {
           return (DCCurrent * 3 * 230) / 1000;
         } else {
           return 0;
@@ -1129,7 +1125,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
-   /**
+  /**
    * Get or set the charge point connected vehicle PV charging DC power identified by the charge point id
    * @param chargePointId charge point id
    * @returns number
@@ -1142,7 +1138,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const DCMinCurrent =
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.pv_charging?.dc_min_current;
-        if (DCMinCurrent !== undefined)    {
+        if (DCMinCurrent !== undefined) {
           return (DCMinCurrent * 3 * 230) / 1000;
         } else {
           return 0;
@@ -1390,7 +1386,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
-	/**
+  /**
    * Get or set the charge point connected vehicle eco charging power identified by the charge point id
    * @param chargePointId charge point id
    * @returns number
@@ -1403,7 +1399,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const DCCurrent =
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.eco_charging?.dc_current;
-        if (DCCurrent !== undefined)    {
+        if (DCCurrent !== undefined) {
           return (DCCurrent * 3 * 230) / 1000;
         } else {
           return 0;
@@ -2764,7 +2760,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehiclePvChargePhasesMinSoc,
     chargePointConnectedVehiclePVChargeFeedInLimit,
     chargePointConnectedVehicleEcoChargeCurrent,
-		chargePointConnectedVehicleEcoChargeDCPower,
+    chargePointConnectedVehicleEcoChargeDCPower,
     chargePointConnectedVehicleEcoChargePhases,
     chargePointConnectedVehicleEcoChargeLimit,
     chargePointConnectedVehicleEcoChargeLimitSoC,
