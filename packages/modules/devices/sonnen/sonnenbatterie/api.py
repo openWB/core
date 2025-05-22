@@ -239,6 +239,8 @@ class JsonApi():
             channel (ChannelDict): The channel data as a dictionary.
         Returns:
             CounterState|InverterState: The converted State object.
+        Raises:
+            ValueError: If the direction is neither "consumption" nor "production".
         """
         if channel["direction"] == self.PowerMeterDirection.CONSUMPTION.value:
             return CounterState(power=channel["w_total"],
@@ -258,11 +260,25 @@ class JsonApi():
             raise ValueError(f"Unknown direction: {channel['direction']}")
 
     def __get_configurations(self) -> Dict:
+        """
+        Reads the configurations from the JSON API.
+        Returns:
+            Dict: The configurations as a dictionary.
+        Raises:
+            ValueError: If the API version is not v2.
+        """
         if self.api_version != JsonApiVersion.V2:
             raise ValueError("Diese Methode erfordert die JSON API v2!")
         return self.__read(endpoint="configurations")
 
     def __set_configurations(self, configuration: Dict) -> None:
+        """
+        Sets the configurations for the battery system.
+        Args:
+            configuration (Dict): The configurations to set.
+        Raises:
+            ValueError: If the API version is not v2.
+        """
         if self.api_version != JsonApiVersion.V2:
             raise ValueError("Diese Methode erfordert die JSON API v2!")
         req.get_http_session().put(f"http://{self.host}/api/v2/configurations",
@@ -270,6 +286,14 @@ class JsonApi():
                                    headers={"Auth-Token": self.auth_token})
 
     def __update_set_point(self, power_limit: int) -> None:
+        """
+        Updates the set point for the battery system.
+        Args:
+            power_limit (int): The desired power limit in watts. A positive value indicates
+                               charging, while a negative value indicates discharging.
+        Raises:
+            ValueError: If the API version is not v2.
+        """
         if self.api_version != JsonApiVersion.V2:
             raise ValueError("Diese Methode erfordert die JSON API v2!")
         command = "charge"
@@ -352,6 +376,23 @@ class JsonApi():
         return counter_state
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
+        """
+        Sets the power limit for the battery system.
+
+        This method adjusts the operating mode and power limit of the battery system
+        based on the provided `power_limit` value. If `power_limit` is None, the method
+        switches the operating mode to "Self Consumption". Otherwise, it switches the
+        operating mode to "Manual" and sets the specified power limit.
+
+        Args:
+            power_limit (Optional[int]): The desired power limit in watts. A positive value
+                                         indicates charging, while a negative value indicates
+                                         discharging. If None, the power limit is removed.
+
+        Raises:
+            ValueError: If the power limit control is not supported or the API version is not v2.
+            KeyError: If the required key 'EM_OperatingMode' is missing in the API response.
+        """
         if self.power_limit_controllable() is False:
             raise ValueError("Leistungsvorgabe wird nur für 'JSON-API v2' unterstützt!")
         operating_mode = self.__get_configurations()["EM_OperatingMode"]
