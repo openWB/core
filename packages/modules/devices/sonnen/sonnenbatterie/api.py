@@ -341,10 +341,12 @@ class JsonApi():
         # this is not correct, but we have no other way to get the currents
         # the current is calculated as apparent power / voltage
         battery_ac_voltage = battery_state["Uac"]
-        currents = [battery_state[f"Sac{phase}"] / battery_ac_voltage for phase in range(1, 4)]
+        currents = [float(battery_state[f"Sac{phase}"]) / battery_ac_voltage
+                    if battery_state[f"Sac{phase}"] else None
+                    for phase in range(1, 4)]
         imported, exported = sim_counter.sim_count(battery_power)
         return BatState(power=battery_power,
-                        currents=currents,
+                        currents=currents if None not in currents else None,
                         soc=battery_soc,
                         imported=imported,
                         exported=exported)
