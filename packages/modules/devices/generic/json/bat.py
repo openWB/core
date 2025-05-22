@@ -20,31 +20,36 @@ class JsonBat(AbstractBat):
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
+    def _compile_jq_filters(self) -> None:
+        config = self.component_config.configuration
+        self.jq_power = jq.compile(config.jq_power)
+        self.jq_soc = jq.compile(config.jq_soc) if config.jq_soc else None
+        self.jq_currents = [jq.compile(c) for c in config.jq_currents] if all(config.jq_currents) else []
+        self.jq_imported = jq.compile(config.jq_imported) if config.jq_imported else None
+        self.jq_exported = jq.compile(config.jq_exported) if config.jq_exported else None
+
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
+        self._compile_jq_filters()
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response) -> None:
-        config = self.component_config.configuration
+        currents = (
+            [float(j.input(response).first()) for j in self.jq_currents]
+            if len(self.jq_currents) == 3 else None
+        )
 
-        currents = [0] * 3
-        for i, c in enumerate(config.jq_currents):
-            if c is not None:
-                currents[i] = float(jq.compile(c).input(response).first())
+        power = float(self.jq_power.input(response).first())
 
-        power = float(jq.compile(config.jq_power).input(response).first())
-        if config.jq_soc != "":
-            soc = float(jq.compile(config.jq_soc).input(response).first())
-        else:
-            soc = 0
+        soc = float(self.jq_soc.input(response).first()) if self.jq_soc else 0
 
-        if config.jq_imported is not None and config.jq_exported is not None:
-            imported = float(jq.compile(config.jq_imported).input(response).first())
-            exported = float(jq.compile(config.jq_exported).input(response).first())
-        else:
+        if self.jq_imported is None or self.jq_exported is None:
             imported, exported = self.sim_counter.sim_count(power)
+        else:
+            imported = float(self.jq_imported.input(response).first())
+            exported = float(self.jq_exported.input(response).first())
 
         bat_state = BatState(
             currents=currents,
