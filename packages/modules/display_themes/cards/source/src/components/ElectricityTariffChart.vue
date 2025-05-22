@@ -1,7 +1,7 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
 
-import { Line as ChartjsLine } from "vue-chartjs";
+import { Line as ChartJsLine } from "vue-chartjs";
 import "chartjs-adapter-luxon";
 import annotationPlugin from 'chartjs-plugin-annotation';
 import {
@@ -19,7 +19,7 @@ Chart.register(Legend, LineController, LineElement, PointElement, LinearScale, T
 export default {
   name: "ElectricityTariffChart",
   components: {
-    ChartjsLine,
+    ChartJsLine,
   },
   props: {
     modelValue: {
@@ -66,7 +66,7 @@ export default {
     chartDataObject() {
       let myData = [];
       const chartEntries = this.mqttStore.getEtPrices;
-      if (Object.keys(chartEntries).length > 0) {
+      if (chartEntries && Object.keys(chartEntries).length > 0) {
         // proper scaling:
         // timestamp: seconds -> milliseconds
         // price: €/Wh -> €/kWh
@@ -232,12 +232,11 @@ export default {
 
 <template>
   <div class="chartContainer">
-    <ChartjsLine
+    <ChartJsLine
       v-if="chartDataRead"
       ref="priceChart"
       :data="chartDataObject"
       :options="myChartOptions"
-      class="chart"
       @click="chartClick"
     />
   </div>
@@ -248,8 +247,5 @@ export default {
   width: 100%;
   min-height: 200px;
   height: min(50vh, 300px);
-}
-.chart {
-  /* width: 100%; */
 }
 </style>
