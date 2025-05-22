@@ -336,8 +336,15 @@ class JsonApi():
         battery_state = self.__read_status()
         battery_power = -battery_state["Pac_total_W"]
         battery_soc = battery_state["USOC"]
+        # try to calculate the individual line currents as no data is provided by the API
+        # we assume that the voltage is the same for all three phases
+        # this is not correct, but we have no other way to get the currents
+        # the current is calculated as apparent power / voltage
+        battery_ac_voltage = battery_state["Uac"]
+        currents = [battery_state[f"Sac{phase}"] / battery_ac_voltage for phase in range(1, 4)]
         imported, exported = sim_counter.sim_count(battery_power)
         return BatState(power=battery_power,
+                        currents=currents,
                         soc=battery_soc,
                         imported=imported,
                         exported=exported)
