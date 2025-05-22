@@ -1212,7 +1212,7 @@ export default {
               "
             />
           </i-form-group>
-          <i-form-group>
+          <i-form-group v-if="mqttStore.getEtConfigured">
             <i-form-label>Preisgrenze für strompreisbasiertes Laden</i-form-label>
             <extended-number-input
               unit="ct/kWh"
