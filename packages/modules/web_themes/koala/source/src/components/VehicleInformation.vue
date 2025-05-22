@@ -12,37 +12,21 @@
     v-else
     :items="vehicleIds"
     :row-data="tableRowData"
-    :column-config="mobile ? columnConfigMobile : columnConfig"
+    :column-config="mobile ? columnConfigMobile : columnConfigDesktop"
     :search-input-visible="searchInputVisible"
     :table-height="mobile ? '35vh' : '40vh'"
     v-model:filter="filter"
     :columns-to-search="['name', 'manufacturer', 'model']"
+    :row-expandable="true"
     @row-click="onRowClick"
   >
-    <template #body-cell-plugged="{ row }">
-      <q-td>
-        <q-icon
-          :name="row.plugState ? 'power' : 'power_off'"
-          size="sm"
-          :color="
-            row.plugState
-              ? row.chargeState
-                ? 'positive'
-                : 'warning'
-              : 'negative'
-          "
-        >
-          <q-tooltip>
-            {{
-              row.plugState
-                ? row.chargeState
-                  ? 'Lädt'
-                  : 'Angesteckt, lädt nicht'
-                : 'Nicht angesteckt'
-            }}
-          </q-tooltip>
-        </q-icon>
+    <template #body-cell-plugged="{ row, col }">
+      <q-td :class="`text-${col.align}`">
+        <ChargePointStateIcon :vehicle-id="row.id as number" />
       </q-td>
+    </template>
+    <template #row-expand="{ row }">
+      <VehicleConnectionStateIcon :vehicle-id="row.id as number" />
     </template>
   </BaseTable>
 
@@ -82,7 +66,10 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { Platform } from 'quasar';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
+import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
+import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
+import { columnConfig } from 'src/components/Models/base-table-model';
 
 const mqttStore = useMqttStore();
 const mobile = computed(() => Platform.is.mobile);
@@ -109,7 +96,6 @@ const tableRowData = computed(() => {
     const model = info?.model || 'keine Angabe';
     const soc = mqttStore.vehicleSocValue(id);
     const vehicleSocValue = soc !== undefined ? `${Math.round(soc)}%` : '–';
-    const vehicleSocModule = mqttStore.vehicleSocModuleName(id) || 'keine';
     return {
       id,
       name,
@@ -118,36 +104,35 @@ const tableRowData = computed(() => {
       plugState,
       chargeState,
       vehicleSocValue,
-      vehicleSocModule,
     };
   };
 });
 
-const columnConfig = {
-  fields: [
-    'name',
-    'manufacturer',
-    'model',
-    'plugged',
-    'vehicleSocValue',
-    'vehicleSocModule',
-  ],
+const columnConfigDesktop: columnConfig = {
+  fields: ['name', 'manufacturer', 'model', 'plugged', 'vehicleSocValue'],
   labels: {
     name: 'Fahrzeug',
     manufacturer: 'Hersteller',
     model: 'Modell',
     plugged: 'Status',
     vehicleSocValue: 'Ladestand',
-    vehicleSocModule: 'SoC Modul',
+  },
+  align: {
+    plugged: 'center',
+    vehicleSocValue: 'right',
   },
 };
 
-const columnConfigMobile = {
+const columnConfigMobile: columnConfig = {
   fields: ['name', 'plugged', 'vehicleSocValue'],
   labels: {
     name: 'Fahrzeug',
     plugged: 'Status',
     vehicleSocValue: 'Ladestand',
+  },
+  align: {
+    plugged: 'center',
+    vehicleSocValue: 'right',
   },
 };
 

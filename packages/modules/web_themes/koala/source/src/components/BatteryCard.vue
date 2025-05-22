@@ -18,30 +18,10 @@
           @click="dialog?.open()"
         />
       </div>
-      <div class="row q-mt-sm text-subtitle2 justify-between no-wrap">
-        <div class="row">
-          <q-icon
-            :name="
-              soc === undefined || soc === null
-                ? 'battery_0_bar'
-                : soc < 85
-                  ? `battery_${Math.floor(soc / 15)}_bar`
-                  : 'battery_full'
-            "
-            size="sm"
-            color="primary"
-            class="rotate90Clockwise q-mr-sm"
-          />
-          <div>SoC:</div>
-          <div class="q-ml-sm">
-            {{ soc === undefined || soc === null ? '___%' : soc + '%' }}
-          </div>
-        </div>
-        <div class="row">
-          <div>Leistung:</div>
-          <div class="q-ml-sm">
-            {{ power }}
-          </div>
+      <div class="row q-mt-sm text-subtitle2 justify-between full-width">
+        <div>Leistung:</div>
+        <div class="q-ml-sm">
+          {{ power }}
         </div>
       </div>
       <div v-if="showSettings" class="row q-mt-md text-subtitle2">
@@ -57,18 +37,24 @@
         </div>
       </div>
       <div class="text-subtitle1 text-weight-bold q-mt-md">Heute:</div>
-      <div class="row q-mt-sm text-subtitle2">
+      <div class="row q-mt-sm text-subtitle2 justify-between full-width">
         <div>Geladen:</div>
         <div class="q-ml-sm">
           {{ dailyImportedEnergy }}
         </div>
       </div>
-      <div class="row q-mt-sm text-subtitle2">
+      <div class="row q-mt-sm text-subtitle2 justify-between full-width">
         <div>Entladen:</div>
         <div class="q-ml-sm">
           {{ dailyExportedEnergy }}
         </div>
       </div>
+      <SliderDouble
+        class="q-mt-sm"
+        :current-value="soc"
+        :readonly="true"
+        :limit-mode="'none'"
+      />
     </q-card-section>
   </q-card>
   <BatterySettingsDialog :battery-id="props.batteryId" ref="dialog" />
@@ -79,6 +65,7 @@ import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import BatterySettingsDialog from './BatterySettingsDialog.vue';
 import { useBatteryModes } from 'src/composables/useBatteryModes.ts';
+import SliderDouble from './SliderDouble.vue';
 
 const props = defineProps<{
   batteryId: number | undefined;
@@ -145,10 +132,7 @@ const dailyExportedEnergy = computed(() => {
 });
 </script>
 
-<style lang="scss" scoped>
-.rotate90Clockwise {
-  transform: rotate(90deg);
-}
+<style scoped>
 .card-width {
   min-width: 24em;
 }
