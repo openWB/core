@@ -123,6 +123,11 @@ class JsonApiVersion(Enum):
 
 
 class JsonApi():
+    class OperatingMode(Enum):
+        MANUAL = "1"
+        SELF_CONSUMPTION = "2"
+        TIME_OF_USE = "10"
+
     class PowerMeterDirection(Enum):
         PRODUCTION = "production"
         CONSUMPTION = "consumption"
@@ -180,6 +185,8 @@ class JsonApi():
         w_l3: float
         w_total: float
 
+    default_operating_mode: Optional[OperatingMode] = None
+
     def __init__(self,
                  host: str,
                  api_version: JsonApiVersion = JsonApiVersion.V1,
@@ -190,6 +197,14 @@ class JsonApi():
         if self.api_version == JsonApiVersion.V2 and self.auth_token is None:
             raise ValueError("API v2 requires an auth_token.")
         self.headers = {"auth-token": auth_token} if api_version == JsonApiVersion.V2 else {}
+
+    def __del__(self) -> None:
+        """
+        Destructor to clean up the object.
+        """
+        # restore normal operating mode
+        if self.api_version == JsonApiVersion.V2:
+            self.set_power_limit(None)
 
     def __read(self, endpoint: str = "status") -> Dict:
         """
@@ -395,13 +410,21 @@ class JsonApi():
         """
         if self.power_limit_controllable() is False:
             raise ValueError("Leistungsvorgabe wird nur für 'JSON-API v2' unterstützt!")
-        operating_mode = self.__get_configurations()["EM_OperatingMode"]
+        configurations = self.__get_configurations()
+        if "EM_OperatingMode" not in configurations:
+            raise KeyError("The key 'EM_OperatingMode' is missing in the API response.")
+        if self.default_operating_mode is None:
+            # Store the default operating mode for later restoration
+            self.default_operating_mode = self.OperatingMode(configurations["EM_OperatingMode"])
+        operating_mode = self.OperatingMode(configurations["EM_OperatingMode"])
         if power_limit is None:
-            # Keine Leistungsvorgabe, Betriebsmodus "Eigenverbrauch" aktivieren
-            if operating_mode == "1":
-                self.__set_configurations({"EM_OperatingMode": "2"})
+            # No specific power limit is set, activating default mode to allow the system to optimize energy usage by it
+            # self.
+            if operating_mode == self.OperatingMode.MANUAL:
+                self.__set_configurations({"EM_OperatingMode": self.default_operating_mode.value})
         else:
-            # Leistungsvorgabe, Betriebsmodus "Manuell" aktivieren
-            if operating_mode == "2":
-                self.__set_configurations({"EM_OperatingMode": "1"})
+            # Activate "Manual" operating mode to allow direct control of the power limit
+            # when a specific `power_limit` value is provided.
+            if operating_mode != self.OperatingMode.MANUAL:
+                self.__set_configurations({"EM_OperatingMode": self.OperatingMode.MANUAL.value})
             self.__update_set_point(power_limit)
