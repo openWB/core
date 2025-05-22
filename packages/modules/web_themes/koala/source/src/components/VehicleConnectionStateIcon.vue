@@ -1,5 +1,5 @@
 <template>
-  <div class="row q-mt-sm">
+  <div class="row" :class="props.passCSSStyle">
     <div class="col">
       <div class="text-subtitle2">Status:</div>
       <q-chip
@@ -8,29 +8,31 @@
         color="primary"
       >
       </q-chip>
-      <q-chip
-        v-for="(chargePoint, index) in vehicleState"
-        :key="index"
-        :icon="chargePoint.plugged ? 'power' : 'power_off'"
-        :color="
-          chargePoint.plugged
-            ? chargePoint.charging
-              ? 'positive'
-              : 'warning'
-            : 'negative'
-        "
-        :label="chargePoint.name"
-      >
-        <q-tooltip>
-          {{
+      <div class="row wrap">
+        <q-chip
+          v-for="(chargePoint, index) in vehicleState"
+          :key="index"
+          :icon="chargePoint.plugged ? 'power' : 'power_off'"
+          :color="
             chargePoint.plugged
               ? chargePoint.charging
-                ? 'Lädt'
-                : 'Angesteckt, lädt nicht'
-              : 'Nicht angesteckt'
-          }}
-        </q-tooltip>
-      </q-chip>
+                ? 'positive'
+                : 'warning'
+              : 'negative'
+          "
+          :label="chargePoint.name"
+        >
+          <q-tooltip>
+            {{
+              chargePoint.plugged
+                ? chargePoint.charging
+                  ? 'Lädt'
+                  : 'Angesteckt, lädt nicht'
+                : 'Nicht angesteckt'
+            }}
+          </q-tooltip>
+        </q-chip>
+      </div>
     </div>
   </div>
 </template>
@@ -41,6 +43,7 @@ import { computed } from 'vue';
 
 const props = defineProps<{
   vehicleId: number;
+  passCSSStyle?: string;
 }>();
 
 const mqttStore = useMqttStore();

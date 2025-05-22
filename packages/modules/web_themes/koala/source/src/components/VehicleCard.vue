@@ -16,7 +16,10 @@
           {{ vehicleInfo?.model || 'keine Angabe' }}
         </div>
       </div>
-      <VehicleConnectionStateIcon :vehicle-id="vehicleId" />
+      <VehicleConnectionStateIcon
+        :vehicle-id="vehicleId"
+        :pass-c-s-s-style="'q-mt-sm'"
+      />
       <div v-if="vehicleSocValue !== null">
         <SliderDouble
           class="q-mt-sm"
