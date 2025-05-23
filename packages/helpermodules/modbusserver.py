@@ -3,7 +3,7 @@ import logging
 from socketserver import TCPServer
 from collections import defaultdict
 import struct
-from typing import Optional
+from typing import Optional, Union
 
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -31,33 +31,32 @@ except (Exception, OSError):
     log.exception("Fehler im Modbus-Server")
 
 
-def _form_int32(value, startreg):
-    secondreg = startreg + 1
+def _form_int32(value: Union[int, float], register: int):
     try:
         binary32 = struct.pack('>l', int(value))
         high_byte, low_byte = struct.unpack('>hh', binary32)
-        data_store[startreg] = high_byte
-        data_store[secondreg] = low_byte
+        data_store[register] = high_byte
+        data_store[register + 1] = low_byte
     except Exception:
         log.exception("Fehler beim Füllen der Register")
-        data_store[startreg] = -1
-        data_store[secondreg] = -1
+        data_store[register] = -1
+        data_store[register + 1] = -1
 
 
-def _form_int16(value, startreg):
+def _form_int16(value: Union[int, float, bool], register: int):
     try:
         value = int(value)
         if (value > 32767 or value < -32768):
             raise Exception("Number to big")
-        data_store[startreg] = value
+        data_store[register] = value
     except Exception:
         log.exception("Fehler beim Füllen der Register")
-        data_store[startreg] = -1
+        data_store[register] = -1
 
 
-def _form_str(value: Optional[str], startreg):
+def _form_str(value: Optional[str], register: int):
     if value is None or len(value) == 0:
-        data_store[startreg] = 0
+        data_store[register] = 0
     else:
         bytes = value.encode("utf-8")
         length = len(bytes)
@@ -72,50 +71,65 @@ def _form_str(value: Optional[str], startreg):
                 else:
                     stream_two_bytes = struct.pack(">bb", bytes[i], 0)
                     stream_one_word = struct.unpack(">h", stream_two_bytes)[0]
-                data_store[startreg+register_offset] = stream_one_word
+                data_store[register + register_offset] = stream_one_word
             except Exception:
-                data_store[startreg+register_offset] = -1
+                data_store[register + register_offset] = -1
             finally:
                 register_offset += 1
 
 
-def _get_pos(number, n):
-    return number // 10**n % 10 - 1
+def _charge_point_index(address: int):
+    return int(str(address)[-3]) - 1
+
+
+def _value_index(address: int):
+    return int(str(address)[-2:])
 
 
 try:
     @app.route(slave_ids=[1], function_codes=[3, 4], addresses=list(range(0, 32000)))
-    def read_data_store(slave_id, function_code, address):
+    def read_data_store(slave_id: int, function_code: int, address: int):
         """" Return value of address. """
+        # Mapping für einfache Zuordnung
+        int32_map = {
+            0: lambda cp: cp.get.power,
+            2: lambda cp: cp.get.imported,
+            41: lambda cp: cp.get.exported,
+        }
+        int16_map = {
+            4: lambda cp: cp.get.voltages[0] * 100,
+            5: lambda cp: cp.get.voltages[1] * 100,
+            6: lambda cp: cp.get.voltages[2] * 100,
+            7: lambda cp: cp.get.currents[0] * 100,
+            8: lambda cp: cp.get.currents[1] * 100,
+            9: lambda cp: cp.get.currents[2] * 100,
+            14: lambda cp: cp.get.plug_state,
+            15: lambda cp: cp.get.charge_state,
+            16: lambda cp: cp.get.evse_current,
+            30: lambda cp: cp.get.powers[0],
+            31: lambda cp: cp.get.powers[1],
+            32: lambda cp: cp.get.powers[2],
+            43: lambda _: 1,
+        }
+        str_map = {
+            50: lambda _: serial_number,
+            60: lambda cp: cp.get.rfid,
+        }
+
         if address > 10099:
             Pub().pub("openWB/set/internal_chargepoint/global_data",
                       {"heartbeat": timecheck.create_timestamp(), "parent_ip": None})
-            chargepoint = SubData.internal_chargepoint_data[f"cp{_get_pos(address, 2)}"]
-            askedvalue = int(str(address)[-2:])
-            if askedvalue == 00:
-                _form_int32(chargepoint.get.power, address)
-            elif askedvalue == 2:
-                _form_int32(chargepoint.get.imported, address)
-            elif 4 <= askedvalue <= 6:
-                _form_int16(chargepoint.get.voltages[askedvalue-4]*100, address)
-            elif 7 <= askedvalue <= 9:
-                _form_int16(chargepoint.get.currents[askedvalue-7]*100, address)
-            elif askedvalue == 14:
-                _form_int16(chargepoint.get.plug_state, address)
-            elif askedvalue == 15:
-                _form_int16(chargepoint.get.charge_state, address)
-            elif askedvalue == 16:
-                _form_int16(chargepoint.get.evse_current, address)
-            elif 30 <= askedvalue <= 32:
-                _form_int16(chargepoint.get.powers[askedvalue-30], address)
-            elif askedvalue == 41:
-                _form_int32(chargepoint.get.exported, address)
-            elif askedvalue == 43:
-                _form_int16(1, address)
-            elif askedvalue == 50:
-                _form_str(serial_number, address)
-            elif askedvalue == 60:
-                _form_str(chargepoint.get.rfid, address)
+            charge_point = SubData.internal_chargepoint_data[f"cp{_charge_point_index(address)}"]
+            requested_value = _value_index(address)
+
+            if requested_value in int32_map:
+                _form_int32(int32_map[requested_value](charge_point), address)
+            elif requested_value in int16_map:
+                _form_int16(int16_map[requested_value](charge_point), address)
+            elif requested_value in str_map:
+                _form_str(str_map[requested_value](charge_point), address)
+            else:
+                log.warning(f"Unbekannte Adresse: {address}")
 
         return data_store[address]
 except Exception:
@@ -123,28 +137,31 @@ except Exception:
 
 try:
     @app.route(slave_ids=[1], function_codes=[6, 16], addresses=list(range(0, 32000)))
-    def write_data_store(slave_id, function_code, address, value):
+    def write_data_store(slave_id: int, function_code: int, address: int, value):
         """" Set value for address. """
         if 10170 < address:
-            cp_topic = f"openWB/set/internal_chargepoint/{_get_pos(address, 2)}/data/"
-            askedvalue = int(str(address)[-2:])
-            if askedvalue == 71:
-                Pub().pub(f"{cp_topic}set_current", value/100)
-            elif askedvalue == 80:
-                Pub().pub(f"{cp_topic}phases_to_use", value)
-            elif askedvalue == 81:
-                Pub().pub(f"{cp_topic}trigger_phase_switch", value)
-            elif askedvalue == 98:
-                Pub().pub(f"{cp_topic}cp_interruption_duration", value)
-            elif askedvalue == 99:
-                Pub().pub("openWB/set/command/modbus_server/todo", {"command": "systemUpdate", "data": {}})
+            cp_topic = f"openWB/set/internal_chargepoint/{_charge_point_index(address)}/data/"
+            requested_value = _value_index(address)
+
+            write_map = {
+                71: lambda value: Pub().pub(f"{cp_topic}set_current", value / 100),
+                80: lambda value: Pub().pub(f"{cp_topic}phases_to_use", value),
+                81: lambda value: Pub().pub(f"{cp_topic}trigger_phase_switch", value),
+                98: lambda value: Pub().pub(f"{cp_topic}cp_interruption_duration", value),
+                99: lambda _: Pub().pub("openWB/set/command/modbus_server/todo",
+                                        {"command": "systemUpdate", "data": {}})
+            }
+            if requested_value in write_map:
+                write_map[requested_value](value)
+            else:
+                log.warning(f"Unbekannte Adresse beim Schreiben: {address}")
 except Exception:
     log.exception("Fehler im Modbus-Server")
 
 
 def start_modbus_server(event_modbus_server):
     try:
-        # Wenn start_modbus_server aus SubData aufegrufen wird, wenn das Topic gesetzt wird, führt das zu einem
+        # Wenn start_modbus_server aus SubData aufgerufen wird, wenn das Topic gesetzt wird, führt das zu einem
         # circular Import.
         event_modbus_server.wait()
         event_modbus_server.clear()
