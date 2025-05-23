@@ -18,7 +18,7 @@ import copy
 from dataclasses import asdict
 import dataclasses
 import logging
-import threading
+from threading import Thread, Event
 import traceback
 from typing import Dict, Optional, Tuple
 
@@ -70,7 +70,7 @@ class Chargepoint(ChargepointRfidMixin):
     """
     MAX_FAILED_PHASE_SWITCHES = 2
 
-    def __init__(self, index: int, event: Optional[threading.Event]):
+    def __init__(self, index: int, event: Optional[Event]):
         try:
             self.template: CpTemplate = None
             self.chargepoint_module: AbstractChargepoint = None
@@ -321,7 +321,7 @@ class Chargepoint(ChargepointRfidMixin):
                     # Wird die Ladung gestartet?
                     if self.data.set.current_prev == 0 and self.data.set.current != 0:
                         # Die CP-Unterbrechung erfolgt in Threads, da diese länger als ein Zyklus dauert.
-                        if thread_handler(threading.Thread(
+                        if thread_handler(Thread(
                                 target=self.chargepoint_module.interrupt_cp,
                                 args=(charging_ev.ev_template.data.control_pilot_interruption_duration,),
                                 name=f"cp{self.chargepoint_module.config.id}")):

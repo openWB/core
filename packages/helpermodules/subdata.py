@@ -3,7 +3,7 @@
 import importlib
 import logging
 from pathlib import Path
-import threading
+from threading import Event
 from typing import Dict, Union
 import re
 import subprocess
@@ -71,22 +71,22 @@ class SubData:
     graph_data = graph.Graph()
 
     def __init__(self,
-                 event_ev_template: threading.Event,
-                 event_cp_config: threading.Event,
-                 event_module_update_completed: threading.Event,
-                 event_copy_data: threading.Event,
-                 event_global_data_initialized: threading.Event,
-                 event_command_completed: threading.Event,
-                 event_subdata_initialized: threading.Event,
-                 event_vehicle_update_completed: threading.Event,
-                 event_start_internal_chargepoint: threading.Event,
-                 event_stop_internal_chargepoint: threading.Event,
-                 event_update_config_completed: threading.Event,
-                 event_update_soc: threading.Event,
-                 event_soc: threading.Event,
-                 event_jobs_running: threading.Event,
-                 event_modbus_server: threading.Event,
-                 event_restart_gpio: threading.Event,):
+                 event_ev_template: Event,
+                 event_cp_config: Event,
+                 event_module_update_completed: Event,
+                 event_copy_data: Event,
+                 event_global_data_initialized: Event,
+                 event_command_completed: Event,
+                 event_subdata_initialized: Event,
+                 event_vehicle_update_completed: Event,
+                 event_start_internal_chargepoint: Event,
+                 event_stop_internal_chargepoint: Event,
+                 event_update_config_completed: Event,
+                 event_update_soc: Event,
+                 event_soc: Event,
+                 event_jobs_running: Event,
+                 event_modbus_server: Event,
+                 event_restart_gpio: Event,):
         self.event_ev_template = event_ev_template
         self.event_cp_config = event_cp_config
         self.event_module_update_completed = event_module_update_completed

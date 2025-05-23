@@ -4,7 +4,7 @@
 import copy
 import dataclasses
 from pathlib import Path
-import threading
+from threading import Event
 from typing import List, Optional, Tuple
 import re
 import paho.mqtt.client as mqtt
@@ -23,10 +23,10 @@ mqtt_log = logging.getLogger("mqtt")
 
 class SetData:
     def __init__(self,
-                 event_ev_template: threading.Event,
-                 event_cp_config: threading.Event,
-                 event_soc: threading.Event,
-                 event_subdata_initialized: threading.Event):
+                 event_ev_template: Event,
+                 event_cp_config: Event,
+                 event_soc: Event,
+                 event_subdata_initialized: Event):
         self.event_ev_template = event_ev_template
         self.event_cp_config = event_cp_config
         self.event_soc = event_soc

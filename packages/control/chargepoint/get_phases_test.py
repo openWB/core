@@ -1,4 +1,4 @@
-import threading
+from threading import Event
 from unittest.mock import Mock
 from typing import Optional
 import pytest
@@ -21,7 +21,7 @@ def cp() -> Chargepoint:
 
 @pytest.fixture(autouse=True)
 def general() -> None:
-    data.data_init(threading.Event())
+    data.data_init(Event())
     data.data.general_data = General()
 
 
