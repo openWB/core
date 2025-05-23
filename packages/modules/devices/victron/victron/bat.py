@@ -14,10 +14,10 @@ from modules.devices.victron.victron.config import VictronBatSetup
 
 log = logging.getLogger(__name__)
 
+
 class KwargsDict(TypedDict):
     device_id: int
     client: modbus.ModbusTcpClient_
-
 
 
 class VictronBat(AbstractBat):
