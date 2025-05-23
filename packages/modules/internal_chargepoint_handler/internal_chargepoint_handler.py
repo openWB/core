@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import copy
 import logging
-import threading
+from threading import Event, Thread
 import time
 from typing import Optional
 from helpermodules import timecheck
@@ -80,9 +80,9 @@ class UpdateState:
     def __init__(self, cp_module: chargepoint_module.ChargepointModule, hierarchy_id: int) -> None:
         self.old_phases_to_use = 0
         self.old_set_current = 0
-        self.phase_switch_thread = None  # type: Optional[threading.Thread]
-        self.cp_interruption_thread = None  # type: Optional[threading.Thread]
-        self.actor_cooldown_thread = None  # type: Optional[threading.Thread]
+        self.phase_switch_thread = None  # type: Optional[Thread]
+        self.cp_interruption_thread = None  # type: Optional[Thread]
+        self.actor_cooldown_thread = None  # type: Optional[Thread]
         self.cp_module = cp_module
         self.hierarchy_id = hierarchy_id
 
@@ -116,14 +116,14 @@ class UpdateState:
             self.__thread_cp_interruption(data.cp_interruption_duration)
 
     def __thread_phase_switch(self, phases_to_use: int) -> None:
-        self.phase_switch_thread = threading.Thread(
+        self.phase_switch_thread = Thread(
             target=self.cp_module.perform_phase_switch, args=(phases_to_use, 5),
             name=f"perform phase switch {self.cp_module.local_charge_point_num}")
         self.phase_switch_thread.start()
         log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
 
     def __thread_cp_interruption(self, duration: int) -> None:
-        self.cp_interruption_thread = threading.Thread(
+        self.cp_interruption_thread = Thread(
             target=self.cp_module.perform_cp_interruption, args=(duration,),
             name=f"perform cp interruption cp{self.cp_module.local_charge_point_num}")
         self.cp_interruption_thread.start()
@@ -140,8 +140,8 @@ class InternalChargepointHandler:
                  hierarchy_id_cp0: int,
                  parent_cp1: Optional[str],
                  hierarchy_id_cp1: Optional[int],
-                 event_start: threading.Event,
-                 event_stop: threading.Event) -> None:
+                 event_start: Event,
+                 event_stop: Event) -> None:
         log.debug(f"Init internal chargepoint as {mode}")
         self.event_start = event_start
         self.event_stop = event_stop
@@ -261,7 +261,7 @@ class HandlerChargepoint:
             self.old_plug_state = False
 
     def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> bool:
-        def __thread_active(thread: Optional[threading.Thread]) -> bool:
+        def __thread_active(thread: Optional[Thread]) -> bool:
             if thread:
                 return thread.is_alive()
             else:
@@ -291,8 +291,8 @@ class HandlerChargepoint:
 
 class GeneralInternalChargepointHandler:
     def __init__(self) -> None:
-        self.event_stop = threading.Event()
-        self.event_start = threading.Event()
+        self.event_stop = Event()
+        self.event_start = Event()
 
     def handler(self):
         while True:

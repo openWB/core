@@ -1,7 +1,7 @@
 from dataclasses import fields, is_dataclass
 from enum import Enum
 import logging
-import threading
+from threading import Event
 from typing import Dict, List, Tuple
 from control import data
 
@@ -15,12 +15,12 @@ log = logging.getLogger(__name__)
 
 # In den Metadaten wird unter dem Key der Topic-Suffix ab "openWB/ev/2/" angegeben. Der Topic-Prefix ("openWB/ev/2/")
 # wird automatisch ermittelt.
-# Der Kontextmanager muss immer verwendet werden, wenn in den Funktionen Werte geändert werden, die nicht gepublished
+# Der Kontextmanager muss immer verwendet werden, wenn in den Funktionen Werte geändert werden, die nicht veröffentlicht
 # werden.
-# Metadaten werden nur für Felder erzeugt, die gepublished werden sollen, dh bei ganzen Klassen für das Feld der
-# jeweiligen Klasse. Wenn Werte aus einer instanziierten Klasse gepublished werden sollen, erhält die übergeordnete
+# Metadaten werden nur für Felder erzeugt, die veröffentlicht werden sollen, dh bei ganzen Klassen für das Feld der
+# jeweiligen Klasse. Wenn Werte aus einer instanziierten Klasse veröffentlicht werden sollen, erhält die übergeordnete
 # Klasse keine Metadaten (siehe Beispiel unten).
-# Damit die geänderten Werte automatisiert gepublished werden können, muss jede Klasse eine bestimmte Form haben:
+# Damit die geänderten Werte automatisiert veröffentlicht werden können, muss jede Klasse eine bestimmte Form haben:
 #
 # @dataclass
 # class SampleClass:
@@ -44,9 +44,9 @@ log = logging.getLogger(__name__)
 
 # @dataclass
 # class SampleData:
-#     # Wenn eine ganze Klasse als Dictionary gepublished werden soll, wie zB bei Konfigurationen, werden Metadaten für
-# diese Klasse eingetragen. Die Felder der Konfigurationsklasse bekommen keine Metadaten, da diese nicht einzeln
-# gepublished werden.
+#     # Wenn eine ganze Klasse als Dictionary veröffentlicht werden soll, wie zB bei Konfigurationen, werden Metadaten
+# für diese Klasse eingetragen. Die Felder der Konfigurationsklasse bekommen keine Metadaten, da diese nicht einzeln
+# veröffentlicht werden.
 #     sample_field_class: SampleClass = field(
 #         default_factory=sample_class, metadata={"topic": "get/field_class"})
 #     sample_field_int: int = field(default=0, metadata={"topic": "get/field_int"})
@@ -54,8 +54,8 @@ log = logging.getLogger(__name__)
 #         default=0, metadata={"topic": "get/field_immutable"})
 #     sample_field_list: List = field(default_factory=currents_list_factory, metadata={
 #                                     "topic": "get/field_list"})
-#     # Bei verschachtelten Klassen, wo der zu publishende Wert auf einer tieferen Ebene liegt, werden nur für den zu
-# publishenden Wert Metadaten erzeugt.
+#     # Bei verschachtelten Klassen, wo der zu veröffentlichende Wert auf einer tieferen Ebene liegt, werden nur für
+# den zu veröffentlichenden Wert Metadaten erzeugt.
 #     sample_field_nested: SampleNested = field(default_factory=sample_nested)
 
 
@@ -65,7 +65,7 @@ log = logging.getLogger(__name__)
 
 
 class ChangedValuesHandler:
-    def __init__(self, event_module_update_completed: threading.Event) -> None:
+    def __init__(self, event_module_update_completed: Event) -> None:
         self.prev_data: Data = Data(event_module_update_completed)
 
     def store_initial_values(self):
@@ -77,7 +77,7 @@ class ChangedValuesHandler:
 
     def pub_changed_values(self):
         try:
-            # publishen der geänderten Werte
+            # veröffentlichen der geänderten Werte
             self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data, data.data.bat_all_data.data)
             self._update_value("openWB/set/chargepoint/", self.prev_data.cp_all_data.data.get,
                                data.data.cp_all_data.data.get)
@@ -135,7 +135,7 @@ class ChangedValuesHandler:
 
 
 class ChangedValuesContext:
-    def __init__(self, event_module_update_completed: threading.Event):
+    def __init__(self, event_module_update_completed: Event):
         self.changed_values_handler = ChangedValuesHandler(event_module_update_completed)
 
     def __enter__(self):
