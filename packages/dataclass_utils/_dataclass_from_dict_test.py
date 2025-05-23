@@ -35,7 +35,7 @@ class Optionals:
         self.o = o
 
 
-class GnericDict:
+class GenericDict:
     def __init__(self, a: str, o: Dict[int, float] = None):
         self.a = a
         self.o = o
@@ -90,7 +90,7 @@ def test_from_dict_extends_generic():
 
 def test_generic_dict():
     # execution
-    actual = dataclass_from_dict(GnericDict, {"a": "aValue", "o": {1: 1.0}})
+    actual = dataclass_from_dict(GenericDict, {"a": "aValue", "o": {1: 1.0}})
 
     # evaluation
     assert actual.a == "aValue"
