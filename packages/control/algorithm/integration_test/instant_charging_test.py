@@ -119,8 +119,8 @@ def test_instant_charging_limit(params: ParamsLimit, all_cp_instant_charging_1p,
     data.data.counter_data["counter0"].data.set.raw_power_left = params.raw_power_left
     data.data.counter_data["counter0"].data.set.raw_currents_left = params.raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = params.raw_currents_left_counter6
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mockget_component_name_by_id)
+    mock_get_component_name_by_id = Mock(return_value="Garage")
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
     # execution
     Algorithm().calc_current()
 
@@ -196,8 +196,8 @@ def test_control_parameter_instant_charging(params: ParamsControlParameter, all_
     data.data.counter_data["counter0"].data.set.raw_power_left = 22080
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32]*3
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16]*3
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mockget_component_name_by_id)
+    mock_get_component_name_by_id = Mock(return_value="Garage")
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
 
     # execution
     Algorithm().calc_current()

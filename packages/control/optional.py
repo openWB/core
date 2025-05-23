@@ -122,7 +122,7 @@ class Optional(OcppMixin):
         for cp in data.data.cp_data.values():
             try:
                 if self.data.ocpp.boot_notification_sent is False:
-                    # Boot-Notfification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
+                    # Boot-Notification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
                     self.boot_notification(cp.data.config.ocpp_chargebox_id,
                                            cp.chargepoint_module.fault_state,
                                            cp.chargepoint_module.config.type,

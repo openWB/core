@@ -9,7 +9,7 @@ def handle_connection_error(e: ConnectionError):
 
 
 def handle_read_timeout(e: ReadTimeout):
-    return "Innerhalb des Timeouts wurde keine Anwort erhalten. Überprüfe Adresse und Netzwerk."
+    return "Innerhalb des Timeouts wurde keine Antwort erhalten. Überprüfe Adresse und Netzwerk."
 
 
 def handle_http_error(e: HTTPError):

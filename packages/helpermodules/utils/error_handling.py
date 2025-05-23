@@ -60,7 +60,7 @@ class ImportErrorContext:
                        "Neustart wird versucht, fehlende Software-Pakete zu installieren.")
             except IndexError:
                 msg = "Importfehler: " + str(exception)
-            # pub_system_message() publlished an openWB/set/, dass wird beim Starten gelöscht
+            # pub_system_message() veröffentlicht an openWB/set/, dass wird beim Starten gelöscht
             log.exception(msg)
             now = time.time()
             message_payload = {

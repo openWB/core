@@ -64,7 +64,7 @@ class SurplusControlled:
                 dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.data.set.current_prev
                 # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
                 # nachregeln, auch wenn der Regelbereich eingehalten wird. Sonst würde zB nicht berücksichtigt werden,
-                # wenn noch ein Fahrzeug dazu kommmt.
+                # wenn noch ein Fahrzeug dazu kommt.
                 if ((pv_charging.control_range[1] - pv_charging.control_range[0]) /
                         (sum(counter.data.get.voltages) / len(counter.data.get.voltages)) < abs(dif_to_old_current)):
                     current = available_for_cp
