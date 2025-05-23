@@ -50,17 +50,7 @@ class VictronBat(AbstractBat):
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         modbus_id = self.component_config.configuration.modbus_id
 
-        # Zu Debugzwecken kann später gelöscht werden
-        ess_mode = self.__tcp_client.read_holding_registers(2902, ModbusDataType.UINT_16, unit=modbus_id)
-        dynamic_ess_mode = self.__tcp_client.read_holding_registers(5400, ModbusDataType.UINT_16, unit=modbus_id)
-        register_39 = self.__tcp_client.read_holding_registers(39, ModbusDataType.UINT_16, unit=228)
-        log.debug(f"Aktueller ESS Mode: {ess_mode}")
-        log.debug(f"Aktuelles Register 39: {register_39}")
-        log.debug(f"Aktueller Dynamic ESS Mode: {dynamic_ess_mode}")
-        log.debug(f"Aktuelles power_limit: {power_limit}")
-        log.debug(f'last_mode: {self.last_mode}')
-
-        # Check Dynamic ESS Mode
+        # Wenn Victron Dynamic ESS aktiv, erfolgt keine weitere Regelung in openWB
         dynamic_ess_mode = self.__tcp_client.read_holding_registers(5400, ModbusDataType.UINT_16, unit=modbus_id)
         if dynamic_ess_mode == 1:
             log.debug("Dynamic ESS Mode ist aktiv, daher erfolgt keine Regelung des Speichers durch openWB")
@@ -86,7 +76,7 @@ class VictronBat(AbstractBat):
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_registers(39, [0], data_type=ModbusDataType.UINT_16, unit=228)
                 self.last_mode = 'discharge'
-            # Die maximale Entladeleistung begrenzen auf 5000W, für Test
+            # Die maximale Entladeleistung begrenzen auf 5000W
             power_value = int(min(power_limit, 5000)) * -1
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen")
             self.__tcp_client.write_registers(37, [power_value & 0xFFFF], data_type=ModbusDataType.INT_16, unit=228)
