@@ -19,6 +19,7 @@ class KwargsDict(TypedDict):
     client: modbus.ModbusTcpClient_
 
 
+
 class VictronBat(AbstractBat):
     def __init__(self, component_config: VictronBatSetup, **kwargs: Any) -> None:
         self.component_config = component_config
