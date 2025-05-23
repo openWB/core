@@ -1,7 +1,7 @@
 """ Modul, das die Phasenumschaltung durchführt.
 """
 import logging
-import threading
+from threading import Thread
 import time
 
 from control.ev.ev import Ev
@@ -17,7 +17,7 @@ def thread_phase_switch(cp) -> None:
     """
     try:
         log.debug("Starte Thread zur Phasenumschaltung an LP"+str(cp.num))
-        return thread_handler(threading.Thread(
+        return thread_handler(Thread(
             target=_perform_phase_switch,
             args=(cp.chargepoint_module,
                   cp.data.control_parameter.phases,

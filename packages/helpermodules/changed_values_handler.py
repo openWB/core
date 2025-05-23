@@ -1,7 +1,7 @@
 from dataclasses import fields, is_dataclass
 from enum import Enum
 import logging
-import threading
+from threading import Event
 from typing import Dict, List, Tuple
 from control import data
 
@@ -65,7 +65,7 @@ log = logging.getLogger(__name__)
 
 
 class ChangedValuesHandler:
-    def __init__(self, event_module_update_completed: threading.Event) -> None:
+    def __init__(self, event_module_update_completed: Event) -> None:
         self.prev_data: Data = Data(event_module_update_completed)
 
     def store_initial_values(self):
@@ -135,7 +135,7 @@ class ChangedValuesHandler:
 
 
 class ChangedValuesContext:
-    def __init__(self, event_module_update_completed: threading.Event):
+    def __init__(self, event_module_update_completed: Event):
         self.changed_values_handler = ChangedValuesHandler(event_module_update_completed)
 
     def __enter__(self):

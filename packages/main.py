@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Starten der benötigten Prozesse
 """
-# flake8: noqa: F402
+# flake8: noqa: E402
 import logging
 from helpermodules import logger
 from helpermodules.utils import thread_handler
+
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
@@ -13,9 +14,8 @@ from pathlib import Path
 from random import randrange
 import schedule
 import time
-import threading
+from threading import Event, Thread, enumerate
 import traceback
-from threading import Thread
 from control.chargelog.chargelog import calculate_charge_cost
 
 from control import data, prepare, process
@@ -72,7 +72,7 @@ class HandlerAlgorithm:
             logger.clear_in_memory_log_handler("main")
 
             log.info("# ***Start*** ")
-            log.debug(f"Threads: {threading.enumerate()}")
+            log.debug(f"Threads: {enumerate()}")
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
             logger.write_logs_to_file("main")
@@ -197,24 +197,24 @@ try:
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
     rfid = RfidReader()
-    event_ev_template = threading.Event()
+    event_ev_template = Event()
     event_ev_template.set()
-    event_cp_config = threading.Event()
+    event_cp_config = Event()
     event_cp_config.set()
-    event_soc = threading.Event()
+    event_soc = Event()
     event_soc.set()
-    event_copy_data = threading.Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
+    event_copy_data = Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
     event_copy_data.set()
-    event_global_data_initialized = threading.Event()
-    event_command_completed = threading.Event()
+    event_global_data_initialized = Event()
+    event_command_completed = Event()
     event_command_completed.set()
-    event_subdata_initialized = threading.Event()
-    event_update_config_completed = threading.Event()
-    event_modbus_server = threading.Event()
-    event_jobs_running = threading.Event()
+    event_subdata_initialized = Event()
+    event_update_config_completed = Event()
+    event_modbus_server = Event()
+    event_jobs_running = Event()
     event_jobs_running.set()
-    event_update_soc = threading.Event()
-    event_restart_gpio = threading.Event()
+    event_update_soc = Event()
+    event_restart_gpio = Event()
     gpio = InternalGpioHandler(event_restart_gpio)
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc(event_update_soc)
@@ -250,7 +250,7 @@ try:
     t_comm.start()
     t_soc.start()
     t_internal_chargepoint.start()
-    threading.Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
+    Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)

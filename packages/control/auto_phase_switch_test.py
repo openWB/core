@@ -1,5 +1,5 @@
-import threading
 import pytest
+from threading import Event
 from typing import List, Optional
 from unittest.mock import Mock
 from control.chargepoint.control_parameter import ControlParameter
@@ -23,7 +23,7 @@ def vehicle() -> Ev:
 
 @pytest.fixture(autouse=True)
 def data_module() -> None:
-    data.data_init(threading.Event())
+    data.data_init(Event())
     data.data.general_data = General()
     data.data.pv_all_data = PvAll()
     data.data.bat_all_data = BatAll()

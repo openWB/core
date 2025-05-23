@@ -1,7 +1,7 @@
 """ Starten des Lade-Vorgangs
 """
 import logging
-import threading
+from threading import Thread
 from typing import List
 
 from control.bat_all import get_controllable_bat_components
@@ -25,7 +25,7 @@ class Process:
 
     def process_algorithm_results(self) -> None:
         try:
-            modules_threads: List[threading.Thread] = []
+            modules_threads: List[Thread] = []
             log.info("# Ladung starten.")
             for cp in data.data.cp_data.values():
                 try:
@@ -68,7 +68,7 @@ class Process:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
             for bat_component in get_controllable_bat_components():
                 modules_threads.append(
-                    threading.Thread(
+                    Thread(
                         target=bat_component.set_power_limit,
                         args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
                         name=f"set power limit {bat_component.component_config.id}"))
@@ -88,7 +88,7 @@ class Process:
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):
                     modules_threads.append(
-                        threading.Thread(
+                        Thread(
                             target=io.write,
                             args=(None, data.data.io_states[f"io_states{io.config.id}"].data.set.digital_output,),
                             name=f"set output io{io.config.id}"))
@@ -133,7 +133,7 @@ class Process:
         log.info(f"LP{chargepoint.num}: set current {current} A, "
                  f"state {ChargepointState(chargepoint.data.control_parameter.state).name}")
 
-    def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
-        return threading.Thread(target=chargepoint.chargepoint_module.set_current,
-                                args=(chargepoint.data.set.current,),
-                                name=f"set current cp{chargepoint.chargepoint_module.config.id}")
+    def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> Thread:
+        return Thread(target=chargepoint.chargepoint_module.set_current,
+                      args=(chargepoint.data.set.current,),
+                      name=f"set current cp{chargepoint.chargepoint_module.config.id}")

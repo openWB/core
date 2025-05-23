@@ -3,7 +3,7 @@ import importlib
 import json
 import logging
 import subprocess
-import threading
+from threading import Event
 import time
 from typing import Dict, List, Optional
 import re
@@ -62,7 +62,7 @@ class Command:
                ("io_device", "system/io", -1),
                ]
 
-    def __init__(self, event_command_completed: threading.Event):
+    def __init__(self, event_command_completed: Event):
         try:
             self.event_command_completed = event_command_completed
             self._get_max_ids()
@@ -937,7 +937,7 @@ class ErrorHandlingContext:
 
 
 class CompleteCommandContext:
-    def __init__(self, event_command_completed: threading.Event):
+    def __init__(self, event_command_completed: Event):
         self.event_command_completed = event_command_completed
 
     def __enter__(self):

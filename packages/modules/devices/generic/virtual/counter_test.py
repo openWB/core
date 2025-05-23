@@ -1,4 +1,4 @@
-import threading
+from threading import Event
 from typing import Callable
 from unittest.mock import Mock
 
@@ -24,7 +24,7 @@ from packages.conftest import hierarchy_standard, hierarchy_hybrid, hierarchy_ne
 
 @pytest.fixture(autouse=True)
 def init_data() -> None:
-    data.data_init(threading.Event())
+    data.data_init(Event())
     data.data.counter_all_data = CounterAll()
     data.data.counter_all_data.data.get.hierarchy = [{"id": 0, "type": "counter", "children": [
         {"id": 6, "type": "counter", "children": [
