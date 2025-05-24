@@ -5,6 +5,7 @@ from modules.vehicles.polestar.auth import PolestarAuth
 from typing import Optional, Dict
 from modules.common.component_state import CarState
 
+CAR_TELEMATICS = 'carTelematicsV2'
 
 log = logging.getLogger(__name__)
 
@@ -46,15 +47,15 @@ class PolestarApi:
 
     def get_battery_data(self) -> Optional[Dict]:
         params = {
-            "query": "query carTelematics($vin: String!) { carTelematics(vin: $vin) { "
+            "query": "query " + CAR_TELEMATICS + "($vins: [String!]!) { " + CAR_TELEMATICS + "(vins: $vins) { "
             + "battery { batteryChargeLevelPercentage  estimatedDistanceToEmptyKm } } }",
-            "operationName": "carTelematics",
-            "variables": "{\"vin\":\"" + self.vin + "\"}"
+            "operationName": CAR_TELEMATICS,
+            "variables": "{\"vins\":\"" + self.vin + "\"}"
         }
 
         result = self.query_params(params)
 
-        return result['data']['carTelematics']['battery']
+        return result['data'][CAR_TELEMATICS]['battery'][0]
 
     def check_vin(self) -> None:
         # get Vehicle Data
