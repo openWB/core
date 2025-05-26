@@ -342,10 +342,20 @@ class Command:
     def addChargepointTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Ladepunkt-Profil erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            pub_user_message(
+                payload, connection_id,
+                'Das Kopieren von Ladepunkt-Profilen ist noch nicht implementiert!',
+                MessageType.ERROR)
+            # new_chargepoint_template = get_chargepoint_template(payload["data"]["copy"])
+            # copy autolock plans...
+            return
+        else:
+            new_chargepoint_template = get_chargepoint_template_default()
         new_id = self.max_id_chargepoint_template + 1
-        default = get_chargepoint_template_default()
-        default["id"] = new_id
-        Pub().pub(f'openWB/set/chargepoint/template/{new_id}', default)
+        new_chargepoint_template["id"] = new_id
+        Pub().pub(f'openWB/set/chargepoint/template/{new_id}', new_chargepoint_template)
         self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
         Pub().pub("openWB/set/command/max_id/chargepoint_template",
                   self.max_id_chargepoint_template)
@@ -374,10 +384,19 @@ class Command:
     def addAutolockPlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            pub_user_message(
+                payload, connection_id,
+                'Das Kopieren von Sperr-Plänen ist noch nicht implementiert!',
+                MessageType.ERROR)
+            # new_autolock_plan = get_autolock_plan(payload["data"]["template"], payload["data"]["copy"])
+            return
+        else:
+            new_autolock_plan = get_autolock_plan_default()
         new_id = self.max_id_autolock_plan + 1
-        default = get_autolock_plan_default()
         Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}/autolock/{new_id}',
-                  default)
+                  new_autolock_plan)
         self.max_id_autolock_plan = new_id
         Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
@@ -407,11 +426,22 @@ class Command:
     def addChargeTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Lade-Profil erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            pub_user_message(
+                payload, connection_id,
+                'Das Kopieren von Lade-Profilen ist noch nicht implementiert!',
+                MessageType.ERROR)
+            # new_charge_template = get_charge_template(payload["data"]["copy"])
+            # copy schedule plans...
+            # copy time charging plans...
+            return
+        else:
+            new_charge_template = get_new_charge_template()
         new_id = self.max_id_charge_template + 1
-        charge_template_default = get_new_charge_template()
-        charge_template_default["id"] = new_id
+        new_charge_template["id"] = new_id
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
-                  str(new_id), charge_template_default)
+                  str(new_id), new_charge_template)
         self.max_id_charge_template = new_id
         Pub().pub("openWB/set/command/max_id/charge_template", new_id)
         pub_user_message(payload, connection_id,
@@ -437,13 +467,23 @@ class Command:
     def addChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            pub_user_message(
+                payload, connection_id,
+                'Das Kopieren von Zielladen-Plänen ist noch nicht implementiert!',
+                MessageType.ERROR)
+            # new_charge_template_schedule_plan = get_charge_template_schedule_plan(
+            #     payload["data"]["template"], payload["data"]["copy"])
+            return
+        else:
+            new_charge_template_schedule_plan = ScheduledChargingPlan()
         new_id = self.max_id_charge_template_scheduled_plan + 1
-        charge_template_default = ScheduledChargingPlan()
-        charge_template_default.id = new_id
+        new_charge_template_schedule_plan.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/chargemode/scheduled_charging/plans/{new_id}',
-            dataclass_utils.asdict(charge_template_default))
+            dataclass_utils.asdict(new_charge_template_schedule_plan))
         self.max_id_charge_template_scheduled_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
@@ -474,13 +514,22 @@ class Command:
     def addChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            pub_user_message(
+                payload, connection_id,
+                'Das Kopieren von Zeitladen-Plänen ist noch nicht implementiert!',
+                MessageType.ERROR)
+            # new_time_charging_plan = get_time_charging_plan(payload["data"]["template"], payload["data"]["copy"])
+            return
+        else:
+            new_time_charging_plan = TimeChargingPlan()
         new_id = self.max_id_charge_template_time_charging_plan + 1
-        time_charging_plan_default = TimeChargingPlan()
-        time_charging_plan_default.id = new_id
+        new_time_charging_plan.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/time_charging/plans/{new_id}',
-            dataclass_utils.asdict(time_charging_plan_default))
+            dataclass_utils.asdict(new_time_charging_plan))
         self.max_id_charge_template_time_charging_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
@@ -560,9 +609,18 @@ class Command:
     def addEvTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Fahrzeug-Profil erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            pub_user_message(
+                payload, connection_id,
+                'Das Kopieren von Fahrzeug-Profilen ist noch nicht implementiert!',
+                MessageType.ERROR)
+            # new_ev_template = get_ev_template(payload["data"]["copy"])
+            return
+        else:
+            new_ev_template = dataclass_utils.asdict(EvTemplateData())
         new_id = self.max_id_ev_template + 1
-        ev_template_default = dataclass_utils.asdict(EvTemplateData())
-        Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
+        Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', new_ev_template)
         self.max_id_ev_template = new_id
         Pub().pub("openWB/set/command/max_id/ev_template", new_id)
         pub_user_message(
