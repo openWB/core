@@ -386,12 +386,9 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            pub_user_message(
-                payload, connection_id,
-                'Das Kopieren von Sperr-Plänen ist noch nicht implementiert!',
-                MessageType.ERROR)
-            # new_autolock_plan = get_autolock_plan(payload["data"]["template"], payload["data"]["copy"])
-            return
+            new_autolock_plan = asdict(data.data.cp_template_data[f'cpt{payload["data"]["template"]}']
+                                       .data.autolock.plans[f'{payload["data"]["copy"]}']).copy()
+            new_autolock_plan["name"] = f'Kopie von {new_autolock_plan["name"]}'
         else:
             new_autolock_plan = get_autolock_plan_default()
         new_id = self.max_id_autolock_plan + 1
