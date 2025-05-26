@@ -344,13 +344,8 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            pub_user_message(
-                payload, connection_id,
-                'Das Kopieren von Ladepunkt-Profilen ist noch nicht implementiert!',
-                MessageType.ERROR)
-            # new_chargepoint_template = get_chargepoint_template(payload["data"]["copy"])
-            # copy autolock plans...
-            return
+            new_chargepoint_template = asdict(data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data).copy()
+            new_chargepoint_template["name"] = f'Kopie von {new_chargepoint_template["name"]}'
         else:
             new_chargepoint_template = get_chargepoint_template_default()
         new_id = self.max_id_chargepoint_template + 1
@@ -359,6 +354,14 @@ class Command:
         self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
         Pub().pub("openWB/set/command/max_id/chargepoint_template",
                   self.max_id_chargepoint_template)
+        # if copying a template, copy autolock plans
+        if "data" in payload and "copy" in payload["data"]:
+            for _, plan in data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data.autolock.plans.items():
+                new_plan = asdict(plan).copy()
+                new_plan["id"] = self.max_id_autolock_plan + 1
+                Pub().pub(f'openWB/set/chargepoint/template/{new_id}/autolock/{new_plan["id"]}', new_plan)
+                self.max_id_autolock_plan += 1
+            Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues Ladepunkt-Profil mit ID \'{new_id}\' hinzugefügt.',
