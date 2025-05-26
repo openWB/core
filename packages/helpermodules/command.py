@@ -611,12 +611,8 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            pub_user_message(
-                payload, connection_id,
-                'Das Kopieren von Fahrzeug-Profilen ist noch nicht implementiert!',
-                MessageType.ERROR)
-            # new_ev_template = get_ev_template(payload["data"]["copy"])
-            return
+            new_ev_template = asdict(data.data.ev_template_data[f"et{payload['data']['copy']}"].data).copy()
+            new_ev_template["name"] = f'Kopie von {new_ev_template["name"]}'
         else:
             new_ev_template = dataclass_utils.asdict(EvTemplateData())
         new_id = self.max_id_ev_template + 1
