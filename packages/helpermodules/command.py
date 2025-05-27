@@ -15,12 +15,12 @@ from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
-# ToDo: move to module commands if implemented
 from control.ev.charge_template import get_new_charge_template
 from control.ev.ev_template import EvTemplateData
 from helpermodules import pub
 from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
+# ToDo: move to module commands if implemented
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
 from helpermodules.broker import BrokerClient
@@ -428,14 +428,10 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            pub_user_message(
-                payload, connection_id,
-                'Das Kopieren von Lade-Profilen ist noch nicht implementiert!',
-                MessageType.ERROR)
-            # new_charge_template = get_charge_template(payload["data"]["copy"])
-            # copy schedule plans...
-            # copy time charging plans...
-            return
+            new_charge_template = asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}'].data).copy()
+            new_charge_template["chargemode"]["scheduled_charging"].pop("plans")
+            new_charge_template["time_charging"].pop("plans")
+            new_charge_template["name"] = f'Kopie von {new_charge_template["name"]}'
         else:
             new_charge_template = get_new_charge_template()
         new_id = self.max_id_charge_template + 1
@@ -444,6 +440,26 @@ class Command:
                   str(new_id), new_charge_template)
         self.max_id_charge_template = new_id
         Pub().pub("openWB/set/command/max_id/charge_template", new_id)
+        # if copying a template, also copy schedule plans and time charging plans
+        if "data" in payload and "copy" in payload["data"]:
+            for _, plan in (data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}']
+                            .data.chargemode.scheduled_charging.plans.items()):
+                new_plan = asdict(plan).copy()
+                new_plan["id"] = self.max_id_charge_template_scheduled_plan + 1
+                Pub().pub(f'openWB/set/vehicle/template/charge_template/{new_id}/'
+                          f'chargemode/scheduled_charging/plans/{new_plan["id"]}',
+                          new_plan)
+                self.max_id_charge_template_scheduled_plan += 1
+            Pub().pub("openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
+            for _, plan in (data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}']
+                            .data.time_charging.plans.items()):
+                new_plan = asdict(plan).copy()
+                new_plan["id"] = self.max_id_charge_template_time_charging_plan + 1
+                Pub().pub(f'openWB/set/vehicle/template/charge_template/{new_id}/'
+                          f'time_charging/plans/{new_plan["id"]}',
+                          new_plan)
+                self.max_id_charge_template_time_charging_plan += 1
+            Pub().pub("openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
         pub_user_message(payload, connection_id,
                          f'Neues Lade-Profil mit ID \'{new_id}\' hinzugefügt.',
                          MessageType.SUCCESS)
