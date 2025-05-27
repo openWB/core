@@ -514,12 +514,9 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            pub_user_message(
-                payload, connection_id,
-                'Das Kopieren von Zeitladen-Plänen ist noch nicht implementiert!',
-                MessageType.ERROR)
-            # new_time_charging_plan = get_time_charging_plan(payload["data"]["template"], payload["data"]["copy"])
-            return
+            new_time_charging_plan = (data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}']
+                                      .data.time_charging.plans[f'{payload["data"]["copy"]}'])
+            new_time_charging_plan.name = f'Kopie von {new_time_charging_plan.name}'
         else:
             new_time_charging_plan = TimeChargingPlan()
         new_id = self.max_id_charge_template_time_charging_plan + 1
