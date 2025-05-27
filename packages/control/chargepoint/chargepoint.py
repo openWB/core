@@ -423,7 +423,8 @@ class Chargepoint(ChargepointRfidMixin):
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
                 if check_timestamp(self.data.control_parameter.timestamp_charge_start,
                                    charging_ev.ev_template.data.keep_charge_active_duration) is False:
-                    if self.cp_ev_chargemode_support_phase_switch():
+                    if (self.cp_ev_support_phase_switch() and self.chargemode_support_phase_switch() and
+                            self.failed_phase_switches_reached()):
                         if phase_switch.phase_switch_thread_alive(self.num) is False:
                             self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
                             if self._is_phase_switch_required() is False:
@@ -881,6 +882,20 @@ class Chargepoint(ChargepointRfidMixin):
             log.exception("Fehler im Prepare-Modul")
 
     def cp_ev_chargemode_support_phase_switch(self) -> bool:
+        if (self.cp_ev_support_phase_switch() and
+                self.data.get.charge_state and
+                self.chargemode_support_phase_switch() and
+                (self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED or
+                 self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY)):
+            return self.failed_phase_switches_reached()
+        else:
+            return False
+
+    def cp_ev_support_phase_switch(self) -> bool:
+        return (self.data.config.auto_phase_switch_hw and
+                self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False)
+
+    def chargemode_support_phase_switch(self) -> bool:
         control_parameter = self.data.control_parameter
         pv_auto_switch = ((control_parameter.chargemode == Chargemode.PV_CHARGING or
                            control_parameter.chargemode == Chargemode.ECO_CHARGING) and
@@ -891,23 +906,15 @@ class Chargepoint(ChargepointRfidMixin):
             control_parameter.submode == Chargemode.PV_CHARGING and
             self.data.set.charge_template.data.chargemode.scheduled_charging.plans[
                 str(self.data.control_parameter.current_plan)].phases_to_use_pv == 0)
-        if (self.cp_ev_support_phase_switch() and
-                self.data.get.charge_state and
-                (pv_auto_switch or scheduled_auto_switch) and
-                (control_parameter.state == ChargepointState.CHARGING_ALLOWED or
-                 control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY)):
-            if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
-                    self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
-                    (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
-                     self.data.control_parameter.failed_phase_switches == 1)):
-                self.set_state_and_log(
-                    "Keine automatische Umschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
-                return False
-            else:
-                return True
-        else:
-            return False
+        return (pv_auto_switch or scheduled_auto_switch)
 
-    def cp_ev_support_phase_switch(self) -> bool:
-        return (self.data.config.auto_phase_switch_hw and
-                self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False)
+    def failed_phase_switches_reached(self) -> bool:
+        if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
+             self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
+            (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
+             self.data.control_parameter.failed_phase_switches == 1)):
+            self.set_state_and_log(
+                "Keine automatische Umschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
+            return False
+        else:
+            return True
