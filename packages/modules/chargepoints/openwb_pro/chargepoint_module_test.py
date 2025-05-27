@@ -148,10 +148,10 @@ def sample_wrong_charge_state_chargepoint_state():
     return sample_wrong_charge_state_chargepoint_state
 
 
-def sample_chargepoint_state_resetted():
-    sample_chargepoint_state_resetted = sample_wrong_charge_state_chargepoint_state()
-    sample_chargepoint_state_resetted.plug_state = False
-    return sample_chargepoint_state_resetted
+def sample_chargepoint_state_is_reset():
+    sample_chargepoint_state_is_reset = sample_wrong_charge_state_chargepoint_state()
+    sample_chargepoint_state_is_reset.plug_state = False
+    return sample_chargepoint_state_is_reset
 
 
 @pytest.mark.parametrize(
@@ -166,7 +166,7 @@ def sample_chargepoint_state_resetted():
                      sample_wrong_charge_state_chargepoint_state(),
                      id="Timestamp gesetzt, Fehler aufgetreten, Timestamp nicht abgelaufen"),
         pytest.param(sample_wrong_charge_state(), 1652683182, ValueError, 1652683182,
-                     sample_chargepoint_state_resetted(),
+                     sample_chargepoint_state_is_reset(),
                      id="Timestamp gesetzt, Fehler aufgetreten, Timestamp abgelaufen"),
     ])
 def test_error_timestamp(sample_state,

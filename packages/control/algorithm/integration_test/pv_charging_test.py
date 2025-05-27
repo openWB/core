@@ -221,8 +221,8 @@ def test_surplus(params: ParamsSurplus, all_cp_pv_charging_3p, all_cp_charging_3
     data.data.counter_data["counter0"].data.set.raw_power_left = params.raw_power_left
     data.data.counter_data["counter0"].data.set.raw_currents_left = params.raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = params.raw_currents_left_counter6
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mockget_component_name_by_id)
+    mock_get_component_name_by_id = Mock(return_value="Garage")
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
     data.data.cp_data["cp3"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
     data.data.cp_data["cp4"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
     data.data.cp_data["cp5"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1

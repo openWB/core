@@ -1,8 +1,8 @@
 """Optionale Module
 """
 import logging
-from math import ceil  # Aufrunden
-import threading
+from math import ceil
+from threading import Thread
 from typing import List
 
 from control import data
@@ -102,7 +102,7 @@ class Optional(OcppMixin):
     def et_get_prices(self):
         try:
             if self.et_module:
-                thread_handler(threading.Thread(target=self.et_module.update, args=(), name="electricity tariff"))
+                thread_handler(Thread(target=self.et_module.update, args=(), name="electricity tariff"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
@@ -114,7 +114,7 @@ class Optional(OcppMixin):
     def ocpp_transfer_meter_values(self):
         try:
             if self.data.ocpp.active:
-                thread_handler(threading.Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
+                thread_handler(Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
         except Exception:
             log.exception("Fehler im OCPP-Optional-Modul")
 
@@ -122,7 +122,7 @@ class Optional(OcppMixin):
         for cp in data.data.cp_data.values():
             try:
                 if self.data.ocpp.boot_notification_sent is False:
-                    # Boot-Notfification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
+                    # Boot-Notification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
                     self.boot_notification(cp.data.config.ocpp_chargebox_id,
                                            cp.chargepoint_module.fault_state,
                                            cp.chargepoint_module.config.type,

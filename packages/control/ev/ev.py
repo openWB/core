@@ -288,9 +288,9 @@ class Ev:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
-        unblanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
+        unbalanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
         condition_1_to_3 = (((get_medium_charging_current(get_currents) > max_current and
-                            all_surplus > required_surplus) or unblanced_load_limit_reached) and
+                            all_surplus > required_surplus) or unbalanced_load_limit_reached) and
                             phases_in_use == 1)
         condition_3_to_1 = get_medium_charging_current(
             get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
