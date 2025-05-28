@@ -45,8 +45,12 @@
           <q-th auto-width :props="{ ...hdr, col: {} }" />
 
           <!-- the other columns -->
-          <q-th v-for="c in hdr.cols" :key="c.name" :props="{ ...hdr, col: c }">
-            {{ c.label }}
+          <q-th
+            v-for="column in hdr.cols"
+            :key="column.name"
+            :props="{ ...hdr, col: column }"
+          >
+            {{ column.label }}
           </q-th>
         </q-tr>
       </template>
@@ -57,7 +61,7 @@
           :key="`main-${rowProps.key}`"
           :props="rowProps"
           @click="onRowClick($event, rowProps.row)"
-          class="mouse-over"
+          class="clickable"
         >
           <q-td auto-width>
             <q-btn
@@ -198,15 +202,15 @@ const customFilterMethod: NonNullable<QTableProps['filterMethod']> = (
   terms,
   cols,
 ) => {
-  if (!terms?.trim()) return rows;
-  const lower = terms.toLowerCase();
-  const searchFields =
+  if (!terms || terms.trim() === '') return rows;
+  const lowerTerms = terms.toLowerCase();
+  const fields =
     props.columnsToSearch ||
-    cols.map((c) => (typeof c.field === 'string' ? c.field : ''));
-  return rows.filter((r) =>
-    searchFields.some((f) => {
-      const val = r[f];
-      return val && String(val).toLowerCase().includes(lower);
+    cols.map((col) => (typeof col.field === 'string' ? col.field : ''));
+  return rows.filter((row) =>
+    fields.some((field) => {
+      const val = row[field];
+      return val && String(val).toLowerCase().includes(lowerTerms);
     }),
   );
 };
@@ -221,7 +225,7 @@ const onRowClick = (evt: Event, row: Record<string, unknown>) =>
   max-width: 18em;
 }
 
-.mouse-over {
+.clickable {
   cursor: pointer;
 }
 </style>

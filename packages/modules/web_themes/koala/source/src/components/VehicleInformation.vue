@@ -22,11 +22,11 @@
   >
     <template #body-cell-plugged="{ row, col }">
       <q-td :class="`text-${col.align}`">
-        <ChargePointStateIcon :vehicle-id="row.id as number" />
+        <ChargePointStateIcon :vehicle-id="(row.id as number)" />
       </q-td>
     </template>
     <template #row-expand="{ row }">
-      <VehicleConnectionStateIcon :vehicle-id="row.id as number" />
+      <VehicleConnectionStateIcon :vehicle-id="(row.id as number)" />
     </template>
   </BaseTable>
 

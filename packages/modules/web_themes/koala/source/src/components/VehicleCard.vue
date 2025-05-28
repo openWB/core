@@ -16,10 +16,7 @@
           {{ vehicleInfo?.model || 'keine Angabe' }}
         </div>
       </div>
-      <VehicleConnectionStateIcon
-        :vehicle-id="vehicleId"
-        :pass-c-s-s-style="'q-mt-sm'"
-      />
+      <VehicleConnectionStateIcon :vehicle-id="vehicleId" class="q-mt-sm" />
       <div v-if="vehicleSocValue !== null">
         <SliderDouble
           class="q-mt-sm"
@@ -92,10 +89,6 @@ const vehicleSocModuleType = computed(() => {
 const vehicleSocValue = computed(() => {
   return mqttStore.vehicleSocValue(props.vehicleId);
 });
-
-// const vehicleState = computed(() => {
-//   return mqttStore.vehicleConnectionState(props.vehicleId);
-// });
 
 const refreshSoc = () => {
   mqttStore.vehicleForceSocUpdate(props.vehicleId);
