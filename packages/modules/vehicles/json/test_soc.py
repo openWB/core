@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from soc import fetch_soc, JsonSocSetup, JsonSocConfiguration
+from soc import initialize_vehicle, fetch_soc, JsonSocSetup, JsonSocConfiguration
 
 
 class TestSoc(unittest.TestCase):
@@ -59,13 +59,19 @@ class TestSoc(unittest.TestCase):
             mock_response.json.return_value = case['sample_data']
             mock_get_http_session.return_value.get.return_value = mock_response
 
+            compiled_queries = {
+                'soc': None,
+                'range': None,
+                'timestamp': None
+            }
             vehicle_config = JsonSocSetup(configuration=JsonSocConfiguration(
                 url=case['url'],
                 soc_pattern=case['soc_pattern'],
                 range_pattern=case['range_pattern'],
                 timestamp_pattern=case['timestamp_pattern']
             ))
-            car_state = fetch_soc(vehicle_config)
+            initialize_vehicle(vehicle_config, compiled_queries)
+            car_state = fetch_soc(vehicle_config, compiled_queries)
 
             self.assertEqual(car_state.soc, case['expected_soc'])
             self.assertEqual(car_state.range, case['expected_range'])
