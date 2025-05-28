@@ -794,6 +794,8 @@ class SetData:
             self.process_bat_topic(msg)
         elif "openWB/set/mqtt/pv/" in msg.topic:
             self.process_pv_topic(msg)
+        elif "openWB/set/mqtt/vehicle/" in msg.topic:
+            self.process_vehicle_topic(msg)
 
     def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
