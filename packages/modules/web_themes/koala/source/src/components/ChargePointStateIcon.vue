@@ -21,15 +21,29 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { computed } from 'vue';
 
 const props = defineProps<{
-  chargePointId: number;
+  chargePointId?: number;
+  vehicleId?: number;
 }>();
 
 const mqttStore = useMqttStore();
 
-const plugState = computed(() =>
-  mqttStore.chargePointPlugState(props.chargePointId),
-);
-const chargeState = computed(() =>
-  mqttStore.chargePointChargeState(props.chargePointId),
-);
+const plugState = computed(() => {
+  if (props.vehicleId !== undefined) {
+    const vehicleState = mqttStore.vehicleConnectionState(props.vehicleId);
+    return vehicleState.some((v) => v.plugged);
+  } else if (props.chargePointId !== undefined) {
+    return mqttStore.chargePointPlugState(props.chargePointId);
+  }
+  return false;
+});
+
+const chargeState = computed(() => {
+  if (props.vehicleId !== undefined) {
+    const vehicleState = mqttStore.vehicleConnectionState(props.vehicleId);
+    return vehicleState.some((v) => v.charging);
+  } else if (props.chargePointId !== undefined) {
+    return mqttStore.chargePointChargeState(props.chargePointId);
+  }
+  return false;
+});
 </script>

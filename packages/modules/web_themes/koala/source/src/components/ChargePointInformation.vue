@@ -12,27 +12,72 @@
     v-else
     :items="chargePointIds"
     :row-data="tableRowData"
-    :column-config="mobile ? columnConfigMobile : columnConfig"
+    :column-config="mobile ? columnConfigMobile : columnConfigDesktop"
     :search-input-visible="searchInputVisible"
     :table-height="mobile ? '35vh' : '40vh'"
     v-model:filter="filter"
     :columns-to-search="['vehicle', 'name']"
+    :row-expandable="mobile"
     @row-click="onRowClick"
   >
-    <template #body-cell-plugged="{ row }">
-      <q-td>
-        <ChargePointStateIcon :charge-point-id="row.id" />
+    <template #body-cell-plugged="{ row, col }">
+      <q-td :class="`text-${col.align}`">
+        <ChargePointStateIcon :charge-point-id="(row.id as number)" />
       </q-td>
     </template>
-    <template #body-cell-timeCharging="{ row }">
-      <q-td>
+
+    <template #body-cell-timeCharging="{ row, col }">
+      <q-td :class="`text-${col.align}`">
         <ChargePointTimeCharging
-          :charge-point-id="row.id"
+          :charge-point-id="(row.id as number)"
           :readonly="true"
           :toolTip="true"
           :icon-size="'xs'"
         />
       </q-td>
+    </template>
+
+    <template #body-cell-powerColumn="{ row, col }">
+      <q-td :class="`text-${col.align}`">
+        <ChargePointPowerData
+          :power="(row.power as string)"
+          :phase-number="(row.phaseNumber as number)"
+          :current="(row.current as string)"
+        />
+      </q-td>
+    </template>
+
+    <!-- Pass expansion row data to BaseTable.vue --------------------------------------------------------->
+    <template #row-expand="{ row }">
+      <div v-if="mobile" class="q-pa-xs column q-gutter-y-xs">
+        <div
+          v-for="field in columnConfigMobile?.fieldsExpansionRow"
+          :key="field"
+          class="row items-start"
+        >
+          <!-- label ------------------------------------------------>
+          <div class="col-5 text-caption text-bold">
+            {{ columnConfigMobile?.labels?.[field] }}:
+          </div>
+
+          <!-- value --------------------------------------------------------->
+          <div class="col-7 text-right">
+            <ChargePointPowerData
+              v-if="field === 'powerColumn'"
+              :power="(row.power as string)"
+              :phase-number="(row.phaseNumber as number)"
+              :current="(row.current as string)"
+            />
+            <ChargePointTimeCharging
+              v-if="field === 'timeCharging'"
+              :charge-point-id="(row.id as number)"
+              readonly
+              icon-size="xs"
+            />
+            <span v-else>{{ row[field] }}</span>
+          </div>
+        </div>
+      </div>
     </template>
   </BaseTable>
 
@@ -76,6 +121,8 @@ import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointCard from 'src/components/ChargePointCard.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
+import ChargePointPowerData from './ChargePointPowerData.vue';
+import { columnConfig } from 'src/components/Models/base-table-model';
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();
@@ -90,6 +137,7 @@ const mobile = computed(() => Platform.is.mobile);
 const selectedChargePointId = ref<number | null>(null);
 const modalChargePointCardVisible = ref(false);
 const filter = ref('');
+
 const tableRowData = computed(() => {
   return (id: number) => {
     const name = mqttStore.chargePointName(id);
@@ -109,7 +157,11 @@ const tableRowData = computed(() => {
       chargePointSoc !== undefined ? `${Math.round(chargePointSoc)}%` : '0%';
     const power = mqttStore.chargePointPower(id, 'textValue');
     const charged = mqttStore.chargePointEnergyChargedPlugged(id, 'textValue');
-    const timeCharging = mqttStore.chargePointConnectedVehicleTimeCharging(id);
+    const timeCharging =
+      mqttStore.chargePointConnectedVehicleTimeCharging(id).value;
+    const phaseNumber = mqttStore.chargePointPhaseNumber(id);
+    const current = mqttStore.chargePointChargingCurrent(id, 'textValue');
+    const powerColumn = '';
     return {
       id,
       name,
@@ -119,21 +171,24 @@ const tableRowData = computed(() => {
       timeCharging,
       soc,
       power,
+      phaseNumber,
+      current,
+      powerColumn,
       charged,
     };
   };
 });
 
-const columnConfig = {
+const columnConfigDesktop: columnConfig = {
   fields: [
     'name',
     'vehicle',
     'plugged',
     'chargeMode',
     'timeCharging',
-    'soc',
-    'power',
+    'powerColumn',
     'charged',
+    'soc',
   ],
   labels: {
     name: 'Ladepunkt',
@@ -141,18 +196,44 @@ const columnConfig = {
     plugged: 'Status',
     chargeMode: 'Lademodus',
     timeCharging: 'Zeitladen',
-    soc: 'Ladestand',
-    power: 'Leistung',
+    powerColumn: 'Leistung',
     charged: 'Geladen',
+    soc: 'Ladestand',
+  },
+  align: {
+    plugged: 'center',
+    timeCharging: 'center',
+    soc: 'right',
+    charged: 'right',
+    powerColumn: 'right',
   },
 };
 
-const columnConfigMobile = {
+const columnConfigMobile: columnConfig = {
   fields: ['name', 'vehicle', 'plugged'],
+  fieldsExpansionRow: [
+    'powerColumn',
+    'chargeMode',
+    'charged',
+    'soc',
+    'timeCharging',
+  ],
   labels: {
     name: 'Ladepunkt',
     vehicle: 'Fahrzeug',
     plugged: 'Status',
+    chargeMode: 'Lademodus',
+    timeCharging: 'Zeitladen',
+    powerColumn: 'Leistung',
+    charged: 'Geladen',
+    soc: 'Ladestand',
+  },
+  align: {
+    plugged: 'center',
+    timeCharging: 'center',
+    soc: 'right',
+    charged: 'right',
+    powerColumn: 'right',
   },
 };
 
