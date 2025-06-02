@@ -1,10 +1,17 @@
 <template>
   <div class="chart-container">
-    <ChartjsLine
-      :data="lineChartData"
-      :options="chartOptions"
-      :class="'chart'"
-      ref="chartRef"
+    <div class="chart-wrapper">
+      <ChartjsLine
+        :key="chartInstanceKey"
+        :data="lineChartData"
+        :options="chartOptions"
+        ref="chartRef"
+      />
+    </div>
+    <HistoryChartLegend
+      v-if="legendDisplay && legendLarge"
+      :chart="chartRef?.chart || null"
+      class="legend-wrapper q-mt-sm"
     />
   </div>
 </template>
@@ -33,6 +40,7 @@ import {
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useLocalDataStore } from 'src/stores/localData-store';
 import { GraphDataPoint } from 'src/stores/mqtt-store-model';
+import HistoryChartLegend from 'src/components/charts/historyChart/HistoryChartLegend.vue';
 import 'chartjs-adapter-luxon';
 import type {
   HistoryChartTooltipItem,
@@ -59,6 +67,10 @@ const props = defineProps<{
 }>();
 
 const chartRef = ref<ChartComponentRef | null>(null);
+
+const legendLarge = computed(() =>
+  lineChartData?.value?.datasets.length > 15 ? true : false,
+);
 
 const applyHiddenDatasetsToChart = <TType extends ChartType, TData>(
   chart: Chart<TType, TData>,
@@ -100,6 +112,9 @@ const gridMeterName = computed(() => {
   }
   return 'Zähler';
 });
+
+//used to recreate chart instance once grid meter name is received from MQTT topic.
+const chartInstanceKey = computed(() => gridMeterName.value);
 
 const vehicles = computed(() => mqttStore.vehicleList);
 const chartRange = computed(
@@ -248,7 +263,7 @@ const chartOptions = computed(() => ({
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      display: legendDisplay.value,
+      display: !legendLarge.value && legendDisplay.value,
       fullSize: true,
       align: 'center' as const,
       position: 'bottom' as const,
@@ -346,14 +361,18 @@ const chartOptions = computed(() => ({
 
 <style scoped>
 .chart-container {
-  position: relative;
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.chart {
-  object-fit: contain;
-  height: 100%;
-  width: 100%;
+.legend-wrapper {
+  flex: 0 0 auto;
+}
+
+.chart-wrapper {
+  flex: 1;
+  min-height: 0;
 }
 </style>

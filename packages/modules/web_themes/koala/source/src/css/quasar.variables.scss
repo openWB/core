@@ -207,6 +207,10 @@ $battery: #ba7128;
   .q-table td:last-child {
     padding-right: 12px !important;
   }
+  // Scroll area styling
+  .q-scrollarea {
+    border: 1px solid var(--q-secondary) !important;
+  }
 }
 // Dark Theme Base Colors
 $dark-page: #000000; // This overrides Quasar's default dark page color
@@ -391,5 +395,9 @@ $dark-tab-icon: #d7d9e0;
       scrollbar-width: thin;
       scrollbar-color: var(--q-primary) var(--q-secondary);
     }
+  }
+
+  .q-scrollarea {
+    border: 1px solid var(--q-secondary) !important;
   }
 }
