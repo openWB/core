@@ -81,7 +81,7 @@ class SolaredgeBat(AbstractBat):
             values = self._read_registers(registers_to_read, unit)
         except pymodbus.exceptions.ModbusException as e:
             log.error(f"Failed to read registers: {e}")
-            self.fault_state.add_fault(f"Modbus read error: {e}")
+            self.fault_state.error(f"Modbus read error: {e}")
             return BatState(power=0, soc=0, imported=0, exported=0)
 
         power = values[f"Battery{self.battery_index}InstantaneousPower"]
@@ -107,12 +107,12 @@ class SolaredgeBat(AbstractBat):
         unit = self.component_config.configuration.modbus_id
 
         try:
-            PowerLimitMode = data.data.bat_all_data.data.config.power_limit_mode
+            power_limit_mode = data.data.bat_all_data.data.config.power_limit_mode
         except AttributeError:
-            log.warning("PowerLimitMode not found, assuming 'no_limit'")
-            PowerLimitMode = 'no_limit'
+            log.warning("power_limit_mode not found, assuming 'no_limit'")
+            power_limit_mode = 'no_limit'
 
-        if PowerLimitMode == 'no_limit' and self.last_mode != 'limited':
+        if power_limit_mode == 'no_limit' and self.last_mode != 'limited':
             """
             Keine Speichersteuerung, andere Steuerungen zulassen (SolarEdge One, ioBroker, Node-Red etc.).
             Falls andere Steuerungen vorhanden sind, sollten diese nicht beeinflusst werden,
@@ -152,7 +152,7 @@ class SolaredgeBat(AbstractBat):
                 values = self._read_registers(registers_to_read, unit)
             except pymodbus.exceptions.ModbusException as e:
                 log.error(f"Failed to read registers: {e}")
-                self.fault_state.add_fault(f"Modbus read error: {e}")
+                self.fault_state.error(f"Modbus read error: {e}")
                 return
             soc = values[f"Battery{self.battery_index}StateOfEnergy"]
             if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
@@ -207,7 +207,7 @@ class SolaredgeBat(AbstractBat):
                 )
             except pymodbus.exceptions.ModbusException as e:
                 log.error(f"Failed to read register {key} at address {address}: {e}")
-                self.fault_state.add_fault(f"Modbus read error: {e}")
+                self.fault_state.error(f"Modbus read error: {e}")
                 values[key] = 0  # Fallback value
         log.debug(f"Bat raw values {self.__tcp_client.address}: {values}")
         return values
@@ -222,7 +222,7 @@ class SolaredgeBat(AbstractBat):
                 log.debug(f"Neuer Wert {encoded_value} in Register {address} geschrieben.")
             except pymodbus.exceptions.ModbusException as e:
                 log.error(f"Failed to write register {key} at address {address}: {e}")
-                self.fault_state.add_fault(f"Modbus write error: {e}")
+                self.fault_state.error(f"Modbus write error: {e}")
 
     def _encode_value(self, value: Union[int, float], data_type: ModbusDataType) -> list:
         builder = pymodbus.payload.BinaryPayloadBuilder(
