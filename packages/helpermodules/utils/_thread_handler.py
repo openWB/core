@@ -19,7 +19,6 @@ def joined_thread_handler(threads: List[Thread], timeout: Optional[int]) -> List
                 log.error(f"{thread.name} ist bereits aktiv und wird nicht erneut gestartet.")
                 not_finished_threads.append(thread.name)
                 threads_chunk.remove(thread)
-                break
         # Start them all
         for thread in threads_chunk:
             thread.start()
