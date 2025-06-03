@@ -1,11 +1,16 @@
-name: Build Web Theme Koala
+name: Node.js CI
 
 on:
   push:
     paths:
       - packages/modules/web_themes/koala/source/**
     branches:
-      - master
+      - main
+  pull_request:
+    paths:
+      - packages/modules/web_themes/koala/source/**
+    branches:
+      - main
 
 jobs:
   build:
@@ -24,19 +29,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: npm
+          cache: 'npm'
           cache-dependency-path: packages/modules/web_themes/koala/source/package-lock.json
 
       - name: Install Dependencies and Build
         run: |
           cd packages/modules/web_themes/koala/source
           npm install
+          npm run lint
+          npm run test:unit
           npm run build --if-present
-
-      - name: Commit and Push Changes
-        run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          git add packages/modules/web_themes/koala/web
-          git commit -m "Build Web Theme: Koala"
-          git push
