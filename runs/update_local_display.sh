@@ -1,5 +1,7 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# set "forceUpdate" to parameter $1, set to 0 if not set
+forceUpdate=${1:-0}
 
 # update display standby timeout
 if timeout=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/standby" -C 1 -W 1); then
@@ -20,8 +22,8 @@ if display_active=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/active
 		echo "setting graphical target as default"
 		sudo systemctl set-default graphical.target
 	fi
-	# only restart display manager if boot done
-	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
+	# only restart display manager if boot done or forceUpdate is set
+	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]] || ((forceUpdate == 1)); then
 		echo "restarting lightdm service"
 		sudo systemctl restart lightdm.service
 	fi
