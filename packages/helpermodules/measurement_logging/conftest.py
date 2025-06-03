@@ -1,6 +1,7 @@
 from threading import Event
 import pytest
 
+from control.bat import Bat
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control import bat_all, counter, pv_all, pv
@@ -10,7 +11,7 @@ from control import data
 @pytest.fixture(autouse=True)
 def data_module() -> None:
     data.data_init(Event())
-    data.data.bat_data.update({"all": bat_all.BatAll(), "bat2": bat_all.Bat(2)})
+    data.data.bat_data.update({"all": bat_all.BatAll(), "bat2": Bat(2)})
     data.data.counter_data.update({"counter0": counter.Counter(0)})
     data.data.cp_all_data = AllChargepoints()
     data.data.cp_data.update({"cp4": chargepoint.Chargepoint(
