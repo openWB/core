@@ -2229,3 +2229,20 @@ class UpdateConfig:
                 return topics
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 83)
+
+    def upgrade_datastore_83(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                if payload.get("type") == "solaredge":
+                    for component_topic, component_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config",
+                                     component_topic) is not None:
+                            config_payload = decode_payload(component_payload)
+                            if config_payload["configuration"].get("battery_index") is None:
+                                config_payload["configuration"].update({
+                                    "battery_index": 1,
+                                })
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 84)
