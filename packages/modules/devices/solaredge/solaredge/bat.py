@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 
-from typing import Any, TypedDict, Dict, Union, Optional
+from typing import Any, TypedDict, Dict, Union, Optional, Tuple
 
 
 from pymodbus.constants import Endian
@@ -23,7 +23,6 @@ from modules.devices.solaredge.solaredge.config import SolaredgeBatSetup
 
 log = logging.getLogger(__name__)
 
-# Constants for magic numbers and control modes
 FLOAT32_UNSUPPORTED = -0xffffff00000000000000000000000000
 MAX_DISCHARGE_LIMIT = 5000
 DEFAULT_CONTROL_MODE = 1  # Control Mode Max Eigenverbrauch
@@ -61,8 +60,6 @@ class SolaredgeBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        # Battery Index wird erst in PR 2236 umgesetzt, solange wird Default-Wert 1 genutzt:
-        self.battery_index = getattr(self.component_config.configuration, "battery_index", 1)
         # SoC Reserve muss in Configurtion erst noch umgesetzt werden, solange wird Default-Wert 10 genutzt:
         self.soc_reserve_configured = getattr(self.component_config.configuration, "soc_reserve", 10)
         self.StorageControlMode_Read = DEFAULT_CONTROL_MODE
@@ -71,37 +68,53 @@ class SolaredgeBat(AbstractBat):
     def update(self) -> None:
         self.store.set(self.read_state())
 
-    def read_state(self) -> BatState:
-        unit = self.component_config.configuration.modbus_id
-        registers_to_read = [
-            f"Battery{self.battery_index}InstantaneousPower",
-            f"Battery{self.battery_index}StateOfEnergy",
-        ]
-        try:
-            values = self._read_registers(registers_to_read, unit)
-        except pymodbus.exceptions.ModbusException as e:
-            log.error(f"Failed to read registers: {e}")
-            self.fault_state.error(f"Modbus read error: {e}")
-            return BatState(power=0, soc=0, imported=0, exported=0)
-
-        power = values[f"Battery{self.battery_index}InstantaneousPower"]
-        soc = values[f"Battery{self.battery_index}StateOfEnergy"]
-
-        if power == FLOAT32_UNSUPPORTED:
-            power = 0
-        if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
-            log.warning(f"Invalid SoC: {soc}, using 0")
-            soc = 0
-
-        imported, exported = self.sim_counter.sim_count(power)
-        bat_state = BatState(
+    def read_state(self):
+        power, soc = self.get_values()
+        imported, exported = self.get_imported_exported(power)
+        return BatState(
             power=power,
             soc=soc,
             imported=imported,
             exported=exported
         )
-        log.debug(f"Bat {self.__tcp_client.address}: {bat_state}")
-        return bat_state
+
+    def get_values(self) -> Tuple[float, float]:
+        unit = self.component_config.configuration.modbus_id
+        # Use 1 as fallback if battery_index is not set
+        battery_index = getattr(self.component_config.configuration, "battery_index", 1)
+
+        # Define base registers for Battery 1 in hex
+        base_soc_reg = 0xE184  # Battery 1 SoC
+        base_power_reg = 0xE174  # Battery 1 Power
+        offset = 0x100  # 256 bytes in hex
+
+        # Adjust registers based on battery_index
+        if battery_index == 1:
+            soc_reg = base_soc_reg
+            power_reg = base_power_reg
+        elif battery_index == 2:
+            soc_reg = base_soc_reg + offset  # 0xE284
+            power_reg = base_power_reg + offset  # 0xE274
+        else:
+            raise ValueError(f"Invalid battery_index: {battery_index}. Must be 1 or 2.")
+
+        # Read SoC and Power from the appropriate registers
+        soc = self.__tcp_client.read_holding_registers(
+            soc_reg, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
+        )
+        power = self.__tcp_client.read_holding_registers(
+            power_reg, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
+        )
+
+        # Handle unsupported FLOAT32 case
+        if power == FLOAT32_UNSUPPORTED:
+            power = 0
+
+        return power, soc
+
+    def get_imported_exported(self, power: float) -> Tuple[float, float]:
+        return self.sim_counter.sim_count(power)
+
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.component_config.configuration.modbus_id
