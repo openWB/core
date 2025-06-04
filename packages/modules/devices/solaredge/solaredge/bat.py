@@ -115,7 +115,6 @@ class SolaredgeBat(AbstractBat):
     def get_imported_exported(self, power: float) -> Tuple[float, float]:
         return self.sim_counter.sim_count(power)
 
-
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.component_config.configuration.modbus_id
 
