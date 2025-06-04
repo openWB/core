@@ -863,12 +863,16 @@ class SubData:
                     var["device"+index] = (dev.Device if hasattr(dev, "Device") else dev.create_device)(config)
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe(f"openWB/system/device/{index}/component/+/config", 2)
+                    client.subscribe(f"openWB/system/device/{index}/error_timestamp", 2)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/simulation$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
                 var["device"+index].components["component"+index_second].sim_counter.data = dataclass_from_dict(
                     SimCounterState,
                     decode_payload(msg.payload))
+            elif re.search("^.+/device/[0-9]+/error_timestamp$", msg.topic) is not None:
+                index = get_index(msg.topic)
+                var["device"+index].client_error_context.error_timestamp = decode_payload(msg.payload)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
