@@ -1,9 +1,9 @@
-import threading
+from threading import Event, Lock
 
 
 class ProcessingCounter:
-    def __init__(self, done_event: threading.Event):
-        self.lock = threading.Lock()
+    def __init__(self, done_event: Event):
+        self.lock = Lock()
         self.counter = 0
         self.done_event = done_event
 
