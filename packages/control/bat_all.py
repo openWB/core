@@ -299,6 +299,9 @@ class BatAll:
             log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
         else:
             self.data.set.power_limit = None
+            control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
+            control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
+            control_range_center = control_range_high - (control_range_high - control_range_low) / 2
             if len(get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)) == 0:
                 log.debug("Speicher-Leistung nicht begrenzen, "
                           "da keine Ladepunkte in einem Lademodus mit Netzbezug sind.")
@@ -306,7 +309,8 @@ class BatAll:
                 log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
             elif self.data.get.power > 0:
                 log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")
-            elif data.data.counter_all_data.get_evu_counter().data.get.power < 0:
+            elif data.data.counter_all_data.get_evu_counter().data.get.power < control_range_center + 80:
+                # Wenn der Regelbereich zB auf Bezug steht, darf auch die Leistung des Regelbereichs entladen werden.
                 log.debug("Speicher-Leistung nicht begrenzen, da EVU-Überschuss vorhanden ist.")
             else:
                 log.debug("Speicher-Leistung nicht begrenzen.")
