@@ -61,7 +61,6 @@ class SolaredgeBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.min_soc = 35
-        self.soc_reserve = 35
         self.StorageControlMode_Read = DEFAULT_CONTROL_MODE
         self.last_mode = 'undefined'
 
