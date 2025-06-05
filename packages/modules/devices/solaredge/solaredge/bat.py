@@ -60,8 +60,8 @@ class SolaredgeBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        # SoC Reserve muss in Configurtion erst noch umgesetzt werden, solange wird Default-Wert 10 genutzt:
-        self.soc_reserve_configured = getattr(self.component_config.configuration, "soc_reserve", 10)
+        self.min_soc = 100
+        self.soc_reserve = 100
         self.StorageControlMode_Read = DEFAULT_CONTROL_MODE
         self.last_mode = 'undefined'
 
@@ -71,6 +71,8 @@ class SolaredgeBat(AbstractBat):
     def read_state(self):
         power, soc = self.get_values()
         imported, exported = self.get_imported_exported(power)
+        self.min_soc = min(int(soc), int(self.min_soc))
+        log.debug(f"Min-SoC: {int(self.min_soc)}%.")
         return BatState(
             power=power,
             soc=soc,
@@ -170,7 +172,8 @@ class SolaredgeBat(AbstractBat):
             if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
                 log.warning(f"Invalid SoC: {soc}, using 0")
                 soc = 0
-            soc_reserve = max(int(self.soc_reserve_configured), int(values["StorageBackupReserved"]))
+            soc_reserve = max(int(self.min_soc + 2), int(values["StorageBackupReserved"]))
+            log.debug(f"SoC-Reserve: {int(soc_reserve)}%.")
             discharge_limit = int(values["RemoteControlCommandDischargeLimit"])
 
             if values["StorageControlMode"] == REMOTE_CONTROL_MODE:  # Speichersteuerung ist aktiv.
