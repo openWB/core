@@ -253,6 +253,7 @@ try:
     Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
+    event_subdata_initialized.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()
