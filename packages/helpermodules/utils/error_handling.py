@@ -29,7 +29,10 @@ class ErrorTimerContext:
                 self.error_timestamp = timecheck.create_timestamp()
                 Pub().pub(self.topic, self.error_timestamp)
             log.error(exception)
-            if self.hide_exception is False or timecheck.check_timestamp(self.error_timestamp, self.timeout) is False:
+            if (self.hide_exception is False or
+                    timecheck.check_timestamp(self.error_timestamp, self.timeout + 10) is False):
+                # Fehlermeldung als abgelaufen markieren, bevor die Exception gesetzt wird, mit der Exception werden
+                # keine Werte mehr gepublished.
                 return False
         return True
 
