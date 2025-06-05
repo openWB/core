@@ -177,8 +177,9 @@ class SolaredgeBat(AbstractBat):
             discharge_limit = int(values["RemoteControlCommandDischargeLimit"])
 
             if values["StorageControlMode"] == REMOTE_CONTROL_MODE:  # Speichersteuerung ist aktiv.
-                if soc_reserve >= soc:
-                    # Speichersteuerung deaktivieren, wenn SoC-Reserve unterschritten.
+                if soc_reserve > soc:
+                    # Speichersteuerung erst deaktivieren, wenn SoC-Reserve unterschritten wird.
+                    # Darf wegen 2 Speichern nicht bereits bei SoC-Reserve deaktiviert werden!
                     log.debug("Speichersteuerung deaktivieren. SoC-Reserve unterschritten.")
                     values_to_write = {
                         "RemoteControlCommandDischargeLimit": MAX_DISCHARGE_LIMIT,
