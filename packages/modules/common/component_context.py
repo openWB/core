@@ -1,6 +1,6 @@
 import logging
 from threading import local
-from typing import Callable, Optional, List, Union, Any, Dict
+from typing import Optional, List, Union, Any, Dict
 from helpermodules.constants import NO_ERROR
 
 from modules.common.fault_state import ComponentInfo, FaultState, FaultStateLevel
@@ -19,13 +19,11 @@ class SingleComponentUpdateContext:
 
     def __init__(self,
                  fault_state: FaultState,
-                 error_handler: Callable = None,
                  update_always: bool = True,
                  reraise: bool = False):
         self.__fault_state = fault_state
         self.update_always = update_always
         self.reraise = reraise
-        self.error_handler = error_handler
 
     def __enter__(self):
         log.debug("Update Komponente ['"+self.__fault_state.component_info.name+"']")
@@ -35,9 +33,7 @@ class SingleComponentUpdateContext:
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
         MultiComponentUpdateContext.override_subcomponent_state(self.__fault_state, exception, self.update_always)
-        if isinstance(exception, Exception) and self.error_handler is not None:
-            self.error_handler()
-        if self.reraise is False:
+        if self.reraise is False or exception is None:
             return True
         else:
             return False
