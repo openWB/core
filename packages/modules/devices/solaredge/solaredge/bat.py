@@ -117,6 +117,7 @@ class SolaredgeBat(AbstractBat):
         return self.sim_counter.sim_count(power)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
+        battery_index = getattr(self.component_config.configuration, "battery_index", 1)
         unit = self.component_config.configuration.modbus_id
 
         try:
@@ -156,7 +157,7 @@ class SolaredgeBat(AbstractBat):
             Steuerung beenden, wenn der SoC vom Speicher die SoC-Reserve unterschreitet.
             """
             registers_to_read = [
-                f"Battery{self.battery_index}StateOfEnergy",
+                f"Battery{battery_index}StateOfEnergy",
                 "StorageControlMode",
                 "StorageBackupReserved",
                 "RemoteControlCommandDischargeLimit",
@@ -167,7 +168,7 @@ class SolaredgeBat(AbstractBat):
                 log.error(f"Failed to read registers: {e}")
                 self.fault_state.error(f"Modbus read error: {e}")
                 return
-            soc = values[f"Battery{self.battery_index}StateOfEnergy"]
+            soc = values[f"Battery{battery_index}StateOfEnergy"]
             if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
                 log.warning(f"Invalid SoC: {soc}, using 0")
                 soc = 0
