@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Optional, TypeVar, Generic, Callable, Union
 
 from modules.common import store
@@ -9,6 +10,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 
 
 T_IO_CONFIG = TypeVar("T_IO_CONFIG")
+log = logging.getLogger(__name__)
 
 
 class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
@@ -20,6 +22,7 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
         self.fault_state = FaultState(ComponentInfo(self.config.id, self.config.name,
                                       ComponentType.IO.value))
         self.store = store.get_io_value_store(self.config.id)
+        self.set_manual: Dict = {}
         with SingleComponentUpdateContext(self.fault_state):
             self.component_reader = component_reader
             self.component_writer = component_writer
@@ -28,7 +31,15 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
         if hasattr(self, "component_reader"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
             with SingleComponentUpdateContext(self.fault_state):
-                self.store.set(self.component_reader())
+                io_state = self.component_reader()
+                if len(self.set_manual) > 0:
+                    log.debug(f"Manuell gesetzte Ausgänge: {self.set_manual}")
+                for manual_output_topic, manual_output_payload in self.set_manual.items():
+                    splitted_topic = manual_output_topic.split("/")
+                    output = io_state.getattr(splitted_topic[-2])
+                    output.setattr(splitted_topic[-1], manual_output_payload)
+                self.set_manual.clear()
+                self.store.set(io_state)
 
     def write(self, analog_output, digital_output):
         if hasattr(self, "component_writer"):

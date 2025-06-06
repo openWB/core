@@ -1029,6 +1029,8 @@ class SetData:
             elif "io" in msg.topic:
                 if "/config" in msg.topic:
                     self._validate_value(msg, "json")
+                elif "/set/manual" in msg.topic:
+                    self._validate_value(msg, bool)
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 # log.error("Unbekanntes set-Topic: "+str(msg.topic)+", "+

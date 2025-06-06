@@ -980,6 +980,8 @@ class SubData:
                                                   "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, io_config)
                     var["io"+index] = dev.create_io(config)
+            elif re.search("^.+/io/[0-9]+/set/manual", msg.topic) is not None:
+                var["io"+index].set_manual.update({msg.topic: decode_payload(msg.payload)})
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
