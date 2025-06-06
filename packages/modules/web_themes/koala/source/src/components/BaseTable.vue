@@ -39,16 +39,16 @@
       </template>
 
       <!-- header ----------------------------------------------------------->
-      <template v-if="props.rowExpandable" #header="hdr">
-        <q-tr :props="hdr">
+      <template v-if="props.rowExpandable" #header="header">
+        <q-tr :props="header">
           <!-- space for arrow column -->
-          <q-th auto-width :props="{ ...hdr, col: {} }" />
-
+          <!-- the abbreviation col has to remain as it comes from Quasar QTableSlots.header -->
+          <q-th auto-width :props="{ ...header, col: {} }" />
           <!-- the other columns -->
           <q-th
-            v-for="column in hdr.cols"
+            v-for="column in header.cols"
             :key="column.name"
-            :props="{ ...hdr, col: column }"
+            :props="{ ...header, col: column }"
           >
             {{ column.label }}
           </q-th>
@@ -56,7 +56,8 @@
       </template>
 
       <!-- body ------------------------------------------------------------->
-      <template v-if="props.rowExpandable" #body="rowProps: BodySlotProps">
+      <!-- "cols" and "col" must match Quasar QTable slot prop names and can't be renamed to "columns"/"column" -->
+      <template v-if="props.rowExpandable" #body="rowProps: BodySlotProps<T>">
         <q-tr
           :key="`main-${rowProps.key}`"
           :props="rowProps"
@@ -84,9 +85,9 @@
                 v-bind="{
                   ...rowProps,
                   col,
-                  value: getCellValue(rowProps.row, col),
                 }"
-              />
+              >
+              </slot>
             </template>
 
             <!-- all other column data -->
@@ -95,10 +96,12 @@
               :props="{
                 ...rowProps,
                 col,
-                value: getCellValue(rowProps.row, col),
+                // cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any);
+                value: rowProps.row[col.field as string],
               }"
             >
-              {{ getCellValue(rowProps.row, col) }}
+              <!-- cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any); -->
+              {{ rowProps.row[col.field as string] }}
             </q-td>
           </template>
         </q-tr>
@@ -122,28 +125,23 @@
         :key="slotName"
         v-slot:[slotName]="slotProps"
       >
-        <slot :name="slotName" v-bind="slotProps" />
+        <slot :name="slotName" v-bind="slotProps"></slot>
       </template>
     </q-table>
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Record<string, unknown>">
 import { computed, ComputedRef, ref, useSlots } from 'vue';
 import type { QTableColumn, QTableProps } from 'quasar';
-import { BodySlotProps } from 'src/components/Models/base-table-model';
+import { BodySlotProps } from 'src/components/models/table-model';
+import { columnConfiguration } from 'src/components/models/table-model';
 
 /* ------------------------------------------------------------------ props */
 const props = defineProps<{
   items: number[];
-  rowData:
-    | ((item: number) => Record<string, unknown>)
-    | ComputedRef<(item: number) => Record<string, unknown>>;
-  columnConfig: {
-    fields: string[];
-    labels?: Record<string, string>;
-    align?: Record<string, 'left' | 'right' | 'center'>;
-  };
+  rowData: ((item: number) => T) | ComputedRef<(item: number) => T>;
+  columnConfig: columnConfiguration[];
   rowKey?: string;
   searchInputVisible?: boolean;
   tableHeight?: string;
@@ -152,71 +150,67 @@ const props = defineProps<{
   rowExpandable?: boolean;
 }>();
 
-/* ------------------------------------------------------------------ utils */
-function getCellValue(row: Record<string, unknown>, col: QTableColumn) {
-  return typeof col.field === 'function'
-    ? col.field(row)
-    : row[col.field as string];
-}
-
 /* ------------------------------------------------------------------ state */
 const expanded = ref<(string | number)[]>([]);
 const slots = useSlots();
 
 const forwardedSlotNames = computed(() => {
   if (props.rowExpandable)
-    return Object.keys(slots).filter((n) => !n.startsWith('body'));
+    return Object.keys(slots).filter((name) => !name.startsWith('body'));
   return Object.keys(slots);
 });
 
 const emit = defineEmits<{
-  (e: 'row-click', row: Record<string, unknown>): void;
-  (e: 'update:filter', value: string): void;
+  (event: 'row-click', row: T): void;
+  (event: 'update:filter', value: string): void;
 }>();
 
 /* ---------------------------------------------------------------- helpers */
 const filterModel = computed({
   get: () => props.filter || '',
-  set: (v) => emit('update:filter', v),
+  set: (value) => emit('update:filter', value),
 });
 
-const rowMapperFn = computed(() =>
-  typeof props.rowData === 'function' ? props.rowData : props.rowData.value,
+const mappedRows = computed(() =>
+  props.items.map(
+    typeof props.rowData === 'function' ? props.rowData : props.rowData.value,
+  ),
 );
 
-const mappedRows = computed(() => props.items.map(rowMapperFn.value));
-
 const mappedColumns = computed<QTableColumn[]>(() =>
-  props.columnConfig.fields.map((field) => ({
-    name: field,
-    label: props.columnConfig.labels?.[field] || field,
-    align: props.columnConfig.align?.[field] || 'left',
-    field,
-    sortable: true,
-    headerStyle: 'font-weight: bold',
-  })),
+  props.columnConfig
+    .filter((column) => !column.expandField) // main table columns only
+    .map((column) => ({
+      name: column.field,
+      field: column.field,
+      label: column.label,
+      align: column.align ?? 'left',
+      sortable: true,
+      headerStyle: 'font-weight: bold',
+    })),
 );
 
 const customFilterMethod: NonNullable<QTableProps['filterMethod']> = (
   rows,
-  terms,
-  cols,
+  searchTerms,
+  columns,
 ) => {
-  if (!terms || terms.trim() === '') return rows;
-  const lowerTerms = terms.toLowerCase();
+  if (!searchTerms || searchTerms.trim() === '') return rows;
+  const lowerTerms = searchTerms.toLowerCase();
   const fields =
     props.columnsToSearch ||
-    cols.map((col) => (typeof col.field === 'string' ? col.field : ''));
+    columns.map((column) =>
+      typeof column.field === 'string' ? column.field : '',
+    );
   return rows.filter((row) =>
     fields.some((field) => {
-      const val = row[field];
-      return val && String(val).toLowerCase().includes(lowerTerms);
+      const value = row[field];
+      return value && String(value).toLowerCase().includes(lowerTerms);
     }),
   );
 };
 
-const onRowClick = (evt: Event, row: Record<string, unknown>) =>
-  emit('row-click', row);
+const onRowClick = (evt: Event, row: T) => emit('row-click', row);
 </script>
 
 <style scoped>
