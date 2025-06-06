@@ -113,6 +113,7 @@ class SolaredgeBat(AbstractBat):
         else:
             self.min_soc = min(int(soc), int(self.min_soc))
             log.debug(f"Min-SoC: {int(self.min_soc)}%.")
+
         return power, soc
 
     def get_imported_exported(self, power: float) -> Tuple[float, float]:
