@@ -53,7 +53,7 @@
         class="q-mt-sm"
         :current-value="soc"
         :readonly="true"
-        :limit-mode="'none'"
+        limit-mode="none"
       />
     </q-card-section>
   </q-card>
