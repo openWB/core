@@ -109,8 +109,7 @@ class SolaredgeBat(AbstractBat):
         if power == FLOAT32_UNSUPPORTED:
             power = 0
         if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
-            log.warning(f"Invalid SoC: {soc}, using 0")
-            soc = 0
+            log.warning(f"Invalid SoC: {soc}")
         else:
             self.min_soc = min(int(soc), int(self.min_soc))
             log.debug(f"Min-SoC: {int(self.min_soc)}%.")
@@ -173,8 +172,7 @@ class SolaredgeBat(AbstractBat):
                 return
             soc = values[f"Battery{battery_index}StateOfEnergy"]
             if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
-                log.warning(f"Invalid SoC: {soc}, using 0")
-                soc = 0
+                log.warning(f"Invalid SoC: {soc}")
             soc_reserve = max(int(self.min_soc + 2), int(values["StorageBackupReserved"]))
             log.debug(f"SoC-Reserve: {int(soc_reserve)}%.")
             discharge_limit = int(values["RemoteControlCommandDischargeLimit"])
