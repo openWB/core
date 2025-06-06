@@ -70,8 +70,6 @@ class SolaredgeBat(AbstractBat):
     def read_state(self):
         power, soc = self.get_values()
         imported, exported = self.get_imported_exported(power)
-        self.min_soc = min(int(soc), int(self.min_soc))
-        log.debug(f"Min-SoC: {int(self.min_soc)}%.")
         return BatState(
             power=power,
             soc=soc,
@@ -107,10 +105,15 @@ class SolaredgeBat(AbstractBat):
             power_reg, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
         )
 
-        # Handle unsupported FLOAT32 case
+        # Handle unsupported case
         if power == FLOAT32_UNSUPPORTED:
             power = 0
-
+        if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
+            log.warning(f"Invalid SoC: {soc}, using 0")
+            soc = 0
+        else:
+            self.min_soc = min(int(soc), int(self.min_soc))
+            log.debug(f"Min-SoC: {int(self.min_soc)}%.")
         return power, soc
 
     def get_imported_exported(self, power: float) -> Tuple[float, float]:
