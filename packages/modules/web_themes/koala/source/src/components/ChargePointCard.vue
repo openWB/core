@@ -142,19 +142,23 @@ const settingsVisible = ref<boolean>(false);
 
 const socInputVisible = ref<boolean>(false);
 const name = computed(() => mqttStore.chargePointName(props.chargePointId));
-
+// Typecast to string is better here because the store method returns a union type which
+// would need to be repeated in child component ChargePointPowerData
+// unnecessary as parameter returnType: string = 'textValue' is already set as default in store
 const power = computed(
-  () => mqttStore.chargePointPower(props.chargePointId, 'textValue') as string,
+  () => mqttStore.chargePointPower(props.chargePointId) as string,
 );
 
 const energyChargedPlugged = computed(() =>
-  mqttStore.chargePointEnergyChargedPlugged(props.chargePointId, 'textValue'),
+  mqttStore.chargePointEnergyChargedPlugged(props.chargePointId),
 );
 
 const phaseNumber = computed(() =>
   mqttStore.chargePointPhaseNumber(props.chargePointId),
 );
-
+// Typecast to string is better here because the store method returns a union type which
+// would need to be repeated in child component ChargePointPowerData
+// unnecessary as parameter returnType: string = 'textValue' is already set as default in store
 const chargingCurrent = computed(
   () => mqttStore.chargePointChargingCurrent(props.chargePointId) as string,
 );
