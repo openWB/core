@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 import pytest
 from packages.conftest import hierarchy_standard
 from control import bat_all
@@ -27,66 +27,40 @@ def data_fixture() -> None:
 
 
 @pytest.mark.parametrize(
-    "parent, bat_power, pv_power, expected_power_hybrid",
+    "max_ac_out, power, expected_result",
     [
-        pytest.param({"id": 6, "type": "counter", "children": [
-            {"id": 2, "type": "bat", "children": []}]}, 100, -6400, (150, False),
-            id="kein Hybrid-System, Speicher wird geladen"),
-        pytest.param({"id": 6, "type": "counter", "children": [
-            {"id": 2, "type": "bat", "children": []}]}, -100, -6400, (150, False),
-            id="kein Hybrid-System, Speicher wird entladen"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, 1200, -6400, (2000, True),
-                     id="Speicher lädt mit 1200W, max 2000W zusätzliche Entladeleistung bis WR max"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, 600, -6400, (1400, True),
-                     id="Speicher lädt mit 600W, max 1400W zusätzliche Entladeleistung bis WR max"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, 0, -6400, (800, True),
-                     id="Speicher neutral, max 800W Entladeleistung bis WR max"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, -600, -6400, (200, True),
-                     id="Speicher entlädt mit 600W, max 200W Entladeleistung bis WR max"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, -800, -6400, (0, True),
-                     id="Speicher entlädt mit 800W, maximale Entladeleistung des WR erreicht"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, 1200, -7200, (1200, True),
-                     id="Speicher lädt mit 1200W, max 1200W zusätzliche Entladeleistung bis WR max"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, 600, -7200, (600, True),
-                     id="Speicher lädt mit 600W, max 600W zusätzliche Entladeleistung bis WR max"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, 0, -7200, (0, True),
-                     id="Speicher neutral, maximale Entladeleistung des WR erreicht"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, 1200, -7800, (600, True),
-                     id="Speicher lädt mit 1200W, max 600W zusätzliche Entladeleistung bis WR max"),
-        pytest.param({"id": 1, "type": "inverter", "children": []}, 600, -7800, (0, True),
-                     id="Speicher lädt mit 600W, maximale Entladeleistung des WR erreicht"),
-    ])
-def test_max_bat_power_hybrid_system(parent, bat_power, pv_power, expected_power_hybrid, data_fixture, monkeypatch):
-    # setup
-    # pv1-Data: max_ac_out 7200
-    mock_get_entry_of_parent = Mock(return_value=parent)
-    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_parent", mock_get_entry_of_parent)
-    data.data.pv_data["pv1"].data.get.power = pv_power
+        pytest.param(5000, -6000, 1000, id="Leistung überschreitet max_ac_out"),
+        pytest.param(5000, -4000, 0, id="Leistung liegt unter max_ac_out"),
+        pytest.param(5000, 0, 0, id="Keine Leistung (power = 0)"),
+        pytest.param(0, -6000, 0, id="max_ac_out ist 0"),
+    ],
+)
+def test_inverter_limited_power(max_ac_out, power, expected_result):
+    # Mock für die Pv-Klasse
+    inverter = Pv(1)
+    inverter.data.config.max_ac_out = max_ac_out
+    inverter.data.get.power = power
+    bat_all = BatAll()
 
-    b = BatAll()
-    bat2 = Bat(2)
-    bat2.data.get.power = bat_power
+    # Aufruf der zu testenden Funktion
+    result = bat_all._inverter_limited_power(inverter)
 
-    # execution
-    power = b._max_bat_power_hybrid_system(bat2)
-
-    # evaluation
-    assert power == expected_power_hybrid
+    # Überprüfung des Ergebnisses
+    assert result == expected_result
 
 
 @pytest.mark.parametrize(
-    "required_power, return_max_bat_power_hybrid_system, expected_power",
+    "required_power, return_inverter_limited_power, expected_power",
     [
-        pytest.param(1000, (1100, True), 1000, id="maximale Entladeleistung nicht erreicht"),
-        pytest.param(1000, (900, True), 900, id="maximale Entladeleistung erreicht"),
-        pytest.param(-1000, (10, True), -1000, id="Speicher soll nicht mehr entladen werden"),
-        pytest.param(1000, (900, False), 1000, id="kein Hybrid-System"),
+        pytest.param(1000, 0, 1000, id="maximale Entladeleistung nicht erreicht"),
+        pytest.param(1000, 100, 900, id="maximale Entladeleistung erreicht"),
+        pytest.param(-1000, 10, -1000, id="Speicher soll nicht mehr entladen werden"),
     ])
-def test_limit_bat_power_discharge(required_power, return_max_bat_power_hybrid_system, expected_power, monkeypatch):
+def test_limit_bat_power_discharge(required_power, return_inverter_limited_power, expected_power, monkeypatch):
     # setup
-    data.data.bat_data = {"bat2": Bat(2)}
-    mock_max_bat_power_hybrid_system = Mock(return_value=return_max_bat_power_hybrid_system)
-    monkeypatch.setattr(BatAll, "_max_bat_power_hybrid_system", mock_max_bat_power_hybrid_system)
+    data.data.pv_data = {"pv2": Pv(2)}
+    mock_inverter_limited_power = Mock(return_value=return_inverter_limited_power)
+    monkeypatch.setattr(BatAll, "_inverter_limited_power", mock_inverter_limited_power)
 
     b = BatAll()
 
@@ -168,8 +142,8 @@ def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypat
     b.data.get.power = params.power
     data.data.bat_data["bat0"] = b
     data.data.general_data.data.chargemode_config.pv_charging = params.config
-    mock__max_bat_power_hybrid_system = Mock(return_value=(params.power, None))
-    monkeypatch.setattr(BatAll, "_max_bat_power_hybrid_system", mock__max_bat_power_hybrid_system)
+    mock_limit_bat_power_discharge = MagicMock(side_effect=lambda x: x)
+    monkeypatch.setattr(BatAll, "_limit_bat_power_discharge", mock_limit_bat_power_discharge)
 
     # execution
     b_all._get_charging_power_left()

@@ -100,7 +100,6 @@ const modePillStyle = computed(() => {
 					style = swapcolors(style)
 				}
 				break
-			case ChargeMode.standby:
 			case ChargeMode.stop:
 				style.background = 'darkgrey'
 				style.color = 'black'

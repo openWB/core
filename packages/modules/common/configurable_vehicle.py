@@ -34,10 +34,12 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                  vehicle: int,
                  calc_while_charging: bool = False,
                  general_config: Optional[GeneralVehicleConfig] = None,
-                 calculated_soc_state: Optional[CalculatedSocState] = None) -> None:
+                 calculated_soc_state: Optional[CalculatedSocState] = None,
+                 initializer: Callable = lambda: None) -> None:
         self.__component_updater = component_updater
         self.vehicle_config = vehicle_config
         self.calculated_soc_state = calculated_soc_state
+        self.__initializer = initializer
         if calculated_soc_state is None:
             self.calculated_soc_state = CalculatedSocState()
         else:
@@ -52,12 +54,17 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         self.store = store.get_car_value_store(self.vehicle)
         self.fault_state = FaultState(ComponentInfo(self.vehicle, self.vehicle_config.name, "vehicle"))
 
+        try:
+            self.__initializer()
+        except Exception:
+            log.exception(f"Initialisierung von Fahrzeug {self.vehicle_config.name} fehlgeschlagen")
+
     def update(self, vehicle_update_data: VehicleUpdateData):
         log.debug(f"Vehicle Instance {type(self.vehicle_config)}")
         log.debug(f"Calculated SoC-State {self.calculated_soc_state}")
         log.debug(f"Vehicle Update Data {vehicle_update_data}")
         log.debug(f"General Config {self.general_config}")
-        with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state, self.__initializer):
 
             source = self._get_carstate_source(vehicle_update_data)
             if source == SocSource.NO_UPDATE:

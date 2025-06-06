@@ -20,39 +20,61 @@ class JsonCounter(AbstractCounter):
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
+    def _compile_jq_filters(self) -> None:
+        config = self.component_config.configuration
+        self.jq_power = jq.compile(config.jq_power)
+        self.jq_powers = [jq.compile(p) for p in config.jq_powers] if all(config.jq_powers) else None
+        self.jq_power_factors = [
+            jq.compile(pf) for pf in config.jq_power_factors] if all(config.jq_power_factors) else None
+        self.jq_currents = [jq.compile(c) for c in config.jq_currents] if all(config.jq_currents) else None
+        self.jq_voltages = [jq.compile(v) for v in config.jq_voltages] if all(config.jq_voltages) else None
+        self.jq_imported = jq.compile(config.jq_imported) if config.jq_imported else None
+        self.jq_exported = jq.compile(config.jq_exported) if config.jq_exported else None
+
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
+        self._compile_jq_filters()
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response) -> None:
-        config = self.component_config.configuration
+        power = float(self.jq_power.input(response).first())
 
-        power = float(jq.compile(config.jq_power).input(response).first())
+        powers = (
+            [float(j.input(response).first()) for j in self.jq_powers]
+            if self.jq_powers is not None else None
+        )
 
-        if all(config.jq_powers):
-            powers = [float(jq.compile(p).input(response).first()) for p in config.jq_powers]
-        else:
-            powers = None
+        currents = (
+            [float(j.input(response).first()) for j in self.jq_currents]
+            if self.jq_currents is not None else None
+        )
 
-        if all(config.jq_currents):
-            currents = [float(jq.compile(c).input(response).first()) for c in config.jq_currents]
-        else:
-            currents = None
+        power_factors = (
+            [float(j.input(response).first()) for j in self.jq_power_factors]
+            if self.jq_power_factors is not None else None
+        )
 
-        if config.jq_imported is None or config.jq_exported is None:
+        voltages = (
+            [float(j.input(response).first()) for j in self.jq_voltages]
+            if self.jq_voltages is not None else None
+        )
+
+        if self.jq_imported is None or self.jq_exported is None:
             imported, exported = self.sim_counter.sim_count(power)
         else:
-            imported = float(jq.compile(config.jq_imported).input(response).first())
-            exported = float(jq.compile(config.jq_exported).input(response).first())
+            imported = float(self.jq_imported.input(response).first())
+            exported = float(self.jq_exported.input(response).first())
 
         counter_state = CounterState(
             imported=imported,
             exported=exported,
             power=power,
             powers=powers,
-            currents=currents
+            currents=currents,
+            power_factors=power_factors,
+            voltages=voltages
         )
         self.store.set(counter_state)
 

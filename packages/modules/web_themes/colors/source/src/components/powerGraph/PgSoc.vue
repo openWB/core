@@ -117,11 +117,11 @@ const cpColor = computed(() => {
 const nameX = computed(() => {
 	switch (props.order) {
 		case 0:
-			return 3 // first vehicle
+			return 3 // x position of first vehicle
 		case 1:
-			return props.width - 3 // 2nd vehicle
+			return props.width - 3 // x position of 2nd vehicle
 		case 2:
-			return props.width / 2 // battery
+			return props.width / 2 // x position of battery
 		default:
 			return 0 // error
 	}
@@ -138,10 +138,9 @@ const nameY = computed(() => {
 				)
 			case 1:
 				index = graphData.data.length - 1
-				return Math.max(
-					12,
-					yScale.value(graphData.data[index]['soc' + topVehicles.value[1]] + 2),
-				)
+				return Math.max (12, yScale.value(
+					graphData.data[index]['soc' + topVehicles.value[1]] + 2,
+				))
 			case 2:
 				index = Math.round(graphData.data.length / 2)
 				return yScale.value(graphData.data[index].batSoc + 2)

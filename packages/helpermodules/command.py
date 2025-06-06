@@ -3,7 +3,7 @@ import importlib
 import json
 import logging
 import subprocess
-import threading
+from threading import Event
 import time
 from typing import Dict, List, Optional
 import re
@@ -15,12 +15,12 @@ from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
-# ToDo: move to module commands if implemented
 from control.ev.charge_template import get_new_charge_template
 from control.ev.ev_template import EvTemplateData
 from helpermodules import pub
 from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
+# ToDo: move to module commands if implemented
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
 from helpermodules.broker import BrokerClient
@@ -62,7 +62,7 @@ class Command:
                ("io_device", "system/io", -1),
                ]
 
-    def __init__(self, event_command_completed: threading.Event):
+    def __init__(self, event_command_completed: Event):
         try:
             self.event_command_completed = event_command_completed
             self._get_max_ids()
@@ -168,7 +168,7 @@ class Command:
             pub_user_message(payload, connection_id, f'Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_device}\'.',
                 MessageType.ERROR)
@@ -194,7 +194,7 @@ class Command:
             pub_user_message(payload, connection_id, f'IO-Aktion mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_io_action}\'.',
@@ -224,7 +224,7 @@ class Command:
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_io_device}\'.',
@@ -237,6 +237,17 @@ class Command:
             Pub().pub(f'openWB/chargepoint/{new_id}/config', chargepoint_config)
             Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
+            charge_template = SubData.ev_charge_template_data[f"ct{SubData.ev_data['ev0'].data.charge_template}"]
+            for time_plan in charge_template.data.time_charging.plans:
+                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/time_charging/plans',
+                          dataclass_utils.asdict(time_plan))
+            for scheduled_plan in charge_template.data.chargemode.scheduled_charging.plans:
+                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/chargemode/scheduled_charging/plans',
+                          scheduled_plan)
+            charge_template = dataclass_utils.asdict(charge_template.data)
+            charge_template["chargemode"]["scheduled_charging"]["plans"].clear()
+            charge_template["time_charging"]["plans"].clear()
+            Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template', charge_template)
             self.max_id_hierarchy = self.max_id_hierarchy + 1
             Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
             if self.max_id_chargepoint_template == -1:
@@ -318,7 +329,7 @@ class Command:
         """ löscht ein Ladepunkt.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
@@ -331,13 +342,26 @@ class Command:
     def addChargepointTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Ladepunkt-Profil erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            new_chargepoint_template = asdict(data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data).copy()
+            new_chargepoint_template["name"] = f'Kopie von {new_chargepoint_template["name"]}'
+        else:
+            new_chargepoint_template = get_chargepoint_template_default()
         new_id = self.max_id_chargepoint_template + 1
-        default = get_chargepoint_template_default()
-        default["id"] = new_id
-        Pub().pub(f'openWB/set/chargepoint/template/{new_id}', default)
+        new_chargepoint_template["id"] = new_id
+        Pub().pub(f'openWB/set/chargepoint/template/{new_id}', new_chargepoint_template)
         self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
         Pub().pub("openWB/set/command/max_id/chargepoint_template",
                   self.max_id_chargepoint_template)
+        # if copying a template, copy autolock plans
+        if "data" in payload and "copy" in payload["data"]:
+            for _, plan in data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data.autolock.plans.items():
+                new_plan = asdict(plan).copy()
+                new_plan["id"] = self.max_id_autolock_plan + 1
+                Pub().pub(f'openWB/set/chargepoint/template/{new_id}/autolock/{new_plan["id"]}', new_plan)
+                self.max_id_autolock_plan += 1
+            Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues Ladepunkt-Profil mit ID \'{new_id}\' hinzugefügt.',
@@ -363,10 +387,16 @@ class Command:
     def addAutolockPlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            new_autolock_plan = asdict(data.data.cp_template_data[f'cpt{payload["data"]["template"]}']
+                                       .data.autolock.plans[f'{payload["data"]["copy"]}']).copy()
+            new_autolock_plan["name"] = f'Kopie von {new_autolock_plan["name"]}'
+        else:
+            new_autolock_plan = get_autolock_plan_default()
         new_id = self.max_id_autolock_plan + 1
-        default = get_autolock_plan_default()
         Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}/autolock/{new_id}',
-                  default)
+                  new_autolock_plan)
         self.max_id_autolock_plan = new_id
         Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
@@ -396,12 +426,40 @@ class Command:
     def addChargeTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Lade-Profil erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            new_charge_template = asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}'].data).copy()
+            new_charge_template["chargemode"]["scheduled_charging"].pop("plans")
+            new_charge_template["time_charging"].pop("plans")
+            new_charge_template["name"] = f'Kopie von {new_charge_template["name"]}'
+        else:
+            new_charge_template = get_new_charge_template()
         new_id = self.max_id_charge_template + 1
-        charge_template_default = get_new_charge_template()
+        new_charge_template["id"] = new_id
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
-                  str(new_id), charge_template_default)
+                  str(new_id), new_charge_template)
         self.max_id_charge_template = new_id
         Pub().pub("openWB/set/command/max_id/charge_template", new_id)
+        # if copying a template, also copy schedule plans and time charging plans
+        if "data" in payload and "copy" in payload["data"]:
+            for _, plan in (data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}']
+                            .data.chargemode.scheduled_charging.plans.items()):
+                new_plan = asdict(plan).copy()
+                new_plan["id"] = self.max_id_charge_template_scheduled_plan + 1
+                Pub().pub(f'openWB/set/vehicle/template/charge_template/{new_id}/'
+                          f'chargemode/scheduled_charging/plans/{new_plan["id"]}',
+                          new_plan)
+                self.max_id_charge_template_scheduled_plan += 1
+            Pub().pub("openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
+            for _, plan in (data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}']
+                            .data.time_charging.plans.items()):
+                new_plan = asdict(plan).copy()
+                new_plan["id"] = self.max_id_charge_template_time_charging_plan + 1
+                Pub().pub(f'openWB/set/vehicle/template/charge_template/{new_id}/'
+                          f'time_charging/plans/{new_plan["id"]}',
+                          new_plan)
+                self.max_id_charge_template_time_charging_plan += 1
+            Pub().pub("openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
         pub_user_message(payload, connection_id,
                          f'Neues Lade-Profil mit ID \'{new_id}\' hinzugefügt.',
                          MessageType.SUCCESS)
@@ -410,8 +468,8 @@ class Command:
         """ löscht ein Lade-Profil.
         """
         if self.max_id_charge_template < payload["data"]["id"]:
-            pub_user_message(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
-                             MessageType.ERROR)
+            log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
+                      MessageType.ERROR)
         if payload["data"]["id"] > 0:
             ProcessBrokerBranch(f'vehicle/template/charge_template/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(
@@ -425,13 +483,21 @@ class Command:
     def addChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            new_charge_template_schedule_plan = (
+                data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}']
+                .data.chargemode.scheduled_charging.plans[f'{payload["data"]["copy"]}']
+            )
+            new_charge_template_schedule_plan.name = f'Kopie von {new_charge_template_schedule_plan.name}'
+        else:
+            new_charge_template_schedule_plan = ScheduledChargingPlan()
         new_id = self.max_id_charge_template_scheduled_plan + 1
-        charge_template_default = ScheduledChargingPlan()
-        charge_template_default.id = new_id
+        new_charge_template_schedule_plan.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/chargemode/scheduled_charging/plans/{new_id}',
-            dataclass_utils.asdict(charge_template_default))
+            dataclass_utils.asdict(new_charge_template_schedule_plan))
         self.max_id_charge_template_scheduled_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
@@ -445,7 +511,7 @@ class Command:
         """ löscht einen Zielladen-Plan.
         """
         if self.max_id_charge_template_scheduled_plan < payload["data"]["plan"]:
-            pub_user_message(
+            log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_charge_template_scheduled_plan}\'.', MessageType.ERROR)
@@ -462,13 +528,19 @@ class Command:
     def addChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            new_time_charging_plan = (data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}']
+                                      .data.time_charging.plans[f'{payload["data"]["copy"]}'])
+            new_time_charging_plan.name = f'Kopie von {new_time_charging_plan.name}'
+        else:
+            new_time_charging_plan = TimeChargingPlan()
         new_id = self.max_id_charge_template_time_charging_plan + 1
-        time_charging_plan_default = TimeChargingPlan()
-        time_charging_plan_default.id = new_id
+        new_time_charging_plan.id = new_id
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/time_charging/plans/{new_id}',
-            dataclass_utils.asdict(time_charging_plan_default))
+            dataclass_utils.asdict(new_time_charging_plan))
         self.max_id_charge_template_time_charging_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
@@ -481,8 +553,8 @@ class Command:
         """ löscht einen Zeitladen-Plan.
         """
         if self.max_id_charge_template_time_charging_plan < payload["data"]["plan"]:
-            pub_user_message(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
-                             MessageType.ERROR)
+            log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
+                      MessageType.ERROR)
         Pub().pub(
             f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}'
             f'/time_charging/plans/{payload["data"]["plan"]}',
@@ -537,8 +609,8 @@ class Command:
         """ löscht eine Komponente.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
-            pub_user_message(payload, connection_id,
-                             "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
+            log.error(payload, connection_id,
+                      "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         branch = f'system/device/{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
         ProcessBrokerBranch(branch).remove_topics()
         pub_user_message(
@@ -548,9 +620,14 @@ class Command:
     def addEvTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Fahrzeug-Profil erstellt werden soll.
         """
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            new_ev_template = asdict(data.data.ev_template_data[f"et{payload['data']['copy']}"].data).copy()
+            new_ev_template["name"] = f'Kopie von {new_ev_template["name"]}'
+        else:
+            new_ev_template = dataclass_utils.asdict(EvTemplateData())
         new_id = self.max_id_ev_template + 1
-        ev_template_default = dataclass_utils.asdict(EvTemplateData())
-        Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
+        Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', new_ev_template)
         self.max_id_ev_template = new_id
         Pub().pub("openWB/set/command/max_id/ev_template", new_id)
         pub_user_message(
@@ -561,8 +638,8 @@ class Command:
         """ löscht ein Fahrzeug-Profil.
         """
         if self.max_id_ev_template < payload["data"]["id"]:
-            pub_user_message(payload, connection_id,
-                             "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
+            log.error(payload, connection_id,
+                      "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         if payload["data"]["id"] > 0:
             ProcessBrokerBranch(f'vehicle/template/ev_template/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(
@@ -595,8 +672,8 @@ class Command:
         """ löscht ein Vehicle.
         """
         if self.max_id_vehicle < payload["data"]["id"]:
-            pub_user_message(payload, connection_id,
-                             "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
+            log.error(payload, connection_id,
+                      "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         if payload["data"]["id"] > 0:
             Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
             ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
@@ -671,9 +748,9 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Bridge mit ID \'{payload["data"]["bridge"]}\' gelöscht.', MessageType.SUCCESS)
         else:
-            pub_user_message(payload, connection_id,
-                             f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
-                             f'ID \'{self.max_id_mqtt_bridge}\'.', MessageType.ERROR)
+            log.error(payload, connection_id,
+                      f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
+                      f'ID \'{self.max_id_mqtt_bridge}\'.', MessageType.ERROR)
 
     def chargepointReboot(self, connection_id: str, payload: dict) -> None:
         pub.pub_single("openWB/set/command/primary/todo",
@@ -684,6 +761,12 @@ class Command:
     def chargepointShutdown(self, connection_id: str, payload: dict) -> None:
         pub.pub_single("openWB/set/command/primary/todo",
                        {"command": "systemReboot", "data": {}},
+                       hostname=SubData.cp_data[payload["data"]["chargepoint"]
+                                                ].chargepoint.chargepoint_module.config.configuration.ip_address)
+
+    def secondaryChargepointUpdate(self, payload: dict) -> None:
+        pub.pub_single("openWB/set/command/primary/todo",
+                       {"command": "systemUpdate", "data": {}},
                        hostname=SubData.cp_data[payload["data"]["chargepoint"]
                                                 ].chargepoint.chargepoint_module.config.configuration.ip_address)
 
@@ -728,6 +811,16 @@ class Command:
             run_command([
                 str(parent_file / "runs" / "update_self.sh"),
                 SubData.system_data["system"].data["current_branch"]])
+        if not SubData.general_data.data.extern and SubData.system_data["system"].data["secondary_auto_update"]:
+            for cp in SubData.cp_data.values():
+                # if chargepoint is external_openwb and not the second CP of duo and version is Release
+                if (
+                    cp.chargepoint.chargepoint_module.config.type == 'external_openwb' and
+                    cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0 and
+                    cp.chargepoint.data.get.current_branch == "Release"
+                ):
+                    time.sleep(2)
+                    self.secondaryChargepointUpdate({"data": {"chargepoint": f"cp{cp.chargepoint.num}"}})
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
         log.info("Fetch versions requested")
@@ -844,7 +937,7 @@ class ErrorHandlingContext:
 
 
 class CompleteCommandContext:
-    def __init__(self, event_command_completed: threading.Event):
+    def __init__(self, event_command_completed: Event):
         self.event_command_completed = event_command_completed
 
     def __enter__(self):

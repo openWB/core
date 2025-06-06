@@ -30,11 +30,16 @@ class ChargepointModule(AbstractChargepoint):
         received_topics = {}
         BrokerClient(f"subscribeMqttChargepointInit{self.config.id}",
                      on_connect, on_message).start_finite_loop()
-        for topic, value in received_topics.items():
-            if "/set/phases_to_use" in topic:
-                break
+        phases_to_use = received_topics.get(f"openWB/mqtt/chargepoint/{self.config.id}/set/phases_to_use")
+
+        if phases_to_use == 0:
+            phases_in_use = received_topics.get(f"openWB/mqtt/chargepoint/{self.config.id}/get/phases_in_use")
+            Pub().pub(
+                f"openWB/mqtt/chargepoint/{self.config.id}/set/phases_to_use",
+                phases_in_use if phases_in_use is not None else 3
+            )
         else:
-            Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/phases_to_use", 0)
+            Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/phases_to_use", 3)
 
     def set_current(self, current: float) -> None:
         Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/current", current)

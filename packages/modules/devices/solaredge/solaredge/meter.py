@@ -1,8 +1,14 @@
 
 import logging
+from typing import Iterable, Union, List
 
-
+from modules.common import modbus
+from modules.devices.solaredge.solaredge.config import (SolaredgeBatSetup, SolaredgeCounterSetup,
+                                                        SolaredgeExternalInverterSetup, SolaredgeInverterSetup)
 log = logging.getLogger(__name__)
+
+
+synergy_unit_identifier = 160
 
 
 class SolaredgeMeterRegisters:
@@ -53,3 +59,55 @@ class SolaredgeMeterRegisters:
     def _add_offset(self, offset: int) -> None:
         for name, value in self.__dict__.items():
             setattr(self, name, value+offset)
+
+
+def _set_registers(components: Iterable,
+                   synergy_units: int,
+                   modbus_id: int) -> None:
+    meters: List = [None]*3
+    for component in components:
+        if (isinstance(component.component_config, (SolaredgeCounterSetup, SolaredgeExternalInverterSetup)) and
+                component.component_config.configuration.modbus_id == modbus_id):
+            # Registerverschibung nur für Komponenten mit gleicher Modbus-ID, da diese am gleichen Haupt-WR hängen
+            # und die gleichen Synergy-Units haben.
+            meters[component.component_config.configuration.meter_id-1] = component
+
+    # https://www.solaredge.com/sites/default/files/sunspec-implementation-technical-note.pdf:
+    # Only enabled meters are readable, i.e. if meter 1 and 3 are enabled, they are readable as 1st meter and 2nd
+    # meter (and the 3rd meter isn't readable).
+    for meter_id, meter in enumerate(filter(None, meters), start=1):
+        log.debug(
+            "%s: internal meter id: %d, synergy units: %s", meter.component_config.name, meter_id, synergy_units
+        )
+        meter.registers = SolaredgeMeterRegisters(meter_id, synergy_units)
+
+
+def _get_synergy_units(component_config: Union[SolaredgeBatSetup,
+                                               SolaredgeCounterSetup,
+                                               SolaredgeInverterSetup,
+                                               SolaredgeExternalInverterSetup],
+                       client) -> int:
+    if client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
+                                     unit=component_config.configuration.modbus_id
+                                     ) == synergy_unit_identifier:
+        # Snyergy-Units vom Haupt-WR des angeschlossenen Meters ermitteln. Es kann mehrere Haupt-WR mit
+        # unterschiedlichen Modbus-IDs im Verbund geben.
+        log.debug("Synergy Units supported")
+        synergy_units = int(client.read_holding_registers(
+            40129, modbus.ModbusDataType.UINT_16,
+            unit=component_config.configuration.modbus_id)) or 1
+        log.debug(
+            f"Synergy Units detected for Modbus ID {component_config.configuration.modbus_id}: {synergy_units}")
+    else:
+        synergy_units = 1
+    return synergy_units
+
+
+def set_component_registers(component_config: Union[SolaredgeBatSetup,
+                                                    SolaredgeCounterSetup,
+                                                    SolaredgeInverterSetup,
+                                                    SolaredgeExternalInverterSetup],
+                            client,
+                            components: Iterable) -> None:
+    synergy_units = _get_synergy_units(component_config, client)
+    _set_registers(components, synergy_units, component_config.configuration.modbus_id)

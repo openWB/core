@@ -1,11 +1,11 @@
 import logging
-import threading
+from threading import Thread, enumerate
 from typing import List, Optional
 
 log = logging.getLogger(__name__)
 
 
-def joined_thread_handler(threads: List[threading.Thread], timeout: Optional[int]) -> List[str]:
+def joined_thread_handler(threads: List[Thread], timeout: Optional[int]) -> List[str]:
     def split_chunks(to_split, n):
         for i in range(0, len(to_split), n):
             yield to_split[i:i + n]
@@ -19,7 +19,6 @@ def joined_thread_handler(threads: List[threading.Thread], timeout: Optional[int
                 log.error(f"{thread.name} ist bereits aktiv und wird nicht erneut gestartet.")
                 not_finished_threads.append(thread.name)
                 threads_chunk.remove(thread)
-                break
         # Start them all
         for thread in threads_chunk:
             thread.start()
@@ -35,7 +34,7 @@ def joined_thread_handler(threads: List[threading.Thread], timeout: Optional[int
     return not_finished_threads
 
 
-def thread_handler(thread: threading.Thread) -> bool:
+def thread_handler(thread: Thread) -> bool:
     if is_thread_alive(thread.name):
         log.error(f"Thread {thread.name} ist bereits aktiv und wird nicht erneut gestartet.")
         return False
@@ -45,4 +44,4 @@ def thread_handler(thread: threading.Thread) -> bool:
 
 
 def is_thread_alive(thread_name: str) -> bool:
-    return any(running_thread.name == thread_name for running_thread in threading.enumerate())
+    return any(running_thread.name == thread_name for running_thread in enumerate())

@@ -9,7 +9,7 @@ openWB hat einen eigenen MQTT-Broker integriert, über den die Kommunikation lä
 
 Als EVU-Zähler können auch Werte über MQTT empfangen werden. Die Integration ist im Abschnitt [Zähler](https://github.com/openWB/core/wiki/Zähler) beschrieben.
 
-## Smarthome
+## SmartHome
 
 ## Steuerbefehle
 
@@ -32,8 +32,8 @@ SoC-Limit auf z.B. 80% setzen
 Zielladen
 `openWB/set/vehicle/template/charge_template/#/chargemode/selected -> scheduled_charging`
 
-Standby
-`openWB/set/vehicle/template/charge_template/#/chargemode/selected -> standby`
+Eco
+`openWB/set/vehicle/template/charge_template/#/chargemode/selected -> eco_charging`
 
 Stop
 `openWB/set/vehicle/template/charge_template/#/chargemode/selected -> stop`
@@ -50,7 +50,7 @@ openWB/vehicle/template/charge_template/1
 Setzen von min_Current für min+PV nachbauen:
 `openWB/set/vehicle/template/charge_template/#/chargemode/pv_charging/min_current`
 
-Setzen des Lademodus: (Werte die zu senden sind: instant_charging, pv_charging, scheduled_charging, standby, stop)
+Setzen des Lademodus: (Werte die zu senden sind: instant_charging, pv_charging, scheduled_charging, eco_charging, stop)
 `openWB/set/vehicle/template/charge_template/#/chargemode/selected`
 
 Ladepunkt sperren für Priosteuerung der LP:

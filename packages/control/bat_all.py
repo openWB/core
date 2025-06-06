@@ -25,10 +25,9 @@ from typing import List
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT
 from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
-from control.bat import Bat
+from control.pv import Pv
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_device import AbstractDevice
-from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
 
@@ -144,48 +143,32 @@ class BatAll:
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
-    def _max_bat_power_hybrid_system(self, battery: Bat) -> float:
+    def _inverter_limited_power(self, inverter: Pv) -> float:
         """gibt die maximale Entladeleistung des Speichers zurück, bis die maximale Ausgangsleistung des WR erreicht
         ist."""
         # tested
-        parent = data.data.counter_all_data.get_entry_of_parent(battery.num)
-        if parent.get("type") == "inverter":
-            parent_data = data.data.pv_data[f"pv{parent['id']}"].data
-            # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
-            # genutzt werden.
-            if parent_data.config.max_ac_out > 0:
-                max_bat_discharge_power = parent_data.config.max_ac_out + \
-                    parent_data.get.power + battery.data.get.power
-                return max_bat_discharge_power, True
-            else:
-                battery.data.get.fault_state = FaultStateLevel.ERROR.value
-                battery.data.get.fault_str = self.ERROR_CONFIG_MAX_AC_OUT
-                raise ValueError(self.ERROR_CONFIG_MAX_AC_OUT)
+        # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
+        # genutzt werden.
+        if inverter.data.config.max_ac_out > 0:
+            return max(inverter.data.get.power * -1 - inverter.data.config.max_ac_out, 0)
         else:
-            # Kein Hybrid-WR
-            # Maximal die Speicher-Leistung als Entladeleistung nutzen, um nicht unnötig Bezug zu erzeugen.
-            return abs(battery.data.get.power) + 50, False
+            return 0
 
     def _limit_bat_power_discharge(self, required_power):
         """begrenzt die für den Algorithmus benötigte Entladeleistung des Speichers, wenn die maximale Ausgangsleistung
         des WR erreicht ist."""
-        available_power = 0
-        hybrid = False
+        inverter_limited_power = 0
         if required_power > 0:
             # Nur wenn der Speicher entladen werden soll, fließt Leistung durch den WR.
-            for battery in data.data.bat_data.values():
+            for inverter in data.data.pv_data.values():
                 try:
-                    available_power_bat, hybrid_bat = self._max_bat_power_hybrid_system(battery)
-                    if hybrid_bat:
-                        hybrid = True
-                        available_power += available_power_bat
+                    inverter_limited_power += self._inverter_limited_power(inverter)
                 except Exception:
-                    log.exception(f"Fehler im Bat-Modul {battery.num}")
-            if hybrid:
-                if required_power > available_power:
-                    log.debug(f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {available_power}W"
-                              " begrenzt.")
-                return min(required_power, available_power)
+                    log.exception(f"Fehler im Bat-Modul {inverter.num}")
+            if inverter_limited_power > 0:
+                required_power = max(required_power-inverter_limited_power, 0)
+                log.debug(f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {required_power}W"
+                          " begrenzt.")
         return required_power
 
     def setup_bat(self):
@@ -316,6 +299,9 @@ class BatAll:
             log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
         else:
             self.data.set.power_limit = None
+            control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
+            control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
+            control_range_center = control_range_high - (control_range_high - control_range_low) / 2
             if len(get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)) == 0:
                 log.debug("Speicher-Leistung nicht begrenzen, "
                           "da keine Ladepunkte in einem Lademodus mit Netzbezug sind.")
@@ -323,7 +309,8 @@ class BatAll:
                 log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
             elif self.data.get.power > 0:
                 log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")
-            elif data.data.counter_all_data.get_evu_counter().data.get.power < 0:
+            elif data.data.counter_all_data.get_evu_counter().data.get.power < control_range_center + 80:
+                # Wenn der Regelbereich zB auf Bezug steht, darf auch die Leistung des Regelbereichs entladen werden.
                 log.debug("Speicher-Leistung nicht begrenzen, da EVU-Überschuss vorhanden ist.")
             else:
                 log.debug("Speicher-Leistung nicht begrenzen.")
@@ -332,10 +319,7 @@ class BatAll:
             if self.data.set.power_limit is None:
                 power_limit = None
             else:
-                power_limit = min(self._max_bat_power_hybrid_system(
-                    data.data.bat_data[f"bat{bat_component.component_config.id}"])[0], remaining_power_limit)
-                remaining_power_limit -= power_limit
-                remaining_power_limit = max(remaining_power_limit, 0)
+                power_limit = self._limit_bat_power_discharge(remaining_power_limit)
 
             data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
 

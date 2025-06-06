@@ -196,16 +196,25 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         date = timecheck.create_timestamp_YYYYMMDD()
     current_timestamp = int(timecheck.create_timestamp())
 
-    prices = data.data.general_data.data.prices
-    if data.data.optional_data.et_module is not None:
-        grid_price = data.data.optional_data.et_get_current_price()
-    else:
-        grid_price = prices.grid
-    prices_dict = {"grid": grid_price,
-                   "pv": prices.pv,
-                   "bat": prices.bat}
+    try:
+        prices = data.data.general_data.data.prices
+        try:
+            grid_price = data.data.optional_data.et_get_current_price()
+        except Exception:
+            grid_price = prices.grid
+        prices_dict = {"grid": grid_price,
+                       "pv": prices.pv,
+                       "bat": prices.bat}
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für Preise")
+        prices_dict = {}
 
-    cp_dict = {}
+    try:
+        cp_dict = {"all": {"imported": data.data.cp_all_data.data.get.imported,
+                           "exported": data.data.cp_all_data.data.get.exported}}
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul")
+        cp_dict = {}
     for cp in data.data.cp_data:
         try:
             if "cp" in cp:
@@ -213,12 +222,6 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                                      "exported": data.data.cp_data[cp].data.get.exported}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Ladepunkt "+str(cp))
-    try:
-        cp_dict.update(
-            {"all": {"imported": data.data.cp_all_data.data.get.imported,
-                     "exported": data.data.cp_all_data.data.get.exported}})
-    except Exception:
-        log.exception("Fehler im Werte-Logging-Modul")
 
     ev_dict = {}
     for ev in data.data.ev_data:
@@ -242,7 +245,11 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
 
-    pv_dict = {"all": {"exported": data.data.pv_all_data.data.get.exported}}
+    try:
+        pv_dict = {"all": {"exported": data.data.pv_all_data.data.get.exported}}
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für PV-Daten")
+        pv_dict = {}
     if data.data.pv_all_data.data.config.configured:
         for pv in data.data.pv_data:
             try:
@@ -251,9 +258,13 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Wechselrichter "+str(pv))
 
-    bat_dict = {"all": {"imported": data.data.bat_all_data.data.get.imported,
-                        "exported": data.data.bat_all_data.data.get.exported,
-                        "soc": data.data.bat_all_data.data.get.soc}}
+    try:
+        bat_dict = {"all": {"imported": data.data.bat_all_data.data.get.imported,
+                            "exported": data.data.bat_all_data.data.get.exported,
+                            "soc": data.data.bat_all_data.data.get.soc}}
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für Batteriespeicher-Daten")
+        bat_dict = {}
     if data.data.bat_all_data.data.config.configured:
         for bat in data.data.bat_data:
             try:
@@ -263,7 +274,11 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
-    hc_dict = {"all": {"imported": data.data.counter_all_data.data.set.imported_home_consumption}}
+    try:
+        hc_dict = {"all": {"imported": data.data.counter_all_data.data.set.imported_home_consumption}}
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für Hausverbrauch")
+        hc_dict = {}
     new_entry = {
         "timestamp": current_timestamp,
         "date": date,

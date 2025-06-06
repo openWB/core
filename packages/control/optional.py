@@ -1,8 +1,8 @@
 """Optionale Module
 """
 import logging
-from math import ceil  # Aufrunden
-import threading
+from math import ceil
+from threading import Thread
 from typing import List
 
 from control import data
@@ -38,7 +38,7 @@ class Optional(OcppMixin):
         if self.mon_module is not None:
             self.mon_module.stop_monitoring()
 
-    def _et_provider_available(self) -> bool:
+    def et_provider_available(self) -> bool:
         return self.et_module is not None
 
     def et_charging_allowed(self, max_price: float):
@@ -50,7 +50,7 @@ class Optional(OcppMixin):
         False: Preis liegt darüber
         """
         try:
-            if self._et_provider_available():
+            if self.et_provider_available():
                 if self.et_get_current_price() <= max_price:
                     return True
                 else:
@@ -65,7 +65,7 @@ class Optional(OcppMixin):
             return False
 
     def et_get_current_price(self):
-        if self._et_provider_available():
+        if self.et_provider_available():
             return self.data.et.get.prices[str(int(create_unix_timestamp_current_full_hour()))]
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
@@ -81,7 +81,7 @@ class Optional(OcppMixin):
         ------
         list: Key des Dictionary (Unix-Sekunden der günstigen Stunden)
         """
-        if self._et_provider_available() is False:
+        if self.et_provider_available() is False:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
             prices = self.data.et.get.prices
@@ -102,7 +102,7 @@ class Optional(OcppMixin):
     def et_get_prices(self):
         try:
             if self.et_module:
-                thread_handler(threading.Thread(target=self.et_module.update, args=(), name="electricity tariff"))
+                thread_handler(Thread(target=self.et_module.update, args=(), name="electricity tariff"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
@@ -114,7 +114,7 @@ class Optional(OcppMixin):
     def ocpp_transfer_meter_values(self):
         try:
             if self.data.ocpp.active:
-                thread_handler(threading.Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
+                thread_handler(Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
         except Exception:
             log.exception("Fehler im OCPP-Optional-Modul")
 
@@ -122,7 +122,7 @@ class Optional(OcppMixin):
         for cp in data.data.cp_data.values():
             try:
                 if self.data.ocpp.boot_notification_sent is False:
-                    # Boot-Notfification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
+                    # Boot-Notification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
                     self.boot_notification(cp.data.config.ocpp_chargebox_id,
                                            cp.chargepoint_module.fault_state,
                                            cp.chargepoint_module.config.type,
