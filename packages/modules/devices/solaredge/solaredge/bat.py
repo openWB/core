@@ -109,10 +109,10 @@ class SolaredgeBat(AbstractBat):
         if power == FLOAT32_UNSUPPORTED:
             power = 0
         if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
-            log.warning(f"Invalid SoC: {soc}")
+            log.warning(f"Invalid SoC Speicher {battery_index}: {soc}")
         else:
             self.min_soc = min(int(soc), int(self.min_soc))
-            log.debug(f"Min-SoC: {int(self.min_soc)}%.")
+            log.debug(f"Min-SoC Speicher {battery_index}: {int(self.min_soc)}%.")
 
         return power, soc
 
@@ -142,7 +142,7 @@ class SolaredgeBat(AbstractBat):
             # Keine Ladung mit Speichersteuerung.
             if self.last_mode == 'limited':
                 # Steuerung deaktivieren.
-                log.debug("Keine Speichersteuerung gefordert, Steuerung deaktivieren.")
+                log.debug(f"Speicher {battery_index}:Keine Steuerung gefordert, Steuerung deaktivieren.")
                 values_to_write = {
                     "RemoteControlCommandDischargeLimit": MAX_DISCHARGE_LIMIT,
                     "StorageChargeDischargeDefaultMode": DEFAULT_COMMAND_MODE,
@@ -174,16 +174,16 @@ class SolaredgeBat(AbstractBat):
                 return
             soc = values[f"Battery{battery_index}StateOfEnergy"]
             if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
-                log.warning(f"Invalid SoC: {soc}")
+                log.warning(f"Speicher {battery_index}: Invalid SoC: {soc}")
             soc_reserve = max(int(self.min_soc + 2), int(values["StorageBackupReserved"]))
-            log.debug(f"SoC-Reserve: {int(soc_reserve)}%.")
+            log.debug(f"Speicher {battery_index}: SoC-Reserve: {int(soc_reserve)}%.")
             discharge_limit = int(values["RemoteControlCommandDischargeLimit"])
 
             if values["StorageControlMode"] == REMOTE_CONTROL_MODE:  # Speichersteuerung ist aktiv.
                 if soc_reserve > soc:
                     # Speichersteuerung erst deaktivieren, wenn SoC-Reserve unterschritten wird.
                     # Darf wegen 2 Speichern nicht bereits bei SoC-Reserve deaktiviert werden!
-                    log.debug("Speichersteuerung deaktivieren. SoC-Reserve unterschritten.")
+                    log.debug(f"Speicher {battery_index}:Steuerung deaktivieren. SoC-Reserve unterschritten")
                     values_to_write = {
                         "RemoteControlCommandDischargeLimit": MAX_DISCHARGE_LIMIT,
                         "StorageChargeDischargeDefaultMode": DEFAULT_COMMAND_MODE,
@@ -195,7 +195,7 @@ class SolaredgeBat(AbstractBat):
 
                 elif discharge_limit not in range(int(power_limit) - 10, int(power_limit) + 10):
                     # Limit nur bei Abweichung von mehr als 10W, um Konflikte bei 2 Speichern zu verhindern.
-                    log.debug(f"Speichersteuerung aktiv, Discharge-Limit {int(power_limit)}W.")
+                    log.debug(f"Speicher {battery_index}:Discharge-Limit {int(power_limit)}W.")
                     values_to_write = {
                         "RemoteControlCommandDischargeLimit": int(min(power_limit, MAX_DISCHARGE_LIMIT))
                     }
@@ -205,7 +205,7 @@ class SolaredgeBat(AbstractBat):
             else:  # Speichersteuerung ist inaktiv.
                 if soc_reserve < soc:
                     # Speichersteuerung nur aktivieren, wenn SoC ueber SoC-Reserve.
-                    log.debug(f"Speichersteuerung aktivieren. Discharge-Limit: {int(power_limit)} W.")
+                    log.debug(f"Speicher {battery_index}:Discharge-Limit aktivieren: {int(power_limit)}W.")
                     self.StorageControlMode_Read = values["StorageControlMode"]
                     values_to_write = {
                         "StorageControlMode": REMOTE_CONTROL_MODE,
