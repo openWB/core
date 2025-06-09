@@ -120,8 +120,9 @@ class SolaredgeBat(AbstractBat):
         return self.sim_counter.sim_count(power)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        battery_index = getattr(self.component_config.configuration, "battery_index", 1)
         unit = self.component_config.configuration.modbus_id
+        # Use 1 as fallback if battery_index is not set
+        battery_index = getattr(self.component_config.configuration, "battery_index", 1)
 
         try:
             power_limit_mode = data.data.bat_all_data.data.config.power_limit_mode
