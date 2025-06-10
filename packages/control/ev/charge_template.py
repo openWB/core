@@ -5,6 +5,7 @@ import traceback
 from typing import Optional, Tuple
 
 from control import data
+from control.chargepoint.chargepoint_state import CHARGING_STATES
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
@@ -135,8 +136,7 @@ class ChargeTemplate:
         "topic": ""})
 
     BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
-    CHARGING_PRICE_EXCEEDED = ("Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt. "
-                               + "Falls vorhanden wird mit EVU-Überschuss geladen.")
+    CHARGING_PRICE_EXCEEDED = ("Der aktuelle Strompreis liegt über dem maximalen Strompreis. ")
     CHARGING_PRICE_LOW = "Laden, da der aktuelle Strompreis unter dem maximalen Strompreis liegt."
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Zeitladen aktiviert, aber keine Zeitfenster konfiguriert."
@@ -269,7 +269,7 @@ class ChargeTemplate:
 
     def eco_charging(self,
                      soc: Optional[float],
-                     min_current: int,
+                     control_parameter: ControlParameter,
                      charging_type: str,
                      used_amount: float) -> Tuple[int, str, Optional[str], int]:
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
@@ -295,10 +295,12 @@ class ChargeTemplate:
                     sub_mode = "instant_charging"
                     message = self.CHARGING_PRICE_LOW
                 else:
-                    current = min_current
+                    current = control_parameter.min_current
                     message = self.CHARGING_PRICE_EXCEEDED
+                    if control_parameter.state in CHARGING_STATES:
+                        message += "Lädt mit Überschuss. "
             else:
-                current = min_current
+                current = control_parameter.min_current
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.data.id))
