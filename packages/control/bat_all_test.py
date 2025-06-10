@@ -154,7 +154,9 @@ def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypat
 
 
 def default_chargepoint_factory() -> List[Chargepoint]:
-    return [Chargepoint(3, None)]
+    cp = Chargepoint(3, None)
+    cp.data.get.power = 1400
+    return [cp]
 
 
 @dataclass
@@ -176,10 +178,10 @@ cases = [
                      power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
     PowerLimitParams("Begrenzung immer, Speicher lädt", None, bat_power=100,
                      power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
-    PowerLimitParams("Begrenzung immer,Einspeisung", None, evu_power=-100,
+    PowerLimitParams("Begrenzung immer,Einspeisung", None, evu_power=-110,
                      power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
     PowerLimitParams("Begrenzung immer", 0, power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
-    PowerLimitParams("Begrenzung Hausverbrauch", 456,
+    PowerLimitParams("Begrenzung Hausverbrauch", -456,
                      power_limit_mode=BatPowerLimitMode.LIMIT_TO_HOME_CONSUMPTION.value),
 ]
 
