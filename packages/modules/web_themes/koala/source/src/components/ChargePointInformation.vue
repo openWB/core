@@ -20,10 +20,17 @@
     :row-expandable="isMobile"
     @row-click="onRowClick"
   >
+    <!----------------------------------------------------------- desktop view table body slots -->
     <!-- "col" = column must match Quasar naming convention -->
     <template #body-cell-plugged="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
         <ChargePointStateIcon :charge-point-id="slotProps.row.id" />
+      </q-td>
+    </template>
+
+    <template #body-cell-chargeMode="slotProps">
+      <q-td :class="`text-${slotProps.col.align}`">
+        <ChargePointMode :charge-point-id="slotProps.row.id" />
       </q-td>
     </template>
 
@@ -44,7 +51,32 @@
           :power="slotProps.row.power"
           :phase-number="slotProps.row.phaseNumber"
           :current="slotProps.row.current"
+          :column-display-format="isMobile"
         />
+      </q-td>
+    </template>
+    <!----------------------------------------------------------- mobile view table body slots -->
+    <!-- mobile view chargepoint name and vehicle name displayed in one field -->
+    <template #body-cell-nameAndVehicle="slotProps">
+      <q-td :class="`text-${slotProps.col.align}`">
+        {{ slotProps.row.name }}<br />
+        <span class="text-caption">{{ slotProps.row.vehicle }}</span>
+      </q-td>
+    </template>
+
+    <!-- mobile view chargepoint chargemode, plug status and time charging displayed in one field -->
+    <template #body-cell-modePluggedTimeCharging="slotProps">
+      <q-td :class="`text-${slotProps.col.align}`">
+        <div class="items-center">
+          <ChargePointMode :charge-point-id="slotProps.row.id" />
+          <ChargePointStateIcon :charge-point-id="slotProps.row.id" />
+          <ChargePointTimeCharging
+            :charge-point-id="slotProps.row.id"
+            :readonly="true"
+            :toolTip="true"
+            :icon-size="'xs'"
+          />
+        </div>
       </q-td>
     </template>
 
@@ -58,22 +90,9 @@
         >
           <!-- label ------------------------------------------------>
           <div class="col-5 text-caption text-bold">{{ column.label }}:</div>
-
           <!-- value --------------------------------------------------------->
           <div class="col-7 text-right">
-            <ChargePointPowerData
-              v-if="column.field === 'powerColumn'"
-              :power="slotProps.row.power"
-              :phase-number="slotProps.row.phaseNumber"
-              :current="slotProps.row.current"
-            />
-            <ChargePointTimeCharging
-              v-if="column.field === 'timeCharging'"
-              :charge-point-id="slotProps.row.id"
-              readonly
-              icon-size="xs"
-            />
-            <span v-else>{{ slotProps.row[column.field] }}</span>
+            {{ slotProps.row[column.field] }}
           </div>
         </div>
       </div>
@@ -119,6 +138,7 @@ import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
 import ChargePointCard from 'src/components/ChargePointCard.vue';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
+import ChargePointMode from './ChargePointMode.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
 import { columnConfiguration } from 'src/components/models/table-model';
@@ -193,24 +213,15 @@ const columnConfigDesktop: columnConfiguration[] = [
 ];
 
 const columnConfigMobile: columnConfiguration[] = [
-  { field: 'name', label: 'Ladepunkt' },
-  { field: 'vehicle', label: 'Fahrzeug' },
-  { field: 'plugged', label: 'Status', align: 'center' },
+  { field: 'nameAndVehicle', label: 'Ladepunkt' },
+  { field: 'modePluggedTimeCharging', label: 'Lademodus', align: 'center' },
   {
     field: 'powerColumn',
     label: 'Leistung',
-    align: 'right',
-    expandField: true,
+    align: 'center',
   },
-  { field: 'chargeMode', label: 'Lademodus', expandField: true },
   { field: 'charged', label: 'Geladen', align: 'right', expandField: true },
   { field: 'soc', label: 'Ladestand', align: 'right', expandField: true },
-  {
-    field: 'timeCharging',
-    label: 'Zeitladen',
-    align: 'center',
-    expandField: true,
-  },
 ];
 
 const tableColumnsMobile = columnConfigMobile.filter(

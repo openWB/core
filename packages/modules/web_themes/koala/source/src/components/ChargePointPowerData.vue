@@ -1,5 +1,10 @@
 <template>
-  <div class="cp-power no-wrap row inline items-center q-gutter-xs">
+  <div
+    :class="[
+      'cp-power items-center q-gutter-xs',
+      columnDisplayFormat ? 'column' : 'row inline',
+    ]"
+  >
     <span>{{ power }}</span>
     <q-badge rounded color="primary" :label="phaseNumber">
       <q-tooltip>Phasenanzahl</q-tooltip>
@@ -13,6 +18,7 @@ defineProps<{
   power: string;
   phaseNumber: number;
   current: string;
+  columnDisplayFormat?: boolean;
 }>();
 </script>
 
