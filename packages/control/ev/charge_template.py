@@ -365,9 +365,8 @@ class ChargeTemplate:
                     soc_request_interval_offset,
                     charging_type,
                     ev_template)
-                if bidi != BidiState.BIDI_CAPABLE:
-                    # Hinweis an Zielladen-Message anhängen, dass Bidi nicht möglich ist
-                    message = bidi.value + message
+                # Hinweis an Zielladen-Message anhängen, dass Bidi nicht möglich ist
+                message = bidi.value + message
                 return required_current, submode, message, phases
 
             elif soc < self.data.chargemode.bidi_charging.plan.limit.soc_scheduled:

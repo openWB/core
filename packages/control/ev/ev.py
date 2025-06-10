@@ -25,9 +25,6 @@ from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
-<< << << < HEAD
-== == == =
->>>>>> > a75be5132(bidi draft)
 
 log = logging.getLogger(__name__)
 

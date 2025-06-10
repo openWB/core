@@ -45,9 +45,6 @@ from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
-<< << << < HEAD
-== == == =
->>>>>> > a75be5132(bidi draft)
 
 
 def get_chargepoint_config_default() -> dict:

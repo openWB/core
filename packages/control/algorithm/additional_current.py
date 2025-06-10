@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class AdditionalCurrent:
+
     def __init__(self) -> None:
         pass
 
