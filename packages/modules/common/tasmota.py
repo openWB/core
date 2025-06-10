@@ -28,13 +28,18 @@ class Tasmota:
         currents = [0.0, 0.0, 0.0]
         power_factors = [0.0, 0.0, 0.0]
 
-        voltages[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Voltage'])
-        powers[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Power'])
-        power = sum(powers)
-        currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
-        power_factors[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Factor'])
-        imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
-        exported = 0.0
+        if ['ENERGY'] in response['StatusSNS']:
+            voltages[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Voltage'])
+            powers[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Power'])
+            power = sum(powers)
+            currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
+            power_factors[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Factor'])
+            imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
+            exported = 0.0
+        else:
+            power = float(response['StatusSNS']['Itron']['Power'])
+            imported = float(response['StatusSNS']['Itron']['E_in'])
+            exported = float(response['StatusSNS']['Itron']['E_out'])
 
         counter_state = CounterState(
             imported=imported,
