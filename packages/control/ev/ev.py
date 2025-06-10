@@ -6,6 +6,14 @@ mit denen das EV aktuell in der Regelung berücksichtigt wird. Bei der Ermittlun
 stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Falls ja, muss das EV
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
 """
+from modules.common.configurable_vehicle import ConfigurableVehicle
+from modules.common.abstract_vehicle import VehicleUpdateData
+from helpermodules.constants import NO_ERROR
+from helpermodules import timecheck
+from dataclass_utils.factories import empty_list_factory
+from control.text import BidiState
+from control.limiting_value import LimitingValue
+from control.limiting_value import LimitingValue, LoadmanagementLimit
 from dataclasses import dataclass, field
 import logging
 from typing import List, Optional, Tuple
@@ -17,12 +25,9 @@ from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
-from control.limiting_value import LimitingValue, LoadmanagementLimit
-from dataclass_utils.factories import empty_list_factory
-from helpermodules import timecheck
-from helpermodules.constants import NO_ERROR
-from modules.common.abstract_vehicle import VehicleUpdateData
-from modules.common.configurable_vehicle import ConfigurableVehicle
+<< << << < HEAD
+== == == =
+>>>>>> > a75be5132(bidi draft)
 
 log = logging.getLogger(__name__)
 
@@ -119,7 +124,9 @@ class Ev:
                              phase_switch_supported: bool,
                              charging_type: str,
                              chargemode_switch_timestamp: float,
-                             imported_since_plugged: float) -> Tuple[bool, Optional[str], str, float, int]:
+                             imported_since_plugged: float,
+                             bidi: BidiState,
+                             phases_in_use: int) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -207,6 +214,21 @@ class Ev:
                     elif charge_template.data.chargemode.selected == "eco_charging":
                         required_current, submode, tmp_message, phases = charge_template.eco_charging(
                             self.data.get.soc, control_parameter, charging_type, imported_since_plugged)
+                    elif charge_template.data.chargemode.selected == "bidi_charging":
+                        required_current, submode, tmp_message, phases = charge_template.bidi_charging(
+                            self.data.get.soc,
+                            self.ev_template,
+                            control_parameter.phases,
+                            imported_since_plugged,
+                            max_phases_hw,
+                            phase_switch_supported,
+                            charging_type,
+                            chargemode_switch_timestamp,
+                            control_parameter,
+                            imported_since_plugged,
+                            self.soc_module.general_config.request_interval_charging,
+                            bidi,
+                            phases_in_use)
                     else:
                         tmp_message = None
                     message = f"{message or ''} {tmp_message or ''}".strip()

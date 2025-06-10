@@ -14,6 +14,16 @@ angesteckt wird, wird der Tag verworfen. Ebenso wenn kein EV gefunden wird.
 Tag-Liste: Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt
 freigeschaltet werden.
 """
+from helpermodules.timecheck import check_timestamp, create_timestamp
+from modules.common.abstract_chargepoint import AbstractChargepoint
+from helpermodules.utils import thread_handler
+from helpermodules import timecheck
+from helpermodules.pub import Pub
+from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
+from helpermodules.broker import InternalBrokerClient
+from control.text import BidiState
+from helpermodules.broker import BrokerClient
+from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 import copy
 from dataclasses import asdict
 import dataclasses
@@ -35,14 +45,9 @@ from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
-from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
-from helpermodules.broker import BrokerClient
-from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
-from helpermodules.pub import Pub
-from helpermodules import timecheck
-from helpermodules.utils import thread_handler
-from modules.common.abstract_chargepoint import AbstractChargepoint
-from helpermodules.timecheck import check_timestamp, create_timestamp
+<< << << < HEAD
+== == == =
+>>>>>> > a75be5132(bidi draft)
 
 
 def get_chargepoint_config_default() -> dict:
@@ -539,6 +544,16 @@ class Chargepoint(ChargepointRfidMixin):
             log.debug(f"Anzahl angeschlossener Phasen beschränkt die nutzbaren Phasen auf {phases}")
         return phases
 
+    def hw_bidi_capable(self) -> BidiState:
+        if self.data.get.evse_signaling is None:
+            return BidiState.CP_NOT_BIDI_CAPABLE
+        elif self.data.get.evse_signaling != "bidi":
+            return BidiState.CP_WRONG_PROTOCOL
+        elif self.data.set.charging_ev_data.ev_template.data.bidi is False:
+            return BidiState.EV_NOT_BIDI_CAPABLE
+        else:
+            return BidiState.BIDI_CAPABLE
+
     def set_phases(self, phases: int) -> int:
         charging_ev = self.data.set.charging_ev_data
 
@@ -648,15 +663,16 @@ class Chargepoint(ChargepointRfidMixin):
             if charging_possible:
                 try:
                     charging_ev = self._get_charging_ev(vehicle, ev_list)
-                    max_phase_hw = self.get_max_phase_hw()
                     state, message_ev, submode, required_current, phases = charging_ev.get_required_current(
                         self.data.set.charge_template,
                         self.data.control_parameter,
-                        max_phase_hw,
+                        self.get_max_phase_hw(),
                         self.cp_ev_support_phase_switch(),
                         self.template.data.charging_type,
                         self.data.control_parameter.timestamp_chargemode_changed,
-                        self.data.set.log.imported_since_plugged)
+                        self.data.set.log.imported_since_plugged,
+                        self.hw_bidi_capable(),
+                        self.data.get.phases_in_use)
                     phases = self.get_phases_by_selected_chargemode(phases)
                     phases = self.set_phases(phases)
                     self._pub_connected_vehicle(charging_ev)

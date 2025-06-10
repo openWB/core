@@ -558,7 +558,8 @@ class SetData:
                 "/get/heartbeat" in msg.topic or
                 "/get/rfid" in msg.topic or
                 "/get/vehicle_id" in msg.topic or
-                "/get/serial_number" in msg.topic):
+                "/get/serial_number" in msg.topic or
+                "/get/evse_signaling" in msg.topic):
             self._validate_value(msg, str)
         elif ("/get/soc" in msg.topic):
             self._validate_value(msg, float, [(0, 100)])

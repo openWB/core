@@ -202,7 +202,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1, "2": plan_mock_2}
 
     # execution
-    selected_plan = ct.scheduled_charging_recent_plan(
+    selected_plan = ct.scheduled_charging(
         60, EvTemplate(), 3, 200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter))
 
     # evaluation

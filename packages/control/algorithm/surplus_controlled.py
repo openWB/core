@@ -75,8 +75,8 @@ class SurplusControlled:
                 current = available_for_cp
 
             current = common.get_current_to_set(cp.data.set.current, current, cp.data.set.target_current)
-            self._set_loadmangement_message(current, limit, cp)
-            limited_current = self._limit_adjust_current(cp, current)
+            self._set_loadmangement_message(current, limit, cp, counter)
+            limited_current = limit_adjust_current(cp, current)
             common.set_current_counterdiff(
                 cp.data.control_parameter.min_current,
                 limited_current,
@@ -104,35 +104,6 @@ class SurplusControlled:
         cp_without_feed_in = list(filter(lambda cp: cp.data.set.charge_template.data.chargemode.
                                          pv_charging.feed_in_limit is False, chargepoints))
         return cp_with_feed_in, cp_without_feed_in
-
-    # tested
-    def _limit_adjust_current(self, chargepoint: Chargepoint, new_current: float) -> float:
-        if chargepoint.template.data.charging_type == ChargingType.AC.value:
-            MAX_CURRENT = 5
-        else:
-            MAX_CURRENT = 30
-        msg = None
-        nominal_difference = chargepoint.data.set.charging_ev_data.ev_template.data.nominal_difference
-        if chargepoint.chargemode_changed or chargepoint.data.get.charge_state is False:
-            return new_current
-        else:
-            # Um max. +/- 5A pro Zyklus regeln
-            if (-MAX_CURRENT-nominal_difference
-                    < new_current - get_medium_charging_current(chargepoint.data.get.currents)
-                    < MAX_CURRENT+nominal_difference):
-                current = new_current
-            else:
-                if new_current < get_medium_charging_current(chargepoint.data.get.currents):
-                    current = get_medium_charging_current(chargepoint.data.get.currents) - MAX_CURRENT
-                    msg = f"Es darf um max {MAX_CURRENT}A unter den aktuell genutzten Strom geregelt werden."
-
-                else:
-                    current = get_medium_charging_current(chargepoint.data.get.currents) + MAX_CURRENT
-                    msg = f"Es darf um max {MAX_CURRENT}A über den aktuell genutzten Strom geregelt werden."
-            chargepoint.set_state_and_log(msg)
-            return max(current,
-                       chargepoint.data.control_parameter.min_current,
-                       chargepoint.data.set.target_current)
 
     def _fix_deviating_evse_current(self, chargepoint: Chargepoint) -> float:
         """Wenn Autos nicht die volle Ladeleistung nutzen, wird unnötig eingespeist. Dann kann um den noch nicht
@@ -215,3 +186,33 @@ class SurplusControlled:
                 control_parameter.required_current = max_current
             except Exception:
                 log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
+
+
+# tested
+def limit_adjust_current(self, chargepoint: Chargepoint, new_current: float) -> float:
+    if chargepoint.template.data.charging_type == ChargingType.AC.value:
+        MAX_CURRENT = 5
+    else:
+        MAX_CURRENT = 30
+    msg = None
+    nominal_difference = chargepoint.data.set.charging_ev_data.ev_template.data.nominal_difference
+    if chargepoint.chargemode_changed or chargepoint.data.get.charge_state is False:
+        return new_current
+    else:
+        # Um max. +/- 5A pro Zyklus regeln
+        if (-MAX_CURRENT-nominal_difference
+                < new_current - get_medium_charging_current(chargepoint.data.get.currents)
+                < MAX_CURRENT+nominal_difference):
+            current = new_current
+        else:
+            if new_current < get_medium_charging_current(chargepoint.data.get.currents):
+                current = get_medium_charging_current(chargepoint.data.get.currents) - MAX_CURRENT
+                msg = f"Es darf um max {MAX_CURRENT}A unter den aktuell genutzten Strom geregelt werden."
+
+            else:
+                current = get_medium_charging_current(chargepoint.data.get.currents) + MAX_CURRENT
+                msg = f"Es darf um max {MAX_CURRENT}A über den aktuell genutzten Strom geregelt werden."
+        chargepoint.set_state_and_log(msg)
+        return max(current,
+                   chargepoint.data.control_parameter.min_current,
+                   chargepoint.data.set.target_current)

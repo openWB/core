@@ -58,6 +58,7 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/version", self.state.version)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/current_branch", self.state.current_branch)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/current_commit", self.state.current_commit)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/evse_signaling", self.state.evse_signaling)
 
 
 def get_chargepoint_value_store(id: int) -> ValueStore[ChargepointState]:

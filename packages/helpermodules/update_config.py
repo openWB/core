@@ -56,7 +56,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 83
+    DATASTORE_VERSION = 85
 
     valid_topic = [
         "^openWB/bat/config/configured$",
@@ -2246,3 +2246,13 @@ class UpdateConfig:
                                 })
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 84)
+
+    def upgrade_datastore_84(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "bidi" not in payload:
+                    payload.update({"bidi": False})
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 85)

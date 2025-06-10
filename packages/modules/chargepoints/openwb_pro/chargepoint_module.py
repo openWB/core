@@ -52,7 +52,11 @@ class ChargepointModule(AbstractChargepoint):
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
-                self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': current})
+                if self.old_chargepoint_state.evse_signaling == "bidi":
+                    watt = current*230*self.old_chargepoint_state.phases_in_use
+                    self.__session.post('http://'+ip_address+'/connect.php', data={'watt': watt})
+                else:
+                    self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': current})
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
@@ -77,7 +81,8 @@ class ChargepointModule(AbstractChargepoint):
                 phases_in_use=json_rsp["phases_in_use"],
                 vehicle_id=json_rsp["vehicle_id"],
                 evse_current=json_rsp["offered_current"],
-                serial_number=json_rsp["serial"]
+                serial_number=json_rsp["serial"],
+                evse_signaling=json_rsp["evse_signaling"],
             )
 
             if json_rsp.get("voltages"):

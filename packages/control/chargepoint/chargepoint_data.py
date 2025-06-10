@@ -102,6 +102,8 @@ class Get:
     daily_exported: float = 0
     error_timestamp: int = 0
     evse_current: Optional[float] = None
+    # kann auch zur Laufzeit geändert werden
+    evse_signaling: Optional[str] = None
     exported: float = 0
     fault_str: str = NO_ERROR
     fault_state: int = 0

@@ -21,6 +21,7 @@ class EvTemplateData:
     efficiency: float = 90
     nominal_difference: float = 1
     keep_charge_active_duration: int = 40
+    bidi: bool = False
 
 
 def ev_template_data_factory() -> EvTemplateData:
