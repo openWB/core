@@ -78,7 +78,8 @@ class ChargepointModule(AbstractChargepoint):
                     soc_timestamp=received_topics.get(f"{topic_prefix}soc_timestamp"),
                     vehicle_id=received_topics.get(f"{topic_prefix}vehicle_id"),
                     evse_current=received_topics.get(f"{topic_prefix}evse_current"),
-                    max_evse_current=received_topics.get(f"{topic_prefix}max_evse_current")
+                    max_evse_current=received_topics.get(f"{topic_prefix}max_evse_current"),
+                    evse_signaling=received_topics.get(f"{topic_prefix}evse_signaling"),
                 )
                 self.store.set(chargepoint_state)
             else:

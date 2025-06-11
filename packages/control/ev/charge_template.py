@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass, field
 import datetime
 import logging
 import traceback
-from typing import List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from control import data
 from control.chargepoint.chargepoint_state import CHARGING_STATES
@@ -342,7 +342,7 @@ class ChargeTemplate:
         else:
             if bidi != BidiState.BIDI_CAPABLE:
                 # normales Zielladen, da Hardware kein bidirektionales Laden unterstützt
-                plan_data = self._find_recent_plan([self.data.chargemode.bidi_charging.plan],
+                plan_data = self._find_recent_plan({self.data.chargemode.bidi_charging.plan.id: self.data.chargemode.bidi_charging.plan},
                                                    soc,
                                                    ev_template,
                                                    phases,
@@ -404,7 +404,7 @@ class ChargeTemplate:
                     ev_template)
 
     def _find_recent_plan(self,
-                          plans: List[ScheduledChargingPlan],
+                          plans: Dict[str, ScheduledChargingPlan],
                           soc: float,
                           ev_template: EvTemplate,
                           phases: int,
@@ -435,7 +435,7 @@ class ChargeTemplate:
                     plan_id = list(plan_dict.keys())[0]
                     plan_end_time = list(plan_dict.values())[0]
 
-                    plan = self.data.chargemode.scheduled_charging.plans[str(plan_id)]
+                    plan = plans[plan_id]
 
                     remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
                         plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
