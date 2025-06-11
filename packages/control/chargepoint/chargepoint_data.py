@@ -176,6 +176,7 @@ class Config:
     configuration: Dict = field(default_factory=empty_dict_factory)
     ev: int = 0
     name: str = "neuer Ladepunkt"
+    color: str = "#0000ff"
     type: Optional[str] = None
     template: int = 0
     connected_phases: int = 3
