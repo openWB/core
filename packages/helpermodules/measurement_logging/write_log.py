@@ -20,77 +20,80 @@ log = logging.getLogger(__name__)
 
 # erstellt für jeden Tag eine Datei, die die Daten für den Langzeitgraph enthält.
 #     Dazu werden alle 5 Min folgende Daten als json-Liste gespeichert:
-#     {"entries": [
-#         {
-#             "timestamp": int,
-#             "date": str,
-#             "prices": {
-#                 "grid": Preis für Netzbezug,
-#                 "pv": Preis für PV-Strom,
-#                 "bat": Preis für Speicherstrom
-#             }
-#             "cp": {
-#                 "cp1": {
-#                     "imported": Zählerstand in Wh,
-#                     "exported": Zählerstand in Wh
+#     {
+#         "entries": [
+#             {
+#                 "timestamp": int,
+#                 "date": str,
+#                 "prices": {
+#                     "grid": Preis für Netzbezug,
+#                     "pv": Preis für PV-Strom,
+#                     "bat": Preis für Speicherstrom
+#                 }
+#                     "cp": {
+#                     "cp1": {
+#                         "imported": Zählerstand in Wh,
+#                         "exported": Zählerstand in Wh
+#                         }
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
+#                     "all": {
+#                         "imported": Zählerstand in Wh,
+#                         "exported": Zählerstand in Wh
+#                         }
+#                 }
+#                 "ev": {
+#                     "ev1": {
+#                         "soc": int in %
 #                     }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#                 "all": {
-#                     "imported": Zählerstand in Wh,
-#                     "exported": Zählerstand in Wh
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
+#                 }
+#                 "counter": {
+#                     "counter0": {
+#                         "grid": bool,
+#                         "imported": Wh,
+#                         "exported": Wh
 #                     }
-#             }
-#             "ev": {
-#                 "ev1": {
-#                     "soc": int in %
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
 #                 }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "counter": {
-#                 "counter0": {
-#                     "grid": bool,
-#                     "imported": Wh,
-#                     "exported": Wh
+#                 "pv": {
+#                     "all": {
+#                         "exported": Wh
+#                     }
+#                     "pv0": {
+#                         "exported": Wh
+#                     }
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
 #                 }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "pv": {
-#                 "all": {
-#                     "exported": Wh
+#                 "bat": {
+#                     "all": {
+#                         "imported": Wh,
+#                         "exported": Wh,
+#                         "soc": int in %
+#                     }
+#                     "bat0": {
+#                         "imported": Wh,
+#                         "exported": Wh,
+#                         "soc": int in %
+#                     }
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
 #                 }
-#                 "pv0": {
-#                     "exported": Wh
-#                 }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "bat": {
-#                 "all": {
-#                     "imported": Wh,
-#                     "exported": Wh,
-#                     "soc": int in %
-#                 }
-#                 "bat0": {
-#                     "imported": Wh,
-#                     "exported": Wh,
-#                     "soc": int in %
-#                 }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "sh": {
-#                 "sh1": {
-#                     "exported": Wh,
-#                     "imported": Wh,
-#                     wenn konfiguriert:
-#                     "temp1": int in °C,
-#                     "temp2": int in °C,
-#                     "temp3": int in °C
+#                 "sh": {
+#                     "sh1": {
+#                         "exported": Wh,
+#                         "imported": Wh,
+#                         wenn konfiguriert:
+#                         "temp1": int in °C,
+#                         "temp2": int in °C,
+#                         "temp3": int in °C
+#                     },
+#                     ... (dynamisch, je nach Anzahl konfigurierter Geräte)
 #                 },
-#                 ... (dynamisch, je nach Anzahl konfigurierter Geräte)
-#             },
-#             "hc": {"all": {"imported": Wh # Hausverbrauch}}
-#         }],
-#      "names": "names": {"sh1": "", "cp1": "", "counter2": "", "pv3": ""}
-#      }
+#                 "hc": {"all": {"imported": Wh # Hausverbrauch}}
+#             }
+#         ],
+#         "names": {"cp1": "", "counter2": "", "pv3": ""},
+#         "colors": {"cp1": "", "counter2": "", "pv3": ""},
+#     }
 
 
 class LogType(Enum):
@@ -357,3 +360,27 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
                 except (ValueError, KeyError, AttributeError):
                     names.update({entry: entry})
     return names
+
+
+def get_colors(elements: Dict) -> Dict:
+    """ Ermittelt die Farben der Fahrzeuge und Ladepunkte, welche
+    in elements vorhanden sind und gibt diese als Dictionary zurück.
+    Parameter
+    ---------
+    elements: dict
+        Dictionary, das die Messwerte enthält.
+    """
+    colors = {}
+    for group in elements.items():
+        if group[0] not in ("ev", "cp"):
+            continue
+        for entry in group[1]:
+            if "all" != entry:
+                try:
+                    if "ev" in entry:
+                        colors.update({entry: data.data.ev_data[entry].data.color})
+                    elif "cp" in entry:
+                        colors.update({entry: data.data.cp_data[entry].data.config.color})
+                except (ValueError, KeyError, AttributeError):
+                    colors.update({entry: "#000000"})
+    return colors

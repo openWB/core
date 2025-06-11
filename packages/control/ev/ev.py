@@ -77,6 +77,7 @@ class EvData:
     charge_template: int = field(default=0, metadata={"topic": "charge_template"})
     ev_template: int = field(default=0, metadata={"topic": "ev_template"})
     name: str = field(default="neues Fahrzeug", metadata={"topic": "name"})
+    color: str = field(default="#17a2b8", metadata={"topic": "color"})
     tag_id: List[str] = field(default_factory=empty_list_factory, metadata={
         "topic": "tag_id"})
     get: Get = field(default_factory=get_factory)
