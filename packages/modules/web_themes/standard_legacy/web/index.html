@@ -1013,49 +1013,68 @@
 								<!-- Eco -->
 								<div class="chargemode-options chargemode-option-eco_charging">
 									<h3>Einstellungen für "Eco"</h3>
-									<div class="form-row vaRow mb-0">
-										<div class="col">
-											Minimaler Dauerstrom unter der Preisgrenze
-										</div>
-										<div class="col-md-8">
-											<div class="form-row form-group mb-1 vaRow">
+									<div class="et et-configured hide">
+										<div class="charge-point-charge-mode-options mb-0 hide">
+											<div class="form-row mb-1">
 												<div class="col">
-													<input type="range"
-														class="charge-point-eco-charge-current form-control-range rangeInput"
-														id="currentEcoChargeCpT"
-														data-topic="openWB/set/chargepoint/<cp>/set/charge_template"
-														data-object="chargeTemplate"
-														data-object-path="chargemode.eco_charging.current"
-														min="6" max="32" step="1">
+													<i class="fas fa-coins"></i>
+													Preisgrenze für strompreisbasiertes Laden
 												</div>
-												<label for="currentEcoChargeCpT"
-													class="col-2 col-form-label valueLabel text-right" data-suffix="A">
-													-- A
-												</label>
+												<div class="col-md-8 text-right">
+													<button type="button"
+														class="charge-point-eco-charge-max_price-button btn btn-sm btn-secondary btn-block"
+														data-max-price="">
+														<span class="charge-point-eco-charge-max_price">
+															--
+														</span>&nbsp;ct/kWh
+													</button>
+												</div>
 											</div>
 										</div>
-									</div>
-									<div class="dc-charging-configured hide">
 										<div class="form-row vaRow mb-0">
 											<div class="col">
-												Minimale Dauerleistung unter der Preisgrenze
+												Minimaler Dauerstrom unter der Preisgrenze
 											</div>
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
 														<input type="range"
-															class="charge-point-eco-charge-dc-current form-control-range rangeInput"
-															id="dcCurrentEcoChargeCpT"
-															data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
+															class="charge-point-eco-charge-current form-control-range rangeInput"
+															id="currentEcoChargeCpT"
 															data-topic="openWB/set/chargepoint/<cp>/set/charge_template"
 															data-object="chargeTemplate"
-															data-object-path="chargemode.eco_charging.dc_current"
-															min="4" max="300" step="1">
+															data-object-path="chargemode.eco_charging.current"
+															min="6" max="32" step="1">
 													</div>
-													<label for="dcCurrentEcoChargeCpT"
-														class="col-2 col-form-label valueLabel text-right" data-suffix="kW">
-														-- kW
+													<label for="currentEcoChargeCpT"
+														class="col-2 col-form-label valueLabel text-right" data-suffix="A">
+														-- A
 													</label>
+												</div>
+											</div>
+										</div>
+										<div class="dc-charging-configured hide">
+											<div class="form-row vaRow mb-0">
+												<div class="col">
+													Minimale Dauerleistung unter der Preisgrenze
+												</div>
+												<div class="col-md-8">
+													<div class="form-row form-group mb-1 vaRow">
+														<div class="col">
+															<input type="range"
+																class="charge-point-eco-charge-dc-current form-control-range rangeInput"
+																id="dcCurrentEcoChargeCpT"
+																data-transformation='{ "in": "(<v> * 3 * 230) / 1000", "out": "(<v> * 1000) / 230 / 3" }'
+																data-topic="openWB/set/chargepoint/<cp>/set/charge_template"
+																data-object="chargeTemplate"
+																data-object-path="chargemode.eco_charging.dc_current"
+																min="4" max="300" step="1">
+														</div>
+														<label for="dcCurrentEcoChargeCpT"
+															class="col-2 col-form-label valueLabel text-right" data-suffix="kW">
+															-- kW
+														</label>
+													</div>
 												</div>
 											</div>
 										</div>
@@ -1144,25 +1163,6 @@
 													<label for="amountLimitEcoCpT"
 														class="col-2 col-form-label valueLabel text-right"
 														data-suffix="kWh">-- kWh</label>
-												</div>
-											</div>
-										</div>
-									</div>
-									<div class="et et-configured hide">
-										<div class="charge-point-charge-mode-options mb-0 hide">
-											<div class="form-row mb-1">
-												<div class="col">
-													<i class="fas fa-coins"></i>
-													Preisgrenze für strompreisbasiertes Laden
-												</div>
-												<div class="col-md-8 text-right">
-													<button type="button"
-														class="charge-point-eco-charge-max_price-button btn btn-sm btn-secondary btn-block"
-														data-max-price="">
-														<span class="charge-point-eco-charge-max_price">
-															--
-														</span>&nbsp;ct/kWh
-													</button>
 												</div>
 											</div>
 										</div>
@@ -1366,8 +1366,10 @@
 						submitPriceForm();
 					});
 
-					$('#electricityPriceChartCanvas').click(function (event) {
-						const points = window.electricityPricechart.getElementsAtEventForMode(event, 'index', { intersect: false }, true);
+					$('#electricityPriceChartCanvas').click((event) => {
+						console.log('click on electricity price chart', event);
+						// get the clicked point in the chart
+						const points = window.electricityPriceChart.getElementsAtEventForMode(event, 'index', { intersect: false }, true);
 						if (points.length > 0){
 							$('#maxPriceBox').val(Math.ceil(points[0].element.$context.raw.price * 100) / 100);
 							updatePriceChart();

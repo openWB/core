@@ -24,6 +24,7 @@ from helpermodules import graph, system
 from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.broker import BrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.utils import ProcessingCounter
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from helpermodules.pub import Pub
@@ -104,6 +105,10 @@ class SubData:
         self.event_modbus_server = event_modbus_server
         self.event_restart_gpio = event_restart_gpio
         self.heartbeat = False
+        # Immer wenn ein Subscribe hinzugefügt wird, wird der Zähler hinzugefügt und subdata_initialized gepublished.
+        # Wenn subdata_initialized empfangen wird, wird der Zäheler runtergezählt. Erst wenn alle subdata_initialized
+        # empfangen wurden, wurden auch die vorher subskribierten Topics empfangen und der Algorithmus kann starten.
+        self.processing_counter = ProcessingCounter(self.event_subdata_initialized)
 
     def sub_topics(self):
         self.internal_broker_client = BrokerClient("mqttsub", self.on_connect, self.on_message)
@@ -140,6 +145,7 @@ class SubData:
             ("openWB/system/io/#", 2),
             ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
         ])
+        self.processing_counter.add_task()
         Pub().pub("openWB/system/subdata_initialized", True)
 
     def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
@@ -301,6 +307,8 @@ class SubData:
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
                             client.subscribe(f"openWB/vehicle/{index}/soc_module/calculated_soc_state", 2)
                             client.subscribe(f"openWB/vehicle/{index}/soc_module/general_config", 2)
+                            self.processing_counter.add_task()
+                            Pub().pub("openWB/system/subdata_initialized", True)
                         self.event_soc.set()
                     else:
                         # temporäres ChargeTemplate aktualisieren, wenn dem Fahrzeug ein anderes Ladeprofil zugeordnet
@@ -863,12 +871,18 @@ class SubData:
                     var["device"+index] = (dev.Device if hasattr(dev, "Device") else dev.create_device)(config)
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe(f"openWB/system/device/{index}/component/+/config", 2)
+                    client.subscribe(f"openWB/system/device/{index}/error_timestamp", 2)
+                    self.processing_counter.add_task()
+                    Pub().pub("openWB/system/subdata_initialized", True)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/simulation$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
                 var["device"+index].components["component"+index_second].sim_counter.data = dataclass_from_dict(
                     SimCounterState,
                     decode_payload(msg.payload))
+            elif re.search("^.+/device/[0-9]+/error_timestamp$", msg.topic) is not None:
+                index = get_index(msg.topic)
+                var["device"+index].client_error_context.error_timestamp = decode_payload(msg.payload)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
@@ -896,6 +910,8 @@ class SubData:
                     config = dataclass_from_dict(component.component_descriptor.configuration_factory, component_config)
                     var["device"+index].add_component(config)
                     client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation", 2)
+                    self.processing_counter.add_task()
+                    Pub().pub("openWB/system/subdata_initialized", True)
             elif "mqtt" and "bridge" in msg.topic:
                 # do not reconfigure mqtt bridges if topic is received on startup
                 if self.event_subdata_initialized.is_set():
@@ -974,7 +990,7 @@ class SubData:
                 elif "openWB/system/subdata_initialized" == msg.topic:
                     if decode_payload(msg.payload) != "":
                         Pub().pub("openWB/system/subdata_initialized", "")
-                        self.event_subdata_initialized.set()
+                        self.processing_counter.task_done()
                 elif "openWB/system/update_config_completed" == msg.topic:
                     if decode_payload(msg.payload) != "":
                         Pub().pub("openWB/system/update_config_completed", "")

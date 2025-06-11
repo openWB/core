@@ -101,7 +101,7 @@ class TestSmartWb:
         charge_state=True,
         rfid="0a1b2c3d",
         rfid_timestamp=1652683252,
-        phases_in_use=1,
+        phases_in_use=None,
         serial_number="94:B9:7E:69:F0:D1",
         max_evse_current=16
     )
