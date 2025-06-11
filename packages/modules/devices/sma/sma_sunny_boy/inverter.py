@@ -80,6 +80,8 @@ class SmaSunnyBoyInverter(AbstractInverter):
             raise ValueError("Unbekannte Version "+str(self.component_config.configuration.version))
         if power_total == self.SMA_INT32_NAN or power_total == self.SMA_NAN:
             power_total = 0
+            # Bei keiner AC Wirkleistung müssen auch die Ströme der Phasen 0 sein.
+            currents = [0, 0, 0]
 
         if energy == self.SMA_UINT32_NAN:
             raise ValueError(
