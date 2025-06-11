@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 101
+    DATASTORE_VERSION = 102
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -360,6 +360,7 @@ class UpdateConfig:
         "^openWB/vehicle/[0-9]+/charge_template$",
         "^openWB/vehicle/[0-9]+/ev_template$",
         "^openWB/vehicle/[0-9]+/name$",
+        "^openWB/vehicle/[0-9]+/color$",
         "^openWB/vehicle/[0-9]+/info$",
         "^openWB/vehicle/[0-9]+/soc_module/calculated_soc_state$",
         "^openWB/vehicle/[0-9]+/soc_module/config$",
@@ -523,6 +524,7 @@ class UpdateConfig:
         ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
+        ("openWB/vehicle/0/color", "#17a2b8"),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.data.id),
         ("openWB/vehicle/0/soc_module/config", NO_MODULE),
@@ -2625,3 +2627,34 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(101)
+
+    def upgrade_datastore_102(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # add vehicle color to vehicle topics
+            if re.search("^openWB/vehicle/[0-9]+/name$", topic) is not None:
+                vehicle_color_topic = topic.replace("/name", "/color")
+                if vehicle_color_topic not in self.all_received_topics:
+                    return {vehicle_color_topic: "#17a2b8"}
+            # add property "color" to charge points
+            if re.search("^openWB/chargepoint/[0-9]+/config$", topic) is not None:
+                config = decode_payload(payload)
+                if "color" not in config:
+                    config.update({"color": "#17a2b8"})
+                    return {topic: config}
+            # add property "color" to components
+            if re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
+                config = decode_payload(payload)
+                if "color" not in config:
+                    if config.get("type").contains("counter"):
+                        config.update({"color": "#dc3545"})
+                    elif config.get("type").contains("bat"):
+                        config.update({"color": "#ffc107"})
+                    elif config.get("type").contains("inverter"):
+                        config.update({"color": "#28a745"})
+                    else:
+                        log.warning(f"Unknown component type {config.get('type')} for topic {topic}.")
+                        config.update({"color": "#000000"})
+                    return {topic: config}
+        self._loop_all_received_topics(upgrade)
+        # ToDo: update already present log files with color information
+        self.__update_topic("openWB/system/datastore_version", 103)
