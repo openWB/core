@@ -42,7 +42,6 @@
       <template v-if="props.rowExpandable" #header="header">
         <q-tr :props="header">
           <!-- space for arrow column -->
-          <!-- the abbreviation col has to remain as it comes from Quasar QTableSlots.header -->
           <q-th auto-width :props="{ ...header, col: {} }" />
           <!-- the other columns -->
           <q-th
@@ -56,7 +55,6 @@
       </template>
 
       <!-- body ------------------------------------------------------------->
-      <!-- "cols" and "col" must match Quasar QTable slot prop names and can't be renamed to "columns"/"column" -->
       <template v-if="props.rowExpandable" #body="rowProps: BodySlotProps<T>">
         <q-tr
           :key="`main-${rowProps.key}`"
@@ -77,14 +75,14 @@
             />
           </q-td>
 
-          <template v-for="col in rowProps.cols" :key="col.name">
+          <template v-for="column in rowProps.cols" :key="column.name">
             <!-- custom body-cell slot -->
-            <template v-if="$slots[`body-cell-${col.name}`]">
+            <template v-if="$slots[`body-cell-${column.name}`]">
               <slot
-                :name="`body-cell-${col.name}`"
+                :name="`body-cell-${column.name}`"
                 v-bind="{
                   ...rowProps,
-                  col,
+                  col: column,
                 }"
               >
               </slot>
@@ -95,13 +93,13 @@
               v-else
               :props="{
                 ...rowProps,
-                col,
+                col: column,
                 // cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any);
-                value: rowProps.row[col.field as string],
+                value: rowProps.row[column.field as string],
               }"
             >
               <!-- cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any); -->
-              {{ rowProps.row[col.field as string] }}
+              {{ rowProps.row[column.field as string] }}
             </q-td>
           </template>
         </q-tr>
@@ -113,7 +111,7 @@
           :props="rowProps"
           class="q-virtual-scroll--with-prev"
         >
-          <q-td colspan="100%">
+          <q-td :colspan="rowProps.cols.length + 1">
             <slot name="row-expand" v-bind="rowProps"> </slot>
           </q-td>
         </q-tr>
@@ -135,13 +133,13 @@
 import { computed, ComputedRef, ref, useSlots } from 'vue';
 import type { QTableColumn, QTableProps } from 'quasar';
 import { BodySlotProps } from 'src/components/models/table-model';
-import { columnConfiguration } from 'src/components/models/table-model';
+import { ColumnConfiguration } from 'src/components/models/table-model';
 
 /* ------------------------------------------------------------------ props */
 const props = defineProps<{
   items: number[];
   rowData: ((item: number) => T) | ComputedRef<(item: number) => T>;
-  columnConfig: columnConfiguration[];
+  columnConfig: ColumnConfiguration[];
   rowKey?: string;
   searchInputVisible?: boolean;
   tableHeight?: string;

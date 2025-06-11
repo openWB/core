@@ -127,7 +127,7 @@ export interface vehicleInfo {
   model: string;
 }
 
-export interface vehicleSocModule {
+export interface vehicleSocModuleConfig {
   name?: string;
   type: string | null;
   official?: boolean;

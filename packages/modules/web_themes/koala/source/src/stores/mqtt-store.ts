@@ -16,7 +16,7 @@ import type {
   ChargePointConnectedVehicleInfo,
   Vehicle,
   vehicleInfo,
-  vehicleSocModule,
+  vehicleSocModuleConfig,
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
@@ -491,7 +491,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param scale flag to scale the value, default is true
    * @param inverted flag to invert the value, default is false
    * @param defaultString default string to use, default is '---'
-   * @param showDecimalPlaces flag to show decimal places, default is false
+   * @param decimalPlaces number of decimal places to use, default is 0
    * @returns object
    */
   const getValueObject = computed(() => {
@@ -502,9 +502,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       scale: boolean = true,
       inverted: boolean = false,
       defaultString: string = '---',
-      showDecimalPlaces: boolean = false,
+      decimalPlaces: number = 0,
     ) => {
-      let scaled = false;
       let scaledValue = value;
       let textValue = defaultString;
       if (value === undefined) {
@@ -523,7 +522,6 @@ export const useMqttStore = defineStore('mqtt', () => {
         });
         while (scale && (scaledValue > 999 || scaledValue < -999)) {
           scaledValue = scaledValue / 1000;
-          scaled = true;
           switch (unitPrefix) {
             case '':
               unitPrefix = 'k';
@@ -537,10 +535,9 @@ export const useMqttStore = defineStore('mqtt', () => {
           }
         }
         const hasDecimalPlaces = scaledValue !== Math.floor(scaledValue);
-        const decimalPlaces = scaled || (showDecimalPlaces && hasDecimalPlaces);
         textValue = scaledValue.toLocaleString(undefined, {
-          minimumFractionDigits: decimalPlaces ? 2 : 0,
-          maximumFractionDigits: decimalPlaces ? 2 : 0,
+          minimumFractionDigits: hasDecimalPlaces ? decimalPlaces : 0,
+          maximumFractionDigits: hasDecimalPlaces ? decimalPlaces : 0,
         });
       }
       return {
@@ -823,7 +820,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         true,
         false,
         '---',
-        true,
+        2,
       );
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
@@ -958,7 +955,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Get boolean value for DC charging enabled / disabled
    * @returns boolean
    */
-  const DCChargingEnabled = computed(() => {
+  const DcChargingEnabled = computed(() => {
     return (getValue.value('openWB/optional/dc_charging') as boolean) || 0;
   });
 
@@ -967,16 +964,16 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns number
    */
-  const chargePointConnectedVehicleInstantDCChargePower = (
+  const chargePointConnectedVehicleInstantDcChargePower = (
     chargePointId: number,
   ) => {
     return computed({
       get() {
-        const DCCurrent =
+        const DcCurrent =
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.instant_charging?.dc_current;
-        if (DCCurrent !== undefined) {
-          return (DCCurrent * 3 * 230) / 1000;
+        if (DcCurrent !== undefined) {
+          return (DcCurrent * 3 * 230) / 1000;
         } else {
           return 0;
         }
@@ -1977,7 +1974,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get vehicle SoC module type identified by the vehicle id
+   * Get vehicle SoC module configuration identified by the vehicle id
    * @param vehicleId vehicle id
    * @returns vehicleSocModule
    */
@@ -1985,7 +1982,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (vehicleId: number) => {
       const socModule = getValue.value(
         `openWB/vehicle/${vehicleId}/soc_module/config`,
-      ) as vehicleSocModule;
+      ) as vehicleSocModuleConfig;
       return socModule;
     };
   });
@@ -2739,12 +2736,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
-    DCChargingEnabled,
+    DcChargingEnabled,
     chargePointConnectedVehicleInfo,
     chargePointConnectedVehicleForceSocUpdate,
     chargePointConnectedVehicleChargeMode,
     chargePointConnectedVehicleInstantChargeCurrent,
-    chargePointConnectedVehicleInstantDCChargePower,
+    chargePointConnectedVehicleInstantDcChargePower,
     chargePointConnectedVehicleInstantChargePhases,
     chargePointConnectedVehicleInstantChargeLimit,
     chargePointConnectedVehicleInstantChargeLimitSoC,

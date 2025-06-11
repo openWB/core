@@ -104,10 +104,10 @@ const instantChargeCurrent = computed(() =>
   ),
 );
 
-const dcCharging = computed(() => mqttStore.DCChargingEnabled);
+const dcCharging = computed(() => mqttStore.DcChargingEnabled);
 
 const instantChargeCurrentDC = computed(() => {
-  return mqttStore.chargePointConnectedVehicleInstantDCChargePower(
+  return mqttStore.chargePointConnectedVehicleInstantDcChargePower(
     props.chargePointId,
   );
 });

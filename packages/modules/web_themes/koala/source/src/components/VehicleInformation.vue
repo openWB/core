@@ -71,7 +71,7 @@ import { VehicleRow } from 'src/components/models/table-model';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
-import { columnConfiguration } from 'src/components/models/table-model';
+import { ColumnConfiguration } from 'src/components/models/table-model';
 
 const mqttStore = useMqttStore();
 const isMobile = computed(() => Platform.is.mobile);
@@ -111,7 +111,7 @@ const tableRowData = computed<(id: number) => VehicleRow>(() => {
   };
 });
 
-const columnConfigDesktop: columnConfiguration[] = [
+const columnConfigDesktop: ColumnConfiguration[] = [
   { field: 'name', label: 'Fahrzeug' },
   { field: 'manufacturer', label: 'Hersteller' },
   { field: 'model', label: 'Modell' },
@@ -119,7 +119,7 @@ const columnConfigDesktop: columnConfiguration[] = [
   { field: 'vehicleSocValue', label: 'Ladestand', align: 'right' },
 ];
 
-const columnConfigMobile: columnConfiguration[] = [
+const columnConfigMobile: ColumnConfiguration[] = [
   { field: 'name', label: 'Fahrzeug' },
   { field: 'plugged', label: 'Status', align: 'center' },
   { field: 'vehicleSocValue', label: 'Ladestand', align: 'right' },

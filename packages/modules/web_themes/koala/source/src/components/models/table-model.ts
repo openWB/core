@@ -7,7 +7,7 @@ import { QTableColumn } from 'quasar';
 //   align?: Align;
 // };
 
-export type columnConfiguration = {
+export type ColumnConfiguration = {
   field: string;
   label: string;
   align?: 'left' | 'right' | 'center';

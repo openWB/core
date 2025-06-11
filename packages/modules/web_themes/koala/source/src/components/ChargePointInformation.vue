@@ -141,7 +141,7 @@ import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointMode from './ChargePointMode.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
-import { columnConfiguration } from 'src/components/models/table-model';
+import { ColumnConfiguration } from 'src/components/models/table-model';
 import { ChargePointRow } from 'src/components/models/table-model';
 
 const mqttStore = useMqttStore();
@@ -201,7 +201,7 @@ const tableRowData = computed<(id: number) => ChargePointRow>(() => {
   };
 });
 
-const columnConfigDesktop: columnConfiguration[] = [
+const columnConfigDesktop: ColumnConfiguration[] = [
   { field: 'name', label: 'Ladepunkt' },
   { field: 'vehicle', label: 'Fahrzeug' },
   { field: 'plugged', label: 'Status', align: 'center' },
@@ -212,7 +212,7 @@ const columnConfigDesktop: columnConfiguration[] = [
   { field: 'soc', label: 'Ladestand', align: 'right' },
 ];
 
-const columnConfigMobile: columnConfiguration[] = [
+const columnConfigMobile: ColumnConfiguration[] = [
   { field: 'nameAndVehicle', label: 'Ladepunkt' },
   { field: 'modePluggedTimeCharging', label: 'Lademodus', align: 'center' },
   {
