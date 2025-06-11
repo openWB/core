@@ -14,7 +14,7 @@ from helpermodules.broker import BrokerClient
 from helpermodules import timecheck
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.topic_parser import decode_payload, get_index
-from modules.common.utils.component_parser import get_component_name_by_id
+from modules.common.utils.component_parser import get_component_name_by_id, get_component_color_by_id
 
 log = logging.getLogger(__name__)
 
@@ -168,6 +168,7 @@ def save_log(log_type: LogType):
         entries = content["entries"]
         entries.append(new_entry)
         content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
+        content["colors"] = get_colors(content["entries"][-1])
         write_and_check(filepath, content)
         return content["entries"]
     except Exception:
@@ -363,7 +364,7 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
 
 
 def get_colors(elements: Dict) -> Dict:
-    """ Ermittelt die Farben der Fahrzeuge und Ladepunkte, welche
+    """ Ermittelt die Farben der Fahrzeuge, Ladepunkte und Komponenten, welche
     in elements vorhanden sind und gibt diese als Dictionary zurück.
     Parameter
     ---------
@@ -372,7 +373,7 @@ def get_colors(elements: Dict) -> Dict:
     """
     colors = {}
     for group in elements.items():
-        if group[0] not in ("ev", "cp"):
+        if group[0] not in ("ev", "cp", "counter", "pv", "bat"):
             continue
         for entry in group[1]:
             if "all" != entry:
@@ -381,6 +382,9 @@ def get_colors(elements: Dict) -> Dict:
                         colors.update({entry: data.data.ev_data[entry].data.color})
                     elif "cp" in entry:
                         colors.update({entry: data.data.cp_data[entry].data.config.color})
+                    else:
+                        id = entry.strip(string.ascii_letters)
+                        colors.update({entry: get_component_color_by_id(int(id))})
                 except (ValueError, KeyError, AttributeError):
                     colors.update({entry: "#000000"})
     return colors
