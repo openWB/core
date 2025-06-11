@@ -43,8 +43,7 @@ class SungrowInverter(AbstractInverter):
             dc_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
                                                               wordorder=Endian.Little, unit=unit) * -1
 
-        currents_raw = self.__tcp_client.read_input_registers(13030, ModbusDataType.INT_16, count=3, 
-                                                              wordorder=Endian.Little, unit=unit)
+        currents_raw = self.__tcp_client.read_input_registers(13030, ModbusDataType.INT_16, 3, unit=unit)
         currents = [value * 0.1 for value in currents_raw]
 
         imported, exported = self.sim_counter.sim_count(power)
