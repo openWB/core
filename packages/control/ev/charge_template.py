@@ -337,71 +337,70 @@ class ChargeTemplate:
                       soc_request_interval_offset: float,
                       bidi: BidiState,
                       phases_in_use: int) -> Tuple[float, str, str, int]:
-        if soc > self.data.chargemode.bidi_charging.plan.limit.soc_scheduled:
+        if bidi != BidiState.BIDI_CAPABLE:
+            # normales Zielladen, da Hardware kein bidirektionales Laden unterstützt
+            plan_data = self._find_recent_plan(
+                {self.data.chargemode.bidi_charging.plan.id: self.data.chargemode.bidi_charging.plan},
+                soc,
+                ev_template,
+                phases,
+                used_amount,
+                max_hw_phases,
+                phase_switch_supported,
+                charging_type,
+                chargemode_switch_timestamp,
+                control_parameter)
+            if plan_data:
+                control_parameter.current_plan = plan_data.plan.id
+            else:
+                control_parameter.current_plan = None
+            required_current, submode, message, phases = self.scheduled_charging_calc_current(
+                plan_data,
+                soc,
+                imported_since_plugged,
+                control_parameter.phases,
+                control_parameter.min_current,
+                soc_request_interval_offset,
+                charging_type,
+                ev_template)
+            # Hinweis an Zielladen-Message anhängen, dass Bidi nicht möglich ist
+            message = bidi.value + message
+            return required_current, submode, message, phases
+        elif soc > self.data.chargemode.bidi_charging.plan.limit.soc_scheduled:
             return 0, "bidi_charging", None, phases_in_use
-        else:
-            if bidi != BidiState.BIDI_CAPABLE:
-                # normales Zielladen, da Hardware kein bidirektionales Laden unterstützt
-                plan_data = self._find_recent_plan({self.data.chargemode.bidi_charging.plan.id: self.data.chargemode.bidi_charging.plan},
-                                                   soc,
-                                                   ev_template,
-                                                   phases,
-                                                   used_amount,
-                                                   max_hw_phases,
-                                                   phase_switch_supported,
-                                                   charging_type,
-                                                   chargemode_switch_timestamp,
-                                                   control_parameter)
-                if plan_data:
-                    control_parameter.current_plan = plan_data.plan.id
-                else:
-                    control_parameter.current_plan = None
-                required_current, submode, message, phases = self.scheduled_charging_calc_current(
-                    plan_data,
-                    soc,
-                    imported_since_plugged,
-                    control_parameter.phases,
-                    control_parameter.min_current,
-                    soc_request_interval_offset,
-                    charging_type,
-                    ev_template)
-                # Hinweis an Zielladen-Message anhängen, dass Bidi nicht möglich ist
-                message = bidi.value + message
-                return required_current, submode, message, phases
+        elif soc < self.data.chargemode.bidi_charging.plan.limit.soc_scheduled:
+            # kein bidirektionales Laden, da SoC noch nicht erreicht
+            missing_amount = ((self.data.chargemode.bidi_charging.plan.limit.soc_scheduled -
+                               soc) / 100) * ev_template.data.battery_capacity
+            duration = missing_amount/self.data.chargemode.bidi_charging.power * 3600
 
-            elif soc < self.data.chargemode.bidi_charging.plan.limit.soc_scheduled:
-                # kein bidirektionales Laden, da SoC noch nicht erreicht
-                missing_amount = ((self.data.chargemode.bidi_charging.plan.limit.soc_scheduled -
-                                  soc) / 100) * ev_template.data.battery_capacity
-                duration = missing_amount/self.data.chargemode.bidi_charging.power * 3600
-
-                # es muss ein Plan übergeben werden, damit die Soll-Ströme ausgerechnet werden können
-                bidi_power_plan = copy.deepcopy(self.data.chargemode.bidi_charging.plan)
-                bidi_power_plan.current = self.data.chargemode.bidi_charging.power / phases_in_use / 230
-                bidi_power_plan.phases_to_use = phases_in_use
-                bidi_power_plan.phases_to_use_pv = phases_in_use
-                plan_end_time = timecheck.check_end_time(bidi_power_plan, chargemode_switch_timestamp)
-                if plan_end_time is None:
-                    plan_data = None
-                else:
-                    plan_data = SelectedPlan(remaining_time=plan_end_time - duration,
-                                             duration=duration,
-                                             missing_amount=missing_amount,
-                                             phases=phases,
-                                             plan=bidi_power_plan)
-                if plan_data:
-                    control_parameter.current_plan = plan_data.plan.id
-                else:
-                    control_parameter.current_plan = None
-                return self.scheduled_charging_calc_current(
-                    plan_data,
-                    soc,
-                    imported_since_plugged,
-                    control_parameter.phases,
-                    control_parameter.min_current,
-                    data.data.general_data.data.control_interval,
-                    charging_type,
-                    ev_template)
+            # es muss ein Plan übergeben werden, damit die Soll-Ströme ausgerechnet werden können
+            bidi_power_plan = copy.deepcopy(self.data.chargemode.bidi_charging.plan)
+            bidi_power_plan.current = self.data.chargemode.bidi_charging.power / phases_in_use / 230
+            bidi_power_plan.phases_to_use = phases_in_use
+            bidi_power_plan.phases_to_use_pv = phases_in_use
+            plan_end_time = timecheck.check_end_time(bidi_power_plan, chargemode_switch_timestamp)
+            if plan_end_time is None:
+                plan_data = None
+            else:
+                plan_data = SelectedPlan(remaining_time=plan_end_time - duration,
+                                         duration=duration,
+                                         missing_amount=missing_amount,
+                                         phases=phases,
+                                         plan=bidi_power_plan)
+            if plan_data:
+                control_parameter.current_plan = plan_data.plan.id
+            else:
+                control_parameter.current_plan = None
+            return self.scheduled_charging_calc_current(
+                plan_data,
+                soc,
+                imported_since_plugged,
+                control_parameter.phases,
+                control_parameter.min_current,
+                data.data.general_data.data.control_interval,
+                charging_type,
+                ev_template)
 
     def _find_recent_plan(self,
                           plans: Dict[str, ScheduledChargingPlan],

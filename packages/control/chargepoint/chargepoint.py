@@ -573,6 +573,9 @@ class Chargepoint(ChargepointRfidMixin):
         return phases
 
     def check_min_max_current(self, required_current: float, phases: int, pv: bool = False) -> float:
+        if (self.data.control_parameter.chargemode == Chargemode.BIDI_CHARGING and
+                self.data.control_parameter.submode == Chargemode.BIDI_CHARGING):
+            return required_current
         required_current_prev = required_current
         required_current, msg = self.data.set.charging_ev_data.check_min_max_current(
             self.data.control_parameter,

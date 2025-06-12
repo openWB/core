@@ -189,7 +189,7 @@ class SurplusControlled:
 
 
 # tested
-def limit_adjust_current(self, chargepoint: Chargepoint, new_current: float) -> float:
+def limit_adjust_current(chargepoint: Chargepoint, new_current: float) -> float:
     if chargepoint.template.data.charging_type == ChargingType.AC.value:
         MAX_CURRENT = 5
     else:

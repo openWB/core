@@ -16,14 +16,15 @@ CHARGEMODES = ((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, True
                (Chargemode.PV_CHARGING, Chargemode.INSTANT_CHARGING, False),
                (Chargemode.SCHEDULED_CHARGING, Chargemode.PV_CHARGING, True),
                (Chargemode.SCHEDULED_CHARGING, Chargemode.PV_CHARGING, False),
+               (Chargemode.BIDI_CHARGING, Chargemode.PV_CHARGING, True),
+               (Chargemode.BIDI_CHARGING, Chargemode.PV_CHARGING, False),
                (Chargemode.ECO_CHARGING, Chargemode.PV_CHARGING, True),
                (Chargemode.ECO_CHARGING, Chargemode.PV_CHARGING, False),
                (Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, True),
                (Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, False),
-               (Chargemode.BIDI_CHARGING, Chargemode.PV_CHARGING, True),
-               (Chargemode.BIDI_CHARGING, Chargemode.PV_CHARGING, False),
-               (Chargemode.BIDI_CHARGING, Chargemode.BIDI_CHARGING, True),
+               # niedrigere Priorität soll nachrangig geladen, aber zuerst entladen werden
                (Chargemode.BIDI_CHARGING, Chargemode.BIDI_CHARGING, False),
+               (Chargemode.BIDI_CHARGING, Chargemode.BIDI_CHARGING, True),
                (None, Chargemode.STOP, True),
                (None, Chargemode.STOP, False))
 
@@ -32,4 +33,4 @@ CONSIDERED_CHARGE_MODES_PV_ONLY = CHARGEMODES[12:20]
 CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT = CHARGEMODES[0:12]
 CONSIDERED_CHARGE_MODES_MIN_CURRENT = CHARGEMODES[0:-1]
 CONSIDERED_CHARGE_MODES_NO_CURRENT = CHARGEMODES[22:24]
-CONSIDERED_CHARGE_MODES_BIDI = CHARGEMODES[20:22]
+CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE = CHARGEMODES[20:22]
