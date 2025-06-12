@@ -2632,28 +2632,35 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> Optional[dict]:
             # add vehicle color to vehicle topics
             if re.search("^openWB/vehicle/[0-9]+/name$", topic) is not None:
+                log.debug(f"Received vehicle name topic {topic}")
                 vehicle_color_topic = topic.replace("/name", "/color")
+                log.debug(f"Checking for vehicle color topic {vehicle_color_topic}")
                 if vehicle_color_topic not in self.all_received_topics:
+                    log.debug(f"Adding vehicle color topic {vehicle_color_topic} with value '#17a2b8'")
                     return {vehicle_color_topic: "#17a2b8"}
             # add property "color" to charge points
             if re.search("^openWB/chargepoint/[0-9]+/config$", topic) is not None:
                 config = decode_payload(payload)
+                log.debug(f"Received charge point config topic {topic} with payload {payload}")
                 if "color" not in config:
-                    config.update({"color": "#17a2b8"})
+                    config.update({"color": "#0000ff"})
+                    log.debug(f"Added color to charge point config {config}")
                     return {topic: config}
             # add property "color" to components
             if re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
                 config = decode_payload(payload)
+                log.debug(f"Received component config topic {topic} with payload {payload}")
                 if "color" not in config:
-                    if config.get("type").contains("counter"):
+                    if "counter" in config.get("type").lower():
                         config.update({"color": "#dc3545"})
-                    elif config.get("type").contains("bat"):
+                    elif "bat" in config.get("type").lower():
                         config.update({"color": "#ffc107"})
-                    elif config.get("type").contains("inverter"):
+                    elif "inverter" in config.get("type").lower():
                         config.update({"color": "#28a745"})
                     else:
                         log.warning(f"Unknown component type {config.get('type')} for topic {topic}.")
                         config.update({"color": "#000000"})
+                    log.debug(f"Updated component config with color {config}")
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
         # ToDo: update already present log files with color information
