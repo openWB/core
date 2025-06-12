@@ -365,6 +365,8 @@ class SetData:
         try:
             if "/name" in msg.topic:
                 self._validate_value(msg, str)
+            elif "/color" in msg.topic:
+                self._validate_value(msg, str)
             elif "/info" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/vehicle/set/vehicle_update_completed" in msg.topic:
