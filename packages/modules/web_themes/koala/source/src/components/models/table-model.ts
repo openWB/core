@@ -1,12 +1,5 @@
 import { QTableColumn } from 'quasar';
 
-// export type columnConfig = {
-//   fields: string[];
-//   fieldsExpansionRow?: string[];
-//   labels?: Record<string, string>;
-//   align?: Align;
-// };
-
 export type ColumnConfiguration = {
   field: string;
   label: string;

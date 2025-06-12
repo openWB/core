@@ -13,7 +13,7 @@
     :min="4"
     :max="300"
     unit="kW"
-    v-model="instantChargeCurrentDC.value"
+    v-model="instantChargeCurrentDc.value"
     class="q-mt-sm"
   />
 
@@ -104,9 +104,9 @@ const instantChargeCurrent = computed(() =>
   ),
 );
 
-const dcCharging = computed(() => mqttStore.DcChargingEnabled);
+const dcCharging = computed(() => mqttStore.dcChargingEnabled);
 
-const instantChargeCurrentDC = computed(() => {
+const instantChargeCurrentDc = computed(() => {
   return mqttStore.chargePointConnectedVehicleInstantDcChargePower(
     props.chargePointId,
   );

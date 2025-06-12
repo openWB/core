@@ -147,10 +147,10 @@ const current = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargeCurrent(props.chargePointId),
 );
 
-const dcCharging = computed(() => mqttStore.DcChargingEnabled);
+const dcCharging = computed(() => mqttStore.dcChargingEnabled);
 
 const dcPower = computed(() =>
-  mqttStore.chargePointConnectedVehicleEcoChargeDCPower(props.chargePointId),
+  mqttStore.chargePointConnectedVehicleEcoChargeDcPower(props.chargePointId),
 );
 
 const numPhases = computed(() =>

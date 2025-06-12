@@ -15,8 +15,8 @@ import type {
   ValueObject,
   ChargePointConnectedVehicleInfo,
   Vehicle,
-  vehicleInfo,
-  vehicleSocModuleConfig,
+  VehicleInfo,
+  VehicleSocModuleConfig,
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
@@ -483,7 +483,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
-  /**
+  /**More actions
    * Get a formatted string for a value
    * @param value value to format
    * @param unit unit to use, default is 'W'
@@ -495,60 +495,68 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns object
    */
   const getValueObject = computed(() => {
-    return (
-      value: number,
-      unit: string = 'W',
-      unitPrefix: string = '',
-      scale: boolean = true,
-      inverted: boolean = false,
-      defaultString: string = '---',
-      decimalPlaces: number = 0,
-    ) => {
-      let scaledValue = value;
-      let textValue = defaultString;
-      if (value === undefined) {
-        console.debug(
-          'value is undefined! using default',
-          value,
-          defaultString,
-        );
-      } else {
-        if (inverted) {
-          scaledValue = value *= -1;
-        }
-        textValue = value.toLocaleString(undefined, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        });
-        while (scale && (scaledValue > 999 || scaledValue < -999)) {
-          scaledValue = scaledValue / 1000;
-          switch (unitPrefix) {
-            case '':
-              unitPrefix = 'k';
-              break;
-            case 'k':
-              unitPrefix = 'M';
-              break;
-            case 'M':
-              unitPrefix = 'G';
-              break;
-          }
-        }
-        const hasDecimalPlaces = scaledValue !== Math.floor(scaledValue);
-        textValue = scaledValue.toLocaleString(undefined, {
-          minimumFractionDigits: hasDecimalPlaces ? decimalPlaces : 0,
-          maximumFractionDigits: hasDecimalPlaces ? decimalPlaces : 0,
-        });
+  return (
+    value: number,
+    unit: string = 'W',
+    unitPrefix: string = '',
+    scale: boolean = true,
+    inverted: boolean = false,
+    defaultString: string = '---',
+    decimalPlaces: number = 0,
+  ) => {
+    let scaled = false;
+    let scaledValue = value;
+    let textValue = defaultString;
+    if (value === undefined) {
+      console.debug(
+        'value is undefined! using default',
+        value,
+        defaultString,
+      );
+    } else {
+      if (inverted) {
+        scaledValue = value *= -1;
       }
-      return {
-        textValue: `${textValue} ${unitPrefix}${unit}`,
-        value: value,
-        unit: unit,
-        scaledValue: scaledValue,
-        scaledUnit: `${unitPrefix}${unit}`,
-      } as ValueObject;
-    };
-  });
+      textValue = value.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
+      while (scale && (scaledValue > 999 || scaledValue < -999)) {
+        scaledValue = scaledValue / 1000;
+        scaled = true;
+        switch (unitPrefix) {
+          case '':
+            unitPrefix = 'k';
+            break;
+          case 'k':
+            unitPrefix = 'M';
+            break;
+          case 'M':
+            unitPrefix = 'G';
+            break;
+        }
+      }
+      let outputDecimalPlaces = 0;
+      if (scaled) {
+        outputDecimalPlaces = decimalPlaces > 0 ? decimalPlaces : 2;
+      } else {
+        const hasDecimalPlaces = scaledValue !== Math.floor(scaledValue);
+        outputDecimalPlaces =  hasDecimalPlaces ? decimalPlaces : 0;
+      }
+      textValue = scaledValue.toLocaleString(undefined, {
+        minimumFractionDigits: outputDecimalPlaces,
+        maximumFractionDigits: outputDecimalPlaces,
+      });
+    }
+    return {
+      textValue: `${textValue} ${unitPrefix}${unit}`,
+      value: value,
+      unit: unit,
+      scaledValue: scaledValue,
+      scaledUnit: `${unitPrefix}${unit}`,
+    } as ValueObject;
+  };
+});
 
   /**
    * Get the theme configuration
@@ -955,7 +963,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Get boolean value for DC charging enabled / disabled
    * @returns boolean
    */
-  const DcChargingEnabled = computed(() => {
+  const dcChargingEnabled = computed(() => {
     return (getValue.value('openWB/optional/dc_charging') as boolean) || 0;
   });
 
@@ -969,11 +977,11 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const DcCurrent =
+        const dcCurrent =
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.instant_charging?.dc_current;
-        if (DcCurrent !== undefined) {
-          return (DcCurrent * 3 * 230) / 1000;
+        if (dcCurrent !== undefined) {
+          return (dcCurrent * 3 * 230) / 1000;
         } else {
           return 0;
         }
@@ -1102,7 +1110,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehiclePVChargeMinCurrent = (
+  const chargePointConnectedVehiclePvChargeMinCurrent = (
     chargePointId: number,
   ) => {
     return computed({
@@ -1127,16 +1135,16 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns number
    */
-  const chargePointConnectedVehiclePV_DC_ChargePower = (
+  const chargePointConnectedVehiclePvDcChargePower = (
     chargePointId: number,
   ) => {
     return computed({
       get() {
-        const DCMinCurrent =
+        const dcMinCurrent =
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.pv_charging?.dc_min_current;
-        if (DCMinCurrent !== undefined) {
-          return (DCMinCurrent * 3 * 230) / 1000;
+        if (dcMinCurrent !== undefined) {
+          return (dcMinCurrent * 3 * 230) / 1000;
         } else {
           return 0;
         }
@@ -1159,7 +1167,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehiclePVChargeMinSoc = (chargePointId: number) => {
+  const chargePointConnectedVehiclePvChargeMinSoc = (chargePointId: number) => {
     return computed({
       get() {
         return chargePointConnectedVehicleChargeTemplate(chargePointId).value
@@ -1182,7 +1190,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehiclePVChargeMinSocCurrent = (
+  const chargePointConnectedVehiclePvChargeMinSocCurrent = (
     chargePointId: number,
   ) => {
     return computed({
@@ -1338,7 +1346,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehiclePVChargeFeedInLimit = (
+  const chargePointConnectedVehiclePvChargeFeedInLimit = (
     chargePointId: number,
   ) => {
     return computed({
@@ -1388,16 +1396,16 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns number
    */
-  const chargePointConnectedVehicleEcoChargeDCPower = (
+  const chargePointConnectedVehicleEcoChargeDcPower = (
     chargePointId: number,
   ) => {
     return computed({
       get() {
-        const DCCurrent =
+        const dcCurrent =
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.eco_charging?.dc_current;
-        if (DCCurrent !== undefined) {
-          return (DCCurrent * 3 * 230) / 1000;
+        if (dcCurrent !== undefined) {
+          return (dcCurrent * 3 * 230) / 1000;
         } else {
           return 0;
         }
@@ -1969,7 +1977,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleInfo = computed(() => {
     return (vehicleId: number) => {
-      return getValue.value(`openWB/vehicle/${vehicleId}/info`) as vehicleInfo;
+      return getValue.value(`openWB/vehicle/${vehicleId}/info`) as VehicleInfo;
     };
   });
 
@@ -1982,7 +1990,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (vehicleId: number) => {
       const socModule = getValue.value(
         `openWB/vehicle/${vehicleId}/soc_module/config`,
-      ) as vehicleSocModuleConfig;
+      ) as VehicleSocModuleConfig;
       return socModule;
     };
   });
@@ -2736,7 +2744,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
-    DcChargingEnabled,
+    dcChargingEnabled,
     chargePointConnectedVehicleInfo,
     chargePointConnectedVehicleForceSocUpdate,
     chargePointConnectedVehicleChargeMode,
@@ -2746,18 +2754,18 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleInstantChargeLimit,
     chargePointConnectedVehicleInstantChargeLimitSoC,
     chargePointConnectedVehicleInstantChargeLimitEnergy,
-    chargePointConnectedVehiclePVChargeMinCurrent,
+    chargePointConnectedVehiclePvChargeMinCurrent,
     chargePointConnectedVehiclePvChargePhases,
     chargePointConnectedVehiclePvChargeLimit,
     chargePointConnectedVehiclePvChargeLimitSoC,
     chargePointConnectedVehiclePvChargeLimitEnergy,
-    chargePointConnectedVehiclePVChargeMinSoc,
-    chargePointConnectedVehiclePVChargeMinSocCurrent,
-    chargePointConnectedVehiclePV_DC_ChargePower,
+    chargePointConnectedVehiclePvChargeMinSoc,
+    chargePointConnectedVehiclePvChargeMinSocCurrent,
+    chargePointConnectedVehiclePvDcChargePower,
     chargePointConnectedVehiclePvChargePhasesMinSoc,
-    chargePointConnectedVehiclePVChargeFeedInLimit,
+    chargePointConnectedVehiclePvChargeFeedInLimit,
     chargePointConnectedVehicleEcoChargeCurrent,
-    chargePointConnectedVehicleEcoChargeDCPower,
+    chargePointConnectedVehicleEcoChargeDcPower,
     chargePointConnectedVehicleEcoChargePhases,
     chargePointConnectedVehicleEcoChargeLimit,
     chargePointConnectedVehicleEcoChargeLimitSoC,

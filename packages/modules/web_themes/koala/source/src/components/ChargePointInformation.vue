@@ -20,7 +20,7 @@
     :row-expandable="isMobile"
     @row-click="onRowClick"
   >
-    <!----------------------------------------------------------- desktop view table body slots -->
+    <!-- desktop view table body slots -->
     <!-- "col" = column must match Quasar naming convention -->
     <template #body-cell-plugged="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
@@ -55,7 +55,7 @@
         />
       </q-td>
     </template>
-    <!----------------------------------------------------------- mobile view table body slots -->
+    <!-- mobile view table body slots -->
     <!-- mobile view chargepoint name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
@@ -80,7 +80,7 @@
       </q-td>
     </template>
 
-    <!-- Pass expansion row data to BaseTable.vue --------------------------------------------------------->
+    <!-- Pass expansion row data to BaseTable.vue ------------------------------------------------------ -->
     <template #row-expand="slotProps">
       <div class="q-pa-xs column q-gutter-y-xs">
         <div
@@ -141,8 +141,7 @@ import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointMode from './ChargePointMode.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
-import { ColumnConfiguration } from 'src/components/models/table-model';
-import { ChargePointRow } from 'src/components/models/table-model';
+import { ColumnConfiguration, ChargePointRow } from 'src/components/models/table-model';
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();
