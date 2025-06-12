@@ -154,7 +154,7 @@ class SolaredgeBat(AbstractBat):
             else:
                 return
 
-        elif power_limit >= 0:
+        elif abs(power_limit) >= 0:
             """
             Ladung mit Speichersteuerung.
             SolarEdge entlaedt den Speicher immer nur bis zur SoC-Reserve.
@@ -193,11 +193,11 @@ class SolaredgeBat(AbstractBat):
                     self._write_registers(values_to_write, unit)
                     self.last_mode = None
 
-                elif discharge_limit not in range(int(power_limit) - 10, int(power_limit) + 10):
+                elif discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
                     # Limit nur bei Abweichung von mehr als 10W, um Konflikte bei 2 Speichern zu verhindern.
-                    log.debug(f"Discharge-Limit Speicher{battery_index}: {int(power_limit)}W.")
+                    log.debug(f"Discharge-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
                     values_to_write = {
-                        "RemoteControlCommandDischargeLimit": int(min(power_limit, MAX_DISCHARGE_LIMIT))
+                        "RemoteControlCommandDischargeLimit": int(min(abs(power_limit), MAX_DISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
                 self.last_mode = 'limited'
@@ -205,13 +205,13 @@ class SolaredgeBat(AbstractBat):
             else:  # Speichersteuerung ist inaktiv.
                 if soc_reserve < soc:
                     # Speichersteuerung nur aktivieren, wenn SoC ueber SoC-Reserve.
-                    log.debug(f"Discharge-Limit aktivieren, Speicher{battery_index}: {int(power_limit)}W.")
+                    log.debug(f"Discharge-Limit aktivieren, Speicher{battery_index}: {int(abs(power_limit))}W.")
                     self.StorageControlMode_Read = values["StorageControlMode"]
                     values_to_write = {
                         "StorageControlMode": REMOTE_CONTROL_MODE,
                         "StorageChargeDischargeDefaultMode": ACTIVE_COMMAND_MODE,
                         "RemoteControlCommandMode": ACTIVE_COMMAND_MODE,
-                        "RemoteControlCommandDischargeLimit": int(min(power_limit, MAX_DISCHARGE_LIMIT))
+                        "RemoteControlCommandDischargeLimit": int(min(abs(power_limit), MAX_DISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
                     self.last_mode = 'limited'
