@@ -11,6 +11,17 @@
     class="q-mt-md"
   />
 
+  <SliderStandard
+    v-if="dcCharging"
+    title="Minimaler DC-Dauerleistung"
+    :min="0"
+    :max="300"
+    :step="1"
+    unit="kW"
+    v-model="pvMinDcCurrent.value"
+    class="q-mt-md"
+  />
+
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group class="col">
@@ -142,7 +153,13 @@ const phaseOptionsMinSoc = [
 ];
 
 const pvMinCurrent = computed(() =>
-  mqttStore.chargePointConnectedVehiclePVChargeMinCurrent(props.chargePointId),
+  mqttStore.chargePointConnectedVehiclePvChargeMinCurrent(props.chargePointId),
+);
+
+const dcCharging = computed(() => mqttStore.dcChargingEnabled);
+
+const pvMinDcCurrent = computed(() =>
+  mqttStore.chargePointConnectedVehiclePvDcChargePower(props.chargePointId),
 );
 
 const numPhases = computed(() =>
@@ -156,11 +173,11 @@ const numPhasesMinSoc = computed(() =>
 );
 
 const pvMinSoc = computed(() =>
-  mqttStore.chargePointConnectedVehiclePVChargeMinSoc(props.chargePointId),
+  mqttStore.chargePointConnectedVehiclePvChargeMinSoc(props.chargePointId),
 );
 
 const pvMinSocCurrent = computed(() =>
-  mqttStore.chargePointConnectedVehiclePVChargeMinSocCurrent(
+  mqttStore.chargePointConnectedVehiclePvChargeMinSocCurrent(
     props.chargePointId,
   ),
 );
@@ -178,6 +195,6 @@ const limitEnergy = computed(() =>
 );
 
 const feedInLimit = computed(() =>
-  mqttStore.chargePointConnectedVehiclePVChargeFeedInLimit(props.chargePointId),
+  mqttStore.chargePointConnectedVehiclePvChargeFeedInLimit(props.chargePointId),
 );
 </script>

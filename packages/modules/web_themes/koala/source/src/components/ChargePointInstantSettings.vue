@@ -7,6 +7,16 @@
     v-model="instantChargeCurrent.value"
     class="q-mt-sm"
   />
+  <SliderStandard
+    v-if="dcCharging"
+    title="DC-Sollleistung"
+    :min="4"
+    :max="300"
+    unit="kW"
+    v-model="instantChargeCurrentDc.value"
+    class="q-mt-sm"
+  />
+
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group class="col">
@@ -93,6 +103,14 @@ const instantChargeCurrent = computed(() =>
     props.chargePointId,
   ),
 );
+
+const dcCharging = computed(() => mqttStore.dcChargingEnabled);
+
+const instantChargeCurrentDc = computed(() => {
+  return mqttStore.chargePointConnectedVehicleInstantDcChargePower(
+    props.chargePointId,
+  );
+});
 
 const numPhases = computed(() =>
   mqttStore.chargePointConnectedVehicleInstantChargePhases(props.chargePointId),
