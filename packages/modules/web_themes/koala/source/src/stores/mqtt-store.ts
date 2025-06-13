@@ -483,7 +483,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
-  /**More actions
+  /**
    * Get a formatted string for a value
    * @param value value to format
    * @param unit unit to use, default is 'W'
