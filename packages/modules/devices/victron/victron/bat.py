@@ -71,7 +71,7 @@ class VictronBat(AbstractBat):
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_registers(39, [1], data_type=ModbusDataType.UINT_16, unit=228)
                 self.last_mode = 'stop'
-        elif power_limit > 0:
+        elif power_limit < 0:
             if self.last_mode != 'discharge':
                 # ESS Mode 3 für externe Steuerung und auf L1 wird entladen
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=modbus_id)
