@@ -36,10 +36,11 @@ class SungrowBat(AbstractBat):
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
-        soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
-        # Es gibt nur einen DC Strom der Batterie, dieser wird daher durch 3 geteilt um die Phasenströme gleich aufzuteilen
+        soc = int(
+            self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
+        # Es gibt nur einen DC Strom der Batterie, daher Aufteilen auf 3 Phasenströme
         bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
-        currents = [bat_current / 3] * 3  
+        currents = [bat_current / 3] * 3
 
         if (
             Firmware(self.device_config.configuration.firmware) == Firmware.v2
