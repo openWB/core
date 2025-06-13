@@ -212,6 +212,29 @@ def test_scheduled_charging_recent_plan(end_time_mock,
         selected_plan = None
 
 
+def test_scheduled_charging_recent_plan_fulfilled(monkeypatch):
+    # setup
+    # der erste PLan ist erfüllt, der zweite wird ausgewählt
+    calculate_duration_mock = Mock(return_value=(100, 3000, 3, 500))
+    monkeypatch.setattr(ChargeTemplate, "_calc_remaining_time", calculate_duration_mock)
+    check_end_time_mock = Mock(side_effect=[None, 1500])
+    monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
+    ct = ChargeTemplate()
+    plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
+    plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
+    ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1}
+
+    # execution
+    selected_plan = ct.scheduled_charging_recent_plan(
+        60, EvTemplate(), 3, 1200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter))
+
+    # evaluation
+    if selected_plan:
+        assert selected_plan.plan.id == 1
+    else:
+        selected_plan = None
+
+
 @pytest.mark.parametrize(
     "plan_data, soc, used_amount, selected, expected",
     [

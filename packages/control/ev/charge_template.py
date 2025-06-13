@@ -325,9 +325,15 @@ class ChargeTemplate:
                     raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren "
                                      f"oder im Plan {p.name} als Begrenzung Energie einstellen.")
                 try:
+                    if ((p.limit.selected == "amount" and used_amount >= p.limit.amount) or
+                            (p.limit.selected == "soc" and soc >= p.limit.soc_scheduled)):
+                        plan_fulfilled = True
+                    else:
+                        plan_fulfilled = False
                     plans_diff_end_date.append(
-                        {p.id: timecheck.check_end_time(p, chargemode_switch_timestamp)})
-                    log.debug("Verbleibende Zeit bis zum Zieltermin [s]: "+str(plans_diff_end_date))
+                        {p.id: timecheck.check_end_time(p, chargemode_switch_timestamp, plan_fulfilled)})
+                    log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}, "
+                              f"Plan erfüllt: {plan_fulfilled}")
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.ct_num))
         if plans_diff_end_date:
