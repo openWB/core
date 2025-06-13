@@ -92,7 +92,7 @@ class SungrowBat(AbstractBat):
                 self.__tcp_client.write_registers(13049, [2], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.__tcp_client.write_registers(13050, [0xCC], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'stop'
-        elif power_limit > 0:
+        elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             if self.last_mode != 'discharge':
                 self.__tcp_client.write_registers(13049, [2], data_type=ModbusDataType.UINT_16, unit=unit)
