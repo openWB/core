@@ -326,7 +326,8 @@ class ChargeTemplate:
                                      f"oder im Plan {p.name} als Begrenzung Energie einstellen.")
                 try:
                     if ((p.limit.selected == "amount" and used_amount >= p.limit.amount) or
-                            (p.limit.selected == "soc" and soc >= p.limit.soc_scheduled)):
+                            ((p.limit.selected == "soc" and soc >= p.limit.soc_scheduled) and
+                             (p.limit.selected == "soc" and soc >= p.limit.soc_limit))):
                         plan_fulfilled = True
                     else:
                         plan_fulfilled = False
