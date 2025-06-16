@@ -14,7 +14,6 @@ angesteckt wird, wird der Tag verworfen. Ebenso wenn kein EV gefunden wird.
 Tag-Liste: Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt
 freigeschaltet werden.
 """
-import copy
 from dataclasses import asdict
 import dataclasses
 import logging
@@ -35,7 +34,6 @@ from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
-from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.broker import BrokerClient
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
@@ -800,41 +798,9 @@ class Chargepoint(ChargepointRfidMixin):
             Pub().pub(topic, "")
 
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:
-        self._clear_template_topics(f'openWB/chargepoint/{self.num}/set/charge_template/#')
-        self.data.set.charge_template = copy.deepcopy(charge_template)
-        pub_template = copy.deepcopy(self.data.set.charge_template.data)
-        pub_template = dataclasses.asdict(pub_template)
-        pub_template["chargemode"]["scheduled_charging"]["plans"].clear()
-        pub_template["time_charging"]["plans"].clear()
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template", pub_template)
-        for id, plan in self.data.set.charge_template.data.time_charging.plans.items():
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template/time_charging/plans/{id}",
-                      dataclasses.asdict(plan))
-        for id, plan in self.data.set.charge_template.data.chargemode.scheduled_charging.plans.items():
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template/chargemode/scheduled_charging/plans/{id}",
-                      dataclasses.asdict(plan))
-
-    def update_bare_charge_template(self, charge_template: ChargeTemplate) -> None:
-        self._clear_template_topics(f"openWB/chargepoint/{self.num}/set/charge_template")
-        self.data.set.charge_template = copy.deepcopy(charge_template)
-        pub_template = copy.deepcopy(self.data.set.charge_template.data)
-        pub_template = dataclasses.asdict(pub_template)
-        pub_template["chargemode"]["scheduled_charging"]["plans"].clear()
-        pub_template["time_charging"]["plans"].clear()
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template", pub_template)
-
-    def update_charge_template_scheduled_plan(self, plan: ScheduledChargingPlan) -> None:
-        self._clear_template_topics(
-            f"openWB/chargepoint/{self.num}/set/charge_template/chargemode/scheduled_charging/plans/{plan.id}")
-        Pub().pub(f"openWB/set/chargepoint/{self.num}"
-                  f"/set/charge_template/chargemode/scheduled_charging/plans/{plan.id}",
-                  dataclasses.asdict(plan))
-
-    def update_charge_template_time_plan(self, plan: TimeChargingPlan) -> None:
-        self._clear_template_topics(
-            f"openWB/chargepoint/{self.num}/set/charge_template/time_charging/plans/{plan.id}")
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template/time_charging/plans/{plan.id}",
-                  dataclasses.asdict(plan))
+        Pub().pub(f'openWB/chargepoint/{self.num}/set/charge_template', "")
+        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
+                  dataclasses.asdict(charge_template.data))
 
     def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.
