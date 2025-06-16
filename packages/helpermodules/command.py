@@ -494,10 +494,11 @@ class Command:
             new_charge_template_schedule_plan = ScheduledChargingPlan()
         new_id = self.max_id_charge_template_scheduled_plan + 1
         new_charge_template_schedule_plan.id = new_id
+        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.update({
+                                                                                                                              new_id: new_charge_template_schedule_plan})
         Pub().pub(
-            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
-            f'/chargemode/scheduled_charging/plans/{new_id}',
-            dataclass_utils.asdict(new_charge_template_schedule_plan))
+            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
+            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
         self.max_id_charge_template_scheduled_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
@@ -515,10 +516,11 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_charge_template_scheduled_plan}\'.', MessageType.ERROR)
+        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.pop(
+            payload["data"]["plan"])
         Pub().pub(
-            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}'
-            f'/chargemode/scheduled_charging/plans/{payload["data"]["plan"]}',
-            "")
+            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}',
+            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
         pub_user_message(
             payload, connection_id,
             f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Profil '
@@ -537,10 +539,11 @@ class Command:
             new_time_charging_plan = TimeChargingPlan()
         new_id = self.max_id_charge_template_time_charging_plan + 1
         new_time_charging_plan.id = new_id
+        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.update({
+                                                                                                              new_id: new_time_charging_plan})
         Pub().pub(
-            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
-            f'/time_charging/plans/{new_id}',
-            dataclass_utils.asdict(new_time_charging_plan))
+            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
+            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
         self.max_id_charge_template_time_charging_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
@@ -555,10 +558,11 @@ class Command:
         if self.max_id_charge_template_time_charging_plan < payload["data"]["plan"]:
             log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
                       MessageType.ERROR)
+        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.pop(
+            payload["data"]["plan"])
         Pub().pub(
-            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}'
-            f'/time_charging/plans/{payload["data"]["plan"]}',
-            "")
+            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}',
+            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
         pub_user_message(
             payload, connection_id,
             f'Zeitladen-Plan mit ID \'{payload["data"]["plan"]}\' zu Profil '

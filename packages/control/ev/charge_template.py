@@ -17,15 +17,11 @@ log = logging.getLogger(__name__)
 
 def get_new_charge_template() -> dict:
     ct_default = asdict(ChargeTemplateData())
-    ct_default["chargemode"]["scheduled_charging"].pop("plans")
-    ct_default["time_charging"].pop("plans")
     return ct_default
 
 
 def get_charge_template_default() -> dict:
     ct_default = asdict(ChargeTemplateData(name="Standard-Lade-Profil"))
-    ct_default["chargemode"]["scheduled_charging"].pop("plans")
-    ct_default["time_charging"].pop("plans")
     return ct_default
 
 
