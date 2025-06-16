@@ -495,68 +495,68 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns object
    */
   const getValueObject = computed(() => {
-  return (
-    value: number,
-    unit: string = 'W',
-    unitPrefix: string = '',
-    scale: boolean = true,
-    inverted: boolean = false,
-    defaultString: string = '---',
-    decimalPlaces: number = 0,
-  ) => {
-    let scaled = false;
-    let scaledValue = value;
-    let textValue = defaultString;
-    if (value === undefined) {
-      console.debug(
-        'value is undefined! using default',
-        value,
-        defaultString,
-      );
-    } else {
-      if (inverted) {
-        scaledValue = value *= -1;
-      }
-      textValue = value.toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-      while (scale && (scaledValue > 999 || scaledValue < -999)) {
-        scaledValue = scaledValue / 1000;
-        scaled = true;
-        switch (unitPrefix) {
-          case '':
-            unitPrefix = 'k';
-            break;
-          case 'k':
-            unitPrefix = 'M';
-            break;
-          case 'M':
-            unitPrefix = 'G';
-            break;
-        }
-      }
-      let outputDecimalPlaces = 0;
-      if (scaled) {
-        outputDecimalPlaces = decimalPlaces > 0 ? decimalPlaces : 2;
+    return (
+      value: number,
+      unit: string = 'W',
+      unitPrefix: string = '',
+      scale: boolean = true,
+      inverted: boolean = false,
+      defaultString: string = '---',
+      decimalPlaces: number = 0,
+    ) => {
+      let scaled = false;
+      let scaledValue = value;
+      let textValue = defaultString;
+      if (value === undefined) {
+        console.debug(
+          'value is undefined! using default',
+          value,
+          defaultString,
+        );
       } else {
-        const hasDecimalPlaces = scaledValue !== Math.floor(scaledValue);
-        outputDecimalPlaces =  hasDecimalPlaces ? decimalPlaces : 0;
+        if (inverted) {
+          scaledValue = value *= -1;
+        }
+        textValue = value.toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        });
+        while (scale && (scaledValue > 999 || scaledValue < -999)) {
+          scaledValue = scaledValue / 1000;
+          scaled = true;
+          switch (unitPrefix) {
+            case '':
+              unitPrefix = 'k';
+              break;
+            case 'k':
+              unitPrefix = 'M';
+              break;
+            case 'M':
+              unitPrefix = 'G';
+              break;
+          }
+        }
+        let outputDecimalPlaces = 0;
+        if (scaled) {
+          outputDecimalPlaces = decimalPlaces > 0 ? decimalPlaces : 2;
+        } else {
+          const hasDecimalPlaces = scaledValue !== Math.floor(scaledValue);
+          outputDecimalPlaces = hasDecimalPlaces ? decimalPlaces : 0;
+        }
+        textValue = scaledValue.toLocaleString(undefined, {
+          minimumFractionDigits: outputDecimalPlaces,
+          maximumFractionDigits: outputDecimalPlaces,
+        });
       }
-      textValue = scaledValue.toLocaleString(undefined, {
-        minimumFractionDigits: outputDecimalPlaces,
-        maximumFractionDigits: outputDecimalPlaces,
-      });
-    }
-    return {
-      textValue: `${textValue} ${unitPrefix}${unit}`,
-      value: value,
-      unit: unit,
-      scaledValue: scaledValue,
-      scaledUnit: `${unitPrefix}${unit}`,
-    } as ValueObject;
-  };
-});
+      return {
+        textValue: `${textValue} ${unitPrefix}${unit}`,
+        value: value,
+        unit: unit,
+        scaledValue: scaledValue,
+        scaledUnit: `${unitPrefix}${unit}`,
+      } as ValueObject;
+    };
+  });
 
   /**
    * Get the theme configuration
