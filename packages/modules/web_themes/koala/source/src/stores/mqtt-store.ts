@@ -491,7 +491,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param scale flag to scale the value, default is true
    * @param inverted flag to invert the value, default is false
    * @param defaultString default string to use, default is '---'
-   * @param decimalPlaces number of decimal places to use, default is 0
+   * @param decimalPlaces number of decimal places to use, default is 0 or 2 for scaled values
    * @returns object
    */
   const getValueObject = computed(() => {

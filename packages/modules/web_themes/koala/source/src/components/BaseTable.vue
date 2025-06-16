@@ -132,8 +132,10 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
 import { computed, ComputedRef, ref, useSlots } from 'vue';
 import type { QTableColumn, QTableProps } from 'quasar';
-import { BodySlotProps } from 'src/components/models/table-model';
-import { ColumnConfiguration } from 'src/components/models/table-model';
+import {
+  ColumnConfiguration,
+  BodySlotProps,
+} from 'src/components/models/table-model';
 
 /* ------------------------------------------------------------------ props */
 const props = defineProps<{

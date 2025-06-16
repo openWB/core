@@ -21,7 +21,6 @@
     @row-click="onRowClick"
   >
     <!-- desktop view table body slots -->
-    <!-- "col" = column must match Quasar naming convention -->
     <template #body-cell-plugged="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
         <ChargePointStateIcon :charge-point-id="slotProps.row.id" />
@@ -141,7 +140,10 @@ import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointMode from './ChargePointMode.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
-import { ColumnConfiguration, ChargePointRow } from 'src/components/models/table-model';
+import {
+  ColumnConfiguration,
+  ChargePointRow,
+} from 'src/components/models/table-model';
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();
