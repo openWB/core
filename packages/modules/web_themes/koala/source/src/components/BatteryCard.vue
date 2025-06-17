@@ -134,6 +134,6 @@ const dailyExportedEnergy = computed(() => {
 
 <style scoped>
 .card-width {
-  min-width: 24em;
+  width: 22em;
 }
 </style>
