@@ -343,7 +343,9 @@ class ChargeTemplate:
                     plan_id = list(plan_dict.keys())[0]
                     plan_end_time = list(plan_dict.values())[0]
 
-                    plan = self.data.chargemode.scheduled_charging.plans[str(plan_id)]
+                    for p in self.data.chargemode.scheduled_charging.plans:
+                        if p.id == plan_id:
+                            plan = p
 
                     remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
                         plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,

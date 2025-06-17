@@ -351,11 +351,6 @@ class SubData:
             if "ct"+index not in var:
                 var["ct"+index] = ChargeTemplate()
             var["ct"+index].data = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
-            for plan in var["ct"+index].data.chargemode.scheduled_charging.plans:
-                var["ct" +
-                    index].data.chargemode.scheduled_charging.plans.append(dataclass_from_dict(ScheduledChargingPlan, plan))
-            for plan in var["ct"+index].data.time_charging.plans:
-                var["ct"+index].data.time_charging.plans.append(dataclass_from_dict(TimeChargingPlan, plan))
             # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
             for vehicle in self.ev_data.values():
                 if vehicle.data.charge_template == int(index):
@@ -436,12 +431,6 @@ class SubData:
                                 var["cp"+index].chargepoint.data.set.charge_template = ChargeTemplate()
                                 var["cp"+index].chargepoint.data.set.charge_template.data = dataclass_from_dict(
                                     ChargeTemplateData, decode_payload(msg.payload))
-                                for plan in var["cp"+index].chargepoint.data.set.charge_template.data.chargemode.scheduled_charging.plans:
-                                    var["cp"+index].chargepoint.data.set.charge_template.data.chargemode.scheduled_charging.plans.append(dataclass_from_dict(
-                                        ScheduledChargingPlan, plan))
-                                for plan in var["cp"+index].chargepoint.data.set.charge_template.data.time_charging.plans:
-                                    var["cp"+index].chargepoint.data.set.charge_template.data.time_charging.plans.append(dataclass_from_dict(
-                                        TimeChargingPlan, plan))
                             else:
                                 self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
