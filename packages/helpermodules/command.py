@@ -410,10 +410,10 @@ class Command:
             new_autolock_plan = get_autolock_plan_default()
         new_id = self.max_id_autolock_plan + 1
         new_autolock_plan.id = new_id
-        data.data.cp_template_data[f'ct{payload["data"]["template"]}'].data.autolock.plans.append(
+        data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans.append(
             new_autolock_plan)
-        Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}/autolock/{new_id}',
-                  asdict(data.data.cp_template_data[f'ct{payload["data"]["template"]}'].data))
+        Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}',
+                  asdict(data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
         self.max_id_autolock_plan = new_id
         Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
