@@ -369,7 +369,7 @@ class SubData:
                                 if decode_payload(msg.payload) == "":
                                     Pub().pub(f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template", "")
                                 else:
-                                    cp.chargepoint.update_charge_template()
+                                    cp.chargepoint.update_charge_template(var["ct"+index])
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

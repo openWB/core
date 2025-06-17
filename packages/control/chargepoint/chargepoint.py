@@ -797,7 +797,6 @@ class Chargepoint(ChargepointRfidMixin):
             Pub().pub(topic, "")
 
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:
-        Pub().pub(f'openWB/chargepoint/{self.num}/set/charge_template', "")
         Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
                   dataclasses.asdict(charge_template.data))
 
