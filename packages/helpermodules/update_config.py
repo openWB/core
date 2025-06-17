@@ -56,7 +56,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 83
+    DATASTORE_VERSION = 84
 
     valid_topic = [
         "^openWB/bat/config/configured$",
@@ -2240,9 +2240,11 @@ class UpdateConfig:
                         if re.search(f"openWB/system/device/{index}/component/[0-9]+/config",
                                      component_topic) is not None:
                             config_payload = decode_payload(component_payload)
-                            if config_payload["configuration"].get("battery_index") is None:
+                            if (config_payload["type"] == "bat" and
+                                    config_payload["configuration"].get("battery_index") is None):
                                 config_payload["configuration"].update({
                                     "battery_index": 1,
                                 })
+                                return {component_topic: config_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 84)
