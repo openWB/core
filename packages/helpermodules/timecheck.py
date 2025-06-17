@@ -2,7 +2,7 @@
 """
 import logging
 import datetime
-from typing import Dict, List, Optional, Tuple, TypeVar, Union
+from typing import List, Optional, Tuple, TypeVar, Union
 
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():

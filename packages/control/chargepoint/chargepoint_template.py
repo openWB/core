@@ -19,10 +19,6 @@ def get_chargepoint_template_default():
     return default
 
 
-def get_autolock_plan_default():
-    return AutolockPlan()
-
-
 @dataclass
 class Autolock:
     active: bool = False

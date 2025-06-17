@@ -199,7 +199,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
     plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1, "2": plan_mock_2}
+    ct.data.chargemode.scheduled_charging.plans = [plan_mock_0, plan_mock_1, plan_mock_2]
 
     # execution
     selected_plan = ct.scheduled_charging_recent_plan(
