@@ -79,7 +79,7 @@
       </q-td>
     </template>
 
-    <!-- Pass expansion row data to BaseTable.vue ------------------------------------------------------ -->
+    <!-- Pass expansion row data to BaseTable.vue -->
     <template #row-expand="slotProps">
       <div class="q-pa-xs column q-gutter-y-xs">
         <div
