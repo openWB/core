@@ -29,29 +29,44 @@ def get_device_generation(address: str) -> int:
 
 
 def create_device(device_config: Shelly) -> ConfigurableDevice:
+    generation = 1
+
     def create_counter_component(component_config: ShellyCounterSetup) -> ShellyCounter:
+        nonlocal generation
         return ShellyCounter(component_config,
                              device_id=device_config.id,
                              ip_address=device_config.configuration.ip_address,
                              factor=device_config.configuration.factor,
-                             generation=get_device_generation(device_config.configuration.ip_address))
+                             generation=generation)
 
     def create_inverter_component(component_config: ShellyInverterSetup) -> ShellyInverter:
+        nonlocal generation
         return ShellyInverter(component_config,
                               device_id=device_config.id,
                               ip_address=device_config.configuration.ip_address,
                               factor=device_config.configuration.factor,
-                              generation=get_device_generation(device_config.configuration.ip_address))
+                              generation=generation)
 
     def create_bat_component(component_config: ShellyBatSetup) -> ShellyBat:
+        nonlocal generation
         return ShellyBat(component_config,
                          device_id=device_config.id,
                          ip_address=device_config.configuration.ip_address,
                          factor=device_config.configuration.factor,
-                         generation=get_device_generation(device_config.configuration.ip_address))
+                         generation=generation)
+
+    def initializer() -> None:
+        nonlocal generation
+        device_info = req.get_http_session().get(
+            f"http://{device_config.configuration.ip_address}/shelly", timeout=3).json()
+        if 'gen' in device_info:  # gen 2+
+            generation = int(device_info['gen'])
 
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
+        # wenn das Auslesen nicht klappt, konnte evlt beim Start die Generation nicht ermittelt werden
+        error_handler=initializer,
         component_factory=ComponentFactoryByType(
             counter=create_counter_component,
             inverter=create_inverter_component,
