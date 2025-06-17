@@ -2258,6 +2258,10 @@ class UpdateConfig:
             if re.search("^openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
                 index = get_index(topic)
                 template = decode_payload(payload)
+                if template["chargemode"]["scheduled_charging"].get("plans") is None:
+                    template["chargemode"]["scheduled_charging"]["plans"] = []
+                if template["time_charging"].get("plans") is None:
+                    template["time_charging"]["plans"] = []
                 for template_topic, template_payload in self.all_received_topics.items():
                     if re.search(f"openWB/vehicle/template/charge_template/{index}/chargemode/scheduled_charging/plans/"
                                  "[0-9]+$", template_topic) is not None:
@@ -2272,7 +2276,7 @@ class UpdateConfig:
                 index = get_index(topic)
                 template = decode_payload(payload)
                 for template_topic, template_payload in self.all_received_topics.items():
-                    if re.search("^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$") is not None:
+                    if re.search("^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$", template_topic) is not None:
                         plan = decode_payload(template_payload)
                         if plan.get("id") is None:
                             plan["id"] = int(get_second_index(template_topic))
