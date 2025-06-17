@@ -500,22 +500,12 @@ class SubData:
         try:
             index = get_index(msg.topic)
             payload = decode_payload(msg.payload)
-            if re.search("/chargepoint/template/[0-9]+/autolock/", msg.topic) is not None:
-                index_second = get_second_index(msg.topic)
-                if payload == "":
-                    var["cpt"+index].data.autolock.plans.pop(index_second)
-                else:
-                    var["cpt"+index].data.autolock.plans[
-                        index_second] = dataclass_from_dict(AutolockPlan, payload)
+            if payload == "":
+                var.pop("cpt"+index)
             else:
-                if payload == "":
-                    var.pop("cpt"+index)
-                else:
-                    if "cpt"+index not in var:
-                        var["cpt"+index] = CpTemplate()
-                    autolock_plans = var["cpt"+index].data.autolock.plans
-                    var["cpt"+index].data = dataclass_from_dict(CpTemplateData, payload)
-                    var["cpt"+index].data.autolock.plans = autolock_plans
+                if "cpt"+index not in var:
+                    var["cpt"+index] = CpTemplate()
+                var["cpt"+index].data = dataclass_from_dict(CpTemplateData, payload)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
