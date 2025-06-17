@@ -9,7 +9,6 @@
         <div class="row">
           <div class="text-h6">Einstellungen {{ name }}</div>
           <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
         </div>
       </q-card-section>
       <q-card-section class="q-py-none">
