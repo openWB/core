@@ -46,12 +46,12 @@ def is_now_in_locking_time(now: datetime.datetime,
 T = TypeVar("T", AutolockPlan, TimeChargingPlan)
 
 
-def check_plans_timeframe(plans: Dict[int, T]) -> Optional[T]:
+def check_plans_timeframe(plans: List[T]) -> Optional[T]:
     """ gibt den ersten aktiven Plan zurück. None, falls kein Plan aktiv ist.
     """
     state = False
     try:
-        for plan in plans.values():
+        for plan in plans:
             if plan.active:
                 state = check_timeframe(plan)
                 if state:
