@@ -67,41 +67,4 @@ def create_device(device_config: Shelly) -> ConfigurableDevice:
     )
 
 
-def run_device_legacy(device_config: Shelly,
-                      component_config: ShellyInverterSetup) -> None:
-    device = create_device(device_config)
-    device.add_component(component_config)
-    log.debug("Shelly Configuration: %s, Component Configuration: %s", device_config, component_config)
-    device.update()
-
-
-def create_legacy_device_config(address: str, generation: int,
-                                num: int) -> Shelly:
-    device_config = Shelly(configuration=ShellyConfiguration(ip_address=address, generation=generation), id=num)
-    log.debug("Config: %s", device_config.configuration)
-    return device_config
-
-
-def read_legacy_inverter(address: str, num: int) -> None:
-    component_config = ShellyInverterSetup(configuration=ShellyInverterConfiguration())
-    component_config.id = num
-    generation = 1
-    generation_file_name = '/var/www/html/openWB/ramdisk/shelly_wr_ret.' + address + '_shelly_infog'
-    # ToDo: remove hardcoded path to ramdisk!
-    if os.path.isfile(generation_file_name):
-        with open(generation_file_name, 'r') as file:
-            generation = int(file.read())
-    else:
-        generation = get_device_generation(address)
-        with open(generation_file_name, 'w') as file:
-            file.write(str(generation))
-    run_device_legacy(create_legacy_device_config(address, generation,
-                                                  num), component_config)
-
-
-def main(argv: List[str]) -> None:
-    run_using_positional_cli_args(
-        {"inverter": read_legacy_inverter}, argv)
-
-
 device_descriptor = DeviceDescriptor(configuration_factory=Shelly)
