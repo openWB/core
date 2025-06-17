@@ -15,8 +15,8 @@ import type {
   ValueObject,
   ChargePointConnectedVehicleInfo,
   Vehicle,
-  vehicleInfo,
-  vehicleSocModule,
+  VehicleInfo,
+  VehicleSocModuleConfig,
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
@@ -491,6 +491,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param scale flag to scale the value, default is true
    * @param inverted flag to invert the value, default is false
    * @param defaultString default string to use, default is '---'
+   * @param decimalPlaces number of decimal places to use, default is 0 or 2 for scaled values
    * @returns object
    */
   const getValueObject = computed(() => {
@@ -501,6 +502,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       scale: boolean = true,
       inverted: boolean = false,
       defaultString: string = '---',
+      decimalPlaces: number = 0,
     ) => {
       let scaled = false;
       let scaledValue = value;
@@ -534,9 +536,16 @@ export const useMqttStore = defineStore('mqtt', () => {
               break;
           }
         }
+        let outputDecimalPlaces = 0;
+        if (scaled) {
+          outputDecimalPlaces = decimalPlaces > 0 ? decimalPlaces : 2;
+        } else {
+          const hasDecimalPlaces = scaledValue !== Math.floor(scaledValue);
+          outputDecimalPlaces = hasDecimalPlaces ? decimalPlaces : 0;
+        }
         textValue = scaledValue.toLocaleString(undefined, {
-          minimumFractionDigits: scaled ? 2 : 0,
-          maximumFractionDigits: scaled ? 2 : 0,
+          minimumFractionDigits: outputDecimalPlaces,
+          maximumFractionDigits: outputDecimalPlaces,
         });
       }
       return {
@@ -806,16 +815,25 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
-  /**
-   * Get the charge point charging current identified by the charge point id
-   */
   const chargePointChargingCurrent = computed(() => {
-    return (chargePointId: number) => {
-      return (
+    return (chargePointId: number, returnType: string = 'textValue') => {
+      const current =
         (getValue.value(
           `openWB/chargepoint/${chargePointId}/set/current`,
-        ) as number) || 0
+        ) as number) || 0;
+      const valueObject = getValueObject.value(
+        current,
+        'A',
+        '',
+        true,
+        false,
+        '---',
+        2,
       );
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      console.error('returnType not found!', returnType, current);
     };
   });
 
@@ -942,6 +960,46 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get boolean value for DC charging enabled / disabled
+   * @returns boolean
+   */
+  const dcChargingEnabled = computed(() => {
+    return (getValue.value('openWB/optional/dc_charging') as boolean) || 0;
+  });
+
+  /**
+   * Get or set the charge point connected vehicle instant charging DC power identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number
+   */
+  const chargePointConnectedVehicleInstantDcChargePower = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const dcCurrent =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.instant_charging?.dc_current;
+        if (dcCurrent !== undefined) {
+          return (dcCurrent * 3 * 230) / 1000;
+        } else {
+          return 0;
+        }
+      },
+      set(newValue: number) {
+        console.debug('set instant charging power', newValue, chargePointId);
+        const newPower = (newValue * 1000) / 230 / 3;
+        return updateTopic(
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+          newPower,
+          'chargemode.instant_charging.dc_current',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
    * Get or set the charge point connected vehicle instant charging phases identified by the charge point id
    * @param chargePointId charge point id
    * @returns number | undefined
@@ -1052,7 +1110,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehiclePVChargeMinCurrent = (
+  const chargePointConnectedVehiclePvChargeMinCurrent = (
     chargePointId: number,
   ) => {
     return computed({
@@ -1073,11 +1131,43 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get or set the charge point connected vehicle PV charging DC power identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number
+   */
+  const chargePointConnectedVehiclePvDcChargePower = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const dcMinCurrent =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.pv_charging?.dc_min_current;
+        if (dcMinCurrent !== undefined) {
+          return (dcMinCurrent * 3 * 230) / 1000;
+        } else {
+          return 0;
+        }
+      },
+      set(newValue: number) {
+        console.debug('set instant charging power', newValue, chargePointId);
+        const newPower = (newValue * 1000) / 230 / 3;
+        return updateTopic(
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+          newPower,
+          'chargemode.pv_charging.dc_min_current',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
    * Get or set the charge point connected vehicle pv min SoC identified by the charge point id
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehiclePVChargeMinSoc = (chargePointId: number) => {
+  const chargePointConnectedVehiclePvChargeMinSoc = (chargePointId: number) => {
     return computed({
       get() {
         return chargePointConnectedVehicleChargeTemplate(chargePointId).value
@@ -1100,7 +1190,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehiclePVChargeMinSocCurrent = (
+  const chargePointConnectedVehiclePvChargeMinSocCurrent = (
     chargePointId: number,
   ) => {
     return computed({
@@ -1256,7 +1346,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns object | undefined
    */
-  const chargePointConnectedVehiclePVChargeFeedInLimit = (
+  const chargePointConnectedVehiclePvChargeFeedInLimit = (
     chargePointId: number,
   ) => {
     return computed({
@@ -1295,6 +1385,38 @@ export const useMqttStore = defineStore('mqtt', () => {
           `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newValue,
           'chargemode.eco_charging.current',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle eco charging power identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number
+   */
+  const chargePointConnectedVehicleEcoChargeDcPower = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const dcCurrent =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.eco_charging?.dc_current;
+        if (dcCurrent !== undefined) {
+          return (dcCurrent * 3 * 230) / 1000;
+        } else {
+          return 0;
+        }
+      },
+      set(newValue: number) {
+        console.debug('set instant charging power', newValue, chargePointId);
+        const newPower = (newValue * 1000) / 230 / 3;
+        return updateTopic(
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+          newPower,
+          'chargemode.eco_charging.dc_current',
           true,
         );
       },
@@ -1638,7 +1760,7 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /**
    * Get the battery power identified by the battery point id
-   * @param batteryId battery point id
+   * @param batteryId battery ID
    * @param returnType type of return value, 'textValue', 'absoluteTextValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject
    */
@@ -1668,7 +1790,7 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /**
    * Get the battery daily imported energy of a given battery id
-   * @param batteryId charge point id
+   * @param batteryId battery ID
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject
    */
@@ -1693,7 +1815,7 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /**
    * Get the battery daily exported energy of a given battery id
-   * @param batteryId charge point id
+   * @param batteryId battery ID
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject
    */
@@ -1855,21 +1977,21 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleInfo = computed(() => {
     return (vehicleId: number) => {
-      return getValue.value(`openWB/vehicle/${vehicleId}/info`) as vehicleInfo;
+      return getValue.value(`openWB/vehicle/${vehicleId}/info`) as VehicleInfo;
     };
   });
 
   /**
-   * Get vehicle SoC module name identified by the vehicle id
+   * Get vehicle SoC module configuration identified by the vehicle id
    * @param vehicleId vehicle id
-   * @returns string
+   * @returns vehicleSocModule
    */
-  const vehicleSocModuleName = computed(() => {
+  const vehicleSocModule = computed(() => {
     return (vehicleId: number) => {
       const socModule = getValue.value(
         `openWB/vehicle/${vehicleId}/soc_module/config`,
-      ) as vehicleSocModule;
-      return socModule?.name;
+      ) as VehicleSocModuleConfig;
+      return socModule;
     };
   });
 
@@ -1885,6 +2007,52 @@ export const useMqttStore = defineStore('mqtt', () => {
         | undefined;
     };
   });
+
+  /**
+   * Get or set the manual SoC by vehicle id
+   * @param vehicleId vehicle id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const vehicleSocManualValue = (
+    vehicleId: number | undefined,
+    chargePointId?: number,
+  ) => {
+    return computed({
+      get() {
+        const topic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
+        const socState = getValue.value(topic) as
+          | CalculatedSocState
+          | undefined;
+        return socState?.manual_soc ?? socState?.soc_start ?? 0;
+      },
+      set(newValue: number) {
+        doPublish(
+          `openWB/set/vehicle/${vehicleId}/soc_module/calculated_soc_state/manual_soc`,
+          newValue,
+        );
+        // Also update the charge point connected vehicle soc to prevent long delay in display update
+        if (chargePointId !== undefined) {
+          const cpTopic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`;
+          const cpSoc = getValue.value(cpTopic) as { soc?: number };
+          if (cpSoc && cpSoc.soc !== undefined) {
+            updateTopic(cpTopic, newValue, 'soc', true);
+          }
+        }
+      },
+    });
+  };
+
+  /**
+   * trigger a force SOC update for the vehicle by vehicle id
+   */
+  const vehicleForceSocUpdate = (vehicleId: number) => {
+    if (vehicleId !== undefined) {
+      const topic = `openWB/set/vehicle/${vehicleId}/get/force_soc_update`;
+      console.log(topic);
+      sendTopicToBroker(topic, 1);
+    }
+  };
 
   /**
    * Get vehicle state identified by the vehicle id
@@ -2576,24 +2744,28 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
+    dcChargingEnabled,
     chargePointConnectedVehicleInfo,
     chargePointConnectedVehicleForceSocUpdate,
     chargePointConnectedVehicleChargeMode,
     chargePointConnectedVehicleInstantChargeCurrent,
+    chargePointConnectedVehicleInstantDcChargePower,
     chargePointConnectedVehicleInstantChargePhases,
     chargePointConnectedVehicleInstantChargeLimit,
     chargePointConnectedVehicleInstantChargeLimitSoC,
     chargePointConnectedVehicleInstantChargeLimitEnergy,
-    chargePointConnectedVehiclePVChargeMinCurrent,
+    chargePointConnectedVehiclePvChargeMinCurrent,
     chargePointConnectedVehiclePvChargePhases,
     chargePointConnectedVehiclePvChargeLimit,
     chargePointConnectedVehiclePvChargeLimitSoC,
     chargePointConnectedVehiclePvChargeLimitEnergy,
-    chargePointConnectedVehiclePVChargeMinSoc,
-    chargePointConnectedVehiclePVChargeMinSocCurrent,
+    chargePointConnectedVehiclePvChargeMinSoc,
+    chargePointConnectedVehiclePvChargeMinSocCurrent,
+    chargePointConnectedVehiclePvDcChargePower,
     chargePointConnectedVehiclePvChargePhasesMinSoc,
-    chargePointConnectedVehiclePVChargeFeedInLimit,
+    chargePointConnectedVehiclePvChargeFeedInLimit,
     chargePointConnectedVehicleEcoChargeCurrent,
+    chargePointConnectedVehicleEcoChargeDcPower,
     chargePointConnectedVehicleEcoChargePhases,
     chargePointConnectedVehicleEcoChargeLimit,
     chargePointConnectedVehicleEcoChargeLimitSoC,
@@ -2607,8 +2779,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleConfig,
     vehicleInfo,
     vehicleConnectionState,
-    vehicleSocModuleName,
+    vehicleSocModule,
     vehicleSocValue,
+    vehicleSocManualValue,
+    vehicleForceSocUpdate,
     chargePointConnectedVehicleSoc,
     vehicleActivePlan,
     vehicleChargeTarget,

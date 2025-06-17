@@ -5,6 +5,7 @@
       :rows="mappedRows"
       :columns="mappedColumns"
       row-key="id"
+      v-model:expanded="expanded"
       :filter="filterModel"
       :filter-method="customFilterMethod"
       virtual-scroll
@@ -16,7 +17,8 @@
       :pagination="{ rowsPerPage: 0 }"
       hide-bottom
     >
-      <template v-slot:top v-if="searchInputVisible">
+      <!-- search field ------------------------------------------------------->
+      <template #top v-if="searchInputVisible">
         <div class="row full-width items-center q-mb-sm">
           <div class="col">
             <q-input
@@ -28,7 +30,7 @@
               class="search-field white-outline-input"
               input-class="text-white"
             >
-              <template v-slot:append>
+              <template #append>
                 <q-icon name="search" color="white" />
               </template>
             </q-input>
@@ -36,91 +38,188 @@
         </div>
       </template>
 
-      <!-- Dynamic slot for custom cell rendering -->
+      <!-- header ----------------------------------------------------------->
+      <template v-if="props.rowExpandable" #header="header">
+        <q-tr :props="header">
+          <!-- space for arrow column -->
+          <q-th auto-width :props="{ ...header, col: {} }" />
+          <!-- the other columns -->
+          <q-th
+            v-for="column in header.cols"
+            :key="column.name"
+            :props="{ ...header, col: column }"
+          >
+            {{ column.label }}
+          </q-th>
+        </q-tr>
+      </template>
+
+      <!-- body ------------------------------------------------------------->
+      <template v-if="props.rowExpandable" #body="rowProps: BodySlotProps<T>">
+        <q-tr
+          :key="`main-${rowProps.key}`"
+          :props="rowProps"
+          @click="onRowClick($event, rowProps.row)"
+          class="clickable"
+        >
+          <q-td auto-width>
+            <q-btn
+              dense
+              flat
+              round
+              size="sm"
+              :icon="
+                rowProps.expand ? 'keyboard_arrow_up' : 'keyboard_arrow_down'
+              "
+              @click.stop="rowProps.expand = !rowProps.expand"
+            />
+          </q-td>
+
+          <template v-for="column in rowProps.cols" :key="column.name">
+            <!-- custom body-cell slot -->
+            <template v-if="$slots[`body-cell-${column.name}`]">
+              <slot
+                :name="`body-cell-${column.name}`"
+                v-bind="{
+                  ...rowProps,
+                  col: column,
+                }"
+              >
+              </slot>
+            </template>
+
+            <!-- all other column data -->
+            <q-td
+              v-else
+              :props="{
+                ...rowProps,
+                col: column,
+                // cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any);
+                value: rowProps.row[column.field as string],
+              }"
+            >
+              <!-- cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any); -->
+              {{ rowProps.row[column.field as string] }}
+            </q-td>
+          </template>
+        </q-tr>
+
+        <!-- expansion row -->
+        <q-tr
+          v-show="rowProps.expand"
+          :key="`xp-${rowProps.key}`"
+          :props="rowProps"
+          class="q-virtual-scroll--with-prev"
+        >
+          <q-td :colspan="rowProps.cols.length + 1">
+            <slot name="row-expand" v-bind="rowProps"> </slot>
+          </q-td>
+        </q-tr>
+      </template>
+
+      <!-- forward any other slots not related to table  e.g top search field -------------------->
       <template
-        v-for="(_, name) in $slots"
-        :key="name"
-        v-slot:[name]="slotData"
+        v-for="slotName in forwardedSlotNames"
+        :key="slotName"
+        v-slot:[slotName]="slotProps"
       >
-        <slot :name="name" v-bind="slotData"></slot>
+        <slot :name="slotName" v-bind="slotProps"></slot>
       </template>
     </q-table>
   </div>
 </template>
 
-<script setup lang="ts">
-import { computed, ComputedRef } from 'vue';
-import { QTableColumn, QTableProps } from 'quasar';
+<script setup lang="ts" generic="T extends Record<string, unknown>">
+import { computed, ComputedRef, ref, useSlots } from 'vue';
+import type { QTableColumn, QTableProps } from 'quasar';
+import {
+  ColumnConfiguration,
+  BodySlotProps,
+} from 'src/components/models/table-model';
 
+/* ------------------------------------------------------------------ props */
 const props = defineProps<{
   items: number[];
-  rowData:
-    | ((item: number) => Record<string, unknown>)
-    | ComputedRef<(item: number) => Record<string, unknown>>;
-  columnConfig: {
-    fields: string[];
-    labels?: Record<string, string>;
-  };
+  rowData: ((item: number) => T) | ComputedRef<(item: number) => T>;
+  columnConfig: ColumnConfiguration[];
   rowKey?: string;
   searchInputVisible?: boolean;
   tableHeight?: string;
   filter?: string;
   columnsToSearch?: string[];
+  rowExpandable?: boolean;
 }>();
+
+/* ------------------------------------------------------------------ state */
+const expanded = ref<(string | number)[]>([]);
+const slots = useSlots();
+
+const forwardedSlotNames = computed(() => {
+  if (props.rowExpandable)
+    return Object.keys(slots).filter((name) => !name.startsWith('body'));
+  return Object.keys(slots);
+});
 
 const emit = defineEmits<{
-  (e: 'row-click', row: Record<string, unknown>): void;
-  (e: 'update:filter', value: string): void;
+  (event: 'row-click', row: T): void;
+  (event: 'update:filter', value: string): void;
 }>();
 
+/* ---------------------------------------------------------------- helpers */
 const filterModel = computed({
   get: () => props.filter || '',
   set: (value) => emit('update:filter', value),
 });
 
-// Data can be passed to basetable as a normal function or computed property
-const rowMapperFn = computed(() =>
-  typeof props.rowData === 'function' ? props.rowData : props.rowData.value,
+const mappedRows = computed(() =>
+  props.items.map(
+    typeof props.rowData === 'function' ? props.rowData : props.rowData.value,
+  ),
 );
 
-const mappedRows = computed(() => props.items.map(rowMapperFn.value));
-
-const mappedColumns = computed<QTableColumn[]>(() => {
-  return props.columnConfig.fields.map((field) => ({
-    name: field,
-    label: props.columnConfig.labels?.[field] || field,
-    field,
-    align: 'left',
-    sortable: true,
-    headerStyle: 'font-weight: bold',
-  }));
-});
+const mappedColumns = computed<QTableColumn[]>(() =>
+  props.columnConfig
+    .filter((column) => !column.expandField) // main table columns only
+    .map((column) => ({
+      name: column.field,
+      field: column.field,
+      label: column.label,
+      align: column.align ?? 'left',
+      sortable: true,
+      headerStyle: 'font-weight: bold',
+    })),
+);
 
 const customFilterMethod: NonNullable<QTableProps['filterMethod']> = (
   rows,
-  terms,
-  cols,
+  searchTerms,
+  columns,
 ) => {
-  if (!terms || terms.trim() === '') return rows;
-  const lowerTerms = terms.toLowerCase();
+  if (!searchTerms || searchTerms.trim() === '') return rows;
+  const lowerTerms = searchTerms.toLowerCase();
   const fields =
     props.columnsToSearch ||
-    cols.map((col) => (typeof col.field === 'string' ? col.field : ''));
+    columns.map((column) =>
+      typeof column.field === 'string' ? column.field : '',
+    );
   return rows.filter((row) =>
     fields.some((field) => {
-      const val = row[field];
-      return val && String(val).toLowerCase().includes(lowerTerms);
+      const value = row[field];
+      return value && String(value).toLowerCase().includes(lowerTerms);
     }),
   );
 };
 
-const onRowClick = (evt: Event, row: Record<string, unknown>) =>
-  emit('row-click', row);
+const onRowClick = (evt: Event, row: T) => emit('row-click', row);
 </script>
 
 <style scoped>
 .search-field {
   width: 100%;
   max-width: 18em;
+}
+
+.clickable {
+  cursor: pointer;
 }
 </style>
