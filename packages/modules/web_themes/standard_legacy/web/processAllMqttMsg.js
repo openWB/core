@@ -265,10 +265,11 @@ function refreshChargeTemplate(chargePointIndex) {
 		// now create any other schedule plan
 		if (
 			Object.prototype.hasOwnProperty.call(chargeTemplate[chargePointIndex].chargemode.scheduled_charging, 'plans') &&
-			Object.keys(chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans).length > 0
+			chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans.length > 0
 		) {
 			chargePoint.find(".charge-point-schedule-plan-missing").addClass("hide");
-			for (const [key, value] of Object.entries(chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans)) {
+			for (const value of chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans) {
+				const key = value.id;
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
 					// console.log('creating schedule plan with id "'+key+'"');
@@ -358,10 +359,11 @@ function refreshChargeTemplate(chargePointIndex) {
 		// now create any other schedule plan
 		if (
 			Object.prototype.hasOwnProperty.call(chargeTemplate[chargePointIndex].time_charging, 'plans') &&
-			Object.keys(chargeTemplate[chargePointIndex].time_charging.plans).length > 0
+			chargeTemplate[chargePointIndex].time_charging.plans.length > 0
 		) {
 			chargePoint.find(".charge-point-time-charge-plan-missing").addClass("hide");
-			for (const [key, value] of Object.entries(chargeTemplate[chargePointIndex].time_charging.plans)) {
+			for (const value of chargeTemplate[chargePointIndex].time_charging.plans) {
+				const key = value.id;
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-time-charge-plan[data-plan=' + key + ']').length == 0) {
 					// console.log('creating time charge plan with id "'+key+'"');
