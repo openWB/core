@@ -1,19 +1,13 @@
 #!/usr/bin/env python3
 import logging
-from typing import List
-import os
 from modules.common import req
 
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_device import (ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater)
+from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
 from modules.devices.shelly.shelly.inverter import ShellyInverter
 from modules.devices.shelly.shelly.bat import ShellyBat
 from modules.devices.shelly.shelly.counter import ShellyCounter
-from modules.devices.shelly.shelly.config import Shelly, ShellyConfiguration
-from modules.devices.shelly.shelly.config import ShellyInverterSetup, ShellyInverterConfiguration
-from modules.devices.shelly.shelly.config import ShellyBatSetup
-from modules.devices.shelly.shelly.config import ShellyCounterSetup
+from modules.devices.shelly.shelly.config import Shelly, ShellyInverterSetup, ShellyBatSetup, ShellyCounterSetup
 
 
 log = logging.getLogger(__name__)
