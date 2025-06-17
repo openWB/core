@@ -51,9 +51,9 @@ class Command:
                ("mqtt_bridge", "system/mqtt/bridge", -1),
                ("charge_template", "vehicle/template/charge_template", 0),
                ("charge_template_scheduled_plan",
-                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans",
+                "vehicle/template/charge_template/+",
                 -1),
-               ("charge_template_time_charging_plan", "vehicle/template/charge_template/+/time_charging/plans", -1),
+               ("charge_template_time_charging_plan", "vehicle/template/charge_template/+", -1),
                ("chargepoint_template", "chargepoint/template", 0),
                ("device", "system/device", -1),
                ("ev_template", "vehicle/template/ev_template", 0),
@@ -494,8 +494,8 @@ class Command:
             new_charge_template_schedule_plan = ScheduledChargingPlan()
         new_id = self.max_id_charge_template_scheduled_plan + 1
         new_charge_template_schedule_plan.id = new_id
-        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.update({
-                                                                                                                              new_id: new_charge_template_schedule_plan})
+        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.append(
+            new_charge_template_schedule_plan)
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
             dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
@@ -516,8 +516,11 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_charge_template_scheduled_plan}\'.', MessageType.ERROR)
-        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.pop(
-            payload["data"]["plan"])
+        for plan in data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans:
+            if plan.id == payload["data"]["plan"]:
+                data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.remove(
+                    plan)
+                break
         Pub().pub(
             f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}',
             dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
@@ -539,8 +542,8 @@ class Command:
             new_time_charging_plan = TimeChargingPlan()
         new_id = self.max_id_charge_template_time_charging_plan + 1
         new_time_charging_plan.id = new_id
-        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.update({
-                                                                                                              new_id: new_time_charging_plan})
+        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.append(
+            new_time_charging_plan)
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
             dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
@@ -558,8 +561,11 @@ class Command:
         if self.max_id_charge_template_time_charging_plan < payload["data"]["plan"]:
             log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
                       MessageType.ERROR)
-        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.pop(
-            payload["data"]["plan"])
+        for plan in data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans:
+            if plan.id == payload["data"]["plan"]:
+                data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.remove(
+                    plan)
+                break
         Pub().pub(
             f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}',
             dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
