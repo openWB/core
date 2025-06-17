@@ -11,8 +11,6 @@ var themeConfiguration = {
 };
 var graphRefreshCounter = 0;
 var chargeTemplate = {};
-var schedulePlan = {};
-var timeChargePlan = {};
 var vehicleSoc = {};
 var evuCounterIndex = undefined;
 var chartLabels = {
@@ -265,9 +263,12 @@ function refreshChargeTemplate(chargePointIndex) {
 		// remove checkbox toggle button style as they will not function after cloning
 		sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
 		// now create any other schedule plan
-		if (chargePointIndex in schedulePlan) {
+		if (
+			Object.prototype.hasOwnProperty.call(chargeTemplate[chargePointIndex].chargemode.scheduled_charging, 'plans') &&
+			Object.keys(chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans).length > 0
+		) {
 			chargePoint.find(".charge-point-schedule-plan-missing").addClass("hide");
-			for (const [key, value] of Object.entries(schedulePlan[chargePointIndex])) {
+			for (const [key, value] of Object.entries(chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans)) {
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
 					// console.log('creating schedule plan with id "'+key+'"');
@@ -355,10 +356,12 @@ function refreshChargeTemplate(chargePointIndex) {
 		// remove checkbox toggle button style as they will not function after cloning
 		sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
 		// now create any other schedule plan
-		if (chargePointIndex in timeChargePlan) {
-			// console.log("time charge plan found", chargePointIndex, timeChargePlan[chargePointIndex]);
+		if (
+			Object.prototype.hasOwnProperty.call(chargeTemplate[chargePointIndex].time_charging, 'plans') &&
+			Object.keys(chargeTemplate[chargePointIndex].time_charging.plans).length > 0
+		) {
 			chargePoint.find(".charge-point-time-charge-plan-missing").addClass("hide");
-			for (const [key, value] of Object.entries(timeChargePlan[chargePointIndex])) {
+			for (const [key, value] of Object.entries(chargeTemplate[chargePointIndex].time_charging.plans)) {
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-time-charge-plan[data-plan=' + key + ']').length == 0) {
 					// console.log('creating time charge plan with id "'+key+'"');
@@ -1059,57 +1062,6 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 			// console.log(chargeTemplate);
 		} else {
 			delete chargeTemplate[chargePointIndex];
-		}
-		refreshChargeTemplate(chargePointIndex);
-	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/set\/charge_template\/chargemode\/scheduled_charging\/plans\/[0-9]+$/i)) {
-		chargePointIndex = getIndex(mqttTopic);
-		planIndex = mqttTopic.match(/[0-9]+$/i)[0];
-		// check for empty payload
-		if (mqttPayload.length > 2) {
-			try {
-				const newPlan = JSON.parse(mqttPayload);
-				if (!(chargePointIndex in schedulePlan)) {
-					schedulePlan[chargePointIndex] = {};
-				}
-				schedulePlan[chargePointIndex][planIndex] = newPlan;
-			} catch (error) {
-				console.error("error parsing schedule plan!");
-				delete schedulePlan[chargePointIndex][planIndex];
-				if (Object.keys(schedulePlan[chargePointIndex]).length == 0) {
-					delete schedulePlan[chargePointIndex];
-				}
-			}
-		} else {
-			delete schedulePlan[chargePointIndex][planIndex];
-			if (Object.keys(schedulePlan[chargePointIndex]).length == 0) {
-				delete schedulePlan[chargePointIndex];
-			}
-		}
-		refreshChargeTemplate(chargePointIndex);
-	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/set\/charge_template\/time_charging\/plans\/[0-9]+$/i)) {
-		chargePointIndex = getIndex(mqttTopic);
-		planIndex = mqttTopic.match(/[0-9]+$/i)[0];
-		// check for empty payload
-		if (mqttPayload.length > 2) {
-			try {
-				// console.log("received time charge plan", chargePointIndex, planIndex, mqttPayload);
-				const newPlan = JSON.parse(mqttPayload);
-				if (!(chargePointIndex in timeChargePlan)) {
-					timeChargePlan[chargePointIndex] = {};
-				}
-				timeChargePlan[chargePointIndex][planIndex] = newPlan;
-			} catch (error) {
-				console.error("error parsing time charge plan!");
-				delete timeChargePlan[chargePointIndex][planIndex];
-				if (Object.keys(timeChargePlan[chargePointIndex]).length == 0) {
-					delete timeChargePlan[chargePointIndex];
-				}
-			}
-		} else {
-			delete timeChargePlan[chargePointIndex][planIndex];
-			if (Object.keys(timeChargePlan[chargePointIndex]).length == 0) {
-				delete timeChargePlan[chargePointIndex];
-			}
 		}
 		refreshChargeTemplate(chargePointIndex);
 	}
