@@ -56,7 +56,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 84
+    DATASTORE_VERSION = 85
 
     valid_topic = [
         "^openWB/bat/config/configured$",
@@ -89,7 +89,7 @@ class UpdateConfig:
         "^openWB/chargepoint/get/daily_exported$",
         "^openWB/chargepoint/get/daily_imported$",
         "^openWB/chargepoint/template/[0-9]+$",
-        "^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$",
+        "^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$",  # OBSOLET seit 2.1.8
         "^openWB/chargepoint/[0-9]+/config$",
         "^openWB/chargepoint/[0-9]+/control_parameter/chargemode$",
         "^openWB/chargepoint/[0-9]+/control_parameter/current_plan$",
@@ -141,8 +141,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/rfid$",
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
         "^openWB/chargepoint/[0-9]+/set/charging_ev$",
-        "^openWB/chargepoint/[0-9]+/set/charge_template/time_charging/plans/[0-9]+$",
-        "^openWB/chargepoint/[0-9]+/set/charge_template/chargemode/scheduled_charging/plans/[0-9]+$",
         "^openWB/chargepoint/[0-9]+/set/charge_template$",
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/energy_to_charge$",
@@ -350,7 +348,8 @@ class UpdateConfig:
 
         "^openWB/vehicle/set/vehicle_update_completed$",
         "^openWB/vehicle/template/ev_template/[0-9]+$",
-        "^openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
+        "^openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",  # OBSOLET seit 2.1.8
+        # OBSOLET seit 2.1.8
         "^openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
         "^openWB/vehicle/template/charge_template/[0-9]+",
         "^openWB/vehicle/[0-9]+/charge_template$",
@@ -2253,3 +2252,31 @@ class UpdateConfig:
                                 return {component_topic: config_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 84)
+
+    def upgrade_datastore_84(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                index = get_index(topic)
+                template = decode_payload(payload)
+                for template_topic, template_payload in self.all_received_topics.items():
+                    if re.search(f"openWB/vehicle/template/charge_template/{index}/chargemode/scheduled_charging/plans/"
+                                 "[0-9]+$", template_topic) is not None:
+                        plan = decode_payload(template_payload)
+                        template["chargemode"]["scheduled_charging"]["plans"].append(plan)
+                    elif re.search(f"openWB/vehicle/template/charge_template/{index}/time_charging/plans/"
+                                   "[0-9]+$", template_topic) is not None:
+                        plan = decode_payload(template_payload)
+                        template["time_charging"]["plans"].append(plan)
+                return {topic: template}
+            elif re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
+                index = get_index(topic)
+                template = decode_payload(payload)
+                for template_topic, template_payload in self.all_received_topics.items():
+                    if re.search("^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$") is not None:
+                        plan = decode_payload(template_payload)
+                        if plan.get("id") is None:
+                            plan["id"] = int(get_second_index(template_topic))
+                        template["autolock"]["plans"].append(plan)
+                return {topic: template}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 85)

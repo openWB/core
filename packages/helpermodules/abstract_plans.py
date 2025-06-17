@@ -85,4 +85,5 @@ class TimeChargingPlan(TimeframePlan):
 
 @dataclass
 class AutolockPlan(TimeframePlan):
+    id: Optional[int] = None
     name: str = "neuer Plan für Sperren nach Uhrzeit"
