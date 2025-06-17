@@ -1268,10 +1268,8 @@ export default {
             !mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
               modalChargePointId,
             ) ||
-              Object.keys(
-                mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
-                  modalChargePointId,
-                ),
+              mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
+                modalChargePointId,
               ).length === 0
           "
           color="warning"
@@ -1406,10 +1404,8 @@ export default {
               !mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
                 modalChargePointId,
               ) ||
-                Object.keys(
-                  mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
-                    modalChargePointId,
-                  ),
+                mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
+                  modalChargePointId,
                 ).length === 0
             "
             color="warning"
