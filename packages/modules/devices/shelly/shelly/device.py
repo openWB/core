@@ -19,15 +19,6 @@ from modules.devices.shelly.shelly.config import ShellyCounterSetup
 log = logging.getLogger(__name__)
 
 
-def get_device_generation(address: str) -> int:
-    url = "http://" + address + "/shelly"
-    generation = 1
-    device_info = req.get_http_session().get(url, timeout=3).json()
-    if 'gen' in device_info:  # gen 2+
-        generation = int(device_info['gen'])
-    return generation
-
-
 def create_device(device_config: Shelly) -> ConfigurableDevice:
     generation = 1
 
