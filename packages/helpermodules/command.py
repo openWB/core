@@ -6,7 +6,7 @@ import logging
 import subprocess
 from threading import Event
 import time
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 import re
 import traceback
 from pathlib import Path
@@ -14,7 +14,7 @@ from pathlib import Path
 import paho.mqtt.client as mqtt
 from control.chargelog import chargelog
 from control.chargepoint import chargepoint
-from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
+from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
 from control.ev.charge_template import get_new_charge_template
 from control.ev.ev_template import EvTemplateData
@@ -407,7 +407,7 @@ class Command:
                     break
             new_autolock_plan["name"] = f'Kopie von {new_autolock_plan["name"]}'
         else:
-            new_autolock_plan = get_autolock_plan_default()
+            new_autolock_plan = AutolockPlan()
         new_id = self.max_id_autolock_plan + 1
         new_autolock_plan.id = new_id
         data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans.append(
@@ -505,7 +505,8 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            for plan in data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans:
+            for plan in data.data.ev_charge_template_data[
+                    f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans:
                 if plan.id == payload["data"]["copy"]:
                     new_charge_template_schedule_plan = copy.deepcopy(plan)
                     break
@@ -514,7 +515,8 @@ class Command:
             new_charge_template_schedule_plan = ScheduledChargingPlan()
         new_id = self.max_id_charge_template_scheduled_plan + 1
         new_charge_template_schedule_plan.id = new_id
-        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.append(
+        data.data.ev_charge_template_data[
+            f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.append(
             new_charge_template_schedule_plan)
         Pub().pub(
             f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
@@ -536,9 +538,11 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_charge_template_scheduled_plan}\'.', MessageType.ERROR)
-        for plan in data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans:
+        for plan in data.data.ev_charge_template_data[
+                f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans:
             if plan.id == payload["data"]["plan"]:
-                data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.remove(
+                data.data.ev_charge_template_data[
+                    f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.remove(
                     plan)
                 break
         Pub().pub(
