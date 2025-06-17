@@ -2275,6 +2275,8 @@ class UpdateConfig:
             elif re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
                 index = get_index(topic)
                 template = decode_payload(payload)
+                if template["autolock"].get("plans") is None:
+                    template["autolock"]["plans"] = []
                 for template_topic, template_payload in self.all_received_topics.items():
                     if re.search("^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$", template_topic) is not None:
                         plan = decode_payload(template_payload)
