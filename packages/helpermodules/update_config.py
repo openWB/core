@@ -2268,6 +2268,8 @@ class UpdateConfig:
                     if re.search(f"openWB/vehicle/template/charge_template/{index}/chargemode/scheduled_charging/plans/"
                                  "[0-9]+$", template_topic) is not None:
                         plan = decode_payload(template_payload)
+                        if isinstance(plan["frequency"]["once"], List):
+                            plan["frequency"]["once"] = plan["frequency"]["once"][0]
                         template["chargemode"]["scheduled_charging"]["plans"].append(plan)
                     elif re.search(f"openWB/vehicle/template/charge_template/{index}/time_charging/plans/"
                                    "[0-9]+$", template_topic) is not None:
