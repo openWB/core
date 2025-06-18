@@ -163,9 +163,7 @@ class Ev:
                     if plan_data:
                         # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
                         # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
-                        if (self.soc_module and
-                                charge_template.data.chargemode.
-                                scheduled_charging.plans[str(plan_data.plan.id)].limit.selected == "soc"):
+                        if (self.soc_module and plan_data.plan.limit.selected == "soc"):
                             soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
                         control_parameter.current_plan = plan_data.plan.id
                     else:
