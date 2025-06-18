@@ -347,23 +347,23 @@ class SubData:
                 if decode_payload(msg.payload) == "":
                     if "ct"+index in var:
                         var.pop("ct"+index)
-            if "ct"+index not in var:
-                var["ct"+index] = ChargeTemplate()
-            var["ct"+index].data = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
-            # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
-            for vehicle in self.ev_data.values():
-                if vehicle.data.charge_template == int(index):
-                    for cp in self.cp_data.values():
-                        if ((cp.chargepoint.data.set.charging_ev != -1 and
-                                cp.chargepoint.data.set.charging_ev == vehicle.num) or
-                                cp.chargepoint.data.config.ev == vehicle.num):
-                            # UI sendet immer alle Topics, auch nicht geänderte. Damit die temporären Topics nicht
-                            # mehrfach gepbulished werden, muss das publishen der temporären Topics 1:1 erfolgen.
-                            if re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
-                                if decode_payload(msg.payload) == "":
-                                    Pub().pub(f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template", "")
-                                else:
-                                    cp.chargepoint.update_charge_template(var["ct"+index])
+                if "ct"+index not in var:
+                    var["ct"+index] = ChargeTemplate()
+                var["ct"+index].data = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
+                # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
+                for vehicle in self.ev_data.values():
+                    if vehicle.data.charge_template == int(index):
+                        for cp in self.cp_data.values():
+                            if ((cp.chargepoint.data.set.charging_ev != -1 and
+                                    cp.chargepoint.data.set.charging_ev == vehicle.num) or
+                                    cp.chargepoint.data.config.ev == vehicle.num):
+                                # UI sendet immer alle Topics, auch nicht geänderte. Damit die temporären Topics nicht
+                                # mehrfach gepbulished werden, muss das publishen der temporären Topics 1:1 erfolgen.
+                                if re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
+                                    if decode_payload(msg.payload) == "":
+                                        Pub().pub(f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template", "")
+                                    else:
+                                        cp.chargepoint.update_charge_template(var["ct"+index])
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -425,13 +425,12 @@ class SubData:
                         if re.search("/chargepoint/[0-9]+/set/log$", msg.topic) is not None:
                             var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
                                 Log, decode_payload(msg.payload))
+                        elif "charge_template" in msg.topic:
+                            var["cp"+index].chargepoint.data.set.charge_template = ChargeTemplate()
+                            var["cp"+index].chargepoint.data.set.charge_template.data = dataclass_from_dict(
+                                ChargeTemplateData, decode_payload(msg.payload))
                         else:
-                            if "charge_template" in msg.topic:
-                                var["cp"+index].chargepoint.data.set.charge_template = ChargeTemplate()
-                                var["cp"+index].chargepoint.data.set.charge_template.data = dataclass_from_dict(
-                                    ChargeTemplateData, decode_payload(msg.payload))
-                            else:
-                                self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
                         if re.search("/chargepoint/[0-9]+/get/connected_vehicle/", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)
