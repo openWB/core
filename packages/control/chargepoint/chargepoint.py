@@ -868,11 +868,13 @@ class Chargepoint(ChargepointRfidMixin):
                            control_parameter.chargemode == Chargemode.ECO_CHARGING) and
                           control_parameter.submode == Chargemode.PV_CHARGING and
                           self.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0)
+        for p in self.data.set.charge_template.data.chargemode.scheduled_charging.plans:
+            if p.id == self.data.control_parameter.current_plan:
+                plan = p
         scheduled_auto_switch = (
             control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
             control_parameter.submode == Chargemode.PV_CHARGING and
-            self.data.set.charge_template.data.chargemode.scheduled_charging.plans[
-                str(self.data.control_parameter.current_plan)].phases_to_use_pv == 0)
+            plan.phases_to_use_pv == 0)
         return (pv_auto_switch or scheduled_auto_switch)
 
     def failed_phase_switches_reached(self) -> bool:
