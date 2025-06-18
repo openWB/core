@@ -101,7 +101,7 @@ const refreshSoc = () => {
 
 <style lang="scss" scoped>
 .card-width {
-  min-width: 24em;
+  width: 22em;
 }
 
 .slider-container {

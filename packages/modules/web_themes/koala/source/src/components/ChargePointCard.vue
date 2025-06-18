@@ -276,6 +276,6 @@ const refreshSoc = () => {
 </script>
 <style lang="scss" scoped>
 .card-width {
-  max-width: 24em;
+  width: 22em;
 }
 </style>
