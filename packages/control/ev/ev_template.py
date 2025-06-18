@@ -3,8 +3,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class EvTemplateData:
-    dc_min_current: int = 0
-    dc_max_current: int = 0
+    dc_min_current: int = 20
+    dc_max_current: int = 150
     id: int = 0
     name: str = "Fahrzeug-Profil"
     max_current_multi_phases: int = 16
