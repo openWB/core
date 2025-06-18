@@ -122,12 +122,12 @@ export interface Vehicle {
   id: number;
   name: string;
 }
-export interface vehicleInfo {
+export interface VehicleInfo {
   manufacturer: string;
   model: string;
 }
 
-export interface vehicleSocModule {
+export interface VehicleSocModuleConfig {
   name?: string;
   type: string | null;
   official?: boolean;
