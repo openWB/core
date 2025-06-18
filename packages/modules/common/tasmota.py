@@ -28,7 +28,7 @@ class Tasmota:
         currents = [0.0, 0.0, 0.0]
         power_factors = [0.0, 0.0, 0.0]
 
-        if ['ENERGY'] in tuple(response['StatusSNS']):
+        if 'ENERGY' in response['StatusSNS']:
             voltages[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Voltage'])
             powers[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Power'])
             power = sum(powers)
