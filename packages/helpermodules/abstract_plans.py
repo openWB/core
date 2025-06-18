@@ -4,7 +4,7 @@ from typing import List, Optional
 
 
 def once_factory() -> List:
-    return [datetime.datetime.today().strftime("%Y%m%d"), datetime.datetime.today().strftime("%Y%m%d")]
+    return [datetime.datetime.today().strftime("%Y-%m-%d"), datetime.datetime.today().strftime("%Y-%m-%d")]
 
 
 def weekly_factory() -> List:

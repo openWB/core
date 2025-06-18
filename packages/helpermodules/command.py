@@ -31,7 +31,7 @@ from helpermodules.messaging import MessageType, pub_user_message
 from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
-from helpermodules.utils.topic_parser import decode_payload
+from helpermodules.utils.topic_parser import decode_payload, get_index
 from control import bat, bridge, data, counter, counter_all, pv
 from control.ev import ev
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
@@ -47,21 +47,23 @@ log = logging.getLogger(__name__)
 class Command:
     """
     """
-    # Tuple: (Name der maximalen ID, Topic zur Ermittlung, Default-Wert)
-    MAX_IDS = [("autolock_plan", "chargepoint/template/+", -1),
-               ("mqtt_bridge", "system/mqtt/bridge", -1),
-               ("charge_template", "vehicle/template/charge_template", 0),
-               ("charge_template_scheduled_plan",
-                "vehicle/template/charge_template/+",
-                -1),
-               ("charge_template_time_charging_plan", "vehicle/template/charge_template/+", -1),
-               ("chargepoint_template", "chargepoint/template", 0),
-               ("device", "system/device", -1),
-               ("ev_template", "vehicle/template/ev_template", 0),
-               ("vehicle", "vehicle", 0),
-               ("io_action", "io/action", -1),
-               ("io_device", "system/io", -1),
-               ]
+    # Tuple: (Name der maximalen ID, Regex-Topic zur Ermittlung, Default-Wert)
+    MAX_IDS = {
+        "nested payload":
+        [("autolock_plan", "openWB/chargepoint/template/[0-9]+$", -1),
+         ("charge_template_scheduled_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1),
+         ("charge_template_time_charging_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1)],
+        "topic":
+        [("mqtt_bridge", "openWB/system/mqtt/bridge", -1),
+         ("vehicle", "openWB/vehicle/[0-9]+/name$", 0)],
+        "payload":
+        [("charge_template", "openWB/vehicle/template/charge_template/[0-9]+$", 0),
+         ("chargepoint_template", "openWB/chargepoint/template/[0-9]+$", 0),
+         ("device", "openWB/system/device/[0-9]+/config$", -1),
+         ("ev_template", "openWB/vehicle/template/ev_template/[0-9]+$", 0),
+         ("io_action", "openWB/io/action/[0-9]+/config$", -1),
+         ("io_device", "openWB/system/io/[0-9]+/config$", -1)],
+    }
 
     def __init__(self, event_command_completed: Event):
         try:
@@ -75,29 +77,33 @@ class Command:
         """ ermittelt die maximale ID vom Broker """
         try:
             received_topics = ProcessBrokerBranch("").get_max_id()
-            for id_topic, topic_str, default in self.MAX_IDS:
+            for id_topic, topic_str, default in self.MAX_IDS["nested payload"]:
                 max_id = default
                 for topic, payload in received_topics.items():
-                    search_str = "openWB/" + topic_str.replace("+", "[0-9]+")
-                    result = re.search('^('+search_str+'/*).*$', topic)
-                    if result is not None:
-                        topic_found = result.group(1)
-                        topic_rest = topic.replace(topic_found, "")
-                        # Bei Plänen sind die Pläne in einer Liste im jeweiligen Profil.
+                    if re.search(topic_str, topic) is not None:
                         if id_topic == "autolock_plan":
                             for plan in payload["autolock"]["plans"]:
-                                max_id = max(plan["id"], max_id)
-                        elif id_topic == "charge_template_time_charging_plan":
-                            for plan in payload["time_charging"]["plans"]:
                                 max_id = max(plan["id"], max_id)
                         elif id_topic == "charge_template_scheduled_plan":
                             for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
                                 max_id = max(plan["id"], max_id)
-                        else:
-                            current_id_regex = re.search('^([0-9]+)/*.*$', topic_rest)
-                            if current_id_regex is not None:
-                                current_id = int(current_id_regex.group(1))
-                                max_id = max(current_id, max_id)
+                        elif id_topic == "charge_template_time_charging_plan":
+                            for plan in payload["time_charging"]["plans"]:
+                                max_id = max(plan["id"], max_id)
+                setattr(self, f'max_id_{id_topic}', max_id)
+                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
+            for id_topic, topic_str, default in self.MAX_IDS["topic"]:
+                max_id = default
+                for topic in received_topics.keys():
+                    if re.search(topic_str, topic) is not None:
+                        max_id = max(int(get_index(topic)), max_id)
+                setattr(self, f'max_id_{id_topic}', max_id)
+                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
+            for id_topic, topic_str, default in self.MAX_IDS["payload"]:
+                max_id = default
+                for topic, payload in received_topics.items():
+                    if re.search(topic_str, topic) is not None:
+                        max_id = max(payload["id"], max_id)
                 setattr(self, f'max_id_{id_topic}', max_id)
                 Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
         except Exception:
