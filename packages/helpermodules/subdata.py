@@ -980,6 +980,12 @@ class SubData:
                                                   "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, io_config)
                     var["io"+index] = dev.create_io(config)
+            elif re.search("^.+/io/[0-9]+/set/manual/analog_output", msg.topic) is not None:
+                index = get_index(msg.topic)
+                self.set_json_payload(var["io"+index].set_manual["analog_output"], msg)
+            elif re.search("^.+/io/[0-9]+/set/manual/digital_output", msg.topic) is not None:
+                index = get_index(msg.topic)
+                self.set_json_payload(var["io"+index].set_manual["digital_output"], msg)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
