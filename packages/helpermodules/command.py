@@ -405,7 +405,7 @@ class Command:
                 if plan.id == payload["data"]["copy"]:
                     new_autolock_plan = copy.deepcopy(plan)
                     break
-            new_autolock_plan["name"] = f'Kopie von {new_autolock_plan["name"]}'
+            new_autolock_plan.name = f'Kopie von {new_autolock_plan.name}'
         else:
             new_autolock_plan = AutolockPlan()
         new_id = self.max_id_autolock_plan + 1
