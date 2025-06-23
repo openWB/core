@@ -12,6 +12,7 @@ from modules.common.hardware_check import check_meter_values
 from modules.common.store import get_chargepoint_value_store
 from modules.common.component_state import ChargepointState
 from modules.common import req
+from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
 
 log = logging.getLogger(__name__)
 
@@ -36,15 +37,16 @@ class ChargepointModule(AbstractChargepoint):
                     'http://' + self.config.configuration.ip_address + '/connect.php',
                     data={'heartbeatenabled': '1'})
 
-    def set_internal_context_handlers(self, parent_cp, parent_hostname):
+    def set_internal_context_handlers(self, internal_cp: InternalChargepoint, parent_hostname: str):
         self.fault_state = FaultState(ComponentInfo(
             self.config.id,
             "Ladepunkt "+str(self.config.id),
-            "chargepoint",
-            parent_id=parent_cp,
+            "internal_chargepoint",
+            parent_id=internal_cp.data.parent_cp,
             parent_hostname=parent_hostname))
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/internal_chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
+        self.client_error_context.error_timestamp = internal_cp.get.error_timestamp
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
