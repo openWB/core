@@ -6,6 +6,7 @@ from modules.common.store._chargepoint import get_chargepoint_value_store
 from modules.common.store._chargepoint_internal import get_internal_chargepoint_value_store
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
 
+
 class ProPlus(ChargepointModule):
     def __init__(self, local_charge_point_num: int,
                  parent_hostname: str,

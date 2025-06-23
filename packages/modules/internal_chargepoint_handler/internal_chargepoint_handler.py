@@ -256,7 +256,10 @@ class HandlerChargepoint:
             self.module = chargepoint_module.ChargepointModule(
                 local_charge_point_num, client_handler, global_data.parent_ip, internal_cp, hierarchy_id)
         with SingleComponentUpdateContext(self.module.fault_state):
-            self.update_values = UpdateValues(local_charge_point_num, global_data.parent_ip, internal_cp.data.parent_cp, hierarchy_id)
+            self.update_values = UpdateValues(local_charge_point_num,
+                                              global_data.parent_ip,
+                                              internal_cp.data.parent_cp,
+                                              hierarchy_id)
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
 
