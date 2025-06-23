@@ -69,10 +69,6 @@
 									class="me-1 fa-solid fa-xs fa-star ps-1"
 								/>
 								<span
-									v-if="chargepoint.etActive"
-									class="me-1 fa-solid fa-xs fa-coins ps-0"
-								/>
-								<span
 									v-if="chargepoint.timedCharging"
 									class="me-0 fa-solid fa-xs fa-clock ps-1"
 								/>
@@ -461,10 +457,6 @@ const editPrice = ref(false)
 
 .fa-circle-check {
 	color: var(--color-menu);
-}
-
-.fa-coins {
-	color: var(--color-battery);
 }
 
 .socEditor {

@@ -138,9 +138,10 @@ const nameY = computed(() => {
 				)
 			case 1:
 				index = graphData.data.length - 1
-				return Math.max (12, yScale.value(
-					graphData.data[index]['soc' + topVehicles.value[1]] + 2,
-				))
+				return Math.max(
+					12,
+					yScale.value(graphData.data[index]['soc' + topVehicles.value[1]] + 2),
+				)
 			case 2:
 				index = Math.round(graphData.data.length / 2)
 				return yScale.value(graphData.data[index].batSoc + 2)
