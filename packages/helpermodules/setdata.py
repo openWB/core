@@ -1029,8 +1029,9 @@ class SetData:
             elif "io" in msg.topic:
                 if "/config" in msg.topic:
                     self._validate_value(msg, "json")
-                elif ("/set/manual/analog_output" in msg.topic or
-                      "/set/manual/digital_output" in msg.topic):
+                elif "/set/manual/analog_output" in msg.topic:
+                    self._validate_value(msg, float)
+                elif "/set/manual/digital_output" in msg.topic:
                     self._validate_value(msg, bool)
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
