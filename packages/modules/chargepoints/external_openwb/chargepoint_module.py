@@ -103,6 +103,10 @@ class ChargepointModule(AbstractChargepoint):
                         max_evse_current=received_topics.get(f"{topic_prefix}max_evse_current"),
                     )
                     self.store.set(chargepoint_state)
+                    if received_topics.get(f"{topic_prefix}fault_state") == 2:
+                        self.fault_state.error(received_topics.get(f"{topic_prefix}fault_str"))
+                    elif received_topics.get(f"{topic_prefix}fault_state") == 1:
+                        self.fault_state.warning(received_topics.get(f"{topic_prefix}fault_str"))
                 else:
                     self.fault_state.warning(f"Keine MQTT-Daten für Ladepunkt {self.config.name} empfangen. Noch keine "
                                              "Daten nach dem Start oder Ladepunkt nicht erreichbar.")
