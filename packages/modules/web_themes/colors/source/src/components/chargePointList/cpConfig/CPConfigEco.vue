@@ -1,9 +1,11 @@
 <template>
 	<div class="pt-2 d-flex flex-column">
 		<div class="heading ms-1">Eco-Laden:</div>
-		<PriceChart :chargepoint="cp as ChargePoint" />
-		<!-- Min+PV-Laden -->
+		<PriceChart v-if="etData.active" :chargepoint="cp as ChargePoint" />
+
+		<!-- Minimal current -->
 		<ConfigItem
+			v-if="etData.active"
 			title="Minimaler Ladestrom unter der Preisgrenze:"
 			icon="fa-bolt"
 			:fullwidth="true"
@@ -23,6 +25,18 @@
 			</div>
 		</ConfigItem>
 
+		<!-- Number of phases -->
+		<ConfigItem title="Anzahl Phasen" icon="fa-plug" :fullwidth="true">
+			<RadioInput2
+				v-model="cp.instantTargetPhases"
+				:options="[
+					['Eine', 1],
+					['Alle', 3],
+					['Auto', 0],
+				]"
+			/>
+		</ConfigItem>
+
 		<!-- Limit Mode -->
 		<ConfigItem title="Begrenzung" icon="fa-hand" :fullwidth="true">
 			<RadioInput2
@@ -30,6 +44,7 @@
 				:options="chargeLimitModes.map((e) => [e.name, e.id])"
 			/>
 		</ConfigItem>
+
 		<!-- Max SoC -->
 		<ConfigItem
 			v-if="cp.ecoChargeLimitMode == 'soc'"
@@ -69,6 +84,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { type ChargePoint, chargeLimitModes } from '../model'
+import { etData } from '@/components/priceChart/model'
 import ConfigItem from '../../shared/ConfigItem.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 //import SwitchInput from '@/components/shared/SwitchInput.vue'
@@ -96,7 +112,7 @@ const energyLimit = computed({
 }
 
 .heading {
-	color: var(--color-pv);
+	color: var(--color-devices);
 	font-size: var(--font-settings);
 	font-weight: bold;
 }
