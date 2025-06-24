@@ -181,15 +181,6 @@ class SurplusControlled:
             except Exception:
                 log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
 
-    def check_switch_on(self) -> None:
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
-            try:
-                if (cp.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
-                        cp.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
-                    data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
-            except Exception:
-                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
-
     def set_required_current_to_max(self) -> None:
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
             try:

@@ -1,7 +1,9 @@
 import logging
 
+from control import data
 from control.algorithm import common
-from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_MIN_CURRENT
+from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_MIN_CURRENT, CONSIDERED_CHARGE_MODES_PV_ONLY
+from control.chargepoint.chargepoint_state import ChargepointState
 from control.loadmanagement import Loadmanagement
 from control.algorithm.filter_chargepoints import get_chargepoints_by_mode_and_counter
 
@@ -41,5 +43,12 @@ class MinCurrent:
                                 cp.data.control_parameter.min_current,
                                 cp)
                     else:
+                        if mode_tuple in CONSIDERED_CHARGE_MODES_PV_ONLY:
+                            try:
+                                if (cp.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
+                                        cp.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
+                                    data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
+                            except Exception:
+                                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
                         cp.data.set.current = 0
                     preferenced_chargepoints.pop(0)
