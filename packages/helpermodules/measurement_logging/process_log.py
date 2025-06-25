@@ -408,6 +408,19 @@ def analyse_percentage(entry):
         pv = entry["pv"]["all"]["energy_exported"] if "all" in entry["pv"].keys() else 0
         grid_imported, grid_exported = get_grid_from(entry)
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
+        for type in ("pv", "bat", "cp"):
+            if entry[type]["all"]["energy_imported"] > consumption:
+                consumption += entry[type]["all"]["energy_imported"] - consumption
+                grid_imported += entry[type]["all"]["energy_imported"] - grid_imported
+                log.debug(f"Angepasste Verbrauchswerte für {type} um "
+                          f"{entry[type]['all']['energy_imported'] - consumption} kWh")
+        for counter in entry["counter"].values():
+            if counter["grid"] is False:
+                if counter["energy_imported"] > consumption:
+                    consumption += counter["energy_imported"] - consumption
+                    grid_imported += counter["energy_imported"] - grid_imported
+                    log.debug(f"Angepasste Verbrauchswerte für {type} um "
+                              f"{entry[type]['all']['energy_imported'] - consumption} kWh")
         try:
             if grid_exported > pv:
                 # Ins Netz eingespeiste Leistung kam nicht von der PV-Anlage sondern aus dem Speicher
