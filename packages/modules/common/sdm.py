@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import time
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter

@@ -5,7 +5,6 @@ from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
-from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
 from modules.common.mpm3pm import Mpm3pm
 from modules.common.sdm import Sdm120

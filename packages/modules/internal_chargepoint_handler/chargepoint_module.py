@@ -57,16 +57,11 @@ class ChargepointModule(AbstractChargepoint):
                 self._client.evse_client.activate_precise_current()
             self._precise_current = self._client.evse_client.is_precise_current_active()
 
+        self.version = SubData.system_data["system"].data["version"]
+        self.current_branch = SubData.system_data["system"].data["current_branch"]
+        self.current_commit = SubData.system_data["system"].data["current_commit"]
 
-<< << << < HEAD
-   self.max_evse_current = self._client.evse_client.get_max_current()
-    self.version = SubData.system_data["system"].data["version"]
-    self.current_branch = SubData.system_data["system"].data["current_branch"]
-    self.current_commit = SubData.system_data["system"].data["current_commit"]
-== == == =
->>>>>> > 1ece26b0c(evse max current)
-
-   def set_current(self, current: float) -> None:
+    def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             formatted_current = round(current*100) if self._precise_current else round(current)
             if self.set_current_evse != formatted_current:
@@ -122,7 +117,7 @@ class ChargepointModule(AbstractChargepoint):
                 rfid=last_tag,
                 evse_current=self.set_current_evse,
                 serial_number=counter_state.serial_number,
-                max_evse_current=evse_state.max_current
+                max_evse_current=evse_state.max_current,
                 version=self.version,
                 current_branch=self.current_branch,
                 current_commit=self.current_commit
