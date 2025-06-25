@@ -288,7 +288,8 @@ class ChargeTemplate:
                      soc: Optional[float],
                      control_parameter: ControlParameter,
                      charging_type: str,
-                     used_amount: float) -> Tuple[int, str, Optional[str], int]:
+                     used_amount: float,
+                     max_phases_hw: int) -> Tuple[int, str, Optional[str], int]:
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
         """
         message = None
@@ -311,6 +312,7 @@ class ChargeTemplate:
                 if data.data.optional_data.et_charging_allowed(eco_charging.max_price):
                     sub_mode = "instant_charging"
                     message = self.CHARGING_PRICE_LOW
+                    phases = max_phases_hw
                 else:
                     current = control_parameter.min_current
                     message = self.CHARGING_PRICE_EXCEEDED
@@ -420,9 +422,16 @@ class ChargeTemplate:
                     raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren "
                                      f"oder im Plan {p.name} als Begrenzung Energie einstellen.")
                 try:
+                    if ((p.limit.selected == "amount" and used_amount >= p.limit.amount) or
+                            ((p.limit.selected == "soc" and soc >= p.limit.soc_scheduled) and
+                             (p.limit.selected == "soc" and soc >= p.limit.soc_limit))):
+                        plan_fulfilled = True
+                    else:
+                        plan_fulfilled = False
                     plans_diff_end_date.append(
-                        {p.id: timecheck.check_end_time(p, chargemode_switch_timestamp)})
-                    log.debug("Verbleibende Zeit bis zum Zieltermin [s]: "+str(plans_diff_end_date))
+                        {p.id: timecheck.check_end_time(p, chargemode_switch_timestamp, plan_fulfilled)})
+                    log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}, "
+                              f"Plan erfüllt: {plan_fulfilled}")
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.ct_num))
         if plans_diff_end_date:

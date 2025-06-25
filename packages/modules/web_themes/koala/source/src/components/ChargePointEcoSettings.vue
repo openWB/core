@@ -9,6 +9,17 @@
     class="q-mt-md"
   />
 
+  <SliderStandard
+    v-if="dcCharging"
+    title="Minimaler Dauerleistung unter der Preisgrenze"
+    :min="4"
+    :max="300"
+    :step="1"
+    unit="kW"
+    v-model="dcPower.value"
+    class="q-mt-md"
+  />
+
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group class="col">
@@ -134,6 +145,12 @@ const phaseOptions = [
 
 const current = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargeCurrent(props.chargePointId),
+);
+
+const dcCharging = computed(() => mqttStore.dcChargingEnabled);
+
+const dcPower = computed(() =>
+  mqttStore.chargePointConnectedVehicleEcoChargeDcPower(props.chargePointId),
 );
 
 const numPhases = computed(() =>

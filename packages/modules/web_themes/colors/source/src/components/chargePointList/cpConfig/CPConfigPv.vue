@@ -31,8 +31,8 @@
 				v-model="cp.pvTargetPhases"
 				:options="[
 					['1', 1],
-					['Maximum', 3],
-					['Automatik', 0],
+					['Alle', 3],
+					['Auto', 0],
 				]"
 			/>
 		</ConfigItem>

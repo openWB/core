@@ -210,7 +210,7 @@ class Ev:
                             self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
                     elif charge_template.data.chargemode.selected == "eco_charging":
                         required_current, submode, tmp_message, phases = charge_template.eco_charging(
-                            self.data.get.soc, control_parameter, charging_type, imported_since_plugged)
+                            self.data.get.soc, control_parameter, charging_type, imported_since_plugged, max_phases_hw)
                     elif charge_template.data.chargemode.selected == "bidi_charging":
                         required_current, submode, tmp_message, phases = charge_template.bidi_charging(
                             self.data.get.soc,

@@ -93,7 +93,7 @@ class MultiComponentUpdateContext:
 
         if exception:
             fault_state.from_exception(exception)
-        elif update_always is False:
+        elif update_always is False and fault_state.fault_state == 0:
             # Fehlerstatus nicht überschreiben
             return
         fault_state.store_error()

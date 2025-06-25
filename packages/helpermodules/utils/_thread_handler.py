@@ -14,20 +14,23 @@ def joined_thread_handler(threads: List[Thread], timeout: Optional[int]) -> List
     threads_splitted = list(split_chunks(threads, 50))
 
     for threads_chunk in threads_splitted:
+        threads_to_keep = []
+
         for thread in threads_chunk:
             if is_thread_alive(thread.name):
                 log.error(f"{thread.name} ist bereits aktiv und wird nicht erneut gestartet.")
                 not_finished_threads.append(thread.name)
-                threads_chunk.remove(thread)
+            else:
+                threads_to_keep.append(thread)
         # Start them all
-        for thread in threads_chunk:
+        for thread in threads_to_keep:
             thread.start()
 
         # Wait for all to complete
-        for thread in threads_chunk:
+        for thread in threads_to_keep:
             thread.join(timeout=timeout)
 
-        for thread in threads_chunk:
+        for thread in threads_to_keep:
             if thread.is_alive():
                 log.error(f"{thread.name} konnte nicht innerhalb des Timeouts abgearbeitet werden.")
                 not_finished_threads.append(thread.name)

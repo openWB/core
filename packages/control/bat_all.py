@@ -287,25 +287,31 @@ class BatAll:
             self.data.get.power_limit_controllable = False
 
     def get_power_limit(self):
+        chargepoint_by_chagemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)
+        power_of_chargepoints_by_chagemodes = sum(
+            [cp.data.get.power for cp in chargepoint_by_chagemodes if cp.data.get.power is not None])
         if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value
-                and len(get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)) > 0 and
+                and len(chargepoint_by_chagemodes) > 0 and
+                power_of_chargepoints_by_chagemodes > 0 and
                 self.data.get.power_limit_controllable and
                 # Nur wenn kein Überschuss im System ist, Speicherleistung begrenzen.
                 self.data.get.power <= 0 and
-                data.data.counter_all_data.get_evu_counter().data.get.power >= 0):
+                data.data.counter_all_data.get_evu_counter().data.get.power >= -100):
             if self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_STOP.value:
                 self.data.set.power_limit = 0
             elif self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_TO_HOME_CONSUMPTION.value:
-                self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption
+                self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
             log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
         else:
             self.data.set.power_limit = None
             control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
             control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
             control_range_center = control_range_high - (control_range_high - control_range_low) / 2
-            if len(get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)) == 0:
+            if len(chargepoint_by_chagemodes) == 0:
                 log.debug("Speicher-Leistung nicht begrenzen, "
                           "da keine Ladepunkte in einem Lademodus mit Netzbezug sind.")
+            elif power_of_chargepoints_by_chagemodes <= 0:
+                log.debug("Speicher-Leistung nicht begrenzen, da kein Ladepunkt mit Netzubezug lädt.")
             elif self.data.get.power_limit_controllable is False:
                 log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
             elif self.data.get.power > 0:

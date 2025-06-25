@@ -262,7 +262,7 @@ class Counter:
     SWITCH_ON_MAX_PHASES = "Der Überschuss ist ausreichend, um direkt mit {} Phasen zu laden."
 
     def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
-        surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
+        surplus = self.calc_raw_surplus() - self.data.set.reserved_surplus
         control_parameter = chargepoint.data.control_parameter
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
 

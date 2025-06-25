@@ -114,7 +114,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung.")
             values_to_write = {
                 "Externe_Steuerung": 802,
-                "Wirkleistungsvorgabe": power_limit
+                "Wirkleistungsvorgabe": abs(power_limit)
             }
             self._write_registers(values_to_write, unit)
             self.last_mode = 'limited'

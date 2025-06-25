@@ -36,7 +36,11 @@ class SungrowBat(AbstractBat):
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
-        soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
+        soc = int(
+            self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
+        # Es gibt nur einen DC Strom der Batterie, daher Aufteilen auf 3 Phasenströme
+        bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
+        currents = [bat_current / 3] * 3
 
         if (
             Firmware(self.device_config.configuration.firmware) == Firmware.v2
@@ -66,6 +70,7 @@ class SungrowBat(AbstractBat):
         bat_state = BatState(
             power=bat_power,
             soc=soc,
+            currents=currents,
             imported=imported,
             exported=exported
         )
@@ -87,14 +92,15 @@ class SungrowBat(AbstractBat):
                 self.__tcp_client.write_registers(13049, [2], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.__tcp_client.write_registers(13050, [0xCC], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'stop'
-        elif power_limit > 0:
+        elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             if self.last_mode != 'discharge':
                 self.__tcp_client.write_registers(13049, [2], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.__tcp_client.write_registers(13050, [0xBB], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'discharge'
             # Die maximale Entladeleistung begrenzen auf 5000W, maximaler Wertebereich Modbusregister.
-            power_value = int(min(power_limit, 5000))
+            power_value = int(min(abs(power_limit), 5000))
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
             self.__tcp_client.write_registers(13051, [power_value], data_type=ModbusDataType.UINT_16, unit=unit)
 
     def power_limit_controllable(self) -> bool:
