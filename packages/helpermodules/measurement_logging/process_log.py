@@ -408,7 +408,7 @@ def analyse_percentage(entry):
         pv = entry["pv"]["all"]["energy_exported"] if "all" in entry["pv"].keys() else 0
         grid_imported, grid_exported = get_grid_from(entry)
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
-        for type in ("pv", "bat", "cp"):
+        for type in ("bat", "cp"):
             if entry[type]["all"]["energy_imported"] > consumption:
                 consumption += entry[type]["all"]["energy_imported"] - consumption
                 grid_imported += entry[type]["all"]["energy_imported"] - grid_imported
