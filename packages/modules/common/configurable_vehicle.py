@@ -71,6 +71,9 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 log.debug("No soc update necessary.")
                 return
             car_state = self._get_carstate_by_source(vehicle_update_data, source)
+            if isinstance(self.vehicle_config, MqttSocSetup) and car_state is None:
+                log.debug("Mqtt uses legacy topics.")
+                return
             log.debug(f"Requested start soc from {source.value}: {car_state.soc}%")
 
             if (source != SocSource.CALCULATION or
@@ -90,8 +93,6 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 log.debug("Not updating SoC, because timestamp is older.")
 
     def _get_carstate_source(self, vehicle_update_data: VehicleUpdateData) -> SocSource:
-        if isinstance(self.vehicle_config, MqttSocSetup):
-            return SocSource.NO_UPDATE
         # Kein SoC vom LP vorhanden oder erwünscht
         if (vehicle_update_data.soc_from_cp is None or self.general_config.use_soc_from_cp is False or
                 # oder aktueller manueller SoC vorhanden (ausgelesenen SoC während der Ladung korrigieren)

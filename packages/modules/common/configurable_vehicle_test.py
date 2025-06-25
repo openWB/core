@@ -120,7 +120,7 @@ def conf_vehicle_mqtt():
         pytest.param(conf_vehicle_api_while_charging(), False, VehicleUpdateData(plug_state=True,
                      charge_state=True), CalculatedSocState(), SocSource.CALCULATION, id="API mit Berechnung, Ladung"),
         pytest.param(conf_vehicle_mqtt(), False, VehicleUpdateData(plug_state=True),
-                     CalculatedSocState(), SocSource.NO_UPDATE, id="Kein Update, da Werte per MQTT"),
+                     CalculatedSocState(), SocSource.API, id="MQTT-Werte werden vom Broker abgerufen"),
     ])
 def test_get_carstate_source(conf_vehicle: ConfigurableVehicle,
                              use_soc_from_cp,

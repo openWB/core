@@ -304,6 +304,9 @@ class UpdateConfig:
         "^openWB/mqtt/inverter/[0-9]+/get/power$",
         "^openWB/mqtt/inverter/[0-9]+/get/exported$",
         "^openWB/mqtt/inverter/[0-9]+/get/dc_power$",
+        "^openWB/mqtt/vehicle/[0-9]+/get/range$",
+        "^openWB/mqtt/vehicle/[0-9]+/get/soc$",
+        "^openWB/mqtt/vehicle/[0-9]+/get/soc_timestamp$",
 
         "^openWB/set/log/request",
         "^openWB/set/log/data",
