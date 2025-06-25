@@ -3,7 +3,7 @@
 import logging
 import os
 import subprocess
-import threading
+from threading import Thread
 import time
 from pathlib import Path
 from typing import Optional
@@ -85,7 +85,7 @@ class System:
                 self.create_backup_and_send_to_cloud()
             except Exception as e:
                 log.exception(f"Error in cloud backup: {e}")
-        thread_handler(threading.Thread(target=create, args=(), name="cloud backup"))
+        thread_handler(Thread(target=create, args=(), name="cloud backup"))
 
     def create_backup_and_send_to_cloud(self):
         if self.backup_cloud is not None:

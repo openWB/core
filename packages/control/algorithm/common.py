@@ -60,7 +60,7 @@ def get_min_current(chargepoint: Chargepoint) -> Tuple[List[float], List[int]]:
 # tested
 
 
-def set_current_counterdiff(diff_curent: float,
+def set_current_counterdiff(diff_current: float,
                             current: float,
                             chargepoint: Chargepoint,
                             surplus: bool = False) -> None:
@@ -68,7 +68,7 @@ def set_current_counterdiff(diff_curent: float,
     considered_current = consider_less_charging_chargepoint_in_loadmanagement(
         chargepoint, current)
     # gar nicht ladende Autos?
-    diff = max(considered_current - diff_curent, 0)
+    diff = max(considered_current - diff_current, 0)
     diffs = [diff if required_currents[i] != 0 else 0 for i in range(3)]
     if max(diffs) > 0:
         counters = data.data.counter_all_data.get_counters_to_check(chargepoint.num)

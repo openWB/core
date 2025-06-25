@@ -5,7 +5,7 @@
 			:transform="'translate(' + 0 + ',' + (height / 2 + 9) + ')'"
 		></g>
 	</svg>
-	<svg :x="props.margin.left" :width="props.width">
+	<svg :x="0" :width="props.width + 10">
 		<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
 			<g
 				id="PGXAxis"
@@ -18,7 +18,7 @@
 				id="PGXAxis2"
 				class="axis"
 				:origin="drawAxis2"
-				:transform="'translate(0,' + (height / 2 + 10) + ')'"
+				:transform="'translate(0,' + (height / 2 + -6) + ')'"
 			/>
 			<g v-if="globalConfig.showGrid">
 				<rect

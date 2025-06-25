@@ -148,10 +148,10 @@ def sample_wrong_charge_state_chargepoint_state():
     return sample_wrong_charge_state_chargepoint_state
 
 
-def sample_chargepoint_state_resetted():
-    sample_chargepoint_state_resetted = sample_wrong_charge_state_chargepoint_state()
-    sample_chargepoint_state_resetted.plug_state = False
-    return sample_chargepoint_state_resetted
+def sample_chargepoint_state_is_reset():
+    sample_chargepoint_state_is_reset = sample_wrong_charge_state_chargepoint_state()
+    sample_chargepoint_state_is_reset.plug_state = False
+    return sample_chargepoint_state_is_reset
 
 
 @pytest.mark.parametrize(
@@ -161,12 +161,11 @@ def sample_chargepoint_state_resetted():
         pytest.param(sample(), 1652683242, None, None, sample_chargepoint_state(),
                      id="Timestamp gesetzt, kein Fehler aufgetreten"),
         pytest.param(sample_wrong_charge_state(), None, None, 1652683252,
-                     sample_wrong_charge_state_chargepoint_state(), id="kein Timestamp gesetzt, Fehler aufgetreten"),
-        pytest.param(sample_wrong_charge_state(), 1652683242, None, 1652683242,
-                     sample_wrong_charge_state_chargepoint_state(),
+                     None, id="kein Timestamp gesetzt, Fehler aufgetreten"),
+        pytest.param(sample_wrong_charge_state(), 1652683242, None, 1652683242, None,
                      id="Timestamp gesetzt, Fehler aufgetreten, Timestamp nicht abgelaufen"),
-        pytest.param(sample_wrong_charge_state(), 1652683182, ValueError, 1652683182,
-                     sample_chargepoint_state_resetted(),
+        pytest.param(sample_wrong_charge_state(), 1652683112, ValueError, 1652683112,
+                     sample_chargepoint_state_is_reset(),
                      id="Timestamp gesetzt, Fehler aufgetreten, Timestamp abgelaufen"),
     ])
 def test_error_timestamp(sample_state,
@@ -185,7 +184,6 @@ def test_error_timestamp(sample_state,
 
     cp = chargepoint_module.ChargepointModule(OpenWBPro(configuration=OpenWBProConfiguration(ip_address=SAMPLE_IP)))
     cp.client_error_context.error_timestamp = error_timestamp
-    cp.old_chargepoint_state = sample_chargepoint_state
 
     # evaluation
     if expected_exception is not None:

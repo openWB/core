@@ -29,13 +29,15 @@
       <div class="row q-mt-sm">
         <div class="col">
           <div class="text-subtitle2">Leistung</div>
-          {{ power }}
-          <q-badge rounded color="primary" :label="phaseNumber">
-            <q-tooltip class="bg-primary">Phasenanzahl</q-tooltip>
-          </q-badge>
-          {{ chargingCurrent + ' A' }}
+          <div class="col no-wrap">
+            <ChargePointPowerData
+              :power="power"
+              :phase-number="phaseNumber"
+              :current="chargingCurrent"
+            />
+          </div>
         </div>
-        <div class="col q-pl-sm">
+        <div class="col text-right">
           <div class="text-subtitle2">geladen</div>
           {{ energyChargedPlugged }}
         </div>
@@ -79,7 +81,8 @@
     :chargePointId="props.chargePointId"
     v-model="settingsVisible"
   />
-  <ChargePointManualSocDialog
+  <ManualSocDialog
+    :vehicleId="vehicleId"
     :chargePointId="props.chargePointId"
     v-model:socDialogVisible="socInputVisible"
   />
@@ -96,8 +99,9 @@ import ChargePointStateMessage from './ChargePointStateMessage.vue';
 import ChargePointFaultMessage from './ChargePointFaultMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
-import ChargePointManualSocDialog from './ChargePointManualSocDialog.vue';
+import ManualSocDialog from './ManualSocDialog.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
+import ChargePointPowerData from './ChargePointPowerData.vue';
 import { useQuasar } from 'quasar';
 
 const mqttStore = useMqttStore();
@@ -107,6 +111,11 @@ const $q = useQuasar();
 const props = defineProps<{
   chargePointId: number;
 }>();
+
+const vehicleId = computed(() => {
+  return mqttStore.chargePointConnectedVehicleInfo(props.chargePointId).value
+    ?.id;
+});
 
 const limitMode = computed(() => {
   switch (chargeMode.value) {
@@ -133,21 +142,25 @@ const settingsVisible = ref<boolean>(false);
 
 const socInputVisible = ref<boolean>(false);
 const name = computed(() => mqttStore.chargePointName(props.chargePointId));
-
-const power = computed(() =>
-  mqttStore.chargePointPower(props.chargePointId, 'textValue'),
+// Typecast to string is better here because the store method returns a union type which
+// would need to be repeated in child component ChargePointPowerData
+// unnecessary as parameter returnType: string = 'textValue' is already set as default in store
+const power = computed(
+  () => mqttStore.chargePointPower(props.chargePointId) as string,
 );
 
 const energyChargedPlugged = computed(() =>
-  mqttStore.chargePointEnergyChargedPlugged(props.chargePointId, 'textValue'),
+  mqttStore.chargePointEnergyChargedPlugged(props.chargePointId),
 );
 
 const phaseNumber = computed(() =>
   mqttStore.chargePointPhaseNumber(props.chargePointId),
 );
-
-const chargingCurrent = computed(() =>
-  mqttStore.chargePointChargingCurrent(props.chargePointId),
+// Typecast to string is better here because the store method returns a union type which
+// would need to be repeated in child component ChargePointPowerData
+// unnecessary as parameter returnType: string = 'textValue' is already set as default in store
+const chargingCurrent = computed(
+  () => mqttStore.chargePointChargingCurrent(props.chargePointId) as string,
 );
 
 const currentValue = computed(() => {
@@ -263,6 +276,6 @@ const refreshSoc = () => {
 </script>
 <style lang="scss" scoped>
 .card-width {
-  max-width: 24em;
+  width: 22em;
 }
 </style>

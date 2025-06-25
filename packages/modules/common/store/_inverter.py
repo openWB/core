@@ -86,7 +86,9 @@ class PurgeInverterState:
                 # Manche Systeme werden auch aus dem Netz geladen, um einen Mindest-SoC zu halten.
                 if state.dc_power == 0:
                     power = 0
-        return InverterState(power=power, exported=exported)
+        state.power = power
+        state.exported = exported
+        return state
 
 
 def get_inverter_value_store(component_num: int) -> PurgeInverterState:

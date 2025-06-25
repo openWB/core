@@ -4,7 +4,7 @@
 import copy
 import dataclasses
 from pathlib import Path
-import threading
+from threading import Event
 from typing import List, Optional, Tuple
 import re
 import paho.mqtt.client as mqtt
@@ -23,10 +23,10 @@ mqtt_log = logging.getLogger("mqtt")
 
 class SetData:
     def __init__(self,
-                 event_ev_template: threading.Event,
-                 event_cp_config: threading.Event,
-                 event_soc: threading.Event,
-                 event_subdata_initialized: threading.Event):
+                 event_ev_template: Event,
+                 event_cp_config: Event,
+                 event_soc: Event,
+                 event_subdata_initialized: Event):
         self.event_ev_template = event_ev_template
         self.event_cp_config = event_cp_config
         self.event_soc = event_soc
@@ -502,7 +502,8 @@ class SetData:
                         "/control_parameter/timestamp_switch_on_off" in msg.topic or
                         "/control_parameter/timestamp_charge_start" in msg.topic or
                         "/control_parameter/timestamp_chargemode_changed" in msg.topic or
-                        "/control_parameter/timestamp_last_phase_switch" in msg.topic):
+                        "/control_parameter/timestamp_last_phase_switch" in msg.topic or
+                        "/control_parameter/timestamp_phase_switch_buffer_start" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
                     self._validate_value(msg, int, [(0, 7)])
@@ -633,13 +634,13 @@ class SetData:
                 self._validate_value(msg, float)
             elif "openWB/set/bat/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
-            elif "openWB/set/bat/get/power" in msg.topic:
+            elif ("openWB/set/bat/get/power" in msg.topic or
+                    "openWB/set/bat/set/power_limit" in msg.topic):
                 self._validate_value(msg, float)
             elif ("openWB/set/bat/get/imported" in msg.topic or
                     "openWB/set/bat/get/exported" in msg.topic or
                     "openWB/set/bat/get/daily_exported" in msg.topic or
-                    "openWB/set/bat/get/daily_imported" in msg.topic or
-                    "openWB/set/bat/set/power_limit" in msg.topic):
+                    "openWB/set/bat/get/daily_imported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/bat/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
@@ -793,6 +794,8 @@ class SetData:
             self.process_bat_topic(msg)
         elif "openWB/set/mqtt/pv/" in msg.topic:
             self.process_pv_topic(msg)
+        elif "openWB/set/mqtt/vehicle/" in msg.topic:
+            self.process_vehicle_topic(msg)
 
     def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
@@ -1015,6 +1018,8 @@ class SetData:
                         self.__unknown_topic(msg)
                 elif "/config" in msg.topic:
                     self._validate_value(msg, "json")
+                elif "/error_timestamp" in msg.topic:
+                    self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/get/fault_str" in msg.topic:
@@ -1026,6 +1031,10 @@ class SetData:
             elif "io" in msg.topic:
                 if "/config" in msg.topic:
                     self._validate_value(msg, "json")
+                elif "/set/manual/analog_output" in msg.topic:
+                    self._validate_value(msg, float)
+                elif "/set/manual/digital_output" in msg.topic:
+                    self._validate_value(msg, bool)
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 # log.error("Unbekanntes set-Topic: "+str(msg.topic)+", "+

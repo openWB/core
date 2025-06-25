@@ -11,6 +11,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_internal_chargepoint_value_store, get_chargepoint_value_store
 from modules.internal_chargepoint_handler.clients import ClientHandler
 from helpermodules.subdata import SubData
+from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
 
 log = logging.getLogger(__name__)
 
@@ -26,14 +27,14 @@ class ChargepointModule(AbstractChargepoint):
     def __init__(self, local_charge_point_num: int,
                  client_handler: ClientHandler,
                  parent_hostname: str,
-                 parent_cp: int,
+                 internal_cp: InternalChargepoint,
                  hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
         self.fault_state = FaultState(ComponentInfo(
             hierarchy_id,
             "Ladepunkt "+str(local_charge_point_num),
-            "chargepoint",
-            parent_id=parent_cp,
+            "internal_chargepoint",
+            parent_id=internal_cp.data.parent_cp,
             parent_hostname=parent_hostname))
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
         self.store = get_chargepoint_value_store(hierarchy_id)
@@ -41,6 +42,7 @@ class ChargepointModule(AbstractChargepoint):
             f"openWB/set/internal_chargepoint/{local_charge_point_num}/get/error_timestamp",
             CP_ERROR,
             hide_exception=True)
+        self.client_error_context.error_timestamp = internal_cp.get.error_timestamp
         self.old_plug_state = False
         self.old_phases_in_use = 0
         self.old_chargepoint_state = ChargepointState()

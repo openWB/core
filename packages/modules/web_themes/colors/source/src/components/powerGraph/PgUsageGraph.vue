@@ -155,9 +155,6 @@ const keysToUse = computed(() => {
 			k.splice(idx + i, 0, key)
 			colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
 		})
-		if (globalConfig.showInverters) {
-			k.push('evuOut')
-		}
 		return k
 	}
 })

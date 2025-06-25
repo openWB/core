@@ -14,6 +14,7 @@ from control.counter import Get as CounterGet
 from control.counter import Set as CounterSet
 from control.counter_all import CounterAll
 from control.pv import Pv, PvData
+from control.pv import Config as PvConfig
 from control.pv import Get as PvGet
 from helpermodules import hardware_configuration, pub, timecheck
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
@@ -155,7 +156,7 @@ def data_() -> None:
         set=Mock(spec=BatSet, power_limit=None)))})
     data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(
         spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None,
-                              fault_state=0)))})
+                              fault_state=0), config=Mock(spec=PvConfig, max_ac_out=10000)))})
     data.data.counter_data.update({
         "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, currents=[40]*3, power=6200, daily_imported=45000, daily_exported=3000, fault_state=0))),

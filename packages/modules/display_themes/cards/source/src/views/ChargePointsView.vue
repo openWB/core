@@ -1000,7 +1000,7 @@ export default {
         name="tab-eco-charging"
       >
         <i-form>
-          <i-form-group>
+          <i-form-group v-if="mqttStore.getEtConfigured">
             <i-form-label>Minimaler Dauerstrom unter Preisgrenze</i-form-label>
             <extended-number-input
               unit="A"
@@ -1212,7 +1212,7 @@ export default {
               "
             />
           </i-form-group>
-          <i-form-group>
+          <i-form-group v-if="mqttStore.getEtConfigured">
             <i-form-label>Preisgrenze für strompreisbasiertes Laden</i-form-label>
             <extended-number-input
               unit="ct/kWh"
@@ -1260,6 +1260,7 @@ export default {
               ),
             ).length === 0
           "
+          color="warning"
         >
           <template #icon>
             <font-awesome-icon

@@ -3,6 +3,8 @@ import logging
 from typing import TypeVar, Generic, Dict, Any, Callable, Iterable, List
 
 from dataclass_utils import dataclass_from_dict
+from helpermodules import timecheck
+from helpermodules.pub import Pub
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext, MultiComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -22,9 +24,16 @@ class IndependentComponentUpdater(Generic[T_COMPONENT]):
         self.__updater = updater
 
     def __call__(self, components: Iterable[T_COMPONENT], error_handler: Callable) -> None:
+        # error_handler nur einmal ausführen, da er für das ganze Gerät gilt
+        run_error_handler = False
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state, error_handler):
-                self.__updater(component)
+            try:
+                with SingleComponentUpdateContext(component.fault_state, reraise=True):
+                    self.__updater(component)
+            except Exception:
+                run_error_handler = True
+        if run_error_handler:
+            error_handler()
 
 
 class MultiComponentUpdater:
@@ -66,26 +75,33 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
                  device_config: T_DEVICE_CONFIG,
                  component_factory: ComponentFactory[Any, T_COMPONENT],
                  component_updater: ComponentUpdater[T_COMPONENT],
-                 initializer: Callable = lambda: None) -> None:
+                 initializer: Callable = lambda: None,
+                 error_handler: Callable = lambda: None) -> None:
         self.__initializer = initializer
+        self.__error_handler = error_handler
         self.__component_factory = component_factory
         self.__component_updater = component_updater
         self.device_config = device_config
         self.components: Dict[str, T_COMPONENT] = {}
-
+        self.error_timestamp = None
         try:
             self.__initializer()
         except Exception:
             log.exception(f"Initialisierung von Gerät {self.device_config.name} fehlgeschlagen")
 
-    def error_handler(self):
-        self.__initializer()
-        for component in self.components.values():
-            component.initialize()
+    def error_handler(self) -> None:
+        if self.error_timestamp is None:
+            self.error_timestamp = timecheck.create_timestamp()
+            Pub().pub(f"openWB/set/system/device/{self.device_config.id}/error_timestamp", self.error_timestamp)
+            log.debug(
+                f"Fehler bei Gerät {self.device_config.name} aufgetreten, Fehlerzeitstempel: {self.error_timestamp}")
+        if timecheck.check_timestamp(self.error_timestamp, 60) is False:
+            self.__error_handler()
+            self.error_timestamp = None
+            Pub().pub(self.topic, self.error_timestamp)
 
     def add_component(self, component_config: T_COMPONENT_CONFIG) -> None:
-        with SingleComponentUpdateContext(FaultState(ComponentInfo.from_component_config(component_config)),
-                                          self.__initializer):
+        with SingleComponentUpdateContext(FaultState(ComponentInfo.from_component_config(component_config))):
             component = self.__component_factory(component_config)
             component.initialized = False
             self.components["component" + str(component_config.id)] = component

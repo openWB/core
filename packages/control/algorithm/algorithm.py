@@ -33,7 +33,6 @@ class Algorithm:
             common.reset_current_to_target_current()
             self.additional_current.set_additional_current()
             counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
-            self.surplus_controlled.check_switch_on()
             if self.evu_counter.data.set.surplus_power_left > 0:
                 log.info("**PV-geführten Strom setzen**")
                 common.reset_current_to_target_current()

@@ -64,7 +64,7 @@ class SurplusControlled:
                 dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.data.set.current_prev
                 # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
                 # nachregeln, auch wenn der Regelbereich eingehalten wird. Sonst würde zB nicht berücksichtigt werden,
-                # wenn noch ein Fahrzeug dazu kommmt.
+                # wenn noch ein Fahrzeug dazu kommt.
                 if ((pv_charging.control_range[1] - pv_charging.control_range[0]) /
                         (sum(counter.data.get.voltages) / len(counter.data.get.voltages)) < abs(dif_to_old_current)):
                     current = available_for_cp
@@ -178,15 +178,6 @@ class SurplusControlled:
                         evu_counter.switch_on_timer_expired(cp)
                     if control_parameter.state not in CHARGING_STATES:
                         control_parameter.required_currents = [0]*3
-            except Exception:
-                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
-
-    def check_switch_on(self) -> None:
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
-            try:
-                if (cp.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
-                        cp.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
-                    data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
             except Exception:
                 log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
 

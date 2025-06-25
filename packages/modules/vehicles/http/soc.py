@@ -18,13 +18,13 @@ def fetch_soc(config: HttpSocSetup) -> CarState:
     soc_url = config.configuration.soc_url
     range_url = config.configuration.range_url
     if soc_url is None or soc_url == "none":
-        log.warn("http_soc: soc_url not defined - set soc to 0")
+        log.warning("http_soc: soc_url not defined - set soc to 0")
         soc = 0
     else:
         soc_text = req.get_http_session().get(soc_url, timeout=5).text
         soc = int(soc_text)
     if range_url is None or range_url == "none":
-        log.warn("http_soc: range_url not defined - set range to 0.0")
+        log.warning("http_soc: range_url not defined - set range to 0.0")
         range = float(0)
     else:
         range_text = req.get_http_session().get(range_url, timeout=5).text

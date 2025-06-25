@@ -56,7 +56,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 83
+    DATASTORE_VERSION = 84
 
     valid_topic = [
         "^openWB/bat/config/configured$",
@@ -112,6 +112,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/currents$",
         "^openWB/chargepoint/[0-9]+/get/current_branch$",
         "^openWB/chargepoint/[0-9]+/get/current_commit$",
+        "^openWB/chargepoint/[0-9]+/get/error_timestamp$",
         "^openWB/chargepoint/[0-9]+/get/evse_current$",
         "^openWB/chargepoint/[0-9]+/get/fault_state$",
         "^openWB/chargepoint/[0-9]+/get/fault_str$",
@@ -256,6 +257,7 @@ class UpdateConfig:
         "^openWB/internal_chargepoint/[0-1]/get/currents$",
         "^openWB/internal_chargepoint/[0-1]/get/current_branch$",
         "^openWB/internal_chargepoint/[0-1]/get/current_commit$",
+        "^openWB/internal_chargepoint/[0-1]/get/error_timestamp$",
         "^openWB/internal_chargepoint/[0-1]/get/evse_current$",
         "^openWB/internal_chargepoint/[0-1]/get/fault_state$",
         "^openWB/internal_chargepoint/[0-1]/get/fault_str$",
@@ -302,6 +304,9 @@ class UpdateConfig:
         "^openWB/mqtt/inverter/[0-9]+/get/power$",
         "^openWB/mqtt/inverter/[0-9]+/get/exported$",
         "^openWB/mqtt/inverter/[0-9]+/get/dc_power$",
+        "^openWB/mqtt/vehicle/[0-9]+/get/range$",
+        "^openWB/mqtt/vehicle/[0-9]+/get/soc$",
+        "^openWB/mqtt/vehicle/[0-9]+/get/soc_timestamp$",
 
         "^openWB/set/log/request",
         "^openWB/set/log/data",
@@ -2229,3 +2234,22 @@ class UpdateConfig:
                 return topics
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 83)
+
+    def upgrade_datastore_83(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                if payload.get("type") == "solaredge":
+                    for component_topic, component_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config",
+                                     component_topic) is not None:
+                            config_payload = decode_payload(component_payload)
+                            if (config_payload["type"] == "bat" and
+                                    config_payload["configuration"].get("battery_index") is None):
+                                config_payload["configuration"].update({
+                                    "battery_index": 1,
+                                })
+                                return {component_topic: config_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 84)

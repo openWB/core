@@ -97,7 +97,7 @@ class RfidReader:
             devices = [InputDevice(path) for path in list_devices()]
             for device in devices:
                 log.debug(f"**** {device.path} {device.name} {device.phys} ****")
-                log.debug(device.capabilities(verbose=True))
+                # log.debug(device.capabilities(verbose=True))
                 device_capabilities = device.capabilities()
                 if ecodes.EV_KEY in device_capabilities:
                     log.debug("device emits keyboard events")

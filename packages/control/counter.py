@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm.utils import get_medium_charging_current
+from control.chargemode import Chargemode
 from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
@@ -253,15 +254,15 @@ class Counter:
         return (-self.calc_surplus() - self.data.set.released_surplus +
                 self.data.set.reserved_surplus - feed_in_yield)
 
-    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Einschaltverzögerung unterschritten."
-    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald in {} die Einschaltverzögerung abgelaufen ist."
+    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Wartezeit unterschritten."
+    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald in {} die Wartezeit abgelaufen ist."
     SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle nicht erreicht "
                               "wird.")
-    SWITCH_ON_EXPIRED = "Einschaltschwelle für die Dauer der Einschaltverzögerung überschritten."
+    SWITCH_ON_EXPIRED = "Einschaltschwelle für die Dauer der Wartezeit überschritten."
     SWITCH_ON_MAX_PHASES = "Der Überschuss ist ausreichend, um direkt mit {} Phasen zu laden."
 
     def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
-        surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
+        surplus = self.calc_raw_surplus() - self.data.set.reserved_surplus
         control_parameter = chargepoint.data.control_parameter
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
 
@@ -344,7 +345,7 @@ class Counter:
                     feed_in_yield = 0
                 ev_template = charging_ev_data.ev_template
                 max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
-                if (control_parameter.submode == "pv_charging" and
+                if (control_parameter.submode == Chargemode.PV_CHARGING and
                     chargepoint.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0 and
                         chargepoint.cp_ev_support_phase_switch() and
                         self.get_usable_surplus(feed_in_yield) > max_phases_power):
@@ -354,8 +355,8 @@ class Counter:
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
-    SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
-    SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Abschaltverzögerung in {} gestoppt."
+    SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Wartezeit gestoppt."
+    SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Wartezeit in {} gestoppt."
     SWITCH_OFF_NO_STOP = ("Der Ladevorgang wird trotz fehlenden Überschusses nicht gestoppt, da in dem Fahrzeug-Profil "
                           "die Einstellung 'Ladung aktiv halten' aktiviert ist.")
     SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."

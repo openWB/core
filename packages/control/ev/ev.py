@@ -144,71 +144,72 @@ class Ev:
         tmp_message = None
         state = True
         try:
-            if charge_template.data.chargemode.selected == "scheduled_charging":
-                plan_data = charge_template.scheduled_charging_recent_plan(
-                    self.data.get.soc,
-                    self.ev_template,
-                    control_parameter.phases,
-                    imported_since_plugged,
-                    max_phases_hw,
-                    phase_switch_supported,
-                    charging_type,
-                    chargemode_switch_timestamp,
-                    control_parameter)
-                soc_request_interval_offset = 0
-                if plan_data:
-                    # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
-                    # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
-                    if (self.soc_module and
-                            charge_template.data.chargemode.
-                            scheduled_charging.plans[str(plan_data.plan.id)].limit.selected == "soc"):
-                        soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
-                    control_parameter.current_plan = plan_data.plan.id
-                else:
-                    control_parameter.current_plan = None
-                required_current, submode, tmp_message, phases = charge_template.scheduled_charging_calc_current(
-                    plan_data,
-                    self.data.get.soc,
-                    imported_since_plugged,
-                    control_parameter.phases,
-                    control_parameter.min_current,
-                    soc_request_interval_offset,
-                    charging_type,
-                    self.ev_template)
-                message = f"{tmp_message or ''}".strip()
-
-            # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
-            if (submode != "instant_charging" and
-                    charge_template.data.time_charging.active):
-                tmp_current, tmp_submode, tmp_message, plan_id, phases = charge_template.time_charging(
-                    self.data.get.soc,
-                    imported_since_plugged,
-                    charging_type
-                )
-                # Info vom Zielladen erhalten
-                message = f"{message or ''} {tmp_message or ''}".strip()
-                if tmp_current > 0:
-                    control_parameter.current_plan = plan_id
-                    required_current = tmp_current
-                    submode = tmp_submode
-            if (required_current == 0) or (required_current is None):
-                if charge_template.data.chargemode.selected == "instant_charging":
-                    required_current, submode, tmp_message, phases = charge_template.instant_charging(
+            if charge_template.data.chargemode.selected == "stop":
+                required_current, submode, message = charge_template.stop()
+                phases = control_parameter.phases or max_phases_hw
+            else:
+                if charge_template.data.chargemode.selected == "scheduled_charging":
+                    plan_data = charge_template.scheduled_charging_recent_plan(
+                        self.data.get.soc,
+                        self.ev_template,
+                        control_parameter.phases,
+                        imported_since_plugged,
+                        max_phases_hw,
+                        phase_switch_supported,
+                        charging_type,
+                        chargemode_switch_timestamp,
+                        control_parameter)
+                    soc_request_interval_offset = 0
+                    if plan_data:
+                        # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
+                        # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
+                        if (self.soc_module and
+                                charge_template.data.chargemode.
+                                scheduled_charging.plans[str(plan_data.plan.id)].limit.selected == "soc"):
+                            soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
+                        control_parameter.current_plan = plan_data.plan.id
+                    else:
+                        control_parameter.current_plan = None
+                    required_current, submode, tmp_message, phases = charge_template.scheduled_charging_calc_current(
+                        plan_data,
                         self.data.get.soc,
                         imported_since_plugged,
-                        charging_type)
-                elif charge_template.data.chargemode.selected == "pv_charging":
-                    required_current, submode, tmp_message, phases = charge_template.pv_charging(
-                        self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
-                elif charge_template.data.chargemode.selected == "eco_charging":
-                    required_current, submode, tmp_message, phases = charge_template.eco_charging(
-                        self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
-                elif charge_template.data.chargemode.selected == "stop":
-                    required_current, submode, tmp_message = charge_template.stop()
-                    phases = control_parameter.phases or max_phases_hw
-                else:
-                    tmp_message = None
-                message = f"{message or ''} {tmp_message or ''}".strip()
+                        control_parameter.phases,
+                        control_parameter.min_current,
+                        soc_request_interval_offset,
+                        charging_type,
+                        self.ev_template)
+                    message = f"{tmp_message or ''}".strip()
+
+                # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
+                if (submode != "instant_charging" and
+                        charge_template.data.time_charging.active):
+                    tmp_current, tmp_submode, tmp_message, plan_id, phases = charge_template.time_charging(
+                        self.data.get.soc,
+                        imported_since_plugged,
+                        charging_type
+                    )
+                    # Info vom Zielladen erhalten
+                    message = f"{message or ''} {tmp_message or ''}".strip()
+                    if tmp_current > 0:
+                        control_parameter.current_plan = plan_id
+                        required_current = tmp_current
+                        submode = tmp_submode
+                if (required_current == 0) or (required_current is None):
+                    if charge_template.data.chargemode.selected == "instant_charging":
+                        required_current, submode, tmp_message, phases = charge_template.instant_charging(
+                            self.data.get.soc,
+                            imported_since_plugged,
+                            charging_type)
+                    elif charge_template.data.chargemode.selected == "pv_charging":
+                        required_current, submode, tmp_message, phases = charge_template.pv_charging(
+                            self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
+                    elif charge_template.data.chargemode.selected == "eco_charging":
+                        required_current, submode, tmp_message, phases = charge_template.eco_charging(
+                            self.data.get.soc, control_parameter, charging_type, imported_since_plugged, max_phases_hw)
+                    else:
+                        tmp_message = None
+                    message = f"{message or ''} {tmp_message or ''}".strip()
             if submode == "stop" or (charge_template.data.chargemode.selected == "stop"):
                 state = False
                 if phases is None:
@@ -287,9 +288,9 @@ class Ev:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
-        unblanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
+        unbalanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
         condition_1_to_3 = (((get_medium_charging_current(get_currents) > max_current and
-                            all_surplus > required_surplus) or unblanced_load_limit_reached) and
+                            all_surplus > required_surplus) or unbalanced_load_limit_reached) and
                             phases_in_use == 1)
         condition_3_to_1 = get_medium_charging_current(
             get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
@@ -315,7 +316,6 @@ class Ev:
                           max_phases: int,
                           limit: LoadmanagementLimit) -> Tuple[int, float, Optional[str]]:
         message = None
-        timestamp_last_phase_switch = control_parameter.timestamp_last_phase_switch
         current = control_parameter.required_current
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
@@ -334,12 +334,14 @@ class Ev:
 
             new_phase = max_phases
             new_current = control_parameter.min_current
+            waiting_time = pv_config.switch_on_delay
         else:
             direction_str = f"Umschaltung von {max_phases} auf 1"
             # Es kann einphasig mit entsprechend niedriger Leistung gestartet werden.
             required_reserved_power = 0
             new_phase = 1
             new_current = self.ev_template.data.max_current_single_phase
+            waiting_time = pv_config.switch_off_delay
 
         log.debug(
             f'Genutzter Strom: {get_medium_charging_current(get_currents)}A, Überschuss: {all_surplus}W, benötigte '
@@ -360,17 +362,21 @@ class Ev:
                     ).data.set.reserved_surplus += max(0, required_reserved_power)
                     message = self.PHASE_SWITCH_DELAY_TEXT.format(
                         direction_str,
-                        timecheck.convert_timestamp_delta_to_time_string(timestamp_last_phase_switch, delay))
+                        self._remaining_phase_switch_time(control_parameter,
+                                                          waiting_time,
+                                                          delay)[1])
                     control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
                 elif condition_msg:
                     log.debug(f"Keine Phasenumschaltung{condition_msg}")
             else:
                 if condition:
                     # Timer laufen lassen
-                    if timecheck.check_timestamp(control_parameter.timestamp_last_phase_switch, delay):
-                        message = self.PHASE_SWITCH_DELAY_TEXT.format(
-                            direction_str,
-                            timecheck.convert_timestamp_delta_to_time_string(timestamp_last_phase_switch, delay))
+                    timestamp_passed, remaining_time = self._remaining_phase_switch_time(
+                        control_parameter,
+                        waiting_time,
+                        delay)
+                    if timestamp_passed is False:
+                        message = self.PHASE_SWITCH_DELAY_TEXT.format(direction_str, remaining_time)
                     else:
                         data.data.counter_all_data.get_evu_counter(
                         ).data.set.reserved_surplus -= max(0, required_reserved_power)
@@ -387,6 +393,36 @@ class Ev:
         if message:
             log.info(f"LP {cp_num}: {message}")
         return phases_to_use, current, message
+
+    def _remaining_phase_switch_time(self, control_parameter: ControlParameter,
+                                     waiting_time: float,
+                                     buffer: float) -> float:
+
+        if control_parameter.timestamp_phase_switch_buffer_start is None:
+            control_parameter.timestamp_phase_switch_buffer_start = timecheck.create_timestamp()
+        # Wenn der Puffer seit der letzen Umschaltung abgelaufen ist, warte noch die Umschaltverzögerung ab. ODER
+        # Wenn der Puffer noch nicht abgelaufen ist und Wartezeit länger als Pufferzeit, dann warte Wartezeit ab
+        remaining_buffer = (buffer - (control_parameter.timestamp_phase_switch_buffer_start -
+                                      control_parameter.timestamp_last_phase_switch))
+        if remaining_buffer < 0 or remaining_buffer < waiting_time:
+            if timecheck.check_timestamp(control_parameter.timestamp_phase_switch_buffer_start, waiting_time):
+                remaining_time = timecheck.convert_timestamp_delta_to_time_string(
+                    control_parameter.timestamp_phase_switch_buffer_start, waiting_time)
+                log.debug(f"Warte verbleibende Wartezeit ab: {remaining_time}")
+                return False, remaining_time
+            else:
+                control_parameter.timestamp_phase_switch_buffer_start = None
+                return True, None
+        else:
+            # Puffer noch nicht abgelaufen, verbleibende Pufferzeit ist länger als Wartezeit
+            if timecheck.check_timestamp(control_parameter.timestamp_last_phase_switch, buffer):
+                remaining_time = timecheck.convert_timestamp_delta_to_time_string(
+                    control_parameter.timestamp_last_phase_switch, buffer)
+                log.debug(f"Warte verbleibende Pufferzeit ab: {remaining_time}")
+                return False, remaining_time
+            else:
+                control_parameter.timestamp_phase_switch_buffer_start = None
+                return True, None
 
     def reset_phase_switch(self, control_parameter: ControlParameter):
         """ Zurücksetzen der Zeitstempel und reservierten Leistung.

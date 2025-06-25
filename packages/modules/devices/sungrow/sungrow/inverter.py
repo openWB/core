@@ -37,17 +37,29 @@ class SungrowInverter(AbstractInverter):
                                                            wordorder=Endian.Little, unit=unit) * -1
             dc_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
                                                               wordorder=Endian.Little, unit=unit) * -1
+
+            current_L1 = self.__tcp_client.read_input_registers(13030, ModbusDataType.INT_16, unit=unit) * -0.1
+            current_L2 = self.__tcp_client.read_input_registers(13031, ModbusDataType.INT_16, unit=unit) * -0.1
+            current_L3 = self.__tcp_client.read_input_registers(13032, ModbusDataType.INT_16, unit=unit) * -0.1
+            currents = [current_L1, current_L2, current_L3]
         else:
             power = self.__tcp_client.read_input_registers(5030, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -1
             dc_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
                                                               wordorder=Endian.Little, unit=unit) * -1
 
-        _, exported = self.sim_counter.sim_count(power)
+            current_L1 = self.__tcp_client.read_input_registers(5021, ModbusDataType.UINT_16, unit=unit) * -0.1
+            current_L2 = self.__tcp_client.read_input_registers(5022, ModbusDataType.UINT_16, unit=unit) * -0.1
+            current_L3 = self.__tcp_client.read_input_registers(5023, ModbusDataType.UINT_16, unit=unit) * -0.1
+            currents = [current_L1, current_L2, current_L3]
+
+        imported, exported = self.sim_counter.sim_count(power)
 
         inverter_state = InverterState(
             power=power,
             dc_power=dc_power,
+            currents=currents,
+            imported=imported,
             exported=exported
         )
         self.store.set(inverter_state)

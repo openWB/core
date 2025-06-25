@@ -43,7 +43,10 @@ function getColors(index: number) {
 	const fg = props.options[index][2] || 'var(--color-fg)'
 	const bg = 'var(--color-bg)'
 	if (props.options[index][1] == v.value) {
-		return { color: fg, background: 'var(--color-menu)' }
+		return {
+			color: bg,
+			background: props.options[index][2] || 'var(--color-menu)',
+		}
 	} else {
 		return { color: fg, background: bg }
 	}

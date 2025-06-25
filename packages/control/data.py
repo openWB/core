@@ -4,7 +4,7 @@ Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden mus
 """
 import copy
 import logging
-import threading
+from threading import Event, Lock
 from functools import wraps
 from typing import Dict
 from control.bat import Bat
@@ -30,27 +30,27 @@ from modules.common.abstract_device import AbstractDevice
 from modules.common.abstract_io import AbstractIoDevice
 
 log = logging.getLogger(__name__)
-bat_data_lock = threading.Lock()
-bat_all_data_lock = threading.Lock()
-graph_data_lock = threading.Lock()
-counter_data_lock = threading.Lock()
-counter_all_data_lock = threading.Lock()
-cp_data_lock = threading.Lock()
-cp_all_data_lock = threading.Lock()
-cp_template_data_lock = threading.Lock()
-ev_charge_template_data_lock = threading.Lock()
-ev_data_lock = threading.Lock()
-ev_template_data_lock = threading.Lock()
-general_data_lock = threading.Lock()
-io_actions_lock = threading.Lock()
-io_states_lock = threading.Lock()
-optional_data_lock = threading.Lock()
-pv_data_lock = threading.Lock()
-pv_all_data_lock = threading.Lock()
-system_data_lock = threading.Lock()
+bat_data_lock = Lock()
+bat_all_data_lock = Lock()
+graph_data_lock = Lock()
+counter_data_lock = Lock()
+counter_all_data_lock = Lock()
+cp_data_lock = Lock()
+cp_all_data_lock = Lock()
+cp_template_data_lock = Lock()
+ev_charge_template_data_lock = Lock()
+ev_data_lock = Lock()
+ev_template_data_lock = Lock()
+general_data_lock = Lock()
+io_actions_lock = Lock()
+io_states_lock = Lock()
+optional_data_lock = Lock()
+pv_data_lock = Lock()
+pv_all_data_lock = Lock()
+system_data_lock = Lock()
 
 
-def locked(lock: threading.Lock):
+def locked(lock: Lock):
     def decorate(method):
         @wraps(method)
         def inner(*args, **kwargs):
@@ -65,7 +65,7 @@ def locked(lock: threading.Lock):
 
 
 class Data:
-    def __init__(self, event_module_update_completed: threading.Event):
+    def __init__(self, event_module_update_completed: Event):
         self.event_module_update_completed = event_module_update_completed
         self._bat_data: Dict[str, Bat] = {}
         self._bat_all_data = BatAll()
@@ -489,7 +489,7 @@ class ModuleDataReceivedContext:
 data: Data
 
 
-def data_init(event_module_update_completed: threading.Event):
+def data_init(event_module_update_completed: Event):
     """instanziiert die Data-Klasse.
     """
     global data
