@@ -121,7 +121,12 @@ class SubData:
         """ subscribe topics
         """
         client.subscribe([
-            ("openWB/vehicle/#", 2),
+            ("openWB/vehicle/set/#", 2),
+            ("openWB/vehicle/template/#", 2),
+            ("openWB/vehicle/+/+", 2),
+            ("openWB/vehicle/+/get/#", 2),
+            ("openWB/vehicle/+/soc_module/config", 2),
+            ("openWB/vehicle/+/set/#", 2),
             ("openWB/chargepoint/#", 2),
             ("openWB/pv/#", 2),
             ("openWB/bat/#", 2),
