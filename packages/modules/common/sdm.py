@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 import time
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
+from modules.common.component_state import CounterState
+from modules.common.fault_state import FaultState
+from modules.common.hardware_check import check_meter_values
 from modules.common.modbus import ModbusDataType
 
 
@@ -13,6 +16,8 @@ class Sdm(AbstractCounter):
         self.id = modbus_id
         self.last_query = self._get_time_ms()
         self.WAIT_MS_BETWEEN_QUERIES = 100
+        with client:
+            self.serial_number = str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, unit=self.id))
 
     def get_imported(self) -> float:
         self._ensure_min_time_between_queries()
@@ -29,10 +34,6 @@ class Sdm(AbstractCounter):
             frequency = frequency / 10
         return frequency
 
-    def get_serial_number(self) -> Optional[str]:
-        self._ensure_min_time_between_queries()
-        return str(self.client.read_holding_registers(0xFC00, ModbusDataType.INT_32, unit=self.id))
-
     # These meters require some minimum time between subsequent Modbus reads. Some Eastron papers recommend 100 ms.
     # Sometimes the time between calls to the get_* methods are much shorter so we forcibly wait for the remaining time.
     def _ensure_min_time_between_queries(self) -> None:
@@ -45,10 +46,14 @@ class Sdm(AbstractCounter):
     def _get_time_ms(self) -> float:
         return time.time_ns() / 1e6
 
+    def get_serial_number(self) -> str:
+        return self.serial_number
+
 
 class Sdm630_72(Sdm):
-    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
+    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
         super().__init__(modbus_id, client)
+        self.fault_state = fault_state
 
     def get_currents(self) -> List[float]:
         self._ensure_min_time_between_queries()
@@ -68,10 +73,27 @@ class Sdm630_72(Sdm):
         self._ensure_min_time_between_queries()
         return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, unit=self.id)
 
+    def get_counter_state(self) -> CounterState:
+        powers, power = self.get_power()
+        counter_state = CounterState(
+            imported=self.get_imported(),
+            exported=self.get_exported(),
+            power=power,
+            voltages=self.get_voltages(),
+            currents=self.get_currents(),
+            powers=powers,
+            power_factors=self.get_power_factors(),
+            frequency=self.get_frequency(),
+            serial_number=self.get_serial_number()
+        )
+        check_meter_values(counter_state, self.fault_state)
+        return counter_state
+
 
 class Sdm120(Sdm):
-    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
+    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
         super().__init__(modbus_id, client)
+        self.fault_state = fault_state
 
     def get_power(self) -> Tuple[List[float], float]:
         self._ensure_min_time_between_queries()
@@ -90,3 +112,17 @@ class Sdm120(Sdm):
     def get_power_factors(self) -> List[float]:
         self._ensure_min_time_between_queries()
         return [self.client.read_input_registers(0x1E, ModbusDataType.FLOAT_32, unit=self.id), 0.0, 0.0]
+
+    def get_counter_state(self) -> CounterState:
+        powers, power = self.get_power()
+        counter_state = CounterState(
+            imported=self.get_imported(),
+            exported=self.get_exported(),
+            power=power,
+            currents=self.get_currents(),
+            powers=powers,
+            frequency=self.get_frequency(),
+            serial_number=self.get_serial_number()
+        )
+        check_meter_values(counter_state, self.fault_state)
+        return counter_state
