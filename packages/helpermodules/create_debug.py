@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 import requests
-import re
 
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
@@ -78,11 +77,9 @@ def get_hardware_data():
     else:
         parsed_data += "aktuell: okay"
     if throttled & mask_undervoltage_reboot:
-        parsed_data += ", seit Reboot: Undervoltage (< 4.63V)\n"
+        parsed_data += ", seit Reboot: Undervoltage (< 4.63V)"
     else:
-        parsed_data += ", seit Reboot: okay\n"
-    parsed_data += f'{get_usb_rs()}'
-    parsed_data += f'{get_rfid_reader()}\n'
+        parsed_data += ", seit Reboot: okay"
     return parsed_data
 
 
@@ -351,42 +348,6 @@ def merge_log_files(log_name, num_lines):
     return ''.join(lines[-num_lines:])
 
 
-def get_rfid_reader():
-    devices = ["ffff:0035"]
-    device_count = 0
-    parsed_data = "RFID_Reader: "
-    for device in devices:
-        result = re.sub(re.compile(r"Bus [0-9]+ Device [0-9]+: ID [0-9a-f]+:[0-9a-f]+ "), '',
-                        run_shell_command(f"lsusb | grep {device} | tail -1"))
-        count = run_shell_command(f"lsusb | grep -c {device}")
-        device_count += int(count)
-        if int(count) > 0:
-            parsed_data += f"{int(count)}x {result}"
-    if device_count == 0:
-        parsed_data += "Kein RFID Reader gefunden"
-    elif device_count > 1:
-        parsed_data += f"Fehler: Es sind {device_count} RFID Reader gefunden worden\n"
-    return parsed_data
-
-
-def get_usb_rs():
-    devices = ["0403:6001", "1a86:55d3"]
-    device_count = 0
-    parsed_data = "USB_RS: "
-    for device in devices:
-        result = re.sub(re.compile(r"Bus [0-9]+ Device [0-9]+: ID [0-9a-f]+:[0-9a-f]+ "), '',
-                        run_shell_command(f"lsusb | grep {device} | tail -1"))
-        count = run_shell_command(f"lsusb | grep -c {device}")
-        device_count += int(count)
-        if int(count) > 0:
-            parsed_data += f"{int(count)}x {result}"
-    if device_count == 0:
-        parsed_data += "Kein USB/RS Wandler gefunden\n"
-    elif device_count > 1:
-        parsed_data += f"Fehler: Es sind {device_count} USB/RS Wandler gefunden worden\n"
-    return parsed_data
-
-
 def get_uuids():
     try:
         with open(openwb_base_dir / 'data/log/uuid', 'r') as uuid_file:
@@ -410,14 +371,15 @@ def create_debug_log(input_data):
         header = (f"{input_data['message']}\n{debug_email}\n{input_data['serialNumber']}\n"
                   f"{input_data['installedComponents']}\n{input_data['vehicles']}\n")
         with open(debug_file, 'w+') as df:
+            write_to_file(df, lambda: "# section: form data #")
             write_to_file(df, lambda: header)
             write_to_file(df, lambda: f'# section: system #\n{get_common_data()}'
                                       f'Kernel: {run_shell_command("uname -s -r -v -m -o")}\n'
                                       f'Uptime:{run_command(["uptime"])}{run_command(["free"])}\n')
-            write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}\n')
+            write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}')
+            write_to_file(df, lambda: f'USB_Devices:{run_shell_command(["lsusb"])}\n')
             write_to_file(df, lambda: f"# section: configuration and state #\n{config_and_state()}")
             write_to_file(df, lambda: f"# section: uuids #\n{get_uuids()}\n")
-            write_to_file(df, lambda: f'# section: network #\n{run_command(["ip", "-s", "address"])}\n')
             write_to_file(df, lambda: f'# section: storage #\n{run_command(["df", "-h"])}\n')
             write_to_file(df, lambda: f"# section: broker essentials #\n{broker.get_broker_essentials()}\n")
             write_to_file(
@@ -437,6 +399,7 @@ def create_debug_log(input_data):
             write_to_file(df, lambda: f'# section: soc log #\n{merge_log_files("soc", 1000)}\n')
             write_to_file(df, lambda: f'# section: charge log #\n{merge_log_files("chargelog", 1000)}\n')
             write_to_file(df, lambda: f"# section: broker #\n{broker.get_broker()}")
+            write_to_file(df, lambda: f'# section: network #\n{run_command(["ip", "-s", "address"])}\n')
 
         log.info("***** uploading debug log...")
         with open(debug_file, 'rb') as f:
