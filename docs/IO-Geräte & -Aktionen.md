@@ -28,3 +28,6 @@ Die AddOn-Platine stellt 7 Eingänge und 3 Ausgänge zur Verfügung. WICHTIG: In
 ### Steuerbare Verbrauchseinrichtungen: Dimmen per EMS, Dimmung per Direkt-Steuerung, RSE
 
 Ausführliche Informationen findest Du im gesonderten Wiki-Beitrag [Steuerbare Verbrauchseinrichtungen](https://github.com/openWB/core/wiki/Steuerbare-Verbrauchseinrichtungen-nach-§14a)
+
+## Manuelles Setzen der Ausgänge
+Die Ausgänge aller IO-Geräte können per MQTT gesetzt werden. Die Topics findet Ihr in den Einstellungen des jeweiligen Geräts als Copy-to-Clipboard-Link. Das manuelle Setzen des Ausgangs überschreibt den Wert, den zB die openWB bei einer IO-Aktion gesetzt hat.
