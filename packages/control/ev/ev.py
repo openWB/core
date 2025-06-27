@@ -12,7 +12,6 @@ from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
 from dataclass_utils.factories import empty_list_factory
 from control.text import BidiState
-from control.limiting_value import LimitingValue
 from control.limiting_value import LimitingValue, LoadmanagementLimit
 from dataclasses import dataclass, field
 import logging
