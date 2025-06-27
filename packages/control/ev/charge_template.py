@@ -447,7 +447,7 @@ class ChargeTemplate:
                     plan_id = list(plan_dict.keys())[0]
                     plan_end_time = list(plan_dict.values())[0]
 
-                    plan = plans[plan_id]
+                    plan = plans[str(plan_id)]
 
                     remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
                         plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,

@@ -24,7 +24,7 @@ OLD_CHARGEPOINT_STATE.imported = 80
 
 @pytest.mark.parametrize(
     "old_chargepoint_state, published_topics",
-    [(None, 50),
+    [(None, 52),
      (OLD_CHARGEPOINT_STATE, 2)]
 
 )
