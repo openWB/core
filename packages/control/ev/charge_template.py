@@ -12,7 +12,7 @@ from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
 from control.text import BidiState
 from dataclass_utils.factories import empty_dict_factory
-from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan
+from helpermodules.abstract_plans import Limit, ScheduledLimit, limit_factory, ScheduledChargingPlan
 from helpermodules import timecheck
 log = logging.getLogger(__name__)
 
@@ -48,9 +48,13 @@ def scheduled_charging_plan_factory() -> ScheduledChargingPlan:
     return ScheduledChargingPlan()
 
 
+def bidi_charging_plan_factory() -> ScheduledChargingPlan:
+    return ScheduledChargingPlan(name="Bidi-Plan", limit=ScheduledLimit(selected="soc"))
+
+
 @dataclass
 class BidiCharging:
-    plan: ScheduledChargingPlan = field(default_factory=scheduled_charging_plan_factory)
+    plan: ScheduledChargingPlan = field(default_factory=bidi_charging_plan_factory)
     power: int = 9000
 
 
@@ -369,7 +373,7 @@ class ChargeTemplate:
             message = bidi.value + message
             return required_current, submode, message, phases
         elif soc > self.data.chargemode.bidi_charging.plan.limit.soc_scheduled:
-            return 0, "bidi_charging", None, phases_in_use
+            return control_parameter.min_current, "bidi_charging", None, phases_in_use
         elif soc < self.data.chargemode.bidi_charging.plan.limit.soc_scheduled:
             # kein bidirektionales Laden, da SoC noch nicht erreicht
             missing_amount = ((self.data.chargemode.bidi_charging.plan.limit.soc_scheduled -
@@ -381,7 +385,7 @@ class ChargeTemplate:
             bidi_power_plan.current = self.data.chargemode.bidi_charging.power / phases_in_use / 230
             bidi_power_plan.phases_to_use = phases_in_use
             bidi_power_plan.phases_to_use_pv = phases_in_use
-            plan_end_time = timecheck.check_end_time(bidi_power_plan, chargemode_switch_timestamp)
+            plan_end_time = timecheck.check_end_time(bidi_power_plan, chargemode_switch_timestamp, False)
             if plan_end_time is None:
                 plan_data = None
             else:
