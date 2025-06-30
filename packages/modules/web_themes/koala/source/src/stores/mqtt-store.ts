@@ -1612,13 +1612,21 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleTimeChargingPlans(chargePointId).value;
-        const plan = plans.find((p) => p.id === planId);
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.active;
       },
       set(newValue: boolean) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/time_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'active', true);
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const planIndex = plans.findIndex((plan) => plan.id === planId);
+        if (planIndex === -1) return;
+        const objectPath = `time_charging.plans.${planIndex}.active`;
+        updateTopic(
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+          newValue,
+          objectPath,
+          true,
+        );
       },
     });
   };
@@ -2085,65 +2093,30 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns ScheduledChargingPlan[] | undefined
    */
-  const vehicleScheduledChargingPlans = (chargePointId: number) => {
-    return computed(() => {
-      const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans`;
-      const plans = getWildcardValues.value(`${baseTopic}/+`) as Record<
-        string,
-        Omit<ScheduledChargingPlan, 'id' | 'frequency.selected_days'>
-      >;
-      //filter used here to prevent undefined values in the plans object due to mqtt topic loading time
-      return Object.keys(plans)
-        .filter((planKey) => plans[planKey] && plans[planKey].frequency)
-        .map((planKey) => {
-          const plan = plans[planKey];
-          const planId = parseInt(planKey.split('/').pop() || '');
-          return {
-            ...plan,
-            id: planId,
-            frequency: {
-              ...plan.frequency,
-              selected_days: getSelectedDays(plan.frequency.weekly),
-            },
-          } as ScheduledChargingPlan;
-        });
-    });
-  };
+  const vehicleScheduledChargingPlans = computed(() => {
+    return (chargePointId: number) => {
+      const plans = getValue.value(
+        `openWB/chargepoint/${chargePointId}/set/charge_template`,
+        'chargemode.scheduled_charging.plans',
+      ) as ScheduledChargingPlan[] | undefined;
+      return Array.isArray(plans) ? plans : [];
+    };
+  });
 
   /**
    * Get time charging plan/s data identified by the charge point id
    * @param chargePointId charge point id
    * @returns TimeChargingPlan[]
    */
-  const vehicleTimeChargingPlans = (chargePointId: number) => {
-    return computed(() => {
-      const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/time_charging/plans`;
-      const plans = getWildcardValues.value(`${baseTopic}/+`) as Record<
-        string,
-        TimeChargingPlan
-      >;
-      return Object.keys(plans).map((planKey) => {
-        return {
-          ...plans[planKey],
-        } as TimeChargingPlan;
-      });
-    });
-  };
-
-  /**
-   * Helper function to convert a boolean array to a string array of selected days
-   * @param weekly boolean array of selected days
-   * @returns string[] string array of selected days
-   */
-  const getSelectedDays = (weekly: boolean[] | undefined): string[] => {
-    const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-    return weekly
-      ? (weekly
-          .map((isSelected, index) => (isSelected ? weekDays[index] : null))
-          .filter(Boolean) as string[]) // Filter out null values
-      : [];
-  };
+  const vehicleTimeChargingPlans = computed(() => {
+    return (chargePointId: number) => {
+      const plans = getValue.value(
+        `openWB/chargepoint/${chargePointId}/set/charge_template`,
+        'time_charging.plans',
+      ) as TimeChargingPlan[] | undefined;
+      return Array.isArray(plans) ? plans : [];
+    };
+  });
 
   /**
    * Get or set the active state of the scheduled charging plan identified by the scheduled charge plan id
@@ -2157,19 +2130,49 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
-        const plan = plans.find((p) => p.id === planId);
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.active;
       },
       set(newValue: boolean) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'active', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'active',
+          newValue,
+        );
       },
     });
   };
 
   /**
-   * Get or set the active state of the scheduled charging plan identified by the scheduled charge plan id
+   * Helper function to update a subtopic of a scheduled charging plan
+   * @param chargePointId charge point id
+   * @param planId scheduled plan id
+   * @param propertyPath path to the property to update
+   * @param newValue new value to set
+   * @returns void
+   */
+  const updateScheduledChargingPlanSubtopic = <T>(
+    chargePointId: number,
+    planId: number,
+    propertyPath: string,
+    newValue: T,
+  ): void => {
+    const plans = vehicleScheduledChargingPlans.value(chargePointId);
+    const planIndex = plans.findIndex((plan) => plan.id === planId);
+    if (planIndex === -1) return;
+    const objectPath = `chargemode.scheduled_charging.plans.${planIndex}.${propertyPath}`;
+    updateTopic(
+      `openWB/chargepoint/${chargePointId}/set/charge_template`,
+      newValue,
+      objectPath,
+      true,
+    );
+  };
+
+  /**
+   * Get or set the active state {energy tariff} of the scheduled charging plan identified by the scheduled charge plan id
    * @param chargePointId charge point id
    * @param planId scheduled plan id
    * @returns boolean | undefined
@@ -2180,13 +2183,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
-        const plan = plans.find((p) => p.id === planId);
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.et_active;
       },
       set(newValue: boolean) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'et_active', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'et_active',
+          newValue,
+        );
       },
     });
   };
@@ -2213,12 +2220,12 @@ export const useMqttStore = defineStore('mqtt', () => {
           : 'scheduledCharging',
         plan: chargePointConnectedVehicleConfig(chargePointId).value
           ?.time_charging_in_use
-          ? vehicleTimeChargingPlans(chargePointId).value.find(
-              (plan) => plan.id === planId,
-            )
-          : vehicleScheduledChargingPlans(chargePointId).value.find(
-              (plan) => plan.id === planId,
-            ),
+          ? vehicleTimeChargingPlans
+              .value(chargePointId)
+              .find((plan) => plan.id === planId)
+          : vehicleScheduledChargingPlans
+              .value(chargePointId)
+              .find((plan) => plan.id === planId),
       };
     });
   };
@@ -2279,13 +2286,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
-        const plan = plans.find((p) => p.id === planId);
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.current;
       },
       set(newValue: number) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'current', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'current',
+          newValue,
+        );
       },
     });
   };
@@ -2302,13 +2313,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
-        const plan = plans.find((p) => p.id === planId);
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.limit.selected;
       },
       set(newValue: string) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'limit.selected', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'limit.selected',
+          newValue,
+        );
       },
     });
   };
@@ -2325,7 +2340,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         const amount = plan?.limit.amount;
         if (amount === undefined) {
@@ -2335,8 +2350,12 @@ export const useMqttStore = defineStore('mqtt', () => {
         return valueObject.scaledValue;
       },
       set(newValue: number) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue * 1000, 'limit.amount', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'limit.amount',
+          newValue,
+        );
       },
     });
   };
@@ -2353,13 +2372,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         return plan?.name;
       },
       set(newValue: string) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'name', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'name',
+          newValue,
+        );
       },
     });
   };
@@ -2376,13 +2399,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         return plan?.time;
       },
       set(newValue: string) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'time', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'time',
+          newValue,
+        );
       },
     });
   };
@@ -2399,13 +2426,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         return plan?.frequency.selected;
       },
       set(newValue: 'once' | 'daily' | 'weekly') {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'frequency.selected', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'frequency.selected',
+          newValue,
+        );
       },
     });
   };
@@ -2422,13 +2453,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         return plan?.frequency.once;
       },
       set(newValue: string) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'frequency.once', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'frequency.once',
+          newValue,
+        );
       },
     });
   };
@@ -2445,13 +2480,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         return plan?.frequency.weekly;
       },
       set(newValue: boolean[]) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'frequency.weekly', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'frequency.weekly',
+          newValue,
+        );
       },
     });
   };
@@ -2468,13 +2507,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         return plan?.limit.soc_limit;
       },
       set(newValue: number) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'limit.soc_limit', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'limit.soc_limit',
+          newValue,
+        );
       },
     });
   };
@@ -2491,13 +2534,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         return plan?.limit.soc_scheduled;
       },
       set(newValue: number) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'limit.soc_scheduled', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'limit.soc_scheduled',
+          newValue,
+        );
       },
     });
   };
@@ -2513,13 +2560,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         return plan?.phases_to_use;
       },
       set(newValue: number) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'phases_to_use', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'phases_to_use',
+          newValue,
+        );
       },
     });
   };
@@ -2535,13 +2586,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   ) => {
     return computed({
       get() {
-        const plans = vehicleScheduledChargingPlans(chargePointId).value;
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
         return plan?.phases_to_use_pv;
       },
       set(newValue: number) {
-        const baseTopic = `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`;
-        updateTopic(baseTopic, newValue, 'phases_to_use_pv', true);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'phases_to_use_pv',
+          newValue,
+        );
       },
     });
   };
