@@ -153,7 +153,7 @@ def test_calc_remaining_time(phases_to_use,
 
     # execution
     remaining_time, missing_amount, phases, duration = ct._calc_remaining_time(
-        plan, 6000, 50, evt, 3000, max_hw_phases, phase_switch_supported, ChargingType.AC.value, 2)
+        plan, 6000, 50, evt, 3000, max_hw_phases, phase_switch_supported, ChargingType.AC.value, 2, 0)
     # end time 16.5.22 10:00
 
     # evaluation
@@ -203,7 +203,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
 
     # execution
     selected_plan = ct.scheduled_charging_recent_plan(
-        60, EvTemplate(), 3, 200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter))
+        60, EvTemplate(), 3, 200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter), 0)
 
     # evaluation
     if selected_plan:
@@ -234,7 +234,7 @@ def test_scheduled_charging_recent_plan_fulfilled(end_time_mock, expected_plan_n
 
     # execution
     selected_plan = ct.scheduled_charging_recent_plan(
-        60, EvTemplate(), 3, 1200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter))
+        60, EvTemplate(), 3, 1200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter), 0)
 
     # evaluation
     if selected_plan:
