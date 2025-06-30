@@ -145,11 +145,12 @@ def check_end_time(plan: ScheduledChargingPlan,
     elif plan.frequency.selected == "weekly":
         if not any(plan.frequency.weekly):
             raise ValueError("Es muss mindestens ein Tag ausgewählt werden.")
-        end = end.replace(now.year, now.month, now.day + _get_next_charging_day(plan.frequency.weekly, now.weekday()))
+        end = end.replace(now.year, now.month, now.day)
+        end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()))
         remaining_time = end - now
         if missed_date_still_active(remaining_time):
-            end = end.replace(now.year, now.month, now.day +
-                              _get_next_charging_day(plan.frequency.weekly, now.weekday()+1)+1)
+            end = end.replace(now.year, now.month, now.day)
+            end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()+1)+1)
             remaining_time = end - now
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')

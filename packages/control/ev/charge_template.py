@@ -264,7 +264,7 @@ class ChargeTemplate:
                     message = self.PV_CHARGING_MIN_CURRENT_CHARGING
             return current, sub_mode, message, phases
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ct_num))
+            log.exception("Fehler im ev-Modul "+str(self.data.id))
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), 1
 
     def eco_charging(self,
@@ -337,7 +337,7 @@ class ChargeTemplate:
                     log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}, "
                               f"Plan erfüllt: {plan_fulfilled}")
                 except Exception:
-                    log.exception("Fehler im ev-Modul "+str(self.ct_num))
+                    log.exception("Fehler im ev-Modul "+str(self.data.id))
         if plans_diff_end_date:
             # ermittle den Key vom kleinsten value in plans_diff_end_date
             filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] is not None]
