@@ -62,7 +62,7 @@
 	</p>
 
 	<div v-if="showPlanDetails">
-		<ChargePlanDetails
+		<ScheduleDetails
 			v-for="plan in plans"
 			:key="plan.id"
 			:plan="plan"
@@ -75,13 +75,14 @@
 import { computed, ref } from 'vue'
 import { ChargePoint, type ChargeSchedule } from '../model'
 import { updateChargeTemplate } from '@/assets/js/sendMessages'
-import ChargePlanDetails from './ChargePlanDetails.vue'
+import ScheduleDetails from './ScheduleDetails.vue'
 import { formatWattH } from '@/assets/js/helpers'
+
 const showPlanDetails = ref(false)
 const freqNames: { [key: string]: string } = {
 	daily: 'Täglich',
 	once: 'Einmal',
-	weekly: 'Wöchentlich',
+	weekly: 'Woche',
 }
 const props = defineProps<{
 	chargePoint: ChargePoint

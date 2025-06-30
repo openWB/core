@@ -466,8 +466,7 @@ export interface ChargeTimePlan {
 	limit: {
 		selected: string
 		amount: number
-		soc_limit: number
-		soc_scheduled: number
+		soc: number
 	}
 	frequency: {
 		once: string[]
