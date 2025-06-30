@@ -317,7 +317,8 @@ class ChargeTemplate:
                                        phase_switch_supported: bool,
                                        charging_type: str,
                                        chargemode_switch_timestamp: float,
-                                       control_parameter: ControlParameter) -> Optional[SelectedPlan]:
+                                       control_parameter: ControlParameter,
+                                       soc_request_interval_offset: int) -> Optional[SelectedPlan]:
         plans_diff_end_date = []
         for p in self.data.chargemode.scheduled_charging.plans.values():
             if p.active:
@@ -350,7 +351,7 @@ class ChargeTemplate:
 
                     remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
                         plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
-                        charging_type, control_parameter.phases)
+                        charging_type, control_parameter.phases, soc_request_interval_offset)
 
                     return SelectedPlan(remaining_time=remaining_time,
                                         duration=duration,
@@ -369,7 +370,8 @@ class ChargeTemplate:
                              max_hw_phases: int,
                              phase_switch_supported: bool,
                              charging_type: str,
-                             control_parameter_phases) -> SelectedPlan:
+                             control_parameter_phases: int,
+                             soc_request_interval_offset: int) -> SelectedPlan:
         if plan.phases_to_use == 0:
             if max_hw_phases == 1:
                 duration, missing_amount = self._calculate_duration(
@@ -389,7 +391,9 @@ class ChargeTemplate:
                 duration_1p, missing_amount = self._calculate_duration(
                     plan, soc, ev_template.data.battery_capacity, used_amount, 1, charging_type, ev_template)
                 remaining_time_1p = plan_end_time - duration_1p
-                if remaining_time_1p < 0:
+                # Kurz vor dem nächsten Abfragen des SoC, wenn noch der alte SoC da ist, kann es sein, dass die Zeit
+                # für 1p nicht mehr reicht, weil die Regelung den neuen SoC noch nicht kennt.
+                if remaining_time_1p - (soc_request_interval_offset if plan.limit.selected == "soc" else 0) < 0:
                     # Zeit reicht nicht mehr für einphasiges Laden
                     remaining_time = remaining_time_3p
                     duration = duration_3p
@@ -477,6 +481,8 @@ class ChargeTemplate:
         else:
             plan_current = plan.dc_current
             max_current = ev_template.data.dc_max_current
+        if plan.limit.selected != "soc":
+            soc_request_interval_offset = 0
         log.debug("Verwendeter Plan: "+str(plan.name))
         if limit.selected == "soc" and soc >= limit.soc_limit and soc >= limit.soc_scheduled:
             message = self.SCHEDULED_CHARGING_REACHED_LIMIT_SOC
