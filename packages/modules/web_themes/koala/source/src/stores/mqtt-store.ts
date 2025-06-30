@@ -878,7 +878,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const chargePointConnectedVehicleForceSocUpdate = (chargePointId: number) => {
     const vehicleId = chargePointConnectedVehicleInfo(chargePointId).value?.id;
     if (vehicleId !== undefined) {
-      const topic = `openWB/set/vehicle/${vehicleId}/get/force_soc_update`;
+      const topic = `openWB/vehicle/${vehicleId}/get/force_soc_update`;
       console.log(topic);
       sendTopicToBroker(topic, 1);
     }

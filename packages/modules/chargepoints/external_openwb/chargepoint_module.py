@@ -101,6 +101,9 @@ class ChargepointModule(AbstractChargepoint):
                         vehicle_id=received_topics.get(f"{topic_prefix}vehicle_id"),
                         evse_current=received_topics.get(f"{topic_prefix}evse_current"),
                         max_evse_current=received_topics.get(f"{topic_prefix}max_evse_current"),
+                        version=received_topics.get(f"{topic_prefix}version"),
+                        current_branch=received_topics.get(f"{topic_prefix}current_branch"),
+                        current_commit=received_topics.get(f"{topic_prefix}current_commit")
                     )
                     self.store.set(chargepoint_state)
                     if received_topics.get(f"{topic_prefix}fault_state") == 2:

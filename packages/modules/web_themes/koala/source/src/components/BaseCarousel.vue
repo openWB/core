@@ -9,10 +9,7 @@
     padding
     :navigation="groupedItems.length > 1"
     :arrows="groupedItems.length > 1 && $q.screen.gt.xs"
-    :class="[
-      'q-mt-md',
-      isMobile ? 'carousel-height-mobile' : 'carousel-height-desktop',
-    ]"
+    class="carousel-height q-mt-md"
     transition-next="slide-left"
     transition-prev="slide-right"
     @mousedown.prevent
@@ -37,9 +34,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
-import { useQuasar, Platform } from 'quasar';
-
-const isMobile = computed(() => Platform.is.mobile);
+import { useQuasar } from 'quasar';
 
 const props = defineProps<{
   items: number[];
@@ -150,13 +145,8 @@ watch(
   padding: 0.25em;
 }
 
-.carousel-height-mobile {
+.carousel-height {
   min-height: fit-content;
   height: 100%;
-}
-
-.carousel-height-desktop {
-  min-height: fit-content;
-  height: auto;
 }
 </style>
