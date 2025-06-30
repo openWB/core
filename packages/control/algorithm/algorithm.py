@@ -4,7 +4,7 @@ from control import counter
 from control import data
 from control.algorithm import common
 from control.algorithm.additional_current import AdditionalCurrent
-from control.algorithm.bidi import Bidi
+from control.algorithm.bidi_charging import Bidi
 from control.algorithm.min_current import MinCurrent
 from control.algorithm.no_current import NoCurrent
 from control.algorithm.surplus_controlled import SurplusControlled
@@ -42,8 +42,7 @@ class Algorithm:
                 self.surplus_controlled.set_surplus_current()
             else:
                 log.info("Keine Leistung für PV-geführtes Laden übrig.")
-            log.info("**Bidi-Entlade-Strom setzen**")
-            counter.set_raw_surplus_power_left()
+            log.info("**Bidi-(Ent-)Lade-Strom setzen**")
             self.bidi.set_bidi()
             self.no_current.set_no_current()
             self.no_current.set_none_current()

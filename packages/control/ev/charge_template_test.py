@@ -185,7 +185,7 @@ def test_calculate_duration(selected: str, phases: int, expected_duration: float
         pytest.param([1000, 1500, 2000], 0, id="1st plan"),
         pytest.param([1500, 1000, 2000], 1, id="2nd plan"),
         pytest.param([1500, 2000, 1000], 2, id="3rd plan"),
-        pytest.param([None]*3, 0, id="no plan"),
+        pytest.param([None]*3, None, id="no plan"),
     ])
 def test_scheduled_charging_recent_plan(end_time_mock,
                                         expected_plan_num: Optional[int],
