@@ -136,7 +136,8 @@ const yAxisGenerator = computed(() => {
 			.ticks(yDomain.value[1] - yDomain.value[0])
 			.tickSize(0)
 			.tickSizeInner(-(width - margin.right - margin.left))
-			.tickFormat((d) => d.toString())
+			//.tickFormat((d) => d.toString())
+			.tickFormat((d: number) => (d % 5 != 0 ? '' : d.toString()))
 	)
 })
 // Draw the diagram
