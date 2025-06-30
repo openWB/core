@@ -16,7 +16,7 @@ MAXTIMEDIFF=$((7 * 24 * 60 * 60)) # one week
 
 if [ ! -e "$LOGFILE" ]; then
 	# create log file and header
-	echo "Date Time;Timestamp;openWB Serial Number;processor name;processor id;mac addr;ip addr;openWB Version;mmc serial number;mmc manufacturing date;Kernel" >"$LOGFILE"
+	echo "Date Time;Timestamp;openWB Serial Number;processor name;processor id;mac addr;ip addr;openWB Version;mmc serial number;mmc manufacturing date;Kernel;FS" >"$LOGFILE"
 else
 	# check file size and truncate
 	lines=$(wc -l "$LOGFILE" | cut -d " " -f 1)
@@ -71,8 +71,16 @@ fi
 # kernel revision
 kernel=$(uname -r)
 
+# filesystem dirtyflag
+fs="-"
+if (sudo dmesg | grep -i "recovery required on readonly filesystem"); then
+	fs=$(echo "dirty")
+else
+	fs=$(echo "clean")
+fi
+
 # check for changes and time since last entry
-newData="$owbSerial;$cpuName;$cpuId;$ethMac;$ipAddresses;$owbVersion;$mmcSerial;$mmcManufacturing;$kernel"
+newData="$owbSerial;$cpuName;$cpuId;$ethMac;$ipAddresses;$owbVersion;$mmcSerial;$mmcManufacturing;$kernel;$fs"
 oldData=$(tail -n 1 "$LOGFILE" | cut -d ";" -f 3-)
 oldTimestamp=$(tail -n 1 "$LOGFILE" | cut -d ";" -f 2)
 if [[ $newData != "$oldData" ]] || ((now - oldTimestamp > MAXTIMEDIFF)); then
