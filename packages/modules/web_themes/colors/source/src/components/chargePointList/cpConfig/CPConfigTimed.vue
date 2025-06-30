@@ -24,9 +24,10 @@
 				</td>
 				<td class="tablecell left">
 					<a
+						v-if="props.chargePoint.chargeTemplate?.id != undefined"
 						:href="
 							'../../settings/#/VehicleConfiguration/charge_template/' +
-							props.chargeTemplateId
+							props.chargePoint.chargeTemplate.id
 						"
 					>
 						<span
@@ -45,7 +46,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { timeChargingPlans } from '../model'
+import { ChargePoint, type ChargeTimePlan } from '../model'
 
 const freqNames: { [key: string]: string } = {
 	daily: 'Täglich',
@@ -53,16 +54,15 @@ const freqNames: { [key: string]: string } = {
 	weekly: 'Wöchentlich',
 }
 const props = defineProps<{
-	chargeTemplateId: number
+	chargePoint: ChargePoint
 }>()
-const plans = computed(() => {
-	if (timeChargingPlans[props.chargeTemplateId]) {
-		let result = Object.values(timeChargingPlans[props.chargeTemplateId])
-		return result ?? []
-	} else {
-		return []
-	}
-})
+
+const plans = computed(
+	() =>
+		props.chargePoint?.chargeTemplate?.time_charging.plans ??
+		([] as ChargeTimePlan[]),
+)
+
 function switchStyle(key: number) {
 	const style = plans.value[key].active
 		? 'var(--color-switchGreen)'
