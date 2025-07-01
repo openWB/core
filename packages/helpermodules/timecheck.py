@@ -2,7 +2,7 @@
 """
 import logging
 import datetime
-from typing import Dict, List, Optional, Tuple, TypeVar, Union
+from typing import List, Optional, Tuple, TypeVar, Union
 
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -46,12 +46,12 @@ def is_now_in_locking_time(now: datetime.datetime,
 T = TypeVar("T", AutolockPlan, TimeChargingPlan)
 
 
-def check_plans_timeframe(plans: Dict[int, T]) -> Optional[T]:
+def check_plans_timeframe(plans: List[T]) -> Optional[T]:
     """ gibt den ersten aktiven Plan zurück. None, falls kein Plan aktiv ist.
     """
     state = False
     try:
-        for plan in plans.values():
+        for plan in plans:
             if plan.active:
                 state = check_timeframe(plan)
                 if state:

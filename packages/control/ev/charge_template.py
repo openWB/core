@@ -2,43 +2,39 @@ from dataclasses import asdict, dataclass, field
 import datetime
 import logging
 import traceback
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from control import data
 from control.chargepoint.chargepoint_state import CHARGING_STATES
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
-from dataclass_utils.factories import empty_dict_factory
-from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan
+from dataclass_utils.factories import empty_list_factory
+from helpermodules.abstract_plans import Limit, TimeChargingPlan, limit_factory, ScheduledChargingPlan
 from helpermodules import timecheck
 log = logging.getLogger(__name__)
 
 
 def get_new_charge_template() -> dict:
     ct_default = asdict(ChargeTemplateData())
-    ct_default["chargemode"]["scheduled_charging"].pop("plans")
-    ct_default["time_charging"].pop("plans")
     return ct_default
 
 
 def get_charge_template_default() -> dict:
     ct_default = asdict(ChargeTemplateData(name="Standard-Lade-Profil"))
-    ct_default["chargemode"]["scheduled_charging"].pop("plans")
-    ct_default["time_charging"].pop("plans")
     return ct_default
 
 
 @dataclass
 class ScheduledCharging:
-    plans: dict = field(default_factory=empty_dict_factory, metadata={
+    plans: List[ScheduledChargingPlan] = field(default_factory=empty_list_factory, metadata={
         "topic": ""})  # Dict[int,ScheduledChargingPlan] wird bei der dict to dataclass Konvertierung nicht unterstützt
 
 
 @dataclass
 class TimeCharging:
     active: bool = False
-    plans: dict = field(default_factory=empty_dict_factory, metadata={
+    plans: List[TimeChargingPlan] = field(default_factory=empty_list_factory, metadata={
         "topic": ""})  # Dict[int, TimeChargingPlan] wird bei der dict to dataclass Konvertierung nicht unterstützt
 
 
@@ -320,7 +316,7 @@ class ChargeTemplate:
                                        control_parameter: ControlParameter,
                                        soc_request_interval_offset: int) -> Optional[SelectedPlan]:
         plans_diff_end_date = []
-        for p in self.data.chargemode.scheduled_charging.plans.values():
+        for p in self.data.chargemode.scheduled_charging.plans:
             if p.active:
                 if p.limit.selected == "soc" and soc is None:
                     raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren "
@@ -347,7 +343,9 @@ class ChargeTemplate:
                     plan_id = list(plan_dict.keys())[0]
                     plan_end_time = list(plan_dict.values())[0]
 
-                    plan = self.data.chargemode.scheduled_charging.plans[str(plan_id)]
+                    for p in self.data.chargemode.scheduled_charging.plans:
+                        if p.id == plan_id:
+                            plan = p
 
                     remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
                         plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,

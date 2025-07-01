@@ -4,7 +4,8 @@ from unittest.mock import MagicMock, Mock
 import pytest
 
 from helpermodules import timecheck
-from helpermodules.abstract_plans import AutolockPlan, Frequency, ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import (AutolockPlan, FrequencyDate, FrequencyPeriod, ScheduledChargingPlan,
+                                          TimeChargingPlan)
 
 
 class Params:
@@ -43,7 +44,7 @@ def test_check_end_time(time: str,
                         plan_fulfilled: bool,
                         expected_remaining_time: float):
     # setup
-    plan = Mock(spec=ScheduledChargingPlan, time=time, frequency=Mock(spec=Frequency, selected=selected,))
+    plan = Mock(spec=ScheduledChargingPlan, time=time, frequency=Mock(spec=FrequencyDate, selected=selected,))
     if date:
         setattr(plan.frequency, selected, date)
 
@@ -74,42 +75,42 @@ def test_get_next_charging_day(weekday: int, weekly: List[bool], expected_days: 
 @pytest.mark.parametrize(
     "plan, now, expected_state",
     [pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
-                                   frequency=Frequency(selected="once", once=["2022-05-16", "2022-05-16"])),
+                                   frequency=FrequencyPeriod(selected="once", once=["2022-05-16", "2022-05-16"])),
                   "2022-05-16 9:50", False, id="once, 10-12 at 9.50"),
      pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
-                                   frequency=Frequency(selected="once", once=["2022-05-16", "2022-05-16"])),
+                                   frequency=FrequencyPeriod(selected="once", once=["2022-05-16", "2022-05-16"])),
                   "2022-05-16 10:50", True, id="once, 10-12 at 10.50"),
      pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
-                                   frequency=Frequency(selected="once", once=["2022-05-16", "2022-05-16"])),
+                                   frequency=FrequencyPeriod(selected="once", once=["2022-05-16", "2022-05-16"])),
                   "2022-05-16 13:50", False, id="once, 10-12 at 13.50"),
-     pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"], frequency=Frequency(selected="daily")),
+     pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"], frequency=FrequencyPeriod(selected="daily")),
                   "2022-05-16 11:50", True, id="daily, 10-12 at 11.50"),
-     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"], frequency=Frequency(selected="daily")),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"], frequency=FrequencyPeriod(selected="daily")),
                   "2022-05-16 22:50", True, id="daily, 22-02 at 22.50"),
-     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"], frequency=Frequency(selected="daily")),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"], frequency=FrequencyPeriod(selected="daily")),
                   "2022-05-17 1:50", True, id="daily, 22-02 at 1.50"),
-     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"], frequency=Frequency(selected="daily")),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"], frequency=FrequencyPeriod(selected="daily")),
                   "2022-05-17 2:50", False, id="daily, 22-02 at 2.50"),
      pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
-                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                                   frequency=FrequencyPeriod(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
                   "2022-05-16 10:50", True, id="weekly, 10-12 at 10.50"),
      pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
-                                   frequency=Frequency(selected="weekly", weekly=[0, 1, 0, 0, 0, 0, 0])),
+                                   frequency=FrequencyPeriod(selected="weekly", weekly=[0, 1, 0, 0, 0, 0, 0])),
                   "2022-05-16 10:50", False, id="weekly, 10-12 at 10.50"),
      pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
-                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                                   frequency=FrequencyPeriod(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
                   "2022-05-16 22:50", True, id="weekly, 22-02 at 22.50"),
      pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
-                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                                   frequency=FrequencyPeriod(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
                   "2022-05-17 1:50", True, id="weekly, 22-02 at 1.50"),
      pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
-                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                                   frequency=FrequencyPeriod(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
                   "2022-05-16 1:50", False, id="weekly, 22-02 at 1.50, weekday before"),
      pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
-                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                                   frequency=FrequencyPeriod(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
                   "2022-05-18 1:50", False, id="weekly, 22-02 at 1.50, weekday after"),
      pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
-                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                                   frequency=FrequencyPeriod(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
                   "2022-05-17 2:50", False, id="weekly, 22-02 at 2.50"),
      ]
 )

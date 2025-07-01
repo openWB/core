@@ -199,7 +199,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
     plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1, "2": plan_mock_2}
+    ct.data.chargemode.scheduled_charging.plans = [plan_mock_0, plan_mock_1, plan_mock_2]
 
     # execution
     selected_plan = ct.scheduled_charging_recent_plan(
@@ -230,7 +230,7 @@ def test_scheduled_charging_recent_plan_fulfilled(end_time_mock, expected_plan_n
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
     plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1, "2": plan_mock_2}
+    ct.data.chargemode.scheduled_charging.plans = [plan_mock_0, plan_mock_1, plan_mock_2]
 
     # execution
     selected_plan = ct.scheduled_charging_recent_plan(
@@ -284,7 +284,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
     plan = ScheduledChargingPlan(active=True, id=0)
     plan.limit.selected = selected
     # json verwandelt Keys in strings
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan}
+    ct.data.chargemode.scheduled_charging.plans = [plan]
     if plan_data:
         plan_data.plan = plan
 
@@ -318,9 +318,9 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
     # setup
     ct = ChargeTemplate()
     plan = ScheduledChargingPlan(active=True)
+    plan.et_active = True
     plan.limit.selected = "soc"
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan}
-    ct.data.chargemode.scheduled_charging.plans["0"].et_active = True
+    ct.data.chargemode.scheduled_charging.plans = [plan]
     # für Github-Test keinen Zeitstempel verwenden
     mock_et_get_loading_hours = Mock(return_value=[datetime.datetime(
         year=2022, month=5, day=16, hour=8, minute=0).timestamp()])

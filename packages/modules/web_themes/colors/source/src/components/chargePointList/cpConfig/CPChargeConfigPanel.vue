@@ -54,6 +54,13 @@
 			>
 				<i class="fa-solid fa-coins" />
 			</a>
+			<a
+				class="nav-link"
+				data-bs-toggle="tab"
+				:data-bs-target="'#timedSettings' + cpid"
+			>
+				<i class="fa-solid fa-clock" />
+			</a>
 			<!-- 	<a
 				class="nav-link"
 				data-bs-toggle="tab"
@@ -114,7 +121,7 @@
 			>
 				<CPConfigScheduled
 					v-if="chargeTemplate != undefined"
-					:charge-template-id="cp.chargeTemplate?.id ?? 0"
+					:charge-point="cp"
 				/>
 			</div>
 			<div
@@ -124,6 +131,14 @@
 				aria-labelledby="eco-tab"
 			>
 				<CPConfigEco v-if="chargeTemplate != undefined" :chargepoint="cp" />
+			</div>
+			<div
+				:id="'timedSettings' + cpid"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="scheduled-tab"
+			>
+				<CPConfigTimed v-if="chargeTemplate != undefined" :charge-point="cp" />
 			</div>
 
 			<!-- 	<div
@@ -159,11 +174,9 @@ import ConfigItem from '../../shared/ConfigItem.vue'
 import CPConfigInstant from './CPConfigInstant.vue'
 import CPConfigPv from './CPConfigPv.vue'
 import CPConfigScheduled from './CPConfigScheduled.vue'
+import CPConfigTimed from './CPConfigTimed.vue'
 import CPConfigEco from './CPConfigEco.vue'
-//import CPConfigVehicle from './CPConfigVehicle.vue'
 import CPChargeConfig from './CPChargeConfig.vue'
-//import PriceChart from '@/components/priceChart/PriceChart.vue'
-// import { etData } from '@/components/priceChart/model'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
