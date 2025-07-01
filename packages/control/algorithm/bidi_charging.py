@@ -23,9 +23,14 @@ class Bidi:
                     cp = preferenced_cps[0]
                     zero_point_adjustment = grid_counter.data.set.surplus_power_left / len(preferenced_cps)
                     log.debug(f"Nullpunktanpassung für LP{cp.num}: verbleibende Leistung {zero_point_adjustment}W")
-                    missing_currents = [0]*3
                     missing_currents = [zero_point_adjustment / cp.data.get.phases_in_use /
                                         230 for i in range(0, cp.data.get.phases_in_use)]
+                    missing_currents += [0] * (3 - len(missing_currents))
+                    for index in range(0,3):
+                        if missing_currents[index] < 0:
+                            missing_currents[index] = max(-32, missing_currents[index])
+                        else:
+                            missing_currents[index] = min(32, missing_currents[index])
                     grid_counter.update_surplus_values_left(missing_currents, cp.data.get.voltages)
                     cp.data.set.current = missing_currents[0]
                     log.info(f"LP{cp.num}: Stromstärke {missing_currents}A")
