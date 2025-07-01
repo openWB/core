@@ -12,6 +12,7 @@
           {{ cardTitle }}
         </div>
         <q-icon
+          class="cursor-pointer"
           v-if="showSettings"
           name="settings"
           size="sm"
