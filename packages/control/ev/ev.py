@@ -158,7 +158,7 @@ class Ev:
                 else:
                     soc_request_interval_offset = 0
                 if charge_template.data.chargemode.selected == "scheduled_charging":
-                    plan_data = charge_template.scheduled_charging_recent_plan(
+                    required_current, submode, tmp_message, phases = charge_template.scheduled_charging(
                         self.data.get.soc,
                         self.ev_template,
                         control_parameter.phases,
@@ -169,19 +169,6 @@ class Ev:
                         chargemode_switch_timestamp,
                         control_parameter,
                         soc_request_interval_offset)
-                    if plan_data:
-                        control_parameter.current_plan = plan_data.plan.id
-                    else:
-                        control_parameter.current_plan = None
-                    required_current, submode, tmp_message, phases = charge_template.scheduled_charging_calc_current(
-                        plan_data,
-                        self.data.get.soc,
-                        imported_since_plugged,
-                        control_parameter.phases,
-                        control_parameter.min_current,
-                        soc_request_interval_offset,
-                        charging_type,
-                        self.ev_template)
                     message = f"{tmp_message or ''}".strip()
 
                 # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.

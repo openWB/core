@@ -36,7 +36,7 @@ from control import counter_all
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
 from control.counter import get_counter_default_config
-from control.ev.charge_template import EcoCharging, get_charge_template_default
+from control.ev.charge_template import EcoCharging, get_charge_template_default, BidiCharging
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
 from control.general import ChargemodeConfig, Prices
@@ -2314,6 +2314,12 @@ class UpdateConfig:
                 payload = decode_payload(payload)
                 if "bidi" not in payload:
                     payload.update({"bidi": False})
+                return {topic: payload}
+            elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "bidi_charging" not in payload["chargemode"]:
+                    payload.pop("bidi_charging")
+                    payload["chargemode"].update({"bidi_charging": asdict(BidiCharging())})
                 return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 86)

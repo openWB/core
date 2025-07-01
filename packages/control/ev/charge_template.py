@@ -470,7 +470,6 @@ class ChargeTemplate:
                            charging_type: str,
                            chargemode_switch_timestamp: float,
                            control_parameter: ControlParameter,
-                           imported_since_plugged: float,
                            soc_request_interval_offset: int) -> Optional[SelectedPlan]:
         plan_data = self._find_recent_plan(self.data.chargemode.scheduled_charging.plans,
                                            soc,
@@ -481,7 +480,8 @@ class ChargeTemplate:
                                            phase_switch_supported,
                                            charging_type,
                                            chargemode_switch_timestamp,
-                                           control_parameter)
+                                           control_parameter,
+                                           soc_request_interval_offset)
         if plan_data:
             control_parameter.current_plan = plan_data.plan.id
         else:
@@ -489,7 +489,7 @@ class ChargeTemplate:
         return self.scheduled_charging_calc_current(
             plan_data,
             soc,
-            imported_since_plugged,
+            used_amount,
             control_parameter.phases,
             control_parameter.min_current,
             soc_request_interval_offset,
