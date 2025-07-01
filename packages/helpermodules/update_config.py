@@ -2295,5 +2295,15 @@ class UpdateConfig:
                             plan["id"] = int(get_second_index(template_topic))
                         template["autolock"]["plans"].append(plan)
                 return {topic: template}
+
+        def cp_upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                if payload["template"] is not None:
+                    charge_template = decode_payload(
+                        self.all_received_topics[f'openWB/vehicle/template/charge_template/{payload["template"]}'])
+                    return {f'openWB/chargepoint/{index}/set/charge_template': charge_template}
         self._loop_all_received_topics(upgrade)
+        self._loop_all_received_topics(cp_upgrade)
         self.__update_topic("openWB/system/datastore_version", 85)
