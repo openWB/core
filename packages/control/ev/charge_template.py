@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass, field
 import datetime
 import logging
 import traceback
-from typing import Dict, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from control import data
 from control.chargepoint.chargepoint_state import CHARGING_STATES
@@ -11,36 +11,32 @@ from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
 from control.text import BidiState
-from dataclass_utils.factories import empty_dict_factory
-from helpermodules.abstract_plans import Limit, ScheduledLimit, limit_factory, ScheduledChargingPlan
+from dataclass_utils.factories import empty_list_factory
+from helpermodules.abstract_plans import Limit, ScheduledLimit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules import timecheck
 log = logging.getLogger(__name__)
 
 
 def get_new_charge_template() -> dict:
     ct_default = asdict(ChargeTemplateData())
-    ct_default["chargemode"]["scheduled_charging"].pop("plans")
-    ct_default["time_charging"].pop("plans")
     return ct_default
 
 
 def get_charge_template_default() -> dict:
     ct_default = asdict(ChargeTemplateData(name="Standard-Lade-Profil"))
-    ct_default["chargemode"]["scheduled_charging"].pop("plans")
-    ct_default["time_charging"].pop("plans")
     return ct_default
 
 
 @dataclass
 class ScheduledCharging:
-    plans: dict = field(default_factory=empty_dict_factory, metadata={
+    plans: List[ScheduledChargingPlan] = field(default_factory=empty_list_factory, metadata={
         "topic": ""})  # Dict[int,ScheduledChargingPlan] wird bei der dict to dataclass Konvertierung nicht unterstützt
 
 
 @dataclass
 class TimeCharging:
     active: bool = False
-    plans: dict = field(default_factory=empty_dict_factory, metadata={
+    plans: List[TimeChargingPlan] = field(default_factory=empty_list_factory, metadata={
         "topic": ""})  # Dict[int, TimeChargingPlan] wird bei der dict to dataclass Konvertierung nicht unterstützt
 
 
@@ -285,7 +281,7 @@ class ChargeTemplate:
                     message = self.PV_CHARGING_MIN_CURRENT_CHARGING
             return current, sub_mode, message, phases
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ct_num))
+            log.exception("Fehler im ev-Modul "+str(self.data.id))
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), 1
 
     def eco_charging(self,
@@ -409,7 +405,7 @@ class ChargeTemplate:
                 ev_template)
 
     def _find_recent_plan(self,
-                          plans: Dict[str, ScheduledChargingPlan],
+                          plans: List[ScheduledChargingPlan],
                           soc: float,
                           ev_template: EvTemplate,
                           phases: int,
@@ -418,9 +414,10 @@ class ChargeTemplate:
                           phase_switch_supported: bool,
                           charging_type: str,
                           chargemode_switch_timestamp: float,
-                          control_parameter: ControlParameter):
+                          control_parameter: ControlParameter,
+                          soc_request_interval_offset: int):
         plans_diff_end_date = []
-        for p in plans.values():
+        for p in plans:
             if p.active:
                 if p.limit.selected == "soc" and soc is None:
                     raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren "
@@ -437,7 +434,7 @@ class ChargeTemplate:
                     log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}, "
                               f"Plan erfüllt: {plan_fulfilled}")
                 except Exception:
-                    log.exception("Fehler im ev-Modul "+str(self.ct_num))
+                    log.exception("Fehler im ev-Modul "+str(self.data.id))
         if plans_diff_end_date:
             # ermittle den Key vom kleinsten value in plans_diff_end_date
             filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] is not None]
@@ -447,11 +444,13 @@ class ChargeTemplate:
                     plan_id = list(plan_dict.keys())[0]
                     plan_end_time = list(plan_dict.values())[0]
 
-                    plan = plans[str(plan_id)]
+                    for p in plans:
+                        if p.id == plan_id:
+                            plan = p
 
                     remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
                         plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
-                        charging_type, control_parameter.phases)
+                        charging_type, control_parameter.phases, soc_request_interval_offset)
 
                     return SelectedPlan(remaining_time=remaining_time,
                                         duration=duration,
@@ -506,7 +505,8 @@ class ChargeTemplate:
                              max_hw_phases: int,
                              phase_switch_supported: bool,
                              charging_type: str,
-                             control_parameter_phases) -> SelectedPlan:
+                             control_parameter_phases: int,
+                             soc_request_interval_offset: int) -> SelectedPlan:
         if plan.phases_to_use == 0:
             if max_hw_phases == 1:
                 duration, missing_amount = self._calculate_duration(
@@ -526,7 +526,9 @@ class ChargeTemplate:
                 duration_1p, missing_amount = self._calculate_duration(
                     plan, soc, ev_template.data.battery_capacity, used_amount, 1, charging_type, ev_template)
                 remaining_time_1p = plan_end_time - duration_1p
-                if remaining_time_1p < 0:
+                # Kurz vor dem nächsten Abfragen des SoC, wenn noch der alte SoC da ist, kann es sein, dass die Zeit
+                # für 1p nicht mehr reicht, weil die Regelung den neuen SoC noch nicht kennt.
+                if remaining_time_1p - (soc_request_interval_offset if plan.limit.selected == "soc" else 0) < 0:
                     # Zeit reicht nicht mehr für einphasiges Laden
                     remaining_time = remaining_time_3p
                     duration = duration_3p
@@ -614,6 +616,8 @@ class ChargeTemplate:
         else:
             plan_current = plan.dc_current
             max_current = ev_template.data.dc_max_current
+        if plan.limit.selected != "soc":
+            soc_request_interval_offset = 0
         log.debug("Verwendeter Plan: "+str(plan.name))
         if limit.selected == "soc" and soc >= limit.soc_limit and soc >= limit.soc_scheduled:
             message = self.SCHEDULED_CHARGING_REACHED_LIMIT_SOC

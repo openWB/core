@@ -1,7 +1,7 @@
 <template>
-  <div class="q-pa-md full-height">
+  <div class="q-pa-md">
     <q-table
-      class="sticky-header-table full-height"
+      class="sticky-header-table"
       :rows="mappedRows"
       :columns="mappedColumns"
       row-key="id"
@@ -143,6 +143,7 @@ const props = defineProps<{
   columnConfig: ColumnConfiguration[];
   rowKey?: string;
   searchInputVisible?: boolean;
+  tableHeight?: string;
   filter?: string;
   columnsToSearch?: string[];
   rowExpandable?: boolean;

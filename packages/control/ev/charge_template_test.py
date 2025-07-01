@@ -153,7 +153,7 @@ def test_calc_remaining_time(phases_to_use,
 
     # execution
     remaining_time, missing_amount, phases, duration = ct._calc_remaining_time(
-        plan, 6000, 50, evt, 3000, max_hw_phases, phase_switch_supported, ChargingType.AC.value, 2)
+        plan, 6000, 50, evt, 3000, max_hw_phases, phase_switch_supported, ChargingType.AC.value, 2, 0)
     # end time 16.5.22 10:00
 
     # evaluation
@@ -200,15 +200,15 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
     plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1, "2": plan_mock_2}
+    plans = [plan_mock_0, plan_mock_1, plan_mock_2]
 
     # execution
-    selected_plan = ct.scheduled_charging(
-        60, EvTemplate(), 3, 200, 3, True, ChargingType.AC.value, 1652688000, control_parameter, 0, 120)
+    selected_plan = ct._find_recent_plan(
+        plans, 60, EvTemplate(), 3, 200, 3, True, ChargingType.AC.value, 1652688000, control_parameter, 0)
 
     # evaluation
     if selected_plan:
-        assert control_parameter.current_plan == expected_plan_num
+        assert selected_plan.plan.id == expected_plan_num
     else:
         assert selected_plan is None
 
@@ -231,11 +231,11 @@ def test_find_recent_plan_fulfilled(end_time_mock, expected_plan_num, monkeypatc
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
     plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
-    plans = {"0": plan_mock_0, "1": plan_mock_1, "2": plan_mock_2}
+    plans = [plan_mock_0, plan_mock_1, plan_mock_2]
 
     # execution
     selected_plan = ct._find_recent_plan(
-        plans, 60, EvTemplate(), 3, 1200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter))
+        plans, 60, EvTemplate(), 3, 1200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter), 0)
 
     # evaluation
     if selected_plan:
@@ -285,7 +285,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
     plan = ScheduledChargingPlan(active=True, id=0)
     plan.limit.selected = selected
     # json verwandelt Keys in strings
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan}
+    ct.data.chargemode.scheduled_charging.plans = [plan]
     if plan_data:
         plan_data.plan = plan
 
@@ -319,9 +319,9 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
     # setup
     ct = ChargeTemplate()
     plan = ScheduledChargingPlan(active=True)
+    plan.et_active = True
     plan.limit.selected = "soc"
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan}
-    ct.data.chargemode.scheduled_charging.plans["0"].et_active = True
+    ct.data.chargemode.scheduled_charging.plans = [plan]
     # für Github-Test keinen Zeitstempel verwenden
     mock_et_get_loading_hours = Mock(return_value=[datetime.datetime(
         year=2022, month=5, day=16, hour=8, minute=0).timestamp()])

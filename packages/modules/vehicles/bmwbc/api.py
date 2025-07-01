@@ -296,34 +296,37 @@ class Api:
                 # get vehicle list - needs to be called async
                 _loop = 5  # 5 retries
                 while _loop > 0:
-                    log.info(self._mode + ": reload vehicles data/" + str(_loop))
+                    _err = 0
+                    log.info(self._mode + ": reload vehicles data, _loop=" + str(_loop))
                     try:
                         await self._account[user_id].get_vehicles()
                     except MyBMWAPIError as err:
-                        log.info(self._mode + ": get_vehicles err= " + str(err.__class__) + ": " + str(err))
                         _err = -1
                         if 'Internal Server Error' in str(err):
-                            log.info(self._mode + ": get_vehicles : Internal Server Error")
+                            log.info(self._mode + ": get_vehicles : Internal Server Error (500)")
                             _err = 500
-                        if 'Request Timeout' in str(err):
-                            log.info(self._mode + ": get_vehicles : Request Timeout")
+                        elif 'Request Timeout' in str(err):
+                            log.info(self._mode + ": get_vehicles : Request Timeout (408)")
                             _err = 408
-                        log.info(self._mode + ": get_vehicles : _err=" + str(_err))
-                        time.sleep(10)  # experimental: sleep for 10 secs
-                        # log.info(self._mode + ": get_vehicles exception " + str(err))
-                        log.info("# before except login:" + str(self._auth[user_id].expires_at) +
-                                 "/" + self._auth[user_id].refresh_token)
+                        else:
+                            log.info(self._mode + ": get_vehicles err=" + str(err))
+                        log.info(self._mode + ": get_vehicles : MyBMWAPIError, _loop/_err=" +
+                                 str(_loop) + "/" + str(_err))
+                        time.sleep(10)  # sleep for 10 secs before token refresh
+                        log.info("# before except login:" + str(self._auth[user_id].expires_at))
+                        # refresh token
                         await self._auth[user_id].login()
-                        log.info("# after  except login:" + str(self._auth[user_id].expires_at) +
-                                 "/" + self._auth[user_id].refresh_token)
-                        await self._account[user_id].get_vehicles()
+                        log.info("# after  except login:" + str(self._auth[user_id].expires_at))
+                        # await self._account[user_id].get_vehicles()
+                        time.sleep(5)  # sleep for 5 secs after token refresh
                         _loop = _loop - 1
                     except Exception as err:
                         log.error("bmwbc.fetch_soc: get_vehicles Error, vehicle_id: " +
                                   vehicle_id + f" {err=}, {type(err)=}")
                         raise err
                     self._last_reload[user_id] = datetime.timestamp(datetime.now())
-                    _loop = 0
+                    if _err == 0:
+                        _loop = 0
 
             # get vehicle data for vin
             vehicle = self._account[user_id].get_vehicle(vin)

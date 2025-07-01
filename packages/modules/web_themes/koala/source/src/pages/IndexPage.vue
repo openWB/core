@@ -24,24 +24,11 @@
       <!-- Tab Panels -->
       <q-tab-panels v-model="tab" class="col">
         <!-- Charge Points -->
-        <q-tab-panel
-          name="charge-points"
-          class="q-pa-none column"
-          :class="[
-            'q-pa-none column',
-            isChargePointTableView ? '' : 'remove-flex-properties',
-          ]"
-        >
+        <q-tab-panel name="charge-points" class="q-pa-none column">
           <ChargePointInformation />
         </q-tab-panel>
         <!-- Vehicles -->
-        <q-tab-panel
-          name="vehicles"
-          :class="[
-            'q-pa-none column',
-            isVehicleTableView ? '' : 'remove-flex-properties',
-          ]"
-        >
+        <q-tab-panel name="vehicles" class="q-pa-none column">
           <VehicleInformation />
         </q-tab-panel>
         <!-- Batteries -->
@@ -58,8 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useMqttStore } from 'src/stores/mqtt-store';
+import { ref } from 'vue';
 import ChartCarousel from 'src/components/ChartCarousel.vue';
 import ChargePointInformation from 'src/components/ChargePointInformation.vue';
 import BatteryInformation from 'src/components/BatteryInformation.vue';
@@ -69,36 +55,12 @@ import VehicleInformation from 'src/components/VehicleInformation.vue';
 defineOptions({
   name: 'IndexPage',
 });
-const mqttStore = useMqttStore();
 
 const tab = ref<string>('charge-points');
-
-const isChargePointTableView = computed(() => {
-  const cardViewBreakpoint =
-    mqttStore.themeConfiguration?.chargePoint_card_view_breakpoint || 4;
-  return mqttStore.chargePointIds.length > cardViewBreakpoint;
-});
-
-const isVehicleTableView = computed(() => {
-  const cardViewBreakpoint =
-    mqttStore.themeConfiguration?.vehicle_card_view_breakpoint || 4;
-  return mqttStore.vehicleList.length > cardViewBreakpoint;
-});
 </script>
 
 <style scoped>
 .chart-section {
   height: 40vh;
-}
-.tab-section {
-  flex: 1 1 0; /* allow the tab section to grow and shrink - flex-grow - flex-shrink - flex-basis */
-  min-height: 0; /* important for flexbox overflow */
-  display: flex;
-  flex-direction: column;
-}
-/* "remove-flex-properties" prevents cards from stretching total vertical space in card view  */
-.remove-flex-properties {
-  flex: none !important;
-  height: auto !important;
 }
 </style>
