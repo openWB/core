@@ -13,7 +13,11 @@
     :unchecked-icon="icon.off"
     size="lg"
     :dense="props.dense"
-  />
+  >
+    <q-tooltip>
+      {{ priority ? 'Fahrzeug priorisiert' : 'Fahrzeug nicht priorisiert' }}
+    </q-tooltip>
+  </q-toggle>
 </template>
 
 <script setup lang="ts">
