@@ -1,14 +1,9 @@
 <template>
-  <q-scroll-area
-    v-if="chart"
-    :thumb-style="thumbStyle"
-    :bar-style="barStyle"
-    class="custom-legend-container"
-  >
-    <q-list dense class="q-pa-none">
-      <div class="row wrap q-pa-none items-center justify-center">
+  <div class="row justify-center items-center">
+  <q-btn-dropdown flat no-caps dense color="primary" label="Legend: Komponenten" class="q-mr-sm">
+    <q-list dense class="q-pa-none" style="max-height: 200px; overflow-y: auto;">
         <q-item
-          v-for="(dataset, index) in legendItems"
+          v-for="(dataset, index) in categorizedLegendItems.component"
           :key="dataset.text || index"
           clickable
           dense
@@ -26,15 +21,98 @@
             <q-item-label class="text-caption">{{ dataset.text }}</q-item-label>
           </q-item-section>
         </q-item>
-      </div>
     </q-list>
-  </q-scroll-area>
+
+  </q-btn-dropdown>
+
+  <q-btn-dropdown flat no-caps dense color="primary" label="Legend: Ladepunkte" class="q-mr-sm">
+    <q-list dense class="q-pa-none" style="max-height: 200px; overflow-y: auto;">
+        <q-item
+          v-for="(dataset, index) in categorizedLegendItems.chargepoint"
+          :key="dataset.text || index"
+          clickable
+          dense
+          class="q-py-none"
+          :class="{ 'legend-item-hidden': dataset.hidden }"
+          @click="toggleDataset(dataset.text, dataset.datasetIndex)"
+        >
+          <q-item-section avatar class="q-pr-none">
+            <div
+              class="legend-color-box q-mr-sm"
+              :style="{ backgroundColor: getItemColor(dataset) }"
+            ></div>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-caption">{{ dataset.text }}</q-item-label>
+          </q-item-section>
+        </q-item>
+    </q-list>
+
+  </q-btn-dropdown>
+
+  <q-btn-dropdown flat no-caps dense color="primary" label="Legend: Fahrzeuge" class="q-mr-sm">
+    <q-list dense class="q-pa-none" style="max-height: 200px; overflow-y: auto;">
+        <q-item
+          v-for="(dataset, index) in categorizedLegendItems.vehicle"
+          :key="dataset.text || index"
+          clickable
+          dense
+          class="q-py-none"
+          :class="{ 'legend-item-hidden': dataset.hidden }"
+          @click="toggleDataset(dataset.text, dataset.datasetIndex)"
+        >
+          <q-item-section avatar class="q-pr-none">
+            <div
+              class="legend-color-box q-mr-sm"
+              :style="{ backgroundColor: getItemColor(dataset) }"
+            ></div>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-caption">{{ dataset.text }}</q-item-label>
+          </q-item-section>
+        </q-item>
+    </q-list>
+
+  </q-btn-dropdown>
+
+  <q-btn-dropdown flat no-caps dense color="primary" label="Legend: Speicher" class="q-mr-sm">
+    <q-list dense class="q-pa-none" style="max-height: 200px; overflow-y: auto;">
+        <q-item
+          v-for="(dataset, index) in categorizedLegendItems.battery"
+          :key="dataset.text || index"
+          clickable
+          dense
+          class="q-py-none"
+          :class="{ 'legend-item-hidden': dataset.hidden }"
+          @click="toggleDataset(dataset.text, dataset.datasetIndex)"
+        >
+          <q-item-section avatar class="q-pr-none">
+            <div
+              class="legend-color-box q-mr-sm"
+              :style="{ backgroundColor: getItemColor(dataset) }"
+            ></div>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-caption">{{ dataset.text }}</q-item-label>
+          </q-item-section>
+        </q-item>
+    </q-list>
+
+  </q-btn-dropdown>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
 import { Chart, LegendItem } from 'chart.js';
+import type {
+  Category,
+  CategorizedDataset,
+} from './history-chart-model';
+import { useMqttStore } from 'src/stores/mqtt-store';
+
+const mqttStore = useMqttStore();
 
 const props = defineProps<{
   chart: Chart | null;
@@ -45,18 +123,48 @@ const legendItems = ref<LegendItem[]>([]);
 
 const updateLegendItems = () => {
   if (!props.chart) return;
-  const items =
-    props.chart.options.plugins?.legend?.labels?.generateLabels?.(
-      props.chart,
-    ) || [];
+
+  const items = props.chart.options.plugins?.legend?.labels?.generateLabels?.(
+    props.chart
+  ) || [];
 
   items.forEach((item) => {
     if (item.text && localDataStore.isDatasetHidden(item.text)) {
       item.hidden = true;
     }
+
+    //  Inject the category from the dataset
+    const dataset = props.chart?.data.datasets[item.datasetIndex!] as unknown as CategorizedDataset;
+    (item as LegendItem & { category?: Category }).category = dataset.category;
   });
+
   legendItems.value = items;
 };
+
+const categorizedLegendItems = computed(() => {
+  const categories: Record<Category, LegendItem[]> = {
+    chargepoint: [],
+    vehicle: [],
+    battery: [],
+    component: [],
+  };
+  for (const item of legendItems.value) {
+    const category = (item as LegendItem & { category?: Category }).category;
+    if (category && categories[category]) {
+      categories[category].push(item);
+    } else {
+      categories.component.push(item);
+    }
+  }
+  // Sort each category's items alphabetically by text
+  Object.keys(categories).forEach((key) => {
+    categories[key as Category].sort((a, b) =>
+      (a.text || '').localeCompare(b.text || '')
+    );
+  });
+  console.log('Categorized Legend Items:', categories);
+  return categories;
+});
 
 const getItemColor = (item: LegendItem) => {
   if (!props.chart || item.datasetIndex === undefined) return '#ccc';
@@ -96,19 +204,27 @@ watch(
   { immediate: true },
 );
 
-const thumbStyle = {
-  borderRadius: '5px',
-  backgroundColor: 'var(--q-primary)',
-  width: '6px',
-  opacity: '1',
-};
+watch(
+  () => mqttStore.vehicleList,
+  () => {
+    updateLegendItems();
+  },
+);
 
-const barStyle = {
-  borderRadius: '5px',
-  backgroundColor: 'var(--q-secondary)',
-  width: '6px',
-  opacity: '1',
-};
+
+// const thumbStyle = {
+//   borderRadius: '5px',
+//   backgroundColor: 'var(--q-primary)',
+//   width: '6px',
+//   opacity: '1',
+// };
+
+// const barStyle = {
+//   borderRadius: '5px',
+//   backgroundColor: 'var(--q-secondary)',
+//   width: '6px',
+//   opacity: '1',
+// };
 </script>
 
 <style scoped>
