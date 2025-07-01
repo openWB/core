@@ -54,11 +54,7 @@ class ChargepointModule(AbstractChargepoint):
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
-                if self.old_chargepoint_state.evse_signaling == "bidi":
-                    watt = current*230*self.old_chargepoint_state.phases_in_use
-                    self.__session.post('http://'+ip_address+'/connect.php', data={'watt': watt})
-                else:
-                    self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': current})
+                self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': current})
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):

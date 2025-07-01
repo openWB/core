@@ -543,7 +543,7 @@ class Chargepoint(ChargepointRfidMixin):
     def hw_bidi_capable(self) -> BidiState:
         if self.data.get.evse_signaling is None:
             return BidiState.CP_NOT_BIDI_CAPABLE
-        elif self.data.get.evse_signaling != "bidi":
+        elif self.data.get.evse_signaling != "HLC":
             return BidiState.CP_WRONG_PROTOCOL
         elif self.data.set.charging_ev_data.ev_template.data.bidi is False:
             return BidiState.EV_NOT_BIDI_CAPABLE
