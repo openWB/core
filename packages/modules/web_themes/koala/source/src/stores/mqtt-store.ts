@@ -981,7 +981,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.instant_charging?.dc_current;
         if (dcCurrent !== undefined) {
-          return (dcCurrent * 3 * 230) / 1000;
+          return Math.round((dcCurrent * 3 * 230) / 1000);
         } else {
           return 0;
         }
@@ -1144,7 +1144,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.pv_charging?.dc_min_current;
         if (dcMinCurrent !== undefined) {
-          return (dcMinCurrent * 3 * 230) / 1000;
+          return Math.round((dcMinCurrent * 3 * 230) / 1000);
         } else {
           return 0;
         }
@@ -1405,7 +1405,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.eco_charging?.dc_current;
         if (dcCurrent !== undefined) {
-          return (dcCurrent * 3 * 230) / 1000;
+          return Math.round((dcCurrent * 3 * 230) / 1000);
         } else {
           return 0;
         }
