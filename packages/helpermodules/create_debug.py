@@ -90,25 +90,34 @@ def config_and_state():
     except Exception:
         secondary = False
 
-    with ErrorHandlingContext():
-        chargemode_config = data.data.general_data.data.chargemode_config
     parsed_data += "## Allgemein ##\n"
     with ErrorHandlingContext():
         parsed_data += f"openWB_Cloud: {BrokerContent().get_cloud()}"
         if secondary is False:
             parsed_data += ("Mode: Primary\n"
                             f"Home_Consumption: {data.data.counter_all_data.data.set.home_consumption} W\n"
-                            f"Phases_To_Use: Sofortladen {chargemode_config.instant_charging.phases_to_use}, "
-                            f"Zielladen {chargemode_config.scheduled_charging.phases_to_use}, "
-                            f"Zeitladen: {chargemode_config.time_charging.phases_to_use}, "
-                            f"PV-Laden: {chargemode_config.pv_charging.phases_to_use}\n"
-                            f"PV_Threshold: Einschaltschwelle: {chargemode_config.pv_charging.switch_on_threshold}W, "
-                            f"Ausschaltschwelle: {chargemode_config.pv_charging.switch_off_threshold}W\n"
                             f"Control_Interval: {data.data.general_data.data.control_interval}s\n")
         else:
             parsed_data += "Mode: Secondary\n"
         parsed_data += f"Display_Active: {data.data.optional_data.data.int_display.active}\n"
-
+    if secondary is False:
+        with ErrorHandlingContext():
+            chargemode_config = data.data.general_data.data.chargemode_config
+            parsed_data += ("\n## Ladeeinstellungen Übergreifendes/ PV ##\n"
+                            f"Phase_Switch_Delay: {chargemode_config.phase_switch_delay} min\n"
+                            f"Retry_Failed_Phase_Switches: {chargemode_config.retry_failed_phase_switches}\n"
+                            f"Control_Range: {chargemode_config.pv_charging.control_range}W\n"
+                            f"Switch_On_Threshold: {chargemode_config.pv_charging.switch_on_threshold}W\n"
+                            f"Switch_On_Delay: {chargemode_config.pv_charging.switch_on_delay}s\n"
+                            f"Switch_Off_Threshold: {chargemode_config.pv_charging.switch_off_threshold}W\n"
+                            f"Switch_Off_Delay: {chargemode_config.pv_charging.switch_off_delay}s\n"
+                            f"Feed_In_Yield: {chargemode_config.pv_charging.feed_in_yield}W\n"
+                            f"Bat_Mode: {chargemode_config.pv_charging.bat_mode}\n"
+                            f"Min_Bat_SoC: {chargemode_config.pv_charging.min_bat_soc}%\n"
+                            f"Bat_Power_Reserve_Active: {chargemode_config.pv_charging.bat_power_reserve_active}\n"
+                            f"Bat_Power_Reserve: {chargemode_config.pv_charging.bat_power_reserve}W\n"
+                            f"Bat_Power_Discharge_Active: {chargemode_config.pv_charging.bat_power_discharge_active}\n"
+                            f"Bat_Power_Discharge: {chargemode_config.pv_charging.bat_power_discharge}W\n")
     if secondary is False:
         with ErrorHandlingContext():
             parsed_data += f"\n## Hierarchie ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
