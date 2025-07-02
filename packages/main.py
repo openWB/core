@@ -5,6 +5,8 @@
 import logging
 from helpermodules import logger
 from helpermodules.utils import thread_handler
+import threading
+import sys
 
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
@@ -73,6 +75,17 @@ class HandlerAlgorithm:
 
             log.info("# ***Start*** ")
             log.debug(f"Threads: {enumerate()}")
+            for thread in threading.enumerate():
+                logging.debug(f"Thread Name: {thread.name}")
+                if hasattr(thread, "ident"):
+                    thread_id = thread.ident
+                    for tid, frame in sys._current_frames().items():
+                        if tid == thread_id:
+                            logging.debug(f"  File: {frame.f_code.co_filename}, Line: {frame.f_lineno}, Function: {frame.f_code.co_name}")
+                            stack_trace = traceback.format_stack(frame)
+                            logging.debug("  Stack Trace:")
+                            for line in stack_trace:
+                                logging.debug(line.strip())
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
             logger.write_logs_to_file("main")
