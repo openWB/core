@@ -356,6 +356,18 @@ def get_uuids():
         log.exception(f"Error reading UUID file: {e}")
 
 
+def get_boots(num_lines=100):
+    lines = []
+    log_file = openwb_base_dir / 'data/log/boot'
+    try:
+        if os.path.isfile(log_file):
+            with open(log_file, 'r') as file:
+                lines = file.readlines()
+    except Exception as e:
+        log.exception(f"Fehler beim Lesen der Logdateien: {e}")
+    return ''.join(lines[-num_lines:])
+
+
 def create_debug_log(input_data):
     def write_to_file(file_handler, func, default: Optional[Any] = None):
         try:
@@ -377,9 +389,11 @@ def create_debug_log(input_data):
                                       f'Kernel: {run_shell_command("uname -s -r -v -m -o")}\n'
                                       f'Uptime:{run_command(["uptime"])}{run_command(["free"])}\n')
             write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}')
-            write_to_file(df, lambda: f'USB_Devices:{run_shell_command(["lsusb"])}\n')
+            write_to_file(df, lambda: f'USB_Devices:\n{run_shell_command(["lsusb"])}\n')
             write_to_file(df, lambda: f"# section: configuration and state #\n{config_and_state()}")
+            write_to_file(df, lambda: f"# section: errors #\n{filter_log_file('main', 'ERROR', 30)}\n")
             write_to_file(df, lambda: f"# section: uuids #\n{get_uuids()}\n")
+            write_to_file(df, lambda: f"# section: boots #\n{get_boots(30)}\n")
             write_to_file(df, lambda: f'# section: storage #\n{run_command(["df", "-h"])}\n')
             write_to_file(df, lambda: f"# section: broker essentials #\n{broker.get_broker_essentials()}\n")
             write_to_file(
