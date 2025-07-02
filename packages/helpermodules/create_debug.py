@@ -43,7 +43,7 @@ def get_common_data():
         parsed_data += f"Version: {version} ({lastcommit})\n"
     with ErrorHandlingContext():
         if serial_number is None or serial_number == "null":
-            parsed_data += "openWB_Serial: unbekannt\n"
+            parsed_data += "openWB_Serial: unknown\n"
         else:
             parsed_data += f"openWB_Serial: {serial_number}\n"
     with ErrorHandlingContext():
@@ -90,7 +90,7 @@ def config_and_state():
     except Exception:
         secondary = False
 
-    parsed_data += "## Allgemein ##\n"
+    parsed_data += "## General ##\n"
     with ErrorHandlingContext():
         parsed_data += f"openWB_Cloud: {BrokerContent().get_cloud()}"
         if secondary is False:
@@ -103,7 +103,7 @@ def config_and_state():
     if secondary is False:
         with ErrorHandlingContext():
             chargemode_config = data.data.general_data.data.chargemode_config
-            parsed_data += ("\n## Ladeeinstellungen Übergreifendes/ PV ##\n"
+            parsed_data += ("\n## General Charge Config/ PV ##\n"
                             f"Phase_Switch_Delay: {chargemode_config.phase_switch_delay} min\n"
                             f"Retry_Failed_Phase_Switches: {chargemode_config.retry_failed_phase_switches}\n"
                             f"Control_Range: {chargemode_config.pv_charging.control_range}W\n"
@@ -120,16 +120,16 @@ def config_and_state():
                             f"Bat_Power_Discharge: {chargemode_config.pv_charging.bat_power_discharge}W\n")
     if secondary is False:
         with ErrorHandlingContext():
-            parsed_data += f"\n## Hierarchie ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
+            parsed_data += f"\n## Hierarchy ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
 
     with ErrorHandlingContext():
         if secondary:
             with ErrorHandlingContext():
-                parsed_data += "\n## Ladepunkte ##\n"
+                parsed_data += "\n## Charge Points ##\n"
                 for cp in subdata.SubData.cp_data.values():
                     parsed_data += get_parsed_cp_data(cp.chargepoint)
         else:
-            parsed_data += "\n## Geräte und Komponenten ##\n"
+            parsed_data += "\n## Devices and Components ##\n"
             for key, value in data.data.system_data.items():
                 with ErrorHandlingContext():
                     if isinstance(value, AbstractDevice):
@@ -179,7 +179,7 @@ def config_and_state():
                                                 f"--| Counter_Currents: {component_data.data.get.currents}A\n"
                                                 f"--| Counter_Error_Status: {component_data.data.get.fault_str}\n\n")
             with ErrorHandlingContext():
-                parsed_data += "\n## Gesamtleistungen ##\n"
+                parsed_data += "\n## Total Powers ##\n"
                 evu_id = data.data.counter_all_data.get_id_evu_counter()
                 try:
                     evu_powers = filter_log_file('mqtt', 'openWB/counter/' + str(evu_id) + '/get/power,', 5)
@@ -207,7 +207,7 @@ def config_and_state():
                     home_consumption = "Keine Daten"
                 parsed_data += f"Home_Consumption:\n {home_consumption}\n"
             with ErrorHandlingContext():
-                parsed_data += "\n## Ladepunkte ##\n"
+                parsed_data += "\n## Charge Points ##\n"
                 parsed_data += f"CP_All_Power: {data.data.cp_all_data.data.get.power / 1000}kW\n\n"
                 for cp in data.data.cp_data.values():
                     parsed_data += get_parsed_cp_data(cp)
