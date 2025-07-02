@@ -44,7 +44,7 @@ class ChargepointModule(AbstractChargepoint):
                                    hostname=self.config.configuration.ip_address)
 
     def get_values(self) -> None:
-        with SingleComponentUpdateContext(self.fault_state, update_always=False):
+        with SingleComponentUpdateContext(self.fault_state):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
                 num = self.config.id
