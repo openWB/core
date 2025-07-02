@@ -1163,6 +1163,38 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get or set the charge point connected vehicle PV charging DC minimum SoC Power identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number
+   */
+  const chargePointConnectedVehiclePvDcMinSocPower = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const dcMinSocCurrent =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.pv_charging?.dc_min_soc_current;
+        if (dcMinSocCurrent !== undefined) {
+          return Math.round((dcMinSocCurrent * 3 * 230) / 1000);
+        } else {
+          return 0;
+        }
+      },
+      set(newValue: number) {
+        console.debug('set instant charging power', newValue, chargePointId);
+        const newPower = (newValue * 1000) / 230 / 3;
+        return updateTopic(
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+          newPower,
+          'chargemode.pv_charging.dc_min_soc_current',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
    * Get or set the charge point connected vehicle pv min SoC identified by the charge point id
    * @param chargePointId charge point id
    * @returns object | undefined
@@ -2762,6 +2794,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehiclePvChargeMinSoc,
     chargePointConnectedVehiclePvChargeMinSocCurrent,
     chargePointConnectedVehiclePvDcChargePower,
+    chargePointConnectedVehiclePvDcMinSocPower,
     chargePointConnectedVehiclePvChargePhasesMinSoc,
     chargePointConnectedVehiclePvChargeFeedInLimit,
     chargePointConnectedVehicleEcoChargeCurrent,

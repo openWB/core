@@ -18,7 +18,7 @@
     :max="300"
     :step="1"
     unit="kW"
-    v-model="pvMinDcCurrent.value"
+    v-model="pvMinDcPower.value"
     class="q-mt-md"
   />
 
@@ -87,6 +87,17 @@
       :max="32"
       unit="A"
       v-model="pvMinSocCurrent.value"
+      class="q-mt-md"
+    />
+
+    <SliderStandard
+      v-if="dcCharging"
+      title="DC Mindest-SoC-Leistung"
+      :min="0"
+      :max="300"
+      :step="1"
+      unit="kW"
+      v-model="pvMinDcMinSocPower.value"
       class="q-mt-md"
     />
     <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Mindest-SoC</div>
@@ -158,8 +169,12 @@ const pvMinCurrent = computed(() =>
 
 const dcCharging = computed(() => mqttStore.dcChargingEnabled);
 
-const pvMinDcCurrent = computed(() =>
+const pvMinDcPower = computed(() =>
   mqttStore.chargePointConnectedVehiclePvDcChargePower(props.chargePointId),
+);
+
+const pvMinDcMinSocPower = computed(() =>
+  mqttStore.chargePointConnectedVehiclePvDcMinSocPower(props.chargePointId),
 );
 
 const numPhases = computed(() =>
