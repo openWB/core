@@ -981,7 +981,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.instant_charging?.dc_current;
         if (dcCurrent !== undefined) {
-          return (dcCurrent * 3 * 230) / 1000;
+          return Math.round((dcCurrent * 3 * 230) / 1000);
         } else {
           return 0;
         }
@@ -1144,7 +1144,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.pv_charging?.dc_min_current;
         if (dcMinCurrent !== undefined) {
-          return (dcMinCurrent * 3 * 230) / 1000;
+          return Math.round((dcMinCurrent * 3 * 230) / 1000);
         } else {
           return 0;
         }
@@ -1156,6 +1156,38 @@ export const useMqttStore = defineStore('mqtt', () => {
           `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newPower,
           'chargemode.pv_charging.dc_min_current',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle PV charging DC minimum SoC Power identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number
+   */
+  const chargePointConnectedVehiclePvDcMinSocPower = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const dcMinSocCurrent =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.pv_charging?.dc_min_soc_current;
+        if (dcMinSocCurrent !== undefined) {
+          return Math.round((dcMinSocCurrent * 3 * 230) / 1000);
+        } else {
+          return 0;
+        }
+      },
+      set(newValue: number) {
+        console.debug('set instant charging power', newValue, chargePointId);
+        const newPower = (newValue * 1000) / 230 / 3;
+        return updateTopic(
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+          newPower,
+          'chargemode.pv_charging.dc_min_soc_current',
           true,
         );
       },
@@ -1405,7 +1437,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.eco_charging?.dc_current;
         if (dcCurrent !== undefined) {
-          return (dcCurrent * 3 * 230) / 1000;
+          return Math.round((dcCurrent * 3 * 230) / 1000);
         } else {
           return 0;
         }
@@ -2817,6 +2849,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehiclePvChargeMinSoc,
     chargePointConnectedVehiclePvChargeMinSocCurrent,
     chargePointConnectedVehiclePvDcChargePower,
+    chargePointConnectedVehiclePvDcMinSocPower,
     chargePointConnectedVehiclePvChargePhasesMinSoc,
     chargePointConnectedVehiclePvChargeFeedInLimit,
     chargePointConnectedVehicleEcoChargeCurrent,
