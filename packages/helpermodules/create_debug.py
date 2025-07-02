@@ -364,7 +364,7 @@ def get_boots(num_lines=100):
             with open(log_file, 'r') as file:
                 lines = file.readlines()
     except Exception as e:
-        log.exception(f"Fehler beim Lesen der Logdateien: {e}")
+        log.exception(f"Error reading BOOT file: {e}")
     return ''.join(lines[-num_lines:])
 
 
