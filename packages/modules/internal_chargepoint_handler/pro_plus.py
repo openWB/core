@@ -18,7 +18,7 @@ class ProPlus(ChargepointModule):
         self.old_chargepoint_state = None
 
         super().__init__(OpenWBPro(configuration=OpenWBProConfiguration(ip_address="192.168.192.50")))
-        super().set_internal_context_handlers(internal_cp, parent_hostname)
+        super().set_internal_context_handlers(hierarchy_id, internal_cp, parent_hostname)
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:

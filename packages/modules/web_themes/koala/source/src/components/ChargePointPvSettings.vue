@@ -105,10 +105,10 @@
     </div>
   </div>
 
-  <div class="row items-center justify-between q-ma-none q-pa-none no-wrap">
+  <div class="row items-center justify-between q-ma-none q-pa-none no-wrap q-mt-md">
     <div class="text-subtitle2 q-mr-sm">Einspeisegrenze beachten</div>
     <div>
-      <ToggleStandard v-model="feedInLimit.value" />
+      <ToggleStandard dense v-model="feedInLimit.value" />
     </div>
   </div>
 </template>

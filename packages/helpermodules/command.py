@@ -1,3 +1,4 @@
+import copy
 from dataclasses import asdict
 import importlib
 import json
@@ -5,7 +6,7 @@ import logging
 import subprocess
 from threading import Event
 import time
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 import re
 import traceback
 from pathlib import Path
@@ -13,12 +14,12 @@ from pathlib import Path
 import paho.mqtt.client as mqtt
 from control.chargelog import chargelog
 from control.chargepoint import chargepoint
-from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
+from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
 from control.ev.charge_template import get_new_charge_template
 from control.ev.ev_template import EvTemplateData
 from helpermodules import pub
-from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
 # ToDo: move to module commands if implemented
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
@@ -30,7 +31,7 @@ from helpermodules.messaging import MessageType, pub_user_message
 from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
-from helpermodules.utils.topic_parser import decode_payload
+from helpermodules.utils.topic_parser import decode_payload, get_index
 from control import bat, bridge, data, counter, counter_all, pv
 from control.ev import ev
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
@@ -46,21 +47,23 @@ log = logging.getLogger(__name__)
 class Command:
     """
     """
-    # Tuple: (Name der maximalen ID, Topic zur Ermittlung, Default-Wert)
-    MAX_IDS = [("autolock_plan", "chargepoint/template/+/autolock", -1),
-               ("mqtt_bridge", "system/mqtt/bridge", -1),
-               ("charge_template", "vehicle/template/charge_template", 0),
-               ("charge_template_scheduled_plan",
-                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans",
-                -1),
-               ("charge_template_time_charging_plan", "vehicle/template/charge_template/+/time_charging/plans", -1),
-               ("chargepoint_template", "chargepoint/template", 0),
-               ("device", "system/device", -1),
-               ("ev_template", "vehicle/template/ev_template", 0),
-               ("vehicle", "vehicle", 0),
-               ("io_action", "io/action", -1),
-               ("io_device", "system/io", -1),
-               ]
+    # Tuple: (Name der maximalen ID, Regex-Topic zur Ermittlung, Default-Wert)
+    MAX_IDS = {
+        "nested payload":
+        [("autolock_plan", "openWB/chargepoint/template/[0-9]+$", -1),
+         ("charge_template_scheduled_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1),
+         ("charge_template_time_charging_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1)],
+        "topic":
+        [("mqtt_bridge", "openWB/system/mqtt/bridge", -1),
+         ("vehicle", "openWB/vehicle/[0-9]+/name$", 0)],
+        "payload":
+        [("charge_template", "openWB/vehicle/template/charge_template/[0-9]+$", 0),
+         ("chargepoint_template", "openWB/chargepoint/template/[0-9]+$", 0),
+         ("device", "openWB/system/device/[0-9]+/config$", -1),
+         ("ev_template", "openWB/vehicle/template/ev_template/[0-9]+$", 0),
+         ("io_action", "openWB/io/action/[0-9]+/config$", -1),
+         ("io_device", "openWB/system/io/[0-9]+/config$", -1)],
+    }
 
     def __init__(self, event_command_completed: Event):
         try:
@@ -74,18 +77,33 @@ class Command:
         """ ermittelt die maximale ID vom Broker """
         try:
             received_topics = ProcessBrokerBranch("").get_max_id()
-            for id_topic, topic_str, default in self.MAX_IDS:
+            for id_topic, topic_str, default in self.MAX_IDS["nested payload"]:
                 max_id = default
-                for topic in received_topics:
-                    search_str = "openWB/" + topic_str.replace("+", "[0-9]+")
-                    result = re.search('^('+search_str+'/*).*$', topic)
-                    if result is not None:
-                        topic_found = result.group(1)
-                        topic_rest = topic.replace(topic_found, "")
-                        current_id_regex = re.search('^([0-9]+)/*.*$', topic_rest)
-                        if current_id_regex is not None:
-                            current_id = int(current_id_regex.group(1))
-                            max_id = max(current_id, max_id)
+                for topic, payload in received_topics.items():
+                    if re.search(topic_str, topic) is not None:
+                        if id_topic == "autolock_plan":
+                            for plan in payload["autolock"]["plans"]:
+                                max_id = max(plan["id"], max_id)
+                        elif id_topic == "charge_template_scheduled_plan":
+                            for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
+                                max_id = max(plan["id"], max_id)
+                        elif id_topic == "charge_template_time_charging_plan":
+                            for plan in payload["time_charging"]["plans"]:
+                                max_id = max(plan["id"], max_id)
+                setattr(self, f'max_id_{id_topic}', max_id)
+                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
+            for id_topic, topic_str, default in self.MAX_IDS["topic"]:
+                max_id = default
+                for topic in received_topics.keys():
+                    if re.search(topic_str, topic) is not None:
+                        max_id = max(int(get_index(topic)), max_id)
+                setattr(self, f'max_id_{id_topic}', max_id)
+                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
+            for id_topic, topic_str, default in self.MAX_IDS["payload"]:
+                max_id = default
+                for topic, payload in received_topics.items():
+                    if re.search(topic_str, topic) is not None:
+                        max_id = max(payload["id"], max_id)
                 setattr(self, f'max_id_{id_topic}', max_id)
                 Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
         except Exception:
@@ -389,14 +407,19 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            new_autolock_plan = asdict(data.data.cp_template_data[f'cpt{payload["data"]["template"]}']
-                                       .data.autolock.plans[f'{payload["data"]["copy"]}']).copy()
-            new_autolock_plan["name"] = f'Kopie von {new_autolock_plan["name"]}'
+            for plan in data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans:
+                if plan.id == payload["data"]["copy"]:
+                    new_autolock_plan = copy.deepcopy(plan)
+                    break
+            new_autolock_plan.name = f'Kopie von {new_autolock_plan.name}'
         else:
-            new_autolock_plan = get_autolock_plan_default()
+            new_autolock_plan = AutolockPlan()
         new_id = self.max_id_autolock_plan + 1
-        Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}/autolock/{new_id}',
-                  new_autolock_plan)
+        new_autolock_plan.id = new_id
+        data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans.append(
+            new_autolock_plan)
+        Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}',
+                  asdict(data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
         self.max_id_autolock_plan = new_id
         Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
@@ -413,10 +436,13 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die '
                 f'maximal vergebene ID \'{self.max_id_autolock_plan}\'.', MessageType.ERROR)
+        for plan in data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans:
+            if plan.id == payload["data"]["plan"]:
+                data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans.remove(plan)
+                break
         Pub().pub(
-            f'openWB/chargepoint/template/{payload["data"]["template"]}'
-            f'/autolock/{payload["data"]["plan"]}',
-            "")
+            f'openWB/chargepoint/template/{payload["data"]["template"]}',
+            dataclass_utils.asdict(data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
         pub_user_message(
             payload, connection_id,
             f'Plan für Sperren nach Uhrzeit mit ID \'{payload["data"]["plan"]}\' vom Profil '
@@ -485,19 +511,22 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            new_charge_template_schedule_plan = (
-                data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}']
-                .data.chargemode.scheduled_charging.plans[f'{payload["data"]["copy"]}']
-            )
+            for plan in data.data.ev_charge_template_data[
+                    f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans:
+                if plan.id == payload["data"]["copy"]:
+                    new_charge_template_schedule_plan = copy.deepcopy(plan)
+                    break
             new_charge_template_schedule_plan.name = f'Kopie von {new_charge_template_schedule_plan.name}'
         else:
             new_charge_template_schedule_plan = ScheduledChargingPlan()
         new_id = self.max_id_charge_template_scheduled_plan + 1
         new_charge_template_schedule_plan.id = new_id
+        data.data.ev_charge_template_data[
+            f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.append(
+            new_charge_template_schedule_plan)
         Pub().pub(
-            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
-            f'/chargemode/scheduled_charging/plans/{new_id}',
-            dataclass_utils.asdict(new_charge_template_schedule_plan))
+            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
+            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
         self.max_id_charge_template_scheduled_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
@@ -515,10 +544,16 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_charge_template_scheduled_plan}\'.', MessageType.ERROR)
+        for plan in data.data.ev_charge_template_data[
+                f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans:
+            if plan.id == payload["data"]["plan"]:
+                data.data.ev_charge_template_data[
+                    f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.remove(
+                    plan)
+                break
         Pub().pub(
-            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}'
-            f'/chargemode/scheduled_charging/plans/{payload["data"]["plan"]}',
-            "")
+            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}',
+            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
         pub_user_message(
             payload, connection_id,
             f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Profil '
@@ -530,17 +565,20 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            new_time_charging_plan = (data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}']
-                                      .data.time_charging.plans[f'{payload["data"]["copy"]}'])
+            for plan in data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans:
+                if plan.id == payload["data"]["copy"]:
+                    new_time_charging_plan = copy.deepcopy(plan)
+                    break
             new_time_charging_plan.name = f'Kopie von {new_time_charging_plan.name}'
         else:
             new_time_charging_plan = TimeChargingPlan()
         new_id = self.max_id_charge_template_time_charging_plan + 1
         new_time_charging_plan.id = new_id
+        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.append(
+            new_time_charging_plan)
         Pub().pub(
-            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
-            f'/time_charging/plans/{new_id}',
-            dataclass_utils.asdict(new_time_charging_plan))
+            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
+            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
         self.max_id_charge_template_time_charging_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
@@ -555,10 +593,14 @@ class Command:
         if self.max_id_charge_template_time_charging_plan < payload["data"]["plan"]:
             log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
                       MessageType.ERROR)
+        for plan in data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans:
+            if plan.id == payload["data"]["plan"]:
+                data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.remove(
+                    plan)
+                break
         Pub().pub(
-            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}'
-            f'/time_charging/plans/{payload["data"]["plan"]}',
-            "")
+            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}',
+            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
         pub_user_message(
             payload, connection_id,
             f'Zeitladen-Plan mit ID \'{payload["data"]["plan"]}\' zu Profil '
@@ -967,14 +1009,14 @@ class ProcessBrokerBranch:
         """
         BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_rm).start_finite_loop()
 
-    def get_max_id(self) -> List[str]:
+    def get_max_id(self) -> Dict[str, str]:
         try:
-            self.received_topics = []
+            self.received_topics = {}
             BrokerClient("processBrokerBranch", self.on_connect, self.__on_message_max_id).start_finite_loop()
             return self.received_topics
         except Exception:
             log.exception("Fehler im Command-Modul")
-            return []
+            return {}
 
     def check_mqtt_bridge_exists(self, name: str) -> bool:
         try:
@@ -1037,7 +1079,7 @@ class ProcessBrokerBranch:
 
     def __on_message_max_id(self, client, userdata, msg):
         try:
-            self.received_topics.append(msg.topic)
+            self.received_topics.update({msg.topic: decode_payload(msg.payload)})
         except Exception:
             log.exception("Fehler in ProcessBrokerBranch")
 
