@@ -12,11 +12,9 @@
         </div>
       </q-card-section>
       <q-card-section class="q-py-none">
-        <div class="row items-center no-wrap">
-          <div class="col text-subtitle2">Ladepunkt sperren</div>
-          <div class="col">
-            <ChargePointLock :charge-point-id="props.chargePointId" dense />
-          </div>
+        <div class="row items-center justify-between">
+          <div class="text-subtitle2">Ladepunkt sperren</div>
+          <ChargePointLock :charge-point-id="props.chargePointId" dense />
         </div>
         <q-separator class="q-mt-sm" />
         <div class="row items-center q-mt-sm">
@@ -28,17 +26,13 @@
             :readonly="false"
           />
         </div>
-        <div class="row items-center no-wrap q-mt-sm">
-          <div class="col row items-center">
-            <div class="col text-subtitle2">Priorität</div>
-            <div class="col">
-              <ChargePointPriority
-                :charge-point-id="props.chargePointId"
-                :readonly="false"
-                dense
-              />
-            </div>
-          </div>
+        <div class="row items-center justify-between q-mt-sm">
+          <div class="text-subtitle2">Priorität</div>
+          <ChargePointPriority
+            :charge-point-id="props.chargePointId"
+            :readonly="false"
+            dense
+          />
         </div>
         <q-separator class="q-mt-sm" />
         <div class="row items-center no-wrap">
