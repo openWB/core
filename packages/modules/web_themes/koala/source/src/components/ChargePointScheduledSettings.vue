@@ -3,7 +3,7 @@
     <div class="text-subtitle2 q-mr-sm q-mt-md">Termine Zielladen:</div>
   </div>
   <div
-    v-if="plans.value.length === 0"
+    v-if="plans.length === 0"
     class="row q-mt-sm q-pa-sm bg-primary text-white no-wrap message-text"
     color="primary"
     style="border-radius: 10px"
@@ -12,7 +12,7 @@
     Keine Ladeziele festgelegt.
   </div>
   <div v-else>
-    <div v-for="(plan, index) in plans.value" :key="index" class="row q-mt-sm">
+    <div v-for="(plan, index) in plans" :key="index" class="row q-mt-sm">
       <ChargePointScheduledPlanButton
         class="full-width"
         :charge-point-id="props.chargePointId"

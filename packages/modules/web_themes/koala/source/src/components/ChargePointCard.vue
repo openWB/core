@@ -15,7 +15,12 @@
             :toolTip="true"
           />
         </div>
-        <q-icon name="settings" size="sm" @click="settingsVisible = true" />
+        <q-icon
+          class="cursor-pointer"
+          name="settings"
+          size="sm"
+          @click="settingsVisible = true"
+        />
       </div>
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
       <ChargePointStateMessage :charge-point-id="props.chargePointId" />

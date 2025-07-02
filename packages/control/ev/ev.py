@@ -148,6 +148,12 @@ class Ev:
                 required_current, submode, message = charge_template.stop()
                 phases = control_parameter.phases or max_phases_hw
             else:
+                # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
+                # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
+                if self.soc_module:
+                    soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
+                else:
+                    soc_request_interval_offset = 0
                 if charge_template.data.chargemode.selected == "scheduled_charging":
                     plan_data = charge_template.scheduled_charging_recent_plan(
                         self.data.get.soc,
@@ -158,15 +164,9 @@ class Ev:
                         phase_switch_supported,
                         charging_type,
                         chargemode_switch_timestamp,
-                        control_parameter)
-                    soc_request_interval_offset = 0
+                        control_parameter,
+                        soc_request_interval_offset)
                     if plan_data:
-                        # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
-                        # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
-                        if (self.soc_module and
-                                charge_template.data.chargemode.
-                                scheduled_charging.plans[str(plan_data.plan.id)].limit.selected == "soc"):
-                            soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
                         control_parameter.current_plan = plan_data.plan.id
                     else:
                         control_parameter.current_plan = None

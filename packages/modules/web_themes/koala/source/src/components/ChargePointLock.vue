@@ -13,7 +13,11 @@
     unchecked-icon="lock_open"
     size="lg"
     :dense="props.dense"
-  />
+  >
+    <q-tooltip>
+      {{ locked ? 'Ladepunkt gesperrt' : 'Ladepunkt entsperrt' }}
+    </q-tooltip>
+  </q-toggle>
 </template>
 
 <script setup lang="ts">

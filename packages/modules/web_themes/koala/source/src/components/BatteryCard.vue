@@ -12,6 +12,7 @@
           {{ cardTitle }}
         </div>
         <q-icon
+          class="cursor-pointer"
           v-if="showSettings"
           name="settings"
           size="sm"
@@ -24,7 +25,7 @@
           {{ power }}
         </div>
       </div>
-      <div v-if="showSettings" class="row q-mt-md text-subtitle2">
+      <div v-if="showSettings" class="row q-mt-md justify-between text-subtitle2">
         <div>Laden mit Überschuss:</div>
         <div class="q-ml-sm row items-center">
           <q-icon

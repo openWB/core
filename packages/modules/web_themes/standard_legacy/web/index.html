@@ -577,7 +577,9 @@
 											Es wurden noch keine Zeitpläne eingerichtet!
 										</div>
 										<div class="form-row mb-1 charge-point-time-charge-plan charge-point-time-charge-plan-template hide"
-											data-plan="">
+											data-plan-type="time_charging"
+											data-plan=""
+										>
 											<div class="col">
 												<span class="charge-point-time-charge-name">--</span>
 											</div>
@@ -1547,7 +1549,7 @@
 				// some helper functions
 				'helperFunctions.js?ver=20250217',
 				// functions for processing messages
-				'processAllMqttMsg.js?ver=20250326',
+				'processAllMqttMsg.js?ver=20250617',
 				// respective Chart.js definition live
 				'livechart.js?ver=20250404',
 				// respective Chart.js definition price based charging
@@ -1627,14 +1629,26 @@
 
 			$('.container').on('click', '.charge-point-time-charge-pill', function (event) {
 				event.stopPropagation();
-				var parentChargePoint = $(this).closest('[data-cp]');
-				var chargePointIndex = parseInt(parentChargePoint.data('cp'));
-				var planId = parseInt($(this).closest('.charge-point-time-charge-plan').data('plan'));
+				const parentChargePoint = $(this).closest('[data-cp]');
+				const chargePointIndex = parseInt(parentChargePoint.data('cp'));
+				const planId = parseInt($(this).closest('.charge-point-time-charge-plan').data('plan'));
 				if (!isNaN(chargePointIndex) && !isNaN(planId)) {
-					var plan = timeChargePlan[chargePointIndex][planId];
-					if (plan !== undefined) {
-						plan.active = !plan.active;
-						publish(plan, `openWB/set/chargepoint/${chargePointIndex}/set/charge_template/time_charging/plans/${planId}`);
+					console.log('toggle time charge plan', chargePointIndex, planId);
+					const object = "chargeTemplate";
+					const objectPath = "time_charging.plans." + planId + ".active";
+					const topic = "openWB/set/chargepoint/" + chargePointIndex + "/set/charge_template";
+					const option = !$(this).hasClass('charge-point-time-charge-active');
+					if (typeof window[object] !== undefined && window[object][chargePointIndex] !== undefined) {
+						let currentObjectState = JSON.parse(JSON.stringify(window[object][chargePointIndex]));
+						currentObjectState = updateObject(currentObjectState, objectPath, option);
+						console.log(
+							'toggle time charge plan',
+							'topic: ' + topic,
+							currentObjectState,
+						);
+						publish(currentObjectState, topic);
+					} else {
+						console.warn('no variable '+ object + ' found for charge point ' + chargePointIndex);
 					}
 				}
 			});
@@ -1648,14 +1662,26 @@
 
 			$('.container').on('click', '.charge-point-schedule-plan-pill', function (event) {
 				event.stopPropagation();
-				var parentChargePoint = $(this).closest('[data-cp]');
-				var chargePointIndex = parseInt(parentChargePoint.data('cp'));
-				var planId = parseInt($(this).closest('.charge-point-schedule-plan').data('plan'));
+				const parentChargePoint = $(this).closest('[data-cp]');
+				const chargePointIndex = parseInt(parentChargePoint.data('cp'));
+				const planId = parseInt($(this).closest('.charge-point-schedule-plan').data('plan'));
 				if (!isNaN(chargePointIndex) && !isNaN(planId)) {
-					var plan = schedulePlan[chargePointIndex][planId];
-					if (plan !== undefined) {
-						plan.active = !plan.active;
-						publish(plan, `openWB/set/chargepoint/${chargePointIndex}/set/charge_template/chargemode/scheduled_charging/plans/${planId}`);
+					console.log('toggle schedule plan', chargePointIndex, planId);
+					const object = "chargeTemplate";
+					const objectPath = "chargemode.scheduled_charging.plans." + planId + ".active";
+					const topic = "openWB/set/chargepoint/" + chargePointIndex + "/set/charge_template";
+					const option = !$(this).hasClass('charge-point-schedule-active');
+					if (typeof window[object] !== undefined && window[object][chargePointIndex] !== undefined) {
+						let currentObjectState = JSON.parse(JSON.stringify(window[object][chargePointIndex]));
+						currentObjectState = updateObject(currentObjectState, objectPath, option);
+						console.log(
+							'toggle schedule charge plan',
+							'topic: ' + topic,
+							currentObjectState,
+						);
+						publish(currentObjectState, topic);
+					} else {
+						console.warn('no variable '+ object + ' found for charge point ' + chargePointIndex);
 					}
 				}
 			});
