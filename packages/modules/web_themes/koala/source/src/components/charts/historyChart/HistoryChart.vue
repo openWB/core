@@ -272,7 +272,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   animation: false,
   plugins: {
     legend: {
-      display: !legendLarge.value && legendDisplay.value,
+      display: false,
       fullSize: true,
       align: 'center' as const,
       position: 'bottom' as const,

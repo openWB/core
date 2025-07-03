@@ -1,68 +1,51 @@
 <template>
-  <div class="row justify-center items-center">
-
-  </div>
+  <q-btn-dropdown
+    flat
+    no-caps
+    dense
+    color="primary"
+    :label="label"
+    class="q-mr-sm"
+  >
+    <q-list dense class="q-pa-none" style="max-height: 200px; overflow-y: auto">
+      <q-item
+        v-for="(dataset, index) in items"
+        :key="dataset.text || index"
+        clickable
+        dense
+        class="q-py-none"
+        :class="{ 'legend-item-hidden': dataset.hidden }"
+        @click="
+          dataset.datasetIndex !== undefined &&
+            toggleDataset(dataset.text, dataset.datasetIndex)
+        "
+      >
+        <q-item-section avatar class="q-pr-none">
+          <div
+            class="legend-color-box q-mr-sm"
+            :style="{ backgroundColor: getItemColor(dataset) }"
+          ></div>
+        </q-item-section>
+        <q-item-section>
+          <q-item-label class="text-caption">{{ dataset.text }}</q-item-label>
+        </q-item-section>
+      </q-item>
+    </q-list>
+  </q-btn-dropdown>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useLocalDataStore } from 'src/stores/localData-store';
-import { Chart, LegendItem } from 'chart.js';
+import { LegendItem } from 'chart.js';
 
-const props = defineProps<{
-  chart: Chart | null;
+defineProps<{
+  label: string;
+  items: LegendItem[];
+  toggleDataset: (datasetName: string, datasetIndex: number) => void;
+  getItemColor: (dataset: LegendItem) => string;
 }>();
-
-const localDataStore = useLocalDataStore();
-const legendItems = ref<LegendItem[]>([]);
-
-const updateLegendItems = () => {
-  if (!props.chart) return;
-  const items =
-    props.chart.options.plugins?.legend?.labels?.generateLabels?.(
-      props.chart,
-    ) || [];
-
-  items.forEach((item) => {
-    if (item.text && localDataStore.isDatasetHidden(item.text)) {
-      item.hidden = true;
-    }
-  });
-  legendItems.value = items;
-};
-
-
-watch(
-  () => props.chart,
-  (newChart) => {
-    if (newChart) {
-      newChart.data.datasets.forEach((dataset, index) => {
-        if (
-          typeof dataset.label === 'string' &&
-          localDataStore.isDatasetHidden(dataset.label)
-        ) {
-          newChart.hide(index);
-        }
-      });
-      newChart.update();
-      updateLegendItems();
-    }
-  },
-  { immediate: true },
-);
-
-
 </script>
 
 <style scoped>
-.custom-legend-container {
-  margin-bottom: 5px;
-  height: 70px;
-  border-radius: 5px;
-  text-align: left;
-  width: 100%;
-}
-
 .legend-color-box {
   display: inline-block;
   width: 20px;
@@ -88,4 +71,3 @@ watch(
   }
 }
 </style>
-
