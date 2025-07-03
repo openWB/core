@@ -2,28 +2,44 @@
 
 # $Id$
 
-## this script generates a log file for unique hardware and software id's on an
+## this script generates 2 log files
+## the first log file contains unique hardware and software id's on an
 ## openWB charging station based on unix timestamp, serial openWB, processor name,
 ## processor id, mac, ip, openWB Software Version, serial of memory card (mmc) and
 ## kernel version
+## the second log file contains previous
 
 ## define vars first
 OPENWBBASEDIR=$(cd "$(dirname "$0")/../" && pwd)
-LOGFILE="$OPENWBBASEDIR/data/log/uuid"
+LOGFILE_UUID="$OPENWBBASEDIR/data/log/uuid"
+LOGFILE_BOOT="$OPENWBBASEDIR/data/log/boot"
 MMCPATH="/sys/block/mmcblk0/device"
 HOMEPATH="/home/$(whoami)"
 MAXTIMEDIFF=$((7 * 24 * 60 * 60)) # one week
 
-if [ ! -e "$LOGFILE" ]; then
+if [ ! -e "$LOGFILE_UUID" ]; then
 	# create log file and header
-	echo "Date Time;Timestamp;openWB Serial Number;processor name;processor id;mac addr;ip addr;openWB Version;mmc serial number;mmc manufacturing date;Kernel;FS" >"$LOGFILE"
+	echo "Date Time;Timestamp;openWB Serial Number;processor name;processor id;mac addr;ip addr;openWB Version;mmc serial number;mmc manufacturing date;Kernel" >"$LOGFILE_UUID"
 else
 	# check file size and truncate
-	lines=$(wc -l "$LOGFILE" | cut -d " " -f 1)
+	lines=$(wc -l "$LOGFILE_UUID" | cut -d " " -f 1)
 	if ((lines > 500)); then
-		head -n 1 "$LOGFILE" >"${LOGFILE}.tmp"
-		tail -n 400 "$LOGFILE" >>"${LOGFILE}.tmp"
-		mv "${LOGFILE}.tmp" "$LOGFILE"
+		head -n 1 "$LOGFILE_UUID" >"${LOGFILE_UUID}.tmp"
+		tail -n 400 "$LOGFILE_UUID" >>"${LOGFILE_UUID}.tmp"
+		mv "${LOGFILE_UUID}.tmp" "$LOGFILE_UUID"
+	fi
+fi
+
+if [ ! -e "$LOGFILE_BOOT" ]; then
+	# create log file and header
+	echo "Date Time;Timestamp;FS-State" >"$LOGFILE_BOOT"
+else
+	# check file size and truncate
+	lines=$(wc -l "$LOGFILE_BOOT" | cut -d " " -f 1)
+	if ((lines > 500)); then
+		head -n 1 "$LOGFILE_BOOT" >"${LOGFILE_BOOT}.tmp"
+		tail -n 400 "$LOGFILE_BOOT" >>"${LOGFILE_BOOT}.tmp"
+		mv "${LOGFILE_BOOT}.tmp" "$LOGFILE_BOOT"
 	fi
 fi
 
@@ -80,10 +96,13 @@ else
 fi
 
 # check for changes and time since last entry
-newData="$owbSerial;$cpuName;$cpuId;$ethMac;$ipAddresses;$owbVersion;$mmcSerial;$mmcManufacturing;$kernel;$fs"
-oldData=$(tail -n 1 "$LOGFILE" | cut -d ";" -f 3-)
-oldTimestamp=$(tail -n 1 "$LOGFILE" | cut -d ";" -f 2)
+newData="$owbSerial;$cpuName;$cpuId;$ethMac;$ipAddresses;$owbVersion;$mmcSerial;$mmcManufacturing;$kernel"
+oldData=$(tail -n 1 "$LOGFILE_UUID" | cut -d ";" -f 3-)
+oldTimestamp=$(tail -n 1 "$LOGFILE_UUID" | cut -d ";" -f 2)
 if [[ $newData != "$oldData" ]] || ((now - oldTimestamp > MAXTIMEDIFF)); then
-	# store collected data in log file
-	echo "$dateTime;$now;$newData" >>"$LOGFILE"
+	# store collected data in uuid log file
+	echo "$dateTime;$now;$newData" >>"$LOGFILE_UUID"
 fi
+
+# store collected data in boot log file
+echo "$dateTime;$now;$fs" >>"$LOGFILE_BOOT"
