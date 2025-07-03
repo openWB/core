@@ -147,10 +147,10 @@ class InternalChargepointHandler:
         self.event_stop = event_stop
         self.heartbeat = False
         self.fault_state_info_cp0 = FaultState(
-            ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
+            ComponentInfo(0, "Interner Ladepunkt 0", "internal_chargepoint", hierarchy_id=hierarchy_id_cp0,
                           parent_hostname=global_data.parent_ip))
         fault_state_info_cp1 = FaultState(
-            ComponentInfo(hierarchy_id_cp1, "Interner Ladepunkt 1", "chargepoint", parent_id=parent_cp1,
+            ComponentInfo(1, "Interner Ladepunkt 1", "internal_chargepoint", hierarchy_id=hierarchy_id_cp1,
                           parent_hostname=global_data.parent_ip))
         with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
             self.init_gpio()
