@@ -38,7 +38,7 @@ class PvCharging:
         "topic": "chargemode_config/pv_charging/bat_mode"})
     switch_off_delay: int = field(default=60, metadata={
                                   "topic": "chargemode_config/pv_charging/switch_off_delay"})
-    switch_off_threshold: int = field(default=5, metadata={
+    switch_off_threshold: int = field(default=0, metadata={
         "topic": "chargemode_config/pv_charging/switch_off_threshold"})
     switch_on_delay: int = field(default=30, metadata={
         "topic": "chargemode_config/pv_charging/switch_on_delay"})
