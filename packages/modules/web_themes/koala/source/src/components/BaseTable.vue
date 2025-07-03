@@ -11,6 +11,7 @@
       virtual-scroll
       :virtual-scroll-item-size="48"
       :virtual-scroll-sticky-size-start="30"
+      :style="{ height: tableHeight }"
       @row-click="onRowClick"
       binary-state-sort
       :pagination="{ rowsPerPage: 0 }"
