@@ -515,3 +515,11 @@ def limit_raw_power_left_to_surplus(surplus) -> None:
         counter.data.set.surplus_power_left = surplus
         log.debug(f'Zähler {counter.num}: Begrenzung der verbleibenden Leistung auf '
                   f'{counter.data.set.surplus_power_left}W')
+
+
+def set_raw_surplus_power_left() -> None:
+    """ beim Bidi-Laden den Regelmodus rausrechnen, da sonst zum Regelmodus und nicht zum Nullpunkt geregelt wird.
+    """
+    grid_counter = data.data.counter_all_data.get_evu_counter()
+    grid_counter.data.set.surplus_power_left -= grid_counter._control_range_offset()
+    log.debug(f"Nullpunktanpassung {grid_counter.data.set.surplus_power_left}W")
