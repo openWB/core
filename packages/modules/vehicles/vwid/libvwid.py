@@ -7,6 +7,9 @@
 import secrets
 import logging
 import json
+import uuid
+import base64
+import hashlib
 
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -16,6 +19,20 @@ with ImportErrorContext():
 LOGIN_BASE = "https://emea.bff.cariad.digital/user-login/v1"
 LOGIN_HANDLER_BASE = "https://identity.vwgroup.io"
 API_BASE = "https://emea.bff.cariad.digital/vehicle/v1"
+CLIENT_ID = "a24fba63-34b3-4d43-b181-942111e6bda8@apps_vw-dilab_com"
+SCOPE = "openid profile badge cars dealers birthdate vin"
+REDIRECT_URI = "weconnect://authenticated"
+RESPONSE_TYPE = "code id_token token"
+CODE_CHALLENGE_METHOD = 'S256'
+REGION = "emea"
+
+# XREQUEST = "com.volkswagen.weconnect"
+# XCLIENT_ID = ""
+# TYPE = "VW"
+# COUNTRY = "DE"
+# XAPPVERSION = ""
+# XAPPNAME = ""
+# XBRAND = "volkswagen"
 
 
 class vwid:
@@ -83,15 +100,34 @@ class vwid:
     def set_jobs(self, jobs):
         self.jobs_string = ','.join(jobs)
 
+    def get_code_challenge(self):
+        code_verifier = secrets.token_urlsafe(64).replace('+', '-').replace('/', '_').replace('=', '')
+        code_challenge = base64.b64encode(hashlib.sha256(code_verifier.encode('utf-8')).digest())
+        code_challenge = code_challenge.decode('utf-8').replace('+', '-').replace('/', '_').replace('=', '')
+        return (code_verifier, code_challenge)
+
     async def connect(self, username, password):
         self.set_credentials(username, password)
         return (await self.reconnect())
 
     async def reconnect(self):
+        # Get code challenge and verifier
+        code_verifier, code_challenge = self.get_code_challenge()
+
         # Get authorize page
+        # payload = {
+        #     'nonce': secrets.token_urlsafe(12),
+        #     'redirect_uri': 'weconnect://authenticated'
+        # }
         payload = {
+            'client_id': CLIENT_ID,
+            'scope': SCOPE,
+            'response_type': RESPONSE_TYPE,
             'nonce': secrets.token_urlsafe(12),
-            'redirect_uri': 'weconnect://authenticated'
+            'redirect_uri': REDIRECT_URI,
+            'state': str(uuid.uuid4()),
+            'code_challenge': code_challenge,
+            'code_challenge_method': CODE_CHALLENGE_METHOD
         }
 
         response = await self.session.get(LOGIN_BASE + '/authorize', params=payload)
@@ -156,8 +192,8 @@ class vwid:
         payload = {
             'state': query['state'],
             'id_token': query['id_token'],
-            'redirect_uri': "weconnect://authenticated",
-            'region': "emea",
+            'redirect_uri': REDIRECT_URI,
+            'region': REGION,
             'access_token': query["access_token"],
             'authorizationCode': query["code"]
         }
