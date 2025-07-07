@@ -43,7 +43,7 @@ def get_common_data():
         parsed_data += f"Version: {version} ({lastcommit})\n"
     with ErrorHandlingContext():
         if serial_number is None or serial_number == "null":
-            parsed_data += "openWB_Serial: unbekannt\n"
+            parsed_data += "openWB_Serial: unknown\n"
         else:
             parsed_data += f"openWB_Serial: {serial_number}\n"
     with ErrorHandlingContext():
@@ -90,37 +90,46 @@ def config_and_state():
     except Exception:
         secondary = False
 
-    with ErrorHandlingContext():
-        chargemode_config = data.data.general_data.data.chargemode_config
-    parsed_data += "## Allgemein ##\n"
+    parsed_data += "## General ##\n"
     with ErrorHandlingContext():
         parsed_data += f"openWB_Cloud: {BrokerContent().get_cloud()}"
         if secondary is False:
             parsed_data += ("Mode: Primary\n"
                             f"Home_Consumption: {data.data.counter_all_data.data.set.home_consumption} W\n"
-                            f"Phases_To_Use: Sofortladen {chargemode_config.instant_charging.phases_to_use}, "
-                            f"Zielladen {chargemode_config.scheduled_charging.phases_to_use}, "
-                            f"Zeitladen: {chargemode_config.time_charging.phases_to_use}, "
-                            f"PV-Laden: {chargemode_config.pv_charging.phases_to_use}\n"
-                            f"PV_Threshold: Einschaltschwelle: {chargemode_config.pv_charging.switch_on_threshold}W, "
-                            f"Ausschaltschwelle: {chargemode_config.pv_charging.switch_off_threshold}W\n"
                             f"Control_Interval: {data.data.general_data.data.control_interval}s\n")
         else:
             parsed_data += "Mode: Secondary\n"
         parsed_data += f"Display_Active: {data.data.optional_data.data.int_display.active}\n"
-
     if secondary is False:
         with ErrorHandlingContext():
-            parsed_data += f"\n## Hierarchie ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
+            chargemode_config = data.data.general_data.data.chargemode_config
+            parsed_data += ("\n## General Charge Config/ PV ##\n"
+                            f"Phase_Switch_Delay: {chargemode_config.phase_switch_delay} min\n"
+                            f"Retry_Failed_Phase_Switches: {chargemode_config.retry_failed_phase_switches}\n"
+                            f"Control_Range: {chargemode_config.pv_charging.control_range}W\n"
+                            f"Switch_On_Threshold: {chargemode_config.pv_charging.switch_on_threshold}W\n"
+                            f"Switch_On_Delay: {chargemode_config.pv_charging.switch_on_delay}s\n"
+                            f"Switch_Off_Threshold: {chargemode_config.pv_charging.switch_off_threshold}W\n"
+                            f"Switch_Off_Delay: {chargemode_config.pv_charging.switch_off_delay}s\n"
+                            f"Feed_In_Yield: {chargemode_config.pv_charging.feed_in_yield}W\n"
+                            f"Bat_Mode: {chargemode_config.pv_charging.bat_mode}\n"
+                            f"Min_Bat_SoC: {chargemode_config.pv_charging.min_bat_soc}%\n"
+                            f"Bat_Power_Reserve_Active: {chargemode_config.pv_charging.bat_power_reserve_active}\n"
+                            f"Bat_Power_Reserve: {chargemode_config.pv_charging.bat_power_reserve}W\n"
+                            f"Bat_Power_Discharge_Active: {chargemode_config.pv_charging.bat_power_discharge_active}\n"
+                            f"Bat_Power_Discharge: {chargemode_config.pv_charging.bat_power_discharge}W\n")
+    if secondary is False:
+        with ErrorHandlingContext():
+            parsed_data += f"\n## Hierarchy ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
 
     with ErrorHandlingContext():
         if secondary:
             with ErrorHandlingContext():
-                parsed_data += "\n## Ladepunkte ##\n"
+                parsed_data += "\n## Charge Points ##\n"
                 for cp in subdata.SubData.cp_data.values():
                     parsed_data += get_parsed_cp_data(cp.chargepoint)
         else:
-            parsed_data += "\n## Geräte und Komponenten ##\n"
+            parsed_data += "\n## Devices and Components ##\n"
             for key, value in data.data.system_data.items():
                 with ErrorHandlingContext():
                     if isinstance(value, AbstractDevice):
@@ -170,7 +179,7 @@ def config_and_state():
                                                 f"--| Counter_Currents: {component_data.data.get.currents}A\n"
                                                 f"--| Counter_Error_Status: {component_data.data.get.fault_str}\n\n")
             with ErrorHandlingContext():
-                parsed_data += "\n## Gesamtleistungen ##\n"
+                parsed_data += "\n## Total Powers ##\n"
                 evu_id = data.data.counter_all_data.get_id_evu_counter()
                 try:
                     evu_powers = filter_log_file('mqtt', 'openWB/counter/' + str(evu_id) + '/get/power,', 5)
@@ -198,7 +207,7 @@ def config_and_state():
                     home_consumption = "Keine Daten"
                 parsed_data += f"Home_Consumption:\n {home_consumption}\n"
             with ErrorHandlingContext():
-                parsed_data += "\n## Ladepunkte ##\n"
+                parsed_data += "\n## Charge Points ##\n"
                 parsed_data += f"CP_All_Power: {data.data.cp_all_data.data.get.power / 1000}kW\n\n"
                 for cp in data.data.cp_data.values():
                     parsed_data += get_parsed_cp_data(cp)
@@ -356,6 +365,18 @@ def get_uuids():
         log.exception(f"Error reading UUID file: {e}")
 
 
+def get_boots(num_lines=100):
+    lines = []
+    log_file = openwb_base_dir / 'data/log/boot'
+    try:
+        if os.path.isfile(log_file):
+            with open(log_file, 'r') as file:
+                lines = file.readlines()
+    except Exception as e:
+        log.exception(f"Error reading BOOT file: {e}")
+    return ''.join(lines[-num_lines:])
+
+
 def create_debug_log(input_data):
     def write_to_file(file_handler, func, default: Optional[Any] = None):
         try:
@@ -377,9 +398,11 @@ def create_debug_log(input_data):
                                       f'Kernel: {run_shell_command("uname -s -r -v -m -o")}\n'
                                       f'Uptime:{run_command(["uptime"])}{run_command(["free"])}\n')
             write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}')
-            write_to_file(df, lambda: f'USB_Devices:{run_shell_command(["lsusb"])}\n')
+            write_to_file(df, lambda: f'USB_Devices:\n{run_shell_command(["lsusb"])}\n')
             write_to_file(df, lambda: f"# section: configuration and state #\n{config_and_state()}")
+            write_to_file(df, lambda: f"# section: errors #\n{filter_log_file('main', 'ERROR', 30)}\n")
             write_to_file(df, lambda: f"# section: uuids #\n{get_uuids()}\n")
+            write_to_file(df, lambda: f"# section: boots #\n{get_boots(30)}\n")
             write_to_file(df, lambda: f'# section: storage #\n{run_command(["df", "-h"])}\n')
             write_to_file(df, lambda: f"# section: broker essentials #\n{broker.get_broker_essentials()}\n")
             write_to_file(

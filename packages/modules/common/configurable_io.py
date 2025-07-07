@@ -18,7 +18,8 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
     def __init__(self,
                  config: T_IO_CONFIG,
                  component_reader: Callable[[], IoState],
-                 component_writer: Callable[[Dict[int, Union[float, int]]], Optional[IoState]]) -> None:
+                 component_writer: Callable[[Dict[int, Union[float, int]]], Optional[IoState]],
+                 initializer: Callable = lambda: None) -> None:
         self.config = config
         self.fault_state = FaultState(ComponentInfo(self.config.id, self.config.name,
                                       ComponentType.IO.value))
@@ -27,6 +28,7 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
         with SingleComponentUpdateContext(self.fault_state):
             self.component_reader = component_reader
             self.component_writer = component_writer
+            initializer()
 
     def read(self):
         if hasattr(self, "component_reader"):
