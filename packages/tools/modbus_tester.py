@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
-import sys
 import time
-from modules.common import modbus
+import sys
+sys.path.append("/var/www/html/openWB/packages")
+try:
+    from modules.common import modbus
+except Exception as e:
+    print(e)
+
 
 host = sys.argv[1]
 port = int(sys.argv[2])
