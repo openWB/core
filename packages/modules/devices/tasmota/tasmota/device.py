@@ -33,7 +33,7 @@ def create_device(device_config: Tasmota):
         component_factory=ComponentFactoryByType(
             counter=create_counter_component,
             inverter=create_inverter_component,
-            inverter=create_bat_component
+            bat=create_bat_component
         ),
         component_updater=IndependentComponentUpdater(lambda component: component.update())
     )

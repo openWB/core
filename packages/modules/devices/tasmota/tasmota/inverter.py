@@ -40,12 +40,12 @@ class TasmotaInverter(AbstractInverter):
 
         if 'ENERGY' in response['StatusSNS']:
             power = float(response['StatusSNS']['ENERGY']['Power']) * -1
-            powers = [float(response['StatusSNS']['ENERGY']['Power']), 0.0, 0.0]
+            currents = [float(response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0]
             _, exported = self.sim_counter.sim_count(power)
 
             inverter_state = InverterState(
                 power=power,
-                powers=powers,
+                currents=currents,
                 exported=exported
             )
         else:

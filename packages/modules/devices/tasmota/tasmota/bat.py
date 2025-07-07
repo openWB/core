@@ -6,7 +6,7 @@ from modules.devices.tasmota.tasmota.config import TasmotaBatSetup
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_bat_value_store
 from modules.common.simcount import SimCounter
 from modules.common import req
 from modules.common.component_state import BatState
@@ -29,7 +29,7 @@ class TasmotaBat(AbstractBat):
         self.__device_id: int = self.kwargs['device_id']
         self.__ip_address: str = self.kwargs['ip_address']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
@@ -40,13 +40,13 @@ class TasmotaBat(AbstractBat):
 
         if 'ENERGY' in response['StatusSNS']:
             power = float(response['StatusSNS']['ENERGY']['Power'])
-            powers = [float(response['StatusSNS']['ENERGY']['Power']), 0.0, 0.0]
+            currents = [float(response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0]
             imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
             _, exported = self.sim_counter.sim_count(power)
 
             bat_state = BatState(
                 power=power,
-                powers=powers,
+                currents=currents,
                 imported=imported,
                 exported=exported
             )
