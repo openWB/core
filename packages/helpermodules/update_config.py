@@ -56,9 +56,10 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 86
+    DATASTORE_VERSION = 87
 
     valid_topic = [
+        "^openWB/bat/config/bat_control_permitted$",
         "^openWB/bat/config/configured$",
         "^openWB/bat/config/power_limit_mode$",
         "^openWB/bat/set/charging_power_left$",
@@ -2326,3 +2327,13 @@ class UpdateConfig:
                                 return {component_topic: config_payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 86)
+
+    def upgrade_datastore_86(self) -> None:
+        if "openWB/bat/config/bat_control_permitted" not in self.all_received_topics.keys():
+            self.__update_topic("openWB/bat/config/bat_control_permitted", False)
+            if decode_payload(self.all_received_topics["openWB/bat/get/power_limit_controllable"]) is True:
+                pub_system_message({}, "Bitte akzeptiere zunächst die "
+                                   "<a href=\"/openWB/web/settings/#/GeneralChargeConfig\">rechtlichen Hinweise</a> "
+                                   "für die Speichersteuerung. Die Speichersteuerung war bisher bereits verfügbar, ist"
+                                   " jedoch bis zum Akzeptieren standardmäßig deaktiviert.", MessageType.WARNING)
+        self.__update_topic("openWB/system/datastore_version", 87)
