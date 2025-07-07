@@ -146,6 +146,7 @@ class HandlerAlgorithm:
     def handler_midnight(self):
         try:
             save_log(LogType.MONTHLY)
+            Path(Path(__file__).resolve().parents[1]/"ramdisk"/"thread_errors.log").unlink(missing_ok=True)
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
