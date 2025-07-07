@@ -4,6 +4,7 @@ from typing import TypedDict, Any
 from modules.common import modbus
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_type import ComponentDescriptor
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.mpm3pm import Mpm3pm
 from modules.common.b23 import B23
 from modules.common.simcount import SimCounter
@@ -26,6 +27,7 @@ class EvuKitFlex(AbstractCounter):
         self.__device_id: int = self.kwargs['device_id']
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         factory = kit_counter_version_factory(self.component_config.configuration.version)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.__client = factory(self.component_config.configuration.id, self.__tcp_client, self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
