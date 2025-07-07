@@ -56,7 +56,7 @@ class ChargepointModule(AbstractChargepoint):
             if self._client.evse_client.is_precise_current_active() is False:
                 self._client.evse_client.activate_precise_current()
             self._precise_current = self._client.evse_client.is_precise_current_active()
-        self.max_evse_current = self._client.evse_client.get_max_current()
+
         self.version = SubData.system_data["system"].data["version"]
         self.current_branch = SubData.system_data["system"].data["current_branch"]
         self.current_commit = SubData.system_data["system"].data["current_commit"]
@@ -77,24 +77,18 @@ class ChargepointModule(AbstractChargepoint):
             chargepoint_state = self.old_chargepoint_state
             self.set_current_evse = chargepoint_state.evse_current
 
-            self._client.check_hardware(self.fault_state)
-            powers, power = self._client.meter_client.get_power()
-            if power < self.PLUG_STANDBY_POWER_THRESHOLD:
+            evse_state, counter_state = self._client.request_and_check_hardware(self.fault_state)
+            power = counter_state.power
+            if counter_state.power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
-            voltages = self._client.meter_client.get_voltages()
-            currents = self._client.meter_client.get_currents()
-            imported = self._client.meter_client.get_imported()
-            power_factors = self._client.meter_client.get_power_factors()
-            frequency = self._client.meter_client.get_frequency()
-            serial_number = self._client.meter_client.get_serial_number()
-            phases_in_use = sum(1 for current in currents if current > 3)
+            phases_in_use = sum(1 for current in counter_state.currents if current > 3)
             if phases_in_use == 0:
                 phases_in_use = self.old_phases_in_use
             else:
                 self.old_phases_in_use = phases_in_use
 
             time.sleep(0.1)
-            plug_state, charge_state, self.set_current_evse = self._client.evse_client.get_plug_charge_state()
+            self.set_current_evse = evse_state.set_current
             self.client_error_context.reset_error_counter()
 
             if phase_switch_cp_active:
@@ -105,24 +99,25 @@ class ChargepointModule(AbstractChargepoint):
                 )
                 plug_state = self.old_plug_state
             else:
-                self.old_plug_state = plug_state
+                self.old_plug_state = evse_state.plug_state
+                plug_state = evse_state.plug_state
 
             chargepoint_state = ChargepointState(
                 power=power,
-                currents=currents,
-                imported=imported,
+                currents=counter_state.currents,
+                imported=counter_state.imported,
                 exported=0,
-                powers=powers,
-                voltages=voltages,
-                frequency=frequency,
+                powers=counter_state.powers,
+                voltages=counter_state.voltages,
+                frequency=counter_state.frequency,
                 plug_state=plug_state,
-                charge_state=charge_state,
+                charge_state=evse_state.charge_state,
                 phases_in_use=phases_in_use,
-                power_factors=power_factors,
+                power_factors=counter_state.power_factors,
                 rfid=last_tag,
                 evse_current=self.set_current_evse,
-                serial_number=serial_number,
-                max_evse_current=self.max_evse_current,
+                serial_number=counter_state.serial_number,
+                max_evse_current=evse_state.max_current,
                 version=self.version,
                 current_branch=self.current_branch,
                 current_commit=self.current_commit

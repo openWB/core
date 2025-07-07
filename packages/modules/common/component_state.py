@@ -88,6 +88,7 @@ class CounterState:
         powers: Optional[List[Optional[float]]] = None,
         power_factors: Optional[List[Optional[float]]] = None,
         frequency: float = 50,
+        serial_number: str = "",
     ):
         """Args:
             imported: total imported energy in Wh
@@ -107,6 +108,7 @@ class CounterState:
         self.exported = exported
         self.power = power
         self.frequency = frequency
+        self.serial_number = serial_number
 
 
 @auto_str
@@ -234,3 +236,11 @@ class IoState:
         self.digital_input = digital_input
         self.analog_output = analog_output
         self.digital_output = digital_output
+
+
+class EvseState:
+    def __init__(self, plug_state: bool, charge_state: bool, set_current: int, max_current: int) -> None:
+        self.plug_state = plug_state
+        self.charge_state = charge_state
+        self.set_current = set_current
+        self.max_current = max_current

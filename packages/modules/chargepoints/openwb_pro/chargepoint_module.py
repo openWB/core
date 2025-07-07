@@ -10,7 +10,7 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.hardware_check import check_meter_values
 from modules.common.store import get_chargepoint_value_store
-from modules.common.component_state import ChargepointState
+from modules.common.component_state import ChargepointState, CounterState
 from modules.common import req
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
 
@@ -82,9 +82,11 @@ class ChargepointModule(AbstractChargepoint):
             )
 
             if json_rsp.get("voltages"):
-                meter_msg = check_meter_values(json_rsp["voltages"])
-                if meter_msg:
-                    self.fault_state.warning(meter_msg)
+                check_meter_values(CounterState(voltages=json_rsp["voltages"],
+                                                currents=json_rsp["currents"],
+                                                powers=json_rsp["powers"],
+                                                power=json_rsp["power_all"]),
+                                   self.fault_state)
                 chargepoint_state.voltages = json_rsp["voltages"]
             if json_rsp.get("soc_value"):
                 chargepoint_state.soc = json_rsp["soc_value"]
