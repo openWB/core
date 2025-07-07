@@ -14,6 +14,7 @@
     :row-data="tableRowData"
     :column-config="isMobile ? columnConfigMobile : columnConfigDesktop"
     :search-input-visible="searchInputVisible"
+    :table-height="isMobile ? '35vh' : '45vh'"
     v-model:filter="filter"
     :columns-to-search="['name', 'manufacturer', 'model']"
     :row-expandable="true"

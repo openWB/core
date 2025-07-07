@@ -15,7 +15,12 @@
             :toolTip="true"
           />
         </div>
-        <q-icon name="settings" size="sm" @click="settingsVisible = true" />
+        <q-icon
+          class="cursor-pointer"
+          name="settings"
+          size="sm"
+          @click="settingsVisible = true"
+        />
       </div>
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
       <ChargePointStateMessage :charge-point-id="props.chargePointId" />
@@ -54,7 +59,7 @@
       >
         <template #update-soc-icon>
           <q-icon
-            v-if="vehicleSocType === 'manual'"
+            v-if="vehicleSocType === 'manual' && limitMode !== 'amount'"
             name="edit"
             size="xs"
             class="q-ml-xs cursor-pointer"
@@ -63,7 +68,7 @@
             <q-tooltip>SoC eingeben</q-tooltip>
           </q-icon>
           <q-icon
-            v-else-if="vehicleSocType !== undefined"
+            v-else-if="vehicleSocType !== undefined && limitMode !== 'amount'"
             name="refresh"
             size="xs"
             class="q-ml-xs cursor-pointer"

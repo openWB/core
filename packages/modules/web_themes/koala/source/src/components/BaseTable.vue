@@ -1,7 +1,7 @@
 <template>
-  <div class="q-pa-md full-height">
+  <div class="q-pa-md">
     <q-table
-      class="sticky-header-table full-height"
+      class="sticky-header-table"
       :rows="mappedRows"
       :columns="mappedColumns"
       row-key="id"
@@ -11,6 +11,7 @@
       virtual-scroll
       :virtual-scroll-item-size="48"
       :virtual-scroll-sticky-size-start="30"
+      :style="{ height: tableHeight }"
       @row-click="onRowClick"
       binary-state-sort
       :pagination="{ rowsPerPage: 0 }"
@@ -143,6 +144,7 @@ const props = defineProps<{
   columnConfig: ColumnConfiguration[];
   rowKey?: string;
   searchInputVisible?: boolean;
+  tableHeight?: string;
   filter?: string;
   columnsToSearch?: string[];
   rowExpandable?: boolean;

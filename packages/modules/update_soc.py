@@ -12,7 +12,6 @@ from helpermodules.pub import Pub
 from helpermodules.utils import joined_thread_handler
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.utils import wait_for_module_update_completed
-from helpermodules.logger import clear_in_memory_log_handler, write_logs_to_file
 
 log = logging.getLogger(__name__)
 
@@ -31,17 +30,14 @@ class UpdateSoc:
             self.event_update_soc.clear()
             topic = "openWB/set/vehicle/set/vehicle_update_completed"
             try:
-                clear_in_memory_log_handler("soc")
                 threads_update, threads_store = self._get_threads()
                 joined_thread_handler(threads_update, 300)
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
                 # threads_store = self._filter_failed_store_threads(threads_store)
                 joined_thread_handler(threads_store, data.data.general_data.data.control_interval/3)
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
-                write_logs_to_file("soc")
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
-                write_logs_to_file("soc")
 
     def _get_threads(self) -> Tuple[List[Thread], List[Thread]]:
         threads_update, threads_store = [], []
