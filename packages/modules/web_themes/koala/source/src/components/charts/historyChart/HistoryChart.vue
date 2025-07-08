@@ -9,7 +9,7 @@
       />
     </div>
     <HistoryChartLegend
-      v-if="legendDisplay && legendLarge"
+      v-if="legendDisplay"
       :chart="chartRef?.chart || null"
       class="legend-wrapper q-mt-sm"
     />
@@ -68,10 +68,6 @@ const props = defineProps<{
 }>();
 
 const chartRef = ref<ChartComponentRef | null>(null);
-
-const legendLarge = computed(() =>
-  lineChartData?.value?.datasets.length > 12 ? true : false,
-);
 
 const applyHiddenDatasetsToChart = <TType extends ChartType, TData>(
   chart: Chart<TType, TData>,

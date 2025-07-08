@@ -58,6 +58,14 @@ const barStyle = {
 </script>
 
 <style scoped>
+.custom-legend-container {
+  margin-bottom: 5px;
+  height: 70px;
+  border-radius: 5px;
+  text-align: left;
+  width: 100%;
+}
+
 .legend-color-box {
   display: inline-block;
   width: 20px;

@@ -76,6 +76,7 @@ const updateLegendItems = () => {
   });
 
   legendItems.value = items;
+  console.log('legendItems:', legendItems.value);
 };
 
 const categorizedLegendItems = computed(() => {
@@ -103,7 +104,7 @@ const categorizedLegendItems = computed(() => {
 });
 
 const legendLarge = computed(() => {
-  return legendItems.value.length > 16;
+  return legendItems.value.length > 100;
 });
 
 const getItemColor = (item: LegendItem) => {
