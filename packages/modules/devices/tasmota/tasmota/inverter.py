@@ -29,18 +29,20 @@ class TasmotaInverter(AbstractInverter):
         self.__device_id: int = self.kwargs['device_id']
         self.__ip_address: str = self.kwargs['ip_address']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.__phase: int = self.kwargs['phase']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
         log.debug("Tasmota inverter update: " + self.__ip_address)
-
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
         if 'ENERGY' in response['StatusSNS']:
+            currents = [0.0, 0.0, 0.0]
+
             power = float(response['StatusSNS']['ENERGY']['Power']) * -1
-            currents = [float(response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0]
+            currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
             _, exported = self.sim_counter.sim_count(power)
 
             inverter_state = InverterState(
