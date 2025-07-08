@@ -27,11 +27,13 @@ class Bidi:
                                         230 for i in range(0, cp.data.get.phases_in_use)]
                     missing_currents += [0] * (3 - len(missing_currents))
                     if zero_point_adjustment > 0:
-                        for index in range(0,3):
-                            missing_currents[index] = min(cp.data.control_parameter.required_current, missing_currents[index])
+                        for index in range(0, 3):
+                            missing_currents[index] = min(cp.data.control_parameter.required_current,
+                                                          missing_currents[index])
                     else:
-                        for index in range(0,3):
-                            missing_currents[index] = cp.check_min_max_current(missing_currents[index], cp.data.get.phases_in_use)
+                        for index in range(0, 3):
+                            missing_currents[index] = cp.check_min_max_current(missing_currents[index],
+                                                                               cp.data.get.phases_in_use)
                     grid_counter.update_surplus_values_left(missing_currents, cp.data.get.voltages)
                     cp.data.set.current = missing_currents[0]
                     log.info(f"LP{cp.num}: Stromstärke {missing_currents}A")

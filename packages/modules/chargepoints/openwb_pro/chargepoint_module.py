@@ -16,11 +16,13 @@ from modules.internal_chargepoint_handler.internal_chargepoint_handler_config im
 
 log = logging.getLogger(__name__)
 
+
 class EvseSignaling:
     HLC = "HLC"
     ISO15118 = "ISO15118"
     FAKE_HIGHLEVEL = "fake_highlevel"
     PWM = "PWM"
+
 
 class ChargepointModule(AbstractChargepoint):
     WRONG_CHARGE_STATE = "Lade-Status ist nicht aktiv, aber Strom fließt."

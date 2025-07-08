@@ -443,7 +443,7 @@ class Chargepoint(ChargepointRfidMixin):
         """
         try:
             if self.data.get.evse_signaling == EvseSignaling.HLC:
-                return 
+                return
             evu_counter = data.data.counter_all_data.get_evu_counter()
             charging_ev = self.data.set.charging_ev_data
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
@@ -502,7 +502,7 @@ class Chargepoint(ChargepointRfidMixin):
     def get_phases_by_selected_chargemode(self, phases_chargemode: int) -> int:
         charging_ev = self.data.set.charging_ev_data
         if self.data.get.evse_signaling == EvseSignaling.HLC:
-            phases = self.data.get.phases_in_use 
+            phases = self.data.get.phases_in_use
         elif ((self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state) or
                 self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch

@@ -518,7 +518,8 @@ def limit_raw_power_left_to_surplus(surplus) -> None:
 
 
 def set_raw_surplus_power_left() -> None:
-    """ Bei surplus power left ist auch Leistung drin, die Autos zugeteilt bekommen, aber nicht ziehen und dann wird ins Netz eingespeist.
+    """ Bei surplus power left ist auch Leistung drin, die Autos zugeteilt bekommen, aber nicht ziehen und dann wird
+    ins Netz eingespeist.
     beim Bidi-Laden den Regelmodus rausrechnen, da sonst zum Regelmodus und nicht zum Nullpunkt geregelt wird.
     """
     grid_counter = data.data.counter_all_data.get_evu_counter()
