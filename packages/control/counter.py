@@ -518,8 +518,9 @@ def limit_raw_power_left_to_surplus(surplus) -> None:
 
 
 def set_raw_surplus_power_left() -> None:
-    """ beim Bidi-Laden den Regelmodus rausrechnen, da sonst zum Regelmodus und nicht zum Nullpunkt geregelt wird.
+    """ Bei surplus power left ist auch Leistung drin, die Autos zugeteilt bekommen, aber nicht ziehen und dann wird ins Netz eingespeist.
+    beim Bidi-Laden den Regelmodus rausrechnen, da sonst zum Regelmodus und nicht zum Nullpunkt geregelt wird.
     """
     grid_counter = data.data.counter_all_data.get_evu_counter()
-    grid_counter.data.set.surplus_power_left -= grid_counter._control_range_offset()
+    grid_counter.data.set.surplus_power_left = grid_counter.data.get.power * -1
     log.debug(f"Nullpunktanpassung {grid_counter.data.set.surplus_power_left}W")
