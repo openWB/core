@@ -8,6 +8,7 @@ from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
 from helpermodules.constants import NO_ERROR
+from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
 from modules.common.abstract_chargepoint import AbstractChargepoint
 
 
@@ -103,7 +104,7 @@ class Get:
     error_timestamp: int = 0
     evse_current: Optional[float] = None
     # kann auch zur Laufzeit geändert werden
-    evse_signaling: Optional[str] = None
+    evse_signaling: Optional[EvseSignaling] = None
     exported: float = 0
     fault_str: str = NO_ERROR
     fault_state: int = 0

@@ -40,6 +40,7 @@ from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler
+from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from helpermodules.timecheck import check_timestamp, create_timestamp
 
@@ -338,6 +339,8 @@ class Chargepoint(ChargepointRfidMixin):
 
     def _is_phase_switch_required(self) -> bool:
         phase_switch_required = False
+        if self.data.get.evse_signaling == EvseSignaling.HLC:
+            return False
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
         # nicht zwischendurch eine neue Umschaltung getriggert werden.
         if ((((self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED or
@@ -439,6 +442,8 @@ class Chargepoint(ChargepointRfidMixin):
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
         try:
+            if self.data.get.evse_signaling == EvseSignaling.HLC:
+                return 
             evu_counter = data.data.counter_all_data.get_evu_counter()
             charging_ev = self.data.set.charging_ev_data
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
@@ -496,7 +501,9 @@ class Chargepoint(ChargepointRfidMixin):
 
     def get_phases_by_selected_chargemode(self, phases_chargemode: int) -> int:
         charging_ev = self.data.set.charging_ev_data
-        if ((self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state) or
+        if self.data.get.evse_signaling == EvseSignaling.HLC:
+            phases = self.data.get.phases_in_use 
+        elif ((self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state) or
                 self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
@@ -584,6 +591,7 @@ class Chargepoint(ChargepointRfidMixin):
 
     def check_min_max_current(self, required_current: float, phases: int, pv: bool = False) -> float:
         required_current_prev = required_current
+        msg = None
         if (self.data.control_parameter.chargemode == Chargemode.BIDI_CHARGING and
                 self.data.control_parameter.submode == Chargemode.BIDI_CHARGING and required_current < 0):
             required_current = max(self.data.get.max_discharge_power / phases / 230, required_current)
@@ -599,7 +607,7 @@ class Chargepoint(ChargepointRfidMixin):
             required_current = self.check_cp_min_max_current(required_current, phases)
         if required_current != required_current_prev and msg is None:
             msg = ("Die Einstellungen in dem Ladepunkt-Profil beschränken den Strom auf "
-                   f"maximal {required_current} A.")
+                   f"maximal {round(required_current, 2)} A.")
         self.set_state_and_log(msg)
         return required_current
 
@@ -882,6 +890,7 @@ class Chargepoint(ChargepointRfidMixin):
 
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and
+                self.data.get.evse_signaling != EvseSignaling.HLC and
                 self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False)
 
     def chargemode_support_phase_switch(self) -> bool:

@@ -341,8 +341,7 @@ class ChargeTemplate:
                       phases_in_use: int) -> Tuple[float, str, str, int]:
         if bidi != BidiState.BIDI_CAPABLE:
             # normales Zielladen, da Hardware kein bidirektionales Laden unterstützt
-            plan_data = self._find_recent_plan(
-                {self.data.chargemode.bidi_charging.plan.id: self.data.chargemode.bidi_charging.plan},
+            plan_data = self._find_recent_plan([self.data.chargemode.bidi_charging.plan],
                 soc,
                 ev_template,
                 phases,
@@ -351,7 +350,8 @@ class ChargeTemplate:
                 phase_switch_supported,
                 charging_type,
                 chargemode_switch_timestamp,
-                control_parameter)
+                control_parameter,
+                soc_request_interval_offset)
             if plan_data:
                 control_parameter.current_plan = plan_data.plan.id
             else:
