@@ -40,7 +40,10 @@ def create_device(device_config: Mqtt):
             for component in components:
                 component.update(received_topics)
         else:
-            raise Exception(f"Keine MQTT Daten für Gerät {device_config.id} empfangen")
+            for component in components:
+                component.fault_state.warning(
+                    f"Keine MQTT-Daten für Komponente {component.component_config.name} empfangen oder es werden "
+                    "veraltete, abwärtskompatible Topics verwendet. Bitte die Doku in den Einstellungen beachten.")
 
     return ConfigurableDevice(
         device_config=device_config,

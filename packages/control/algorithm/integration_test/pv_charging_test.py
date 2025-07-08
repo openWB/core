@@ -7,7 +7,6 @@ from control.algorithm.integration_test.conftest import ParamsExpectedSetCurrent
 from control.chargemode import Chargemode
 from control import data, loadmanagement
 from control.algorithm.algorithm import Algorithm
-from control.algorithm.algorithm import data as algorithm_data
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory
@@ -116,7 +115,7 @@ def assert_counter_set(params: ParamsExpectedCounterSet):
 def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch):
     # alle 3 im PV-laden, keine Ladung -> bei zwei die Verzögerung starten, für den 3. reicht es nicht
     # setup
-    data.data.counter_data["counter0"].data.set.raw_power_left = 31775
+    data.data.counter_data["counter0"].data.set.raw_power_left = 31975
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16, 12, 14]
     data.data.counter_data["counter0"].data.set.reserved_surplus = 0
@@ -128,13 +127,13 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
     for i in range(3, 6):
         assert data.data.cp_data[f"cp{i}"].data.set.current == 0
     assert data.data.cp_data[
-        "cp3"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
+        "cp3"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.cp_data[
         "cp4"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
     assert data.data.cp_data[
-        "cp5"].data.control_parameter.timestamp_switch_on_off is None
-    assert data.data.counter_data["counter0"].data.set.raw_power_left == 31775
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9890
+        "cp5"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
+    assert data.data.counter_data["counter0"].data.set.raw_power_left == 31975
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 10090.0
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 9000
 
 
@@ -222,8 +221,11 @@ def test_surplus(params: ParamsSurplus, all_cp_pv_charging_3p, all_cp_charging_3
     data.data.counter_data["counter0"].data.set.raw_power_left = params.raw_power_left
     data.data.counter_data["counter0"].data.set.raw_currents_left = params.raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = params.raw_currents_left_counter6
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mockget_component_name_by_id)
+    mock_get_component_name_by_id = Mock(return_value="Garage")
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
+    data.data.cp_data["cp3"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
+    data.data.cp_data["cp4"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
+    data.data.cp_data["cp5"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
 
     # execution
     Algorithm().calc_current()
@@ -270,8 +272,6 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     data.data.counter_data["counter0"].data.set.raw_power_left = cases_phase_switch[0].raw_power_left
     data.data.counter_data["counter0"].data.set.raw_currents_left = cases_phase_switch[0].raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = cases_phase_switch[0].raw_currents_left_counter6
-    mockget_get_phases_chargemode = Mock(return_value=0)
-    monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
     data.data.cp_data[
         "cp3"].data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
     data.data.cp_data[
@@ -293,8 +293,6 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     data.data.counter_data["counter0"].data.set.raw_power_left = cases_phase_switch[1].raw_power_left
     data.data.counter_data["counter0"].data.set.raw_currents_left = cases_phase_switch[1].raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = cases_phase_switch[1].raw_currents_left_counter6
-    mockget_get_phases_chargemode = Mock(return_value=0)
-    monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
     data.data.cp_data["cp3"].data.get.currents = [32, 0, 0]
     data.data.cp_data["cp3"].data.get.power = 7360
     data.data.cp_data["cp3"].data.control_parameter.timestamp_last_phase_switch = 1652682252

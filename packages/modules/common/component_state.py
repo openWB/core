@@ -56,6 +56,7 @@ class BatState:
         exported: float = 0,
         power: float = 0,
         soc: float = 0,
+        currents: Optional[List[float]] = None,
     ):
         """Args:
             imported: total imported energy in Wh
@@ -67,6 +68,12 @@ class BatState:
         self.exported = exported
         self.power = power
         self.soc = soc
+        if _check_none(currents):
+            currents = [0.0]*3
+        else:
+            if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
+                log.debug("currents sign wrong "+str(currents))
+        self.currents = currents
 
 
 @auto_str
@@ -81,6 +88,7 @@ class CounterState:
         powers: Optional[List[Optional[float]]] = None,
         power_factors: Optional[List[Optional[float]]] = None,
         frequency: float = 50,
+        serial_number: str = "",
     ):
         """Args:
             imported: total imported energy in Wh
@@ -100,6 +108,7 @@ class CounterState:
         self.exported = exported
         self.power = power
         self.frequency = frequency
+        self.serial_number = serial_number
 
 
 @auto_str
@@ -174,7 +183,10 @@ class ChargepointState:
                  soc_timestamp: Optional[int] = None,
                  evse_current: Optional[float] = None,
                  vehicle_id: Optional[str] = None,
-                 max_evse_current: Optional[int] = None):
+                 max_evse_current: Optional[int] = None,
+                 current_branch: Optional[str] = None,
+                 current_commit: Optional[str] = None,
+                 version: Optional[str] = None):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
@@ -200,6 +212,9 @@ class ChargepointState:
         self.evse_current = evse_current
         self.max_evse_current = max_evse_current
         self.vehicle_id = vehicle_id
+        self.current_branch = current_branch
+        self.current_commit = current_commit
+        self.version = version
 
 
 @auto_str
@@ -221,3 +236,11 @@ class IoState:
         self.digital_input = digital_input
         self.analog_output = analog_output
         self.digital_output = digital_output
+
+
+class EvseState:
+    def __init__(self, plug_state: bool, charge_state: bool, set_current: int, max_current: int) -> None:
+        self.plug_state = plug_state
+        self.charge_state = charge_state
+        self.set_current = set_current
+        self.max_current = max_current

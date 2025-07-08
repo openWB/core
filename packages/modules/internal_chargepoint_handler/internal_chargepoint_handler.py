@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import copy
 import logging
-import threading
+from threading import Event, Thread
 import time
 from typing import Optional
 from helpermodules import timecheck
@@ -80,9 +80,9 @@ class UpdateState:
     def __init__(self, cp_module: chargepoint_module.ChargepointModule, hierarchy_id: int) -> None:
         self.old_phases_to_use = 0
         self.old_set_current = 0
-        self.phase_switch_thread = None  # type: Optional[threading.Thread]
-        self.cp_interruption_thread = None  # type: Optional[threading.Thread]
-        self.actor_cooldown_thread = None  # type: Optional[threading.Thread]
+        self.phase_switch_thread = None  # type: Optional[Thread]
+        self.cp_interruption_thread = None  # type: Optional[Thread]
+        self.actor_cooldown_thread = None  # type: Optional[Thread]
         self.cp_module = cp_module
         self.hierarchy_id = hierarchy_id
 
@@ -116,14 +116,14 @@ class UpdateState:
             self.__thread_cp_interruption(data.cp_interruption_duration)
 
     def __thread_phase_switch(self, phases_to_use: int) -> None:
-        self.phase_switch_thread = threading.Thread(
+        self.phase_switch_thread = Thread(
             target=self.cp_module.perform_phase_switch, args=(phases_to_use, 5),
             name=f"perform phase switch {self.cp_module.local_charge_point_num}")
         self.phase_switch_thread.start()
         log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
 
     def __thread_cp_interruption(self, duration: int) -> None:
-        self.cp_interruption_thread = threading.Thread(
+        self.cp_interruption_thread = Thread(
             target=self.cp_module.perform_cp_interruption, args=(duration,),
             name=f"perform cp interruption cp{self.cp_module.local_charge_point_num}")
         self.cp_interruption_thread.start()
@@ -140,17 +140,17 @@ class InternalChargepointHandler:
                  hierarchy_id_cp0: int,
                  parent_cp1: Optional[str],
                  hierarchy_id_cp1: Optional[int],
-                 event_start: threading.Event,
-                 event_stop: threading.Event) -> None:
+                 event_start: Event,
+                 event_stop: Event) -> None:
         log.debug(f"Init internal chargepoint as {mode}")
         self.event_start = event_start
         self.event_stop = event_stop
         self.heartbeat = False
         self.fault_state_info_cp0 = FaultState(
-            ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
+            ComponentInfo(0, "Interner Ladepunkt 0", "internal_chargepoint", hierarchy_id=hierarchy_id_cp0,
                           parent_hostname=global_data.parent_ip))
         fault_state_info_cp1 = FaultState(
-            ComponentInfo(hierarchy_id_cp1, "Interner Ladepunkt 1", "chargepoint", parent_id=parent_cp1,
+            ComponentInfo(1, "Interner Ladepunkt 1", "internal_chargepoint", hierarchy_id=hierarchy_id_cp1,
                           parent_hostname=global_data.parent_ip))
         with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
             self.init_gpio()
@@ -239,29 +239,32 @@ class HandlerChargepoint:
                  local_charge_point_num: int,
                  mode: InternalChargepointMode,
                  global_data: GlobalHandlerData,
-                 parent_cp: str,
+                 internal_cp: InternalChargepoint,
                  hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
         self.mode = mode
         if local_charge_point_num == 0:
             if mode == InternalChargepointMode.SOCKET.value:
                 self.module = Socket(local_charge_point_num, client_handler,
-                                     global_data.parent_ip, parent_cp, hierarchy_id)
+                                     global_data.parent_ip, internal_cp, hierarchy_id)
             elif mode == InternalChargepointMode.PRO_PLUS.value:
-                self.module = ProPlus(local_charge_point_num, global_data.parent_ip, parent_cp, hierarchy_id)
+                self.module = ProPlus(local_charge_point_num, global_data.parent_ip, internal_cp, hierarchy_id)
             else:
                 self.module = chargepoint_module.ChargepointModule(
-                    local_charge_point_num, client_handler, global_data.parent_ip, parent_cp, hierarchy_id)
+                    local_charge_point_num, client_handler, global_data.parent_ip, internal_cp, hierarchy_id)
         else:
             self.module = chargepoint_module.ChargepointModule(
-                local_charge_point_num, client_handler, global_data.parent_ip, parent_cp, hierarchy_id)
+                local_charge_point_num, client_handler, global_data.parent_ip, internal_cp, hierarchy_id)
         with SingleComponentUpdateContext(self.module.fault_state):
-            self.update_values = UpdateValues(local_charge_point_num, global_data.parent_ip, parent_cp, hierarchy_id)
+            self.update_values = UpdateValues(local_charge_point_num,
+                                              global_data.parent_ip,
+                                              internal_cp.data.parent_cp,
+                                              hierarchy_id)
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
 
     def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> bool:
-        def __thread_active(thread: Optional[threading.Thread]) -> bool:
+        def __thread_active(thread: Optional[Thread]) -> bool:
             if thread:
                 return thread.is_alive()
             else:
@@ -291,8 +294,8 @@ class HandlerChargepoint:
 
 class GeneralInternalChargepointHandler:
     def __init__(self) -> None:
-        self.event_stop = threading.Event()
-        self.event_start = threading.Event()
+        self.event_stop = Event()
+        self.event_start = Event()
 
     def handler(self):
         while True:
@@ -317,9 +320,9 @@ class GeneralInternalChargepointHandler:
                     self.internal_chargepoint_handler = InternalChargepointHandler(
                         mode,
                         data["global_data"],
-                        data["cp0"].data.parent_cp,
+                        data["cp0"],
                         hierarchy_id_cp0,
-                        data["cp1"].data.parent_cp,
+                        data["cp1"],
                         hierarchy_id_cp1,
                         self.event_start,
                         self.event_stop)

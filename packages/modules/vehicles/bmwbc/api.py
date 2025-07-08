@@ -11,8 +11,10 @@ from asyncio import new_event_loop, set_event_loop
 from datetime import datetime
 from copy import deepcopy
 from threading import Lock
+# from uuid import uuid4
 import os.path
 import shutil
+import time
 
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -21,6 +23,7 @@ with ImportErrorContext():
     from bimmer_connected.account import MyBMWAccount
     from bimmer_connected.api.regions import Regions
     from bimmer_connected.utils import MyBMWJSONEncoder
+    from bimmer_connected.models import MyBMWAPIError
 
 from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
@@ -205,6 +208,7 @@ class Api:
                     if self._store[user_id]['captcha_token'] != captcha_token:
                         # invalidate current refresh and access token to force new login
                         log.debug("new captcha token configured - invalidate stored token set")
+                        self._new_captcha = True
                         self._store[user_id]['expires_at'] = None
                         self._store[user_id]['access_token'] = None
                         self._store[user_id]['refresh_token'] = None
@@ -212,6 +216,7 @@ class Api:
                         self._store[user_id]['gcid'] = None
                     else:
                         log.debug("captcha token unchanged")
+                        self._new_captcha = False
 
                 if user_id not in self._auth:
                     if self._store[user_id]['expires_at'] is not None and \
@@ -227,7 +232,8 @@ class Api:
                                                                   Regions.REST_OF_WORLD,
                                                                   refresh_token=self._store[user_id]['refresh_token'],
                                                                   access_token=self._store[user_id]['access_token'],
-                                                                  expires_at=expires_at)
+                                                                  expires_at=expires_at,
+                                                                  hcaptcha_token=captcha_token)
                     else:
                         # no token, authenticate via user_id, password and captcha_token
                         log.info("authenticate via userid, password, captcha token")
@@ -252,7 +258,7 @@ class Api:
                 else:
                     log.debug("# Reuse _clconf instance")
 
-                # instantiate account object of not existent yet
+                # instantiate account object if not existent yet
                 if user_id not in self._account:
                     log.debug("# Create _account instance")
                     # user, password and region already set in BMWAuthentication/ClientConfiguration!
@@ -273,6 +279,7 @@ class Api:
             if user_id not in self._last_reload:
                 self._last_reload[user_id] = 0
             if self._now > self._last_reload[user_id] + 5 * 60:
+                # self._auth[user_id].session_id = str(uuid4())  # experimental to avoid error 408: reset session_id
                 # experimental: login  when expires_at is reached to force token refresh
                 if self._store[user_id]['expires_at'] is not None:
                     expires_at = datetime.fromisoformat(self._store[user_id]['expires_at'])
@@ -287,9 +294,39 @@ class Api:
                                   "/" + self._auth[user_id].refresh_token)
 
                 # get vehicle list - needs to be called async
-                log.info(self._mode + ": reload vehicles data")
-                await self._account[user_id].get_vehicles()
-                self._last_reload[user_id] = datetime.timestamp(datetime.now())
+                _loop = 5  # 5 retries
+                while _loop > 0:
+                    _err = 0
+                    log.info(self._mode + ": reload vehicles data, _loop=" + str(_loop))
+                    try:
+                        await self._account[user_id].get_vehicles()
+                    except MyBMWAPIError as err:
+                        _err = -1
+                        if 'Internal Server Error' in str(err):
+                            log.info(self._mode + ": get_vehicles : Internal Server Error (500)")
+                            _err = 500
+                        elif 'Request Timeout' in str(err):
+                            log.info(self._mode + ": get_vehicles : Request Timeout (408)")
+                            _err = 408
+                        else:
+                            log.info(self._mode + ": get_vehicles err=" + str(err))
+                        log.info(self._mode + ": get_vehicles : MyBMWAPIError, _loop/_err=" +
+                                 str(_loop) + "/" + str(_err))
+                        time.sleep(10)  # sleep for 10 secs before token refresh
+                        log.info("# before except login:" + str(self._auth[user_id].expires_at))
+                        # refresh token
+                        await self._auth[user_id].login()
+                        log.info("# after  except login:" + str(self._auth[user_id].expires_at))
+                        # await self._account[user_id].get_vehicles()
+                        time.sleep(5)  # sleep for 5 secs after token refresh
+                        _loop = _loop - 1
+                    except Exception as err:
+                        log.error("bmwbc.fetch_soc: get_vehicles Error, vehicle_id: " +
+                                  vehicle_id + f" {err=}, {type(err)=}")
+                        raise err
+                    self._last_reload[user_id] = datetime.timestamp(datetime.now())
+                    if _err == 0:
+                        _loop = 0
 
             # get vehicle data for vin
             vehicle = self._account[user_id].get_vehicle(vin)
@@ -305,9 +342,15 @@ class Api:
             soc = int(state['electricChargingState']['chargingLevelPercent'])
             range = float(state['electricChargingState']['range'])
             lastUpdatedAt = state['lastUpdatedAt']
-            # convert lastUpdatedAt to soc_timestamp
-            soc_tsdtZ = datetime.strptime(lastUpdatedAt, ts_fmt + "Z")
-            soc_tsX = datetime.timestamp(soc_tsdtZ)
+            if self._new_captcha:
+                # after new captcha use system timestamp
+                # soc_tsX = datetime.timestamp(datetime.now())
+                # after new captcha use timestamp 0 (19700101)
+                soc_tsX = 0
+            else:
+                # convert lastUpdatedAt to soc_timestamp
+                soc_tsdtZ = datetime.strptime(lastUpdatedAt, ts_fmt + "Z")
+                soc_tsX = datetime.timestamp(soc_tsdtZ)
 
             # save the vehicle data for further analysis if required
             dump_json(respd, replyFilePrefix + vehicle_id)
@@ -333,7 +376,8 @@ class Api:
                           "/" + self._auth[user_id].refresh_token)
 
         except Exception as err:
-            log.error("bmwbc.fetch_soc: requestData Error, vehicle_id: " + vehicle_id + f" {err=}, {type(err)=}")
+            # log.error("bmwbc.fetch_soc: requestData Error, vehicle_id: " + vehicle_id + f" {err=}, {type(err)=}")
+            log.error("bmwbc.fetch_soc: requestData Error, vehicle_id: " + str(vehicle_id))
             # self._auth = None
             self._auth.pop(user_id, None)
             self._clconf.pop(user_id, None)
@@ -341,7 +385,8 @@ class Api:
             soc = 0
             range = 0.0
             soc_tsX = datetime.timestamp(datetime.now())
-            raise RequestFailed("SoC Request failed:\n" + str(err))
+            # raise RequestFailed("SoC Request failed:\n" + str(err))
+            raise Exception("SoC Request failed") from err
         return soc, range, soc_tsX
 
 

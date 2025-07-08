@@ -17,8 +17,12 @@ VALID_VERSIONS = ["openWB DimmModul"]
 
 
 def create_io(config: IoLan):
+    version = False
+    client = None
+
     def read():
         nonlocal version
+        nonlocal client
         if version is False:
             try:
                 parsed_answer = get_version_by_telnet(VALID_VERSIONS[0], config.configuration.host)
@@ -53,15 +57,17 @@ def create_io(config: IoLan):
                 ) for pin in DigitalOutputMapping})
 
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]) -> None:
+        nonlocal client
         for i, value in digital_output.items():
             client.write_single_coil(DigitalOutputMapping[i].value, 1 if value is True else 0,
                                      unit=config.configuration.modbus_id)
 
-    version = False
-    client = ModbusTcpClient_(config.configuration.host, config.configuration.port)
-    for output, value in config.output["digital"].items():
-        client.write_single_coil(DigitalOutputMapping[output].value, value, unit=config.configuration.modbus_id)
-    return ConfigurableIo(config=config, component_reader=read, component_writer=write)
+    def initializer():
+        nonlocal client
+        client = ModbusTcpClient_(config.configuration.host, config.configuration.port)
+        for output, value in config.output["digital"].items():
+            client.write_single_coil(DigitalOutputMapping[output].value, value, unit=config.configuration.modbus_id)
+    return ConfigurableIo(config=config, component_reader=read, component_writer=write, initializer=initializer)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=IoLan)

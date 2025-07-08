@@ -408,6 +408,19 @@ def analyse_percentage(entry):
         pv = entry["pv"]["all"]["energy_exported"] if "all" in entry["pv"].keys() else 0
         grid_imported, grid_exported = get_grid_from(entry)
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
+        for type in ("bat", "cp"):
+            if entry[type]["all"]["energy_imported"] > consumption:
+                consumption += entry[type]["all"]["energy_imported"] - consumption
+                grid_imported += entry[type]["all"]["energy_imported"] - grid_imported
+                log.debug(f"Angepasste Verbrauchswerte für {type} um "
+                          f"{entry[type]['all']['energy_imported'] - consumption} kWh")
+        for counter in entry["counter"].values():
+            if counter["grid"] is False:
+                if counter["energy_imported"] > consumption:
+                    consumption += counter["energy_imported"] - consumption
+                    grid_imported += counter["energy_imported"] - grid_imported
+                    log.debug(f"Angepasste Verbrauchswerte für {type} um "
+                              f"{entry[type]['all']['energy_imported'] - consumption} kWh")
         try:
             if grid_exported > pv:
                 # Ins Netz eingespeiste Leistung kam nicht von der PV-Anlage sondern aus dem Speicher
@@ -434,7 +447,7 @@ def analyse_percentage(entry):
                 entry["cp"][key][f"energy_imported_{source}"] = calc_energy_imported_by_source(
                     entry["cp"][key]["energy_imported"], entry["energy_source"][source])
             for counter in entry["counter"].values():
-                if counter["exported"] == 0:
+                if counter["grid"] is False:
                     counter[f"energy_imported_{source}"] = calc_energy_imported_by_source(
                         counter["energy_imported"], entry["energy_source"][source])
 
@@ -460,7 +473,7 @@ def analyse_percentage_totals(entries, totals):
                         totals["cp"][key].update({f"energy_imported_{source}": 0})
                     totals["cp"][key][f"energy_imported_{source}"] += entry["cp"][key][f"energy_imported_{source}"]*1000
             for key, counter in entry["counter"].items():
-                if counter["exported"] == 0:
+                if counter["grid"] is False:
                     if totals["counter"][key].get(f"energy_imported_{source}") is None:
                         totals["counter"][key].update({f"energy_imported_{source}": 0})
                     totals["counter"][key][f"energy_imported_{source}"] += counter[f"energy_imported_{source}"]*1000
@@ -548,10 +561,14 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                     log.exception("Fehler beim Berechnen der Leistung")
             # next_entry may contain new modules, we add them here
             try:
-                for module in next_entry[type].keys():
+                for module, module_data in next_entry[type].items():
                     if module not in entry[type].keys():
                         log.debug(f"adding module {module} from next entry")
-                        entry[type].update({module: {"energy_imported": 0.0, "energy_exported": 0.0}})
+                        if calculation in [CalculationType.POWER, CalculationType.ALL]:
+                            module_data.update({"power_average": 0, "power_imported": 0, "power_exported": 0})
+                        if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
+                            module_data.update({"energy_imported": 0, "energy_exported": 0})
+                        entry[type].update({module: module_data})
             except KeyError:
                 # catch missing "type"
                 pass

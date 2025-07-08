@@ -206,7 +206,7 @@ class MigrateData:
                         elif row[7] == "3":
                             chargemode = "stop"
                         elif row[7] == "4":
-                            chargemode = "standby"
+                            chargemode = "eco_charging"
                         elif row[7] == "7":
                             chargemode = "scheduled_charging"
                         else:
@@ -444,7 +444,7 @@ class MigrateData:
         alte Spaltenbelegung:
             12, 19 oder 29 Felder! Wurde in 1.9 nicht vereinheitlicht!
         Allgemein:
-            0: Datum "YYYMMDD"
+            0: Datum "YYYYMMDD"
         EVU:
             1-2: Bezug, Einspeisung
         PV:

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import logging
+from pathlib import Path
 from typing import Iterable, Union
 
+from helpermodules.utils.run_command import run_command
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.alpha_ess.alpha_ess.config import (
     AlphaEss, AlphaEssBatSetup, AlphaEssCounterSetup, AlphaEssInverterSetup)
@@ -56,9 +58,13 @@ def create_device(device_config: AlphaEss):
             client = modbus.ModbusTcpClient_(
                 device_config.configuration.ip_address, device_config.configuration.port)
 
+    def error_handler():
+        run_command(f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin")
+
     return ConfigurableDevice(
         device_config=device_config,
         initializer=initializer,
+        error_handler=error_handler,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,

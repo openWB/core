@@ -7,6 +7,7 @@ from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_PV_ONLY, CONSI
 from control.algorithm.filter_chargepoints import (get_chargepoints_by_chargemodes,
                                                    get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging)
+from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState, CHARGING_STATES
@@ -52,6 +53,7 @@ class SurplusControlled:
             cp = chargepoints[0]
             missing_currents, counts = common.get_missing_currents_left(chargepoints)
             available_currents, limit = Loadmanagement().get_available_currents_surplus(missing_currents,
+                                                                                        cp.data.get.voltages,
                                                                                         counter,
                                                                                         cp,
                                                                                         feed_in=feed_in_yield)
@@ -62,8 +64,9 @@ class SurplusControlled:
                 dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.data.set.current_prev
                 # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
                 # nachregeln, auch wenn der Regelbereich eingehalten wird. Sonst würde zB nicht berücksichtigt werden,
-                # wenn noch ein Fahrzeug dazu kommmt.
-                if (pv_charging.control_range[1] - pv_charging.control_range[0]) / 230 < abs(dif_to_old_current):
+                # wenn noch ein Fahrzeug dazu kommt.
+                if ((pv_charging.control_range[1] - pv_charging.control_range[0]) /
+                        (sum(counter.data.get.voltages) / len(counter.data.get.voltages)) < abs(dif_to_old_current)):
                     current = available_for_cp
                 else:
                     # Nicht mehr freigeben, wie das Lastmanagement vorgibt
@@ -96,9 +99,9 @@ class SurplusControlled:
 
     # tested
     def filter_by_feed_in_limit(self, chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:
-        cp_with_feed_in = list(filter(lambda cp: cp.data.set.charging_ev_data.charge_template.data.chargemode.
+        cp_with_feed_in = list(filter(lambda cp: cp.data.set.charge_template.data.chargemode.
                                       pv_charging.feed_in_limit is True, chargepoints))
-        cp_without_feed_in = list(filter(lambda cp: cp.data.set.charging_ev_data.charge_template.data.chargemode.
+        cp_without_feed_in = list(filter(lambda cp: cp.data.set.charge_template.data.chargemode.
                                          pv_charging.feed_in_limit is False, chargepoints))
         return cp_with_feed_in, cp_without_feed_in
 
@@ -110,21 +113,21 @@ class SurplusControlled:
             MAX_CURRENT = 30
         msg = None
         nominal_difference = chargepoint.data.set.charging_ev_data.ev_template.data.nominal_difference
-        if chargepoint.data.set.charging_ev_data.chargemode_changed or chargepoint.data.get.charge_state is False:
+        if chargepoint.chargemode_changed or chargepoint.data.get.charge_state is False:
             return new_current
         else:
             # Um max. +/- 5A pro Zyklus regeln
             if (-MAX_CURRENT-nominal_difference
-                    < new_current - max(chargepoint.data.get.currents)
+                    < new_current - get_medium_charging_current(chargepoint.data.get.currents)
                     < MAX_CURRENT+nominal_difference):
                 current = new_current
             else:
-                if new_current < max(chargepoint.data.get.currents):
-                    current = max(chargepoint.data.get.currents) - MAX_CURRENT
+                if new_current < get_medium_charging_current(chargepoint.data.get.currents):
+                    current = get_medium_charging_current(chargepoint.data.get.currents) - MAX_CURRENT
                     msg = f"Es darf um max {MAX_CURRENT}A unter den aktuell genutzten Strom geregelt werden."
 
                 else:
-                    current = max(chargepoint.data.get.currents) + MAX_CURRENT
+                    current = get_medium_charging_current(chargepoint.data.get.currents) + MAX_CURRENT
                     msg = f"Es darf um max {MAX_CURRENT}A über den aktuell genutzten Strom geregelt werden."
             chargepoint.set_state_and_log(msg)
             return max(current,
@@ -139,7 +142,7 @@ class SurplusControlled:
         Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen."""
         evse_current = chargepoint.data.get.evse_current
         if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
-            offset = evse_current - max(chargepoint.data.get.currents)
+            offset = evse_current - get_medium_charging_current(chargepoint.data.get.currents)
             current_with_offset = chargepoint.data.set.current + offset
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
             if current != chargepoint.data.set.current:
@@ -150,55 +153,56 @@ class SurplusControlled:
         evu_counter = data.data.counter_all_data.get_evu_counter()
 
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
-            def phase_switch_necessary() -> bool:
-                return cp.cp_ev_chargemode_support_phase_switch() and cp.data.get.phases_in_use != 1
-            control_parameter = cp.data.control_parameter
-            if cp.data.set.charging_ev_data.chargemode_changed or cp.data.set.charging_ev_data.submode_changed:
-                if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
-                    if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
-                        threshold = evu_counter.calc_switch_off_threshold(cp)[0]
-                        if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:
-                            control_parameter.required_currents = [0]*3
-                            control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+            try:
+                def phase_switch_necessary() -> bool:
+                    return cp.cp_ev_chargemode_support_phase_switch() and cp.data.get.phases_in_use != 1
+                control_parameter = cp.data.control_parameter
+                if cp.chargemode_changed or cp.submode_changed:
+                    if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
+                        if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
+                            threshold = evu_counter.calc_switch_off_threshold(cp)[0]
+                            if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:
+                                control_parameter.required_currents = [0]*3
+                                control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+                    else:
+                        control_parameter.required_currents = [0]*3
                 else:
-                    control_parameter.required_currents = [0]*3
-            else:
-                if ((control_parameter.state == ChargepointState.CHARGING_ALLOWED or
-                        control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
-                        phase_switch_necessary() is False):
-                    evu_counter.switch_off_check_threshold(cp)
-                if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
-                    evu_counter.switch_off_check_timer(cp)
-                if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
-                    # Wenn charge_state False und set_current > 0, will Auto nicht laden
-                    evu_counter.switch_on_timer_expired(cp)
-                if control_parameter.state not in CHARGING_STATES:
-                    control_parameter.required_currents = [0]*3
-
-    def check_switch_on(self) -> None:
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
-            if (cp.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
-                    cp.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
-                data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
+                    if ((control_parameter.state == ChargepointState.CHARGING_ALLOWED or
+                            control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
+                            phase_switch_necessary() is False):
+                        evu_counter.switch_off_check_threshold(cp)
+                    if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
+                        evu_counter.switch_off_check_timer(cp)
+                    if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
+                        # Wenn charge_state False und set_current > 0, will Auto nicht laden
+                        evu_counter.switch_on_timer_expired(cp)
+                    if control_parameter.state not in CHARGING_STATES:
+                        control_parameter.required_currents = [0]*3
+            except Exception:
+                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
 
     def set_required_current_to_max(self) -> None:
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
-            charging_ev_data = cp.data.set.charging_ev_data
-            required_currents = cp.data.control_parameter.required_currents
-            control_parameter = cp.data.control_parameter
+            try:
+                charging_ev_data = cp.data.set.charging_ev_data
+                required_currents = cp.data.control_parameter.required_currents
+                control_parameter = cp.data.control_parameter
 
-            if control_parameter.phases == 1:
-                max_current = charging_ev_data.ev_template.data.max_current_single_phase
-            else:
-                max_current = charging_ev_data.ev_template.data.max_current_multi_phases
-
-            if cp.template.data.charging_type == ChargingType.AC.value:
                 if control_parameter.phases == 1:
                     max_current = charging_ev_data.ev_template.data.max_current_single_phase
                 else:
                     max_current = charging_ev_data.ev_template.data.max_current_multi_phases
-            else:
-                max_current = charging_ev_data.ev_template.data.dc_max_current
 
-            control_parameter.required_currents = [max_current if required_currents[i] != 0 else 0 for i in range(3)]
-            control_parameter.required_current = max_current
+                if cp.template.data.charging_type == ChargingType.AC.value:
+                    if control_parameter.phases == 1:
+                        max_current = charging_ev_data.ev_template.data.max_current_single_phase
+                    else:
+                        max_current = charging_ev_data.ev_template.data.max_current_multi_phases
+                else:
+                    max_current = charging_ev_data.ev_template.data.dc_max_current
+
+                control_parameter.required_currents = [
+                    max_current if required_currents[i] != 0 else 0 for i in range(3)]
+                control_parameter.required_current = max_current
+            except Exception:
+                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")

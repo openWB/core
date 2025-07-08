@@ -20,26 +20,38 @@ class JsonInverter(AbstractInverter):
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
+    def _compile_jq_filters(self) -> None:
+        config = self.component_config.configuration
+        self.jq_power = jq.compile(config.jq_power)
+        self.jq_exported = jq.compile(config.jq_exported) if config.jq_exported else None
+        self.jq_currents = [jq.compile(c) for c in config.jq_currents] if all(config.jq_currents) else None
+
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
+        self._compile_jq_filters()
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response) -> None:
-        config = self.component_config.configuration
-
-        power = float(jq.compile(config.jq_power).input(response).first())
+        power = float(self.jq_power.input(response).first())
         if power >= 0:
             power = power * -1
-        if config.jq_exported is None:
+
+        currents = (
+            [float(j.input(response).first()) for j in self.jq_currents]
+            if self.jq_currents is not None else None
+        )
+
+        if self.jq_exported is None:
             _, exported = self.sim_counter.sim_count(power)
         else:
-            exported = float(jq.compile(config.jq_exported).input(response).first())
+            exported = float(self.jq_exported.input(response).first())
 
         inverter_state = InverterState(
             power=power,
-            exported=exported
+            exported=exported,
+            currents=currents
         )
         self.store.set(inverter_state)
 

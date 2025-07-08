@@ -7,20 +7,9 @@ from typing import List, Optional
 
 from control import data
 from control.bat_all import BatConsiderationMode
-from control.chargemode import Chargemode
 from helpermodules import timecheck
 
 log = logging.getLogger(__name__)
-
-
-@dataclass
-class InstantCharging:
-    phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/instant_charging/phases_to_use"})
-
-
-def instant_charging_factory() -> InstantCharging:
-    return InstantCharging()
 
 
 def control_range_factory() -> List:
@@ -39,8 +28,6 @@ class PvCharging:
         "topic": "chargemode_config/pv_charging/feed_in_yield"})
     phase_switch_delay: int = field(default=7, metadata={
         "topic": "chargemode_config/pv_charging/phase_switch_delay"})
-    phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/pv_charging/phases_to_use"})
     bat_power_discharge: int = field(default=1500, metadata={
         "topic": "chargemode_config/pv_charging/bat_power_discharge"})
     bat_power_discharge_active: bool = field(default=False, metadata={
@@ -51,7 +38,7 @@ class PvCharging:
         "topic": "chargemode_config/pv_charging/bat_mode"})
     switch_off_delay: int = field(default=60, metadata={
                                   "topic": "chargemode_config/pv_charging/switch_off_delay"})
-    switch_off_threshold: int = field(default=5, metadata={
+    switch_off_threshold: int = field(default=0, metadata={
         "topic": "chargemode_config/pv_charging/switch_off_threshold"})
     switch_on_delay: int = field(default=30, metadata={
         "topic": "chargemode_config/pv_charging/switch_on_delay"})
@@ -64,38 +51,13 @@ def pv_charging_factory() -> PvCharging:
 
 
 @dataclass
-class ScheduledCharging:
-    phases_to_use: int = field(default=0, metadata={
-        "topic": "chargemode_config/scheduled_charging/phases_to_use"})
-    phases_to_use_pv: int = field(default=0, metadata={
-        "topic": "chargemode_config/scheduled_charging/phases_to_use_pv"})
-
-
-def scheduled_charging_factory() -> ScheduledCharging:
-    return ScheduledCharging()
-
-
-@dataclass
-class TimeCharging:
-    phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/time_charging/phases_to_use"})
-
-
-def time_charging_factory() -> TimeCharging:
-    return TimeCharging()
-
-
-@dataclass
 class ChargemodeConfig:
-    instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
     phase_switch_delay: int = field(default=5, metadata={
         "topic": "chargemode_config/phase_switch_delay"})
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     retry_failed_phase_switches: bool = field(
         default=False,
         metadata={"topic": "chargemode_config/retry_failed_phase_switches"})
-    scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
-    time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = field(
         default=18, metadata={"topic": "chargemode_config/unbalanced_load_limit"})
     unbalanced_load: bool = field(default=False, metadata={
@@ -148,25 +110,6 @@ class General:
 
     def __init__(self):
         self.data: GeneralData = GeneralData()
-
-    def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
-        """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
-        Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
-        die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
-        """
-        try:
-            if chargemode == "stop" or chargemode == "standby":
-                # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
-                return None
-            elif chargemode == "scheduled_charging" and (submode == "pv_charging" or submode == Chargemode.PV_CHARGING):
-                # todo Lademodus von String auf Enum umstellen
-                # Phasenumschaltung bei PV-Ueberschuss nutzen
-                return getattr(self.data.chargemode_config, chargemode).phases_to_use_pv
-            else:
-                return getattr(self.data.chargemode_config, chargemode).phases_to_use
-        except Exception:
-            log.exception("Fehler im General-Modul")
-            return 1
 
     def grid_protection(self):
         """ Wenn der Netzschutz konfiguriert ist, wird geprüft, ob die Frequenz außerhalb des Normalbereichs liegt

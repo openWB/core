@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Starten der benötigten Prozesse
 """
-# flake8: noqa: F402
+# flake8: noqa: E402
 import logging
 from helpermodules import logger
 from helpermodules.utils import thread_handler
+import threading
+import sys
+
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
@@ -13,9 +16,8 @@ from pathlib import Path
 from random import randrange
 import schedule
 import time
-import threading
+from threading import Event, Thread, enumerate
 import traceback
-from threading import Thread
 from control.chargelog.chargelog import calculate_charge_cost
 
 from control import data, prepare, process
@@ -68,7 +70,18 @@ class HandlerAlgorithm:
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
-            log.debug(f"Threads: {threading.enumerate()}")
+            log.debug(f"Threads: {enumerate()}")
+            for thread in threading.enumerate():
+                logging.debug(f"Thread Name: {thread.name}")
+                if hasattr(thread, "ident"):
+                    thread_id = thread.ident
+                    for tid, frame in sys._current_frames().items():
+                        if tid == thread_id:
+                            logging.debug(f"  File: {frame.f_code.co_filename}, Line: {frame.f_lineno}, Function: {frame.f_code.co_name}")
+                            stack_trace = traceback.format_stack(frame)
+                            logging.debug("  Stack Trace:")
+                            for line in stack_trace:
+                                logging.debug(line.strip())
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
         except KeyboardInterrupt:
@@ -133,6 +146,9 @@ class HandlerAlgorithm:
     def handler_midnight(self):
         try:
             save_log(LogType.MONTHLY)
+            thread_errors_path = Path(Path(__file__).resolve().parents[1]/"ramdisk"/"thread_errors.log")
+            with thread_errors_path.open("w") as f:
+                f.write("")
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -191,41 +207,34 @@ try:
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
     rfid = RfidReader()
-    event_ev_template = threading.Event()
+    event_ev_template = Event()
     event_ev_template.set()
-    event_charge_template = threading.Event()
-    event_charge_template.set()
-    event_cp_config = threading.Event()
+    event_cp_config = Event()
     event_cp_config.set()
-    event_scheduled_charging_plan = threading.Event()
-    event_scheduled_charging_plan.set()
-    event_time_charging_plan = threading.Event()
-    event_time_charging_plan.set()
-    event_soc = threading.Event()
+    event_soc = Event()
     event_soc.set()
-    event_copy_data = threading.Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
+    event_copy_data = Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
     event_copy_data.set()
-    event_global_data_initialized = threading.Event()
-    event_command_completed = threading.Event()
+    event_global_data_initialized = Event()
+    event_command_completed = Event()
     event_command_completed.set()
-    event_subdata_initialized = threading.Event()
-    event_update_config_completed = threading.Event()
-    event_modbus_server = threading.Event()
-    event_jobs_running = threading.Event()
+    event_subdata_initialized = Event()
+    event_update_config_completed = Event()
+    event_modbus_server = Event()
+    event_jobs_running = Event()
     event_jobs_running.set()
-    event_update_soc = threading.Event()
-    event_restart_gpio = threading.Event()
+    event_update_soc = Event()
+    event_restart_gpio = Event()
     gpio = InternalGpioHandler(event_restart_gpio)
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc(event_update_soc)
-    set = setdata.SetData(event_ev_template, event_charge_template,
-                          event_cp_config, event_scheduled_charging_plan, event_time_charging_plan, event_soc,
+    set = setdata.SetData(event_ev_template,
+                          event_cp_config, event_soc,
                           event_subdata_initialized)
-    sub = subdata.SubData(event_ev_template, event_charge_template,
+    sub = subdata.SubData(event_ev_template,
                           event_cp_config, loadvars_.event_module_update_completed,
                           event_copy_data, event_global_data_initialized, event_command_completed,
                           event_subdata_initialized, soc.event_vehicle_update_completed,
-                          event_scheduled_charging_plan, event_time_charging_plan,
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,
@@ -251,9 +260,10 @@ try:
     t_comm.start()
     t_soc.start()
     t_internal_chargepoint.start()
-    threading.Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
+    Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
+    event_subdata_initialized.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()

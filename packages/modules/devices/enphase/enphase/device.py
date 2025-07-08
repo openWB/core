@@ -107,7 +107,7 @@ def create_device(device_config: Enphase):
 
     def update_components(components: Iterable[Union[EnphaseBat, EnphaseCounter, EnphaseInverter]]):
         nonlocal token_fails
-        if device_config.configuration.version == EnphaseVersion.V2.value:
+        if device_config.configuration.version == EnphaseVersion.V2:
             # v2 requires token authentication
             if check_token() is False:
                 log.error("no valid token to connect to envoy")
@@ -115,12 +115,12 @@ def create_device(device_config: Enphase):
         log.debug("Start device reading " + str(components))
         with req.get_http_session() as session:
             json_live_data = None
-            if device_config.configuration.version == EnphaseVersion.V1.value:
+            if device_config.configuration.version == EnphaseVersion.V1:
                 json_response = session.get(
                     'http://'+device_config.configuration.hostname+'/ivp/meters/readings',
                     timeout=5).json()
                 # json_live_data does not exist on older firmware
-            elif device_config.configuration.version == EnphaseVersion.V2.value:
+            elif device_config.configuration.version == EnphaseVersion.V2:
                 response = session.get(
                     'https://'+device_config.configuration.hostname+'/ivp/meters/readings',
                     timeout=5, verify=False,

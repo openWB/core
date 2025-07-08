@@ -42,18 +42,31 @@ class QCellsCounter(AbstractCounter):
             voltages = [self.client.read_input_registers(
                 0x006A, ModbusDataType.UINT_16, unit=self.__modbus_id
             ) / 10, self.client.read_input_registers(
-                0x006C, ModbusDataType.UINT_16, unit=self.__modbus_id
-            ) / 10, self.client.read_input_registers(
                 0x006E, ModbusDataType.UINT_16, unit=self.__modbus_id
+            ) / 10, self.client.read_input_registers(
+                0x0072, ModbusDataType.UINT_16, unit=self.__modbus_id
             ) / 10]
+            if voltages[0] < 1:
+                voltages[0] = 230
+            if voltages[1] < 1:
+                voltages[1] = 230
+            if voltages[2] < 1:
+                voltages[2] = 230
         except Exception:
-            voltages = None
+            voltages = [230, 230, 230]
+        exported, imported = [value * 10
+                              for value in self.client.read_input_registers(
+                                  0x0048, [ModbusDataType.UINT_32] * 2,
+                                  wordorder=Endian.Little, unit=self.__modbus_id
+                              )]
 
         counter_state = CounterState(
+            imported=imported,
+            exported=exported,
             power=power,
-            frequency=frequency,
             powers=powers,
-            voltages=voltages
+            frequency=frequency,
+            voltages=voltages,
         )
         self.store.set(counter_state)
 

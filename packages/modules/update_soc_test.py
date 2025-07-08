@@ -22,7 +22,7 @@ from modules.update_soc import UpdateSoc
 def mock_data() -> None:
     data.data_init(Mock())
 
-    SubData(*([Mock()]*19))
+    SubData(*([Mock()]*16))
     SubData.cp_data = {"cp0":  Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
         spec=Chargepoint,
         id=id,

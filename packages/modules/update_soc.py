@@ -1,5 +1,4 @@
 import logging
-import threading
 from typing import List, Tuple
 import copy
 from threading import Event, Thread
@@ -18,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateSoc:
-    def __init__(self, event_update_soc: threading.Event) -> None:
+    def __init__(self, event_update_soc: Event) -> None:
         self.heartbeat = False
         self.event_vehicle_update_completed = Event()
         self.event_vehicle_update_completed.set()

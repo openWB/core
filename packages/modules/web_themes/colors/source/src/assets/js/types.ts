@@ -33,7 +33,7 @@ export enum ChargeMode {
 	instant_charging = 'instant_charging',
 	pv_charging = 'pv_charging',
 	scheduled_charging = 'scheduled_charging',
-	standby = 'standby',
+	eco_charging = 'eco_charging',
 	stop = 'stop',
 }
 

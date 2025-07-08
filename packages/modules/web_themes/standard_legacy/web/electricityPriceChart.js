@@ -53,7 +53,7 @@ function createPriceAnnotations(){
 
 function loadElectricityPriceChart() {
 	if (typeof electricityPriceList === 'undefined') {
-		console.error("'electricityPriceTimeline' not defined. Skipping chart update.");
+		console.error("'electricityPriceList' not defined. Skipping chart update.");
 		return
 	}
 

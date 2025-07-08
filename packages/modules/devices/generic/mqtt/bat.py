@@ -26,6 +26,7 @@ class MqttBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:
+        currents = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/currents")
         power = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/power")
         soc = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/soc")
         if (received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/imported") and
@@ -36,6 +37,7 @@ class MqttBat(AbstractBat):
             imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(
+            currents=currents,
             power=power,
             soc=soc,
             imported=imported,
@@ -44,7 +46,7 @@ class MqttBat(AbstractBat):
         self.store.set(bat_state)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        Pub().pub(f"openWB/mqtt/bat/{self.component_config.id}/set/powerLimit", power_limit)
+        Pub().pub(f"openWB/set/mqtt/bat/{self.component_config.id}/set/power_limit", power_limit)
 
     def power_limit_controllable(self) -> bool:
         return self.component_config.configuration.power_limit_controllable

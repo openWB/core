@@ -1,14 +1,15 @@
 import datetime
-from typing import Dict, NamedTuple, Optional, Tuple
+from typing import Dict, Optional, Tuple
 from unittest.mock import Mock
 
 import pytest
 
 from control import data
 from control import optional
+from control.chargepoint.control_parameter import ControlParameter
 from control.ev.charge_template import SelectedPlan
 from control.chargepoint.charging_type import ChargingType
-from control.ev.ev import ChargeTemplate
+from control.ev.charge_template import ChargeTemplate
 from control.ev.ev_template import EvTemplate, EvTemplateData
 from control.general import General
 from helpermodules import timecheck
@@ -25,32 +26,33 @@ def data_module() -> None:
 @pytest.mark.parametrize(
     "plans, soc, used_amount_time_charging, plan_found, expected",
     [
-        pytest.param({}, 0, 0, None, (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_CONFIGURED, None),
+        pytest.param({}, 0, 0, None, (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_CONFIGURED, None, None),
                      id="no plan defined"),
         pytest.param({"0": TimeChargingPlan(id=0)}, 0, 0,  None,
-                     (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None), id="no plan active"),
+                     (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None, None), id="no plan active"),
         pytest.param({"0": TimeChargingPlan(id=0)}, 0, 0,  TimeChargingPlan(id=0),
-                     (16, "time_charging", None, 0), id="plan active"),
+                     (16, "time_charging", None, 0, 1), id="plan active"),
         pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="soc"))}, 100, 0,
                      TimeChargingPlan(id=0, limit=Limit(selected="soc")),
-                     (0, "stop", ChargeTemplate.TIME_CHARGING_SOC_REACHED, 0),
+                     (0, "stop", ChargeTemplate.TIME_CHARGING_SOC_REACHED, 0, 1),
                      id="plan active, soc is reached"),
         pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="soc"))}, 40, 0,
                      TimeChargingPlan(id=0, limit=Limit(selected="soc")),
-                     (16, "time_charging", None, 0), id="plan active, soc is not reached"),
+                     (16, "time_charging", None, 0, 1), id="plan active, soc is not reached"),
         pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="soc"))}, None, 0,
                      TimeChargingPlan(id=0, limit=Limit(selected="soc")),
-                     (16, "time_charging", None, 0), id="plan active, soc is not defined"),
+                     (16, "time_charging", None, 0, 1), id="plan active, soc is not defined"),
         pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="amount"))}, 0, 1500,
                      TimeChargingPlan(id=0, limit=Limit(selected="amount")),
-                     (0, "stop", ChargeTemplate.TIME_CHARGING_AMOUNT_REACHED, 0),
+                     (0, "stop", ChargeTemplate.TIME_CHARGING_AMOUNT_REACHED, 0, 1),
                      id="plan active, used_amount_time_charging is reached"),
         pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="amount"))}, 0, 500,
                      TimeChargingPlan(id=0, limit=Limit(selected="amount")),
-                     (16, "time_charging", None, 0),
+                     (16, "time_charging", None, 0, 1),
                      id="plan active, used_amount_time_charging is not reached"),
         pytest.param({"0": TimeChargingPlan(id=0)}, 0, 0,  None,
-                     (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None), id="plan defined but not found"),
+                     (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None, None),
+                     id="plan defined but not found"),
     ]
 )
 def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amount_time_charging: float,
@@ -58,7 +60,7 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
                        expected: Tuple[int, str, Optional[str], Optional[str]],
                        monkeypatch):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     ct.data.time_charging.plans = plans
     check_plans_timeframe_mock = Mock(return_value=plan_found)
     monkeypatch.setattr(timecheck, "check_plans_timeframe", check_plans_timeframe_mock)
@@ -73,20 +75,20 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
 @pytest.mark.parametrize(
     "selected, current_soc, used_amount, expected",
     [
-        pytest.param("none", 0, 0, (10, "instant_charging", None), id="without limit"),
-        pytest.param("soc", None, 0, (10, "instant_charging", None), id="limit soc: soc not defined"),
-        pytest.param("soc", 49, 0, (10, "instant_charging", None), id="limit soc: soc not reached"),
-        pytest.param("soc", 50, 0, (0, "stop", ChargeTemplate.INSTANT_CHARGING_SOC_REACHED),
+        pytest.param("none", 0, 0, (16, "instant_charging", None, 3), id="without limit"),
+        pytest.param("soc", None, 0, (16, "instant_charging", None, 3), id="limit soc: soc not defined"),
+        pytest.param("soc", 49, 0, (16, "instant_charging", None, 3), id="limit soc: soc not reached"),
+        pytest.param("soc", 50, 0, (0, "stop", ChargeTemplate.SOC_REACHED, 3),
                      id="limit soc: soc reached"),
-        pytest.param("amount", 0, 999, (10, "instant_charging", None), id="limit amount: amount not reached"),
-        pytest.param("amount", 0, 1000, (0, "stop", ChargeTemplate.INSTANT_CHARGING_AMOUNT_REACHED),
+        pytest.param("amount", 0, 999, (16, "instant_charging", None, 3), id="limit amount: amount not reached"),
+        pytest.param("amount", 0, 1000, (0, "stop", ChargeTemplate.AMOUNT_REACHED, 3),
                      id="limit amount: amount reached"),
     ])
 def test_instant_charging(selected: str, current_soc: float, used_amount: float,
                           expected: Tuple[int, str, Optional[str]]):
     # setup
     data.data.optional_data.data.et.active = False
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     ct.data.chargemode.instant_charging.limit.selected = selected
 
     # execution
@@ -97,72 +99,65 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
 
 
 @pytest.mark.parametrize(
-    "min_soc, min_current, current_soc, expected",
+    "min_soc, min_current, limit_selected, current_soc, used_amount, expected",
     [
-        pytest.param(0, 0, 100, (0, "stop", ChargeTemplate.PV_CHARGING_SOC_REACHED), id="max soc reached"),
-        pytest.param(15, 0, 14, (10, "instant_charging", ChargeTemplate.PV_CHARGING_SOC_CHARGING),
+        pytest.param(0, 0, "amount", 14, 1500, (0, "stop", ChargeTemplate.AMOUNT_REACHED, 0), id="max amount reached"),
+        pytest.param(0, 0, "soc", 100, 900, (0, "stop", ChargeTemplate.SOC_REACHED, 0), id="max soc reached"),
+        pytest.param(15, 0, None, 14, 900, (10, "instant_charging", ChargeTemplate.PV_CHARGING_SOC_CHARGING, 3),
                      id="min soc not reached"),
-        pytest.param(15, 0, None, (6, "pv_charging", None), id="soc not defined"),
-        pytest.param(15, 8, 15, (8, "instant_charging", ChargeTemplate.PV_CHARGING_MIN_CURRENT_CHARGING),
+        pytest.param(15, 0, None, None, 900, (6, "pv_charging", None, 0), id="soc not defined"),
+        pytest.param(15, 8, None, 15, 900, (8, "instant_charging", ChargeTemplate.PV_CHARGING_MIN_CURRENT_CHARGING, 0),
                      id="min current configured"),
-        pytest.param(15, 0, 15, (6, "pv_charging", None), id="bare pv charging"),
+        pytest.param(15, 0, None, 15, 900, (6, "pv_charging", None, 0), id="bare pv charging"),
     ])
-def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
-                     expected: Tuple[int, str, Optional[str]]):
+def test_pv_charging(min_soc: int, min_current: int, limit_selected: str, current_soc: float, used_amount: float,
+                     expected: Tuple[int, str, Optional[str], int]):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     ct.data.chargemode.pv_charging.min_soc = min_soc
     ct.data.chargemode.pv_charging.min_current = min_current
+    ct.data.chargemode.pv_charging.phases_to_use = 0
+    ct.data.chargemode.pv_charging.phases_to_use_min_soc = 3
+    ct.data.chargemode.pv_charging.limit.selected = limit_selected
+    ct.data.chargemode.pv_charging.limit.soc = 90
     data.data.bat_all_data.data.config.configured = True
 
     # execution
-    ret = ct.pv_charging(current_soc, 6, ChargingType.AC.value)
+    ret = ct.pv_charging(current_soc, 6, ChargingType.AC.value, used_amount)
 
     # evaluation
     assert ret == expected
 
 
-Params = NamedTuple("Params", [("name", str),
-                               ("phase_switch_supported", bool),
-                               ("chargemode_phases", int),
-                               ("search_plan", Optional[SelectedPlan]),
-                               ("expected_max_current", int),
-                               ("phases", int),
-                               ("max_phases", int),
-                               ("expected_phases", int)])
-
-cases = [
-    Params(name="no phase switch, one phase", phase_switch_supported=False, chargemode_phases=0,
-           search_plan=None, phases=1, max_phases=3, expected_max_current=32, expected_phases=1),
-    Params(name="no phase switch, multi phase", phase_switch_supported=False, chargemode_phases=0,
-           search_plan=None, phases=3, max_phases=3, expected_max_current=16, expected_phases=3),
-    Params(name="no automatic mode, multi phase", phase_switch_supported=True, chargemode_phases=2,
-           search_plan=None, phases=2, max_phases=2, expected_max_current=16, expected_phases=2),
-    Params(name="select phases, not enough time", phase_switch_supported=True, chargemode_phases=0, search_plan=Mock(
-        spec=SelectedPlan, remaining_time=300), phases=1, max_phases=3, expected_max_current=16, expected_phases=3),
-    Params(name="select phases, enough time", phase_switch_supported=True, chargemode_phases=0, search_plan=Mock(
-        spec=SelectedPlan, remaining_time=301), phases=1, max_phases=3, expected_max_current=32, expected_phases=1)
-]
-
-
-@pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
+@pytest.mark.parametrize("phases_to_use, calc_duration, max_hw_phases, phase_switch_supported, expected",
+                         [
+                             pytest.param(0, [(1000, 3)], 1, True, (5000, 3, 1, 1000), id="automatic, one hw phase"),
+                             pytest.param(0, [(1000, 3)], 3, False, (5000, 3, 2, 1000),
+                                          id="automatic, no phase switch"),
+                             pytest.param(0, [(1000, 3), (7000, 3)], 3, True, (5000, 3, 3, 1000), id="automatic, 3p"),
+                             pytest.param(0, [(500, 3), (1500, 3)], 3, True, (4500, 3, 1, 1500), id="automatic, 1p"),
+                             pytest.param(3, [(5000, 3)], 3, True, (1000, 3, 3, 5000), id="3p"),
+                             pytest.param(1, [(5000, 3)], 3, True, (1000, 3, 1, 5000), id="1p"),
+                         ])
+def test_calc_remaining_time(phases_to_use,
+                             calc_duration,
+                             max_hw_phases,
+                             phase_switch_supported,
+                             expected, monkeypatch):
     # setup
-    ct = ChargeTemplate(0)
-    get_phases_chargemode_mock = Mock(return_value=params.chargemode_phases)
-    monkeypatch.setattr(data.data.general_data, "get_phases_chargemode", get_phases_chargemode_mock)
-    search_plan_mock = Mock(return_value=params.search_plan)
-    monkeypatch.setattr(ChargeTemplate, "_search_plan", search_plan_mock)
-    evt_data = Mock(spec=EvTemplateData, max_current_multi_phases=16, max_current_single_phase=32)
-    evt = Mock(spec=EvTemplate, data=evt_data)
+    ct = ChargeTemplate()
+    plan = ScheduledChargingPlan(phases_to_use=phases_to_use)
+    calculate_duration_mock = Mock(side_effect=calc_duration)
+    monkeypatch.setattr(ChargeTemplate, "_calculate_duration", calculate_duration_mock)
+    evt = Mock(spec=EvTemplate, data=Mock(spec=EvTemplateData, battery_capacity=85))
 
     # execution
-    ct.scheduled_charging_recent_plan(50, evt, params.phases, 5, params.max_phases,
-                                      params.phase_switch_supported, ChargingType.AC.value)
+    remaining_time, missing_amount, phases, duration = ct._calc_remaining_time(
+        plan, 6000, 50, evt, 3000, max_hw_phases, phase_switch_supported, ChargingType.AC.value, 2, 0)
+    # end time 16.5.22 10:00
 
     # evaluation
-    assert search_plan_mock.call_args.args[0] == params.expected_max_current
-    assert search_plan_mock.call_args.args[3] == params.expected_phases
+    assert (remaining_time, missing_amount, phases, duration) == expected
 
 
 @pytest.mark.parametrize(
@@ -173,7 +168,7 @@ def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
     ])
 def test_calculate_duration(selected: str, phases: int, expected_duration: float, expected_missing_amount: float):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     plan = ScheduledChargingPlan()
     plan.limit.selected = selected
     # execution
@@ -185,36 +180,67 @@ def test_calculate_duration(selected: str, phases: int, expected_duration: float
 
 
 @pytest.mark.parametrize(
-    "check_duration_return1, check_duration_return2, expected_plan_num",
+    "end_time_mock, expected_plan_num",
     [
-        pytest.param((-50, False), (60, False), 0, id="too late, but didn't miss date for today"),
-        pytest.param((-50, True), (60, False), 1, id="too late and missed date for today"),
-        pytest.param((-50, True), (-60, True), None, id="missed both"),
-        pytest.param((50, False), (60, False), 0, id="in time, plan 1"),
-        pytest.param((50, False), (40, False), 1, id="in time, plan 2"),
+        pytest.param([1000, 1500, 2000], 0, id="1st plan"),
+        pytest.param([1500, 1000, 2000], 1, id="2nd plan"),
+        pytest.param([1500, 2000, 1000], 2, id="3rd plan"),
+        pytest.param([None]*3, 0, id="no plan"),
     ])
-def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
-                     check_duration_return2: Tuple[Optional[float], bool],
-                     expected_plan_num: Optional[int],
-                     monkeypatch):
+def test_scheduled_charging_recent_plan(end_time_mock,
+                                        expected_plan_num: Optional[int],
+                                        monkeypatch):
     # setup
-    calculate_duration_mock = Mock(return_value=(100, 200))
-    monkeypatch.setattr(ChargeTemplate, "_calculate_duration", calculate_duration_mock)
-    check_duration_mock = Mock(side_effect=[check_duration_return1, check_duration_return2])
-    monkeypatch.setattr(timecheck, "check_duration", check_duration_mock)
-    ct = ChargeTemplate(0)
+    calculate_duration_mock = Mock(return_value=(100, 3000, 3, 500))
+    monkeypatch.setattr(ChargeTemplate, "_calc_remaining_time", calculate_duration_mock)
+    check_end_time_mock = Mock(side_effect=end_time_mock)
+    monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
+    ct = ChargeTemplate()
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1}
+    plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
+    ct.data.chargemode.scheduled_charging.plans = [plan_mock_0, plan_mock_1, plan_mock_2]
+
     # execution
-    plan_data = ct._search_plan(14, 60, EvTemplate(), 3, 200, ChargingType.AC.value)
+    selected_plan = ct.scheduled_charging_recent_plan(
+        60, EvTemplate(), 3, 200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter), 0)
 
     # evaluation
-    if expected_plan_num is None:
-        assert plan_data is None
+    if selected_plan:
+        assert selected_plan.plan.id == expected_plan_num
     else:
-        assert plan_data.id == expected_plan_num
-        assert plan_data.duration == 100
+        assert selected_plan is None
+
+
+@pytest.mark.parametrize("end_time_mock, expected_plan_num",
+                         [
+                             pytest.param([-10000, 1500, 2000], 0, id="1st plan"),
+                             pytest.param([None, -100, 2000], 1, id="1st plan fulfilled, 2nd plan"),
+                             pytest.param([None, -50, -100], 2, id="1st plan fulfilled, 3rd plan"),
+                             pytest.param([None]*3, None, id="no plan"),
+                         ])
+def test_scheduled_charging_recent_plan_fulfilled(end_time_mock, expected_plan_num, monkeypatch):
+    # setup
+    # der erste PLan ist erfüllt, der zweite wird ausgewählt
+    calculate_duration_mock = Mock(return_value=(100, 3000, 3, 500))
+    monkeypatch.setattr(ChargeTemplate, "_calc_remaining_time", calculate_duration_mock)
+    check_end_time_mock = Mock(side_effect=end_time_mock)
+    monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
+    ct = ChargeTemplate()
+    plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
+    plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
+    plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
+    ct.data.chargemode.scheduled_charging.plans = [plan_mock_0, plan_mock_1, plan_mock_2]
+
+    # execution
+    selected_plan = ct.scheduled_charging_recent_plan(
+        60, EvTemplate(), 3, 1200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter), 0)
+
+    # evaluation
+    if selected_plan:
+        assert selected_plan.plan.id == expected_plan_num
+    else:
+        assert selected_plan is expected_plan_num
 
 
 @pytest.mark.parametrize(
@@ -225,7 +251,7 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
         pytest.param(SelectedPlan(duration=3600), 90, 0, "soc", (0, "stop",
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_LIMIT_SOC, 1), id="reached limit soc"),
         pytest.param(SelectedPlan(duration=3600), 80, 0, "soc", (6, "pv_charging",
-                     ChargeTemplate.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC, 3), id="reached scheduled soc"),
+                     ChargeTemplate.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC, 0), id="reached scheduled soc"),
         pytest.param(SelectedPlan(phases=3, duration=3600), 0, 1000, "amount", (0, "stop",
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_AMOUNT, 3), id="reached amount"),
         pytest.param(SelectedPlan(remaining_time=299, duration=3600), 0, 999, "amount",
@@ -245,7 +271,7 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
                      ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(16), 3),
                      id="few minutes too late, but didn't miss for today"),
         pytest.param(SelectedPlan(remaining_time=301, duration=3600), 79, 0, "soc",
-                     (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV.format("um 8:45 Uhr"), 3),
+                     (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV.format("um 8:45 Uhr"), 0),
                      id="too early, use pv"),
     ])
 def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
@@ -254,14 +280,16 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          selected: str,
                                          expected: Tuple[float, str, str, int]):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     plan = ScheduledChargingPlan(active=True, id=0)
     plan.limit.selected = selected
     # json verwandelt Keys in strings
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan}
+    ct.data.chargemode.scheduled_charging.plans = [plan]
+    if plan_data:
+        plan_data.plan = plan
 
     # execution
-    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6, 0)
+    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6, 0, ChargingType.AC.value, EvTemplate())
 
     # evaluation
     assert ret == expected
@@ -269,10 +297,10 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
 
 def test_scheduled_charging_calc_current_no_plans():
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
 
     # execution
-    ret = ct.scheduled_charging_calc_current(None, 63, 5, 3, 6, 0)
+    ret = ct.scheduled_charging_calc_current(None, 63, 5, 3, 6, 0, ChargingType.AC.value, EvTemplate())
 
     # evaluation
     assert ret == (0, "stop", ChargeTemplate.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, 3)
@@ -284,15 +312,15 @@ def test_scheduled_charging_calc_current_no_plans():
         pytest.param(True, (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_CHEAP_HOUR.format(
             "Geladen wird zu folgenden Uhrzeiten: 8:00."), 3)),
         pytest.param(False, (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR.format(
-            "Geladen wird zu folgenden Uhrzeiten: 8:00."), 3)),
+            "Geladen wird zu folgenden Uhrzeiten: 8:00."), 0)),
     ])
 def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expected, monkeypatch):
     # setup
-    ct = ChargeTemplate(0)
+    ct = ChargeTemplate()
     plan = ScheduledChargingPlan(active=True)
+    plan.et_active = True
     plan.limit.selected = "soc"
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan}
-    ct.data.et.active = True
+    ct.data.chargemode.scheduled_charging.plans = [plan]
     # für Github-Test keinen Zeitstempel verwenden
     mock_et_get_loading_hours = Mock(return_value=[datetime.datetime(
         year=2022, month=5, day=16, hour=8, minute=0).timestamp()])
@@ -301,7 +329,8 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
     monkeypatch.setattr(timecheck, "is_list_valid", mock_is_list_valid)
 
     # execution
-    ret = ct.scheduled_charging_calc_current(SelectedPlan(remaining_time=301, phases=3, duration=3600), 79, 0, 3, 6, 0)
+    ret = ct.scheduled_charging_calc_current(SelectedPlan(
+        plan=plan, remaining_time=301, phases=3, duration=3600), 79, 0, 3, 6, 0, ChargingType.AC.value, EvTemplate())
 
     # evaluation
     assert ret == expected

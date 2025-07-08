@@ -256,7 +256,22 @@ chmod 666 "$LOGFILE"
 		echo "'tvservice' not found, assuming a display is present"
 	fi
 	echo "displayDetected: $displayDetected"
-	mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+	forceDisplaySetup=0
+	if displayDetected_old=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/detected" -C 1 -W 1); then
+		echo "previous displayDetected value: $displayDetected_old"
+		if [[ $displayDetected_old != "$displayDetected" ]]; then
+			echo "displayDetected value changed, publishing new value"
+			mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+		else
+			echo "no change in displayDetected value, skipping publish"
+		fi
+	else
+		echo "no previous displayDetected value found, assuming initial boot"
+		echo "update of display settings forced"
+		forceDisplaySetup=1
+		mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+		mosquitto_pub -p 1886 -t "openWB/optional/int_display/active" -r -m "true"
+	fi
 
 	# display setup
 	echo "display setup..."
@@ -285,8 +300,8 @@ chmod 666 "$LOGFILE"
 		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
 		displaySetupModified=1
 	fi
-	if ((displaySetupModified == 1)); then
-		"${OPENWBBASEDIR}/runs/update_local_display.sh"
+	if ((displaySetupModified == 1)) || ((forceDisplaySetup == 1)); then
+		"${OPENWBBASEDIR}/runs/update_local_display.sh" $forceDisplaySetup
 	fi
 
 	# check apache configuration
@@ -374,7 +389,7 @@ chmod 666 "$LOGFILE"
 	# check for python dependencies
 	if ((hasInet == 1)); then
 		echo "install required python packages with 'pip3'..."
-		if pip3 install --upgrade --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
+		if pip3 install --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
 			echo "done"
 		else
 			echo "failed!"

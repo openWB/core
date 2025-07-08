@@ -7,6 +7,7 @@ from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
+from modules.common.mpm3pm import Mpm3pm
 from modules.common.sdm import Sdm120
 from modules.common.sdm import Sdm630_72
 from modules.common.simcount import SimCounter
@@ -29,27 +30,36 @@ class BatKitFlex(AbstractBat):
         self.__device_id: int = self.kwargs['device_id']
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         factory = kit_bat_version_factory(self.component_config.configuration.version)
-        self.__client = factory(self.component_config.configuration.id, self.__tcp_client)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.__client = factory(self.component_config.configuration.id, self.__tcp_client, self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
-        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,
         # dass offene Verbindungen den Modbus-Adapter blockieren.
         with self.__tcp_client:
-            if isinstance(self.__client, Sdm630_72):
-                _, power = self.__client.get_power()
-                power = power * -1
+            counter_state = self.__client.get_counter_state()
+
+        power = counter_state.power
+        if isinstance(self.__client, Sdm630_72):
+            power = power * -1
+        if isinstance(self.__client, Lovato) or isinstance(self.__client, Sdm120):
+            imported, exported = self.sim_counter.sim_count(power)
+        else:
+            imported = counter_state.imported
+            exported = counter_state.exported
+
+            voltages = self.__client.get_voltages()
+            powers, power = self.__client.get_power()
+
+            if isinstance(self.__client, Mpm3pm):
+                currents = [powers[i] / voltages[i] for i in range(3)]
             else:
-                _, power = self.__client.get_power()
-            if isinstance(self.__client, Lovato) or isinstance(self.__client, Sdm120):
-                imported, exported = self.sim_counter.sim_count(power)
-            else:
-                imported = self.__client.get_imported()
-                exported = self.__client.get_exported()
+                currents = self.__client.get_currents()
 
         bat_state = BatState(
+            currents=currents,
             imported=imported,
             exported=exported,
             power=power

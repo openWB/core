@@ -13,10 +13,6 @@ class ControlParameter:
                                         "topic": "control_parameter/chargemode"})
     current_plan: Optional[str] = field(default=None, metadata={"topic": "control_parameter/current_plan"})
     failed_phase_switches: int = field(default=0, metadata={"topic": "control_parameter/failed_phase_switches"})
-    imported_at_plan_start: Optional[float] = field(
-        default=None, metadata={"topic": "control_parameter/imported_at_plan_start"})
-    imported_instant_charging: Optional[float] = field(
-        default=None, metadata={"topic": "control_parameter/imported_instant_charging"})
     limit: Optional[LoadmanagementLimit] = field(default_factory=loadmanagement_limit_factory, metadata={
                                                  "topic": "control_parameter/limit"})
     min_current: int = field(default=6, metadata={"topic": "control_parameter/min_current"})
@@ -29,8 +25,12 @@ class ControlParameter:
     submode: Chargemode_enum = field(default=Chargemode_enum.STOP, metadata={"topic": "control_parameter/submode"})
     timestamp_charge_start: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_charge_start"})
+    timestamp_chargemode_changed: Optional[float] = field(
+        default=None, metadata={"topic": "control_parameter/timestamp_chargemode_changed"})
     timestamp_last_phase_switch: float = field(
         default=0, metadata={"topic": "control_parameter/timestamp_last_phase_switch"})
+    timestamp_phase_switch_buffer_start: Optional[float] = field(
+        default=None, metadata={"topic": "control_parameter/timestamp_phase_switch_buffer_start"})
     timestamp_switch_on_off: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_switch_on_off"})
 
