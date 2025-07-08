@@ -7,11 +7,11 @@
       </div>
     </div>
   </div>
-  <div class="row justify-between items-center">
+  <div v-if="timeChargingEnabled" class="row justify-between items-center">
     <div class="text-subtitle2">Termine Zeitladen:</div>
   </div>
   <div
-    v-if="plans.length === 0"
+    v-if="plans.length === 0 && timeChargingEnabled"
     class="row q-mt-sm q-pa-sm bg-primary text-white no-wrap message-text"
     color="primary"
     style="border-radius: 10px"
@@ -19,7 +19,7 @@
     <q-icon name="info" size="sm" class="q-mr-xs" />
     Keine Zeitpläne vorhanden.
   </div>
-  <div v-else>
+  <div v-else-if="timeChargingEnabled">
     <div v-for="(plan, index) in plans" :key="index" class="row q-mt-sm">
       <ChargePointTimeChargingPlanButton
         class="full-width"
@@ -44,6 +44,10 @@ const mqttStore = useMqttStore();
 
 const plans = computed(() =>
   mqttStore.vehicleTimeChargingPlans(props.chargePointId),
+);
+
+const timeChargingEnabled = mqttStore.chargePointConnectedVehicleTimeCharging(
+  props.chargePointId,
 );
 </script>
 
