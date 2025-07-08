@@ -34,11 +34,11 @@ class Algorithm:
             log.info("**Soll-Strom setzen**")
             common.reset_current_to_target_current()
             self.additional_current.set_additional_current()
+            self.surplus_controlled.set_required_current_to_max()
             log.info("**PV-geführten Strom setzen**")
             counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
             if self.evu_counter.data.set.surplus_power_left > 0:
                 common.reset_current_to_target_current()
-                self.surplus_controlled.set_required_current_to_max()
                 self.surplus_controlled.set_surplus_current()
             else:
                 log.info("Keine Leistung für PV-geführtes Laden übrig.")
