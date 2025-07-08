@@ -177,6 +177,10 @@ def setup_logging() -> None:
     logging.getLogger("uModbus").setLevel(logging.WARNING)
     logging.getLogger("websockets").setLevel(logging.WARNING)
 
+    thread_errors_path = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"thread_errors.log")
+    with thread_errors_path.open("w") as f:
+        f.write("")
+
     def threading_excepthook(args):
         with open(RAMDISK_PATH+"thread_errors.log", "a") as f:
             f.write("Uncaught exception in thread:\n")
