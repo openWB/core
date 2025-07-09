@@ -506,6 +506,7 @@ class UpdateConfig:
         "^openWB/system/version$",
     ]
     default_topic = (
+        ("openWB/bat/config/bat_control_permitted", False),
         ("openWB/bat/config/configured", False),
         ("openWB/bat/config/power_limit_mode", "no_limit"),
         ("openWB/bat/get/fault_state", 0),
