@@ -2,14 +2,14 @@
 from typing import Any, TypedDict
 import logging
 
-from modules.devices.tasmota.tasmota.config import TasmotaCounterSetup
-from modules.common.abstract_device import AbstractCounter
+from modules.devices.tasmota.tasmota.config import TasmotaBatSetup
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_bat_value_store
 from modules.common.simcount import SimCounter
 from modules.common import req
-from modules.common.component_state import CounterState
+from modules.common.component_state import BatState
 
 log = logging.getLogger(__name__)
 
@@ -20,17 +20,17 @@ class KwargsDict(TypedDict):
     phase: int
 
 
-class TasmotaCounter(AbstractCounter):
-    def __init__(self, component_config: TasmotaCounterSetup, **kwargs: Any) -> None:
+class TasmotaBat(AbstractBat):
+    def __init__(self, component_config: TasmotaBatSetup, **kwargs: Any) -> None:
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.__ip_address: str = self.kwargs['ip_address']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.__phase: int = self.kwargs['phase']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
@@ -38,25 +38,16 @@ class TasmotaCounter(AbstractCounter):
         response = req.get_http_session().get(url, timeout=5).json()
 
         if 'ENERGY' in response['StatusSNS']:
-            voltages = [0.0, 0.0, 0.0]
-            powers = [0.0, 0.0, 0.0]
             currents = [0.0, 0.0, 0.0]
-            power_factors = [0.0, 0.0, 0.0]
 
             power = float(response['StatusSNS']['ENERGY']['Power'])
-            voltages[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Voltage'])
-            powers[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Power'])
-            currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
-            power_factors[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Factor'])
+            currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
             imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
             _, exported = self.sim_counter.sim_count(power)
 
-            counter_state = CounterState(
+            bat_state = BatState(
                 power=power,
-                voltages=voltages,
                 currents=currents,
-                powers=powers,
-                power_factors=power_factors,
                 imported=imported,
                 exported=exported
             )
@@ -65,13 +56,13 @@ class TasmotaCounter(AbstractCounter):
             imported = float(response['StatusSNS']['Itron']['E_in']*1000)
             exported = float(response['StatusSNS']['Itron']['E_out']*1000)
 
-            counter_state = CounterState(
+            bat_state = BatState(
                 power=power,
                 imported=imported,
                 exported=exported
             )
 
-        self.store.set(counter_state)
+        self.store.set(bat_state)
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=TasmotaCounterSetup)
+component_descriptor = ComponentDescriptor(configuration_factory=TasmotaBatSetup)
