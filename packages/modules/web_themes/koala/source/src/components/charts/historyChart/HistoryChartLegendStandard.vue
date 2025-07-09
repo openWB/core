@@ -1,13 +1,6 @@
 <template>
-  <q-btn-dropdown
-    flat
-    no-caps
-    dense
-    color="primary"
-    :label="label"
-    class="q-mr-sm"
-  >
-    <q-list dense class="q-pa-none" style="max-height: 200px; overflow-y: auto">
+  <q-list class="q-pa-none">
+    <div class="row wrap q-pa-none items-center justify-center">
       <q-item
         v-for="(dataset, index) in items"
         :key="dataset.text || index"
@@ -51,15 +44,14 @@
           <q-item-label class="text-caption">{{ dataset.text }}</q-item-label>
         </q-item-section>
       </q-item>
-    </q-list>
-  </q-btn-dropdown>
+    </div>
+  </q-list>
 </template>
 
 <script setup lang="ts">
 import { LegendItem } from 'chart.js';
 
 defineProps<{
-  label: string;
   items: LegendItem[];
   toggleDataset: (datasetName: string, datasetIndex: number) => void;
   getItemColor: (dataset: LegendItem) => string;
@@ -77,5 +69,11 @@ defineProps<{
 .q-item__section--avatar {
   min-width: 5px !important;
   padding-right: 5px !important;
+}
+
+.q-item {
+  min-height: 22px !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
 }
 </style>

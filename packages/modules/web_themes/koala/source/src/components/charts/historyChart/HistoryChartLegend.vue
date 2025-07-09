@@ -1,9 +1,10 @@
 <template>
-  <HistoryChartLegendScrollArea
+  <HistoryChartLegendStandard
     v-if="chart && !legendLarge"
     :items="legendItems"
     :toggleDataset="toggleDataset"
     :getItemColor="getItemColor"
+    :getItemLineType="getItemLineType"
   />
 
   <div v-else class="row justify-center items-center">
@@ -12,6 +13,7 @@
       :items="categorizedLegendItems.component"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
+      :getItemLineType="getItemLineType"
     />
 
     <HistoryChartLegendCategory
@@ -19,6 +21,7 @@
       :items="categorizedLegendItems.chargepoint"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
+      :getItemLineType="getItemLineType"
     />
 
     <HistoryChartLegendCategory
@@ -26,6 +29,7 @@
       :items="categorizedLegendItems.vehicle"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
+      :getItemLineType="getItemLineType"
     />
 
     <HistoryChartLegendCategory
@@ -33,6 +37,7 @@
       :items="categorizedLegendItems.battery"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
+      :getItemLineType="getItemLineType"
     />
   </div>
 </template>
@@ -44,7 +49,7 @@ import { Chart, LegendItem } from 'chart.js';
 import type { Category, CategorizedDataset } from './history-chart-model';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import HistoryChartLegendCategory from './HistoryChartLegendCategory.vue';
-import HistoryChartLegendScrollArea from './HistoryChartLegendScrollArea.vue';
+import HistoryChartLegendStandard from './HistoryChartLegendStandard.vue';
 
 const mqttStore = useMqttStore();
 
@@ -57,26 +62,21 @@ const legendItems = ref<LegendItem[]>([]);
 
 const updateLegendItems = () => {
   if (!props.chart) return;
-
   const items =
     props.chart.options.plugins?.legend?.labels?.generateLabels?.(
       props.chart,
     ) || [];
-
   items.forEach((item) => {
     if (item.text && localDataStore.isDatasetHidden(item.text)) {
       item.hidden = true;
     }
-
     //  Inject the category from the dataset
     const dataset = props.chart?.data.datasets[
       item.datasetIndex!
     ] as unknown as CategorizedDataset;
     (item as LegendItem & { category?: Category }).category = dataset.category;
   });
-
   legendItems.value = items;
-  console.log('legendItems:', legendItems.value);
 };
 
 const categorizedLegendItems = computed(() => {
@@ -97,21 +97,31 @@ const categorizedLegendItems = computed(() => {
   // Sort each category's items alphabetically
   Object.keys(categories).forEach((key) => {
     categories[key as Category].sort((a, b) =>
-      (a.text || '').localeCompare(b.text || ''),
+      (a.text || '').localeCompare(b.text || '', undefined, { numeric: true }),
     );
   });
   return categories;
 });
 
 const legendLarge = computed(() => {
-  return legendItems.value.length > 100;
+  return legendItems.value.length > 16;
 });
 
 const getItemColor = (item: LegendItem) => {
   if (!props.chart || item.datasetIndex === undefined) return '#ccc';
-
   const dataset = props.chart.data.datasets[item.datasetIndex];
   return (dataset.borderColor as string) || '#ccc';
+};
+
+const getItemLineType = (item: LegendItem) => {
+  if (!props.chart || item.datasetIndex === undefined) return;
+  const dataset = props.chart.data.datasets[
+    item.datasetIndex
+  ] as unknown as CategorizedDataset;
+  const borderDash = dataset.borderDash;
+  return Array.isArray(borderDash) && borderDash.length > 0
+    ? 'dashed'
+    : 'solid';
 };
 
 const toggleDataset = (datasetName?: string, datasetIndex?: number) => {
