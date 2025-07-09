@@ -34,7 +34,6 @@ class TasmotaCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        log.debug("Tasmota counter update: " + self.__ip_address)
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
@@ -72,9 +71,6 @@ class TasmotaCounter(AbstractCounter):
                 exported=exported
             )
 
-        log.debug("Tasmota CounterState:\nurl=" + url +
-                  "\nresponse=" + str(response) +
-                  "\nCounterState=" + str(counter_state))
         self.store.set(counter_state)
 
 

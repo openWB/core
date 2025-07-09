@@ -34,7 +34,6 @@ class TasmotaInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        log.debug("Tasmota inverter update: " + self.__ip_address)
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
@@ -59,9 +58,6 @@ class TasmotaInverter(AbstractInverter):
                 exported=exported
             )
 
-        log.debug("Tasmota InverterState:\nurl=" + url +
-                  "\nresponse=" + str(response) +
-                  "\nInverterState=" + str(inverter_state))
         self.store.set(inverter_state)
 
 

@@ -34,7 +34,6 @@ class TasmotaBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        log.debug("Tasmota bat update: " + self.__ip_address)
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
@@ -63,9 +62,6 @@ class TasmotaBat(AbstractBat):
                 exported=exported
             )
 
-        log.debug("Tasmota BatState:\nurl=" + url +
-                  "\nresponse=" + str(response) +
-                  "\nBatState=" + str(bat_state))
         self.store.set(bat_state)
 
 
