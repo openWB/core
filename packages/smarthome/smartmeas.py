@@ -533,7 +533,7 @@ class Slsdm120(Slbase):
         try:
             # neu aus openwb 2.0
             with modbus.ModbusTcpClient_(self._device_measureip, self._device_measureportsdm) as tcp_client:
-                sdm120 = sdm.Sdm120(self._device_measureid, tcp_client)
+                sdm120 = sdm.Sdm120(self._device_measureid, tcp_client, None)
                 _, newwatt = sdm120.get_power()
                 self.newwatt = int(newwatt)
                 self.newwattk = int(sdm120.get_imported())
