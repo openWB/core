@@ -15,7 +15,7 @@ class StepwiseControl(AbstractIoAction):
         self.config = config
         control_command_log.info(f"Stufenweise Steuerung einer EZA: Eingang {self.config.configuration.s1} für S1, "
                                  f"Eingang {self.config.configuration.s2} für S2, und Eingang "
-                                 f"{self.config.configuration.w3} für W3 wird überwacht. Die Beschränkung musss im WR"
+                                 f"{self.config.configuration.w3} für W3 wird überwacht. Die Beschränkung musss in der EZA"
                                  " vorgenommen werden.")
         super().__init__()
 
@@ -24,7 +24,7 @@ class StepwiseControl(AbstractIoAction):
 
     def control_stepwise(self) -> Optional[str]:
         text = (f"Die Einspeiseleistung von {get_component_name_by_id(self.config.configuration.pv_id)} ist auf "
-                "{} % beschränkt. Die Beschränkung musss im WR vorgenommen werden.")
+                "{} % beschränkt. Die Beschränkung musss in der EZA vorgenommen werden.")
         msg = None
         digital_input = data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input
         digital_input_prev = data.data.io_states[
@@ -55,7 +55,7 @@ class StepwiseControl(AbstractIoAction):
         else:
             # Keine Beschränkung soll nicht dauerhaft im WR angezeigt werden.
             msg = (f"Die Einspeiseleistung von {get_component_name_by_id(self.config.configuration.pv_id)} ist "
-                   "nicht beschränkt. Die Beschränkung musss im WR vorgenommen werden.")
+                   "nicht beschränkt. Die Beschränkung musss in der EZA vorgenommen werden.")
 
         if not (digital_input[self.config.configuration.s1] == digital_input_prev[self.config.configuration.s1] and
                 digital_input[self.config.configuration.s2] == digital_input_prev[self.config.configuration.s2] and
