@@ -17,9 +17,6 @@ class StepwiseControl(AbstractIoAction):
                                  f"Eingang {self.config.configuration.s2} für S2, und Eingang "
                                  f"{self.config.configuration.w3} für W3 wird überwacht. Die Beschränkung musss im WR"
                                  " vorgenommen werden.")
-        self.s1_prev = False
-        self.s2_prev = False
-        self.w3_prev = False
         super().__init__()
 
     def setup(self) -> None:
@@ -29,36 +26,32 @@ class StepwiseControl(AbstractIoAction):
         text = (f"Die Einspeiseleistung von {get_component_name_by_id(self.config.configuration.pv_id)} ist auf "
                 "{} % beschränkt. Die Beschränkung musss im WR vorgenommen werden.")
         msg = None
-        log_msg = None
         digital_input = data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input
         if digital_input[self.config.configuration.s1] is True:
             msg = text.format(60)
-            if self.s1_prev is False:
-                log_msg = msg
         elif digital_input[self.config.configuration.s2] is True:
             msg = text.format(30)
-            if self.s1_prev is False:
-                log_msg = msg
         elif digital_input[self.config.configuration.w3] is True:
             msg = text.format(0)
-            if self.s1_prev is False:
-                log_msg = msg
+        if msg is not None:
+            with ModifyLoglevelContext(control_command_log, logging.DEBUG):
+                control_command_log.info(msg)
+            return msg
         if (digital_input[self.config.configuration.s1] is False and
                 digital_input[self.config.configuration.s2] is False and
-                digital_input[self.config.configuration.w3] is False and
-                self.s1_prev is False and
-                self.s2_prev is False and
-                self.w3_prev is False):
+                digital_input[self.config.configuration.w3] is False):
             # Keine Beschränkung soll nicht dauerhaft im WR angezeigt werden.
-            log_msg = (f"Die Einspeiseleistung von {get_component_name_by_id(self.config.configuration.pv_id)} ist "
+            msg = (f"Die Einspeiseleistung von {get_component_name_by_id(self.config.configuration.pv_id)} ist "
                        "nicht beschränkt. Die Beschränkung musss im WR vorgenommen werden.")
-        self.s1_prev = digital_input[self.config.configuration.s1]
-        self.s2_prev = digital_input[self.config.configuration.s2]
-        self.w3_prev = digital_input[self.config.configuration.w3]
-        if log_msg is not None:
             with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-                control_command_log.info(log_msg)
-        return msg
+                control_command_log.info(msg)
+            return None
+        else:
+            raise ValueError(
+                f"Unbekannter Zustand der Stufenweise Steuerung {self.config.name}: "
+                f"{digital_input[self.config.configuration.s1]}, "
+                f"{digital_input[self.config.configuration.s2]}, {digital_input[self.config.configuration.w3]}."
+            )
 
 
 def create_action(config: StepwiseControlSetup):
