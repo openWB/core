@@ -169,7 +169,8 @@ def setup_logging() -> None:
         PERSISTENT_LOG_PATH + 'steuve_control_command.log', maxBytes=mb_to_bytes(80), backupCount=1)
     steuve_control_command_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     steuve_control_command_log.addHandler(steuve_control_command_queue_handler)
-    steuve_control_command_listener = logging.handlers.QueueListener(steuve_control_command_queue, steuve_control_command_file_handler)
+    steuve_control_command_listener = logging.handlers.QueueListener(steuve_control_command_queue,
+                                                                     steuve_control_command_file_handler)
     steuve_control_command_listener.start()
 
     # Smarthome logger
@@ -204,7 +205,8 @@ def setup_logging() -> None:
     internal_chargepoint_log_handler.addFilter(functools.partial(filter_pos, "Internal Chargepoint"))
     internal_chargepoint_log_handler.addFilter(RedactingFilter())
     logging.getLogger().addHandler(internal_chargepoint_queue_handler)
-    internal_chargepoint_listener = logging.handlers.QueueListener(internal_chargepoint_queue, internal_chargepoint_log_handler)
+    internal_chargepoint_listener = logging.handlers.QueueListener(internal_chargepoint_queue,
+                                                                   internal_chargepoint_log_handler)
     internal_chargepoint_listener.start()
 
     # urllib3 logger
