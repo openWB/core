@@ -27,31 +27,43 @@ class StepwiseControl(AbstractIoAction):
                 "{} % beschränkt. Die Beschränkung musss im WR vorgenommen werden.")
         msg = None
         digital_input = data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input
-        if digital_input[self.config.configuration.s1] is True:
+        digital_input_prev = data.data.io_states[
+            f"io_states{self.config.configuration.io_device}"].data.get.digital_input_prev
+
+        active_inputs = [
+            digital_input[self.config.configuration.s1],
+            digital_input[self.config.configuration.s2],
+            digital_input[self.config.configuration.w3]
+        ]
+        num_active = sum(1 for v in active_inputs if v)
+
+        if num_active > 1:
+            error_msg = (f"Fehler: Mehr als ein Eingang ist aktiv für die stufenweise Steuerung der EZA! "
+                         f"S1: {digital_input[self.config.configuration.s1]}, "
+                         f"S2: {digital_input[self.config.configuration.s2]}, "
+                         f"W3: {digital_input[self.config.configuration.w3]}")
+            with ModifyLoglevelContext(control_command_log, logging.ERROR):
+                control_command_log.error(error_msg)
+            raise ValueError(error_msg)
+
+        if digital_input[self.config.configuration.s1]:
             msg = text.format(60)
-        elif digital_input[self.config.configuration.s2] is True:
+        elif digital_input[self.config.configuration.s2]:
             msg = text.format(30)
-        elif digital_input[self.config.configuration.w3] is True:
+        elif digital_input[self.config.configuration.w3]:
             msg = text.format(0)
-        if msg is not None:
-            with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-                control_command_log.info(msg)
-            return msg
-        if (digital_input[self.config.configuration.s1] is False and
-                digital_input[self.config.configuration.s2] is False and
-                digital_input[self.config.configuration.w3] is False):
+        else:
             # Keine Beschränkung soll nicht dauerhaft im WR angezeigt werden.
             msg = (f"Die Einspeiseleistung von {get_component_name_by_id(self.config.configuration.pv_id)} ist "
-                       "nicht beschränkt. Die Beschränkung musss im WR vorgenommen werden.")
+                   "nicht beschränkt. Die Beschränkung musss im WR vorgenommen werden.")
+
+        if not (digital_input[self.config.configuration.s1] == digital_input_prev[self.config.configuration.s1] and
+                digital_input[self.config.configuration.s2] == digital_input_prev[self.config.configuration.s2] and
+                digital_input[self.config.configuration.w3] == digital_input_prev[self.config.configuration.w3]):
+            # Wenn sich was geändet hat, loggen
             with ModifyLoglevelContext(control_command_log, logging.DEBUG):
                 control_command_log.info(msg)
-            return None
-        else:
-            raise ValueError(
-                f"Unbekannter Zustand der Stufenweise Steuerung {self.config.name}: "
-                f"{digital_input[self.config.configuration.s1]}, "
-                f"{digital_input[self.config.configuration.s2]}, {digital_input[self.config.configuration.w3]}."
-            )
+        return msg
 
 
 def create_action(config: StepwiseControlSetup):
