@@ -15,8 +15,8 @@ class StepwiseControl(AbstractIoAction):
         self.config = config
         control_command_log.info(f"Stufenweise Steuerung einer EZA: Eingang {self.config.configuration.s1} für S1, "
                                  f"Eingang {self.config.configuration.s2} für S2, und Eingang "
-                                 f"{self.config.configuration.w3} für W3 wird überwacht. Die Beschränkung musss in der EZA"
-                                 " vorgenommen werden.")
+                                 f"{self.config.configuration.w3} für W3 wird überwacht. Die Beschränkung musss in "
+                                 "der EZA vorgenommen werden.")
         super().__init__()
 
     def setup(self) -> None:
