@@ -4,7 +4,7 @@
 # flake8: noqa: E402
 import logging
 from helpermodules import logger
-from helpermodules.utils import thread_handler
+from helpermodules.utils import run_command, thread_handler
 import threading
 import sys
 
@@ -70,6 +70,7 @@ class HandlerAlgorithm:
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
+            log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
             log.debug(f"Threads: {enumerate()}")
             for thread in threading.enumerate():
                 logging.debug(f"Thread Name: {thread.name}")
