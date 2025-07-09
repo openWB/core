@@ -49,6 +49,7 @@ class Config:
     configured: bool = field(default=False, metadata={"topic": "config/configured"})
     power_limit_mode: str = field(default=BatPowerLimitMode.NO_LIMIT.value,
                                   metadata={"topic": "config/power_limit_mode"})
+    bat_control_permitted: bool = field(default=False, metadata={"topic": "config/bat_control_permitted"})
 
 
 def config_factory() -> Config:
@@ -287,11 +288,13 @@ class BatAll:
             self.data.get.power_limit_controllable = False
 
     def get_power_limit(self):
+        if self.data.config.bat_control_permitted is False:
+            return
         chargepoint_by_chagemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)
         power_of_chargepoints_by_chagemodes = sum(
             [cp.data.get.power for cp in chargepoint_by_chagemodes if cp.data.get.power is not None])
-        if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value
-                and len(chargepoint_by_chagemodes) > 0 and
+        if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value and
+            len(chargepoint_by_chagemodes) > 0 and
                 power_of_chargepoints_by_chagemodes > 0 and
                 self.data.get.power_limit_controllable and
                 # Nur wenn kein Überschuss im System ist, Speicherleistung begrenzen.

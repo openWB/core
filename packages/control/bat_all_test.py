@@ -189,6 +189,7 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
     b_all = BatAll()
+    b_all.data.config.bat_control_permitted = True
     b_all.data.config.power_limit_mode = params.power_limit_mode
     b_all.data.get.power_limit_controllable = params.power_limit_controllable
     b_all.data.get.power = params.bat_power

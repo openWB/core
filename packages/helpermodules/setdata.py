@@ -629,7 +629,8 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/bat/config/configured" in msg.topic or
+            if ("openWB/set/bat/config/bat_control_permitted" in msg.topic or
+                "openWB/set/bat/config/configured" in msg.topic or
                 "openWB/set/bat/get/power_limit_controllable" in msg.topic or
                     "openWB/set/bat/set/regulate_up" in msg.topic):
                 self._validate_value(msg, bool)
