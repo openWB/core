@@ -11,7 +11,12 @@ else
 	echo "setting default value of 60s"
 	timeout=60
 fi
-sudo sed -i "s/^xset s .*$/xset s ${timeout}/" "/home/openwb/.config/lxsession/LXDE/autostart"
+sudo sed -i '/^xset -dpms/d' "/home/openwb/.config/lxsession/LXDE/autostart"
+if [[ "$timeout" == 0 ]]; then
+        sudo sed -i "s/^xset s .*$/xset s off\nxset -dpms/" "/home/openwb/.config/lxsession/LXDE/autostart"
+else
+        sudo sed -i "s/^xset s .*$/xset s ${timeout}/" "/home/openwb/.config/lxsession/LXDE/autostart"
+fi
 
 # enable/disable display
 default_target=$(systemctl get-default)

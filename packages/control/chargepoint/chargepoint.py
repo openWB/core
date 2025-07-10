@@ -871,6 +871,7 @@ class Chargepoint(ChargepointRfidMixin):
         for p in self.data.set.charge_template.data.chargemode.scheduled_charging.plans:
             if p.id == self.data.control_parameter.current_plan:
                 phases_to_use_pv = p.phases_to_use_pv
+                break
         else:
             phases_to_use_pv = 1
         scheduled_auto_switch = (
