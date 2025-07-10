@@ -26,6 +26,7 @@ class GoodWeBat(AbstractBat):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.version: GoodWeVersion = self.kwargs['version']
         self.firmware: int = self.kwargs['firmware']

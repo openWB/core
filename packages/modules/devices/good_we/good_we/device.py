@@ -22,6 +22,7 @@ def create_device(device_config: GoodWe):
     def create_bat_component(component_config: GoodWeBatSetup):
         nonlocal client
         return bat.GoodWeBat(component_config=component_config,
+                             device_id=device_config.id,
                              modbus_id=device_config.configuration.modbus_id,
                              version=GoodWeVersion(device_config.configuration.version),
                              firmware=device_config.configuration.firmware,
