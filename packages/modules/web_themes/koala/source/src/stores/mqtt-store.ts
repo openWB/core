@@ -1737,7 +1737,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed(() => {
       const vehicleId =
         chargePointConnectedVehicleInfo(chargePointId).value?.id;
-      if (!vehicleId) return undefined;
+      if (vehicleId === undefined) return undefined;
       const socConfig = getValue.value(
         `openWB/vehicle/${vehicleId}/soc_module/config`,
       ) as { type: string } | null;
