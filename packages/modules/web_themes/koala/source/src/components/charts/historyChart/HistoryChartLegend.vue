@@ -31,14 +31,6 @@
       :getItemColor="getItemColor"
       :getItemLineType="getItemLineType"
     />
-
-    <HistoryChartLegendCategory
-      :label="'Speicher Legende'"
-      :items="categorizedLegendItems.battery"
-      :toggleDataset="toggleDataset"
-      :getItemColor="getItemColor"
-      :getItemLineType="getItemLineType"
-    />
   </div>
 </template>
 
@@ -104,7 +96,7 @@ const categorizedLegendItems = computed(() => {
 });
 
 const legendLarge = computed(() => {
-  return legendItems.value.length > 19;
+  return legendItems.value.length > 20;
 });
 
 const getItemColor = (item: LegendItem): string => {

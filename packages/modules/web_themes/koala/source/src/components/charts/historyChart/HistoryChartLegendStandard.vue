@@ -1,43 +1,18 @@
 <template>
   <q-list class="q-pa-none">
     <div class="row wrap q-pa-none items-center justify-center">
-      <q-item
-        v-for="(dataset, index) in items"
-        :key="dataset.text || index"
-        clickable
-        dense
-        class="q-py-none"
-        :class="{ 'legend-item-hidden': dataset.hidden }"
-        @click="
+      <q-item v-for="(dataset, index) in items" :key="dataset.text || index" clickable dense class="q-py-none"
+        :class="{ 'legend-item-hidden': dataset.hidden }" @click="
           dataset.datasetIndex !== undefined &&
-            toggleDataset(dataset.text, dataset.datasetIndex)
-        "
-      >
+          toggleDataset(dataset.text, dataset.datasetIndex)
+          ">
         <q-item-section avatar class="q-pr-none">
-          <svg
-            v-if="getItemLineType(dataset) === 'dashed'"
-            width="20"
-            height="3"
-          >
-            <line
-              x1="0"
-              y1="1.5"
-              x2="20"
-              y2="1.5"
-              :stroke="getItemColor(dataset)"
-              stroke-width="2"
-              stroke-dasharray="8,2"
-            />
+          <svg v-if="getItemLineType(dataset) === 'dashed'" width="20" height="3">
+            <line x1="0" y1="1.5" x2="20" y2="1.5" :stroke="getItemColor(dataset)" stroke-width="2"
+              stroke-dasharray="8,2" />
           </svg>
           <svg v-else width="20" height="3">
-            <line
-              x1="0"
-              y1="1.5"
-              x2="30"
-              y2="1.5"
-              :stroke="getItemColor(dataset)"
-              stroke-width="2"
-            />
+            <line x1="0" y1="1.5" x2="30" y2="1.5" :stroke="getItemColor(dataset)" stroke-width="2" />
           </svg>
         </q-item-section>
         <q-item-section>

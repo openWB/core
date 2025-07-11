@@ -224,7 +224,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Speicher ges.',
-        category: 'battery',
+        category: 'component',
         unit: 'kW',
         borderColor: '#b5a647',
         backgroundColor: 'rgba(181, 166, 71, 0.2)',
@@ -241,7 +241,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Speicher SoC',
-        category: 'battery',
+        category: 'component',
         unit: '%',
         borderColor: '#FFB96E',
         borderWidth: 2,
