@@ -14,6 +14,7 @@ from modules.devices.good_we.good_we.version import GoodWeVersion
 
 
 class KwargsDict(TypedDict):
+    device_id: int
     modbus_id: int
     version: GoodWeVersion
     firmware: int
