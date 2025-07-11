@@ -104,10 +104,10 @@ const categorizedLegendItems = computed(() => {
 });
 
 const legendLarge = computed(() => {
-  return legendItems.value.length > 16;
+  return legendItems.value.length > 19;
 });
 
-const getItemColor = (item: LegendItem) => {
+const getItemColor = (item: LegendItem): string => {
   if (!props.chart || item.datasetIndex === undefined) return '#ccc';
   const dataset = props.chart.data.datasets[item.datasetIndex];
   return (dataset.borderColor as string) || '#ccc';
