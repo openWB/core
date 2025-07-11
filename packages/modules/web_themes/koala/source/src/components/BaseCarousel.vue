@@ -48,7 +48,7 @@ const animated = ref<boolean>(true);
  * Group the items in chunks of 2 for large screens and 1 for small screens.
  */
 const groupedItems = computed(() => {
-  const groupSize = $q.screen.width > 1400 ? 3 : $q.screen.width > 800 ? 2 : 1;
+  const groupSize = $q.screen.width > 800 ? 2 : 1;
   return props.items.reduce((resultArray, item, index) => {
     const chunkIndex = Math.floor(index / groupSize);
     if (!resultArray[chunkIndex]) {
