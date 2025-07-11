@@ -116,14 +116,23 @@
     </q-drawer>
 
     <!-- Page container that takes the remaining height -->
-    <q-page-container class="column flex centered-container">
+    <q-page-container
+      :class="[
+        'column',
+        'flex',
+        {
+          'centered-container': !isLargeScreen,
+          'centered-container-large': isLargeScreen,
+        },
+      ]"
+    >
       <router-view />
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 const $q = useQuasar();
 
@@ -133,6 +142,7 @@ defineOptions({
 
 const drawer = ref(false);
 const themeMode = ref('auto');
+const isLargeScreen = computed(() => $q.screen.width > 1400);
 
 const setTheme = (mode: 'light' | 'dark' | 'auto') => {
   themeMode.value = mode;
@@ -160,6 +170,12 @@ onMounted(() => {
 <style scoped>
 .centered-container {
   max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.centered-container-large {
+  max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
 }
