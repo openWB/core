@@ -60,7 +60,7 @@ class SolaredgeBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.min_soc = 8
+        self.min_soc = 13
         self.StorageControlMode_Read = DEFAULT_CONTROL_MODE
         self.last_mode = 'undefined'
 
