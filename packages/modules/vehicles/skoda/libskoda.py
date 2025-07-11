@@ -168,8 +168,6 @@ class skoda:
 
             response = await self.session.get(url, data=form, allow_redirects=False)
 
-        self.headers = dict(response.headers)
-
         # Get final token
         params = {
             'tokenType': 'CONNECT'
