@@ -376,4 +376,9 @@ const chartOptions = computed(() => ({
   flex: 1;
   min-height: 0;
 }
+
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 </style>
