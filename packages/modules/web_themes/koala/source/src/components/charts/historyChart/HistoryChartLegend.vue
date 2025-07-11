@@ -9,7 +9,7 @@
 
   <div v-else class="row justify-center items-center">
     <HistoryChartLegendCategory
-      :label="'Komponenten Legend'"
+      :label="'Komponenten Legende'"
       :items="categorizedLegendItems.component"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
@@ -17,7 +17,7 @@
     />
 
     <HistoryChartLegendCategory
-      :label="'Ladepunkt Legend'"
+      :label="'Ladepunkt Legende'"
       :items="categorizedLegendItems.chargepoint"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
@@ -25,7 +25,7 @@
     />
 
     <HistoryChartLegendCategory
-      :label="'Fahrzeug Legend'"
+      :label="'Fahrzeug Legende'"
       :items="categorizedLegendItems.vehicle"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
@@ -33,7 +33,7 @@
     />
 
     <HistoryChartLegendCategory
-      :label="'Speicher Legend'"
+      :label="'Speicher Legende'"
       :items="categorizedLegendItems.battery"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
