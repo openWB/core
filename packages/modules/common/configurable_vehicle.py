@@ -83,7 +83,8 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 self.calculated_soc_state.soc_start = car_state.soc
                 Pub().pub(f"openWB/set/vehicle/{self.vehicle}/soc_module/calculated_soc_state",
                           asdict(self.calculated_soc_state))
-            if vehicle_update_data.soc_timestamp is None or vehicle_update_data.soc_timestamp < car_state.soc_timestamp:
+            if (vehicle_update_data.soc_timestamp is None or
+                    vehicle_update_data.soc_timestamp <= car_state.soc_timestamp):
                 # Nur wenn der SoC neuer ist als der bisherige, diesen setzen.
                 self.store.set(car_state)
             elif vehicle_update_data.soc_timestamp > 1e10:
@@ -99,7 +100,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 self.calculated_soc_state.manual_soc):
             if isinstance(self.vehicle_config, ManualSoc):
                 # Wenn ein manueller SoC gesetzt wurde, diesen als neuen Start merken.
-                if self.calculated_soc_state.manual_soc or self.calculated_soc_state.imported_start is None:
+                if self.calculated_soc_state.manual_soc is not None or self.calculated_soc_state.imported_start is None:
                     return SocSource.MANUAL
                 else:
                     if vehicle_update_data.plug_state:
@@ -134,7 +135,10 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             return CarState(soc=vehicle_update_data.soc_from_cp,
                             soc_timestamp=vehicle_update_data.timestamp_soc_from_cp)
         elif source == SocSource.MANUAL:
-            soc = self.calculated_soc_state.manual_soc or self.calculated_soc_state.soc_start
+            if self.calculated_soc_state.manual_soc is not None:
+                soc = self.calculated_soc_state.manual_soc
+            else:
+                self.calculated_soc_state.soc_start
             self.calculated_soc_state.manual_soc = None
             return CarState(soc)
 
