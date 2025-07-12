@@ -68,6 +68,10 @@ class PvAll:
                             else:
                                 if fault_state < module_data.get.fault_state:
                                     fault_state = module_data.get.fault_state
+                            msg = data.data.io_actions.stepwise_control(data.data.pv_data[module].num)
+                            if msg is not None and data.data.pv_data[module].data.get.fault_state == 0:
+                                data.data.pv_data[module].data.get.fault_str = msg
+                                Pub().pub(f"openWB/set/pv/{data.data.pv_data[module].num}/get/fault_str", msg)
                     except Exception:
                         log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
                 if fault_state == 0:
