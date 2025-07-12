@@ -6,6 +6,7 @@
 * [Fahrzeuge](https://github.com/openWB/core/wiki/Fahrzeuge)
   * [Manueller SoC](https://github.com/openWB/core/wiki/Manueller-SoC)
   * [SoC BMW & Mini](https://github.com/openWB/core/wiki/SoC-BMW-Mini)
+  * [SoC Cupra](https://github.com/openWB/core/wiki/SoC-Cupra)
   * [SoC OVMS](https://github.com/openWB/core/wiki/SoC-OVMS)
   * [SoC VWId](https://github.com/openWB/core/wiki/SoC-VWId)
   * [WiCAN OBD2-Dongle mit manuellem SoC](https://github.com/openWB/core/wiki/WiCAN)
