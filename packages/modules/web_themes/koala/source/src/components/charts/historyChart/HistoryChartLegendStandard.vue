@@ -51,4 +51,8 @@ defineProps<{
   padding-left: 4px !important;
   padding-right: 4px !important;
 }
+
+.body--dark .q-list {
+  background-color: transparent;
+}
 </style>
