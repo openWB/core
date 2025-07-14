@@ -2,6 +2,7 @@
   <div class="q-pa-md">
     <q-table
       class="sticky-header-table"
+      :class="{ 'custom-table-height': tableHeight }"
       :rows="mappedRows"
       :columns="mappedColumns"
       row-key="id"
@@ -11,7 +12,6 @@
       virtual-scroll
       :virtual-scroll-item-size="48"
       :virtual-scroll-sticky-size-start="30"
-      :style="{ height: tableHeight }"
       @row-click="onRowClick"
       binary-state-sort
       :pagination="{ rowsPerPage: 0 }"
@@ -221,5 +221,9 @@ const onRowClick = (evt: Event, row: T) => emit('row-click', row);
 
 .clickable {
   cursor: pointer;
+}
+
+.custom-table-height {
+  height: v-bind('tableHeight');
 }
 </style>
