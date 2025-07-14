@@ -20,8 +20,6 @@ export class ChargePoint {
 	chargeTemplate: ChargeTemplate | null = null
 	chargeTemplateId = 0
 	evTemplate = 0
-	private _chargeMode = ChargeMode.pv_charging
-	private _hasPriority = false
 	currentPlan = ''
 	averageConsumption = 0
 	vehicleName = ''
@@ -46,25 +44,6 @@ export class ChargePoint {
 	isSocManual = false
 	waitingForSoc = false
 	color = 'white'
-	private _timedCharging = false
-	private _instantChargeLimitMode = ''
-	private _instantTargetCurrent = 0
-	private _instantTargetSoc = 0
-	private _instantMaxEnergy = 0
-	private _instantTargetPhases = 0
-	private _pvFeedInLimit = false
-	private _pvMinCurrent = 0
-	private _pvMaxSoc = 101
-	private _pvMinSoc = 0
-	private _pvMinSocCurrent = 0
-	private _ecoMinCurrent = 0
-	private _ecoTargetPhases = 0
-	private _ecoChargeLimitMode = ''
-	private _ecoTargetSoc = 0
-	private _ecoMaxEnergy = 0
-
-	private _etActive = false
-	private _etMaxPrice = 20
 
 	constructor(index: number) {
 		this.id = index
@@ -112,18 +91,12 @@ export class ChargePoint {
 			updateChargeTemplate(this.id)
 		}
 	}
-	updateChargeMode(cm: ChargeMode) {
-		this._chargeMode = cm
-	}
 	get hasPriority() {
-		return this._hasPriority
+		return this.chargeTemplate?.prio ?? false
 	}
 	set hasPriority(prio: boolean) {
-		this._hasPriority = prio
-		updateServer('cpPriority', prio, this.id)
-	}
-	updateCpPriority(prio: boolean) {
-		this._hasPriority = prio
+		this.chargeTemplate!.prio = prio
+		updateChargeTemplate(this.id)
 	}
 	get timedCharging() {
 		if (this.chargeTemplate) {
@@ -134,7 +107,7 @@ export class ChargePoint {
 	}
 	set timedCharging(setting: boolean) {
 		this.chargeTemplate!.time_charging.active = setting
-		updateServer('cpTimedCharging', setting, this.id)
+		updateChargeTemplate(this.id)
 	}
 	get instantTargetCurrent() {
 		return this.chargeTemplate?.chargemode.instant_charging.current ?? 0
@@ -200,16 +173,6 @@ export class ChargePoint {
 			this.chargeTemplate.chargemode.pv_charging.min_current = min
 			updateChargeTemplate(this.id)
 		}
-	}
-	get pvMaxSoc() {
-		return this._pvMaxSoc
-	}
-	set pvMaxSoc(max: number) {
-		this._pvMaxSoc = max
-		updateServer('cpPvMaxSoc', max, this.id)
-	}
-	updatePvMaxSoc(max: number) {
-		this._pvMaxSoc = max
 	}
 	get pvMinSoc() {
 		return this.chargeTemplate?.chargemode.pv_charging.min_soc ?? 0

@@ -50,9 +50,7 @@ const props = defineProps<{
 	chargePoint: ChargePoint
 }>()
 const plans = computed(() => {
-	return (
-		props.chargePoint.chargeTemplate?.time_charging.plans ?? []
-	)
+	return props.chargePoint.chargeTemplate?.time_charging.plans ?? []
 })
 function updatePlanState(i: number) {
 	props.chargePoint.chargeTemplate!.chargemode.scheduled_charging.plans[
