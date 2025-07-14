@@ -20,7 +20,7 @@ Je nach Speicher 1-4 Sekunden.
 from dataclasses import dataclass, field
 from enum import Enum
 import logging
-from typing import List
+from typing import List, Optional
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT
@@ -75,9 +75,8 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
-    charging_power_left: float = field(
-        default=0, metadata={"topic": "set/charging_power_left"})
-    power_limit: float = field(default=0, metadata={"topic": "set/power_limit"})
+    charging_power_left: float = field(default=0, metadata={"topic": "set/charging_power_left"})
+    power_limit: Optional[float] = field(default=None, metadata={"topic": "set/power_limit"})
     regulate_up: bool = field(default=False, metadata={"topic": "set/regulate_up"})
 
 
