@@ -106,6 +106,7 @@ export function processChargepointMessages(topic: string, message: string) {
 		) {
 			const config: ConnectedVehicleConfig = JSON.parse(message)
 			chargePoints[index].averageConsumption = config.average_consumption
+			chargePoints[index].chargeTemplateId = config.charge_template
 		} else if (
 			topic.match(/^openwb\/chargepoint\/[0-9]+\/set\/charge_template$/i)
 		) {

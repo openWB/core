@@ -109,7 +109,7 @@
 			>
 				<ConfigTimed
 					v-if="chargeTemplate != undefined"
-					:charge-template-id="cpid"
+					:charge-point="props.chargepoint"
 				/>
 			</div>
 		</div>

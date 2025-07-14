@@ -1,7 +1,7 @@
 <template>
 	<div class="ecosettings">
 		<PriceChart
-			v-if="etData.active"
+			v-if="etData.active && etData.etPriceList.size > 0"
 			:charge-point-id="props.chargepoint.id"
 			class="fullwidth"
 		/>

@@ -9,24 +9,29 @@
 			<thead>
 				<tr>
 					<th></th>
-					<th>Startzeit</th>
-					<th>SoC-Ziel</th>
-					<th>SoC-Limit</th>
+					<th>Plan</th>
+					<th>Zielzeit</th>
+					<th>Ladeziel</th>
 					<th>Wiederholung</th>
 				</tr>
 			</thead>
 			<tbody>
 				<tr v-for="(plan, i) in plans" :key="i" :style="cellStyle(i)">
 					<td>
-						<!-- <SwitchInput
+						<SwitchInput
 							v-model="plan.active"
-							@update:model-value="updatePlanState(i)"
-						>
-						</SwitchInput> -->
+							@update:model-value="togglePlanStatus(i)"
+						/>
 					</td>
+					<td>{{ plan.name }}</td>
 					<td>{{ timeString(i) }}</td>
-					<td>{{ plan.limit.soc_scheduled }}%</td>
-					<td>{{ plan.limit.soc_limit }}%</td>
+					<td>
+						{{
+							plan.limit.selected == 'soc'
+								? plan.limit.soc_scheduled + '%'
+								: formatWattH(plan.limit.amount, 0)
+						}}
+					</td>
 					<td>{{ freqNames[plan.frequency.selected] }}</td>
 				</tr>
 			</tbody>
@@ -36,9 +41,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ChargePoint, scheduledChargingPlans } from '../model'
-//import SwitchInput from '../shared/SwitchInput.vue'
-//import { updateServer } from '@/assets/js/sendMessages'
+import { ChargePoint } from '../model'
+import SwitchInput from '@/components/shared/SwitchInput.vue'
+import { updateChargeTemplate } from '@/assets/js/sendMessages'
+import { formatWattH } from '@/assets/js/helpers'
 
 const freqNames: { [key: string]: string } = {
 	daily: 'Täglich',
@@ -48,24 +54,13 @@ const freqNames: { [key: string]: string } = {
 const props = defineProps<{
 	chargePoint: ChargePoint
 }>()
-//computed
-const plans = computed(() =>
-	scheduledChargingPlans[props.chargePoint.chargeTemplate?.id ?? 0]
-		? Object.values(
-				scheduledChargingPlans[props.chargePoint.chargeTemplate?.id ?? 0],
-			)
-		: [],
-)
 
-/* function updatePlanState(i: number) {
-	console.log(`update ${i}`)
-	updateServer(
-		'cpScheduledPlanActive',
-		plans.value[i].active,
-		props.chargeTemplateId,
-		i,
+//computed
+const plans = computed(() => {
+	return (
+		props.chargePoint.chargeTemplate?.chargemode.scheduled_charging.plans ?? []
 	)
-} */
+})
 
 //methods
 function timeString(key: number) {
@@ -75,17 +70,18 @@ function cellStyle(key: number) {
 	const style = plans.value[key].active ? 'bold' : 'regular'
 	return { 'font-weight': style }
 }
+function togglePlanStatus(i: number) {
+	props.chargePoint.chargeTemplate!.chargemode.scheduled_charging.plans[
+		i
+	]!.active = plans.value[i].active
+	updateChargeTemplate(props.chargePoint.id)
+}
 </script>
 
 <style scoped>
 .subtitle {
 	font-size: var(--font-large);
 	font-weight: bold;
-}
-.warning {
-	font-size: var(--font-large);
-	font-weight: bold;
-	color: var(--color-evu);
 }
 .info {
 	font-size: var(--font-large);

@@ -18,6 +18,7 @@ export class ChargePoint {
 	private _isLocked = false
 	private _connectedVehicle = 0
 	chargeTemplate: ChargeTemplate | null = null
+	chargeTemplateId = 0
 	evTemplate = 0
 	private _chargeMode = ChargeMode.pv_charging
 	private _hasPriority = false
