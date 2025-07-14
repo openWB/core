@@ -5,16 +5,11 @@ import {
 	chargeTemplates,
 	evTemplates,
 	Vehicle,
-	ChargeMode,
-	type ChargeTimePlan,
-	scheduledChargingPlans,
-	timeChargingPlans,
 } from './model'
 import type {
 	ConnectedVehicleConfig,
 	ChargeTemplate,
 	EvTemplate,
-	ChargeSchedule,
 } from './model'
 
 export function processChargepointMessages(topic: string, message: string) {
@@ -110,25 +105,11 @@ export function processChargepointMessages(topic: string, message: string) {
 			)
 		) {
 			const config: ConnectedVehicleConfig = JSON.parse(message)
-			switch (config.chargemode) {
-				case 'instant_charging':
-					chargePoints[index].updateChargeMode(ChargeMode.instant_charging)
-					break
-				case 'pv_charging':
-					chargePoints[index].updateChargeMode(ChargeMode.pv_charging)
-					break
-				case 'scheduled_charging':
-					chargePoints[index].updateChargeMode(ChargeMode.scheduled_charging)
-					break
-				case 'standby':
-					chargePoints[index].updateChargeMode(ChargeMode.standby)
-					break
-				case 'stop':
-					chargePoints[index].updateChargeMode(ChargeMode.stop)
-					break
-			}
-			chargePoints[index].chargeTemplate = config.charge_template
 			chargePoints[index].averageConsumption = config.average_consumption
+		} else if (
+			topic.match(/^openwb\/chargepoint\/[0-9]+\/set\/charge_template$/i)
+		) {
+			chargePoints[index].chargeTemplate = JSON.parse(message)
 		} else {
 			// console.warn('Ignored chargepoint message: ' + topic)
 		}
@@ -183,41 +164,7 @@ export function processVehicleTemplateMessages(topic: string, message: string) {
 		const match = topic.match(/[0-9]+$/i)
 		if (match) {
 			const index = +match[0]
-			const template: ChargeTemplate = JSON.parse(message) as ChargeTemplate
-			chargeTemplates[index] = template
-			updateCpFromChargeTemplate(index, template)
-		}
-	} else if (
-		topic.match(
-			/^openwb\/vehicle\/template\/charge_template\/[0-9]+\/time_charging\/plans\/[0-9]+$/i,
-		)
-	) {
-		const tidMatch = topic.match(/(?:\/)([0-9]+)(?:\/)/g)
-		const pidMatch = topic.match(/[0-9]+$/i)
-		if (tidMatch && pidMatch) {
-			const tId = +tidMatch[0].replace(/[^0-9]+/g, '')
-			const pId = +pidMatch[0]
-			const plan: ChargeTimePlan = JSON.parse(message)
-			if (!(tId in timeChargingPlans)) {
-				timeChargingPlans[tId] = []
-			}
-			timeChargingPlans[tId][pId] = plan
-		}
-	} else if (
-		topic.match(
-			/^openwb\/vehicle\/template\/charge_template\/[0-9]+\/chargemode\/scheduled_charging\/plans\/[0-9]+$/i,
-		)
-	) {
-		const tidMatch = topic.match(/(?:\/)([0-9]+)(?:\/)/g)
-		const pidMatch = topic.match(/[0-9]+$/i)
-		if (tidMatch && pidMatch) {
-			const tId = +tidMatch[0].replace(/[^0-9]+/g, '')
-			const pId = +pidMatch[0]
-			const plan: ChargeSchedule = JSON.parse(message)
-			if (!(tId in scheduledChargingPlans)) {
-				scheduledChargingPlans[tId] = []
-			}
-			scheduledChargingPlans[tId][pId] = plan
+			chargeTemplates[index] = JSON.parse(message) as ChargeTemplate
 		}
 	} else if (topic.match(/^openwb\/vehicle\/template\/ev_template\/[0-9]+$/i)) {
 		const match = topic.match(/[0-9]+$/i)
@@ -225,34 +172,10 @@ export function processVehicleTemplateMessages(topic: string, message: string) {
 			const index = +match[0]
 			const template: EvTemplate = JSON.parse(message) as EvTemplate
 			evTemplates[index] = template
-			// updateCpFromChargeTemplate(index, template)
 		}
 	} else {
 		// console.warn('Ignored VEHICLE TEMPLATE message [' + topic + ']=' + message)
 	}
-}
-function updateCpFromChargeTemplate(index: number, template: ChargeTemplate) {
-	Object.values(chargePoints).forEach((cp) => {
-		if (cp.chargeTemplate == index) {
-			cp.updateCpPriority(template.prio)
-			// cp.updateChargeMode(template.chargemode.selected)
-			cp.updateInstantChargeLimitMode(
-				template.chargemode.instant_charging.limit.selected,
-			)
-			cp.updateInstantTargetCurrent(
-				template.chargemode.instant_charging.current,
-			)
-			cp.updateInstantTargetSoc(template.chargemode.instant_charging.limit.soc)
-			cp.updateInstantMaxEnergy(
-				template.chargemode.instant_charging.limit.amount,
-			)
-			cp.updatePvFeedInLimit(template.chargemode.pv_charging.feed_in_limit)
-			cp.updatePvMinCurrent(template.chargemode.pv_charging.min_current)
-			cp.updatePvMaxSoc(template.chargemode.pv_charging.max_soc)
-			cp.updatePvMinSoc(template.chargemode.pv_charging.min_soc)
-			cp.updatePvMinSocCurrent(template.chargemode.pv_charging.min_soc_current)
-		}
-	})
 }
 
 function getIndex(topic: string): number | undefined {

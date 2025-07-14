@@ -1,5 +1,5 @@
 <template>
-	<div class="m-0 mt-1 p-0 grid-col-12 tabarea">
+	<div :id="`tabarea-${cpid}`" class="m-0 mt-1 p-0 grid-col-12 tabarea">
 		<nav class="nav nav-tabs nav-justified mx-1 mt-1" role="tablist">
 			<a
 				:id="'chSettings' + cpid"
@@ -34,21 +34,21 @@
 				<i class="fa-solid fa-bullseye me-1" /> Zielladen
 			</a>
 			<a
+				:id="'ecSettings' + cpid"
+				class="nav-link"
+				data-bs-toggle="tab"
+				:data-bs-target="'#ecoSettings' + cpid"
+			>
+				<i class="fa-solid fa-coins me-1" /> Eco
+			</a>
+
+			<a
 				:id="'tmSettings' + cpid"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#timeSettings' + cpid"
 			>
 				<i class="fa-solid fa-clock" /> Zeitpläne
-			</a>
-			<a
-				v-if="etData.active"
-				:id="'prSettings' + cpid"
-				class="nav-link"
-				data-bs-toggle="tab"
-				:data-bs-target="'#priceSettings' + cpid"
-			>
-				<i class="fa-solid fa-coins" /> Strompreis
 			</a>
 		</nav>
 
@@ -60,7 +60,7 @@
 				role="tabpanel"
 				aria-labelledby="instant-tab"
 			>
-				<CPChargeConfig :chargepoint-id="cpid" />
+				<ChargeConfig :chargepoint-id="cpid" />
 			</div>
 			<div
 				:id="'instantSettings' + cpid"
@@ -68,7 +68,7 @@
 				role="tabpanel"
 				aria-labelledby="instant-tab"
 			>
-				<CPConfigInstant :chargepoint-id="cpid" />
+				<ConfigInstant :chargepoint-id="cpid" />
 			</div>
 
 			<div
@@ -77,7 +77,7 @@
 				role="tabpanel"
 				aria-labelledby="pv-tab"
 			>
-				<CPConfigPv :chargepoint-id="cpid" />
+				<ConfigPv :chargepoint-id="cpid" />
 			</div>
 			<div
 				:id="'scheduledSettings' + cpid"
@@ -85,9 +85,20 @@
 				role="tabpanel"
 				aria-labelledby="scheduled-tab"
 			>
-				<CPConfigScheduled
+				<ConfigScheduled
 					v-if="chargeTemplate != undefined"
-					:charge-template-id="props.chargepoint.chargeTemplate"
+					:charge-point="props.chargepoint"
+				/>
+			</div>
+			<div
+				:id="'ecoSettings' + cpid"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="eco-tab"
+			>
+				<ConfigEco
+					v-if="chargeTemplate != undefined"
+					:chargepoint="props.chargepoint"
 				/>
 			</div>
 			<div
@@ -96,21 +107,9 @@
 				role="tabpanel"
 				aria-labelledby="time-tab"
 			>
-				<CPConfigTimed
+				<ConfigTimed
 					v-if="chargeTemplate != undefined"
-					:charge-template-id="props.chargepoint.chargeTemplate"
-				/>
-			</div>
-			<div
-				v-if="etData.active"
-				:id="'priceSettings' + cpid"
-				class="tab-pane"
-				role="tabpanel"
-				aria-labelledby="price-tab"
-			>
-				<PriceChart
-					v-if="etData.active"
-					:charge-point-id="props.chargepoint.id"
+					:charge-template-id="cpid"
 				/>
 			</div>
 		</div>
@@ -121,20 +120,20 @@
 import { computed } from 'vue'
 import {
 	type ChargePoint,
-	chargeTemplates,
+	//	chargeTemplates,
 } from '@/components/chargePointList/model'
-import CPConfigInstant from '@/components/chargePointList/CPConfigInstant.vue'
-import CPConfigPv from '@/components/chargePointList/CPConfigPv.vue'
-import CPConfigScheduled from '@/components/chargePointList/CPConfigScheduled.vue'
-import CPConfigTimed from '@/components/chargePointList/CPConfigTimed.vue'
-import CPChargeConfig from '@/components/chargePointList/CPChargeConfig.vue'
-import PriceChart from '@/components/priceChart/PriceChart.vue'
-import { etData } from '@/components/priceChart/model'
+import ConfigInstant from '@/components/chargePointList/configPanels/ConfigInstant.vue'
+import ConfigPv from '@/components/chargePointList/configPanels/ConfigPv.vue'
+import ConfigScheduled from '@/components/chargePointList/configPanels/ConfigScheduled.vue'
+import ConfigEco from '@/components/chargePointList/configPanels/ConfigEco.vue'
+import ConfigTimed from '@/components/chargePointList/configPanels/ConfigTimed.vue'
+import ChargeConfig from '@/components/chargePointList/configPanels/ChargeConfig.vue'
+//import PriceChart from '@/components/priceChart/PriceChart.vue'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
 const chargeTemplate = computed(() => {
-	return chargeTemplates[props.chargepoint.chargeTemplate]
+	return props.chargepoint.chargeTemplate
 })
 const cpid = computed(() => {
 	return props.chargepoint.id
@@ -163,7 +162,7 @@ const cpid = computed(() => {
 }
 
 .fa-charging-station {
-	color: var(--color-charging);
+	color: var(--color-menu);
 }
 
 .fa-bullseye {
@@ -179,6 +178,10 @@ const cpid = computed(() => {
 }
 
 .fa-coins {
-	color: var(--color-charging);
+	color: var(--color-devices);
+}
+
+.fa-clock {
+	color: var(--color-menu);
 }
 </style>

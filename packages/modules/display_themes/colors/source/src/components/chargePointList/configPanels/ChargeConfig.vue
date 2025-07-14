@@ -11,7 +11,7 @@
 				:options="Object.values(vehicles).map((v) => [v.name, v.id])"
 			/>
 		</ConfigItem>
-		<ConfigItem
+		<!-- <ConfigItem
 			v-if="Object.keys(chargeTemplates).length > 1"
 			title="Ladeprofil"
 			icon="fa-sliders"
@@ -25,6 +25,7 @@
 				"
 			/>
 		</ConfigItem>
+		 -->
 		<hr class="grid-col-2 my-2" />
 		<ConfigItem
 			title="Priorität"
@@ -51,13 +52,14 @@
 		</ConfigItem>
 		<!-- Priority -->
 
-		<ConfigItem
+		<!-- <ConfigItem
 			title="Strompreisbasiert laden"
 			icon="fa-coins"
 			iconcolor="var(--color-battery)"
 		>
 			<SwitchInput v-model="etActive"></SwitchInput>
 		</ConfigItem>
+		 -->
 		<hr v-if="globalData.isBatteryConfigured" class="grid-col-2 my-2" />
 		<ConfigItem
 			v-if="globalData.isBatteryConfigured"
@@ -76,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { vehicles, chargePoints, chargeTemplates } from './model'
+import { vehicles, chargePoints } from '../model'
 import ConfigItem from '@/components/shared/ConfigItem.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
@@ -97,12 +99,6 @@ const connectedVehicle = computed({
 	get: () => cp.value.connectedVehicle,
 	set: (value: number) => {
 		chargePoints[cp.value.id].connectedVehicle = value
-	},
-})
-const etActive = computed({
-	get: () => cp.value.etActive,
-	set: (value: boolean) => {
-		chargePoints[cp.value.id].etActive = value
 	},
 })
 const timedCharging = computed({

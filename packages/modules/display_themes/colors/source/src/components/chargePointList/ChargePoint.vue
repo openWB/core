@@ -68,7 +68,7 @@
 
 		<!-- Car information-->
 		<template #footer>
-			<CPVehicle :chargepoint="props.chargepoint" />
+			<VehicleData :chargepoint="props.chargepoint" />
 		</template>
 	</WBWidget>
 </template>
@@ -83,7 +83,7 @@ import InfoItem from '@/components/shared/InfoItem.vue'
 import FormatWatt from '@/components/shared/FormatWatt.vue'
 import FormatWattH from '../shared/FormatWattH.vue'
 import DisplayButton from '@/components/shared/DisplayButton.vue'
-import CPVehicle from './CPVehicle.vue'
+import VehicleData from './VehicleData.vue'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
@@ -173,6 +173,9 @@ function openSettings() {
 				break
 			case 'scheduled_charging':
 				chargePanelName = '#scSettings'
+				break
+			case 'eco_charging':
+				chargePanelName = '#ecSettings'
 				break
 			default:
 				chargePanelName = '#chSettings'
