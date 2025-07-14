@@ -2643,7 +2643,7 @@ class UpdateConfig:
                 config = decode_payload(payload)
                 log.debug(f"Received charge point config topic {topic} with payload {payload}")
                 if "color" not in config:
-                    config.update({"color": "#0000ff"})
+                    config.update({"color": "#007bff"})
                     log.debug(f"Added color to charge point config {config}")
                     return {topic: config}
             # add property "color" to components
