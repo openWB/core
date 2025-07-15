@@ -18,6 +18,9 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
         self.config = config
         self.store = store.get_electricity_tariff_value_store()
         self.fault_state = FaultState(ComponentInfo(None, self.config.name, ComponentType.ELECTRICITY_TARIFF.value))
+        # nach Init auf NO_ERROR setzen, damit der Fehlerstatus beim Modulwechsel gelöscht wird
+        self.fault_state.no_error()
+        self.fault_state.store_error()
         with SingleComponentUpdateContext(self.fault_state):
             self._component_updater = component_initializer(config)
 
