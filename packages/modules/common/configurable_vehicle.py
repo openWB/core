@@ -138,7 +138,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             if self.calculated_soc_state.manual_soc is not None:
                 soc = self.calculated_soc_state.manual_soc
             else:
-                self.calculated_soc_state.soc_start
+                soc = self.calculated_soc_state.soc_start
             self.calculated_soc_state.manual_soc = None
             return CarState(soc)
 
