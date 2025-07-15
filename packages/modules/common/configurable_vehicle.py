@@ -53,6 +53,9 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         self.vehicle = vehicle
         self.store = store.get_car_value_store(self.vehicle)
         self.fault_state = FaultState(ComponentInfo(self.vehicle, self.vehicle_config.name, "vehicle"))
+        # nach Init auf NO_ERROR setzen, damit der Fehlerstatus beim Modulwechsel gelöscht wird
+        self.fault_state.no_error()
+        self.fault_state.store_error()
 
         try:
             self.__initializer()
