@@ -6,6 +6,7 @@ from requests import HTTPError, Session
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.lg.lg.bat import LgBat
 from modules.devices.lg.lg.config import LG, LgBatSetup, LgCounterSetup, LgInverterSetup
@@ -58,7 +59,8 @@ def create_device(device_config: LG):
             response = _request_data(session, session_key, device_config.configuration.ip_address)
 
         for component in components:
-            component.update(response)
+            with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                component.update(response)
 
     session_key = " "
     return ConfigurableDevice(

@@ -25,7 +25,8 @@ class MqttInverter(AbstractInverter):
         self.store = get_inverter_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:
-        power = received_topics.get(f"openWB/mqtt/pv/{self.component_config.id}/get/power")
+        # [] für erforderliche Topics, .get() für optionale Topics
+        power = received_topics[f"openWB/mqtt/pv/{self.component_config.id}/get/power"]
         if received_topics.get(f"openWB/mqtt/pv/{self.component_config.id}/get/exported"):
             exported = received_topics.get(f"openWB/mqtt/pv/{self.component_config.id}/get/exported")
         else:

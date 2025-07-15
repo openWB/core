@@ -25,8 +25,9 @@ class MqttCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:
+        # [] für erforderliche Topics, .get() für optionale Topics
         currents = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/currents")
-        power = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/power")
+        power = received_topics[f"openWB/mqtt/counter/{self.component_config.id}/get/power"]
         frequency = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/frequency")
         power_factors = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/power_factors")
         powers = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/powers")
