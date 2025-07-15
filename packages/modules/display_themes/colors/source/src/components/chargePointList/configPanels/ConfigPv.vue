@@ -27,7 +27,7 @@
 				v-model="cp.pvTargetPhases"
 				:options="[
 					['Eine', 1],
-					['Alle', 2],
+					['Max', 2],
 					['Auto', 3],
 				]"
 			/>

@@ -19,7 +19,7 @@
 				v-model="cp.instantTargetPhases"
 				:options="[
 					['Eine', 1],
-					['Alle', 2],
+					['Max', 2],
 					['Auto', 3],
 				]"
 			/>
