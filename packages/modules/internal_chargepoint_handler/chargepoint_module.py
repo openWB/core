@@ -26,7 +26,6 @@ class ChargepointModule(AbstractChargepoint):
 
     def __init__(self, local_charge_point_num: int,
                  client_handler: ClientHandler,
-                 parent_hostname: str,
                  internal_cp: InternalChargepoint,
                  hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
@@ -34,8 +33,7 @@ class ChargepointModule(AbstractChargepoint):
             local_charge_point_num,
             "Ladepunkt "+str(local_charge_point_num),
             "internal_chargepoint",
-            hierarchy_id=hierarchy_id,
-            parent_hostname=parent_hostname))
+            hierarchy_id=hierarchy_id))
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
         self.store = get_chargepoint_value_store(hierarchy_id)
         self.client_error_context = ErrorTimerContext(
