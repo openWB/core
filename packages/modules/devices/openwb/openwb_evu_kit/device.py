@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-import time
 from typing import Iterable, Union
 
 from helpermodules.utils.run_command import run_command
@@ -36,7 +35,6 @@ def create_device(device_config: EvuKitSetup):
         with client:
             for component in components:
                 component.update()
-                time.sleep(0.2)
 
     def initializer():
         nonlocal client
