@@ -9,6 +9,7 @@ from dataclass_utils._dataclass_asdict import asdict
 from helpermodules.pub import Pub
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.avm.avm.config import Avm, AvmCounterSetup
 from modules.devices.avm.avm.counter import AvmCounter
@@ -36,7 +37,8 @@ def create_device(device_config: Avm):
         deviceListElementTree = ET.fromstring(response.text.strip())
 
         for component in components:
-            component.update(deviceListElementTree)
+            with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                component.update(deviceListElementTree)
 
     def get_session_id():
         # checking existing sessionID

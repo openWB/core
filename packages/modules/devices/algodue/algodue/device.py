@@ -23,7 +23,7 @@ def create_device(device_config: Algodue):
     def update_components(components: Iterable[counter.AlgodueCounter]):
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
+                with SingleComponentUpdateContext(component.fault_state, update_always=False):
                     component.update()
 
     def initializer():
