@@ -2354,5 +2354,6 @@ class UpdateConfig:
                                                         "tag": "*HEAD*"}}),
                                    ip_address,
                                    no_json=True)
+                    time.sleep(2)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 88)
