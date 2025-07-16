@@ -2133,16 +2133,7 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 80)
 
-    def upgrade_datastore_80(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
-                    re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
-                payload = decode_payload(payload)
-                index = get_index(topic)
-                payload.update({"id": index})
-                Pub().pub(topic, payload)
-        self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 81)
+    # moved and corrected to 87
 
     def upgrade_datastore_81(self) -> None:
         def upgrade(topic: str, payload) -> None:
@@ -2353,4 +2344,15 @@ class UpdateConfig:
                                    "<a href=\"/openWB/web/settings/#/GeneralChargeConfig\">rechtlichen Hinweise</a> "
                                    "für die Speichersteuerung. Die Speichersteuerung war bisher bereits verfügbar, ist"
                                    " jedoch bis zum Akzeptieren standardmäßig deaktiviert.", MessageType.WARNING)
+        self.__update_topic("openWB/system/datastore_version", 87)
+
+    def upgrade_datastore_87(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
+                    re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
+                payload = decode_payload(payload)
+                index = int(get_index(topic))
+                payload.update({"id": index})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 88)
