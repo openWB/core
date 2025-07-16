@@ -3,6 +3,7 @@ import logging
 from typing import Iterable
 
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.nibe.nibe.config import Nibe, NibeCounterSetup
@@ -21,7 +22,8 @@ def create_device(device_config: Nibe):
     def update_components(components: Iterable[NibeCounter]):
         with client:
             for component in components:
-                component.update()
+                with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                    component.update()
 
     def initializer():
         nonlocal client

@@ -4,7 +4,7 @@ from typing import Iterable, Optional, Union, List
 
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import MultiComponentUpdateContext
+from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.store import get_inverter_value_store
 from modules.devices.batterx.batterx import bat, external_inverter
@@ -39,7 +39,8 @@ def create_device(device_config: BatterX):
             'http://' + device_config.configuration.ip_address + '/api.php?get=currentstate',
             timeout=5).json()
         for component in components:
-            component.update(resp_json)
+            with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                component.update(resp_json)
 
     return ConfigurableDevice(
         device_config=device_config,

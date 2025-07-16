@@ -4,6 +4,7 @@ from typing import Iterable
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.sma.sma_sunny_island.bat import SunnyIslandBat
 from modules.devices.sma.sma_sunny_island.config import SmaSunnyIsland, SmaSunnyIslandBatSetup
@@ -22,7 +23,8 @@ def create_device(device_config: SmaSunnyIsland):
         nonlocal client
         with client:
             for component in components:
-                component.update()
+                with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                    component.update()
 
     def initializer():
         nonlocal client

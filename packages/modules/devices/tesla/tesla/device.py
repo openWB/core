@@ -5,6 +5,7 @@ from requests import HTTPError
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.req import get_http_session
 from modules.devices.tesla.tesla.bat import TeslaBat
@@ -20,7 +21,8 @@ def __update_components(client: PowerwallHttpClient,
                         components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
     aggregate = client.get_json("/api/meters/aggregates")
     for component in components:
-        component.update(client, aggregate)
+        with SingleComponentUpdateContext(component.fault_state, update_always=False):
+            component.update(client, aggregate)
 
 
 def _authenticate(session: requests.Session, url: str, email: str, password: str):

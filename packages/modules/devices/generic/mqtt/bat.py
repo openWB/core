@@ -26,9 +26,10 @@ class MqttBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:
+        # [] für erforderliche Topics, .get() für optionale Topics
         currents = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/currents")
-        power = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/power")
-        soc = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/soc")
+        power = received_topics[f"openWB/mqtt/bat/{self.component_config.id}/get/power"]
+        soc = received_topics[f"openWB/mqtt/bat/{self.component_config.id}/get/soc"]
         if (received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/imported") and
                 received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/exported")):
             imported = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/imported")
