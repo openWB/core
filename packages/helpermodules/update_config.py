@@ -17,6 +17,7 @@ import dataclass_utils
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
 from helpermodules import hardware_configuration
+from helpermodules import pub
 from helpermodules.broker import BrokerClient
 from helpermodules.abstract_plans import Limit
 from helpermodules.constants import NO_ERROR
@@ -56,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 90
+    DATASTORE_VERSION = 91
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2370,3 +2371,20 @@ class UpdateConfig:
                 return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 90)
+
+    def upgrade_datastore_90(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
+                config = decode_payload(payload)
+                if config["type"] == "external_openwb":
+                    log.info(f"Update an LP {config['name']} angestoßen.")
+                    ip_address = config["configuration"]["ip_address"]
+                    pub.pub_single("openWB/set/command/primary/todo",
+                                   json.dumps({"command": "systemUpdate",
+                                               "data": {"branch": decode_payload(self.all_received_topics[
+                                                   "openWB/system/current_branch"]),
+                                                   "tag": "*HEAD*"}}),
+                                   ip_address,
+                                   no_json=True)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 91)

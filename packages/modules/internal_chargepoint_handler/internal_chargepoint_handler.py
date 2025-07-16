@@ -12,8 +12,6 @@ from helpermodules.subdata import SubData
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store._util import get_rounding_function_by_digits
-from modules.common.component_state import ChargepointState
 from modules.internal_chargepoint_handler import chargepoint_module
 from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory
 from modules.internal_chargepoint_handler.pro_plus import ProPlus
@@ -26,54 +24,6 @@ try:
     import RPi.GPIO as GPIO
 except ImportError:
     log.info("failed to import RPi.GPIO! maybe we are not running on a pi")
-
-
-class UpdateValues:
-    def __init__(self,
-                 local_charge_point_num: int,
-                 parent_ip: Optional[str],
-                 parent_cp: str,
-                 hierarchy_id: int) -> None:
-        self.local_charge_point_num_str = str(local_charge_point_num)
-        self.old_chargepoint_state = None
-        self.parent_ip = parent_ip
-        self.parent_cp = parent_cp
-        self.hierarchy_id = hierarchy_id
-
-    def update_values(self, chargepoint_state: ChargepointState, heartbeat_expired: bool) -> None:
-        if self.parent_ip is not None:
-            if self.old_chargepoint_state:
-                # iterate over counter state
-                vars_old_counter_state = vars(self.old_chargepoint_state)
-                for key, value in vars(chargepoint_state).items():
-                    # Zählerstatus immer veröffentlichen für Ladelog-Einträge
-                    if value != vars_old_counter_state[key] or key == "imported":
-                        self._pub_values_to_2(key, value)
-            else:
-                # Bei Neustart alles veröffentlichen
-                for key, value in vars(chargepoint_state).items():
-                    self._pub_values_to_2(key, value)
-            if heartbeat_expired is False:
-                # Nur wenn eine Verbindung zum Master besteht, die veröffentlichten Werte speichern.
-                self.old_chargepoint_state = chargepoint_state
-
-    def _pub_values_to_2(self, topic: str, value) -> None:
-        rounding = get_rounding_function_by_digits(2)
-        # fix rfid default value
-        if topic == "rfid" and value == "0":
-            value = None
-        if isinstance(value, (str, bool, type(None))):
-            payload = value
-        else:
-            # qos 2 reicht nicht, da die Daten zwar auf dem Broker ankommen, aber nicht verarbeitet werden.
-            if isinstance(value, list):
-                payload = [rounding(v) for v in value]
-            else:
-                payload = rounding(value)
-        pub_single(f"openWB/set/chargepoint/{self.parent_cp}/get/{topic}", payload=payload, hostname=self.parent_ip)
-        if self.parent_ip != "localhost":
-            pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/get/state_str",
-                       payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
 
 
 class UpdateState:
@@ -147,11 +97,9 @@ class InternalChargepointHandler:
         self.event_stop = event_stop
         self.heartbeat = False
         self.fault_state_info_cp0 = FaultState(
-            ComponentInfo(0, "Interner Ladepunkt 0", "internal_chargepoint", hierarchy_id=hierarchy_id_cp0,
-                          parent_hostname=global_data.parent_ip))
+            ComponentInfo(0, "Interner Ladepunkt 0", "internal_chargepoint", hierarchy_id=hierarchy_id_cp0))
         fault_state_info_cp1 = FaultState(
-            ComponentInfo(1, "Interner Ladepunkt 1", "internal_chargepoint", hierarchy_id=hierarchy_id_cp1,
-                          parent_hostname=global_data.parent_ip))
+            ComponentInfo(1, "Interner Ladepunkt 1", "internal_chargepoint", hierarchy_id=hierarchy_id_cp1))
         with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
             self.init_gpio()
         try:
@@ -245,23 +193,21 @@ class HandlerChargepoint:
         self.mode = mode
         if local_charge_point_num == 0:
             if mode == InternalChargepointMode.SOCKET.value:
-                self.module = Socket(local_charge_point_num, client_handler,
-                                     global_data.parent_ip, internal_cp, hierarchy_id)
+                self.module = Socket(local_charge_point_num, client_handler, internal_cp, hierarchy_id)
             elif mode == InternalChargepointMode.PRO_PLUS.value:
-                self.module = ProPlus(local_charge_point_num, global_data.parent_ip, internal_cp, hierarchy_id)
+                self.module = ProPlus(local_charge_point_num, internal_cp, hierarchy_id)
             else:
                 self.module = chargepoint_module.ChargepointModule(
-                    local_charge_point_num, client_handler, global_data.parent_ip, internal_cp, hierarchy_id)
+                    local_charge_point_num, client_handler, internal_cp, hierarchy_id)
         else:
             self.module = chargepoint_module.ChargepointModule(
-                local_charge_point_num, client_handler, global_data.parent_ip, internal_cp, hierarchy_id)
+                local_charge_point_num, client_handler, internal_cp, hierarchy_id)
         with SingleComponentUpdateContext(self.module.fault_state):
-            self.update_values = UpdateValues(local_charge_point_num,
-                                              global_data.parent_ip,
-                                              internal_cp.data.parent_cp,
-                                              hierarchy_id)
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
+            if global_data.parent_ip != "localhost":
+                pub_single(f"openWB/set/chargepoint/{hierarchy_id}/get/state_str",
+                           payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
 
     def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> bool:
         def __thread_active(thread: Optional[Thread]) -> bool:
@@ -277,8 +223,6 @@ class HandlerChargepoint:
             state = self.module.get_values(phase_switch_cp_active, rfid_data.last_tag)
             log.debug("Published plug state "+str(state.plug_state))
             heartbeat_expired = self._check_heartbeat_expired(global_data.heartbeat)
-            if global_data.parent_ip is not None:
-                self.update_values.update_values(state, heartbeat_expired)
             self.update_state.update_state(data, heartbeat_expired)
             return True
         return False

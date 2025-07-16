@@ -17,24 +17,20 @@ class ComponentInfo:
                  name: str,
                  type: str,
                  hostname: str = "localhost",
-                 hierarchy_id: Optional[int] = None,
-                 parent_hostname: Optional[str] = None) -> None:
+                 hierarchy_id: Optional[int] = None) -> None:
         self.id = id
         self.name = name
         self.type = type
         self.hostname = hostname
         self.hierarchy_id = hierarchy_id
-        self.parent_hostname = parent_hostname
 
     @staticmethod
     def from_component_config(component_config: ComponentSetup,
-                              hostname: str = "localhost",
-                              parent_hostname: Optional[str] = None):
+                              hostname: str = "localhost"):
         return ComponentInfo(component_config.id,
                              component_config.name,
                              component_config.type,
-                             hostname,
-                             parent_hostname)
+                             hostname)
 
 
 class FaultState(Exception):
