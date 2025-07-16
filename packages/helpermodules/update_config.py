@@ -56,7 +56,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 88
+    DATASTORE_VERSION = 89
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2356,3 +2356,11 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 88)
+
+    def upgrade_datastore_88(self) -> None:
+        pub_system_message({}, "Änderungen, die du auf der Hauptseite vornimmst, gelten nur vorübergehend, bis das "
+                           "Fahrzeug abgesteckt wird. \nDie dauerhaften Einstellungen aus dem Einstellungsmenü werden "
+                           "danach automatisch wieder aktiviert.", MessageType.INFO)
+        pub_system_message({}, "Es gibt ein neues Theme: das Koala-Theme! Smarthpone-optimiert und mit "
+                           "Energiefluss-Diagramm & Karten-Ansicht der Ladepunkte", MessageType.INFO)
+        self.__update_topic("openWB/system/datastore_version", 89)
