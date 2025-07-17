@@ -7,7 +7,7 @@ from modules.common.utils.component_parser import get_io_name_by_id
 from modules.io_actions.controllable_consumers.dimming.api import Dimming
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 from modules.io_actions.controllable_consumers.ripple_control_receiver.api import RippleControlReceiver
-from modules.io_actions.production_plants.stepwise_control.api import StepwiseControl
+from modules.io_actions.generator_systems.stepwise_control.api import StepwiseControl
 
 
 @dataclass
