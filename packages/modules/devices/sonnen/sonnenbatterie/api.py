@@ -258,10 +258,19 @@ class JsonApi():
             ValueError: If the direction is neither "consumption" nor "production".
         """
         if channel["direction"] == self.PowerMeterDirection.CONSUMPTION.value:
+            powers = [channel[f"w_l{phase}"] for phase in range(1, 4)]
+            currents = [channel[f"a_l{phase}"] for phase in range(1, 4)]
+            voltages = [channel[f"v_l{phase}_n"] for phase in range(1, 4)]
+            power_factors = [
+                powers[phase] / (voltages[phase] * currents[phase])
+                if voltages[phase] and currents[phase] else None
+                for phase in range(0, 3)
+            ]
             return CounterState(power=channel["w_total"],
-                                powers=[channel[f"w_l{phase}"] for phase in range(1, 4)],
-                                currents=[channel[f"a_l{phase}"] for phase in range(1, 4)],
-                                voltages=[channel[f"v_l{phase}_n"] for phase in range(1, 4)],
+                                powers=powers,
+                                currents=currents,
+                                voltages=voltages,
+                                power_factors=power_factors,
                                 imported=channel["kwh_imported"] * 1000,
                                 exported=channel["kwh_exported"] * 1000)
         elif channel["direction"] == self.PowerMeterDirection.PRODUCTION.value:
