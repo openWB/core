@@ -21,7 +21,7 @@ def __update_components(client: PowerwallHttpClient,
                         components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
     aggregate = client.get_json("/api/meters/aggregates")
     for component in components:
-        with SingleComponentUpdateContext(component.fault_state, update_always=False):
+        with SingleComponentUpdateContext(component.fault_state):
             component.update(client, aggregate)
 
 

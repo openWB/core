@@ -27,7 +27,7 @@ def create_device(device_config: SolarWorld):
         response = req.get_http_session().get("http://"+str(device_config.configuration.ip_address) +
                                               "/rest/solarworld/lpvm/powerAndBatteryData", timeout=5).json()
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state, update_always=False):
+            with SingleComponentUpdateContext(component.fault_state):
                 component.update(response)
 
     return ConfigurableDevice(

@@ -37,7 +37,7 @@ def create_device(device_config: Avm):
         deviceListElementTree = ET.fromstring(response.text.strip())
 
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state, update_always=False):
+            with SingleComponentUpdateContext(component.fault_state):
                 component.update(deviceListElementTree)
 
     def get_session_id():

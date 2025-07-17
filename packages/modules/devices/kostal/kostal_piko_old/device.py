@@ -25,7 +25,7 @@ def create_device(device_config: KostalPikoOld):
         response = req.get_http_session().get(device_config.configuration.url, verify=False, auth=(
             device_config.configuration.user, device_config.configuration.password), timeout=5).text
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state, update_always=False):
+            with SingleComponentUpdateContext(component.fault_state):
                 component.update(response)
 
     return ConfigurableDevice(

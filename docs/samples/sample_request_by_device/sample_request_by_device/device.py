@@ -27,7 +27,7 @@ def create_device(device_config: Sample):
     def update_components(components: Iterable[Union[SampleBat, SampleCounter, SampleInverter]]):
         response = req.get_http_session().get(device_config.configuration.ip_address, timeout=5).json()
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state, update_always=False):
+            with SingleComponentUpdateContext(component.fault_state):
                 component.update(response)
 
     return ConfigurableDevice(
