@@ -37,6 +37,7 @@ class InternalChargepointValueStore(ValueStore[ChargepointState]):
             pub_to_broker(f"{topic_prefix}/soc_timestamp", self.state.soc_timestamp)
         if self.state.rfid_timestamp is not None:
             pub_to_broker(f"{topic_prefix}/vehicle_id", self.state.vehicle_id)
+            pub_to_broker(f"{topic_prefix}/rfid_timestamp", self.state.rfid_timestamp)
 
 
 def get_internal_chargepoint_value_store(id: int) -> ValueStore[ChargepointState]:
