@@ -22,4 +22,4 @@ class StepwiseControlSetup:
         self.type = type
         self.id = id
         self.configuration = configuration or StepwiseControlConfig()
-        self.group = ActionGroup.PRODUCTION_PLANTS.value
+        self.group = ActionGroup.GENERATOR_SYSTEMS.value
