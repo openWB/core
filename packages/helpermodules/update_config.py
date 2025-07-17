@@ -28,7 +28,7 @@ from helpermodules.hardware_configuration import (
 from helpermodules.measurement_logging.process_log import get_default_charge_log_columns, get_totals
 from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
-from helpermodules.pub import Pub
+from helpermodules.pub import Pub, pub_single
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
@@ -2355,7 +2355,7 @@ class UpdateConfig:
 
         def on_message(client, userdata, message):
             log.debug(f"Lösche MQTT-Device-Topic {message.topic} auf dem externen Broker")
-            Pub().pub(message.topic, "")
+            pub_single(message.topic, "")
 
         BrokerClient("deleteMqttDeviceExternalBroker",
                      on_connect,
