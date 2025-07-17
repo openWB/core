@@ -11,7 +11,21 @@
 				unit="A"
 			/>
 		</ConfigItem>
-		<hr v-if="cp.instantChargeLimitMode != 'none'" />
+
+		<!-- Phases -->
+		<ConfigItem title="Anzahl Phasen" icon="fa-plug" :fullwidth="true">
+			<RadioInput
+				id="targetPhases"
+				v-model="cp.instantTargetPhases"
+				:options="[
+					['Eine', 1],
+					['Max', 2],
+					['Auto', 3],
+				]"
+			/>
+		</ConfigItem>
+
+		<hr v-if="cp.instantChargeLimitMode != 'none'" class="fullwidth" />
 		<!-- Limit Mode -->
 		<ConfigItem title="Begrenzung" icon="fa-hand" :fullwidth="true">
 			<RadioInput
@@ -58,8 +72,8 @@
 <script setup lang="ts">
 // import { eventBus } from '@/main.js'
 import { computed } from 'vue'
-import { chargePoints } from './model'
-import ConfigItem from '../shared/ConfigItem.vue'
+import { chargePoints } from '../model'
+import ConfigItem from '@/components/shared/ConfigItem.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
 
@@ -103,5 +117,8 @@ const energyLimit = computed({
 	color: var(--color-fg);
 	font-size: var(--font-settings);
 	font-weight: bold;
+}
+.fullwidth {
+	grid-column: 1 / -1;
 }
 </style>

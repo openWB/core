@@ -14,7 +14,7 @@
 						<i class="fa-solid fa-lg fa-circle-check m-0 p-0" />
 					</button>
 				</div>
-				<div class="modal-body">
+				<div :id="'modal-body-' + props.modalId" class="modal-body">
 					<slot />
 				</div>
 				<div class="modal-footer"></div>

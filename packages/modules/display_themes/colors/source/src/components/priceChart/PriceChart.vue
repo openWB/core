@@ -1,9 +1,9 @@
 <template>
 	<div class="pricesettings">
 		<div class="grapharea">
-			<p>Anbieter: {{ etData.etProvider }}</p>
+			<span>Anbieter: {{ etData.etProvider }}</span>
 			<figure id="pricechart">
-				<svg viewBox="0 0 400 300">
+				<svg viewBox="0 0 400 270">
 					<g
 						:id="chartId"
 						:origin="draw"
@@ -323,12 +323,12 @@ onMounted(() => {
 .pricesettings {
 	display: grid;
 	grid-template-columns: 50% 50%;
-	grid-template-rows: 340px;
+	grid-template-rows: 325px;
 }
 .grapharea {
 	display: flex;
 	flex-direction: column;
-	justify-content: space-between;
+	justify-content: top;
 	align-items: stretch;
 	min-width: 0px;
 	overflow: hidden;
@@ -337,7 +337,7 @@ onMounted(() => {
 .controlarea {
 	display: flex;
 	flex-direction: column;
-	justify-content: space-between;
+	justify-content: center;
 	align-items: stretch;
 	min-width: 0px;
 	overflow: hidden;
@@ -346,7 +346,7 @@ onMounted(() => {
 	padding-right: 10px;
 }
 .sliderarea {
-	margin-bottom: 45px;
+	margin-bottom: 5px;
 }
 .subtitle {
 	font-size: var(--font-settings);

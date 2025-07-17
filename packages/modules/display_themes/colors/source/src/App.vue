@@ -12,7 +12,6 @@ import DisplayTheme from './views/DisplayTheme.vue'
 import { wbSettings } from './assets/js/themeConfig'
 
 onMounted(() => {
-	console.log('on mounted')
 	let uri = window.location.search
 	if (uri != '') {
 		console.debug('search', uri)
