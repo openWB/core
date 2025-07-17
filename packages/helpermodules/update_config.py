@@ -56,7 +56,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 89
+    DATASTORE_VERSION = 90
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2348,3 +2348,19 @@ class UpdateConfig:
         pub_system_message({}, "Es gibt ein neues Theme: das Koala-Theme! Smarthpone-optimiert und mit "
                            "Energiefluss-Diagramm & Karten-Ansicht der Ladepunkte", MessageType.INFO)
         self.__update_topic("openWB/system/datastore_version", 89)
+
+    def upgrade_datastore_89(self) -> None:
+        def on_connect(client, userdata, flags, rc):
+            client.subscribe("openWB/mqtt/#")
+
+        def on_message(client, userdata, message):
+            log.debug(f"Lösche MQTT-Device-Topic {message.topic} auf dem externen Broker")
+            Pub().pub(message.topic, "")
+
+        BrokerClient("deleteMqttDeviceExternalBroker",
+                     on_connect,
+                     on_message,
+                     host="localhost",
+                     port=1883).start_finite_loop()
+
+        self.__update_topic("openWB/system/datastore_version", 90)
