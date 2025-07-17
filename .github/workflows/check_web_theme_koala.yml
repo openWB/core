@@ -5,12 +5,12 @@ on:
     paths:
       - packages/modules/web_themes/koala/source/**
     branches:
-      - main
+      - master
   pull_request:
     paths:
       - packages/modules/web_themes/koala/source/**
     branches:
-      - main
+      - master
 
 jobs:
   build:
