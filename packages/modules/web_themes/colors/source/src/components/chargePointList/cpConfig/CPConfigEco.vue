@@ -30,8 +30,8 @@
 			<RadioInput2
 				v-model="cp.instantTargetPhases"
 				:options="[
-					['Eine', 1],
-					['Alle', 3],
+					['1', 1],
+					['Maximum', 3],
 					['Auto', 0],
 				]"
 			/>
