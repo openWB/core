@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
-from dataclass_utils.factories import empty_io_pattern_factory, empty_list_factory
+from dataclass_utils.factories import empty_io_pattern_boolean_factory, empty_list_factory
 from modules.io_actions.groups import ActionGroup
 
 
 @dataclass
 class DimmingConfig:
     io_device: Optional[int] = None
-    input_pattern: List[Dict] = field(default_factory=empty_io_pattern_factory)
+    input_pattern: List[Dict] = field(default_factory=empty_io_pattern_boolean_factory)
     devices: List[Dict] = field(default_factory=empty_list_factory)
     # [{"type": "cp", "id": 0},
     # {"type": "io", "id": 1, "digital_output": "SofortLa"}]

@@ -1,10 +1,11 @@
 import logging
-from control import data
 from typing import Optional
+from control import data
 from helpermodules.logger import ModifyLoglevelContext
+from helpermodules.pub import Pub
+from helpermodules.timecheck import create_timestamp
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_io import AbstractIoAction
-from modules.common.utils.component_parser import get_component_name_by_id
 from modules.io_actions.generator_systems.stepwise_control.config import StepwiseControlSetup
 
 control_command_log = logging.getLogger("steuve_control_command")
@@ -13,57 +14,62 @@ control_command_log = logging.getLogger("steuve_control_command")
 class StepwiseControl(AbstractIoAction):
     def __init__(self, config: StepwiseControlSetup):
         self.config = config
-        control_command_log.info(f"Stufenweise Steuerung einer EZA: Eingang {self.config.configuration.s1} für S1, "
-                                 f"Eingang {self.config.configuration.s2} für S2, und Eingang "
-                                 f"{self.config.configuration.w3} für W3 wird überwacht. Die Beschränkung muss in "
-                                 "der EZA vorgenommen werden.")
+        self.__unique_inputs = []
+        for pattern in self.config.configuration.input_pattern:
+            for key in pattern["input_matrix"].keys():
+                if key not in self.__unique_inputs:
+                    self.__unique_inputs.append(key)
+        assigned_devices = [io_device["id"] for io_device in self.config.configuration.devices]
+        control_command_log.info(
+            f"Stufenweise Steuerung von EZA: I/O-Gerät: {self.config.configuration.io_device}, "
+            f"Überwachte digitale Eingänge: {self.__unique_inputs}, "
+            f"zugeordnete Erzeugungsanlagen: {assigned_devices} "
+            "Die Begrenzung muss in den EZA vorgenommen werden!"
+        )
         super().__init__()
 
     def setup(self) -> None:
-        pass
+        with ModifyLoglevelContext(control_command_log, logging.DEBUG):
+            digital_input = (
+                data.data.io_states[
+                    f"io_states{self.config.configuration.io_device}"
+                ].data.get.digital_input
+            )
+            digital_input_prev = data.data.io_states[
+                f"io_states{self.config.configuration.io_device}"].data.get.digital_input_prev
+            changed = len([
+                input_name for input_name in self.__unique_inputs
+                if digital_input[input_name] != digital_input_prev[input_name]
+            ]) > 0
 
-    def control_stepwise(self) -> Optional[str]:
-        text = (f"Die Einspeiseleistung von {get_component_name_by_id(self.config.configuration.pv_id)} ist auf "
-                "{} % beschränkt. Die Beschränkung muss in der EZA vorgenommen werden.")
-        msg = None
-        digital_input = data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input
-        digital_input_prev = data.data.io_states[
-            f"io_states{self.config.configuration.io_device}"].data.get.digital_input_prev
+            for pattern in self.config.configuration.input_pattern:
+                for action_input, value in pattern["input_matrix"].items():
+                    if digital_input[action_input] != value:
+                        break
+                else:
+                    # Alle digitalen Eingänge entsprechen dem Pattern
+                    if pattern["value"] != 1:
+                        if changed:
+                            Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
+                            control_command_log.info(f"EZA-Begrenzung mit Wert {int(pattern['value']*100)}% aktiviert.")
+                        break
+            else:
+                if changed:
+                    Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
+                    control_command_log.info("EZA-Begrenzung aufgehoben.")
 
-        active_inputs = [
-            digital_input[self.config.configuration.s1],
-            digital_input[self.config.configuration.s2],
-            digital_input[self.config.configuration.w3]
-        ]
-        num_active = sum(1 for v in active_inputs if v)
-
-        if num_active > 1:
-            error_msg = (f"Fehler: Mehr als ein Eingang ist aktiv für die stufenweise Steuerung der EZA! "
-                         f"S1: {digital_input[self.config.configuration.s1]}, "
-                         f"S2: {digital_input[self.config.configuration.s2]}, "
-                         f"W3: {digital_input[self.config.configuration.w3]}")
-            with ModifyLoglevelContext(control_command_log, logging.ERROR):
-                control_command_log.error(error_msg)
-            raise ValueError(error_msg)
-
-        if digital_input[self.config.configuration.s1]:
-            msg = text.format(60)
-        elif digital_input[self.config.configuration.s2]:
-            msg = text.format(30)
-        elif digital_input[self.config.configuration.w3]:
-            msg = text.format(0)
+    def control_stepwise(self) -> Optional[float]:
+        for pattern in self.config.configuration.input_pattern:
+            for digital_input, value in pattern["input_matrix"].items():
+                if data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                       ].data.get.digital_input[digital_input] != value:
+                    break
+            else:
+                # Alle digitalen Eingänge entsprechen dem Pattern
+                return pattern['value']
         else:
-            # Keine Beschränkung soll nicht dauerhaft im WR angezeigt werden.
-            msg = (f"Die Einspeiseleistung von {get_component_name_by_id(self.config.configuration.pv_id)} ist "
-                   "nicht beschränkt. Die Beschränkung muss in der EZA vorgenommen werden.")
-
-        if not (digital_input[self.config.configuration.s1] == digital_input_prev[self.config.configuration.s1] and
-                digital_input[self.config.configuration.s2] == digital_input_prev[self.config.configuration.s2] and
-                digital_input[self.config.configuration.w3] == digital_input_prev[self.config.configuration.w3]):
-            # Wenn sich was geändert hat, loggen
-            with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-                control_command_log.info(msg)
-        return msg
+            # Zustand entspricht keinem Pattern, Leistungsbegrenzung aufheben
+            return 1
 
 
 def create_action(config: StepwiseControlSetup):

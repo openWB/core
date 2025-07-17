@@ -101,10 +101,10 @@ class IoActions:
         else:
             return 1
 
-    def stepwise_control(self, device_id: int) -> Optional[str]:
+    def stepwise_control(self, device_id: int) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, StepwiseControl):
-                if device_id == action.config.configuration.pv_id:
+                if device_id in [component["id"] for component in action.config.configuration.devices]:
                     self._check_fault_state_io_device(action.config.configuration.io_device)
                     return action.control_stepwise()
         else:
