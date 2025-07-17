@@ -1,11 +1,6 @@
-name: Node.js CI
+name: Check Web Theme Koala
 
 on:
-  push:
-    paths:
-      - packages/modules/web_themes/koala/source/**
-    branches:
-      - master
   pull_request:
     paths:
       - packages/modules/web_themes/koala/source/**
