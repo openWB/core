@@ -59,7 +59,7 @@ def create_device(device_config: LG):
             response = _request_data(session, session_key, device_config.configuration.ip_address)
 
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state, update_always=False):
+            with SingleComponentUpdateContext(component.fault_state):
                 component.update(response)
 
     session_key = " "

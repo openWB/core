@@ -54,11 +54,11 @@ def create_device(device_config: Varta):
         with client:
             for component in components:
                 if isinstance(component, (VartaBatModbus, VartaCounter, VartaInverter)):
-                    with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                    with SingleComponentUpdateContext(component.fault_state):
                         component.update()
         for component in components:
             if isinstance(component, (VartaBatApi)):
-                with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
     def initializer():

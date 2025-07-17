@@ -144,7 +144,7 @@ def create_device(device_config: Enphase):
                 log.error(f"unknown version: {device_config.configuration.version}")
                 return
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                with SingleComponentUpdateContext(component.fault_state):
                     component.update(json_response, json_live_data)
 
     read_live_data = False

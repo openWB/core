@@ -39,7 +39,7 @@ def create_device(device_config: Mqtt):
         if received_topics:
             log.debug(f"Empfange MQTT Daten für Gerät {device_config.id}: {received_topics}")
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                with SingleComponentUpdateContext(component.fault_state):
                     try:
                         component.update(received_topics)
                     except KeyError:
