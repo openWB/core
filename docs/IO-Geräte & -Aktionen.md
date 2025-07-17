@@ -30,7 +30,7 @@ Die AddOn-Platine stellt 7 Eingänge und 3 Ausgänge zur Verfügung. WICHTIG: In
 Ausführliche Informationen findest Du im gesonderten Wiki-Beitrag [Steuerbare Einrichtungen nach § 14a EnGW und § 9 EEG](https://github.com/openWB/core/wiki/Steuerbare-Verbrauchseinrichtungen-nach-§14a)
 
 ### Steuerbare Erzeugungseinrichtungen: Stufenweise Steuerung
-Bitte beachten: Die openWB steuert keinen Wechselrichter an. Sie zeigt lediglich den aktuellen Zustand der Beschränkung ein.
+Bitte beachten: Die openWB steuert keinen Wechselrichter an. Sie zeigt lediglich den aktuellen Zustand der Beschränkung an.
 Ausführliche Informationen findest Du im gesonderten Wiki-Beitrag [Steuerbare Einrichtungen nach § 14a EnGW und § 9 EEG](https://github.com/openWB/core/wiki/Steuerbare-Verbrauchseinrichtungen-nach-§14a)
 
 ## Manuelles Setzen der Ausgänge
