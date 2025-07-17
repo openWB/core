@@ -5,12 +5,12 @@ on:
     paths:
       - packages/modules/display_themes/cards/source/**
     branches:
-      - main
+      - master
   pull_request:
     paths:
       - packages/modules/display_themes/cards/source/**
     branches:
-      - main
+      - master
 
 jobs:
   build:
