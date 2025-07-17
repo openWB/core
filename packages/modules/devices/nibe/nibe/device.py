@@ -22,7 +22,7 @@ def create_device(device_config: Nibe):
     def update_components(components: Iterable[NibeCounter]):
         with client:
             for component in components:
-                with SingleComponentUpdateContext(component.fault_state, update_always=False):
+                with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
     def initializer():
