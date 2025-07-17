@@ -377,7 +377,7 @@ const chartOptions = computed(() => ({
   min-height: 0;
 }
 
-canvas {
+.chart-wrapper > canvas {
   width: 100% !important;
   height: 100% !important;
 }
