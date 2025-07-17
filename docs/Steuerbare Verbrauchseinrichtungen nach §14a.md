@@ -17,11 +17,12 @@ Für den RSE-Kontakt kann ein Muster aus verschiedenen Eingängen und ein Prozen
 
 ## Steuerbare Erzeugungsanlagen (EZA) nach § 9 EEG
 
-Bitte beachten: Die openWB steuert keinen Wechselrichter an. Sie zeigt lediglich den aktuellen Zustand der Beschränkung ein.
+Bitte beachten: Die openWB steuert keinen Wechselrichter an. Sie zeigt lediglich den aktuellen Zustand der Beschränkung an.
 
-Die Einspeiseleistung des Wechselrichters wird über drei Signalkontakte der FNN-Steuerbox geregelt. Die openWB übernimmt dabei keine direkte Steuerung des Wechselrichters, sondern visualisiert lediglich den aktuellen Steuerzustand. Das Signalkabel der FNN-Steuerbox muss daher beispielsweise über eine Doppelklemme mit dem I/O-Modul der openWB verbunden und anschließend zum Wechselrichter weitergeführt (durchgeschleift) werden.
+Die Einspeiseleistung des Wechselrichters wird über drei Signalkontakte der FNN-Steuerbox geregelt. Die openWB übernimmt dabei keine direkte Steuerung des Wechselrichters, sondern visualisiert lediglich den aktuellen Steuerzustand. Das Signalkabel der FNN-Steuerbox muss daher beispielsweise über eine Doppelklemme mit dem I/O-Modul der openWB verbunden und anschließend zum Wechselrichter weitergeführt (durchgeschliffen) werden.
 Die Signalkontakte bilden folgende Zustände ab:
 S1 -> 60% der EZA
 S2 -> 30% der EZA
 W3 -> 0% der EZA
 alle Kontakte offen -> 100% der EZA
+Sollten mehrere Kontakte geschlossen sein, so wird die geringste Leistungsstufe ausgewählt (z. B. S2 und W3 -> 0%).
