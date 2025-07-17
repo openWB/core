@@ -25,4 +25,3 @@ S1 -> 60% der EZA
 S2 -> 30% der EZA
 W3 -> 0% der EZA
 alle Kontakte offen -> 100% der EZA
-Sollten mehrere Kontakte geschlossen sein, so wird die geringste Leistungsstufe ausgewählt (z. B. S2 und W3 -> 0%).

@@ -1,20 +1,20 @@
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+from dataclass_utils.factories import empty_list_factory, empty_io_pattern_stepwise_factory
 from modules.io_actions.groups import ActionGroup
 
 
 @dataclass
 class StepwiseControlConfig:
     io_device: Optional[int] = None
-    s1: str = None
-    s2: str = None
-    w3: str = None
-    pv_id: int = None
+    input_pattern: List[Dict] = field(default_factory=empty_io_pattern_stepwise_factory)
+    devices: List[Dict] = field(default_factory=empty_list_factory)
+    # [{"type": "inverter", "id": 1},...]
 
 
 class StepwiseControlSetup:
     def __init__(self,
-                 name: str = "Stufenweise Steuerung einer EZA",
+                 name: str = "Stufenweise Steuerung von EZA",
                  type: str = "stepwise_control",
                  id: int = 0,
                  configuration: StepwiseControlConfig = None):
