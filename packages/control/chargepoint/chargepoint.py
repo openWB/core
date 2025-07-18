@@ -336,29 +336,30 @@ class Chargepoint(ChargepointRfidMixin):
         return (phase_a == 1 and phase_b in [2, 3]) or (phase_b == 1 and phase_a in [2, 3])
 
     def _is_phase_switch_required(self) -> bool:
-        phase_switch_required = False
+        if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
+            phase_switch_required = False
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
         # nicht zwischendurch eine neue Umschaltung getriggert werden.
-        if ((((self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED or
+        elif ((((self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED or
                 self.data.control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
                 # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
-            self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use)) or
+                self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use)) or
                 # Vorgegebene Phasenzahl hat sich geändert und es wird geladen
-             (self.check_deviating_contactor_states(self.data.set.phases_to_use,
-                                                    self.data.control_parameter.phases) and
+               (self.check_deviating_contactor_states(self.data.set.phases_to_use,
+                                                      self.data.control_parameter.phases) and
                 self.data.control_parameter.state in CHARGING_STATES)) and
                 # Wenn ein Soll-Strom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
-            ((self.data.set.current != 0 and self.data.get.charge_state) or
-             (self.data.set.current != 0 and self.data.set.current_prev == 0) or
-             self.data.set.current == 0)):
+              ((self.data.set.current != 0 and self.data.get.charge_state) or
+               (self.data.set.current != 0 and self.data.set.current_prev == 0) or
+               self.data.set.current == 0)):
             phase_switch_required = True
-        if (self.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
-            (self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
+        elif (self.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
+              (self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
                 # Vorgegebene Phasenzahl hat sich geändert
-             self.check_deviating_contactor_states(self.data.set.phases_to_use,
-                                                   self.data.control_parameter.phases)) and
+               self.check_deviating_contactor_states(self.data.set.phases_to_use,
+                                                     self.data.control_parameter.phases)) and
                 # Wenn der Ladevorgang gestartet wird, muss vor dem ersten Laden umgeschaltet werden.
                 self.data.set.current != 0):
             phase_switch_required = True
