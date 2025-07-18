@@ -34,27 +34,12 @@ class KostalPlenticoreCounter(AbstractCounter):
         power = self.client.read_holding_registers(252, ModbusDataType.FLOAT_32, unit=self.modbus_id)
         imported, exported = self.sim_counter.sim_count(power)
         power_factor = self.client.read_holding_registers(150, ModbusDataType.FLOAT_32, unit=self.modbus_id)
-        currents = [
-                self.client.read_holding_registers(
-                    222, ModbusDataType.FLOAT_32, unit=self.modbus_id),
-                self.client.read_holding_registers(
-                    232, ModbusDataType.FLOAT_32, unit=self.modbus_id),
-                self.client.read_holding_registers(
-                    242, ModbusDataType.FLOAT_32, unit=self.modbus_id)]
-        voltages = [
-                self.client.read_holding_registers(
-                    230, ModbusDataType.FLOAT_32, unit=self.modbus_id),
-                self.client.read_holding_registers(
-                    240, ModbusDataType.FLOAT_32, unit=self.modbus_id),
-                self.client.read_holding_registers(
-                    250, ModbusDataType.FLOAT_32, unit=self.modbus_id)]
-        powers = [
-                self.client.read_holding_registers(
-                    224, ModbusDataType.FLOAT_32, unit=self.modbus_id),
-                self.client.read_holding_registers(
-                    234, ModbusDataType.FLOAT_32, unit=self.modbus_id),
-                self.client.read_holding_registers(
-                    244, ModbusDataType.FLOAT_32, unit=self.modbus_id)]
+        currents = [self.client.read_holding_registers(
+            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id) for reg in [222, 232, 242]]
+        voltages = [self.client.read_holding_registers(
+            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id) for reg in [230, 240, 250]]
+        powers = [self.client.read_holding_registers(
+            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id) for reg in [224, 234, 244]]
         frequency = self.client.read_holding_registers(220, ModbusDataType.FLOAT_32, unit=self.modbus_id)
 
         counter_state = CounterState(
