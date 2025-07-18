@@ -37,9 +37,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { timeChargingPlans } from './model'
-import { updateServer } from '@/assets/js/sendMessages'
-import SwitchInput from '../shared/SwitchInput.vue'
+import { ChargePoint } from '../model'
+import { updateChargeTemplate } from '@/assets/js/sendMessages'
+import SwitchInput from '@/components/shared/SwitchInput.vue'
 
 const freqNames: { [key: string]: string } = {
 	daily: 'Täglich',
@@ -47,24 +47,16 @@ const freqNames: { [key: string]: string } = {
 	weekly: 'Wöchentlich',
 }
 const props = defineProps<{
-	chargeTemplateId: number
+	chargePoint: ChargePoint
 }>()
 const plans = computed(() => {
-	if (timeChargingPlans[props.chargeTemplateId]) {
-		let result = Object.values(timeChargingPlans[props.chargeTemplateId])
-		return result ?? []
-	} else {
-		return []
-	}
+	return props.chargePoint.chargeTemplate?.time_charging.plans ?? []
 })
 function updatePlanState(i: number) {
-	console.log(`update ${i}`)
-	updateServer(
-		'cpTimedPlanActive',
-		plans.value[i].active,
-		props.chargeTemplateId,
-		i,
-	)
+	props.chargePoint.chargeTemplate!.chargemode.scheduled_charging.plans[
+		i
+	]!.active = plans.value[i].active
+	updateChargeTemplate(props.chargePoint.id)
 }
 function cellStyle(key: number) {
 	const style = plans.value[key].active ? 'bold' : 'regular'

@@ -78,14 +78,15 @@
 		</div>
 		<div class="infoline">
 			<!-- ET Information -->
-			<InfoItem
+			<!-- <InfoItem
 				v-if="etData.active"
 				heading="Preisladen:"
 				class="grid-col-4 grid-left"
 			>
 				<SwitchInput v-model="cp.etActive" />
-				<!--{{ cp.etActive ? 'Ja' : 'Nein' }}-->
-			</InfoItem>
+				{{ cp.etActive ? 'Ja' : 'Nein' }}
+			</InfoItem> 
+			-->
 
 			<InfoItem v-if="etData.active" heading="max. Preis:" class="grid-col-4">
 				<DisplayButton v-if="cp.etActive" @click="openSettings('#prSettings')">
@@ -139,7 +140,6 @@ import InfoItem from '@/components/shared/InfoItem.vue'
 import BatterySymbol from '@/components/shared/BatterySymbol.vue'
 import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import DisplayButton from '@/components/shared/DisplayButton.vue'
-import SwitchInput from '../shared/SwitchInput.vue'
 import RangeInput from '../shared/RangeInput.vue'
 import { etData } from '../priceChart/model'
 import { computed } from 'vue'

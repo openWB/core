@@ -260,7 +260,7 @@
 			</div>
 		</template>
 	</WBWidget>
-	<WbWidgetFlex v-if="configmode" :full-width="props.fullWidth">
+	<WbWidgetFlex v-else :full-width="props.fullWidth">
 		<template #title>
 			<span :style="cpNameStyle" @click="configmode = !configmode">
 				<span class="fas fa-gear">&nbsp;</span>
@@ -281,6 +281,14 @@
 			v-if="chargepoint != undefined"
 			:chargepoint="chargepoint"
 		/>
+
+		<button
+			type="button"
+			class="close-config-button btn ms-2 pt-1"
+			@click="configmode = !configmode"
+		>
+			OK
+		</button>
 	</WbWidgetFlex>
 </template>
 
@@ -496,5 +504,11 @@ const editPrice = ref(false)
 
 .blue {
 	color: var(--color-charging);
+}
+.close-config-button {
+	background: var(--color-menu);
+	color: var(--color-bg);
+	grid-column: 11 / span 2;
+	font-size: var(--font-settings-button);
 }
 </style>
