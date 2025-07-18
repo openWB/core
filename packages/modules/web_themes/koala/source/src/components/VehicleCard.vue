@@ -17,16 +17,16 @@
         </div>
       </div>
       <VehicleConnectionStateIcon :vehicle-id="vehicleId" class="q-mt-sm" />
-        <SliderDouble
-          v-if="vehicleSocType"
-          class="q-mt-sm"
-          :current-value="vehicleSocValue"
-          :readonly="true"
-          :limit-mode="'none'"
-          :vehicle-soc-type="vehicleSocType"
-          :on-edit-soc="openSocDialog"
-          :on-refresh-soc="refreshSoc"
-        />
+      <SliderDouble
+        v-if="vehicleSocType"
+        class="q-mt-sm"
+        :current-value="vehicleSocValue"
+        :readonly="true"
+        :limit-mode="'none'"
+        :vehicle-soc-type="vehicleSocType"
+        :on-edit-soc="openSocDialog"
+        :on-refresh-soc="refreshSoc"
+      />
       <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>

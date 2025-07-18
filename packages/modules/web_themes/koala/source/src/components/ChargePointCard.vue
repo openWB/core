@@ -47,7 +47,6 @@
           {{ energyChargedPlugged }}
         </div>
       </div>
-      {{ vehicleSocType }}
       <SliderDouble
         v-if="showSocTargetSlider"
         class="q-mt-sm"

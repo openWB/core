@@ -2027,7 +2027,6 @@ export const useMqttStore = defineStore('mqtt', () => {
       const socConfig = getValue.value(
         `openWB/vehicle/${vehicleId}/soc_module/config`,
       ) as { type: string } | null;
-      console.log(socConfig);
       return socConfig?.type;
     };
   });
