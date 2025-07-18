@@ -336,6 +336,7 @@ class Chargepoint(ChargepointRfidMixin):
         return (phase_a == 1 and phase_b in [2, 3]) or (phase_b == 1 and phase_a in [2, 3])
 
     def _is_phase_switch_required(self) -> bool:
+        phase_switch_required = False
         if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
             phase_switch_required = False
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
