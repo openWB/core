@@ -517,10 +517,10 @@ class Slsdm630(Slbase):
                 _, newwatt = sdm630.get_power()
                 self.newwatt = int(newwatt)
                 self.newwattk = int(sdm630.get_imported())
-        except Exception as e1:
-            log.warning("Leistungsmessung %s %d %s Fehlermeldung: %s "
-                        % ('Sdm630 ', self.device_nummer,
-                           str(self._device_measureip), str(e1)))
+        except Exception:
+            log.exception("Leistungsmessung %s %d %s Fehlermeldung: %s "
+                          % ('Sdm630 ', self.device_nummer,
+                             str(self._device_measureip)))
         return self.newwatt, self.newwattk
 
 
@@ -537,8 +537,8 @@ class Slsdm120(Slbase):
                 _, newwatt = sdm120.get_power()
                 self.newwatt = int(newwatt)
                 self.newwattk = int(sdm120.get_imported())
-        except Exception as e1:
-            log.warning("Leistungsmessung %s %d %s Fehlermeldung: %s "
-                        % ('Sdm120 ', self.device_nummer,
-                           str(self._device_measureip), str(e1)))
+        except Exception:
+            log.exception("Leistungsmessung %s %d %s Fehlermeldung: %s "
+                          % ('Sdm120 ', self.device_nummer,
+                             str(self._device_measureip)))
         return self.newwatt, self.newwattk
