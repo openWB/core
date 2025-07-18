@@ -19,6 +19,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
+import type { ChartOptions } from 'chart.js';
 import { Line as ChartjsLine } from 'vue-chartjs';
 import {
   Chart,
@@ -258,10 +259,10 @@ const lineChartData = computed(() => {
   };
 });
 
-const chartOptions = computed(() => ({
+const chartOptions = computed<ChartOptions<'line'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  animation: { duration: 0 },
+  animation: false,
   plugins: {
     legend: {
       display: !legendLarge.value && legendDisplay.value,

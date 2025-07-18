@@ -240,37 +240,37 @@ var chartDatasets = [
 
 // Generate custom legendAdd commentMore actions
 function generateCustomLegend(chart) {
-    const legendContainer = document.getElementById('custom-legend-container');
-    // Clear existing legend
-    legendContainer.innerHTML = '';
-    // Create legend items
-    chart.data.datasets.forEach((dataset, index) => {
-        if (!dataset.label) return;
-        const legendItem = document.createElement('div');
-        legendItem.className = 'legend-item';
-        if (chart.getDatasetMeta(index).hidden) {
-            legendItem.className += ' hidden';
-        }
-        const colorBox = document.createElement('span');
-        colorBox.className = 'legend-color-box';
-        colorBox.style.backgroundColor = dataset.borderColor;
-        const text = document.createElement('span');
-        text.textContent = dataset.label;
-        legendItem.appendChild(colorBox);
-        legendItem.appendChild(text);
-        // toggle visibility
-        legendItem.onclick = ()=> {
-            const item = chart.getDatasetMeta(index);
-            item.hidden = !item.hidden;
-            if (item.hidden) {
-                legendItem.classList.add('hidden');
-            } else {
-                legendItem.classList.remove('hidden');
-            }
-            chart.update();
-        };
-        legendContainer.appendChild(legendItem);
-    });
+	const legendContainer = document.getElementById("custom-legend-container");
+	// Clear existing legend
+	legendContainer.innerHTML = "";
+	// Create legend items
+	chart.data.datasets.forEach((dataset, index) => {
+		if (!dataset.label) return;
+		const legendItem = document.createElement("div");
+		legendItem.className = "legend-item";
+		if (chart.getDatasetMeta(index).hidden) {
+			legendItem.className += " hidden";
+		}
+		const colorBox = document.createElement("span");
+		colorBox.className = "legend-color-box";
+		colorBox.style.backgroundColor = dataset.borderColor;
+		const text = document.createElement("span");
+		text.textContent = dataset.label;
+		legendItem.appendChild(colorBox);
+		legendItem.appendChild(text);
+		// toggle visibility
+		legendItem.onclick = () => {
+			const item = chart.getDatasetMeta(index);
+			item.hidden = !item.hidden;
+			if (item.hidden) {
+				legendItem.classList.add("hidden");
+			} else {
+				legendItem.classList.remove("hidden");
+			}
+			chart.update();
+		};
+		legendContainer.appendChild(legendItem);
+	});
 }
 
 function loadGraph(animationDuration = 1000) {
@@ -331,11 +331,11 @@ function loadGraph(animationDuration = 1000) {
 		type: 'line',
 		plugins: [{
 			afterInit: (chart) => {
-                doGraphResponsive(chart);
-                generateCustomLegend(chart);
-            },
-            resize: doGraphResponsive,
-            afterUpdate: generateCustomLegend
+				doGraphResponsive(chart);
+				generateCustomLegend(chart);
+			},
+			resize: doGraphResponsive,
+			afterUpdate: generateCustomLegend,
 		}],
 		data: chartData,
 		options: {
@@ -457,6 +457,7 @@ function loadGraph(animationDuration = 1000) {
 
 	initialRead = 1;
 	$('#waitForGraphLoadingDiv').hide();
+	$('#legend-container').show();
 }  // end loadGraph
 
 function getDatasetIndex(datasetId) {
