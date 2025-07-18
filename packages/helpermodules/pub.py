@@ -45,6 +45,8 @@ def pub_single(topic, payload, hostname="localhost", port=1883, no_json=False, r
     no_json: bool
         Kompatibilität mit ISSS, die ramdisk verwenden.
     """
+    if payload == "":
+        no_json = True
     if no_json:
         publish.single(topic, payload, hostname=hostname, port=port, retain=retain)
     else:

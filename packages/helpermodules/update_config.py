@@ -2354,13 +2354,15 @@ class UpdateConfig:
             client.subscribe("openWB/mqtt/#")
 
         def on_message(client, userdata, message):
-            log.debug(f"Lösche MQTT-Device-Topic {message.topic} auf dem externen Broker")
-            pub_single(message.topic, "")
+            topics_to_delete.append(message.topic)
 
+        topics_to_delete = []
         BrokerClient("deleteMqttDeviceExternalBroker",
                      on_connect,
                      on_message,
                      host="localhost",
                      port=1883).start_finite_loop()
-
+        for topic in topics_to_delete:
+            log.debug(f"Lösche MQTT-Device-Topic {topic} auf dem externen Broker")
+            pub_single(topic, "", port=1884)
         self.__update_topic("openWB/system/datastore_version", 90)
