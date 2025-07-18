@@ -16,7 +16,6 @@ import type {
   ChargePointConnectedVehicleInfo,
   Vehicle,
   VehicleInfo,
-  VehicleSocModuleConfig,
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
@@ -874,13 +873,13 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /**
    * trigger a force SOC update for the connected vehicle
+   * @param chargePointId charge point id
+   * @returns void
    */
   const chargePointConnectedVehicleForceSocUpdate = (chargePointId: number) => {
     const vehicleId = chargePointConnectedVehicleInfo(chargePointId).value?.id;
     if (vehicleId !== undefined) {
-      const topic = `openWB/vehicle/${vehicleId}/get/force_soc_update`;
-      console.log(topic);
-      sendTopicToBroker(topic, 1);
+      vehicleForceSocUpdate(vehicleId);
     }
   };
 
@@ -1738,10 +1737,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       const vehicleId =
         chargePointConnectedVehicleInfo(chargePointId).value?.id;
       if (vehicleId === undefined) return undefined;
-      const socConfig = getValue.value(
-        `openWB/vehicle/${vehicleId}/soc_module/config`,
-      ) as { type: string } | null;
-      return socConfig?.type;
+      return vehicleSocType.value(vehicleId);
     });
   };
 
@@ -2022,16 +2018,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get vehicle SoC module configuration identified by the vehicle id
+   * Get vehicle SoC type identified by the vehicle id
    * @param vehicleId vehicle id
-   * @returns vehicleSocModule
+   * @returns string | null | undefined
    */
-  const vehicleSocModule = computed(() => {
+  const vehicleSocType = computed(() => {
     return (vehicleId: number) => {
-      const socModule = getValue.value(
+      const socConfig = getValue.value(
         `openWB/vehicle/${vehicleId}/soc_module/config`,
-      ) as VehicleSocModuleConfig;
-      return socModule;
+      ) as { type: string } | null;
+      console.log(socConfig);
+      return socConfig?.type;
     };
   });
 
@@ -2085,11 +2082,12 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /**
    * trigger a force SOC update for the vehicle by vehicle id
+   * @param vehicleId vehicle id
+   * @returns void
    */
   const vehicleForceSocUpdate = (vehicleId: number) => {
     if (vehicleId !== undefined) {
-      const topic = `openWB/set/vehicle/${vehicleId}/get/force_soc_update`;
-      console.log(topic);
+      const topic = `openWB/vehicle/${vehicleId}/get/force_soc_update`;
       sendTopicToBroker(topic, 1);
     }
   };
@@ -2867,7 +2865,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleConfig,
     vehicleInfo,
     vehicleConnectionState,
-    vehicleSocModule,
+    vehicleSocType,
     vehicleSocValue,
     vehicleSocManualValue,
     vehicleForceSocUpdate,
