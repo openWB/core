@@ -1,5 +1,6 @@
 <template>
   <q-carousel
+    ref="carouselRef"
     v-model="currentSlide"
     swipeable
     :animated="animated"
@@ -33,82 +34,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import {
+  ref,
+  computed,
+  watch,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+} from 'vue';
 import { useQuasar } from 'quasar';
 
 const props = defineProps<{
   items: number[];
+  cardWidth?: number;
 }>();
 
 const $q = useQuasar();
 const currentSlide = ref<number>(0);
 const animated = ref<boolean>(true);
-
-/**
- * Group the items in chunks of 2 for large screens and 1 for small screens.
- */
-const groupedItems = computed(() => {
-  const groupSize = $q.screen.width > 800 ? 2 : 1;
-  return props.items.reduce((resultArray, item, index) => {
-    const chunkIndex = Math.floor(index / groupSize);
-    if (!resultArray[chunkIndex]) {
-      resultArray[chunkIndex] = [];
-    }
-    resultArray[chunkIndex].push(item);
-    return resultArray;
-  }, [] as number[][]);
-});
-
-/**
- * Update the current slide when the grouped items change.
- * This may happen when the items are sorted or filtered or when the screen size changes.
- * We try to keep the same item in view when the slide changes.
- */
-watch(
-  () => groupedItems.value,
-  async (newValue, oldValue) => {
-    const findSlide = (itemId: number) => {
-      return newValue.findIndex((group) => group.includes(itemId));
-    };
-    if (!oldValue || oldValue.length === 0) {
-      currentSlide.value = 0;
-      return;
-    }
-    // Prevent animation when the current slide is modified
-    animated.value = false;
-    currentSlide.value = Math.max(
-      findSlide(oldValue[currentSlide.value][0]),
-      0,
-    );
-    await nextTick();
-    animated.value = true;
-  },
-);
-
-const handleSlideChange = () => {
-  const currentScroll = window.scrollY;
-  nextTick(() => {
-    updateMaxCardHeight();
-    observeCardChanges();
-    window.scrollTo(0, currentScroll);
-  });
-};
-
+const carouselRef = ref<{ $el: HTMLElement } | null>(null);
+const carouselWidth = ref(0);
+let resizeObserver: ResizeObserver | null = null;
 const maxCardHeight = ref<number>(0);
 
+// Calculates and sets the maximum card height for all cards in the active slide
 const updateMaxCardHeight = () => {
-  const cards = document.querySelectorAll('.item-container');
+  // Quasar adds CSS class .q-carousel__slide--active when the slide is active - calculation then made only on active slide/s
+  const cards = document.querySelectorAll(
+    '.q-carousel__slide--active .item-container',
+  );
   const heights = Array.from(cards).map(
     (card) => (card as HTMLElement).offsetHeight,
   );
   maxCardHeight.value = Math.max(...heights);
 };
 
+// Sets up a MutationObserver to watch for changes in the cards of the active slide
 const observeCardChanges = () => {
   const observer = new MutationObserver(() => {
     updateMaxCardHeight();
   });
-  const cards = document.querySelectorAll('.item-container');
+  const cards = document.querySelectorAll(
+    '.q-carousel__slide--active .item-container',
+  );
   cards.forEach((card) => {
     observer.observe(card, {
       childList: true,
@@ -120,18 +88,90 @@ const observeCardChanges = () => {
 
 onMounted(() => {
   nextTick(() => {
+    if (carouselRef.value && carouselRef.value.$el) {
+      carouselWidth.value = carouselRef.value.$el.offsetWidth;
+      // Set up ResizeObserver to update width and card height on resize
+      resizeObserver = new ResizeObserver(() => {
+        if (carouselRef.value && carouselRef.value.$el) {
+          carouselWidth.value = carouselRef.value.$el.offsetWidth;
+          updateMaxCardHeight();
+        }
+      });
+      resizeObserver.observe(carouselRef.value.$el);
+    }
+    // Calculate initial card height and set up MutationObserver
     updateMaxCardHeight();
     observeCardChanges();
   });
 });
 
+onBeforeUnmount(() => {
+  if (resizeObserver && carouselRef.value && carouselRef.value.$el) {
+    resizeObserver.unobserve(carouselRef.value.$el);
+  }
+});
+
+const effectiveCardWidth = ref<number | undefined>(undefined);
+
+// Computes how many cards can fit in the carousel based on carousel width and the card width
+const groupSize = computed(() => {
+  return effectiveCardWidth.value
+    ? Math.max(1, Math.floor(carouselWidth.value / effectiveCardWidth.value))
+    : 380;
+});
+
+// Groups the items into arrays for each slide, based on the computed group size
+const groupedItems = computed(() => {
+  return props.items.reduce((resultArray, item, index) => {
+    const chunkIndex = Math.floor(index / groupSize.value);
+    if (!resultArray[chunkIndex]) {
+      resultArray[chunkIndex] = [];
+    }
+    resultArray[chunkIndex].push(item);
+    return resultArray;
+  }, [] as number[][]);
+});
+
+// Updates the current slide and recalculates card heights when the grouped items change
 watch(
-  () => props.items,
-  () => {
-    nextTick(() => {
-      updateMaxCardHeight();
-      observeCardChanges();
-    });
+  () => groupedItems.value,
+  async (newValue, oldValue) => {
+    const findSlide = (itemId: number) => {
+      return newValue.findIndex((group) => group.includes(itemId));
+    };
+    if (!oldValue || oldValue.length === 0) {
+      currentSlide.value = 0;
+      return;
+    }
+    animated.value = false;
+    currentSlide.value = Math.max(
+      findSlide(oldValue[currentSlide.value][0]),
+      0,
+    );
+    await nextTick();
+    animated.value = true;
+    updateMaxCardHeight();
+    observeCardChanges();
+  },
+);
+
+// Called when the slide changes; recalculates card heights and scrolls to the previous position
+const handleSlideChange = () => {
+  const currentScroll = window.scrollY;
+  nextTick(() => {
+    updateMaxCardHeight();
+    observeCardChanges();
+    window.scrollTo(0, currentScroll);
+  });
+};
+
+// watches cardWidth prop because it takes time to be emitted and passed through component hierarchy
+watch(
+  () => props.cardWidth,
+  (newVal) => {
+    if (newVal && newVal > 0) {
+      effectiveCardWidth.value = newVal + 72; // Add 72px to account for padding / margins / navigation buttons in carousel
+    }
   },
 );
 </script>
