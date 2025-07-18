@@ -7,4 +7,5 @@ class Chargemode(Enum):
     INSTANT_CHARGING = "instant_charging"
     PV_CHARGING = "pv_charging"
     ECO_CHARGING = "eco_charging"
+    BIDI_CHARGING = "bidi_charging"
     STOP = "stop"

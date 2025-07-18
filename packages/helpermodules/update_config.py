@@ -36,7 +36,7 @@ from control import counter_all
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
 from control.counter import get_counter_default_config
-from control.ev.charge_template import EcoCharging, get_charge_template_default
+from control.ev.charge_template import EcoCharging, get_charge_template_default, BidiCharging
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
 from control.general import ChargemodeConfig, Prices
@@ -2302,6 +2302,22 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 85)
 
     def upgrade_datastore_85(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "bidi" not in payload:
+                    payload.update({"bidi": False})
+                return {topic: payload}
+            elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "bidi_charging" not in payload["chargemode"]:
+                    payload.pop("bidi_charging")
+                    payload["chargemode"].update({"bidi_charging": asdict(BidiCharging())})
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 86)
+
+    def upgrade_datastore_86(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
@@ -2318,9 +2334,9 @@ class UpdateConfig:
                                 })
                                 return {component_topic: config_payload}
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 86)
+        self.__update_topic("openWB/system/datastore_version", 87)
 
-    def upgrade_datastore_86(self) -> None:
+    def upgrade_datastore_87(self) -> None:
         if "openWB/bat/config/bat_control_permitted" not in self.all_received_topics.keys():
             self.__update_topic("openWB/bat/config/bat_control_permitted", False)
             if decode_payload(self.all_received_topics["openWB/bat/get/power_limit_controllable"]) is True:

@@ -206,6 +206,7 @@ class BatAll:
                 else:
                     charging_power_left = 0
                 self.data.set.regulate_up = True if self.data.get.soc < 100 else False
+            #  ev wird nach Speicher geladen
             elif config.bat_mode == BatConsiderationMode.EV_MODE.value:
                 # Speicher sollte weder ge- noch entladen werden.
                 charging_power_left = self.data.get.power
