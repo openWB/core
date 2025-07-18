@@ -36,10 +36,10 @@ class KostalPlenticoreBat(AbstractBat):
     def update(self) -> None:
         power = self.client.read_holding_registers(582, ModbusDataType.INT_16, unit=self.modbus_id) * -1
         soc = self.client.read_holding_registers(514, ModbusDataType.INT_16, unit=self.modbus_id)
-        imported, exported = self.sim_counter.sim_count(power)
-        log.debug("raw bat power "+str(power))
         if power < 0:
             power = self.client.read_holding_registers(106, ModbusDataType.FLOAT_32, unit=self.modbus_id) * -1
+        imported, exported = self.sim_counter.sim_count(power)
+        log.debug("raw bat power "+str(power))
 
         bat_state = BatState(
             power=power,
