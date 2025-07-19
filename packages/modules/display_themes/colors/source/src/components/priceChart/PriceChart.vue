@@ -1,6 +1,6 @@
 <template>
 	<div class="pricesettings">
-		<div class="grapharea">
+		<div class="grapharea rounded shadow p-2">
 			<span>Anbieter: {{ etData.etProvider }}</span>
 			<figure id="pricechart">
 				<svg viewBox="0 0 400 270">
@@ -12,7 +12,7 @@
 				</svg>
 			</figure>
 		</div>
-		<div class="controlarea">
+		<div class="controlarea rounded shadow p-2">
 			<span class="pt-1 pb-2 d-flex justify-content-between">
 				<button
 					type="button"
@@ -323,7 +323,7 @@ onMounted(() => {
 .pricesettings {
 	display: grid;
 	grid-template-columns: 50% 50%;
-	grid-template-rows: 325px;
+	grid-template-rows: 310px;
 }
 .grapharea {
 	display: flex;
@@ -333,6 +333,9 @@ onMounted(() => {
 	min-width: 0px;
 	overflow: hidden;
 	height: 100%;
+	margin-right: 5px;
+	border: 1px solid var(--color-frame);
+	border-radius: 30px;
 }
 .controlarea {
 	display: flex;
@@ -344,6 +347,9 @@ onMounted(() => {
 	height: 100%;
 	padding-left: 20px;
 	padding-right: 10px;
+	margin-left: 5px;
+	border: 1px solid var(--color-frame);
+	border-radius: 30px;
 }
 .sliderarea {
 	margin-bottom: 5px;

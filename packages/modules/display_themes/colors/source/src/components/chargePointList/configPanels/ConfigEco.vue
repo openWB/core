@@ -5,7 +5,8 @@
 			:charge-point-id="props.chargepoint.id"
 			class="fullwidth"
 		/>
-		<span class="fullwidth mb-4">
+
+		<span class="fullwidth mb-4 mt-2">
 			<button type="button" class="btn btn-secondary" @click="pageDown">
 				<i class="fa-solid fa-circle-down me-2"></i>
 				Abwärts
@@ -35,8 +36,8 @@
 				v-model="cp.ecoTargetPhases"
 				:options="[
 					['Eine', 1],
-					['Max', 2],
-					['Auto', 3],
+					['Max', 3],
+					['Auto', 0],
 				]"
 			/>
 		</ConfigItem>
@@ -160,5 +161,8 @@ function pageUp() {
 }
 .fullwidth {
 	grid-column: 1 / -1;
+}
+.chartsection {
+	border: 1px solid var(--color-border);
 }
 </style>

@@ -11,9 +11,9 @@
 		{{ title }}</span
 	>
 	<div
-		class="ms-1 mb-2 p-0 pt-2 d-flex justify-content-stretch align-items-center"
+		class="configwidget ms-1 mb-2 p-0 pt-2 d-flex justify-content-stretch align-items-center"
 	>
-		<span class="justify-content-stretch d-flex">
+		<span class="configslot justify-content-stretch d-flex">
 			<slot />
 		</span>
 	</div>
@@ -30,6 +30,12 @@ const props = defineProps<{
 </script>
 
 <style scoped>
+.configwidget {
+	width: 100%;
+}
+.configslot {
+	width: 100%;
+}
 .infotext {
 	font-size: var(--font-settings);
 	color: var(--color-battery);
