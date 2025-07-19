@@ -58,7 +58,11 @@ function setValue(event: Event) {
 		element = element.parentElement as HTMLButtonElement
 	}
 	if (element.value) {
-		v.value = element.value
+		if (typeof props.options[0][1] === 'number') {
+			v.value = Number(element.value)
+		} else {
+			v.value = element.value
+		}
 	}
 }
 </script>
