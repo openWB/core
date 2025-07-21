@@ -15,6 +15,7 @@ from modules.common.abstract_io import AbstractIoDevice
 from modules.common.fault_state_level import FaultStateLevel
 from modules.io_actions.controllable_consumers.dimming.api import Dimming
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
+from modules.io_actions.generator_systems.stepwise_control.api import StepwiseControl
 
 log = logging.getLogger(__name__)
 
@@ -84,6 +85,12 @@ class Process:
                         if d["type"] == "io":
                             data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
                                 not action.dimming_active()  # active output (True) if no dimming
+                            )
+                if isinstance(action, StepwiseControl):
+                    for d in action.config.configuration.devices:
+                        if d["type"] == "io":
+                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
+                                action.control_stepwise() == d["value"]  # active output (True) if value matches
                             )
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):
