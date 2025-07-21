@@ -1,5 +1,5 @@
 <template>
-  <q-card class="full-height card-width">
+  <q-card ref="cardRef" class="full-height card-width">
     <q-card-section>
       <div class="row items-center text-h6 text-bold">
         <div class="col flex items-center">
@@ -75,7 +75,7 @@
   />
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderDouble from './SliderDouble.vue';
 import ChargePointLock from './ChargePointLock.vue';
@@ -90,6 +90,11 @@ import ManualSocDialog from './ManualSocDialog.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
 import { useQuasar } from 'quasar';
+
+const cardRef = ref<{ $el: HTMLElement } | null>(null);
+const emit = defineEmits<{
+  (event: 'card-width', width: number | undefined): void;
+}>();
 
 const mqttStore = useMqttStore();
 
@@ -264,6 +269,11 @@ const refreshSoc = () => {
     message: 'SoC Update angefordert.',
   });
 };
+
+onMounted(() => {
+  const cardWidth = cardRef.value?.$el.offsetWidth;
+  emit('card-width', cardWidth);
+});
 </script>
 <style lang="scss" scoped>
 .card-width {

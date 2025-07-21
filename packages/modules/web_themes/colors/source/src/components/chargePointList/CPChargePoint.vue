@@ -61,9 +61,13 @@
 						<div
 							class="carTitleLine d-flex justify-content-between align-items-center"
 						>
-							<h3 @click="configmode = !configmode">
+							<h3 @click="changeCar = !changeCar">
 								<i class="fa-solid fa-sm fa-car me-2" />
 								{{ chargepoint.vehicleName }}
+								<span
+									class="fa-solid fa-xs me-2"
+									:class="changeCar ? 'fa-caret-up' : 'fa-caret-down'"
+								/>
 								<span
 									v-if="chargepoint.hasPriority"
 									class="me-1 fa-solid fa-xs fa-star ps-1"
@@ -96,6 +100,18 @@
 									@click="loadSoc"
 								/>
 							</WbBadge>
+						</div>
+						<div v-if="changeCar" class="carSelector p-4 m-2">
+							<span class="changeCarTitle mb-2">Fahrzeug wechseln:</span>
+							<RadioInput2
+								v-model.number="cp.connectedVehicle"
+								:options="
+									Object.values(vehicles)
+										.filter((v) => v.visible)
+										.map((v) => [v.name, v.id])
+								"
+								@update:model-value="changeCar = false"
+							/>
 						</div>
 					</div>
 				</div>
@@ -303,6 +319,7 @@ import BatterySymbol from '@/components/shared/BatterySymbol.vue'
 import FormatWatt from '@/components/shared/FormatWatt.vue'
 import FormatWattH from '../shared/FormatWattH.vue'
 import RadioBarInput from '@/components/shared/RadioBarInput.vue'
+import RadioInput2 from '@/components/shared/RadioInput2.vue'
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import WbBadge from '../shared/WbBadge.vue'
 import { updateServer } from '@/assets/js/sendMessages'
@@ -316,6 +333,8 @@ const props = defineProps<{
 	fullWidth?: boolean
 }>()
 const cp = ref(props.chargepoint)
+const changeCar = ref(false)
+
 // computed
 const chargeMode = computed({
 	get() {
@@ -510,5 +529,12 @@ const editPrice = ref(false)
 	color: var(--color-bg);
 	grid-column: 11 / span 2;
 	font-size: var(--font-settings-button);
+}
+.carSelector {
+	border: 1px solid var(--color-menu);
+	font-size: var(--font-settings);
+	border-radius: 3px;
+	display: flex;
+	flex-direction: column;
 }
 </style>

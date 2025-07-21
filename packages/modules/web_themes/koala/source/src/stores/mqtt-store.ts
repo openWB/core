@@ -967,6 +967,34 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Converts DC current to power in Watt
+   * This function assumes a 3-phase system with a voltage of 230V
+   * and calculates the AC power based on the formula: P = I * V * 3 / 1000
+   * where P is power in Kilowatts, I is current in Amperes,
+   * and V is voltage in Volts.
+   * The result is rounded to the nearest integer.
+   * @param dcCurrent DC current in Ampere
+   * @returns number
+   */
+  const convertDcCurrentToPower = (dcCurrent: number): number => {
+    return Math.round((dcCurrent * 3 * 230) / 1000);
+  }
+
+  /**
+   * Converts power in Kilowatts to DC current in Ampere.
+   * This function assumes a 3-phase system with a voltage of 230V
+   * and calculates the DC current based on the formula: I = P * 1000 / (V * 3)
+   * where P is power in Watts, I is current in Amperes,
+   * and V is voltage in Volts.
+   * The result is rounded to the nearest integer.
+   * @param power Power in Kilowatts
+   * @returns number
+   */
+  const convertPowerToDcCurrent = (power: number): number => {
+    return Math.round(power * 1000 / (230 * 3));
+  }
+
+  /**
    * Get or set the charge point connected vehicle instant charging DC power identified by the charge point id
    * @param chargePointId charge point id
    * @returns number
@@ -980,14 +1008,14 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.instant_charging?.dc_current;
         if (dcCurrent !== undefined) {
-          return Math.round((dcCurrent * 3 * 230) / 1000);
+          return convertDcCurrentToPower(dcCurrent);
         } else {
           return 0;
         }
       },
       set(newValue: number) {
         console.debug('set instant charging power', newValue, chargePointId);
-        const newPower = (newValue * 1000) / 230 / 3;
+        const newPower = convertPowerToDcCurrent(newValue);
         return updateTopic(
           `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newPower,
@@ -1143,14 +1171,14 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.pv_charging?.dc_min_current;
         if (dcMinCurrent !== undefined) {
-          return Math.round((dcMinCurrent * 3 * 230) / 1000);
+          return convertDcCurrentToPower(dcMinCurrent);
         } else {
           return 0;
         }
       },
       set(newValue: number) {
         console.debug('set instant charging power', newValue, chargePointId);
-        const newPower = (newValue * 1000) / 230 / 3;
+        const newPower = convertPowerToDcCurrent(newValue);
         return updateTopic(
           `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newPower,
@@ -1436,14 +1464,14 @@ export const useMqttStore = defineStore('mqtt', () => {
           chargePointConnectedVehicleChargeTemplate(chargePointId).value
             ?.chargemode?.eco_charging?.dc_current;
         if (dcCurrent !== undefined) {
-          return Math.round((dcCurrent * 3 * 230) / 1000);
+          return convertDcCurrentToPower(dcCurrent);
         } else {
           return 0;
         }
       },
       set(newValue: number) {
-        console.debug('set instant charging power', newValue, chargePointId);
-        const newPower = (newValue * 1000) / 230 / 3;
+        console.debug('set eco power', newValue, chargePointId);
+        const newPower = convertPowerToDcCurrent(newValue);
         return updateTopic(
           `openWB/chargepoint/${chargePointId}/set/charge_template`,
           newPower,
