@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from typing import TypedDict, Any
+from pymodbus.constants import Endian
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -32,12 +33,17 @@ class KostalPlenticoreBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.endianess = Endian.Big if self.client.read_holding_registers(
+            5, ModbusDataType.UINT_16, unit=self.modbus_id) else Endian.Little
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(582, ModbusDataType.INT_16, unit=self.modbus_id) * -1
-        soc = self.client.read_holding_registers(514, ModbusDataType.INT_16, unit=self.modbus_id)
+        power = self.client.read_holding_registers(
+            582, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
+        soc = self.client.read_holding_registers(
+            514, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess)
         if power < 0:
-            power = self.client.read_holding_registers(106, ModbusDataType.FLOAT_32, unit=self.modbus_id) * -1
+            power = self.client.read_holding_registers(
+                106, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
         imported, exported = self.sim_counter.sim_count(power)
         log.debug("raw bat power "+str(power))
 

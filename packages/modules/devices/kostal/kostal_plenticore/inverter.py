@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
+from pymodbus.constants import Endian
 
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -29,10 +30,14 @@ class KostalPlenticoreInverter(AbstractInverter):
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.endianess = Endian.Big if self.client.read_holding_registers(
+            5, ModbusDataType.UINT_16, unit=self.modbus_id) else Endian.Little
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(575, ModbusDataType.INT_16, unit=self.modbus_id) * -1
-        exported = self.client.read_holding_registers(320, ModbusDataType.FLOAT_32, unit=self.modbus_id)
+        power = self.client.read_holding_registers(
+            575, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
+        exported = self.client.read_holding_registers(
+            320, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
 
         inverter_state = InverterState(
             power=power,

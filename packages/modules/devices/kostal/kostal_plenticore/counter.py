@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
+from pymodbus.constants import Endian
 
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -29,18 +30,23 @@ class KostalPlenticoreCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.endianess = Endian.Big if self.client.read_holding_registers(
+            5, ModbusDataType.UINT_16, unit=self.modbus_id) else Endian.Little
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(252, ModbusDataType.FLOAT_32, unit=self.modbus_id)
+        power = self.client.read_holding_registers(
+            252, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
         imported, exported = self.sim_counter.sim_count(power)
-        power_factor = self.client.read_holding_registers(150, ModbusDataType.FLOAT_32, unit=self.modbus_id)
+        power_factor = self.client.read_holding_registers(
+            150, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
         currents = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id) for reg in [222, 232, 242]]
+            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) for reg in [222, 232, 242]]
         voltages = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id) for reg in [230, 240, 250]]
+            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) for reg in [230, 240, 250]]
         powers = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id) for reg in [224, 234, 244]]
-        frequency = self.client.read_holding_registers(220, ModbusDataType.FLOAT_32, unit=self.modbus_id)
+            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) for reg in [224, 234, 244]]
+        frequency = self.client.read_holding_registers(
+            220, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
 
         counter_state = CounterState(
             powers=powers,
