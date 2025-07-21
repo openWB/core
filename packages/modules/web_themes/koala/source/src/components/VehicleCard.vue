@@ -71,13 +71,8 @@ const vehicleInfo = computed(() => {
   return mqttStore.vehicleInfo(props.vehicleId);
 });
 
-<<<<<<< HEAD
 const vehicleSocType = computed(() => {
   return mqttStore.vehicleSocType(props.vehicleId);
-=======
-const vehicleSocModuleType = computed(() => {
-  return mqttStore.vehicleSocModule(props.vehicleId)?.type;
->>>>>>> upstream/master
 });
 
 const vehicleSocValue = computed(() => {
