@@ -5,6 +5,7 @@ from typing import Iterable
 from helpermodules.utils.run_command import run_command
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.openwb.openwb_pv_kit import inverter
 from modules.devices.openwb.openwb_pv_kit.config import PvKitSetup, PvKitInverterSetup
@@ -23,7 +24,8 @@ def create_device(device_config: PvKitSetup):
         nonlocal client
         with client:
             for component in components:
-                component.update()
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update()
 
     def initializer():
         nonlocal client

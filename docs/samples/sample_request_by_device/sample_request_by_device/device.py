@@ -4,6 +4,7 @@ from typing import Iterable, Union
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.sample_request_by_device.sample_request_by_device.bat import SampleBat
 from modules.devices.sample_request_by_device.sample_request_by_device.config import Sample, SampleBatSetup, SampleCounterSetup, SampleInverterSetup
@@ -26,7 +27,8 @@ def create_device(device_config: Sample):
     def update_components(components: Iterable[Union[SampleBat, SampleCounter, SampleInverter]]):
         response = req.get_http_session().get(device_config.configuration.ip_address, timeout=5).json()
         for component in components:
-            component.update(response)
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(response)
 
     return ConfigurableDevice(
         device_config=device_config,

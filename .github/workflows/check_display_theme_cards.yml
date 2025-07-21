@@ -1,16 +1,11 @@
-name: Node.js CI
+name: Check Display Theme Cards
 
 on:
-  push:
-    paths:
-      - packages/modules/display_themes/cards/source/**
-    branches:
-      - main
   pull_request:
     paths:
       - packages/modules/display_themes/cards/source/**
     branches:
-      - main
+      - master
 
 jobs:
   build:

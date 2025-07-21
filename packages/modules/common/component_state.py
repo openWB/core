@@ -197,10 +197,7 @@ class ChargepointState:
         self.charge_state = charge_state
         self.plug_state = plug_state
         self.rfid = rfid
-        if self.rfid and rfid_timestamp is None:
-            self.rfid_timestamp = timecheck.create_timestamp()
-        else:
-            self.rfid_timestamp = rfid_timestamp
+        self.rfid_timestamp = rfid_timestamp
         if _check_none(power_factors):
             power_factors = [0.0]*3
         self.charging_current = charging_current

@@ -25,7 +25,8 @@ def create_device(device_config: SolarLog):
         response = req.get_http_session().post('http://'+device_config.configuration.ip_address+'/getjp',
                                                data=json.dumps({"801": {"170": None}}), timeout=5).json()
         for component in components:
-            component.update(response)
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(response)
 
     return ConfigurableDevice(
         device_config=device_config,

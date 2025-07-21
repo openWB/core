@@ -290,7 +290,7 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
                         f"CP_Control_Pilot_HW: {cp.data.config.control_pilot_interruption_hw}\n"
                         f"CP_IP: {ip}\n"
                         f"CP_Set_Current: {cp.data.set.current} A\n"
-                        f"Meter_Power: {cp.data.get.power/1000} kW\n"
+                        f"Meter_Power: {cp.data.get.power} W\n"
                         f"Meter_Voltages: {cp.data.get.voltages} V\n"
                         f"Meter_Currents: {cp.data.get.currents} A\n"
                         f"Meter_Frequency: {frequency} Hz\n"
