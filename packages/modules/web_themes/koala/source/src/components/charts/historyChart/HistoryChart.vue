@@ -377,4 +377,9 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   flex: 1;
   min-height: 0;
 }
+
+.chart-wrapper > canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 </style>

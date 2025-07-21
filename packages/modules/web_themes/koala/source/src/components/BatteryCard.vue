@@ -1,5 +1,5 @@
 <template>
-  <q-card class="full-height card-width">
+  <q-card ref="cardRef" class="full-height card-width">
     <q-card-section>
       <div class="row text-h6 items-center text-bold justify-between">
         <div>
@@ -62,11 +62,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import BatterySettingsDialog from './BatterySettingsDialog.vue';
 import { useBatteryModes } from 'src/composables/useBatteryModes.ts';
 import SliderDouble from './SliderDouble.vue';
+
+const cardRef = ref<{ $el: HTMLElement } | null>(null);
+const emit = defineEmits<{
+  (event: 'card-width', width: number | undefined): void;
+}>();
 
 const props = defineProps<{
   batteryId: number | undefined;
@@ -130,6 +135,11 @@ const dailyExportedEnergy = computed(() => {
     (mqttStore.batteryDailyExported(props.batteryId, 'textValue') as string) ||
     '---'
   );
+});
+
+onMounted(() => {
+  const cardWidth = cardRef.value?.$el.clientWidth;
+  emit('card-width', cardWidth);
 });
 </script>
 
