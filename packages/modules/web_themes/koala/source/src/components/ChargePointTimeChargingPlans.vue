@@ -1,10 +1,8 @@
 <template>
-  <div class="row items-center q-ma-none q-pa-none no-wrap">
-    <div class="col row items-center">
-      <div class="col text-subtitle2">Zeitladen</div>
-      <div class="col">
-        <ChargePointTimeCharging :charge-point-id="props.chargePointId" dense />
-      </div>
+  <div class="row items-center q-ma-none q-pa-none no-wrap items-center justify-between">
+    <div class="text-subtitle2">Zeitladen</div>
+    <div>
+      <ChargePointTimeCharging :charge-point-id="props.chargePointId" dense />
     </div>
   </div>
   <div v-if="timeChargingEnabled" class="row justify-between items-center">
