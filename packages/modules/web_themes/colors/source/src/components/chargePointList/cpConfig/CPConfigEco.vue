@@ -28,7 +28,7 @@
 		<!-- Number of phases -->
 		<ConfigItem title="Anzahl Phasen" icon="fa-plug" :fullwidth="true">
 			<RadioInput2
-				v-model="cp.instantTargetPhases"
+				v-model="cp.ecoTargetPhases"
 				:options="[
 					['1', 1],
 					['Maximum', 3],
@@ -54,7 +54,7 @@
 		>
 			<RangeInput
 				id="maxSoc"
-				v-model="cp.pvTargetSoc"
+				v-model="cp.ecoTargetSoc"
 				:min="0"
 				:max="100"
 				:step="1"
