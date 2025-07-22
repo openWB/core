@@ -32,7 +32,7 @@
           <VehicleInformation />
         </q-tab-panel>
         <!-- Batteries -->
-        <q-tab-panel name="batteries" class="remove-flex-properties">
+        <q-tab-panel name="batteries" class="q-pa-none column">
           <BatteryInformation />
         </q-tab-panel>
         <!-- Smart Home -->
