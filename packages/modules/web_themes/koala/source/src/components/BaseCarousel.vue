@@ -41,6 +41,7 @@ import {
   nextTick,
   onMounted,
   onBeforeUnmount,
+  provide,
 } from 'vue';
 import { useQuasar } from 'quasar';
 
@@ -112,6 +113,13 @@ onBeforeUnmount(() => {
 });
 
 const effectiveCardWidth = ref<number | undefined>(undefined);
+
+// Function provided to child components
+const setCardWidth = (width: number | undefined) => {
+  effectiveCardWidth.value = width ? width + 72 : undefined; // Add 72px to account for padding / margins / navigation buttons in carousel
+};
+
+provide('setCardWidth', setCardWidth);
 
 // Computes how many cards can fit in the carousel based on carousel width and the card width
 const groupSize = computed(() => {
