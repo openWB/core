@@ -172,16 +172,6 @@ const handleSlideChange = () => {
     window.scrollTo(0, currentScroll);
   });
 };
-
-// watches cardWidth prop because it takes time to be emitted and passed through component hierarchy
-watch(
-  () => props.cardWidth,
-  (newVal) => {
-    if (newVal && newVal > 0) {
-      effectiveCardWidth.value = newVal + 72; // Add 72px to account for padding / margins / navigation buttons in carousel
-    }
-  },
-);
 </script>
 
 <style scoped>
