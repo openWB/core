@@ -21,7 +21,7 @@
         v-model="target"
         :min="0"
         :max="100"
-        color="light-green-5"
+        color="light-green-13"
         inner-track-color="blue-grey-2"
         class="target-slider"
         track-size="1.5em"
