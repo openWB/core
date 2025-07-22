@@ -15,6 +15,7 @@ from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreCoun
 class KwargsDict(TypedDict):
     device_id: int
     modbus_id: int
+    endianess: Endian
     client: ModbusTcpClient_
 
 
@@ -26,12 +27,11 @@ class KostalPlenticoreCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.modbus_id: int = self.kwargs['modbus_id']
+        self.endianess: Endian = self.kwargs['endianess']
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.endianess = Endian.Big if self.client.read_holding_registers(
-            5, ModbusDataType.UINT_16, unit=self.modbus_id) else Endian.Little
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
