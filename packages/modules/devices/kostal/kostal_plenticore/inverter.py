@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
+from pymodbus.constants import Endian
 
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -14,6 +15,7 @@ from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreInve
 class KwargsDict(TypedDict):
     device_id: int
     modbus_id: int
+    endianess: Endian
     client: ModbusTcpClient_
 
 
@@ -25,14 +27,17 @@ class KostalPlenticoreInverter(AbstractInverter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.modbus_id: int = self.kwargs['modbus_id']
+        self.endianess: Endian = self.kwargs['endianess']
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(575, ModbusDataType.INT_16, unit=self.modbus_id) * -1
-        exported = self.client.read_holding_registers(320, ModbusDataType.FLOAT_32, unit=self.modbus_id)
+        power = self.client.read_holding_registers(
+            575, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
+        exported = self.client.read_holding_registers(
+            320, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
 
         inverter_state = InverterState(
             power=power,

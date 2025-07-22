@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from typing import TypedDict, Any
+from pymodbus.constants import Endian
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -17,6 +18,7 @@ log = logging.getLogger(__name__)
 class KwargsDict(TypedDict):
     device_id: int
     modbus_id: int
+    endianess: Endian
     client: ModbusTcpClient_
 
 
@@ -28,18 +30,21 @@ class KostalPlenticoreBat(AbstractBat):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.modbus_id: int = self.kwargs['modbus_id']
+        self.endianess: Endian = self.kwargs['endianess']
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(582, ModbusDataType.INT_16, unit=self.modbus_id) * -1
-        soc = self.client.read_holding_registers(514, ModbusDataType.INT_16, unit=self.modbus_id)
+        power = self.client.read_holding_registers(
+            582, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
+        soc = self.client.read_holding_registers(
+            514, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess)
         if power < 0:
-            power = self.client.read_holding_registers(106, ModbusDataType.FLOAT_32, unit=self.modbus_id) * -1
+            power = self.client.read_holding_registers(
+                106, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
         imported, exported = self.sim_counter.sim_count(power)
-        log.debug("raw bat power "+str(power))
 
         bat_state = BatState(
             power=power,
