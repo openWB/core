@@ -47,7 +47,6 @@ import { useQuasar } from 'quasar';
 
 const props = defineProps<{
   items: number[];
-  cardWidth?: number;
 }>();
 
 const $q = useQuasar();
