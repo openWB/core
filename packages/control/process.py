@@ -87,11 +87,16 @@ class Process:
                                 not action.dimming_active()  # active output (True) if no dimming
                             )
                 if isinstance(action, StepwiseControl):
-                    for d in action.config.configuration.devices:
-                        if d["type"] == "io":
-                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
-                                action.control_stepwise() == d["value"]  # active output (True) if value matches
-                            )
+                    # check if passthrough is enabled
+                    if action.config.configuration.passthrough_enabled:
+                        # find output pattern by value
+                        for pattern in action.config.configuration.output_pattern:
+                            if pattern["value"] == action.control_stepwise():
+                                # set digital outputs according to matching output_pattern
+                                for output in pattern["matrix"].keys():
+                                    data.data.io_states[
+                                        f"io_states{action.config.configuration.io_device}"
+                                    ].data.set.digital_output[output] = pattern["matrix"][output]
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):
                     modules_threads.append(
