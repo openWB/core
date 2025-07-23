@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, inject } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import SliderDouble from './SliderDouble.vue';
@@ -67,9 +67,8 @@ import ManualSocDialog from './ManualSocDialog.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
-const emit = defineEmits<{
-  (event: 'card-width', width: number | undefined): void;
-}>();
+const setCardWidth =
+  inject<(width: number | undefined) => void>('setCardWidth');
 
 const props = defineProps<{
   vehicleId: number;
@@ -105,7 +104,7 @@ const refreshSoc = () => {
 
 onMounted(() => {
   const cardWidth = cardRef.value?.$el.offsetWidth;
-  emit('card-width', cardWidth);
+  setCardWidth?.(cardWidth);
 });
 </script>
 

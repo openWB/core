@@ -2,10 +2,9 @@
   <BaseCarousel
     v-if="chargePointIds.length <= cardViewBreakpoint"
     :items="chargePointIds"
-    :card-width="cardWidth"
   >
     <template #item="{ item }">
-      <ChargePointCard :charge-point-id="item" @card-width="cardWidth = $event" />
+      <ChargePointCard :charge-point-id="item" />
     </template>
   </BaseCarousel>
 
@@ -145,8 +144,6 @@ import {
   ColumnConfiguration,
   ChargePointRow,
 } from 'src/components/models/table-model';
-
-const cardWidth = ref<number | undefined>(undefined);
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();
