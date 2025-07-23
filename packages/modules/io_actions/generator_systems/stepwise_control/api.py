@@ -6,7 +6,7 @@ from helpermodules.pub import Pub
 from helpermodules.timecheck import create_timestamp
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_io import AbstractIoAction
-from modules.common.utils.component_parser import get_component_name_by_id, get_io_name_by_id
+from modules.common.utils.component_parser import get_component_name_by_id
 from modules.io_actions.generator_systems.stepwise_control.config import StepwiseControlSetup
 
 control_command_log = logging.getLogger("steuve_control_command")
@@ -17,7 +17,7 @@ class StepwiseControl(AbstractIoAction):
         self.config = config
         self.__unique_inputs = []
         for pattern in self.config.configuration.input_pattern:
-            for key in pattern["input_matrix"].keys():
+            for key in pattern["matrix"].keys():
                 if key not in self.__unique_inputs:
                     self.__unique_inputs.append(key)
         assigned_inverters = [
@@ -30,16 +30,17 @@ class StepwiseControl(AbstractIoAction):
             for device in self.config.configuration.devices
             if device["type"] == "io"
         ]
-        # Log the configuration details
-        # We cannot use configured names here, as the devices are not yet initialized
-        # and thus the names are not available.
-        control_command_log.info(
-            f"Stufenweise Steuerung von EZA: I/O-Gerät: {self.config.configuration.io_device}, "
-            f"Überwachte digitale Eingänge: {self.__unique_inputs}, "
-            f"zugeordnete Erzeugungsanlagen: {assigned_inverters} "
-            f"zugeordnete IO-Ausgänge: {assigned_outputs} "
-            "Die Begrenzung muss in den EZA vorgenommen werden!"
-        )
+        with ModifyLoglevelContext(control_command_log, logging.DEBUG):
+            # Log the configuration details
+            # We cannot use configured names here, as the devices are not yet initialized
+            # and thus the names are not available.
+            control_command_log.info(
+                f"Stufenweise Steuerung von EZA: I/O-Gerät: {self.config.configuration.io_device}, "
+                f"Überwachte digitale Eingänge: {self.__unique_inputs}, "
+                f"zugeordnete Erzeugungsanlagen: {assigned_inverters} "
+                f"zugeordnete IO-Ausgänge: {assigned_outputs} "
+                "Die Begrenzung muss in den EZA vorgenommen werden!"
+            )
         super().__init__()
 
     def setup(self) -> None:
@@ -57,7 +58,7 @@ class StepwiseControl(AbstractIoAction):
             ]) > 0
 
             for pattern in self.config.configuration.input_pattern:
-                for action_input, value in pattern["input_matrix"].items():
+                for action_input, value in pattern["matrix"].items():
                     if digital_input[action_input] != value:
                         break
                 else:
@@ -72,12 +73,6 @@ class StepwiseControl(AbstractIoAction):
                                         f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
                                         f"auf {int(pattern['value']*100)}% begrenzt."
                                     )
-                                elif device["type"] == "io":
-                                    control_command_log.info(
-                                        f"IO-Gerät {get_io_name_by_id(device['id'])} Ausgang "
-                                        f"{device['digital_output']} "
-                                        f"{'aktiviert' if device['value'] == pattern['value'] else 'deaktiviert'}."
-                                    )
                         break
             else:
                 if changed:
@@ -86,7 +81,7 @@ class StepwiseControl(AbstractIoAction):
 
     def control_stepwise(self) -> Optional[float]:
         for pattern in self.config.configuration.input_pattern:
-            for digital_input, value in pattern["input_matrix"].items():
+            for digital_input, value in pattern["matrix"].items():
                 if data.data.io_states[f"io_states{self.config.configuration.io_device}"
                                        ].data.get.digital_input[digital_input] != value:
                     break

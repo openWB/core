@@ -14,7 +14,7 @@ class DimmingDirectControl(AbstractIoAction):
     def __init__(self, config: DimmingDirectControlSetup):
         self.config = config
         for pattern in self.config.configuration.input_pattern:
-            input_matrix_list = list(pattern["input_matrix"].items())
+            input_matrix_list = list(pattern["matrix"].items())
             if len(input_matrix_list):
                 if pattern["value"]:
                     self.dimming_input, self.dimming_value = input_matrix_list[0]

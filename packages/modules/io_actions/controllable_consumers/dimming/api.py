@@ -17,7 +17,7 @@ class Dimming(AbstractIoAction):
         self.config = config
         self.import_power_left = None
         for pattern in self.config.configuration.input_pattern:
-            input_matrix_list = list(pattern["input_matrix"].items())
+            input_matrix_list = list(pattern["matrix"].items())
             if len(input_matrix_list):
                 if pattern["value"]:
                     self.dimming_input, self.dimming_value = input_matrix_list[0]

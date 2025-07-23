@@ -56,7 +56,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 89
+    DATASTORE_VERSION = 90
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2348,3 +2348,25 @@ class UpdateConfig:
         pub_system_message({}, "Es gibt ein neues Theme: das Koala-Theme! Smarthpone-optimiert und mit "
                            "Energiefluss-Diagramm & Karten-Ansicht der Ladepunkte", MessageType.INFO)
         self.__update_topic("openWB/system/datastore_version", 89)
+
+    def upgrade_datastore_89(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/io/action/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                # modify key "input_matrix" to "matrix" for all patterns
+                if "input_pattern" not in payload["configuration"] and "output_pattern" not in payload["configuration"]:
+                    # No input/output patterns found in IO action configuration
+                    return None
+                log.debug(f"Updating IO action configuration: {topic}: {payload}")
+                if "input_pattern" in payload["configuration"]:
+                    for pattern in payload["configuration"]["input_pattern"]:
+                        if "input_matrix" in pattern:
+                            pattern["matrix"] = pattern.pop("input_matrix")
+                if "output_pattern" in payload["configuration"]:
+                    for pattern in payload["configuration"]["output_pattern"]:
+                        if "input_matrix" in pattern:
+                            pattern["matrix"] = pattern.pop("input_matrix")
+                log.debug(f"Updated IO action configuration: {topic}: {payload}")
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 90)
