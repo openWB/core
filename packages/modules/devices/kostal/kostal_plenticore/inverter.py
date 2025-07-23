@@ -31,17 +31,22 @@ class KostalPlenticoreInverter(AbstractInverter):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
             575, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
         exported = self.client.read_holding_registers(
             320, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
+        dc_power = self.client.read_holding_registers(
+            1066, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
+        imported, _ = self.sim_counter.sim_count(power)
 
         inverter_state = InverterState(
             power=power,
-            exported=exported
+            exported=exported,
+            dc_power=dc_power,
+            imported=imported
         )
         self.store.set(inverter_state)
 
