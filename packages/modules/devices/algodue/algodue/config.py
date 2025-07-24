@@ -2,6 +2,7 @@ from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 from ..vendor import vendor_descriptor
+from helpermodules.auto_str import auto_str
 
 
 class AlgodueConfiguration:
@@ -24,11 +25,13 @@ class Algodue:
         self.configuration = configuration or AlgodueConfiguration()
 
 
+@auto_str
 class AlgodueCounterConfiguration:
     def __init__(self):
         pass
 
 
+@auto_str
 class AlgodueCounterSetup(ComponentSetup[AlgodueCounterConfiguration]):
     def __init__(self,
                  name: str = "Algodue Zähler",
@@ -36,3 +39,35 @@ class AlgodueCounterSetup(ComponentSetup[AlgodueCounterConfiguration]):
                  id: int = 0,
                  configuration: AlgodueCounterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or AlgodueCounterConfiguration())
+
+
+@auto_str
+class AlgodueInverterConfiguration:
+    def __init__(self):
+        pass
+
+
+@auto_str
+class AlgodueInverterSetup(ComponentSetup[AlgodueInverterConfiguration]):
+    def __init__(self,
+                 name: str = "Algodue Wechselrichterzähler",
+                 type: str = "inverter",
+                 id: int = 0,
+                 configuration: AlgodueInverterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or AlgodueInverterConfiguration())
+
+
+@auto_str
+class AlgodueBatConfiguration:
+    def __init__(self):
+        pass
+
+
+@auto_str
+class AlgodueBatSetup(ComponentSetup[AlgodueBatConfiguration]):
+    def __init__(self,
+                 name: str = "Algodue Speicherzähler",
+                 type: str = "bat",
+                 id: int = 0,
+                 configuration: AlgodueBatConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or AlgodueBatConfiguration())

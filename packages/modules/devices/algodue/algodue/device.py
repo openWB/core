@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable
+from typing import Iterable, Union
 
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
-from modules.devices.algodue.algodue import counter
-from modules.devices.algodue.algodue.config import Algodue, AlgodueCounterSetup
+from modules.devices.algodue.algodue import counter, inverter, bat
+from modules.devices.algodue.algodue.config import Algodue, AlgodueCounterSetup, AlgodueInverterSetup, AlgodueBatSetup
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
@@ -20,7 +20,18 @@ def create_device(device_config: Algodue):
         return counter.AlgodueCounter(component_config=component_config, device_id=device_config.id,
                                       tcp_client=client, modbus_id=device_config.configuration.modbus_id)
 
-    def update_components(components: Iterable[counter.AlgodueCounter]):
+    def create_inverter_component(component_config: AlgodueInverterSetup):
+        nonlocal client
+        return inverter.AlgodueInverter(component_config=component_config, device_id=device_config.id,
+                                        tcp_client=client, modbus_id=device_config.configuration.modbus_id)
+
+    def create_bat_component(component_config: AlgodueBatSetup):
+        nonlocal client
+        return bat.AlgodueBat(component_config=component_config, device_id=device_config.id,
+                              tcp_client=client, modbus_id=device_config.configuration.modbus_id)
+
+    def update_components(
+            components: Iterable[Union[counter.AlgodueCounter, inverter.AlgodueInverter, bat.AlgodueBat]]):
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
