@@ -9,27 +9,34 @@
 
   <div v-else class="row justify-center items-center">
     <HistoryChartLegendCategory
-      :label="'Komponenten Legende'"
+      :label="'Komponenten'"
       :items="categorizedLegendItems.component"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
       :getItemLineType="getItemLineType"
+      menuAnchor="bottom right"
+      menuSelf="top right"
     />
 
     <HistoryChartLegendCategory
-      :label="'Ladepunkt Legende'"
+      :label="'Ladepunkte'"
       :items="categorizedLegendItems.chargepoint"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
       :getItemLineType="getItemLineType"
+      menuAnchor="bottom middle"
+      menuSelf="top middle"
+      menuFormat="q-mx-lg"
     />
 
     <HistoryChartLegendCategory
-      :label="'Fahrzeug Legende'"
+      :label="'Fahrzeuge'"
       :items="categorizedLegendItems.vehicle"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
       :getItemLineType="getItemLineType"
+      menuAnchor="bottom left"
+      menuSelf="top left"
     />
   </div>
 </template>

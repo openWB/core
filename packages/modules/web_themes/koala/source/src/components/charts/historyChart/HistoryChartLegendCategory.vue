@@ -5,7 +5,9 @@
     dense
     color="primary"
     :label="label"
-    class="q-mr-sm"
+    :class="menuFormat"
+    :menu-anchor="menuAnchor"
+    :menu-self="menuSelf"
   >
     <q-list dense class="q-pa-none" style="max-height: 200px; overflow-y: auto">
       <q-item
@@ -57,6 +59,7 @@
 
 <script setup lang="ts">
 import { LegendItem } from 'chart.js';
+import type { QMenuProps } from 'quasar';
 
 defineProps<{
   label: string;
@@ -64,6 +67,9 @@ defineProps<{
   toggleDataset: (datasetName: string, datasetIndex: number) => void;
   getItemColor: (dataset: LegendItem) => string;
   getItemLineType: (dataset: LegendItem) => string | undefined;
+  menuAnchor: QMenuProps['anchor'];
+  menuSelf: QMenuProps['self'];
+  menuFormat?: string;
 }>();
 </script>
 
