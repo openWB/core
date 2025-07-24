@@ -41,12 +41,12 @@ import {
   nextTick,
   onMounted,
   onBeforeUnmount,
+  provide,
 } from 'vue';
 import { useQuasar } from 'quasar';
 
 const props = defineProps<{
   items: number[];
-  cardWidth?: number;
 }>();
 
 const $q = useQuasar();
@@ -113,6 +113,13 @@ onBeforeUnmount(() => {
 
 const effectiveCardWidth = ref<number | undefined>(undefined);
 
+// Function provided to child components
+const setCardWidth = (width: number | undefined) => {
+  effectiveCardWidth.value = width ? width + 72 : undefined; // Add 72px to account for padding / margins / navigation buttons in carousel
+};
+
+provide('setCardWidth', setCardWidth);
+
 // Computes how many cards can fit in the carousel based on carousel width and the card width
 const groupSize = computed(() => {
   return effectiveCardWidth.value
@@ -164,16 +171,6 @@ const handleSlideChange = () => {
     window.scrollTo(0, currentScroll);
   });
 };
-
-// watches cardWidth prop because it takes time to be emitted and passed through component hierarchy
-watch(
-  () => props.cardWidth,
-  (newVal) => {
-    if (newVal && newVal > 0) {
-      effectiveCardWidth.value = newVal + 72; // Add 72px to account for padding / margins / navigation buttons in carousel
-    }
-  },
-);
 </script>
 
 <style scoped>

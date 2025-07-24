@@ -25,7 +25,10 @@
           {{ power }}
         </div>
       </div>
-      <div v-if="showSettings" class="row q-mt-md justify-between text-subtitle2">
+      <div
+        v-if="showSettings"
+        class="row q-mt-md justify-between text-subtitle2"
+      >
         <div>Laden mit Überschuss:</div>
         <div class="q-ml-sm row items-center">
           <q-icon
@@ -62,16 +65,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, inject } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import BatterySettingsDialog from './BatterySettingsDialog.vue';
 import { useBatteryModes } from 'src/composables/useBatteryModes.ts';
 import SliderDouble from './SliderDouble.vue';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
-const emit = defineEmits<{
-  (event: 'card-width', width: number | undefined): void;
-}>();
+const setCardWidth = inject<((width: number | undefined) => void) | undefined>(
+  'setCardWidth',
+  undefined,
+);
 
 const props = defineProps<{
   batteryId: number | undefined;
@@ -139,7 +143,7 @@ const dailyExportedEnergy = computed(() => {
 
 onMounted(() => {
   const cardWidth = cardRef.value?.$el.clientWidth;
-  emit('card-width', cardWidth);
+  setCardWidth?.(cardWidth);
 });
 </script>
 

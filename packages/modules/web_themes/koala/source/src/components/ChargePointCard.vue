@@ -93,7 +93,7 @@
   />
 </template>
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, inject } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderDouble from './SliderDouble.vue';
 import ChargePointLock from './ChargePointLock.vue';
@@ -110,9 +110,8 @@ import ChargePointPowerData from './ChargePointPowerData.vue';
 import { useQuasar } from 'quasar';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
-const emit = defineEmits<{
-  (event: 'card-width', width: number | undefined): void;
-}>();
+const setCardWidth =
+  inject<(width: number | undefined) => void>('setCardWidth');
 
 const mqttStore = useMqttStore();
 
@@ -286,7 +285,7 @@ const refreshSoc = () => {
 
 onMounted(() => {
   const cardWidth = cardRef.value?.$el.offsetWidth;
-  emit('card-width', cardWidth);
+  setCardWidth?.(cardWidth);
 });
 </script>
 <style lang="scss" scoped>

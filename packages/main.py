@@ -71,7 +71,7 @@ class HandlerAlgorithm:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
             log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
-            log.debug(f'Drosselung: {run_command.run_shell_command("vcgencmd get_throttled")}')
+            log.debug(f'Drosselung: {run_command.run_shell_command("if which vcgencmd >/dev/null; then vcgencmd get_throttled; else echo not found; fi")}')
             log.debug(f"Threads: {enumerate()}")
             for thread in threading.enumerate():
                 logging.debug(f"Thread Name: {thread.name}")
