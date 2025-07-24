@@ -30,7 +30,7 @@ class SolisBat(AbstractBat):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = self.client.read_input_registers(33149, ModbusDataType.INT_32, unit=unit) * -1
+        power = self.client.read_input_registers(33149, ModbusDataType.INT_32, unit=unit)
         soc = self.client.read_input_registers(33139, ModbusDataType.UINT_16, unit=unit)
         # Geladen in kWh
         imported = self.client.read_input_registers(33161, ModbusDataType.UINT_32, unit=unit) * 1000
