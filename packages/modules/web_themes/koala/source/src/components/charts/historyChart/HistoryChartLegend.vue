@@ -1,44 +1,29 @@
 <template>
+  <!-- On smaller screens (<md) always show categories -->
+  <HistoryChartLegendCategoriesGroup
+    v-if="$q.screen.lt.md"
+    :categorizedLegendItems="categorizedLegendItems"
+    :toggleDataset="toggleDataset"
+    :getItemColor="getItemColor"
+    :getItemLineType="getItemLineType"
+  />
+
+  <!-- On larger screens: show standard legend if legend not large; otherwise show categories -->
   <HistoryChartLegendStandard
-    v-if="chart && !legendLarge"
+    v-else-if="chart && !$q.screen.lt.sm && !legendLarge"
     :items="legendItems"
     :toggleDataset="toggleDataset"
     :getItemColor="getItemColor"
     :getItemLineType="getItemLineType"
   />
 
-  <div v-else class="row justify-center items-center">
-    <HistoryChartLegendCategory
-      :label="'Komponenten'"
-      :items="categorizedLegendItems.component"
-      :toggleDataset="toggleDataset"
-      :getItemColor="getItemColor"
-      :getItemLineType="getItemLineType"
-      menuAnchor="bottom right"
-      menuSelf="top right"
-    />
-
-    <HistoryChartLegendCategory
-      :label="'Ladepunkte'"
-      :items="categorizedLegendItems.chargepoint"
-      :toggleDataset="toggleDataset"
-      :getItemColor="getItemColor"
-      :getItemLineType="getItemLineType"
-      menuAnchor="bottom middle"
-      menuSelf="top middle"
-      menuFormat="q-mx-lg"
-    />
-
-    <HistoryChartLegendCategory
-      :label="'Fahrzeuge'"
-      :items="categorizedLegendItems.vehicle"
-      :toggleDataset="toggleDataset"
-      :getItemColor="getItemColor"
-      :getItemLineType="getItemLineType"
-      menuAnchor="bottom left"
-      menuSelf="top left"
-    />
-  </div>
+  <HistoryChartLegendCategoriesGroup
+    v-else
+    :categorizedLegendItems="categorizedLegendItems"
+    :toggleDataset="toggleDataset"
+    :getItemColor="getItemColor"
+    :getItemLineType="getItemLineType"
+  />
 </template>
 
 <script setup lang="ts">
@@ -47,10 +32,12 @@ import { useLocalDataStore } from 'src/stores/localData-store';
 import { Chart, LegendItem } from 'chart.js';
 import type { Category, CategorizedDataset } from './history-chart-model';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import HistoryChartLegendCategory from './HistoryChartLegendCategory.vue';
+import { useQuasar } from 'quasar';
+import HistoryChartLegendCategoriesGroup from './HistoryChartLegendCategoriesGroup.vue';
 import HistoryChartLegendStandard from './HistoryChartLegendStandard.vue';
 
 const mqttStore = useMqttStore();
+const $q = useQuasar();
 
 const props = defineProps<{
   chart: Chart | null;
@@ -58,6 +45,10 @@ const props = defineProps<{
 
 const localDataStore = useLocalDataStore();
 const legendItems = ref<LegendItem[]>([]);
+
+const legendLarge = computed(() => {
+  return legendItems.value.length > 20;
+});
 
 const updateLegendItems = () => {
   if (!props.chart) return;
@@ -100,10 +91,6 @@ const categorizedLegendItems = computed(() => {
     );
   });
   return categories;
-});
-
-const legendLarge = computed(() => {
-  return legendItems.value.length > 20;
 });
 
 const getItemColor = (item: LegendItem): string => {
