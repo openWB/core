@@ -63,13 +63,32 @@ class ShellyCounter(AbstractCounter):
                     power_factors = [meter[f'{i}_pf'] for i in 'abc']
                     power = meter['total_act_power'] * self.factor
                 # Shelly MiniPM G3
-                else:
-                    meter = status['pm1:0']
+                elif "pm1:0" in status:
                     log.debug("single phase shelly")
+                    meter = status['pm1:0']
                     voltages = [meter['voltage'], 0, 0]
                     currents = [meter['current'], 0, 0]
                     power = meter['apower']
                     frequency = meter['freq']
+                    powers = [meter['apower'], 0, 0]
+                elif 'switch:0' in status and 'apower' in status['switch:0']:
+                    log.debug("single phase shelly")
+                    meter = status['switch:0']
+                    power = meter['apower']
+                    voltages = [meter['voltage'], 0, 0]
+                    currents = [meter['current'], 0, 0]
+                    frequency = meter['freq']
+                    power_factors = [meter['pf'], 0, 0]
+                    powers = [meter['apower'], 0, 0]
+                else:
+                    log.debug("single phase shelly")
+                    meter = status['em1:0']
+                    power = meter['act_power']  # shelly Pro EM Gen 2
+                    voltages = [meter['voltage'], 0, 0]
+                    currents = [meter['current'], 0, 0]
+                    frequency = meter['freq']
+                    power_factors = [meter['pf'], 0, 0]
+                    powers = [meter['act_power'], 0, 0]
 
             imported, exported = self.sim_counter.sim_count(power)
 

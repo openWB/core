@@ -56,4 +56,4 @@ def test_counter_shelly_minipm_g3(monkeypatch, requests_mock: requests_mock.mock
 
 
 SAMPLE_COUNTER_STATE = CounterState(voltages=[230.9, 0, 0], power=230, currents=[
-                                    1, 0, 0], frequency=51, imported=100, exported=200)
+                                    1, 0, 0], frequency=51, imported=100, exported=200, powers=[230, 0, 0])
