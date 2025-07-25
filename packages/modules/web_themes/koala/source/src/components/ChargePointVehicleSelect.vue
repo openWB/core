@@ -49,7 +49,17 @@ const connectedVehicle = mqttStore.chargePointConnectedVehicleInfo(
   props.chargePointId,
 );
 
-const vehicles = computed(() => mqttStore.vehicleList);
+const hideStandardVehicle = computed(
+  () => mqttStore.themeConfiguration?.hide_standard_vehicle,
+);
+const vehicles = computed(() => {
+  if (hideStandardVehicle.value) {
+    return mqttStore.vehicleList.filter(
+      (vehicle) => vehicle.name !== 'Standard-Fahrzeug',
+    );
+  }
+  return mqttStore.vehicleList;
+});
 </script>
 
 <style scoped>

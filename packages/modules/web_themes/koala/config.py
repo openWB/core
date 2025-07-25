@@ -6,16 +6,18 @@ from modules.common.abstract_device import DeviceDescriptor
 @auto_str
 class KoalaWebThemeConfiguration:
     def __init__(self,
+                 hide_standard_vehicle: bool = False,
                  history_chart_range: int = 3600,
                  chargePoint_card_view_breakpoint: int = 4,
                  vehicle_card_view_breakpoint: int = 4,
                  chargePoint_table_search_input_field: bool = False,
                  vehicle_table_search_input_field: bool = False) -> None:
+        self.hide_standard_vehicle = hide_standard_vehicle
         self.history_chart_range = history_chart_range
         self.chargePoint_card_view_breakpoint = chargePoint_card_view_breakpoint
         self.vehicle_card_view_breakpoint = vehicle_card_view_breakpoint
         self.chargePoint_table_search_input_field = chargePoint_table_search_input_field
-        self.vehicle_table_search_input_field = vehicle_table_search_input_field
+        self.vehicle_table_search_input_field = vehicle_table_search_input_field        
 
 
 @auto_str
