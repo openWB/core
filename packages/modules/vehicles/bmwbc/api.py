@@ -45,9 +45,9 @@ log = getLogger(__name__)
 # send store content n debug level to soc log
 def log_store(store: dict, txt: str):
     st = deepcopy(store)            # create a copy of the store
-    st['rt'] = st['refresh_token']  # copy key to avoid REDACTED
-    st['at'] = st['access_token']   # copy key to avoid REDACTED
-    log.info("store file action:" + txt)
+    # st['rt'] = st['refresh_token']  # copy key to avoid REDACTED
+    # st['at'] = st['access_token']   # copy key to avoid REDACTED
+    log.debug("store file action:" + txt)
     log.debug(txt + ":\n" + dumps(st, indent=4))
 
 
@@ -287,11 +287,9 @@ class Api:
 
                     if nowdt > expires_at:
                         log.debug("# Proactive login to force refresh token before get_vehicles")
-                        log.debug("# before proactive login:" + str(self._auth[user_id].expires_at) +
-                                  "/" + self._auth[user_id].refresh_token)
+                        log.debug("# before proactive login:" + str(self._auth[user_id].expires_at))
                         await self._auth[user_id].login()
-                        log.debug("# after  proactive login:" + str(self._auth[user_id].expires_at) +
-                                  "/" + self._auth[user_id].refresh_token)
+                        log.debug("# after  proactive login:" + str(self._auth[user_id].expires_at))
 
                 # get vehicle list - needs to be called async
                 _loop = 5  # 5 retries
@@ -309,16 +307,10 @@ class Api:
                             log.info(self._mode + ": get_vehicles : Request Timeout (408)")
                             _err = 408
                         else:
-                            log.info(self._mode + ": get_vehicles err=" + str(err))
+                            log.info(self._mode + ": get_vehicles unknown err=" + str(err))
                         log.info(self._mode + ": get_vehicles : MyBMWAPIError, _loop/_err=" +
                                  str(_loop) + "/" + str(_err))
-                        time.sleep(10)  # sleep for 10 secs before token refresh
-                        log.info("# before except login:" + str(self._auth[user_id].expires_at))
-                        # refresh token
-                        await self._auth[user_id].login()
-                        log.info("# after  except login:" + str(self._auth[user_id].expires_at))
-                        # await self._account[user_id].get_vehicles()
-                        time.sleep(5)  # sleep for 5 secs after token refresh
+                        time.sleep(15)  # sleep for 15 secs before retry
                         _loop = _loop - 1
                     except Exception as err:
                         log.error("bmwbc.fetch_soc: get_vehicles Error, vehicle_id: " +
