@@ -56,28 +56,10 @@
         :limit-mode="limitMode"
         :current-value="currentValue"
         :target-time="vehicleTarget.time"
-      >
-        <template #update-soc-icon>
-          <q-icon
-            v-if="vehicleSocType === 'manual' && limitMode !== 'amount'"
-            name="edit"
-            size="xs"
-            class="q-ml-xs cursor-pointer"
-            @click="socInputVisible = true"
-          >
-            <q-tooltip>SoC eingeben</q-tooltip>
-          </q-icon>
-          <q-icon
-            v-else-if="vehicleSocType !== undefined && limitMode !== 'amount'"
-            name="refresh"
-            size="xs"
-            class="q-ml-xs cursor-pointer"
-            @click="refreshSoc"
-          >
-            <q-tooltip>SoC aktualisieren</q-tooltip>
-          </q-icon>
-        </template>
-      </SliderDouble>
+        :vehicle-soc-type="vehicleSocType"
+        :on-edit-soc="openSocDialog"
+        :on-refresh-soc="refreshSoc"
+      />
       <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>
@@ -150,6 +132,10 @@ const limitMode = computed(() => {
 const settingsVisible = ref<boolean>(false);
 
 const socInputVisible = ref<boolean>(false);
+const openSocDialog = () => {
+  socInputVisible.value = true;
+};
+
 const name = computed(() => mqttStore.chargePointName(props.chargePointId));
 // Typecast to string is better here because the store method returns a union type which
 // would need to be repeated in child component ChargePointPowerData
@@ -260,7 +246,7 @@ const showSocTargetSlider = computed(() => {
     // we have a energy based target
     return true;
   }
-  if (vehicleSocType.value !== undefined) {
+  if (vehicleSocType.value) {
     // we have a soc module defined
     return true;
   }

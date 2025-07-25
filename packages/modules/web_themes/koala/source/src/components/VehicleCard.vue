@@ -17,35 +17,16 @@
         </div>
       </div>
       <VehicleConnectionStateIcon :vehicle-id="vehicleId" class="q-mt-sm" />
-      <div v-if="vehicleSocModuleType !== null">
-        <SliderDouble
-          class="q-mt-sm"
-          :current-value="vehicleSocValue"
-          :readonly="true"
-          :limit-mode="'none'"
-        >
-          <template #update-soc-icon>
-            <q-icon
-              v-if="vehicleSocModuleType === 'manual'"
-              name="edit"
-              size="xs"
-              class="q-ml-xs cursor-pointer"
-              @click="socInputVisible = true"
-            >
-              <q-tooltip>SoC eingeben</q-tooltip>
-            </q-icon>
-            <q-icon
-              v-else-if="vehicleSocModuleType !== undefined"
-              name="refresh"
-              size="xs"
-              class="q-ml-xs cursor-pointer"
-              @click="refreshSoc"
-            >
-              <q-tooltip>SoC aktualisieren</q-tooltip>
-            </q-icon>
-          </template>
-        </SliderDouble>
-      </div>
+      <SliderDouble
+        v-if="vehicleSocType"
+        class="q-mt-sm"
+        :current-value="vehicleSocValue"
+        :readonly="true"
+        :limit-mode="'none'"
+        :vehicle-soc-type="vehicleSocType"
+        :on-edit-soc="openSocDialog"
+        :on-refresh-soc="refreshSoc"
+      />
       <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>
@@ -77,6 +58,9 @@ const props = defineProps<{
 const mqttStore = useMqttStore();
 const $q = useQuasar();
 const socInputVisible = ref<boolean>(false);
+const openSocDialog = () => {
+  socInputVisible.value = true;
+};
 
 const vehicle = computed(() => {
   return mqttStore.vehicleList.find((v) => v.id === props.vehicleId);
@@ -86,8 +70,8 @@ const vehicleInfo = computed(() => {
   return mqttStore.vehicleInfo(props.vehicleId);
 });
 
-const vehicleSocModuleType = computed(() => {
-  return mqttStore.vehicleSocModule(props.vehicleId)?.type;
+const vehicleSocType = computed(() => {
+  return mqttStore.vehicleSocType(props.vehicleId);
 });
 
 const vehicleSocValue = computed(() => {
