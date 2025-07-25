@@ -1,6 +1,6 @@
 <template>
   <q-card ref="cardRef" class="full-height card-width">
-    <q-card-section class="row justify-between text-h6 text-bold">
+    <q-card-section class="row justify-between text-h6 text-bold ellipsis" :title="name">
       {{ name }}
     </q-card-section>
     <q-separator inset />
@@ -318,5 +318,12 @@ onMounted(() => {
 .q-card__section:not(:first-of-type):not(:last-of-type) {
   padding-top: 0;
   padding-bottom: 0;
+}
+
+.ellipsis {
+  display: inline-block;
+  max-width: 310px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
