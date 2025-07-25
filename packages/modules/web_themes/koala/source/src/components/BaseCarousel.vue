@@ -10,7 +10,7 @@
     padding
     :navigation="groupedItems.length > 1"
     :arrows="groupedItems.length > 1 && $q.screen.gt.xs"
-    class="carousel-height q-mt-md"
+    class="carousel-height"
     transition-next="slide-left"
     transition-prev="slide-right"
     @mousedown.prevent

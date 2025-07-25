@@ -978,7 +978,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const convertDcCurrentToPower = (dcCurrent: number): number => {
     return Math.round((dcCurrent * 3 * 230) / 1000);
-  }
+  };
 
   /**
    * Converts power in Kilowatts to DC current in Ampere.
@@ -991,8 +991,8 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns number
    */
   const convertPowerToDcCurrent = (power: number): number => {
-    return Math.round(power * 1000 / (230 * 3));
-  }
+    return Math.round((power * 1000) / (230 * 3));
+  };
 
   /**
    * Get or set the charge point connected vehicle instant charging DC power identified by the charge point id

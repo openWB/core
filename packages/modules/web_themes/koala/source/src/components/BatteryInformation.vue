@@ -1,7 +1,4 @@
 <template>
-  <div v-if="showBatteryOverview" class="row justify-center">
-    <BatteryCard :battery-id="undefined" />
-  </div>
   <BaseCarousel :items="batteryIds">
     <template #item="{ item }">
       <BatteryCard :battery-id="item" />
@@ -18,9 +15,12 @@ import BatteryCard from 'src/components/BatteryCard.vue';
 
 const mqttStore = useMqttStore();
 
-const batteryIds = computed(() => mqttStore.batteryIds);
-
-const showBatteryOverview = computed(() => {
-  return mqttStore.batteryIds.length > 1;
+const batteryIds = computed(() => {
+  let ids = mqttStore.batteryIds;
+  console.log('Battery IDs:' + ids);
+  if (ids.length > 0) {
+    return [-1].concat(ids); // add overview card if more than one battery
+  }
+  return ids;
 });
 </script>

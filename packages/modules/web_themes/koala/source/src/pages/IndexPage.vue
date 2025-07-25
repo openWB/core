@@ -24,15 +24,15 @@
       <!-- Tab Panels -->
       <q-tab-panels v-model="tab" class="col">
         <!-- Charge Points -->
-        <q-tab-panel name="charge-points" class="q-pa-none column">
+        <q-tab-panel name="charge-points">
           <ChargePointInformation />
         </q-tab-panel>
         <!-- Vehicles -->
-        <q-tab-panel name="vehicles" class="q-pa-none column">
+        <q-tab-panel name="vehicles">
           <VehicleInformation />
         </q-tab-panel>
         <!-- Batteries -->
-        <q-tab-panel name="batteries" class="remove-flex-properties">
+        <q-tab-panel name="batteries">
           <BatteryInformation />
         </q-tab-panel>
         <!-- Smart Home -->
