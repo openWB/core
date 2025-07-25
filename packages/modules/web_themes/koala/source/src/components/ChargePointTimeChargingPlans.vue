@@ -1,5 +1,7 @@
 <template>
-  <div class="row items-center q-ma-none q-pa-none no-wrap items-center justify-between">
+  <div
+    class="row items-center q-ma-none q-pa-none no-wrap items-center justify-between"
+  >
     <div class="text-subtitle2">Zeitladen</div>
     <div>
       <ChargePointTimeCharging :charge-point-id="props.chargePointId" dense />
