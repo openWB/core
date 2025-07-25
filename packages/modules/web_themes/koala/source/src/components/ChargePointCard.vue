@@ -1,6 +1,9 @@
 <template>
   <q-card ref="cardRef" class="full-height card-width">
-    <q-card-section class="row justify-between text-h6 text-bold ellipsis" :title="name">
+    <q-card-section
+      class="row justify-between text-h6 text-bold ellipsis"
+      :title="name"
+    >
       {{ name }}
     </q-card-section>
     <q-separator inset />
