@@ -68,6 +68,15 @@ class PvAll:
                             else:
                                 if fault_state < module_data.get.fault_state:
                                     fault_state = module_data.get.fault_state
+                            limit_value = data.data.io_actions.stepwise_control(data.data.pv_data[module].num)
+                            if limit_value is not None and data.data.pv_data[module].data.get.fault_state == 0:
+                                msg = (
+                                    f"Leistung begrenzt auf {int(limit_value * 100)}%"
+                                    if limit_value < 1
+                                    else "Keine Leistungsbegrenzung aktiv."
+                                )
+                                data.data.pv_data[module].data.get.fault_str = msg
+                                Pub().pub(f"openWB/set/pv/{data.data.pv_data[module].num}/get/fault_str", msg)
                     except Exception:
                         log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
                 if fault_state == 0:
