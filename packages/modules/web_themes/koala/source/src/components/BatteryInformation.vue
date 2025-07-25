@@ -17,8 +17,9 @@ const mqttStore = useMqttStore();
 
 const batteryIds = computed(() => {
   let ids = mqttStore.batteryIds;
-  if (ids.length > 1) {
-    ids.unshift(-1); // add overview card if more than one battery
+  console.log('Battery IDs:' + ids);
+  if (ids.length > 0) {
+    return [-1].concat(ids); // add overview card if more than one battery
   }
   return ids;
 });
