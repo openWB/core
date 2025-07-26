@@ -34,8 +34,7 @@ def create_vehicle(config: EVCCVehicleSocConfiguration, stub: vehicle_pb2_grpc.V
     response = stub.New(
         vehicle_pb2.NewRequest(
             token=config.sponsor_token,
-            type="template",
-            template=config.vehicle_type,
+            type=config.vehicle_type,
             config=cast(Mapping[str, str], {
                 'User': config.user_id,
                 'Password': config.password,
@@ -69,7 +68,7 @@ def fetch_soc(
         stub = vehicle_pb2_grpc.VehicleStub(channel)
 
         if not evcc_config.vehicle_id:  # create and fetch vehicle id if not included in config
-            create_and_save_vehicle_id(stub, evcc_config, vehicle)
+             vehicle_to_fetch = create_and_save_vehicle_id(stub, evcc_config, vehicle)
 #            vehicle_to_fetch = create_vehicle(evcc_config, stub)
 #            log.debug("Vehicle client received: " + str(vehicle_to_fetch))
 
