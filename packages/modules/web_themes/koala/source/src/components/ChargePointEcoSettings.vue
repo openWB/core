@@ -78,15 +78,33 @@
         v-if="maxPrice.value"
         icon="remove"
         color="grey"
-        size="sm"
+        size="xs"
+        dense
         class="col q-mr-sm"
         @click="maxPrice.value = maxPrice.value - 0.01"
+      />
+      <q-btn
+        v-if="maxPrice.value"
+        icon="remove"
+        color="grey"
+        size="sm"
+        class="col q-mr-sm"
+        @click="maxPrice.value = maxPrice.value - 1"
       />
       <q-btn
         v-if="maxPrice.value"
         icon="add"
         color="grey"
         size="sm"
+        class="col q-mr-sm"
+        @click="maxPrice.value = maxPrice.value + 1"
+      />
+      <q-btn
+        v-if="maxPrice.value"
+        icon="add"
+        color="grey"
+        size="xs"
+        dense
         class="col"
         @click="maxPrice.value = maxPrice.value + 0.01"
       />
