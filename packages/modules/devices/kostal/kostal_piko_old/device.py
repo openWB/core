@@ -6,6 +6,7 @@ from typing import Iterable, Optional, List
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.kostal.kostal_piko_old import inverter
 from modules.devices.kostal.kostal_piko_old.config import (KostalPikoOld,
@@ -24,7 +25,8 @@ def create_device(device_config: KostalPikoOld):
         response = req.get_http_session().get(device_config.configuration.url, verify=False, auth=(
             device_config.configuration.user, device_config.configuration.password), timeout=5).text
         for component in components:
-            component.update(response)
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(response)
 
     return ConfigurableDevice(
         device_config=device_config,

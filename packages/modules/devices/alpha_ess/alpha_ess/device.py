@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Iterable, Union
 
 from helpermodules.utils.run_command import run_command
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.alpha_ess.alpha_ess.config import (
     AlphaEss, AlphaEssBatSetup, AlphaEssCounterSetup, AlphaEssInverterSetup)
@@ -48,7 +49,8 @@ def create_device(device_config: AlphaEss):
         nonlocal client
         with client:
             for component in components:
-                component.update()
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update()
 
     def initializer():
         nonlocal client

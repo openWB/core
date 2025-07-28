@@ -4,6 +4,7 @@ from typing import Iterable, Optional, List, Union
 
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.deye.deye.bat import DeyeBat
@@ -34,7 +35,8 @@ def create_device(device_config: Deye):
         nonlocal client
         with client:
             for component in components:
-                component.update()
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update()
 
     def initializer():
         nonlocal client

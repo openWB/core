@@ -1,5 +1,5 @@
 <template>
-  <q-card class="full-height card-width">
+  <q-card ref="cardRef" class="full-height card-width">
     <q-card-section>
       <div class="row items-center text-h6 text-bold">
         <div class="col flex items-center">
@@ -56,28 +56,10 @@
         :limit-mode="limitMode"
         :current-value="currentValue"
         :target-time="vehicleTarget.time"
-      >
-        <template #update-soc-icon>
-          <q-icon
-            v-if="vehicleSocType === 'manual' && limitMode !== 'amount'"
-            name="edit"
-            size="xs"
-            class="q-ml-xs cursor-pointer"
-            @click="socInputVisible = true"
-          >
-            <q-tooltip>SoC eingeben</q-tooltip>
-          </q-icon>
-          <q-icon
-            v-else-if="vehicleSocType !== undefined && limitMode !== 'amount'"
-            name="refresh"
-            size="xs"
-            class="q-ml-xs cursor-pointer"
-            @click="refreshSoc"
-          >
-            <q-tooltip>SoC aktualisieren</q-tooltip>
-          </q-icon>
-        </template>
-      </SliderDouble>
+        :vehicle-soc-type="vehicleSocType"
+        :on-edit-soc="openSocDialog"
+        :on-refresh-soc="refreshSoc"
+      />
       <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>
@@ -93,7 +75,7 @@
   />
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, inject } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderDouble from './SliderDouble.vue';
 import ChargePointLock from './ChargePointLock.vue';
@@ -108,6 +90,10 @@ import ManualSocDialog from './ManualSocDialog.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
 import { useQuasar } from 'quasar';
+
+const cardRef = ref<{ $el: HTMLElement } | null>(null);
+const setCardWidth =
+  inject<(width: number | undefined) => void>('setCardWidth');
 
 const mqttStore = useMqttStore();
 
@@ -146,6 +132,10 @@ const limitMode = computed(() => {
 const settingsVisible = ref<boolean>(false);
 
 const socInputVisible = ref<boolean>(false);
+const openSocDialog = () => {
+  socInputVisible.value = true;
+};
+
 const name = computed(() => mqttStore.chargePointName(props.chargePointId));
 // Typecast to string is better here because the store method returns a union type which
 // would need to be repeated in child component ChargePointPowerData
@@ -256,7 +246,7 @@ const showSocTargetSlider = computed(() => {
     // we have a energy based target
     return true;
   }
-  if (vehicleSocType.value !== undefined) {
+  if (vehicleSocType.value) {
     // we have a soc module defined
     return true;
   }
@@ -278,6 +268,11 @@ const refreshSoc = () => {
     message: 'SoC Update angefordert.',
   });
 };
+
+onMounted(() => {
+  const cardWidth = cardRef.value?.$el.offsetWidth;
+  setCardWidth?.(cardWidth);
+});
 </script>
 <style lang="scss" scoped>
 .card-width {

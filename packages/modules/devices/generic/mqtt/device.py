@@ -5,6 +5,7 @@ import logging
 from helpermodules.broker import BrokerClient
 from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_type import type_to_topic_mapping
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.generic.mqtt import bat, counter, inverter
@@ -38,7 +39,14 @@ def create_device(device_config: Mqtt):
         if received_topics:
             log.debug(f"Empfange MQTT Daten für Gerät {device_config.id}: {received_topics}")
             for component in components:
-                component.update(received_topics)
+                with SingleComponentUpdateContext(component.fault_state):
+                    try:
+                        component.update(received_topics)
+                    except KeyError:
+                        raise KeyError(
+                            "Fehlende MQTT-Daten: Stelle sicher, dass Du Werte an die erforderlichen Topics "
+                            "(beschrieben in den Komponenten-Einstellungen) veröffentlichst (Publish)."
+                        )
         else:
             for component in components:
                 component.fault_state.warning(

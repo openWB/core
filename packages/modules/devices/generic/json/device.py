@@ -5,6 +5,7 @@ from typing import List, Union, Iterable
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.generic.json import bat, counter, inverter
 from modules.devices.generic.json.bat import JsonBat
@@ -36,7 +37,8 @@ def create_device(device_config: Json):
     def update_components(components: Iterable[JsonComponent]):
         response = req.get_http_session().get(device_config.configuration.url, timeout=5).json()
         for component in components:
-            component.update(response)
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(response)
 
     return ConfigurableDevice(
         device_config,

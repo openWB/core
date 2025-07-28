@@ -1,5 +1,5 @@
 <template>
-  <q-card class="full-height card-width">
+  <q-card ref="cardRef" class="full-height card-width">
     <q-card-section>
       <div class="row items-center text-h6 text-bold">
         <div class="col flex items-center">
@@ -17,35 +17,16 @@
         </div>
       </div>
       <VehicleConnectionStateIcon :vehicle-id="vehicleId" class="q-mt-sm" />
-      <div v-if="isVehicleSocModule !== undefined">
-        <SliderDouble
-          class="q-mt-sm"
-          :current-value="vehicleSocValue"
-          :readonly="true"
-          :limit-mode="'none'"
-        >
-          <template #update-soc-icon>
-            <q-icon
-              v-if="vehicleSocModuleType === 'manual'"
-              name="edit"
-              size="xs"
-              class="q-ml-xs cursor-pointer"
-              @click="socInputVisible = true"
-            >
-              <q-tooltip>SoC eingeben</q-tooltip>
-            </q-icon>
-            <q-icon
-              v-else-if="vehicleSocModuleType !== undefined"
-              name="refresh"
-              size="xs"
-              class="q-ml-xs cursor-pointer"
-              @click="refreshSoc"
-            >
-              <q-tooltip>SoC aktualisieren</q-tooltip>
-            </q-icon>
-          </template>
-        </SliderDouble>
-      </div>
+      <SliderDouble
+        v-if="vehicleSocType"
+        class="q-mt-sm"
+        :current-value="vehicleSocValue"
+        :readonly="true"
+        :limit-mode="'none'"
+        :vehicle-soc-type="vehicleSocType"
+        :on-edit-soc="openSocDialog"
+        :on-refresh-soc="refreshSoc"
+      />
       <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>
@@ -59,12 +40,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, inject } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import SliderDouble from './SliderDouble.vue';
 import ManualSocDialog from './ManualSocDialog.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
+
+const cardRef = ref<{ $el: HTMLElement } | null>(null);
+const setCardWidth =
+  inject<(width: number | undefined) => void>('setCardWidth');
 
 const props = defineProps<{
   vehicleId: number;
@@ -73,6 +58,9 @@ const props = defineProps<{
 const mqttStore = useMqttStore();
 const $q = useQuasar();
 const socInputVisible = ref<boolean>(false);
+const openSocDialog = () => {
+  socInputVisible.value = true;
+};
 
 const vehicle = computed(() => {
   return mqttStore.vehicleList.find((v) => v.id === props.vehicleId);
@@ -82,12 +70,8 @@ const vehicleInfo = computed(() => {
   return mqttStore.vehicleInfo(props.vehicleId);
 });
 
-const isVehicleSocModule = computed(() => {
-  return mqttStore.vehicleSocModule(props.vehicleId)?.name;
-});
-
-const vehicleSocModuleType = computed(() => {
-  return mqttStore.vehicleSocModule(props.vehicleId)?.type;
+const vehicleSocType = computed(() => {
+  return mqttStore.vehicleSocType(props.vehicleId);
 });
 
 const vehicleSocValue = computed(() => {
@@ -101,6 +85,11 @@ const refreshSoc = () => {
     message: 'SoC Update angefordert.',
   });
 };
+
+onMounted(() => {
+  const cardWidth = cardRef.value?.$el.offsetWidth;
+  setCardWidth?.(cardWidth);
+});
 </script>
 
 <style lang="scss" scoped>

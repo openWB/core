@@ -14,7 +14,7 @@ Die Konfiguration erfolgt im Bereich Einstellungen - Konfiguration - Fahrzeuge:
 
 Für nicht-Skoda Fahrzeuge (Audi, VW, etc.) funktioniert das Modul nicht.
 
-Erfolgreich getestet u.a. für folgende Fahrzeuge: Enyaq.
+Erfolgreich getestet u.a. für folgende Fahrzeuge: Enyaq, Elroq.
 
 **Wichtig für alle Fahrzeuge:**
 Es muss ein aktives Konto im Skoda ID Portal vorhanden sein und die "MySkoda App" muss eingerichtet sein.

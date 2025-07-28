@@ -5,6 +5,7 @@ from typing import Iterable, Optional, List, Union
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.solarmax.solarmax import inverter
 from modules.devices.solarmax.solarmax.bat import SolarmaxBat
@@ -29,7 +30,8 @@ def create_device(device_config: Solarmax):
         nonlocal client
         with client:
             for component in components:
-                component.update()
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update()
 
     def initializer():
         nonlocal client
