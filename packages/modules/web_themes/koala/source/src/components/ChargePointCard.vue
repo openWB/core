@@ -1,7 +1,7 @@
 <template>
   <q-card ref="cardRef" class="full-height card-width">
     <q-card-section
-      class="row justify-between text-h6 text-bold ellipsis"
+      class="row justify-between text-h6 text-bold ellipsis max-width"
       :title="name"
     >
       {{ name }}
@@ -323,10 +323,8 @@ onMounted(() => {
   padding-bottom: 0;
 }
 
-.ellipsis {
+.max-width {
   display: inline-block;
   max-width: 310px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 </style>
