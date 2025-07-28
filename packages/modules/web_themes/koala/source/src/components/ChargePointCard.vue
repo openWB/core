@@ -1,7 +1,7 @@
 <template>
   <q-card ref="cardRef" class="full-height card-width">
     <q-card-section
-      class="row justify-between text-h6 text-bold ellipsis max-width"
+      class="justify-between text-h6 text-bold ellipsis"
       :title="name"
     >
       {{ name }}
@@ -321,10 +321,5 @@ onMounted(() => {
 .q-card__section:not(:first-of-type):not(:last-of-type) {
   padding-top: 0;
   padding-bottom: 0;
-}
-
-.max-width {
-  display: inline-block;
-  max-width: 310px;
 }
 </style>
