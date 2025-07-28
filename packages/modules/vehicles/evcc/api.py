@@ -34,7 +34,7 @@ def create_vehicle(config: EVCCVehicleSocConfiguration, stub: vehicle_pb2_grpc.V
     response = stub.New(
         vehicle_pb2.NewRequest(
             token=config.sponsor_token,
-            type=template,
+            type="template",
             template=config.vehicle_type,
             config=cast(Mapping[str, str], {
                 'User': config.user_id,
