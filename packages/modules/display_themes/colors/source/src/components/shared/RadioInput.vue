@@ -30,6 +30,8 @@ const v = computed({
 		return props.modelValue
 	},
 	set(value: number | string) {
+		console.log(props.options)
+		console.log('set value', value)
 		emit('update:modelValue', value)
 	},
 })
@@ -41,13 +43,18 @@ function getColor(index: number) {
 	}
 }
 function setValue(event: Event) {
+	console.log(event)
 	let element = event.target as HTMLButtonElement
 	while (element && !element.value && element.parentElement) {
 		// we need to move up the DOM in case a sub element of the button was clicked
 		element = element.parentElement as HTMLButtonElement
 	}
 	if (element.value) {
-		v.value = element.value
+		if (typeof props.options[0][1] === 'number') {
+			v.value = Number(element.value)
+		} else {
+			v.value = element.value
+		}
 	}
 }
 </script>

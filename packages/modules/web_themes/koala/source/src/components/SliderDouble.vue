@@ -21,7 +21,7 @@
         v-model="target"
         :min="0"
         :max="100"
-        color="light-green-5"
+        color="light-green-13"
         inner-track-color="blue-grey-2"
         class="target-slider"
         track-size="1.5em"
@@ -41,7 +41,24 @@
               ? formatEnergy(currentValue)
               : currentValue + '%'
           }}
-          <slot name="update-soc-icon"></slot>
+          <q-icon
+            v-if="vehicleSocType === 'manual' && limitMode !== 'amount'"
+            name="edit"
+            size="xs"
+            class="q-ml-xs cursor-pointer"
+            @click="onEditSoc"
+          >
+            <q-tooltip>SoC eingeben</q-tooltip>
+          </q-icon>
+          <q-icon
+            v-else-if="vehicleSocType !== undefined && limitMode !== 'amount'"
+            name="refresh"
+            size="xs"
+            class="q-ml-xs cursor-pointer"
+            @click="onRefreshSoc"
+          >
+            <q-tooltip>SoC aktualisieren</q-tooltip>
+          </q-icon>
         </div>
       </div>
       <div v-if="props.targetTime" class="col text-center">
@@ -95,6 +112,19 @@ const props = defineProps({
     type: String,
     required: false,
     default: undefined,
+  },
+  vehicleSocType: {
+    type: String,
+    required: false,
+    default: undefined,
+  },
+  onEditSoc: {
+    type: Function,
+    required: false,
+  },
+  onRefreshSoc: {
+    type: Function,
+    required: false,
   },
 });
 

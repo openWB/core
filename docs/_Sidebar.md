@@ -8,6 +8,7 @@
   * [SoC BMW & Mini](https://github.com/openWB/core/wiki/SoC-BMW-Mini)
   * [SoC Cupra](https://github.com/openWB/core/wiki/SoC-Cupra)
   * [SoC OVMS](https://github.com/openWB/core/wiki/SoC-OVMS)
+  * [SoC Skoda](https://github.com/openWB/core/wiki/SoC-Skoda)
   * [SoC VWId](https://github.com/openWB/core/wiki/SoC-VWId)
   * [WiCAN OBD2-Dongle mit manuellem SoC](https://github.com/openWB/core/wiki/WiCAN)
 * [Lademodi](https://github.com/openWB/core/wiki/Lademodi)
