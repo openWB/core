@@ -2379,11 +2379,18 @@ class UpdateConfig:
                 if config["type"] == "external_openwb":
                     log.info(f"Update an LP {config['name']} angestoßen.")
                     ip_address = config["configuration"]["ip_address"]
+                    branch = decode_payload(self.all_received_topics[
+                        "openWB/system/current_branch"])
+                    if branch == "master":
+                        tag = "*HEAD*"
+                    else:
+                        tag = re.search(r"\[([^\]]+)\]",
+                                        decode_payload(self.all_received_topics["openWB/system/current_branch_commit"])
+                                        ).group(1)
                     pub.pub_single("openWB/set/command/primary/todo",
                                    json.dumps({"command": "systemUpdate",
-                                               "data": {"branch": decode_payload(self.all_received_topics[
-                                                   "openWB/system/current_branch"]),
-                                                   "tag": "*HEAD*"}}),
+                                               "data": {"branch": branch,
+                                                        "tag": tag, }}),
                                    ip_address,
                                    no_json=True)
                     time.sleep(2)
