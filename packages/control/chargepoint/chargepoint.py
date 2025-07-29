@@ -591,21 +591,21 @@ class Chargepoint(ChargepointRfidMixin):
             required_current = min(required_current, self.template.data.dc_max_current)
         return required_current
 
-    def check_min_max_current(self, required_current: float, phases: int, pv: bool = False) -> float:
+    def check_min_max_current(self, required_current: float, phases: int) -> float:
         required_current_prev = required_current
         msg = None
         if (self.data.control_parameter.chargemode == Chargemode.BIDI_CHARGING and
-                self.data.control_parameter.submode == Chargemode.BIDI_CHARGING and required_current < 0):
-            required_current = max(self.data.get.max_discharge_power / phases / 230, required_current)
-            # CDP prüft für Ladeströme, aber Entladeströme dürfen auch nicht höher sein.
+                self.data.control_parameter.submode == Chargemode.BIDI_CHARGING):
+            if required_current < 0:
+                required_current = max(self.data.get.max_discharge_power / phases / 230, required_current)
+            else:
+                required_current = max(self.data.get.max_charge_power / phases / 230, required_current)
             required_current = self.check_cp_min_max_current(abs(required_current), phases) * -1
         else:
             required_current, msg = self.data.set.charging_ev_data.check_min_max_current(
-                self.data.control_parameter,
                 required_current,
                 phases,
-                self.template.data.charging_type,
-                pv)
+                self.template.data.charging_type)
             required_current = self.check_cp_min_max_current(required_current, phases)
         if required_current != required_current_prev and msg is None:
             msg = ("Die Einstellungen in dem Ladepunkt-Profil beschränken den Strom auf "

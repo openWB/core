@@ -232,11 +232,9 @@ class Ev:
                     control_parameter.phases)
 
     def check_min_max_current(self,
-                              control_parameter: ControlParameter,
                               required_current: float,
                               phases: int,
-                              charging_type: str,
-                              pv: bool = False,) -> Tuple[float, Optional[str]]:
+                              charging_type: str) -> Tuple[float, Optional[str]]:
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt.
         Falls nicht, wird der Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom des EV gesetzt.
         Wenn PV-Laden aktiv ist, darf die Stromstärke nicht unter den PV-Mindeststrom gesetzt werden.
@@ -247,13 +245,10 @@ class Ev:
         if phases != 0:
             # EV soll/darf nicht laden
             if required_current != 0:
-                if not pv:
-                    if charging_type == ChargingType.AC.value:
-                        min_current = self.ev_template.data.min_current
-                    else:
-                        min_current = self.ev_template.data.dc_min_current
+                if charging_type == ChargingType.AC.value:
+                    min_current = self.ev_template.data.min_current
                 else:
-                    min_current = control_parameter.required_current
+                    min_current = self.ev_template.data.dc_min_current
                 if required_current < min_current:
                     required_current = min_current
                     msg = ("Die Einstellungen in dem Fahrzeug-Profil beschränken den Strom auf "

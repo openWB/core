@@ -108,9 +108,8 @@ class ChargepointModule(AbstractChargepoint):
                 chargepoint_state.rfid_timestamp = json_rsp["rfid_timestamp"]
             if json_rsp.get("max_discharge_power"):
                 chargepoint_state.max_discharge_power = json_rsp["max_discharge_power"]
-            else:
-                # TODO REMOVE
-                chargepoint_state.max_discharge_power = 4000
+            if json_rsp.get("max_charge_power"):
+                chargepoint_state.max_charge_power = json_rsp["max_charge_power"]
 
             self.validate_values(chargepoint_state)
             self.client_error_context.reset_error_counter()

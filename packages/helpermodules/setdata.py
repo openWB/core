@@ -531,6 +531,7 @@ class SetData:
                 "/get/charging_current" in msg.topic or
                 "/get/charging_power" in msg.topic or
                 "/get/charging_voltage" in msg.topic or
+                "/get/max_charge_power" in msg.topic or
                 "/get/max_discharge_power" in msg.topic or
                 "/get/imported" in msg.topic or
                 "/get/exported" in msg.topic or

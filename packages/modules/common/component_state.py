@@ -171,6 +171,7 @@ class ChargepointState:
                  charging_voltage: Optional[float] = 0,
                  charging_power: Optional[float] = 0,
                  evse_signaling: Optional[str] = None,
+                 max_charge_power: Optional[float] = None,
                  max_discharge_power: Optional[float] = None,
                  powers: Optional[List[Optional[float]]] = None,
                  voltages: Optional[List[Optional[float]]] = None,
@@ -215,6 +216,7 @@ class ChargepointState:
         self.current_commit = current_commit
         self.version = version
         self.evse_signaling = evse_signaling
+        self.max_charge_power = max_charge_power
         self.max_discharge_power = max_discharge_power
 
 
