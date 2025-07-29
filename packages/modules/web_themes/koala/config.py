@@ -17,7 +17,7 @@ class KoalaWebThemeConfiguration:
         self.chargePoint_card_view_breakpoint = chargePoint_card_view_breakpoint
         self.vehicle_card_view_breakpoint = vehicle_card_view_breakpoint
         self.chargePoint_table_search_input_field = chargePoint_table_search_input_field
-        self.vehicle_table_search_input_field = vehicle_table_search_input_field        
+        self.vehicle_table_search_input_field = vehicle_table_search_input_field
 
 
 @auto_str
