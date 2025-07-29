@@ -129,14 +129,6 @@ export interface VehicleInfo {
   manufacturer: string;
   model: string;
 }
-
-export interface VehicleSocModuleConfig {
-  name?: string;
-  type: string | null;
-  official?: boolean;
-  configuration: object;
-}
-
 export interface ScheduledChargingPlan {
   id: number;
   name: string;

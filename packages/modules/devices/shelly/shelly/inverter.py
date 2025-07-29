@@ -50,6 +50,7 @@ class ShellyInverter(AbstractInverter):
                 # shellyEM has one meter, shelly3EM has three meters:
                 for meter in meters:
                     power = power + meter['power']
+                    power = power + meter['power']
             else:
                 if 'switch:0' in status and 'apower' in status['switch:0']:
                     power = status['switch:0']['apower']
@@ -57,7 +58,15 @@ class ShellyInverter(AbstractInverter):
                 elif 'em1:0' in status:
                     power = status['em1:0']['act_power']  # shelly Pro EM Gen 2
                     currents = [status['em1:0']['current'], 0, 0]
+                if 'switch:0' in status and 'apower' in status['switch:0']:
+                    power = status['switch:0']['apower']
+                    currents = [status['switch:0']['current'], 0, 0]
+                elif 'em1:0' in status:
+                    power = status['em1:0']['act_power']  # shelly Pro EM Gen 2
+                    currents = [status['em1:0']['current'], 0, 0]
                 elif 'pm1:0' in status:
+                    power = status['pm1:0']['apower']  # shelly PM Mini Gen 3
+                    currents = [status['pm1:0']['current'], 0, 0]
                     power = status['pm1:0']['apower']  # shelly PM Mini Gen 3
                     currents = [status['pm1:0']['current'], 0, 0]
                 else:

@@ -1,16 +1,12 @@
 <template>
-  <q-card ref="cardRef" class="full-height card-width">
+  <q-card
+    ref="cardRef"
+    class="full-height card-width"
+    :class="{ 'battery-sum': props.batteryId === -1 }"
+  >
     <q-card-section>
       <div class="row text-h6 items-center text-bold justify-between">
-        <div>
-          <q-icon
-            name="battery_full"
-            size="sm"
-            class="q-mr-sm"
-            color="primary"
-          />
-          {{ cardTitle }}
-        </div>
+        {{ cardTitle }}
         <q-icon
           class="cursor-pointer"
           v-if="showSettings"
@@ -78,7 +74,7 @@ const setCardWidth = inject<((width: number | undefined) => void) | undefined>(
 );
 
 const props = defineProps<{
-  batteryId: number | undefined;
+  batteryId: number;
 }>();
 
 const singleBattery = computed(() => {
@@ -86,10 +82,14 @@ const singleBattery = computed(() => {
 });
 
 const showSettings = computed(() => {
-  return props.batteryId === undefined || singleBattery.value;
+  return isOverview.value || singleBattery.value;
 });
 
 const { batteryModes } = useBatteryModes();
+
+const isOverview = computed(() => {
+  return props.batteryId === -1;
+});
 
 const batteryMode = computed(() => {
   const mode = mqttStore.batteryMode();
@@ -101,28 +101,28 @@ const dialog = ref();
 const mqttStore = useMqttStore();
 
 const cardTitle = computed(() => {
-  if (props.batteryId === undefined) {
+  if (isOverview.value) {
     return 'Speicher Übersicht';
   }
   return mqttStore.batteryName(props.batteryId);
 });
 
 const soc = computed(() => {
-  if (props.batteryId === undefined) {
+  if (isOverview.value) {
     return mqttStore.batterySocTotal;
   }
   return mqttStore.batterySoc(props.batteryId);
 });
 
 const power = computed(() => {
-  if (props.batteryId === undefined) {
+  if (isOverview.value) {
     return mqttStore.batteryTotalPower('textValue') as string | '---';
   }
   return mqttStore.batteryPower(props.batteryId, 'textValue') as string | '---';
 });
 
 const dailyImportedEnergy = computed(() => {
-  if (props.batteryId === undefined) {
+  if (isOverview.value) {
     return mqttStore.batteryDailyImportedTotal('textValue') as string | '---';
   }
   return (
@@ -132,7 +132,7 @@ const dailyImportedEnergy = computed(() => {
 });
 
 const dailyExportedEnergy = computed(() => {
-  if (props.batteryId === undefined) {
+  if (isOverview.value) {
     return mqttStore.batteryDailyExportedTotal('textValue') as string | '---';
   }
   return (

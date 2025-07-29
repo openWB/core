@@ -1,52 +1,60 @@
 <template>
   <q-card ref="cardRef" class="full-height card-width">
-    <q-card-section>
-      <div class="row items-center text-h6 text-bold">
-        <div class="col flex items-center">
-          {{ name }}
-          <ChargePointLock :charge-point-id="props.chargePointId" />
-          <ChargePointStateIcon
-            :charge-point-id="Number(props.chargePointId)"
-          />
-          <ChargePointTimeCharging
-            :charge-point-id="Number(props.chargePointId)"
-            :readonly="true"
-            :iconSize="'xs'"
-            :toolTip="true"
-          />
-        </div>
-        <q-icon
-          class="cursor-pointer"
-          name="settings"
-          size="sm"
-          @click="settingsVisible = true"
+    <q-card-section
+      class="justify-between text-h6 text-bold ellipsis"
+      :title="name"
+    >
+      {{ name }}
+    </q-card-section>
+    <q-separator inset />
+    <q-card-section class="row flex items-center justify-between">
+      <div>
+        <ChargePointStateIcon :charge-point-id="Number(props.chargePointId)" />
+        <ChargePointTimeCharging
+          :charge-point-id="Number(props.chargePointId)"
+          :readonly="true"
+          :iconSize="'xs'"
+          :toolTip="true"
         />
+        <ChargePointLock :charge-point-id="props.chargePointId" />
       </div>
+      <q-icon
+        class="cursor-pointer"
+        name="settings"
+        size="sm"
+        @click="settingsVisible = true"
+      />
+    </q-card-section>
+    <q-card-section>
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
       <ChargePointStateMessage :charge-point-id="props.chargePointId" />
-      <div class="row items-center q-mt-sm">
-        <ChargePointVehicleSelect
-          :charge-point-id="Number(props.chargePointId)"
-        />
-        <ChargePointPriority :charge-point-id="props.chargePointId" />
-      </div>
+    </q-card-section>
+    <q-card-section class="row items-center q-mt-sm">
+      <ChargePointVehicleSelect
+        :charge-point-id="Number(props.chargePointId)"
+      />
+      <ChargePointPriority :charge-point-id="props.chargePointId" />
+    </q-card-section>
+    <q-card-section>
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
-      <div class="row q-mt-sm">
-        <div class="col">
-          <div class="text-subtitle2">Leistung</div>
-          <div class="col no-wrap">
-            <ChargePointPowerData
-              :power="power"
-              :phase-number="phaseNumber"
-              :current="chargingCurrent"
-            />
-          </div>
-        </div>
-        <div class="col text-right">
-          <div class="text-subtitle2">geladen</div>
-          {{ energyChargedPlugged }}
+    </q-card-section>
+    <q-card-section class="row q-mt-sm">
+      <div class="col">
+        <div class="text-subtitle2">Leistung</div>
+        <div class="col no-wrap">
+          <ChargePointPowerData
+            :power="power"
+            :phase-number="phaseNumber"
+            :current="chargingCurrent"
+          />
         </div>
       </div>
+      <div class="col text-right">
+        <div class="text-subtitle2">geladen</div>
+        {{ energyChargedPlugged }}
+      </div>
+    </q-card-section>
+    <q-card-section>
       <SliderDouble
         v-if="showSocTargetSlider"
         class="q-mt-sm"
@@ -56,28 +64,10 @@
         :limit-mode="limitMode"
         :current-value="currentValue"
         :target-time="vehicleTarget.time"
-      >
-        <template #update-soc-icon>
-          <q-icon
-            v-if="vehicleSocType === 'manual' && limitMode !== 'amount'"
-            name="edit"
-            size="xs"
-            class="q-ml-xs cursor-pointer"
-            @click="socInputVisible = true"
-          >
-            <q-tooltip>SoC eingeben</q-tooltip>
-          </q-icon>
-          <q-icon
-            v-else-if="vehicleSocType !== undefined && limitMode !== 'amount'"
-            name="refresh"
-            size="xs"
-            class="q-ml-xs cursor-pointer"
-            @click="refreshSoc"
-          >
-            <q-tooltip>SoC aktualisieren</q-tooltip>
-          </q-icon>
-        </template>
-      </SliderDouble>
+        :vehicle-soc-type="vehicleSocType"
+        :on-edit-soc="openSocDialog"
+        :on-refresh-soc="refreshSoc"
+      />
       <slot name="card-footer"></slot>
     </q-card-section>
   </q-card>
@@ -150,6 +140,10 @@ const limitMode = computed(() => {
 const settingsVisible = ref<boolean>(false);
 
 const socInputVisible = ref<boolean>(false);
+const openSocDialog = () => {
+  socInputVisible.value = true;
+};
+
 const name = computed(() => mqttStore.chargePointName(props.chargePointId));
 // Typecast to string is better here because the store method returns a union type which
 // would need to be repeated in child component ChargePointPowerData
@@ -260,7 +254,7 @@ const showSocTargetSlider = computed(() => {
     // we have a energy based target
     return true;
   }
-  if (vehicleSocType.value !== undefined) {
+  if (vehicleSocType.value) {
     // we have a soc module defined
     return true;
   }
@@ -291,5 +285,27 @@ onMounted(() => {
 <style lang="scss" scoped>
 .card-width {
   width: 22em;
+}
+
+.q-card__section {
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.q-card__section:first-of-type {
+  padding-top: 16px;
+  padding-bottom: 0;
+}
+
+.q-card__section:last-of-type {
+  padding-top: 0;
+  padding-bottom: 16px;
+}
+
+.q-card__section:not(:first-of-type):not(:last-of-type) {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>
