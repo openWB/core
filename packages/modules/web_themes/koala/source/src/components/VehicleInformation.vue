@@ -2,10 +2,9 @@
   <BaseCarousel
     v-if="vehicleIds.length <= cardViewBreakpoint"
     :items="vehicleIds"
-    :card-width="cardWidth"
   >
     <template #item="{ item }">
-      <VehicleCard :vehicle-id="item" @card-width="cardWidth = $event" />
+      <VehicleCard :vehicle-id="item" />
     </template>
   </BaseCarousel>
 
@@ -73,8 +72,6 @@ import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
 import { ColumnConfiguration } from 'src/components/models/table-model';
-
-const cardWidth = ref<number | undefined>(undefined);
 
 const mqttStore = useMqttStore();
 const isMobile = computed(() => Platform.is.mobile);

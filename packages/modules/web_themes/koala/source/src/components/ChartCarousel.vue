@@ -25,7 +25,7 @@
           v-if="currentSlide === 'HistoryChart'"
           size="sm"
           class="q-mr-sm legend-button-text"
-          label="Legend ein/aus"
+          label="Legende ein/aus"
           @click="toggleLegend"
         />
         <q-btn
