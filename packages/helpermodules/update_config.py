@@ -56,7 +56,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 89
+    DATASTORE_VERSION = 90
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2346,7 +2346,7 @@ class UpdateConfig:
                                    " jedoch bis zum Akzeptieren standardmäßig deaktiviert.", MessageType.WARNING)
         self.__update_topic("openWB/system/datastore_version", 87)
 
-    def upgrade_datastore_87(self) -> None:
+    def upgrade_datastore_88(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
                     re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
@@ -2355,12 +2355,12 @@ class UpdateConfig:
                 payload.update({"id": index})
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 88)
+        self.__update_topic("openWB/system/datastore_version", 89)
 
-    def upgrade_datastore_88(self) -> None:
+    def upgrade_datastore_89(self) -> None:
         pub_system_message({}, "Änderungen, die du auf der Hauptseite vornimmst, gelten nur vorübergehend, bis das "
                            "Fahrzeug abgesteckt wird. \nDie dauerhaften Einstellungen aus dem Einstellungsmenü werden "
                            "danach automatisch wieder aktiviert.", MessageType.INFO)
         pub_system_message({}, "Es gibt ein neues Theme: das Koala-Theme! Smarthpone-optimiert und mit "
                            "Energiefluss-Diagramm & Karten-Ansicht der Ladepunkte", MessageType.INFO)
-        self.__update_topic("openWB/system/datastore_version", 89)
+        self.__update_topic("openWB/system/datastore_version", 90)
