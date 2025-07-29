@@ -70,12 +70,12 @@ def fetch_soc(
 
         if not evcc_config.vehicle_id:  # create and fetch vehicle id if not included in config
             vehicle_to_fetch = create_and_save_vehicle_id(stub, evcc_config, vehicle)
-#            vehicle_to_fetch = create_vehicle(evcc_config, stub)
-#            log.debug("Vehicle client received: " + str(vehicle_to_fetch))
+            # vehicle_to_fetch = create_vehicle(evcc_config, stub)
+            # log.debug("Vehicle client received: " + str(vehicle_to_fetch))
 
             # saving vehicle id in config
-#            topic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
-#            write_vehicle_id_mqtt(topic, vehicle_to_fetch, evcc_config)
+            # topic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
+            # write_vehicle_id_mqtt(topic, vehicle_to_fetch, evcc_config)
         else:
             log.debug("Vehicle id found in config: " + str(evcc_config.vehicle_id))
             vehicle_to_fetch = evcc_config.vehicle_id
