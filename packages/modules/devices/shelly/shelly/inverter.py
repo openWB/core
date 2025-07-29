@@ -64,10 +64,10 @@ class ShellyInverter(AbstractInverter):
                     power = status['em:0']['total_act_power']  # shelly Pro3EM
                     currents = [meter[f'{i}_current'] for i in 'abc']
 
-            pv = self.total_power_from_shelly() * self.factor
-            _, exported = self.sim_counter.sim_count(pv)
+            power = power * self.factor
+            _, exported = self.sim_counter.sim_count(power)
             inverter_state = InverterState(
-                power=pv,
+                power=power,
                 exported=exported,
                 currents=currents
             )
