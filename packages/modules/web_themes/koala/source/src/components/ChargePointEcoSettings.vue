@@ -69,55 +69,84 @@
     class="q-mt-md"
   />
   <div v-if="etConfigured">
-    <div class="text-subtitle2 q-mt-sm q-mr-sm">
+    <div class="text-subtitle2 q-my-sm">
       Preisgrenze für strompreisbasiertes Laden
     </div>
-    <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-      <!-- <q-btn-group class="col"> -->
-      <q-btn
-        v-if="maxPrice.value"
-        icon="remove"
-        color="grey"
-        size="xs"
-        dense
-        class="col q-mr-sm"
-        @click="maxPrice.value = maxPrice.value - 0.01"
-      />
-      <q-btn
-        v-if="maxPrice.value"
-        icon="remove"
-        color="grey"
-        size="sm"
-        class="col q-mr-sm"
-        @click="maxPrice.value = maxPrice.value - 1"
-      />
-      <q-btn
-        v-if="maxPrice.value"
-        icon="add"
-        color="grey"
-        size="sm"
-        class="col q-mr-sm"
-        @click="maxPrice.value = maxPrice.value + 1"
-      />
-      <q-btn
-        v-if="maxPrice.value"
-        icon="add"
-        color="grey"
-        size="xs"
-        dense
-        class="col"
-        @click="maxPrice.value = maxPrice.value + 0.01"
-      />
-      <!-- </q-btn-group> -->
-      <div class="col-5 text-right">
-        {{
-          maxPrice.value?.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }) + ' ct/kWh'
-        }}
+    <div class="row items-center q-mb-xs q-gutter-x-sm">
+      <div class="col-auto">
+        <q-btn
+          v-if="maxPrice.value"
+          icon="remove"
+          color="grey"
+          size="sm"
+          class="q-mr-md"
+          @click="maxPrice.value = maxPrice.value - 1"
+        />
+        <q-btn
+          v-if="maxPrice.value"
+          icon="add"
+          color="grey"
+          size="sm"
+          @click="maxPrice.value = maxPrice.value + 1"
+        />
+      </div>
+      <div class="col text-left">
+        <span class="text-caption">Cent</span>
       </div>
     </div>
+    <div class="row items-center q-mb-xs q-gutter-x-sm">
+      <div class="col-auto">
+        <q-btn
+          v-if="maxPrice.value"
+          icon="remove"
+          color="grey"
+          size="sm"
+          class="q-mr-md"
+          @click="maxPrice.value = maxPrice.value - 0.1"
+        />
+        <q-btn
+          v-if="maxPrice.value"
+          icon="add"
+          color="grey"
+          size="sm"
+          @click="maxPrice.value = maxPrice.value + 0.1"
+        />
+      </div>
+      <div class="col text-left">
+        <span class="text-caption">Zehntel Cent</span>
+      </div>
+    </div>
+    <div class="row items-center q-gutter-x-sm">
+      <div class="col-auto">
+        <q-btn
+          v-if="maxPrice.value"
+          icon="remove"
+          color="grey"
+          size="sm"
+          class="q-mr-md"
+          @click="maxPrice.value = maxPrice.value - 0.01"
+        />
+        <q-btn
+          v-if="maxPrice.value"
+          icon="add"
+          color="grey"
+          size="sm"
+          @click="maxPrice.value = maxPrice.value + 0.01"
+        />
+      </div>
+      <div class="col text-left">
+        <span class="text-caption">Hundertstel Cent</span>
+      </div>
+    </div>
+    <div class="q-mt-sm">
+      {{
+        maxPrice.value?.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }) + ' ct/kWh'
+      }}
+    </div>
+
     <q-field filled class="q-mt-sm">
       <ElectricityTariffChart
         :modelValue="maxPrice.value"
