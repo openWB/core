@@ -136,9 +136,9 @@ class ChargeTemplate:
     CHARGING_PRICE_LOW = "Laden, da der aktuelle Strompreis unter dem maximalen Strompreis liegt."
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Zeitladen aktiviert, aber keine Zeitfenster konfiguriert."
-    TIME_CHARGING_NO_PLAN_ACTIVE = "Keine Ladung, da kein Zeitfenster für Zeitladen aktiv ist."
-    TIME_CHARGING_SOC_REACHED = "Kein Zeitladen, da der Soc bereits erreicht wurde."
-    TIME_CHARGING_AMOUNT_REACHED = "Kein Zeitladen, da die Energiemenge bereits geladen wurde."
+    TIME_CHARGING_NO_PLAN_ACTIVE = "Kein Zeitfenster für Zeitladen aktiv."
+    TIME_CHARGING_SOC_REACHED = "Das Ladeziel für das Zeitladen wurde erreicht."
+    TIME_CHARGING_AMOUNT_REACHED = "Die gewünschte Energiemenge für das Zeitladen wurde geladen."
 
     def time_charging(self,
                       soc: Optional[float],
@@ -181,7 +181,7 @@ class ChargeTemplate:
             return (0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None,
                     0)
 
-    SOC_REACHED = "Keine Ladung, da der Soc bereits erreicht wurde."
+    SOC_REACHED = "Keine Ladung, da das Ladeziel bereits erreicht wurde."
     AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
 
     def instant_charging(self,
