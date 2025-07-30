@@ -29,8 +29,8 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
-import { Chart, LegendItem } from 'chart.js';
-import type { Category, CategorizedDataset } from './history-chart-model';
+import { Chart, ChartDataset, LegendItem } from 'chart.js';
+import type { Category, CategorizedDataset, LegendItemWithCategory } from './history-chart-model';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import HistoryChartLegendCategoriesGroup from './HistoryChartLegendCategoriesGroup.vue';
@@ -44,10 +44,10 @@ const props = defineProps<{
 }>();
 
 const localDataStore = useLocalDataStore();
-const legendItems = ref<LegendItem[]>([]);
+const legendItems = ref<LegendItemWithCategory[]>([]);
 
 const legendLarge = computed(() => {
-  return legendItems.value.length > 10;
+  return legendItems.value.length > 20;
 });
 
 const updateLegendItems = () => {
@@ -56,28 +56,28 @@ const updateLegendItems = () => {
     props.chart.options.plugins?.legend?.labels?.generateLabels?.(
       props.chart,
     ) || [];
-  items.forEach((item) => {
+  (items as LegendItemWithCategory[]).forEach((item) => {
     if (item.text && localDataStore.isDatasetHidden(item.text)) {
       item.hidden = true;
     }
-    //  Inject the category from the dataset
+    // Inject the category from the dataset
     const dataset = props.chart?.data.datasets[
       item.datasetIndex!
     ] as unknown as CategorizedDataset;
-    (item as LegendItem & { category?: Category }).category = dataset.category;
+    item.category = dataset.category;
   });
-  legendItems.value = items;
+  legendItems.value = items as LegendItemWithCategory[];
 };
 
 const categorizedLegendItems = computed(() => {
-  const categories: Record<Category, LegendItem[]> = {
+  const categories: Record<Category, LegendItemWithCategory[]> = {
     chargepoint: [],
     vehicle: [],
     battery: [],
     component: [],
   };
   for (const item of legendItems.value) {
-    const category = (item as LegendItem & { category?: Category }).category;
+    const category = item.category;
     if (category && categories[category]) {
       categories[category].push(item);
     } else {
@@ -103,7 +103,7 @@ const getItemLineType = (item: LegendItem) => {
   if (!props.chart || item.datasetIndex === undefined) return;
   const dataset = props.chart.data.datasets[
     item.datasetIndex
-  ] as unknown as CategorizedDataset;
+  ] as ChartDataset<'line'>;
   const borderDash = dataset.borderDash;
   return Array.isArray(borderDash) && borderDash.length > 0
     ? 'dashed'

@@ -1,4 +1,6 @@
-import type { Chart, ChartDataset, TooltipItem } from 'chart.js'; // Importieren des TooltipItem-Typs
+import type { Chart, TooltipItem, ChartDataset, LegendItem } from 'chart.js';
+import type { } from 'chart.js';
+
 export interface HistoryChartTooltipItem extends TooltipItem<'line'> {
   dataset: TooltipItem<'line'>['dataset'] & {
     unit?: string;
@@ -16,4 +18,9 @@ export type Category = 'chargepoint' | 'vehicle' | 'battery' | 'component';
 export interface CategorizedDataset
   extends ChartDataset<'line', { x: number; y: number }> {
   category: Category;
+}
+
+// Add category to the legendItem
+export interface LegendItemWithCategory extends LegendItem {
+  category?: Category;
 }
