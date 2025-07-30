@@ -30,7 +30,11 @@
 import { ref, watch, computed, nextTick } from 'vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
 import { Chart, ChartDataset, LegendItem } from 'chart.js';
-import type { Category, CategorizedDataset, LegendItemWithCategory } from './history-chart-model';
+import type {
+  Category,
+  CategorizedDataset,
+  LegendItemWithCategory,
+} from './history-chart-model';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import HistoryChartLegendCategoriesGroup from './HistoryChartLegendCategoriesGroup.vue';

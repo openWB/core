@@ -1,5 +1,4 @@
 import type { Chart, TooltipItem, ChartDataset, LegendItem } from 'chart.js';
-import type { } from 'chart.js';
 
 export interface HistoryChartTooltipItem extends TooltipItem<'line'> {
   dataset: TooltipItem<'line'>['dataset'] & {
