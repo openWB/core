@@ -18,7 +18,7 @@ class RippleControlReceiver(AbstractIoAction):
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             for pattern in self.config.configuration.input_pattern:
-                for digital_input, value in pattern["input_matrix"].items():
+                for digital_input, value in pattern["matrix"].items():
                     if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                             digital_input] != value:
                         break
@@ -51,7 +51,7 @@ class RippleControlReceiver(AbstractIoAction):
 
     def ripple_control_receiver(self) -> float:
         for pattern in self.config.configuration.input_pattern:
-            for digital_input, value in pattern["input_matrix"].items():
+            for digital_input, value in pattern["matrix"].items():
                 if data.data.io_states[f"io_states{self.config.configuration.io_device}"
                                        ].data.get.digital_input[digital_input] != value:
                     break

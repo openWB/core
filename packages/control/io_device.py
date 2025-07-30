@@ -7,6 +7,7 @@ from modules.common.utils.component_parser import get_io_name_by_id
 from modules.io_actions.controllable_consumers.dimming.api import Dimming
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 from modules.io_actions.controllable_consumers.ripple_control_receiver.api import RippleControlReceiver
+from modules.io_actions.generator_systems.stepwise_control.api import StepwiseControl
 
 
 @dataclass
@@ -15,6 +16,10 @@ class Get:
     analog_output: Dict[int, float] = None
     digital_input: Dict[int, bool] = None
     digital_output: Dict[int, bool] = None
+    analog_input_prev: Dict[int, float] = None
+    analog_output_prev: Dict[int, float] = None
+    digital_input_prev: Dict[int, bool] = None
+    digital_output_prev: Dict[int, bool] = None
     fault_str: str = NO_ERROR
     fault_state: int = 0
 
@@ -26,7 +31,9 @@ def get_factory():
 @dataclass
 class Set:
     analog_output: Dict[int, float] = None
+    analog_output_prev: Dict[int, float] = None
     digital_output: Dict[int, bool] = None
+    digital_output_prev: Dict[int, bool] = None
 
 
 def set_factory():
@@ -47,7 +54,7 @@ class IoStates:
 
 class IoActions:
     def __init__(self):
-        self.actions: Dict[int, Union[Dimming, DimmingDirectControl, RippleControlReceiver]] = {}
+        self.actions: Dict[int, Union[Dimming, DimmingDirectControl, RippleControlReceiver, StepwiseControl]] = {}
 
     def setup(self):
         for action in self.actions.values():
@@ -93,3 +100,12 @@ class IoActions:
                         return action.ripple_control_receiver()
         else:
             return 1
+
+    def stepwise_control(self, device_id: int) -> Optional[float]:
+        for action in self.actions.values():
+            if isinstance(action, StepwiseControl):
+                if device_id in [component["id"] for component in action.config.configuration.devices]:
+                    self._check_fault_state_io_device(action.config.configuration.io_device)
+                    return action.control_stepwise()
+        else:
+            return None

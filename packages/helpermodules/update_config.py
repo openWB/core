@@ -17,6 +17,7 @@ import dataclass_utils
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
 from helpermodules import hardware_configuration
+from helpermodules import pub
 from helpermodules.broker import BrokerClient
 from helpermodules.abstract_plans import Limit
 from helpermodules.constants import NO_ERROR
@@ -56,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 90
+    DATASTORE_VERSION = 92
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2363,4 +2364,51 @@ class UpdateConfig:
                            "danach automatisch wieder aktiviert.", MessageType.INFO)
         pub_system_message({}, "Es gibt ein neues Theme: das Koala-Theme! Smarthpone-optimiert und mit "
                            "Energiefluss-Diagramm & Karten-Ansicht der Ladepunkte", MessageType.INFO)
-        self.__update_topic("openWB/system/datastore_version", 90)
+        self.__update_topic("openWB/system/datastore_version", 89)
+
+    def upgrade_datastore_90(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/io/action/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                # modify key "input_matrix" to "matrix" for all patterns
+                if "input_pattern" not in payload["configuration"] and "output_pattern" not in payload["configuration"]:
+                    # No input/output patterns found in IO action configuration
+                    return None
+                log.debug(f"Updating IO action configuration: {topic}: {payload}")
+                if "input_pattern" in payload["configuration"]:
+                    for pattern in payload["configuration"]["input_pattern"]:
+                        if "input_matrix" in pattern:
+                            pattern["matrix"] = pattern.pop("input_matrix")
+                if "output_pattern" in payload["configuration"]:
+                    for pattern in payload["configuration"]["output_pattern"]:
+                        if "input_matrix" in pattern:
+                            pattern["matrix"] = pattern.pop("input_matrix")
+                log.debug(f"Updated IO action configuration: {topic}: {payload}")
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 91)
+
+    def upgrade_datastore_91(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
+                config = decode_payload(payload)
+                if config["type"] == "external_openwb":
+                    log.info(f"Update an LP {config['name']} angestoßen.")
+                    ip_address = config["configuration"]["ip_address"]
+                    branch = decode_payload(self.all_received_topics[
+                        "openWB/system/current_branch"])
+                    if branch == "master":
+                        tag = "*HEAD*"
+                    else:
+                        tag = re.search(r"\[([^\]]+)\]",
+                                        decode_payload(self.all_received_topics["openWB/system/current_branch_commit"])
+                                        ).group(1)
+                    pub.pub_single("openWB/set/command/primary/todo",
+                                   json.dumps({"command": "systemUpdate",
+                                               "data": {"branch": branch,
+                                                        "tag": tag, }}),
+                                   ip_address,
+                                   no_json=True)
+                    time.sleep(2)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 92)
