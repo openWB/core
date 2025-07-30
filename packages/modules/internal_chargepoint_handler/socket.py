@@ -51,13 +51,12 @@ class Socket(ChargepointModule):
     def __init__(self,
                  local_charge_point_num: int,
                  client_handler: ClientHandler,
-                 parent_hostname: str,
                  internal_cp: InternalChargepoint,
                  hierarchy_id: int) -> None:
         self.socket_max_current = get_hardware_configuration_setting("max_c_socket")
         with ModifyLoglevelContext(log, logging.DEBUG):
             log.info(f"Konfiguration als Buchse mit maximal {self.socket_max_current}A Ladestrom je Phase.")
-        super().__init__(local_charge_point_num, client_handler, parent_hostname, internal_cp, hierarchy_id)
+        super().__init__(local_charge_point_num, client_handler, internal_cp, hierarchy_id)
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
