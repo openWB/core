@@ -42,8 +42,8 @@ class KostalPlenticoreInverter(AbstractInverter):
         try:
             dc_power = self.client.read_holding_registers(
                 1066, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
-        except Exception as e:
-            dc_power = 0      
+        except Exception:
+            dc_power = 0
         imported, _ = self.sim_counter.sim_count(power)
 
         inverter_state = InverterState(
