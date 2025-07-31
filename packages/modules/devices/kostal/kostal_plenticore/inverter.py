@@ -33,7 +33,7 @@ class KostalPlenticoreInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
         self.fault_text = (
-            "Es kann keine PV Leistung aus dem Wechselrichter ausgelesen werden, "
+            "Es kann keine DC-Leistung aus dem Wechselrichter ausgelesen werden, "
             "möglicherweise kann ein Firmware-Update für den Wechselrichter nötig sein."
         )
 
