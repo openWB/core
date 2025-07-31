@@ -9,7 +9,7 @@
       />
     </div>
     <HistoryChartLegend
-      v-if="legendDisplay && legendLarge"
+      v-if="legendDisplay"
       :chart="chartRef?.chart || null"
       class="legend-wrapper q-mt-sm"
     />
@@ -31,10 +31,6 @@ import {
   TimeScale,
   Tooltip,
   Filler,
-  ChartEvent,
-  LegendItem,
-  LegendElement,
-  ChartTypeRegistry,
   ChartDataset,
   ChartType,
 } from 'chart.js';
@@ -68,10 +64,6 @@ const props = defineProps<{
 }>();
 
 const chartRef = ref<ChartComponentRef | null>(null);
-
-const legendLarge = computed(() =>
-  lineChartData?.value?.datasets.length > 15 ? true : false,
-);
 
 const applyHiddenDatasetsToChart = <TType extends ChartType, TData>(
   chart: Chart<TType, TData>,
@@ -125,6 +117,7 @@ const chartRange = computed(
 const chargePointDatasets = computed(() =>
   chargePointIds.value.map((cpId) => ({
     label: `${chargePointNames.value(cpId)}`,
+    category: 'chargepoint',
     unit: 'kW',
     borderColor: '#4766b5',
     backgroundColor: 'rgba(71, 102, 181, 0.2)',
@@ -148,6 +141,7 @@ const vehicleDatasets = computed(() =>
       if (selectedData.value.some((item) => socKey in item)) {
         return {
           label: `${vehicle.name} SoC`,
+          category: 'vehicle',
           unit: '%',
           borderColor: '#9F8AFF',
           borderWidth: 2,
@@ -175,6 +169,7 @@ const lineChartData = computed(() => {
     datasets: [
       {
         label: gridMeterName.value,
+        category: 'component',
         unit: 'kW',
         borderColor: '#a33c42',
         backgroundColor: 'rgba(239,182,188, 0.2)',
@@ -191,6 +186,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Hausverbrauch',
+        category: 'component',
         unit: 'kW',
         borderColor: '#949aa1',
         backgroundColor: 'rgba(148, 154, 161, 0.2)',
@@ -207,6 +203,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'PV ges.',
+        category: 'component',
         unit: 'kW',
         borderColor: 'green',
         backgroundColor: 'rgba(144, 238, 144, 0.2)',
@@ -223,6 +220,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Speicher ges.',
+        category: 'component',
         unit: 'kW',
         borderColor: '#b5a647',
         backgroundColor: 'rgba(181, 166, 71, 0.2)',
@@ -239,6 +237,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Speicher SoC',
+        category: 'component',
         unit: '%',
         borderColor: '#FFB96E',
         borderWidth: 2,
@@ -265,33 +264,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   animation: false,
   plugins: {
     legend: {
-      display: !legendLarge.value && legendDisplay.value,
-      fullSize: true,
-      align: 'center' as const,
-      position: 'bottom' as const,
-      labels: {
-        boxWidth: 19,
-        boxHeight: 0.1,
-      },
-      onClick: (
-        e: ChartEvent,
-        legendItem: LegendItem,
-        legend: LegendElement<keyof ChartTypeRegistry>,
-      ) => {
-        const index = legendItem.datasetIndex!;
-        const chartInstance = legend.chart;
-        const datasetName = legendItem.text;
-
-        // Toggle visibility using the store
-        localDataStore.toggleDataset(datasetName);
-
-        // Update chart visibility
-        if (localDataStore.isDatasetHidden(datasetName)) {
-          chartInstance.hide(index);
-        } else {
-          chartInstance.show(index);
-        }
-      },
+      display: false,
     },
     tooltip: {
       mode: 'index' as const,
