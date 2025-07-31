@@ -2503,6 +2503,13 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(90)
 
+    BLACK = "#000000"
+    BLUE = "#007bff"
+    CYAN = "#17a2b8"
+    GREEN = "#28a745"
+    RED = "#dc3545"
+    YELLOW = "#ffc107"
+
     def upgrade_datastore_91(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
