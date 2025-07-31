@@ -26,11 +26,17 @@
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
       <ChargePointStateMessage :charge-point-id="props.chargePointId" />
     </q-card-section>
-    <q-card-section class="row items-center justify-between q-mt-sm">
+    <q-card-section
+      class="full-width row no-wrap justify-between content-start items-center q-mt-sm"
+    >
       <ChargePointVehicleSelect
+        class="col"
         :charge-point-id="Number(props.chargePointId)"
       />
-      <ChargePointPriority :charge-point-id="props.chargePointId" />
+      <ChargePointPriority
+        class="col-auto"
+        :charge-point-id="props.chargePointId"
+      />
     </q-card-section>
     <q-card-section>
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
