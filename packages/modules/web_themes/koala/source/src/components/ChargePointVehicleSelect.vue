@@ -1,13 +1,12 @@
 <template>
   <div v-if="props.readonly" class="q-mx-sm">
+    <q-icon name="directions_car" />
     {{ connectedVehicle?.name }}
   </div>
-  <q-btn-dropdown v-else color="grey" dense no-caps icon="directions_car">
+  <q-btn-dropdown v-else color="grey" dense no-caps>
     <template #label>
-      <span
-        class="dropdown-label ellipsis q-ml-xs"
-        :title="connectedVehicle?.name"
-      >
+      <span class="ellipsis q-ml-xs" :title="connectedVehicle?.name">
+        <q-icon name="directions_car" />
         {{ connectedVehicle?.name }}
       </span>
     </template>
@@ -21,7 +20,7 @@
         @click="connectedVehicle = vehicle"
       >
         <q-item-section>
-          <q-item-label class="ellipsis dropdown-label" :title="vehicle.name">{{
+          <q-item-label class="ellipsis" :title="vehicle.name">{{
             vehicle.name
           }}</q-item-label>
         </q-item-section>
@@ -57,10 +56,5 @@ const vehicles = computed(() => mqttStore.vehicleList);
 <style scoped>
 .flex-grow {
   flex-grow: 1;
-}
-
-.dropdown-label {
-  text-align: left;
-  width: 135px;
 }
 </style>
