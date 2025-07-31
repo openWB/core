@@ -35,6 +35,7 @@ class KostalPlenticoreInverter(AbstractInverter):
         self.fault_text = (
             "Es kann keine PV Leistung aus dem Wechselrichter ausgelesen werden, "
             "möglicherweise kann ein Firmware-Update für den Wechselrichter nötig sein."
+        )
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
