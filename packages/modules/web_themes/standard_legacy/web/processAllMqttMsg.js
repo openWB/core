@@ -303,11 +303,9 @@ function refreshChargeTemplate(chargePointIndex) {
 					}
 					schedulePlanElement.find('.charge-point-schedule-time').text(value.time);
 					if (value.active == true) {
-						schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-danger border-danger');
-						schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-success border-success');
+						schedulePlanElement.find('.charge-point-schedule-plan-pill').addClass('charge-point-plan-pill-active');
 					} else {
-						schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-success border-success');
-						schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-danger border-danger');
+						schedulePlanElement.find('.charge-point-schedule-plan-pill').removeClass('charge-point-plan-pill-active');
 					}
 					switch (value.frequency.selected) {
 						case "once":
@@ -383,11 +381,9 @@ function refreshChargeTemplate(chargePointIndex) {
 					timeChargePlanElement.find('.charge-point-time-charge-name').text(value.name);
 					timeChargePlanElement.find('.charge-point-time-charge-time').text(value.time[0] + " - " + value.time[1]);
 					if (value.active == true) {
-						timeChargePlanElement.find('.charge-point-time-charge-active').removeClass('alert-danger border-danger');
-						timeChargePlanElement.find('.charge-point-time-charge-active').addClass('alert-success border-success');
+						timeChargePlanElement.find('.charge-point-time-charge-pill').addClass('charge-point-plan-pill-active');
 					} else {
-						timeChargePlanElement.find('.charge-point-time-charge-active').removeClass('alert-success border-success');
-						timeChargePlanElement.find('.charge-point-time-charge-active').addClass('alert-danger border-danger');
+						timeChargePlanElement.find('.charge-point-time-charge-pill').removeClass('charge-point-plan-pill-active');
 					}
 					if (value.limit.selected == "soc") {
 						timeChargePlanElement.find('.charge-point-time-charge-limit').removeClass('hide');

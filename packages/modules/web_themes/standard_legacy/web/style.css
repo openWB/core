@@ -145,6 +145,20 @@ body>.container {
 	text-decoration: line-through;
 }
 
+.charge-point-schedule-plan-pill,
+.charge-point-time-charge-pill {
+	border-color: #dc3545!important;
+	color: #721c24;
+	background-color: #f8d7da;
+}
+
+.charge-point-schedule-plan-pill.charge-point-plan-pill-active,
+.charge-point-time-charge-pill.charge-point-plan-pill-active {
+	border-color: #28a745!important;
+	color: #155724;
+	background-color: #d4edda;
+}
+
 .text-green {
 	color: #006515;
 }

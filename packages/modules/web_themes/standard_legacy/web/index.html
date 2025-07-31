@@ -584,7 +584,7 @@
 												<span class="charge-point-time-charge-name">--</span>
 											</div>
 											<div class="col-lg-6 text-right">
-												<span class="charge-point-time-charge-pill charge-point-time-charge-active cursor-pointer border rounded p-1">
+												<span class="charge-point-time-charge-pill cursor-pointer border rounded p-1">
 													<span class="charge-point-time-charge-frequency">
 														<i class="fas fa-calendar-alt"></i>
 														<span class="charge-point-time-charge-frequency-value">--</span>
@@ -1000,7 +1000,7 @@
 											<span class="charge-point-schedule-name">--</span>
 										</div>
 										<div class="col-lg-6 text-right">
-											<span class="charge-point-schedule-plan-pill charge-point-schedule-active cursor-pointer border rounded p-1">
+											<span class="charge-point-schedule-plan-pill cursor-pointer border rounded p-1">
 												<span class="charge-point-schedule-frequency">
 													<i class="fas fa-calendar-alt"></i>
 													<span class="charge-point-schedule-frequency-value">--</span>
@@ -1637,7 +1637,7 @@
 					const object = "chargeTemplate";
 					const objectPath = "time_charging.plans." + planId + ".active";
 					const topic = "openWB/set/chargepoint/" + chargePointIndex + "/set/charge_template";
-					const option = !$(this).hasClass('charge-point-time-charge-active');
+					const option = !$(this).hasClass('charge-point-plan-pill-active');
 					if (typeof window[object] !== undefined && window[object][chargePointIndex] !== undefined) {
 						let currentObjectState = JSON.parse(JSON.stringify(window[object][chargePointIndex]));
 						currentObjectState = updateObject(currentObjectState, objectPath, option);
@@ -1670,7 +1670,7 @@
 					const object = "chargeTemplate";
 					const objectPath = "chargemode.scheduled_charging.plans." + planId + ".active";
 					const topic = "openWB/set/chargepoint/" + chargePointIndex + "/set/charge_template";
-					const option = !$(this).hasClass('charge-point-schedule-active');
+					const option = !$(this).hasClass('charge-point-plan-pill-active');
 					if (typeof window[object] !== undefined && window[object][chargePointIndex] !== undefined) {
 						let currentObjectState = JSON.parse(JSON.stringify(window[object][chargePointIndex]));
 						currentObjectState = updateObject(currentObjectState, objectPath, option);
