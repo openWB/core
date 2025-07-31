@@ -84,18 +84,8 @@ const searchInputVisible = computed(
 const cardViewBreakpoint = computed(
   () => mqttStore.themeConfiguration?.vehicle_card_view_breakpoint || 4,
 );
-const hideStandardVehicle = computed(
-  () => mqttStore.themeConfiguration?.hide_standard_vehicle,
-);
 const vehicles = computed(() => mqttStore.vehicleList);
-const vehicleIds = computed(() => {
-  if (hideStandardVehicle.value) {
-    return vehicles.value
-      .filter((vehicle) => vehicle.name !== 'Standard-Fahrzeug')
-      .map((vehicle) => vehicle.id);
-  }
-  return vehicles.value.map((vehicle) => vehicle.id);
-});
+const vehicleIds = computed(() => vehicles.value.map((vehicle) => vehicle.id));
 
 const tableRowData = computed<(id: number) => VehicleRow>(() => {
   return (id: number) => {
