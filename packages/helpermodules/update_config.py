@@ -1,3 +1,4 @@
+from concurrent.futures import ProcessPoolExecutor
 import copy
 from dataclasses import asdict
 import datetime
@@ -2421,6 +2422,13 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(90)
 
+    BLACK = "#000000"
+    BLUE = "#007bff"
+    CYAN = "#17a2b8"
+    GREEN = "#28a745"
+    RED = "#dc3545"
+    YELLOW = "#ffc107"
+
     def upgrade_datastore_91(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
@@ -2629,6 +2637,13 @@ class UpdateConfig:
         self._append_datastore_version(101)
 
     def upgrade_datastore_102(self) -> None:
+        def add_colors_to_logs():
+            files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+            files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+            files.sort()
+            with ProcessPoolExecutor() as executor:
+                executor.map(self.process_file, files)
+
         def upgrade(topic: str, payload) -> Optional[dict]:
             # add vehicle color to vehicle topics
             if re.search("^openWB/vehicle/[0-9]+/name$", topic) is not None:
@@ -2637,13 +2652,13 @@ class UpdateConfig:
                 log.debug(f"Checking for vehicle color topic {vehicle_color_topic}")
                 if vehicle_color_topic not in self.all_received_topics:
                     log.debug(f"Adding vehicle color topic {vehicle_color_topic} with value '#17a2b8'")
-                    return {vehicle_color_topic: "#17a2b8"}
+                    return {vehicle_color_topic: self.CYAN}
             # add property "color" to charge points
             if re.search("^openWB/chargepoint/[0-9]+/config$", topic) is not None:
                 config = decode_payload(payload)
                 log.debug(f"Received charge point config topic {topic} with payload {payload}")
                 if "color" not in config:
-                    config.update({"color": "#007bff"})
+                    config.update({"color": self.BLUE})
                     log.debug(f"Added color to charge point config {config}")
                     return {topic: config}
             # add property "color" to components
@@ -2652,16 +2667,41 @@ class UpdateConfig:
                 log.debug(f"Received component config topic {topic} with payload {payload}")
                 if "color" not in config:
                     if "counter" in config.get("type").lower():
-                        config.update({"color": "#dc3545"})
+                        config.update({"color": self.RED})
                     elif "bat" in config.get("type").lower():
-                        config.update({"color": "#ffc107"})
+                        config.update({"color": self.YELLOW})
                     elif "inverter" in config.get("type").lower():
-                        config.update({"color": "#28a745"})
+                        config.update({"color": self.GREEN})
                     else:
                         log.warning(f"Unknown component type {config.get('type')} for topic {topic}.")
-                        config.update({"color": "#000000"})
+                        config.update({"color": self.BLACK})
                     log.debug(f"Updated component config with color {config}")
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
-        # ToDo: update already present log files with color information
+        add_colors_to_logs()
         self.__update_topic("openWB/system/datastore_version", 103)
+
+    def process_file(self, file):
+        colors = {}
+        with open(file, "r+") as jsonFile:
+            content_raw = jsonFile.read()
+            content = json.loads(content_raw)
+            if "colors" in content:
+                return
+            for key in content["names"].keys():
+                if "bat" in key:
+                    colors[key] = self.YELLOW
+                elif "counter" in key:
+                    colors[key] = self.RED
+                elif "cp" in key:
+                    colors[key] = self.BLUE
+                elif "ev" in key:
+                    colors[key] = self.CYAN
+                elif "inverter" in key:
+                    colors[key] = self.GREEN
+                else:
+                    colors[key] = self.BLACK
+            content["colors"] = colors
+            jsonFile.seek(0)
+            jsonFile.write(json.dumps(content))
+            jsonFile.truncate()
