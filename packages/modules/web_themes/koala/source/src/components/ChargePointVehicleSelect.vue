@@ -54,7 +54,4 @@ const vehicles = computed(() => mqttStore.vehicleList);
 </script>
 
 <style scoped>
-.flex-grow {
-  flex-grow: 1;
-}
 </style>
