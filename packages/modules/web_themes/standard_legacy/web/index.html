@@ -579,6 +579,7 @@
 										<div class="form-row mb-1 charge-point-time-charge-plan charge-point-time-charge-plan-template hide"
 											data-plan-type="time_charging"
 											data-plan=""
+											data-index=""
 										>
 											<div class="col">
 												<span class="charge-point-time-charge-name">--</span>
@@ -995,7 +996,9 @@
 										Es wurden noch keine Zeitpläne eingerichtet!
 									</div>
 									<div class="form-row mb-1 charge-point-schedule-plan charge-point-schedule-plan-template hide"
-										data-plan="">
+										data-plan=""
+										data-index=""
+									>
 										<div class="col">
 											<span class="charge-point-schedule-name">--</span>
 										</div>
@@ -1549,7 +1552,7 @@
 				// some helper functions
 				'helperFunctions.js?ver=20250217',
 				// functions for processing messages
-				'processAllMqttMsg.js?ver=20250731',
+				'processAllMqttMsg.js?ver=20250801',
 				// respective Chart.js definition live
 				'livechart.js?ver=20250404',
 				// respective Chart.js definition price based charging
@@ -1632,12 +1635,13 @@
 				const parentChargePoint = $(this).closest('[data-cp]');
 				const chargePointIndex = parseInt(parentChargePoint.data('cp'));
 				const planId = parseInt($(this).closest('.charge-point-time-charge-plan').data('plan'));
-				if (!isNaN(chargePointIndex) && !isNaN(planId)) {
-					console.log('toggle time charge plan', chargePointIndex, planId);
+				const planIndex = parseInt($(this).closest('.charge-point-time-charge-plan').data('plan-index'));
+				if (!isNaN(chargePointIndex) && !isNaN(planId) && !isNaN(planIndex)) {
 					const object = "chargeTemplate";
-					const objectPath = "time_charging.plans." + planId + ".active";
+					const objectPath = "time_charging.plans." + planIndex + ".active";
 					const topic = "openWB/set/chargepoint/" + chargePointIndex + "/set/charge_template";
 					const option = !$(this).hasClass('charge-point-plan-pill-active');
+					console.log('toggle time charge plan', chargePointIndex, planId, planIndex, option);
 					if (typeof window[object] !== undefined && window[object][chargePointIndex] !== undefined) {
 						let currentObjectState = JSON.parse(JSON.stringify(window[object][chargePointIndex]));
 						currentObjectState = updateObject(currentObjectState, objectPath, option);
@@ -1665,12 +1669,13 @@
 				const parentChargePoint = $(this).closest('[data-cp]');
 				const chargePointIndex = parseInt(parentChargePoint.data('cp'));
 				const planId = parseInt($(this).closest('.charge-point-schedule-plan').data('plan'));
-				if (!isNaN(chargePointIndex) && !isNaN(planId)) {
-					console.log('toggle schedule plan', chargePointIndex, planId);
+				const planIndex = parseInt($(this).closest('.charge-point-schedule-plan').data('plan-index'));
+				if (!isNaN(chargePointIndex) && !isNaN(planId) && !isNaN(planIndex)) {
 					const object = "chargeTemplate";
-					const objectPath = "chargemode.scheduled_charging.plans." + planId + ".active";
+					const objectPath = "chargemode.scheduled_charging.plans." + planIndex + ".active";
 					const topic = "openWB/set/chargepoint/" + chargePointIndex + "/set/charge_template";
 					const option = !$(this).hasClass('charge-point-plan-pill-active');
+					console.log('toggle schedule plan', chargePointIndex, planId, planIndex, option);
 					if (typeof window[object] !== undefined && window[object][chargePointIndex] !== undefined) {
 						let currentObjectState = JSON.parse(JSON.stringify(window[object][chargePointIndex]));
 						currentObjectState = updateObject(currentObjectState, objectPath, option);
