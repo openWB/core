@@ -19,12 +19,11 @@ class NewRequest(_message.Message):
         def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
     TOKEN_FIELD_NUMBER: _ClassVar[int]
     TYPE_FIELD_NUMBER: _ClassVar[int]
-    TEMPLATE_FIELD_NUMBER: _ClassVar[int]
     CONFIG_FIELD_NUMBER: _ClassVar[int]
     token: str
     type: str
     config: _containers.ScalarMap[str, str]
-    def __init__(self, token: _Optional[str] = ..., type: _Optional[str] = ..., template: _Optional[str] = ..., config: _Optional[_Mapping[str, str]] = ...) -> None: ...
+    def __init__(self, token: _Optional[str] = ..., type: _Optional[str] = ..., config: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class NewReply(_message.Message):
     __slots__ = ("vehicle_id",)
