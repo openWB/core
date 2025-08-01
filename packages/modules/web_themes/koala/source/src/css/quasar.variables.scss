@@ -192,6 +192,12 @@ $battery: #ba7128;
     }
   }
 
+  // Scrollbar styling für .q-list auto Light Theme
+  .q-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--q-primary) var(--q-background-2);
+  }
+
   //table padding
   .q-table th,
   .q-table td {
@@ -399,5 +405,11 @@ $dark-tab-icon: #d7d9e0;
 
   .q-scrollarea {
     border: 1px solid var(--q-secondary) !important;
+  }
+
+  //Scrollbar styling für .q-list - Dark Theme
+  .q-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--q-primary) var(--q-list);
   }
 }

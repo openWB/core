@@ -872,7 +872,7 @@ class Command:
         pub_user_message(payload, connection_id, "Versionsliste erfolgreich aktualisiert.", MessageType.SUCCESS)
 
     def createBackup(self, connection_id: str, payload: dict) -> None:
-        pub_user_message(payload, connection_id, "Backup wird erstellt...", MessageType.INFO)
+        pub_user_message(payload, connection_id, "Sicherung wird erstellt...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
         result = run_command(
             [str(parent_file / "runs" / "backup.sh"),
@@ -880,16 +880,16 @@ class Command:
         file_name = result.rstrip('\n')
         file_link = "/openWB/data/backup/" + file_name
         pub_user_message(payload, connection_id,
-                         "Backup erfolgreich erstellt.<br />"
+                         "Sicherung erfolgreich erstellt.<br />"
                          f'Jetzt <a href="{file_link}" target="_blank">herunterladen</a>.', MessageType.SUCCESS)
 
     def createCloudBackup(self, connection_id: str, payload: dict) -> None:
         if SubData.system_data["system"].backup_cloud is not None:
-            pub_user_message(payload, connection_id, ("Backup wird erstellt. Dieser Vorgang kann je nach Umfang der "
+            pub_user_message(payload, connection_id, ("Sicherung wird erstellt. Dieser Vorgang kann je nach Umfang der "
                              "Logdaten und Upload-Geschwindigkeit des Cloud-Dienstes einige Zeit in Anspruch nehmen."),
                              MessageType.INFO)
             SubData.system_data["system"].create_backup_and_send_to_cloud()
-            pub_user_message(payload, connection_id, "Backup erfolgreich erstellt.<br />", MessageType.SUCCESS)
+            pub_user_message(payload, connection_id, "Sicherung erfolgreich erstellt.<br />", MessageType.SUCCESS)
         else:
             pub_user_message(payload, connection_id,
                              "Es ist keine Backup-Cloud konfiguriert.<br />", MessageType.WARNING)

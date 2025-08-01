@@ -268,7 +268,7 @@ function refreshChargeTemplate(chargePointIndex) {
 			chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans.length > 0
 		) {
 			chargePoint.find(".charge-point-schedule-plan-missing").addClass("hide");
-			for (const value of chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans) {
+			for (const [index, value] of chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans.entries()) {
 				const key = value.id;
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
@@ -276,6 +276,7 @@ function refreshChargeTemplate(chargePointIndex) {
 					var clonedElement = sourceElement.clone();
 					// update all data referencing the old index in our clone
 					clonedElement.attr('data-plan', key).data('plan', key);
+					clonedElement.attr('data-plan-index', index).data('plan-index', index);
 					// insert after last existing plan to honor sorting from the array
 					target = chargePoint.find('.charge-point-schedule-plan').last();
 					// console.log("target: "+target.data('plan')+" index: "+key);
@@ -303,11 +304,9 @@ function refreshChargeTemplate(chargePointIndex) {
 					}
 					schedulePlanElement.find('.charge-point-schedule-time').text(value.time);
 					if (value.active == true) {
-						schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-danger border-danger');
-						schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-success border-success');
+						schedulePlanElement.find('.charge-point-schedule-plan-pill').addClass('charge-point-plan-pill-active');
 					} else {
-						schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-success border-success');
-						schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-danger border-danger');
+						schedulePlanElement.find('.charge-point-schedule-plan-pill').removeClass('charge-point-plan-pill-active');
 					}
 					switch (value.frequency.selected) {
 						case "once":
@@ -362,7 +361,7 @@ function refreshChargeTemplate(chargePointIndex) {
 			chargeTemplate[chargePointIndex].time_charging.plans.length > 0
 		) {
 			chargePoint.find(".charge-point-time-charge-plan-missing").addClass("hide");
-			for (const value of chargeTemplate[chargePointIndex].time_charging.plans) {
+			for (const [index, value] of chargeTemplate[chargePointIndex].time_charging.plans.entries()) {
 				const key = value.id;
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-time-charge-plan[data-plan=' + key + ']').length == 0) {
@@ -370,6 +369,7 @@ function refreshChargeTemplate(chargePointIndex) {
 					var clonedElement = sourceElement.clone();
 					// update all data referencing the old index in our clone
 					clonedElement.attr('data-plan', key).data('plan', key);
+					clonedElement.attr('data-plan-index', index).data('plan-index', index);
 					// insert after last existing plan to honor sorting from the array
 					target = chargePoint.find('.charge-point-time-charge-plan').last();
 					// console.log("target: "+target.data('plan')+" index: "+key);
@@ -383,11 +383,9 @@ function refreshChargeTemplate(chargePointIndex) {
 					timeChargePlanElement.find('.charge-point-time-charge-name').text(value.name);
 					timeChargePlanElement.find('.charge-point-time-charge-time').text(value.time[0] + " - " + value.time[1]);
 					if (value.active == true) {
-						timeChargePlanElement.find('.charge-point-time-charge-active').removeClass('alert-danger border-danger');
-						timeChargePlanElement.find('.charge-point-time-charge-active').addClass('alert-success border-success');
+						timeChargePlanElement.find('.charge-point-time-charge-pill').addClass('charge-point-plan-pill-active');
 					} else {
-						timeChargePlanElement.find('.charge-point-time-charge-active').removeClass('alert-success border-success');
-						timeChargePlanElement.find('.charge-point-time-charge-active').addClass('alert-danger border-danger');
+						timeChargePlanElement.find('.charge-point-time-charge-pill').removeClass('charge-point-plan-pill-active');
 					}
 					if (value.limit.selected == "soc") {
 						timeChargePlanElement.find('.charge-point-time-charge-limit').removeClass('hide');

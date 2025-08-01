@@ -136,9 +136,9 @@ class ChargeTemplate:
     CHARGING_PRICE_LOW = "Laden, da der aktuelle Strompreis unter dem maximalen Strompreis liegt."
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Zeitladen aktiviert, aber keine Zeitfenster konfiguriert."
-    TIME_CHARGING_NO_PLAN_ACTIVE = "Keine Ladung, da kein Zeitfenster für Zeitladen aktiv ist."
-    TIME_CHARGING_SOC_REACHED = "Kein Zeitladen, da der Soc bereits erreicht wurde."
-    TIME_CHARGING_AMOUNT_REACHED = "Kein Zeitladen, da die Energiemenge bereits geladen wurde."
+    TIME_CHARGING_NO_PLAN_ACTIVE = "Kein Zeitfenster für Zeitladen aktiv."
+    TIME_CHARGING_SOC_REACHED = "Das Ladeziel für das Zeitladen wurde erreicht."
+    TIME_CHARGING_AMOUNT_REACHED = "Die gewünschte Energiemenge für das Zeitladen wurde geladen."
 
     def time_charging(self,
                       soc: Optional[float],
@@ -181,7 +181,7 @@ class ChargeTemplate:
             return (0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None,
                     0)
 
-    SOC_REACHED = "Keine Ladung, da der Soc bereits erreicht wurde."
+    SOC_REACHED = "Keine Ladung, da das Ladeziel bereits erreicht wurde."
     AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
 
     def instant_charging(self,
@@ -322,23 +322,26 @@ class ChargeTemplate:
                     raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren "
                                      f"oder im Plan {p.name} als Begrenzung Energie einstellen.")
                 try:
-                    if ((p.limit.selected == "amount" and used_amount >= p.limit.amount) or
-                            ((p.limit.selected == "soc" and soc >= p.limit.soc_scheduled) and
-                             (p.limit.selected == "soc" and soc >= p.limit.soc_limit))):
-                        plan_fulfilled = True
-                    else:
-                        plan_fulfilled = False
                     plans_diff_end_date.append(
-                        {p.id: timecheck.check_end_time(p, chargemode_switch_timestamp, plan_fulfilled)})
-                    log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}, "
-                              f"Plan erfüllt: {plan_fulfilled}")
+                        {p.id: timecheck.check_end_time(p, chargemode_switch_timestamp)})
+                    log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}")
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.data.id))
         if plans_diff_end_date:
             # ermittle den Key vom kleinsten value in plans_diff_end_date
             filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] is not None]
             if filtered_plans:
-                plan_dict = min(filtered_plans, key=lambda x: list(x.values())[0])
+                sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0])
+                if len(sorted_plans) == 1:
+                    plan_dict = sorted_plans[0]
+                elif (len(sorted_plans) > 1 and
+                      list(sorted_plans[0].values())[0] < 0 and
+                      list(sorted_plans[1].values())[0] < 43200):
+                    # wenn der erste Plan in der Liste in der Vergangenheit liegt, dann den zweiten nehmen, wenn dessen
+                    # Zielzeit weniger als 12 h entfernt ist.
+                    plan_dict = sorted_plans[1]
+                else:
+                    plan_dict = sorted_plans[0]
                 if plan_dict:
                     plan_id = list(plan_dict.keys())[0]
                     plan_end_time = list(plan_dict.values())[0]

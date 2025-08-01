@@ -182,10 +182,11 @@ def test_calculate_duration(selected: str, phases: int, expected_duration: float
 @pytest.mark.parametrize(
     "end_time_mock, expected_plan_num",
     [
-        pytest.param([1000, 1500, 2000], 0, id="1st plan"),
-        pytest.param([1500, 1000, 2000], 1, id="2nd plan"),
-        pytest.param([1500, 2000, 1000], 2, id="3rd plan"),
-        pytest.param([None]*3, 0, id="no plan"),
+        pytest.param([1000, 1500, 2000], 0, id="nächster Zieltermin Plan 0"),
+        pytest.param([-100, 1000, 2000], 1, id="Plan 0 abgelaufen, Plan 1 innerhalb der nächsten 12h"),
+        pytest.param([-100, 45000, 50000], 0, id="Plan 0 abgelaufen, Plan 1 nicht innerhalb der nächsten 12h"),
+        pytest.param([1500, 2000, 1000], 2, id="nächster Zieltermin Plan 2"),
+        pytest.param([None]*3, 0, id="kein Plan"),
     ])
 def test_scheduled_charging_recent_plan(end_time_mock,
                                         expected_plan_num: Optional[int],
@@ -210,37 +211,6 @@ def test_scheduled_charging_recent_plan(end_time_mock,
         assert selected_plan.plan.id == expected_plan_num
     else:
         assert selected_plan is None
-
-
-@pytest.mark.parametrize("end_time_mock, expected_plan_num",
-                         [
-                             pytest.param([-10000, 1500, 2000], 0, id="1st plan"),
-                             pytest.param([None, -100, 2000], 1, id="1st plan fulfilled, 2nd plan"),
-                             pytest.param([None, -50, -100], 2, id="1st plan fulfilled, 3rd plan"),
-                             pytest.param([None]*3, None, id="no plan"),
-                         ])
-def test_scheduled_charging_recent_plan_fulfilled(end_time_mock, expected_plan_num, monkeypatch):
-    # setup
-    # der erste PLan ist erfüllt, der zweite wird ausgewählt
-    calculate_duration_mock = Mock(return_value=(100, 3000, 3, 500))
-    monkeypatch.setattr(ChargeTemplate, "_calc_remaining_time", calculate_duration_mock)
-    check_end_time_mock = Mock(side_effect=end_time_mock)
-    monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
-    ct = ChargeTemplate()
-    plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
-    plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
-    plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
-    ct.data.chargemode.scheduled_charging.plans = [plan_mock_0, plan_mock_1, plan_mock_2]
-
-    # execution
-    selected_plan = ct.scheduled_charging_recent_plan(
-        60, EvTemplate(), 3, 1200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter), 0)
-
-    # evaluation
-    if selected_plan:
-        assert selected_plan.plan.id == expected_plan_num
-    else:
-        assert selected_plan is expected_plan_num
 
 
 @pytest.mark.parametrize(

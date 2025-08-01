@@ -1,22 +1,25 @@
 <template>
   <q-card ref="cardRef" class="full-height card-width">
+    <q-card-section class="text-h6 text-bold ellipsis" :title="vehicle?.name">
+      {{ vehicle?.name }}
+    </q-card-section>
+    <q-separator inset />
+    <q-card-section class="row q-mt-sm">
+      <div class="col">
+        <div class="text-subtitle2">Hersteller:</div>
+        {{ vehicleInfo?.manufacturer || 'keine Angabe' }}
+      </div>
+      <div class="col q-pl-sm">
+        <div class="text-subtitle2">Modell:</div>
+        {{ vehicleInfo?.model || 'keine Angabe' }}
+      </div>
+    </q-card-section>
+    <q-separator inset class="q-mt-sm" />
     <q-card-section>
-      <div class="row items-center text-h6 text-bold">
-        <div class="col flex items-center">
-          {{ vehicle?.name }}
-        </div>
-      </div>
-      <div class="row q-mt-sm">
-        <div class="col">
-          <div class="text-subtitle2">Hersteller:</div>
-          {{ vehicleInfo?.manufacturer || 'keine Angabe' }}
-        </div>
-        <div class="col q-pl-sm">
-          <div class="text-subtitle2">Modell:</div>
-          {{ vehicleInfo?.model || 'keine Angabe' }}
-        </div>
-      </div>
       <VehicleConnectionStateIcon :vehicle-id="vehicleId" class="q-mt-sm" />
+    </q-card-section>
+    <q-separator inset class="q-mt-sm" />
+    <q-card-section>
       <SliderDouble
         v-if="vehicleSocType"
         class="q-mt-sm"
@@ -97,8 +100,25 @@ onMounted(() => {
   width: 22em;
 }
 
-.slider-container {
-  position: relative;
-  height: 40px;
+.q-card__section {
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.q-card__section:first-of-type {
+  padding-top: 16px;
+  padding-bottom: 0;
+}
+
+.q-card__section:last-of-type {
+  padding-top: 0;
+  padding-bottom: 16px;
+}
+
+.q-card__section:not(:first-of-type):not(:last-of-type) {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>
