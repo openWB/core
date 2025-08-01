@@ -68,9 +68,10 @@ class ShellyInverter(AbstractInverter):
             _, exported = self.sim_counter.sim_count(power)
             inverter_state = InverterState(
                 power=power,
-                exported=exported,
-                currents=currents
+                exported=exported
             )
+            if 'currents' in locals():
+                inverter_state.currents = currents
             self.store.set(inverter_state)
         except KeyError:
             log.exception("unsupported shelly device.")
