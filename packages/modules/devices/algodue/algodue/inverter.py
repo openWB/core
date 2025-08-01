@@ -32,12 +32,10 @@ class AlgodueInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        with self.__tcp_client:
-
-            currents = self.__tcp_client.read_input_registers(
-                0x100E, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
-            powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
-            power = sum(powers)
+        currents = self.__tcp_client.read_input_registers(
+            0x100E, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+        powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+        power = sum(powers)
 
         _, exported = self.sim_counter.sim_count(power)
 
