@@ -196,15 +196,16 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     monkeypatch.setattr(ChargeTemplate, "_calc_remaining_time", calculate_duration_mock)
     check_end_time_mock = Mock(side_effect=end_time_mock)
     monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
+    control_parameter = ControlParameter()
     ct = ChargeTemplate()
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
     plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
-    ct.data.chargemode.scheduled_charging.plans = [plan_mock_0, plan_mock_1, plan_mock_2]
+    plans = [plan_mock_0, plan_mock_1, plan_mock_2]
 
     # execution
-    selected_plan = ct.scheduled_charging_recent_plan(
-        60, EvTemplate(), 3, 200, 3, True, ChargingType.AC.value, 1652688000, Mock(spec=ControlParameter), 0)
+    selected_plan = ct._find_recent_plan(
+        plans, 60, EvTemplate(), 3, 200, 3, True, ChargingType.AC.value, 1652688000, control_parameter, 0)
 
     # evaluation
     if selected_plan:

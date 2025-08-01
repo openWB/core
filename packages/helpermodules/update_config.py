@@ -37,7 +37,7 @@ from control import counter_all
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
 from control.counter import get_counter_default_config
-from control.ev.charge_template import EcoCharging, get_charge_template_default
+from control.ev.charge_template import EcoCharging, get_charge_template_default, BidiCharging
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
 from control.general import ChargemodeConfig, Prices
@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 91
+    DATASTORE_VERSION = 92
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2303,6 +2303,22 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 85)
 
     def upgrade_datastore_85(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "bidi" not in payload:
+                    payload.update({"bidi": False})
+                return {topic: payload}
+            elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "bidi_charging" not in payload["chargemode"]:
+                    payload.pop("bidi_charging")
+                    payload["chargemode"].update({"bidi_charging": asdict(BidiCharging())})
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 86)
+
+    def upgrade_datastore_86(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
@@ -2319,9 +2335,9 @@ class UpdateConfig:
                                 })
                                 return {component_topic: config_payload}
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 86)
+        self.__update_topic("openWB/system/datastore_version", 87)
 
-    def upgrade_datastore_86(self) -> None:
+    def upgrade_datastore_87(self) -> None:
         if "openWB/bat/config/bat_control_permitted" not in self.all_received_topics.keys():
             self.__update_topic("openWB/bat/config/bat_control_permitted", False)
             if decode_payload(self.all_received_topics["openWB/bat/get/power_limit_controllable"]) is True:
@@ -2331,7 +2347,7 @@ class UpdateConfig:
                                    " jedoch bis zum Akzeptieren standardmäßig deaktiviert.", MessageType.WARNING)
         self.__update_topic("openWB/system/datastore_version", 87)
 
-    def upgrade_datastore_87(self) -> None:
+    def upgrade_datastore_88(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
                     re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
@@ -2340,9 +2356,9 @@ class UpdateConfig:
                 payload.update({"id": index})
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 88)
+        self.__update_topic("openWB/system/datastore_version", 89)
 
-    def upgrade_datastore_88(self) -> None:
+    def upgrade_datastore_89(self) -> None:
         pub_system_message({}, "Änderungen, die du auf der Hauptseite vornimmst, gelten nur vorübergehend, bis das "
                            "Fahrzeug abgesteckt wird. \nDie dauerhaften Einstellungen aus dem Einstellungsmenü werden "
                            "danach automatisch wieder aktiviert.", MessageType.INFO)
@@ -2350,7 +2366,7 @@ class UpdateConfig:
                            "Energiefluss-Diagramm & Karten-Ansicht der Ladepunkte", MessageType.INFO)
         self.__update_topic("openWB/system/datastore_version", 89)
 
-    def upgrade_datastore_89(self) -> None:
+    def upgrade_datastore_90(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("^openWB/io/action/[0-9]+/config$", topic) is not None:
                 payload = decode_payload(payload)
@@ -2370,9 +2386,9 @@ class UpdateConfig:
                 log.debug(f"Updated IO action configuration: {topic}: {payload}")
                 return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 90)
+        self.__update_topic("openWB/system/datastore_version", 91)
 
-    def upgrade_datastore_90(self) -> None:
+    def upgrade_datastore_91(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
                 config = decode_payload(payload)
@@ -2395,4 +2411,4 @@ class UpdateConfig:
                                    no_json=True)
                     time.sleep(2)
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 91)
+        self.__update_topic("openWB/system/datastore_version", 92)
