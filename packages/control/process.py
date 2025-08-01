@@ -57,7 +57,7 @@ class Process:
                     else:
                         if cp.data.get.charge_state:
                             Pub().pub(
-                                f"openWB/set/chargepoint/{cp.num}/get/state_str", "Lädt... ")
+                                f"openWB/set/chargepoint/{cp.num}/get/state_str", "Fahrzeug lädt.")
                         else:
                             Pub().pub(
                                 f"openWB/set/chargepoint/{cp.num}/get/state_str", "Ladevorgang wird gestartet... ")

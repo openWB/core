@@ -1,9 +1,6 @@
 <template>
   <q-card ref="cardRef" class="full-height card-width">
-    <q-card-section
-      class="justify-between text-h6 text-bold ellipsis"
-      :title="name"
-    >
+    <q-card-section class="text-h6 text-bold ellipsis" :title="name">
       {{ name }}
     </q-card-section>
     <q-separator inset />
@@ -29,11 +26,17 @@
       <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
       <ChargePointStateMessage :charge-point-id="props.chargePointId" />
     </q-card-section>
-    <q-card-section class="row items-center q-mt-sm">
+    <q-card-section
+      class="full-width row no-wrap justify-between content-start items-center q-mt-sm"
+    >
       <ChargePointVehicleSelect
+        class="col"
         :charge-point-id="Number(props.chargePointId)"
       />
-      <ChargePointPriority :charge-point-id="props.chargePointId" />
+      <ChargePointPriority
+        class="col-auto"
+        :charge-point-id="props.chargePointId"
+      />
     </q-card-section>
     <q-card-section>
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />

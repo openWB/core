@@ -4,39 +4,49 @@
     class="full-height card-width"
     :class="{ 'battery-sum': props.batteryId === -1 }"
   >
-    <q-card-section>
-      <div class="row text-h6 items-center text-bold justify-between">
-        {{ cardTitle }}
-        <q-icon
-          class="cursor-pointer"
-          v-if="showSettings"
-          name="settings"
-          size="sm"
-          @click="dialog?.open()"
-        />
-      </div>
-      <div class="row q-mt-sm text-subtitle2 justify-between full-width">
-        <div>Leistung:</div>
-        <div class="q-ml-sm">
-          {{ power }}
-        </div>
-      </div>
-      <div
+    <q-card-section
+      class="text-h6 items-center text-bold justify-between ellipsis"
+      :title="cardTitle"
+    >
+      {{ cardTitle }}
+    </q-card-section>
+    <q-separator inset />
+    <q-card-section class="row flex justify-end">
+      <q-icon
+        class="cursor-pointer q-mt-sm"
         v-if="showSettings"
-        class="row q-mt-md justify-between text-subtitle2"
-      >
-        <div>Laden mit Überschuss:</div>
-        <div class="q-ml-sm row items-center">
-          <q-icon
-            :name="batteryMode.icon"
-            size="sm"
-            class="q-mr-sm"
-            color="primary"
-          />
-          {{ batteryMode.label }}
-        </div>
+        name="settings"
+        size="sm"
+        @click="dialog?.open()"
+      />
+    </q-card-section>
+    <q-card-section
+      class="row q-mt-sm text-subtitle2 justify-between full-width"
+    >
+      <div>Leistung:</div>
+      <div class="q-ml-sm">
+        {{ power }}
       </div>
-      <div class="text-subtitle1 text-weight-bold q-mt-md">Heute:</div>
+    </q-card-section>
+    <q-separator v-if="showSettings" inset class="q-mt-sm" />
+    <q-card-section
+      v-if="showSettings"
+      class="row q-mt-md justify-between text-subtitle2"
+    >
+      <div>Laden mit Überschuss:</div>
+      <div class="q-ml-sm row items-center">
+        <q-icon
+          :name="batteryMode.icon"
+          size="sm"
+          class="q-mr-sm"
+          color="primary"
+        />
+        {{ batteryMode.label }}
+      </div>
+    </q-card-section>
+    <q-separator inset class="q-mt-sm" />
+    <q-card-section>
+      <div class="text-subtitle1 text-weight-bold q-mt-sm">Heute:</div>
       <div class="row q-mt-sm text-subtitle2 justify-between full-width">
         <div>Geladen:</div>
         <div class="q-ml-sm">
@@ -49,6 +59,9 @@
           {{ dailyExportedEnergy }}
         </div>
       </div>
+    </q-card-section>
+    <q-separator inset class="q-mt-sm" />
+    <q-card-section>
       <SliderDouble
         class="q-mt-sm"
         :current-value="soc"
@@ -150,5 +163,27 @@ onMounted(() => {
 <style scoped>
 .card-width {
   width: 22em;
+}
+
+.q-card__section {
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.q-card__section:first-of-type {
+  padding-top: 16px;
+  padding-bottom: 0;
+}
+
+.q-card__section:last-of-type {
+  padding-top: 0;
+  padding-bottom: 16px;
+}
+
+.q-card__section:not(:first-of-type):not(:last-of-type) {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>

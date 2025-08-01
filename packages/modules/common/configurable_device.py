@@ -96,7 +96,13 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
             log.debug(
                 f"Fehler bei Gerät {self.device_config.name} aufgetreten, Fehlerzeitstempel: {self.error_timestamp}")
         if timecheck.check_timestamp(self.error_timestamp, 60) is False:
-            self.__error_handler()
+            try:
+                self.__error_handler()
+            except Exception:
+                log.exception(f"Fehlerbehandlung für Gerät {self.device_config.name} fehlgeschlagen")
+            else:
+                log.debug(f"Fehlerbehandlung für Gerät {self.device_config.name} wurde durchgeführt.")
+
             self.error_timestamp = None
             Pub().pub(self.topic, self.error_timestamp)
 

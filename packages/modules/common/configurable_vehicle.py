@@ -87,8 +87,11 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 Pub().pub(f"openWB/set/vehicle/{self.vehicle}/soc_module/calculated_soc_state",
                           asdict(self.calculated_soc_state))
             if (vehicle_update_data.soc_timestamp is None or
-                    vehicle_update_data.soc_timestamp <= car_state.soc_timestamp):
+                    vehicle_update_data.soc_timestamp <= car_state.soc_timestamp + 60):
                 # Nur wenn der SoC neuer ist als der bisherige, diesen setzen.
+                # Manche Fahrzeuge liefern in Ladepausen zwar einen SoC, aber manchmal einen alten.
+                # Die Pro liefert manchmal den SoC nicht, bis nach dem Anstecken das SoC-Update getriggert wird.
+                # Wenn Sie dann doch noch den alten SoC liefert, darf dieser nicht verworfen werden.
                 self.store.set(car_state)
             elif vehicle_update_data.soc_timestamp > 1e10:
                 # car_state ist in ms geschrieben, dieser kann überschrieben werden
@@ -100,7 +103,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         # Kein SoC vom LP vorhanden oder erwünscht
         if (vehicle_update_data.soc_from_cp is None or self.general_config.use_soc_from_cp is False or
                 # oder aktueller manueller SoC vorhanden (ausgelesenen SoC während der Ladung korrigieren)
-                self.calculated_soc_state.manual_soc):
+                self.calculated_soc_state.manual_soc is not None):
             if isinstance(self.vehicle_config, ManualSoc):
                 # Wenn ein manueller SoC gesetzt wurde, diesen als neuen Start merken.
                 if self.calculated_soc_state.manual_soc is not None or self.calculated_soc_state.imported_start is None:
