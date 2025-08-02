@@ -1,25 +1,54 @@
 <template>
-	<g id="pmUsageArc" :origin="draw" />
+	<g>
+		<defs>
+			<filter id="f1">
+				<feDropShadow
+					dx="2"
+					dy="2"
+					rx="10"
+					ry="10"
+					stdDeviation="1"
+					flood-opacity="0.7"
+				/>
+			</filter>
+		</defs>
+		<g id="pmUsageArc" :origin="draw" />
+	</g>
 </template>
 
 <script setup lang="ts">
-import type { PowerItem } from '@/assets/js/types'
+import { PowerItemType, type PowerItem } from '@/assets/js/types'
 import { usageSummary } from '@/assets/js/model'
+import { batteries } from '../batteryList/model'
 import { shDevices } from '../smartHome/model'
-import { type PieArcDatum, select, arc, pie } from 'd3'
+import {
+	type PieArcDatum,
+	select,
+	arc,
+	pie,
+	type Arc,
+	type EnterElement,
+	type Selection,
+	type BaseType,
+} from 'd3'
 import { computed } from 'vue'
+import { chargePoints } from '../chargePointList/model'
+import { formatWatt, fgColor } from '@/assets/js/helpers'
 // props
 const props = defineProps<{
 	radius: number
 	cornerRadius: number
 	circleGapSize: number
 	emptyPower: number
+	showLabels: boolean
 }>()
+
 //  computed: {
 const draw = computed(() => {
 	// Draw the arc using d3
 	let emptyPowerItem: PowerItem = {
 		name: '',
+		type: PowerItemType.counter,
 		power: props.emptyPower,
 		energy: 0,
 		energyPv: 0,
@@ -29,16 +58,45 @@ const draw = computed(() => {
 		icon: '',
 		showInGraph: true,
 	}
-	const plotdata = [usageSummary.evuOut, usageSummary.charging]
-		.concat(
+	// const plotdata = [usageSummary.evuOut, usageSummary.charging]
+	let plotdata = [usageSummary.evuOut]
+	if (Object.values(chargePoints).length > 1) {
+		plotdata = plotdata.concat(
+			Object.values(chargePoints).sort((a, b) => {
+				return b.power - a.power
+			}) as PowerItem[],
+		)
+	} else {
+		plotdata = plotdata.concat([usageSummary.charging] as PowerItem[])
+	}
+
+	plotdata = plotdata.concat(plotdevices.value)
+	/* if (shDevices.size > 1) {
+		plotdata = plotdata
+			.concat(
 			[...shDevices.values()]
-				.filter((row) => row.configured && !row.countAsHouse)
+				.filter((row) => row.configured && !row.countAsHouse && row.showInGraph)
 				.sort((a, b) => {
 					return b.power - a.power
 				}) as PowerItem[],
 		)
-		.concat([usageSummary.batIn, usageSummary.house])
-		.concat(emptyPowerItem)
+	} else {
+		plotdata.push(usageSummary.devices)
+	} */
+
+	if (Object.values(batteries).length > 1) {
+		plotdata = plotdata.concat(
+			[...batteries.value.values()]
+				.filter((b) => b.power > 0)
+				.sort((a, b) => {
+					return b.power - a.power
+				}) as PowerItem[],
+		)
+	} else {
+		plotdata.push(usageSummary.batIn)
+	}
+	plotdata = plotdata.concat([usageSummary.house]).concat(emptyPowerItem)
+
 	const arcCount = plotdata.length - 1
 	const pieGenerator = pie<PowerItem>()
 		.value((record: PowerItem) => record.power)
@@ -46,15 +104,17 @@ const draw = computed(() => {
 		.endAngle(Math.PI / 2 + props.circleGapSize)
 		.sort(null)
 	const path = arc<PieArcDatum<PowerItem>>()
-		.innerRadius((props.radius / 6) * 5)
+		//.innerRadius((props.radius / 6) * 5)
+		.innerRadius(props.radius * 0.88)
 		.outerRadius(props.radius)
 		.cornerRadius(props.cornerRadius)
 	const graph = select('g#pmUsageArc')
 	graph.selectAll('*').remove()
-	graph
+	const consumers = graph
 		.selectAll('consumers')
-		.data(pieGenerator(plotdata))
+		.data(pieGenerator(plotdata.filter((v) => v.power != 0)))
 		.enter()
+	consumers
 		.append('path')
 		.attr('d', path)
 		.attr('fill', (d) => d.data.color)
@@ -65,8 +125,103 @@ const draw = computed(() => {
 					: 'null'
 				: d.data.color,
 		)
+	//graph.selectAll('consumers')
+	//	.data(pieGenerator(plotdata.filter((v) => v.power != 0)))
+	//	.enter()
+
+	addLabels(path, consumers)
+
 	return 'pmUsageArc.vue'
 })
+
+const plotdevices = computed(() => {
+	let summarizedPower = 0
+	for (const d of shDevices.values()) {
+		if (d.configured && !d.countAsHouse && !d.showInGraph) {
+			summarizedPower += d.power
+		}
+	}
+	const deviceSummary: PowerItem = {
+		name: 'Geräte',
+		type: PowerItemType.device,
+		power: summarizedPower,
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+		color: 'var(--color-devices)',
+		icon: '',
+		showInGraph: true,
+	}
+	return shDevices.size > 1
+		? [deviceSummary].concat(
+				[...shDevices.values()]
+					.filter(
+						(row) => row.configured && !row.countAsHouse && row.showInGraph,
+					)
+					.sort((a, b) => {
+						return b.power - a.power
+					}),
+			)
+		: [usageSummary.devices]
+})
+function addLabels(
+	path: Arc<unknown, PieArcDatum<PowerItem>>,
+	consumers: Selection<EnterElement, PieArcDatum<PowerItem>, BaseType, unknown>,
+) {
+	const categoriesToShow = [
+		PowerItemType.chargepoint,
+		PowerItemType.battery,
+		PowerItemType.device,
+	]
+	consumers = consumers.filter((d) => categoriesToShow.includes(d.data.type))
+	if (props.showLabels) {
+		consumers
+			.append('rect')
+			.attr('transform', (d) => 'translate(' + path.centroid(d) + ')')
+			.attr('x', -40)
+			.attr('y', -17)
+			.attr('rx', 10)
+			.attr('ry', 10)
+			.attr('width', 80)
+			.attr('height', 40)
+			.attr('corner-radius', 20)
+			.attr('filter', 'url(#f1)')
+			//.style('fill', 'var(--color-input)')
+			.style('fill', (d) => d.data.color)
+			.style('stroke', 'var(--color-axis)')
+			.style('stroke-width', 0.4)
+			.style('opacity', 1)
+		const labels = consumers
+			.append('text')
+			.attr('transform', (d) => 'translate(' + path.centroid(d) + ')')
+			.attr('dy', 0)
+			.attr('x', 0)
+			.attr('y', 0)
+			.style('text-anchor', 'middle')
+			.style('font-size', 17)
+			//.style('stroke', (d) => fgColor(d.data.color))
+			.style('fill', (d) => fgColor(d.data.color))
+		labels
+			.append('tspan')
+			.attr('y', '0')
+			.style('font-size', 14)
+			.text((d) => trimLabel(d.data.name))
+		labels
+			.append('tspan')
+			.attr('dy', '1em')
+			.attr('x', '0')
+			.text((d) => formatWatt(d.data.power))
+	}
+}
+
+function trimLabel(txt: string): string {
+	const MAXLENGTH = 8
+	if (txt.length > MAXLENGTH) {
+		return txt.substring(0, MAXLENGTH) + '.'
+	}
+	return txt
+}
 </script>
 
 <style></style>

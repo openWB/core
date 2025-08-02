@@ -42,6 +42,7 @@ export class Config {
 	private _debug: boolean = false
 	private _lowerPriceBound = 0
 	private _upperPriceBound = 0
+	private _showPmLabels = true
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
 	showRightButton = true
@@ -318,6 +319,16 @@ export class Config {
 	setUpperPriceBound(val: number) {
 		this._upperPriceBound = val
 	}
+	get showPmLabels() {
+		return this._showPmLabels
+	}
+	set showPmLabels(val: boolean) {
+		this._showPmLabels = val
+		savePrefs()
+	}
+	setShowPmLabels(val: boolean) {
+		this._showPmLabels = val
+	}
 }
 
 export const globalConfig = reactive(new Config())
@@ -494,6 +505,7 @@ interface Preferences {
 	lowerP?: number
 	upperP?: number
 	sslPrefs?: boolean
+	pmLabels?: boolean
 	debug?: boolean
 }
 
@@ -527,6 +539,7 @@ function writeCookie() {
 	prefs.lowerP = globalConfig.lowerPriceBound
 	prefs.upperP = globalConfig.upperPriceBound
 	prefs.sslPrefs = globalConfig.sslPrefs
+	prefs.pmLabels = globalConfig.showPmLabels
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
@@ -625,6 +638,9 @@ function readCookie() {
 		}
 		if (prefs.sslPrefs !== undefined) {
 			globalConfig.setSslPrefs(prefs.sslPrefs)
+		}
+		if (prefs.pmLabels !== undefined) {
+			globalConfig.setShowPmLabels(prefs.pmLabels)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)

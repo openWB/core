@@ -174,8 +174,8 @@ function processHierarchy(hierarchy: Hierarchy) {
 			addBattery(hierarchy.id)
 			break
 		case 'inverter':
-			// addInverter (todo)
-			// console.info('inverter id ' + hierarchy.id)
+			addPvSystem(hierarchy.id)
+			console.info('new inverter id ' + hierarchy.id)
 			break
 		default:
 		// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
@@ -188,25 +188,26 @@ function processHierarchy(hierarchy: Hierarchy) {
 function processPvMessages(topic: string, message: string) {
 	const index = getIndex(topic)
 	if (index && !pvSystems.value.has(index)) {
-		// console.warn('Creating PV system: ' + index)
-		addPvSystem(index)
-	}
-	if (topic == 'openWB/pv/get/power') {
-		sourceSummary.pv.power = -message
-	} else if (topic == 'openWB/pv/get/daily_exported') {
-		sourceSummary.pv.energy = +message
-	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/power$/i)) {
-		pvSystems.value.get(index!)!.power = +message
-	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/daily_exported$/i)) {
-		pvSystems.value.get(index!)!.energy = +message
-	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/monthly_exported$/i)) {
-		pvSystems.value.get(index!)!.energy_month = +message
-	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/yearly_exported$/i)) {
-		pvSystems.value.get(index!)!.energy_year = +message
-	} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/exported$/i)) {
-		pvSystems.value.get(index!)!.energy_total = +message
+		console.warn('Invalid PV system index: ' + index)
+		// addPvSystem(index)
 	} else {
-		// console.warn('Ignored PV msg: [' + topic + '] ' + message)
+		if (topic == 'openWB/pv/get/power') {
+			sourceSummary.pv.power = -message
+		} else if (topic == 'openWB/pv/get/daily_exported') {
+			sourceSummary.pv.energy = +message
+		} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/power$/i)) {
+			pvSystems.value.get(index!)!.power = +message
+		} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/daily_exported$/i)) {
+			pvSystems.value.get(index!)!.energy = +message
+		} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/monthly_exported$/i)) {
+			pvSystems.value.get(index!)!.energy_month = +message
+		} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/yearly_exported$/i)) {
+			pvSystems.value.get(index!)!.energy_year = +message
+		} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/exported$/i)) {
+			pvSystems.value.get(index!)!.energy_total = +message
+		} else {
+			// console.warn('Ignored PV msg: [' + topic + '] ' + message)
+		}
 	}
 }
 

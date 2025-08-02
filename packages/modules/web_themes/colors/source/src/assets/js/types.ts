@@ -9,6 +9,7 @@
 export class ShDevice implements PowerItem {
 	id: number
 	name = ''
+	type = PowerItemType.device
 	power = 0
 	energy = 0
 	energyPv = 0
@@ -49,9 +50,21 @@ export interface ItemProps {
 	color: string
 	icon: string
 }
-
+export enum PowerItemType {
+	counter = 'counter',
+	inverter = 'inverter',
+	pvSummary = 'pvSummary',
+	battery = 'battery',
+	batterySummary = 'batterySummary',
+	chargepoint = 'chargepoint',
+	chargeSummary = 'chargeSummary',
+	device = 'device',
+	deviceSummary = 'deviceSummary',
+	house = 'house',
+}
 export interface PowerItem {
 	name: string
+	type: PowerItemType
 	power: number
 	energy: number
 	energyPv: number
@@ -73,16 +86,21 @@ export interface MarginType {
 	bottom: number
 }
 
-export class PvSystem {
+export class PvSystem implements PowerItem {
 	id: number
 	name = 'Wechselrichter'
+	type = PowerItemType.inverter
 	color = 'var(--color-pv)'
 	power = 0
 	energy = 0
 	energy_month = 0
 	energy_year = 0
 	energy_total = 0
-
+	energyPv = 0
+	energyBat = 0
+	pvPercentage = 0
+	icon = ''
+	showInGraph = true
 	constructor(index: number) {
 		this.id = index
 	}
