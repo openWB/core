@@ -175,7 +175,6 @@ function processHierarchy(hierarchy: Hierarchy) {
 			break
 		case 'inverter':
 			addPvSystem(hierarchy.id)
-			console.info('new inverter id ' + hierarchy.id)
 			break
 		default:
 		// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
