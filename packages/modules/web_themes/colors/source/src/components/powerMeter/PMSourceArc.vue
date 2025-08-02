@@ -46,40 +46,6 @@ const props = defineProps<{
 //  computed:
 const draw = computed(() => {
 	// Draw the arc using d3
-	let emptyPowerItem: PowerItem = {
-		name: '',
-		type: PowerItemType.counter,
-		power: props.emptyPower,
-		energy: 0,
-		energyPv: 0,
-		energyBat: 0,
-		pvPercentage: 0,
-		color: 'var(--color-bg)',
-		icon: '',
-		showInGraph: true,
-	}
-	let plotdata = [sourceSummary.evuIn]
-	if (pvSystems.value.size > 1) {
-		plotdata = plotdata.concat(
-			[...pvSystems.value.values()].sort((a, b) => {
-				return a.power - b.power
-			}) as PowerItem[],
-		)
-	} else {
-		plotdata.push(sourceSummary.pv)
-	}
-	if (batteries.value.size > 1) {
-		plotdata = plotdata.concat(
-			[...batteries.value.values()]
-				.filter((b) => b.power < 0)
-				.sort((a, b) => {
-					return a.power - b.power
-				}) as PowerItem[],
-		)
-	} else {
-		plotdata.push(sourceSummary.batOut)
-	}
-	plotdata = plotdata.concat(emptyPowerItem)
 	const arcCount = Object.values(sourceSummary).length - 1
 	const pieGenerator = pie<PowerItem>()
 		.value((record: PowerItem) => Math.abs(record.power))
@@ -96,7 +62,7 @@ const draw = computed(() => {
 	graph.selectAll('*').remove()
 	const sources = graph
 		.selectAll('sources')
-		.data(pieGenerator(Object.values(plotdata).filter((v) => v.power != 0)))
+		.data(pieGenerator(plotdata.value.filter((v) => v.power != 0)))
 		.enter()
 
 	sources
@@ -113,6 +79,44 @@ const draw = computed(() => {
 	addLabels(path, sources)
 	return 'pmSourceArc.vue'
 })
+const plotdata = computed(() => {
+	return [sourceSummary.evuIn].concat(
+		invertersToShow.value,
+		batteriesToShow.value,
+		emptyPowerItem.value,
+	)
+})
+const invertersToShow = computed(() =>
+	pvSystems.value.size > 1
+		? [...pvSystems.value.values()].sort((a, b) => {
+				return a.power - b.power
+			})
+		: [sourceSummary.pv],
+)
+const batteriesToShow = computed(() =>
+	batteries.value.size > 1
+		? [...batteries.value.values()]
+				.filter((b) => b.power < 0)
+				.sort((a, b) => {
+					return a.power - b.power
+				})
+		: [sourceSummary.batOut],
+)
+const emptyPowerItem = computed(() => {
+	return {
+		name: '',
+		type: PowerItemType.counter,
+		power: props.emptyPower,
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+		color: 'var(--color-bg)',
+		icon: '',
+		showInGraph: true,
+	}
+})
+
 function addLabels(
 	path: Arc<unknown, PieArcDatum<PowerItem>>,
 	consumers: Selection<EnterElement, PieArcDatum<PowerItem>, BaseType, unknown>,

@@ -46,58 +46,7 @@ const props = defineProps<{
 //  computed: {
 const draw = computed(() => {
 	// Draw the arc using d3
-	let emptyPowerItem: PowerItem = {
-		name: '',
-		type: PowerItemType.counter,
-		power: props.emptyPower,
-		energy: 0,
-		energyPv: 0,
-		energyBat: 0,
-		pvPercentage: 0,
-		color: 'var(--color-bg)',
-		icon: '',
-		showInGraph: true,
-	}
-	// const plotdata = [usageSummary.evuOut, usageSummary.charging]
-	let plotdata = [usageSummary.evuOut]
-	if (Object.values(chargePoints).length > 1) {
-		plotdata = plotdata.concat(
-			Object.values(chargePoints).sort((a, b) => {
-				return b.power - a.power
-			}) as PowerItem[],
-		)
-	} else {
-		plotdata = plotdata.concat([usageSummary.charging] as PowerItem[])
-	}
-
-	plotdata = plotdata.concat(plotdevices.value)
-	/* if (shDevices.size > 1) {
-		plotdata = plotdata
-			.concat(
-			[...shDevices.values()]
-				.filter((row) => row.configured && !row.countAsHouse && row.showInGraph)
-				.sort((a, b) => {
-					return b.power - a.power
-				}) as PowerItem[],
-		)
-	} else {
-		plotdata.push(usageSummary.devices)
-	} */
-
-	if (Object.values(batteries).length > 1) {
-		plotdata = plotdata.concat(
-			[...batteries.value.values()]
-				.filter((b) => b.power > 0)
-				.sort((a, b) => {
-					return b.power - a.power
-				}) as PowerItem[],
-		)
-	} else {
-		plotdata.push(usageSummary.batIn)
-	}
-	plotdata = plotdata.concat([usageSummary.house]).concat(emptyPowerItem)
-
-	const arcCount = plotdata.length - 1
+	const arcCount = plotdata.value.length - 1
 	const pieGenerator = pie<PowerItem>()
 		.value((record: PowerItem) => record.power)
 		.startAngle(Math.PI * 1.5 - props.circleGapSize)
@@ -112,7 +61,7 @@ const draw = computed(() => {
 	graph.selectAll('*').remove()
 	const consumers = graph
 		.selectAll('consumers')
-		.data(pieGenerator(plotdata.filter((v) => v.power != 0)))
+		.data(pieGenerator(plotdata.value.filter((v) => v.power != 0)))
 		.enter()
 	consumers
 		.append('path')
@@ -133,8 +82,37 @@ const draw = computed(() => {
 
 	return 'pmUsageArc.vue'
 })
-
-const plotdevices = computed(() => {
+const emptyPowerItem = computed(() => {
+	return {
+		name: '',
+		type: PowerItemType.counter,
+		power: props.emptyPower,
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+		color: 'var(--color-bg)',
+		icon: '',
+		showInGraph: true,
+	}
+})
+const plotdata = computed(() => {
+	return [usageSummary.evuOut].concat(
+		chargePointsToShow.value,
+		devicesToShow.value,
+		batteriesToShow.value,
+		usageSummary.house,
+		emptyPowerItem.value,
+	)
+})
+const chargePointsToShow = computed(() => {
+	return Object.values(chargePoints).length > 1
+		? Object.values(chargePoints).sort((a, b) => {
+				return b.power - a.power
+			})
+		: [usageSummary.charging]
+})
+const devicesToShow = computed(() => {
 	let summarizedPower = 0
 	for (const d of shDevices.values()) {
 		if (d.configured && !d.countAsHouse && !d.showInGraph) {
@@ -153,18 +131,27 @@ const plotdevices = computed(() => {
 		icon: '',
 		showInGraph: true,
 	}
-	return shDevices.size > 1
+	let activeDevices = [...shDevices.values()].filter((row) => row.configured)
+	return activeDevices.length > 1
 		? [deviceSummary].concat(
-				[...shDevices.values()]
-					.filter(
-						(row) => row.configured && !row.countAsHouse && row.showInGraph,
-					)
+				activeDevices
+					.filter((row) => !row.countAsHouse && row.showInGraph)
 					.sort((a, b) => {
 						return b.power - a.power
 					}),
 			)
 		: [usageSummary.devices]
 })
+const batteriesToShow = computed(() => {
+	return batteries.value.size > 1
+		? [...batteries.value.values()]
+				.filter((b) => b.power > 0)
+				.sort((a, b) => {
+					return b.power - a.power
+				})
+		: [usageSummary.batIn]
+})
+
 function addLabels(
 	path: Arc<unknown, PieArcDatum<PowerItem>>,
 	consumers: Selection<EnterElement, PieArcDatum<PowerItem>, BaseType, unknown>,
