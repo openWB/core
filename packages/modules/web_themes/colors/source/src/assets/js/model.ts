@@ -9,7 +9,7 @@
 
 import { reactive, ref } from 'vue'
 import { GlobalData } from './themeConfig'
-import type { PowerItem, ItemProps } from './types'
+import { type PowerItem, type ItemProps, PowerItemType } from './types'
 import { PvSystem } from './types'
 
 export const masterData: { [key: string]: ItemProps } = reactive({
@@ -86,10 +86,43 @@ class HistoricSummary {
 	values() {
 		return Object.values(this._items)
 	}
-	addItem(key: string, useColor?: string) {
+	addItem(key: string, type?: PowerItemType, useColor?: string) {
+		let itemType: PowerItemType
+		if (type) {
+			itemType = type
+		} else {
+			switch (key) {
+				case 'evuIn':
+					itemType = PowerItemType.counter
+					break
+				case 'pv':
+					itemType = PowerItemType.inverter
+					break
+				case 'batOut':
+					itemType = PowerItemType.battery
+					break
+				case 'evuOut':
+					itemType = PowerItemType.counter
+					break
+				case 'charging':
+					itemType = PowerItemType.chargepoint
+					break
+				case 'devices':
+					itemType = PowerItemType.device
+					break
+				case 'batIn':
+					itemType = PowerItemType.battery
+					break
+				case 'house':
+					itemType = PowerItemType.house
+					break
+				default:
+					itemType = PowerItemType.counter
+			}
+		}
 		this._items[key] = useColor
-			? createPowerItem(key, useColor)
-			: createPowerItem(key)
+			? createPowerItem(key, itemType, useColor)
+			: createPowerItem(key, itemType)
 	}
 	setEnergy(cat: string, val: number) {
 		if (!this.keys().includes(cat)) {
@@ -131,23 +164,28 @@ export function resetHistoricSummary() {
 	historicSummary = new HistoricSummary()
 }
 export const sourceSummary: { [key: string]: PowerItem } = reactive({
-	evuIn: createPowerItem('evuIn'),
-	pv: createPowerItem('pv'),
-	batOut: createPowerItem('batOut'),
+	evuIn: createPowerItem('evuIn', PowerItemType.counter),
+	pv: createPowerItem('pv', PowerItemType.pvSummary),
+	batOut: createPowerItem('batOut', PowerItemType.batterySummary),
 })
 export const usageSummary: { [key: string]: PowerItem } = reactive({
-	evuOut: createPowerItem('evuOut'),
-	charging: createPowerItem('charging'),
-	devices: createPowerItem('devices'),
-	batIn: createPowerItem('batIn'),
-	house: createPowerItem('house'),
+	evuOut: createPowerItem('evuOut', PowerItemType.counter),
+	charging: createPowerItem('charging', PowerItemType.chargeSummary),
+	devices: createPowerItem('devices', PowerItemType.deviceSummary),
+	batIn: createPowerItem('batIn', PowerItemType.batterySummary),
+	house: createPowerItem('house', PowerItemType.house),
 })
 export const globalData = reactive(new GlobalData())
 export const etPriceList = ref('')
 export const energyMeterNeedsRedraw = ref(false)
-function createPowerItem(key: string, useColor?: string): PowerItem {
+function createPowerItem(
+	key: string,
+	type: PowerItemType,
+	useColor?: string,
+): PowerItem {
 	const p: PowerItem = {
 		name: masterData[key] ? masterData[key].name : 'item',
+		type: type,
 		power: 0,
 		energy: 0,
 		energyPv: 0,
@@ -172,6 +210,16 @@ export const currentTime = ref(new Date())
 export const pvSystems = ref(new Map<number, PvSystem>())
 export const addPvSystem = (index: number) => {
 	pvSystems.value.set(index, new PvSystem(index))
-	pvSystems.value.get(index)!.color =
-		masterData['pv' + pvSystems.value.size].color
+	assignPvSystemColors()
+	//pvSystems.value.get(index)!.color =
+	//masterData['pv' + pvSystems.value.size].color
+}
+
+function assignPvSystemColors() {
+	const pvSystemsSorted = [...pvSystems.value.values()].sort(
+		(a, b) => a.id - b.id,
+	)
+	pvSystemsSorted.forEach((system, index) => {
+		system.color = masterData['pv' + (index + 1)].color
+	})
 }

@@ -66,7 +66,7 @@
 <script setup lang="ts">
 import { scaleBand, scaleLinear } from 'd3'
 import { max } from 'd3'
-import type { PowerItem } from '@/assets/js/types'
+import { PowerItemType, type PowerItem } from '@/assets/js/types'
 import {
 	sourceSummary,
 	historicSummary,
@@ -203,6 +203,7 @@ function addSourceDetails(sources: PowerItem[]): PowerItem[] {
 		pvSystems.value.forEach((inv) => {
 			sources.splice(2 + idx++, 0, {
 				name: inv.name,
+				type: PowerItemType.inverter,
 				power: inv.power,
 				energy: inv.energy,
 				energyPv: 0,
@@ -218,6 +219,7 @@ function addSourceDetails(sources: PowerItem[]): PowerItem[] {
 		batteries.value.forEach((bat) => {
 			sources.splice(3 + idx++, 0, {
 				name: bat.name,
+				type: PowerItemType.battery,
 				power: bat.power,
 				energy: bat.dailyYieldExport,
 				energyPv: 0,

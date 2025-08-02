@@ -1,13 +1,13 @@
 import { computed, reactive } from 'vue'
 import { updateChargeTemplate, updateServer } from '@/assets/js/sendMessages'
-import { ChargeMode, type PowerItem } from '@/assets/js/types'
+import { ChargeMode, PowerItemType, type PowerItem } from '@/assets/js/types'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { masterData } from '@/assets/js/model'
-export class ChargePoint {
+export class ChargePoint implements PowerItem {
 	id: number
 	name = 'Ladepunkt'
 	icon = 'Ladepunkt'
-	type = ''
+	type = PowerItemType.chargepoint
 	ev = 0
 	template = 0
 	connectedPhases = 0
@@ -47,6 +47,8 @@ export class ChargePoint {
 	isSocManual = false
 	waitingForSoc = false
 	color = 'white'
+	energy = 0
+	showInGraph = true
 	private _timedCharging = false
 	private _instantChargeLimitMode = ''
 	private _instantTargetCurrent = 0
@@ -387,6 +389,7 @@ export class ChargePoint {
 	toPowerItem(): PowerItem {
 		return {
 			name: this.name,
+			type: PowerItemType.chargepoint,
 			power: this.power,
 			energy: this.dailyYield,
 			energyPv: this.energyPv,

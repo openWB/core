@@ -5,10 +5,12 @@
  */
 
 import { masterData } from '@/assets/js/model'
+import { PowerItemType, type PowerItem } from '@/assets/js/types'
 import { reactive, ref } from 'vue'
-export class Battery {
+export class Battery implements PowerItem {
 	id: number
 	name = 'Speicher'
+	type = PowerItemType.battery
 	color = 'var(--color-battery)'
 	dailyYieldExport = 0
 	dailyYieldImport = 0
@@ -22,6 +24,12 @@ export class Battery {
 	imported = 0
 	power = 0
 	soc = 0
+	energy = 0
+	energyPv = 0
+	energyBat = 0
+	pvPercentage = 0
+	showInGraph = true
+	icon = 'Speicher'
 	constructor(index: number) {
 		this.id = index
 	}
