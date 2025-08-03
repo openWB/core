@@ -14,7 +14,6 @@
 					/>
 
 					<PMUsageArc
-						:sh-device="shDevices"
 						:radius="radius"
 						:corner-radius="cornerRadius"
 						:circle-gap-size="circleGapSize"
@@ -180,7 +179,6 @@ import {
 	usageSummary,
 	masterData,
 } from '@/assets/js/model'
-import { shDevices } from '../smartHome/model'
 import {
 	chargePoints,
 	vehicles,
