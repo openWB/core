@@ -38,20 +38,31 @@ class SungrowBat(AbstractBat):
         unit = self.device_config.configuration.modbus_id
         soc = int(
             self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
-        # Es gibt nur einen DC Strom der Batterie, daher Aufteilen auf 3 Phasenströme
-        bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
+        # Ab FW Version 95.09 gibt es ein neues Register für den Batteriestrom
+        try:
+            bat_current = self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit) * -0.1
+        except Exception:
+            bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
         currents = [bat_current / 3] * 3
+    
+        firmware = Firmware(self.device_config.configuration.firmware)
+        version = self.device_config.configuration.version
 
-        if (
-            Firmware(self.device_config.configuration.firmware) == Firmware.v2
-            and self.device_config.configuration.version == Version.SH
-        ):
+        bat_power = None
+        if firmware == Firmware.v2:
+            try:
+                # Ab FW Version 95.09 gibt es ein neues Register für die Batterieleistung
+                bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32, 
+                                                                   wordorder=Endian.Little, unit=unit) * -1
+            except Exception:
+                bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
+        elif firmware == Firmware.v1 and version == Version.SH:
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
         else:
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
 
             # Beim WiNet S-Dongle fehlt das Register für das Vorzeichen der Speicherleistung
-            if self.device_config.configuration.version == Version.SH_winet_dongle:
+            if version == Version.SH_winet_dongle:
                 total_power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
                                                                      wordorder=Endian.Little, unit=unit)
                 pv_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
