@@ -49,13 +49,14 @@ class SungrowBat(AbstractBat):
         version = Version(self.device_config.configuration.version)
 
         bat_power = None
-        if firmware == Firmware.v2:
+        if firmware == Firmware.v2 and version in (Version.SH, Version.SH_winet_dongle):
             try:
                 # Ab FW Version 95.09 gibt es ein neues Register für die Batterieleistung
                 bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32, 
                                                                    wordorder=Endian.Little, unit=unit) * -1
             except Exception:
                 bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
+                
         elif firmware == Firmware.v1 and version == Version.SH:
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
         else:
@@ -70,11 +71,6 @@ class SungrowBat(AbstractBat):
 
                 # Ist die Gesamtleistung des WR größer als die PV-Erzeugung wird der Speicher entladen
                 if total_power > pv_power:
-                    bat_power = bat_power * -1
-            else:
-                resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
-                binary = bin(resp.registers[0])[2:].zfill(8)
-                if binary[5] == "1":
                     bat_power = bat_power * -1
 
         imported, exported = self.sim_counter.sim_count(bat_power)
