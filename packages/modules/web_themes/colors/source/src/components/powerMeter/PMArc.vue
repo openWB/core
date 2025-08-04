@@ -33,7 +33,7 @@
 			:transform="'translate(' + path.centroid(consumer) + ')'"
 		>
 			<PMPopup
-				v-if="categoriesToShow.includes(consumer.data.type)"
+				v-if="categoriesToShow.includes(consumer.data.type) && consumer.data.power / summarizedPower > 0.05"
 				:consumer="consumer.data"
 			/>
 		</g>
@@ -83,5 +83,8 @@ function strokeColor(d: PieArcDatum<PowerItem>, i: number): string {
 			: 'null'
 		: d.data.color
 }
+const summarizedPower = computed (() => {
+	return props.plotdata.reduce((sum, item) => sum + item.power, 0)
+})
 </script>
 <style scoped></style>
