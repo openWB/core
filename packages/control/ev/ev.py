@@ -9,6 +9,7 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 from dataclasses import dataclass, field
 import logging
 from typing import List, Optional, Tuple
+import fnmatch
 
 from control import data
 from control.ev.charge_template import ChargeTemplate
@@ -466,12 +467,12 @@ def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
-                if vehicle_id is not None and vehicle_id in data.data.ev_data[vehicle].data.tag_id:
-                    log.debug(f"MAC {vehicle_id} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
-                    return data.data.ev_data[vehicle].num
-                if rfid in data.data.ev_data[vehicle].data.tag_id:
-                    log.debug(f"RFID {rfid} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
-                    return data.data.ev_data[vehicle].num
+                ev_id = vehicle_id if vehicle_id is not None else rfid
+                for tag_id in data.data.ev_data[vehicle].data.tag_id:
+                    if fnmatch.fnmatch(ev_id, tag_id):
+                        log.debug(f"EV_ID '{ev_id}' und gespeicherte Tag_ID {tag_id} stimmen überein. "
+                                  f"EV {data.data.ev_data[vehicle].num} wird zugeordnet.")
+                        return data.data.ev_data[vehicle].num
         except Exception:
             log.exception("Fehler im ev-Modul "+vehicle)
             return None
