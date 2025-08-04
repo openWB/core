@@ -467,11 +467,15 @@ def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
-                ev_id = vehicle_id if vehicle_id is not None else rfid
                 for tag_id in data.data.ev_data[vehicle].data.tag_id:
-                    if fnmatch.fnmatch(ev_id, tag_id):
-                        log.debug(f"EV_ID '{ev_id}' und gespeicherte Tag_ID {tag_id} stimmen überein. "
-                                  f"EV {data.data.ev_data[vehicle].num} wird zugeordnet.")
+                    if vehicle_id is not None:
+                        if fnmatch.fnmatch(vehicle_id, tag_id):
+                            log.debug(f"MAC {vehicle_id} und gespeicherte Tag_ID {tag_id} stimmen überein. "
+                                      f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
+                            return data.data.ev_data[vehicle].num
+                    if fnmatch.fnmatch(rfid, tag_id):
+                        log.debug(f"RFID {rfid}  und gespeicherte Tag_ID {tag_id} stimmen überein. "
+                                  f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
                         return data.data.ev_data[vehicle].num
         except Exception:
             log.exception("Fehler im ev-Modul "+vehicle)
