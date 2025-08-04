@@ -44,7 +44,7 @@ class SungrowBat(AbstractBat):
         except Exception:
             bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
         currents = [bat_current / 3] * 3
-    
+
         firmware = Firmware(self.device_config.configuration.firmware)
         version = Version(self.device_config.configuration.version)
 
@@ -52,11 +52,11 @@ class SungrowBat(AbstractBat):
         if firmware == Firmware.v2 and version in (Version.SH, Version.SH_winet_dongle):
             try:
                 # Ab FW Version 95.09 gibt es ein neues Register für die Batterieleistung
-                bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32, 
+                bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
                                                                    wordorder=Endian.Little, unit=unit) * -1
             except Exception:
                 bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
-                
+
         elif firmware == Firmware.v1 and version == Version.SH:
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
         else:
