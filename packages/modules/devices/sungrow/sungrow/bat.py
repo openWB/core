@@ -46,7 +46,7 @@ class SungrowBat(AbstractBat):
         currents = [bat_current / 3] * 3
     
         firmware = Firmware(self.device_config.configuration.firmware)
-        version = self.device_config.configuration.version
+        version = Version(self.device_config.configuration.version)
 
         bat_power = None
         if firmware == Firmware.v2:
