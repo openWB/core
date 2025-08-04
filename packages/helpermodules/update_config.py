@@ -55,6 +55,14 @@ log = logging.getLogger(__name__)
 
 NO_MODULE = {"type": None, "configuration": {}}
 
+# Default colors
+COLOR_CHARGEPOINT = "#007bff"  # Default color for charge points: blue
+COLOR_VEHICLE = "#17a2b8"  # Default color for vehicles: teal
+COLOR_INVERTER = "#28a745"  # Default color for inverters: green
+COLOR_COUNTER = "#dc3545"  # Default color for counters: red
+COLOR_BATTERY = "#ffc107"  # Default color for batteries: yellow
+COLOR_UNKNOWN = "#000000"  # Default color for unknown components: black
+
 
 class UpdateConfig:
 
@@ -2422,13 +2430,6 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(90)
 
-    BLACK = "#000000"
-    BLUE = "#007bff"
-    CYAN = "#17a2b8"
-    GREEN = "#28a745"
-    RED = "#dc3545"
-    YELLOW = "#ffc107"
-
     def upgrade_datastore_91(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
@@ -2651,14 +2652,14 @@ class UpdateConfig:
                 vehicle_color_topic = topic.replace("/name", "/color")
                 log.debug(f"Checking for vehicle color topic {vehicle_color_topic}")
                 if vehicle_color_topic not in self.all_received_topics:
-                    log.debug(f"Adding vehicle color topic {vehicle_color_topic} with value '#17a2b8'")
-                    return {vehicle_color_topic: self.CYAN}
+                    log.debug(f"Adding vehicle color topic {vehicle_color_topic} with value '{COLOR_VEHICLE}'")
+                    return {vehicle_color_topic: COLOR_VEHICLE}
             # add property "color" to charge points
             if re.search("^openWB/chargepoint/[0-9]+/config$", topic) is not None:
                 config = decode_payload(payload)
                 log.debug(f"Received charge point config topic {topic} with payload {payload}")
                 if "color" not in config:
-                    config.update({"color": self.BLUE})
+                    config.update({"color": COLOR_CHARGEPOINT})
                     log.debug(f"Added color to charge point config {config}")
                     return {topic: config}
             # add property "color" to components
@@ -2667,14 +2668,14 @@ class UpdateConfig:
                 log.debug(f"Received component config topic {topic} with payload {payload}")
                 if "color" not in config:
                     if "counter" in config.get("type").lower():
-                        config.update({"color": self.RED})
+                        config.update({"color": COLOR_COUNTER})
                     elif "bat" in config.get("type").lower():
-                        config.update({"color": self.YELLOW})
+                        config.update({"color": COLOR_BATTERY})
                     elif "inverter" in config.get("type").lower():
-                        config.update({"color": self.GREEN})
+                        config.update({"color": COLOR_INVERTER})
                     else:
                         log.warning(f"Unknown component type {config.get('type')} for topic {topic}.")
-                        config.update({"color": self.BLACK})
+                        config.update({"color": COLOR_UNKNOWN})
                     log.debug(f"Updated component config with color {config}")
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
@@ -2690,17 +2691,17 @@ class UpdateConfig:
                 return
             for key in content["names"].keys():
                 if "bat" in key:
-                    colors[key] = self.YELLOW
+                    colors[key] = COLOR_BATTERY
                 elif "counter" in key:
-                    colors[key] = self.RED
+                    colors[key] = COLOR_COUNTER
                 elif "cp" in key:
-                    colors[key] = self.BLUE
+                    colors[key] = COLOR_CHARGEPOINT
                 elif "ev" in key:
-                    colors[key] = self.CYAN
+                    colors[key] = COLOR_VEHICLE
                 elif "inverter" in key:
-                    colors[key] = self.GREEN
+                    colors[key] = COLOR_INVERTER
                 else:
-                    colors[key] = self.BLACK
+                    colors[key] = COLOR_UNKNOWN
             content["colors"] = colors
             jsonFile.seek(0)
             jsonFile.write(json.dumps(content))
