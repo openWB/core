@@ -35,7 +35,7 @@
           />
         </div>
         <q-separator class="q-mt-sm" />
-        <div class="row items-center no-wrap">
+        <div>
           <ChargePointModeButtons :charge-point-id="props.chargePointId" />
         </div>
         <!-- ///////////////// Instant charge settings /////////////////// -->
@@ -55,6 +55,10 @@
           <ChargePointScheduledSettings
             :charge-point-id="props.chargePointId"
           />
+        </div>
+        <!-- /////////////////  bidi charging settings /////////////////// -->
+        <div v-if="chargeMode.value === 'bidi_charging'">
+          <ChargePointBidiSettings :charge-point-id="props.chargePointId" />
         </div>
         <!-- /////////////////  time charging settings /////////////////// -->
         <div v-if="chargeMode.value !== 'stop'">
@@ -85,6 +89,7 @@ import ChargePointLock from './ChargePointLock.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointTimeChargingPlans from './ChargePointTimeChargingPlans.vue';
+import ChargePointBidiSettings from './ChargePointBidiSettings.vue';
 
 const $q = useQuasar();
 const mqttStore = useMqttStore();

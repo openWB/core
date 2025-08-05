@@ -12,6 +12,7 @@ import type {
   Hierarchy,
   ChargePointConnectedVehicleConfig,
   ChargeTemplateConfiguration,
+  BidiChargingPlan,
   ValueObject,
   ChargePointConnectedVehicleInfo,
   Vehicle,
@@ -1616,6 +1617,76 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get the charge point connected vehicle bidi charging plan identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns object | undefined
+   */
+  const chargePointConnectedVehicleBidiChargePlan = computed(() => {
+    return (chargePointId: number) => {
+      return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+        ?.chargemode?.bidi_charging?.plan as BidiChargingPlan | undefined;
+    };
+  });
+
+  /**
+   * Get or set the charge point connected vehicle bidi charging minimaler Entlade-SoC identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const chargePointConnectedVehicleBidiChargeMinEntladeSoC = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const soc =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.bidi_charging?.plan?.limit?.soc_scheduled;
+        if (soc === undefined) {
+          return;
+        }
+        return soc;
+      },
+      set(newValue: number) {
+        return updateTopic(
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+          newValue,
+          'chargemode.bidi_charging.plan.limit.soc_scheduled',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the charge point connected vehicle bidi charging current identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const chargePointConnectedVehicleBidiChargeCurrent = (
+    chargePointId: number,
+  ) => {
+    return computed({
+      get() {
+        const current =
+          chargePointConnectedVehicleChargeTemplate(chargePointId).value
+            ?.chargemode?.bidi_charging?.plan?.current;
+        if (current === undefined) {
+          return;
+        }
+        return current;
+      },
+      set(newValue: number) {
+        return updateTopic(
+          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+          newValue,
+          'chargemode.bidi_charging.plan.current',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
    * Get or set the charge point connected vehicle charge priority identified by the charge point id
    * @param chargePointId charge point id
    * @returns boolean | undefined
@@ -2884,6 +2955,9 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleEcoChargeLimitSoC,
     chargePointConnectedVehicleEcoChargeLimitEnergy,
     chargePointConnectedVehicleEcoChargeMaxPrice,
+    chargePointConnectedVehicleBidiChargePlan,
+    chargePointConnectedVehicleBidiChargeMinEntladeSoC,
+    chargePointConnectedVehicleBidiChargeCurrent,
     chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleTimeCharging,
     chargePointConnectedVehicleChargeTemplate,
