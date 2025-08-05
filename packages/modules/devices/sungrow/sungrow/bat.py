@@ -33,11 +33,11 @@ class SungrowBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
-        self.firmware_check = None
+        self.check_firmware_register()
 
-    def check_firmware_register(self, unit):
+    def check_firmware_register(self):
+        unit = self.device_config.configuration.modbus_id
         try:
-            self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit)
             self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
                                                    wordorder=Endian.Little, unit=unit)
             self.firmware_check = True
@@ -48,9 +48,6 @@ class SungrowBat(AbstractBat):
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
-
-        if self.firmware_check is None:
-            self.check_firmware_register(unit)
 
         soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
         firmware = Firmware(self.device_config.configuration.firmware)
