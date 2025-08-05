@@ -3,11 +3,10 @@
 """
 # flake8: noqa: E402
 import logging
-import threading
-import sys
 from helpermodules import logger
 from helpermodules.utils import run_command, thread_handler
-from helpermodules.utils._exit_after import TimeoutException
+import threading
+import sys
 
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
@@ -46,9 +45,9 @@ class HandlerAlgorithm:
     def handler10Sec(self):
         """ führt den Algorithmus durch.
         """
-        @exit_after(data.data.general_data.data.control_interval)
-        def handler_with_control_interval():
-            try:
+        try:
+            @exit_after(data.data.general_data.data.control_interval)
+            def handler_with_control_interval():
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
                     loadvars_.get_values()
@@ -70,10 +69,6 @@ class HandlerAlgorithm:
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
-            except Exception:
-                log.exception("Fehler im Main-Modul 10s-Handler")
-
-        try:
             log.info("# ***Start*** ")
             log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
             log.debug(f'Drosselung: {run_command.run_shell_command("if which vcgencmd >/dev/null; then vcgencmd get_throttled; else echo not found; fi")}')
@@ -91,7 +86,7 @@ class HandlerAlgorithm:
                                 logging.debug(line.strip())
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
-        except TimeoutException:
+        except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.exception("Fehler im Main-Modul")
@@ -109,7 +104,7 @@ class HandlerAlgorithm:
                 data.data.general_data.grid_protection()
                 data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
-        except TimeoutException:
+        except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.exception("Fehler im Main-Modul")
@@ -144,7 +139,7 @@ class HandlerAlgorithm:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 sub.system_data["system"].update_ip_address()
-        except TimeoutException:
+        except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.exception("Fehler im Main-Modul")
@@ -156,7 +151,7 @@ class HandlerAlgorithm:
             thread_errors_path = Path(Path(__file__).resolve().parents[1]/"ramdisk"/"thread_errors.log")
             with thread_errors_path.open("w") as f:
                 f.write("")
-        except TimeoutException:
+        except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.exception("Fehler im Main-Modul")
@@ -165,7 +160,7 @@ class HandlerAlgorithm:
     def handler_random_nightly(self):
         try:
             data.data.system_data["system"].thread_backup_and_send_to_cloud()
-        except TimeoutException:
+        except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.exception("Fehler im Main-Modul")
@@ -177,7 +172,7 @@ class HandlerAlgorithm:
                 for cp in data.data.cp_data.values():
                     calculate_charge_cost(cp)
             data.data.optional_data.et_get_prices()
-        except TimeoutException:
+        except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.exception("Fehler im Main-Modul")
