@@ -55,15 +55,15 @@ const invertersToShow = computed(() =>
 			})
 		: [sourceSummary.pv],
 )
-const batteriesToShow = computed(() =>
-	batteries.value.size > 1
+const batteriesToShow = computed(() => {
+	return batteries.value.size > 1
 		? [...batteries.value.values()]
 				.filter((b) => b.power < 0)
 				.sort((a, b) => {
 					return a.power - b.power
 				})
-		: [sourceSummary.batOut],
-)
+		: [sourceSummary.batOut]
+})
 
 watchEffect(() => {
 	let currentMax =
