@@ -87,4 +87,21 @@ const currentModeLabel = computed(
 .flex-grow {
   flex-grow: 1;
 }
+
+.q-btn-group:first-of-type .q-btn:first-child {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 0;
+}
+.q-btn-group:first-of-type .q-btn:last-child {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 0;
+}
+.q-btn-group:last-of-type .q-btn:first-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 3px;
+}
+.q-btn-group:last-of-type .q-btn:last-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 3px;
+}
 </style>
