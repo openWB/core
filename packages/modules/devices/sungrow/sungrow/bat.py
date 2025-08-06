@@ -33,27 +33,28 @@ class SungrowBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
-        self.check_firmware_register()
+        self.firmware_check = self.check_firmware_register()
 
     def check_firmware_register(self):
+        if Firmware(self.device_config.configuration.firmware) == Firmware.v1:
+            return False
         unit = self.device_config.configuration.modbus_id
         try:
             self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
                                                    wordorder=Endian.Little, unit=unit)
-            self.firmware_check = True
             log.debug("Wechselrichter Firmware ist größer gleich 95.09")
+            return True
         except Exception:
-            self.firmware_check = False
             log.debug("Wechselrichter Firmware ist kleiner als 95.09")
+            return False
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
 
         soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
-        firmware = Firmware(self.device_config.configuration.firmware)
         version = Version(self.device_config.configuration.version)
 
-        if firmware == Firmware.v2:
+        if Firmware(self.device_config.configuration.firmware) == Firmware.v2:
             if self.firmware_check:  # Firmware >= 95.09
                 bat_current = self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit) * -0.1
                 bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
