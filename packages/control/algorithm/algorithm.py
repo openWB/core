@@ -4,6 +4,7 @@ from control import counter
 from control import data
 from control.algorithm import common
 from control.algorithm.additional_current import AdditionalCurrent
+from control.algorithm.bidi_charging import Bidi
 from control.algorithm.min_current import MinCurrent
 from control.algorithm.no_current import NoCurrent
 from control.algorithm.surplus_controlled import SurplusControlled
@@ -14,6 +15,7 @@ log = logging.getLogger(__name__)
 class Algorithm:
     def __init__(self):
         self.additional_current = AdditionalCurrent()
+        self.bidi = Bidi()
         self.min_current = MinCurrent()
         self.no_current = NoCurrent()
         self.surplus_controlled = SurplusControlled()
@@ -32,14 +34,17 @@ class Algorithm:
             log.info("**Soll-Strom setzen**")
             common.reset_current_to_target_current()
             self.additional_current.set_additional_current()
+            self.surplus_controlled.set_required_current_to_max()
+            log.info("**PV-geführten Strom setzen**")
             counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
             if self.evu_counter.data.set.surplus_power_left > 0:
-                log.info("**PV-geführten Strom setzen**")
                 common.reset_current_to_target_current()
-                self.surplus_controlled.set_required_current_to_max()
                 self.surplus_controlled.set_surplus_current()
             else:
-                log.info("**Keine Leistung für PV-geführtes Laden übrig.**")
+                log.info("Keine Leistung für PV-geführtes Laden übrig.")
+            log.info("**Bidi-(Ent-)Lade-Strom setzen**")
+            counter.set_raw_surplus_power_left()
+            self.bidi.set_bidi()
             self.no_current.set_no_current()
             self.no_current.set_none_current()
         except Exception:
