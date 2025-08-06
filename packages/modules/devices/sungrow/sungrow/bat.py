@@ -35,7 +35,7 @@ class SungrowBat(AbstractBat):
         self.last_mode = 'Undefined'
         self.firmware_check = self.check_firmware_register()
 
-    def check_firmware_register(self):
+    def check_firmware_register(self) -> bool:
         if Firmware(self.device_config.configuration.firmware) == Firmware.v1:
             return False
         unit = self.device_config.configuration.modbus_id
