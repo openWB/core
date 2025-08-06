@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Systeminfo</title>
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<h1>Systeminformationen</h1>
+		<div id="content">
+			<p>Lade Daten...</p>
+		</div>
+		<div id="error"></div>
+		<script>
+			const fetchInterval = 5000; // 5 Sekunden
+			const maxHistoryLength = 60; // z.B. 5 Minuten bei 5s Intervall
+
+			// Verlaufsspeicher für alle Daten
+			const history = {};
+
+			// Chart.js laden
+			const chartJsScript = document.createElement("script");
+			chartJsScript.src = "chart.umd.min.js";
+			document.head.appendChild(chartJsScript);
+
+			// Warten bis Chart.js geladen ist
+			function onChartJsReady(cb) {
+				if (window.Chart) cb();
+				else chartJsScript.onload = cb;
+			}
+
+			// Diagramm-Container
+			const charts = {};
+
+			// Nur für diese Abschnitte werden Diagramme erstellt:
+			const chartSections = ["cpuLoad", "memory", "storage"];
+
+			function updateHistory(data) {
+				for (const key in data) {
+					if (!Object.hasOwn(data, key)) continue;
+					const value = data[key];
+					if (typeof value === "object" && value !== null) {
+						if (!history[key]) history[key] = {};
+						for (const subKey in value) {
+							if (!Object.hasOwn(value, subKey)) continue;
+							if (!history[key][subKey]) history[key][subKey] = [];
+							history[key][subKey].push({ t: Date.now(), v: value[subKey] });
+							if (history[key][subKey].length > maxHistoryLength)
+								history[key][subKey].shift();
+						}
+					} else {
+						if (!history[key]) history[key] = [];
+						history[key].push({ t: Date.now(), v: value });
+						if (history[key].length > maxHistoryLength) history[key].shift();
+					}
+				}
+			}
+
+			function displayData(data) {
+				if (typeof data !== "object" || data === null) {
+					document.getElementById("content").innerHTML =
+						"<p>Keine gültigen Daten erhalten.</p>";
+					return;
+				}
+				let html = `<h2>Aktuelle Messwerte <span style="color:#888;font-size:0.95em">(${new Date().toLocaleString()})</span></h2>`;
+				html += '<div class="card-container">';
+				for (const key in data) {
+					if (Object.hasOwn(data, key)) {
+						const value = data[key];
+						html += `<div class="card"><h2>${key}</h2>`;
+						if (typeof value === "object" && value !== null) {
+							html += '<table style="margin:0; width:100%;">';
+							for (const subKey in value) {
+								if (Object.hasOwn(value, subKey)) {
+									const v = value[subKey];
+									if (
+										v &&
+										typeof v === "object" &&
+										"value" in v &&
+										"unit" in v
+									) {
+										let num = Number(v.value);
+										let formatted = isFinite(num) ? num.toFixed(1) : v.value;
+										html += `<tr><th>${subKey}</th><td>${formatted} <span style="color:#888;font-size:0.95em">${v.unit}</span></td></tr>`;
+									} else {
+										html += `<tr><th>${subKey}</th><td>${v}</td></tr>`;
+									}
+								}
+							}
+							html += "</table>";
+						} else {
+							html += `<div style="font-size:1.3em;">${value}</div>`;
+						}
+						html += "</div>";
+					}
+				}
+				html += "</div>";
+				document.getElementById("content").innerHTML = html;
+			}
+
+			function renderCharts() {
+				const chartDivId = "charts";
+				let chartDiv = document.getElementById(chartDivId);
+				if (!chartDiv) {
+					chartDiv = document.createElement("div");
+					chartDiv.id = chartDivId;
+					chartDiv.style.marginTop = "40px";
+					document.body.appendChild(chartDiv);
+				}
+
+				// Vor dem Neuzeichnen alle alten Charts zerstören
+				for (const key in charts) {
+					if (charts[key]) {
+						charts[key].destroy();
+					}
+				}
+				Object.keys(charts).forEach((k) => delete charts[k]);
+
+				chartDiv.innerHTML = "<h2>Verlaufsdiagramme</h2>";
+
+				let chartsHtml = '<div class="card-container">';
+				for (const key in history) {
+					if (!Object.hasOwn(history, key)) continue;
+					if (!chartSections.includes(key)) continue;
+					const value = history[key];
+					// Prüfe, ob es sich um mehrere Reihen handelt (Objekt mit value/unit) oder Array
+					if (Array.isArray(value)) {
+						const canvasId = `chart_${key}`;
+						// Versuche Einheit aus aktuellem API-Datensatz zu holen
+						let unit = "";
+						if (
+							window.latestApiData &&
+							window.latestApiData[key] &&
+							window.latestApiData[key].unit
+						) {
+							unit = window.latestApiData[key].unit;
+						}
+						chartsHtml += `
+                <div class="card">
+                    <h2>${key}</h2>
+                    <div class="chart-row">
+                        <div class="chart-cell">
+                            <canvas id="${canvasId}" height="120" width="300"></canvas>
+                        </div>
+                    </div>
+                </div>`;
+					} else if (typeof value === "object" && value !== null) {
+						let rowHtml = `<div class="card"><h2>${key}</h2><div class="chart-row">`;
+						for (const subKey in value) {
+							if (!Object.hasOwn(value, subKey)) continue;
+							const canvasId = `chart_${key}_${subKey}`;
+							// Einheit aus aktuellem API-Datensatz holen
+							let unit = "";
+							if (
+								window.latestApiData &&
+								window.latestApiData[key] &&
+								window.latestApiData[key][subKey] &&
+								typeof window.latestApiData[key][subKey] === "object" &&
+								"unit" in window.latestApiData[key][subKey]
+							) {
+								unit = window.latestApiData[key][subKey].unit;
+							}
+							rowHtml += `
+                    <div class="chart-cell">
+                        <div style="margin-bottom:4px"><b>${subKey}</b></div>
+                        <canvas id="${canvasId}" height="120" width="300"></canvas>
+                    </div>`;
+						}
+						rowHtml += `</div></div>`;
+						chartsHtml += rowHtml;
+					}
+				}
+				chartsHtml += "</div>";
+				chartDiv.innerHTML += chartsHtml;
+
+				// Diagramme zeichnen
+				for (const key in history) {
+					if (!Object.hasOwn(history, key)) continue;
+					if (!chartSections.includes(key)) continue;
+					const value = history[key];
+					if (Array.isArray(value)) {
+						const canvas = document.getElementById(`chart_${key}`);
+						if (!canvas) continue;
+						const labels = value.map((e) => new Date(e.t).toLocaleTimeString());
+						const data = value.map((e) =>
+							typeof e.v === "object" && e.v !== null && "value" in e.v
+								? Number(e.v.value)
+								: Number(e.v)
+						);
+						// Einheit für Achsenlabel holen
+						let unit = "";
+						if (
+							window.latestApiData &&
+							window.latestApiData[key] &&
+							window.latestApiData[key].unit
+						) {
+							unit = window.latestApiData[key].unit;
+						}
+						if (!charts[key]) {
+							charts[key] = new Chart(canvas, {
+								type: "line",
+								data: {
+									labels,
+									datasets: [
+										{
+											label: key,
+											data,
+											fill: false,
+											borderColor: "blue",
+											pointRadius: 1,
+											tension: 0.2,
+										},
+									],
+								},
+								options: {
+									scales: {
+										x: { display: false }, // Keine unit-Beschriftung für X-Achse
+										y: {
+											title: {
+												display: !!unit,
+												text: unit,
+											},
+										},
+									},
+									plugins: { legend: { display: false } },
+									animation: false,
+								},
+							});
+						} else {
+							charts[key].data.labels = labels;
+							charts[key].data.datasets[0].data = data;
+							charts[key].update("none");
+						}
+					} else if (typeof value === "object" && value !== null) {
+						for (const subKey in value) {
+							if (!Object.hasOwn(value, subKey)) continue;
+							const canvas = document.getElementById(`chart_${key}_${subKey}`);
+							if (!canvas) continue;
+							const arr = value[subKey];
+							const labels = arr.map((e) => new Date(e.t).toLocaleTimeString());
+							const data = arr.map((e) =>
+								typeof e.v === "object" && e.v !== null && "value" in e.v
+									? Number(e.v.value)
+									: Number(e.v)
+							);
+							const chartKey = `${key}_${subKey}`;
+							// Einheit für Achsenlabel holen
+							let unit = "";
+							if (
+								window.latestApiData &&
+								window.latestApiData[key] &&
+								window.latestApiData[key][subKey] &&
+								typeof window.latestApiData[key][subKey] === "object" &&
+								"unit" in window.latestApiData[key][subKey]
+							) {
+								unit = window.latestApiData[key][subKey].unit;
+							}
+							if (!charts[chartKey]) {
+								charts[chartKey] = new Chart(canvas, {
+									type: "line",
+									data: {
+										labels,
+										datasets: [
+											{
+												label: `${key} / ${subKey}`,
+												data,
+												fill: false,
+												borderColor: "green",
+												pointRadius: 1,
+												tension: 0.2,
+											},
+										],
+									},
+									options: {
+										scales: {
+											x: { display: true }, // Keine unit-Beschriftung für X-Achse
+											y: {
+												title: {
+													display: !!unit,
+													text: unit,
+												},
+											},
+										},
+										plugins: { legend: { display: false } },
+										animation: false,
+									},
+								});
+							} else {
+								charts[chartKey].data.labels = labels;
+								charts[chartKey].data.datasets[0].data = data;
+								charts[chartKey].update("none");
+							}
+						}
+					}
+				}
+			}
+
+			// Hook in fetchSystemInfo
+			const origDisplayData = displayData;
+			displayData = function (data) {
+				window.latestApiData = data; // Für Einheitenzugriff in renderCharts
+				updateHistory(data);
+				origDisplayData(data);
+				onChartJsReady(renderCharts);
+			};
+
+			async function fetchSystemInfo() {
+				try {
+					const response = await fetch("systeminfo_api.php", {
+						cache: "no-store",
+					});
+					if (!response.ok) throw new Error("Fehler beim Laden der Daten");
+					const data = await response.json();
+					displayData(data);
+					document.getElementById("error").textContent = "";
+				} catch (err) {
+					document.getElementById("error").textContent = err.message;
+				}
+			}
+
+			fetchSystemInfo();
+			setInterval(fetchSystemInfo, fetchInterval);
+		</script>
+	</body>
+</html>
