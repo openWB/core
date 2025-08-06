@@ -105,6 +105,11 @@ function createChargePoint(hierarchy) {
 				clonedElement.find('#socLimitEcoCpT').attr('id', 'socLimitEcoCp' + chargePointIndex);
 				clonedElement.find('label[for=amountLimitEcoCpT]').attr('for', 'amountLimitEcoCp' + chargePointIndex);
 				clonedElement.find('#amountLimitEcoCpT').attr('id', 'amountLimitEcoCp' + chargePointIndex);
+				//bidi settings
+				clonedElement.find('label[for=minSocBidiCpT]').attr('for', 'minSocBidiCp' + chargePointIndex);
+				clonedElement.find('#minSocBidiCpT').attr('id', 'minSocBidiCp' + chargePointIndex);
+				clonedElement.find('label[for=currentBidiChargeCpT]').attr('for', 'currentBidiChargeCp' + chargePointIndex);
+				clonedElement.find('#currentBidiChargeCpT').attr('id', 'currentBidiChargeCp' + chargePointIndex);
 				// Preisgrenze!
 
 				// insert after last existing charge point to honor sorting from the array
@@ -254,6 +259,47 @@ function refreshChargeTemplate(chargePointIndex) {
 		element.data('max-price', max_price);
 		element.attr('data-max-price', max_price).data('max-price', max_price);
 		element.find('.charge-point-eco-charge-max_price').text(max_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+		// ***** bidi_charging *****
+		// chargemode.bidi_charging.plan.limit.soc_scheduled
+		element = chargePoint.find('.charge-point-bidi-charge-min-soc');
+        setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.bidi_charging.plan.limit.soc_scheduled);
+        // chargemode.bidi_charging.plan.current
+        element = chargePoint.find('.charge-point-bidi-charge-current');
+        setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.bidi_charging.plan.current);
+		// bidi charging plan
+		const plan = chargeTemplate[chargePointIndex].chargemode.bidi_charging.plan;
+		const parent = chargePoint.find('.charge-point-bidi-plan-display');
+		// Name
+		parent.find('.charge-point-bidi-plan-name').text(plan.name);
+		// Frequenz
+		let freqText = '';
+		if (plan.frequency.selected === 'once') {
+			parent.find('.charge-point-bidi-plan-frequency-icon').removeClass('fa-calendar-alt').addClass('fa-calendar-day');
+			const date = new Date(plan.frequency.once);
+			parent.find('.charge-point-bidi-plan-date-value').text(date.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }));
+		} else if (plan.frequency.selected === 'daily') {
+			freqText = 'Täglich';
+			parent.find('.charge-point-bidi-plan-frequency-icon').removeClass('fa-calendar-day').addClass('fa-calendar-alt');
+			parent.find('.charge-point-bidi-plan-date-value').text('');
+		} else if (plan.frequency.selected === 'weekly') {
+			parent.find('.charge-point-bidi-plan-frequency-icon').removeClass('fa-calendar-day').addClass('fa-calendar-alt');
+			const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+			let daysText = '';
+			plan.frequency.weekly.forEach((dayValue, index) => {
+				if (dayValue) {
+					if (daysText.length > 0) daysText += ',';
+					daysText += days[index];
+				}
+			});
+			freqText = daysText;
+			parent.find('.charge-point-bidi-plan-date-value').text('');
+		}
+		parent.find('.charge-point-bidi-plan-frequency-value').text(freqText);
+		// Uhrzeit
+		parent.find('.charge-point-bidi-plan-time').text(plan.time);
+		// Limit (SoC)
+		parent.find('.charge-point-bidi-plan-limit').text(plan.limit.soc_scheduled + '%');
 
 		// ***** scheduled_charging *****
 		// chargemode.scheduled_charging.X

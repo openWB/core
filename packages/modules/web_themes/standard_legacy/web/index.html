@@ -1182,6 +1182,87 @@
 										</div>
 									</div>
 								</div>
+								<!-- Bidi -->
+								<div class="chargemode-options chargemode-option-bidi_charging">
+									<div class="form-row vaRow mb-1">
+										<div class="col">
+											<h3 class="mb-0">Einstellungen für "Bidi"</h3>
+										</div>
+										<div class="col-2 text-right">
+											<button type="button"
+												class="bidi-charging-settings-link btn btn-sm btn-secondary">
+												<i class="fas fa-cogs"></i>
+											</button>
+										</div>
+									</div>
+									<div class="form-row vaRow mb-0">
+										<div class="col">
+											Minimaler Entlade-SoC
+										</div>
+										<div class="col-md-8">
+											<div class="form-row form-group mb-1 vaRow">
+												<div class="col">
+													<input type="range"
+														class="charge-point-bidi-charge-min-soc form-control-range rangeInput"
+														id="minSocBidiCpT"
+														data-topic="openWB/set/chargepoint/<cp>/set/charge_template"
+														data-object="chargeTemplate"
+														data-object-path="chargemode.bidi_charging.plan.limit.soc_scheduled"
+														min="0" max="100" step="5">
+												</div>
+												<label for="minSocBidiCpT"
+													class="col-2 col-form-label valueLabel text-right" data-suffix="%">
+													-- %
+												</label>
+											</div>
+										</div>
+									</div>
+									<div class="form-row vaRow mb-1">
+										<div class="col">
+											Stromstärke
+										</div>
+										<div class="col-md-8">
+											<div class="form-row form-group mb-1 vaRow">
+												<div class="col">
+													<input type="range"
+														class="charge-point-bidi-charge-current form-control-range rangeInput"
+														id="currentBidiChargeCpT"
+														data-topic="openWB/set/chargepoint/<cp>/set/charge_template"
+														data-object="chargeTemplate"
+														data-object-path="chargemode.bidi_charging.plan.current"
+														min="6" max="32" step="1">
+												</div>
+												<label for="currentBidiChargeCpT"
+													class="col-2 col-form-label valueLabel text-right" data-suffix="A">
+													-- A
+												</label>
+											</div>
+										</div>
+									</div>
+									<!-- Bidi-Plan -->
+									<div class="charge-point-bidi-plan-display mb-1">
+										<div class="row">
+											<div class="col">
+												<span class="charge-point-bidi-plan-name">--</span>
+											</div>
+											<div class="col-lg-6 text-right">
+												<span class="charge-point-bidi-plan-pill border rounded p-1 charge-point-plan-pill-active">
+													<span class="charge-point-bidi-plan-frequency">
+														<i class="charge-point-bidi-plan-frequency-icon fas fa-calendar-alt"></i>
+														<span class="charge-point-bidi-plan-frequency-value">--</span>
+													</span>
+													<span class="charge-point-bidi-plan-date">
+														<span class="charge-point-bidi-plan-date-value">--</span>
+													</span>
+														<i class="fas fa-clock"></i>
+														<span class="charge-point-bidi-plan-time">--</span>
+														<i class="fas fa-car-battery"></i>
+													<span class="charge-point-bidi-plan-limit">--</span>
+												</span>
+											</div>
+										</div>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -1660,7 +1741,7 @@
 				}
 			});
 
-			$('.container').on('click', '.scheduled-charging-settings-link', function (event) {
+			$('.container').on('click', '.scheduled-charging-settings-link, .bidi-charging-settings-link', function (event) {
 				event.stopPropagation();
 				var parentChargePoint = $(this).closest('[data-cp]');
 				var chargeTemplate = parseInt(parentChargePoint.data('charge-template'));
