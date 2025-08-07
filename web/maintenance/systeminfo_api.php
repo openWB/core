@@ -1,23 +1,13 @@
 <?php
 // systeminfo_api.php
-// This script provides system information in JSON format for API access.
-// It is intended to be accessed via AJAX or similar methods.
+// This script provides system information in JSON format for API access and control.
 
-if (php_sapi_name() !== 'cli' && basename($_SERVER['SCRIPT_FILENAME']) === 'systeminfo_api.php') {
-	header('Content-Type: application/json');
-	echo json_encode([
-		'cpuLoad' => getCpuLoad(),
-		'memory' => getMemoryUsage(),
-		'storage' => getStorageUsage(),
-		'services' => getServiceStatus([
-			'openwb2.service',
-			'openwbRemoteSupport.service',
-			'mosquitto.service',
-			'mosquitto_local.service'
-		])
-	]);
-	exit;
-}
+$serviceList = [
+	'openwb2.service',
+	'openwbRemoteSupport.service',
+	'mosquitto.service',
+	'mosquitto_local.service'
+];
 
 function getCpuLoad()
 {
@@ -124,4 +114,60 @@ function getServiceStatus($services)
 		$result[$service] = $status;
 	}
 	return $result;
+}
+
+// API-Handler
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+	header('Content-Type: application/json');
+	$input = json_decode(file_get_contents('php://input'), true);
+
+	if (isset($input['action'])) {
+		// POST: Dienst neustarten
+		switch ($input['action']) {
+			case 'restart_service':
+				// Aktion zum Neustarten eines Dienstes
+				if (
+					isset($input['service']) &&
+					in_array($input['service'], $serviceList, true)
+				) {
+					$service = escapeshellarg($input['service']);
+					// Neustart des Dienstes (nur wenn root-Rechte vorhanden!)
+					$output = [];
+					$returnVar = 0;
+					exec("sudo systemctl restart $service 2>&1", $output, $returnVar);
+					echo json_encode([
+						'status' => $returnVar === 0 ? 'ok' : 'error',
+						'service' => $input['service'],
+						'output' => $output
+					]);
+					exit;
+				} else {
+					http_response_code(400);
+					echo json_encode(['status' => 'error', 'message' => 'Dienst nicht erlaubt.']);
+					exit;
+				}
+				break;
+			default:
+				http_response_code(400);
+				echo json_encode(['status' => 'error', 'message' => 'Ungültige Aktion.']);
+				exit;
+		}
+	}
+} else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+	// GET: Statusabfrage
+	if (php_sapi_name() !== 'cli' && basename($_SERVER['SCRIPT_FILENAME']) === 'systeminfo_api.php') {
+		header('Content-Type: application/json');
+		echo json_encode([
+			'cpuLoad' => getCpuLoad(),
+			'memory' => getMemoryUsage(),
+			'storage' => getStorageUsage(),
+			'services' => getServiceStatus($serviceList)
+		]);
+		exit;
+	}
+} else {
+	http_response_code(405);
+	header('Allow: GET, POST');
+	echo json_encode(['status' => 'error', 'message' => 'Method not allowed.']);
+	exit;
 }
