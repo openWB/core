@@ -272,7 +272,7 @@ function refreshChargeTemplate(chargePointIndex) {
 		const parent = chargePoint.find('.charge-point-bidi-plan-display');
 		// Name
 		parent.find('.charge-point-bidi-plan-name').text(plan.name);
-		// Frequenz
+		// Frequency
 		let freqText = '';
 		if (plan.frequency.selected === 'once') {
 			parent.find('.charge-point-bidi-plan-frequency-icon').removeClass('fa-calendar-alt').addClass('fa-calendar-day');
@@ -296,9 +296,9 @@ function refreshChargeTemplate(chargePointIndex) {
 			parent.find('.charge-point-bidi-plan-date-value').text('');
 		}
 		parent.find('.charge-point-bidi-plan-frequency-value').text(freqText);
-		// Uhrzeit
+		// Time
 		parent.find('.charge-point-bidi-plan-time').text(plan.time);
-		// Limit (SoC)
+		// Minimaler Entlade-SoC
 		parent.find('.charge-point-bidi-plan-limit').text(plan.limit.soc_scheduled + '%');
 
 		// ***** scheduled_charging *****
