@@ -27,6 +27,7 @@
       :date="plan?.frequency.once"
       :weeklyDays="plan?.frequency.weekly"
       :limitIcon="'battery_full'"
+      :etActive="planEtActive"
     />
   </div>
 </template>
@@ -55,5 +56,11 @@ const minEntladeSoC = computed(() =>
 
 const current = computed(() =>
   mqttStore.chargePointConnectedVehicleBidiChargeCurrent(props.chargePointId),
+);
+
+const planEtActive = computed(() =>
+  mqttStore.chargePointConnectedVehicleBidiChargeEtActive(
+    props.chargePointId,
+  ),
 );
 </script>

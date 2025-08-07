@@ -1687,6 +1687,18 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get the active state {energy tariff} of the bidi charging plan identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns boolean | undefined
+   */
+  const chargePointConnectedVehicleBidiChargeEtActive = computed(() => {
+    return (chargePointId: number) => {
+      return chargePointConnectedVehicleChargeTemplate(chargePointId).value
+        ?.chargemode?.bidi_charging?.plan.et_active;
+    };
+  });
+
+  /**
    * Get or set the charge point connected vehicle charge priority identified by the charge point id
    * @param chargePointId charge point id
    * @returns boolean | undefined
@@ -2958,6 +2970,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleBidiChargePlan,
     chargePointConnectedVehicleBidiChargeMinEntladeSoC,
     chargePointConnectedVehicleBidiChargeCurrent,
+    chargePointConnectedVehicleBidiChargeEtActive,
     chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleTimeCharging,
     chargePointConnectedVehicleChargeTemplate,
