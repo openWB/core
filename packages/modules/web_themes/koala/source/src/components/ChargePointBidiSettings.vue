@@ -9,7 +9,7 @@
     class="q-mt-md"
   />
   <SliderStandard
-    title="Ladestrom"
+    title="Stromstärke"
     :min="6"
     :max="32"
     :step="1"
