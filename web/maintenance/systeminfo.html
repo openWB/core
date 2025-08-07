@@ -68,7 +68,28 @@
 					if (Object.hasOwn(data, key)) {
 						const value = data[key];
 						html += `<div class="card"><h2>${key}</h2>`;
-						if (typeof value === "object" && value !== null) {
+						if (
+							key === "services" &&
+							typeof value === "object" &&
+							value !== null
+						) {
+							html += '<table style="margin:0; width:100%;">';
+							for (const service in value) {
+								if (Object.hasOwn(value, service)) {
+									const status = value[service];
+									const btnId = `restart_${service.replace(/\W/g, "_")}`;
+									html += `
+                        <tr>
+                            <th>${service.replace(/\.service/g, "")}</th>
+                            <td>
+                                <span>${status}</span>
+                                <button id="${btnId}" style="margin-left:10px;">Neustart</button>
+                            </td>
+                        </tr>`;
+								}
+							}
+							html += "</table>";
+						} else if (typeof value === "object" && value !== null) {
 							html += '<table style="margin:0; width:100%;">';
 							for (const subKey in value) {
 								if (Object.hasOwn(value, subKey)) {
@@ -96,6 +117,57 @@
 				}
 				html += "</div>";
 				document.getElementById("content").innerHTML = html;
+
+				// Event-Handler für Service-Neustart-Buttons
+				if (data.services) {
+					for (const service in data.services) {
+						if (!Object.hasOwn(data.services, service)) continue;
+						const btnId = `restart_${service.replace(/\W/g, "_")}`;
+						const btn = document.getElementById(btnId);
+						if (btn) {
+							btn.onclick = async function () {
+								btn.disabled = true;
+								btn.textContent = "Neustart läuft...";
+								try {
+									const response = await fetch("systeminfo_api.php", {
+										method: "POST",
+										headers: { "Content-Type": "application/json" },
+										body: JSON.stringify({
+											action: "restart_service",
+											service: service,
+										}),
+									});
+									const result = await response.json();
+									if (result.status === "ok") {
+										btn.textContent = "Erfolgreich";
+										setTimeout(() => {
+											btn.textContent = "Neustart";
+											btn.disabled = false;
+											fetchSystemInfo();
+										}, 1500);
+									} else {
+										btn.textContent = "Fehler";
+										setTimeout(() => {
+											btn.textContent = "Neustart";
+											btn.disabled = false;
+										}, 2000);
+										alert(
+											"Fehler beim Neustart: " +
+												(result.message || result.output || "")
+										);
+									}
+								} catch (err) {
+									btn.textContent = "Fehler";
+									setTimeout(() => {
+										btn.textContent = "Neustart";
+										btn.disabled = false;
+									}, 2000);
+									alert("Fehler beim Neustart: " + err.message);
+								}
+							};
+						}
+					}
+				}
 			}
 
 			function renderCharts() {
