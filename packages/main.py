@@ -74,6 +74,7 @@ class HandlerAlgorithm:
         if lock:
             lock.release()
             log.debug(f"Lock für {handler_name} freigegeben nach {time.time() - self.handler_timestamps[handler_name]} Sekunden.")
+            self.handler_timestamps.pop(handler_name, None)
         else:
             log.warning(f"Lock für {handler_name} nicht gefunden.")
 
@@ -91,6 +92,39 @@ class HandlerAlgorithm:
                     return
             return wrapper
         return decorator
+
+    def monitor_handler_locks(self, max_runtime=300):
+        emergency_exit = False
+        for handler_name, lock in self.handler_locks.items():
+            if lock.locked():
+                # Überprüfen, wie lange der Lock bereits aktiv ist
+                duration = time.time() - self.handler_timestamps[handler_name]
+                log.warning(f"Handler {handler_name} ist seit {duration} Sekunden gesperrt.")
+                # Stack Trace des Threads, der den Lock hält
+                for tid, frame in sys._current_frames().items():
+                    if tid == lock._get_ident():
+                        stack_trace = traceback.format_stack(frame)
+                        log.warning(f"Stack Trace für {handler_name}:")
+                        for line in stack_trace:
+                            log.warning(line.strip())
+                if duration > max_runtime:
+                    log.error(f"Handler {handler_name} ist seit mehr als {max_runtime} Sekunden gesperrt.")
+                    emergency_exit = True
+        if emergency_exit:
+            log.error(f"Deadlock erkannt, Prozess wird beendet!")
+            log.debug(f"Threads: {enumerate()}")
+            for thread in enumerate():
+                logging.debug(f"Thread Name: {thread.name}")
+                if hasattr(thread, "ident"):
+                    thread_id = thread.ident
+                    for tid, frame in sys._current_frames().items():
+                        if tid == thread_id:
+                            logging.debug(f"  File: {frame.f_code.co_filename}, Line: {frame.f_lineno}, Function: {frame.f_code.co_name}")
+                            stack_trace = traceback.format_stack(frame)
+                            logging.debug("  Stack Trace:")
+                            for line in stack_trace:
+                                logging.debug(line.strip())
+            sys.exit(1)
 
     # decorator can not be used here as it would block logging before handler_with_control_interval()
     # @__with_handler_lock(error_threshold=30)
@@ -121,20 +155,8 @@ class HandlerAlgorithm:
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
-            log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
-            log.debug(f'Drosselung: {run_command.run_shell_command("if which vcgencmd >/dev/null; then vcgencmd get_throttled; else echo not found; fi")}')
-            log.debug(f"Threads: {enumerate()}")
-            for thread in threading.enumerate():
-                logging.debug(f"Thread Name: {thread.name}")
-                if hasattr(thread, "ident"):
-                    thread_id = thread.ident
-                    for tid, frame in sys._current_frames().items():
-                        if tid == thread_id:
-                            logging.debug(f"  File: {frame.f_code.co_filename}, Line: {frame.f_lineno}, Function: {frame.f_code.co_name}")
-                            stack_trace = traceback.format_stack(frame)
-                            logging.debug("  Stack Trace:")
-                            for line in stack_trace:
-                                logging.debug(line.strip())
+            # log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
+            # log.debug(f'Drosselung: {run_command.run_shell_command("if which vcgencmd >/dev/null; then vcgencmd get_throttled; else echo not found; fi")}')
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             if not self.__acquire_lock("handler10Sec", error_threshold=30):
                 return
@@ -235,6 +257,8 @@ def schedule_jobs():
     schedule.every().day.at(f"0{randrange(0, 5)}:{randrange(0, 59):02d}:{randrange(0, 59):02d}").do(
         handler.handler_random_nightly)
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
+    # 30 Sekunden Handler, der die Locks überwacht, Deadlocks erkennt, loggt und ggf. den Prozess beendet
+    schedule.every(30).seconds.do(handler.monitor_handler_locks, max_runtime=600)
 
 
 try:
