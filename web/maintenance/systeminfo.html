@@ -102,9 +102,9 @@
 									) {
 										let num = Number(v.value);
 										let formatted = isFinite(num) ? num.toFixed(1) : v.value;
-										html += `<tr><th>${subKey}</th><td>${formatted} <span style="color:#888;font-size:0.95em">${v.unit}</span></td></tr>`;
+										html += `<tr><th>${subKey}</th><td style="text-align:right;">${formatted} <span style="color:#888;font-size:0.95em">${v.unit}</span></td></tr>`;
 									} else {
-										html += `<tr><th>${subKey}</th><td>${v}</td></tr>`;
+										html += `<tr><th>${subKey}</th><td style="text-align:right;">${v}</td></tr>`;
 									}
 								}
 							}
