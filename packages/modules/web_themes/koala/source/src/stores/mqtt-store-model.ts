@@ -139,29 +139,6 @@ export interface ChargeTemplateConfiguration {
     };
   };
 }
-export interface BidiChargingPlan {
-  id: number;
-  name: string;
-  active: boolean;
-  current: number;
-  dc_current: number;
-  et_active: boolean;
-  time: string;
-  phases_to_use: number;
-  phases_to_use_pv: number;
-
-  frequency: {
-    selected: string;
-    once?: string;
-    weekly: boolean[];
-  };
-  limit: {
-    selected: string;
-    amount?: number;
-    soc_limit?: number;
-    soc_scheduled?: number;
-  };
-}
 export interface ValueObject {
   textValue: string;
   value: number;

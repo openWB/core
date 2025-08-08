@@ -12,7 +12,6 @@ import type {
   Hierarchy,
   ChargePointConnectedVehicleConfig,
   ChargeTemplateConfiguration,
-  BidiChargingPlan,
   ValueObject,
   ChargePointConnectedVehicleInfo,
   Vehicle,
@@ -1624,7 +1623,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const chargePointConnectedVehicleBidiChargePlan = computed(() => {
     return (chargePointId: number) => {
       return chargePointConnectedVehicleChargeTemplate(chargePointId).value
-        ?.chargemode?.bidi_charging?.plan as BidiChargingPlan | undefined;
+        ?.chargemode?.bidi_charging?.plan
     };
   });
 
@@ -1633,7 +1632,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns number | undefined
    */
-  const chargePointConnectedVehicleBidiChargeMinEntladeSoC = (
+  const chargePointConnectedVehicleBidiChargeMinDischargeSoC = (
     chargePointId: number,
   ) => {
     return computed({
@@ -2968,7 +2967,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleEcoChargeLimitEnergy,
     chargePointConnectedVehicleEcoChargeMaxPrice,
     chargePointConnectedVehicleBidiChargePlan,
-    chargePointConnectedVehicleBidiChargeMinEntladeSoC,
+    chargePointConnectedVehicleBidiChargeMinDischargeSoC,
     chargePointConnectedVehicleBidiChargeCurrent,
     chargePointConnectedVehicleBidiChargeEtActive,
     chargePointConnectedVehiclePriority,

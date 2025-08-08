@@ -5,7 +5,7 @@
     :max="100"
     :step="5"
     unit="%"
-    v-model="minEntladeSoC.value"
+    v-model="minDischargeSoC.value"
     class="q-mt-md"
   />
   <SliderStandard
@@ -48,8 +48,8 @@ const plan = computed(() =>
   mqttStore.chargePointConnectedVehicleBidiChargePlan(props.chargePointId),
 );
 
-const minEntladeSoC = computed(() =>
-  mqttStore.chargePointConnectedVehicleBidiChargeMinEntladeSoC(
+const minDischargeSoC = computed(() =>
+  mqttStore.chargePointConnectedVehicleBidiChargeMinDischargeSoC(
     props.chargePointId,
   ),
 );
