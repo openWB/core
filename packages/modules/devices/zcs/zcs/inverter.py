@@ -19,6 +19,7 @@ class ZCSInverter(AbstractInverter):
     def __init__(self, component_config: ZCSInverterSetup, **kwargs: Any) -> None:
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
+        self.__modbus_id = component_config.configuration.modbus_id
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
@@ -28,12 +29,20 @@ class ZCSInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(0x0485, ModbusDataType.INT_16, unit=self.__modbus_id)/100
-        exported = self.client.read_holding_registers(0x0684, ModbusDataType.UINT_32, unit=self.__modbus_id)/100
-        # exported = self.sim_counter.sim_count(power)[1]
+        try:
+            power = self.client.read_holding_registers(0x0485, ModbusDataType.INT_16, unit=self.__modbus_id)*10
+            exported = self.client.read_holding_registers(0x0684, ModbusDataType.UINT_32, unit=self.__modbus_id)*10
+            currents = [
+                self.client.read_holding_registers(0x48E, ModbusDataType.FLOAT_32, unit=self.__modbus_id)*0.01,
+                self.client.read_holding_registers(0x499, ModbusDataType.FLOAT_32, unit=self.__modbus_id)*0.01,
+                self.client.read_holding_registers(0x4A4, ModbusDataType.FLOAT_32, unit=self.__modbus_id)*0.01
+            ]
+        except Exception:
+            power = None
+            exported = None
 
         inverter_state = InverterState(
-            # currents=currents,
+            currents=currents,
             power=power,
             exported=exported
             # dc_power=dc_power

@@ -28,41 +28,47 @@ class CHINTCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        # power = self.client.read_holding_registers(0x2012, ModbusDataType.INT_32, unit=self.__modbus_id)
-        frequency = self.client.read_holding_registers(0x2044, ModbusDataType.FLOAT_32, unit=self.__modbus_id)/100
-        # imported, exported = self.sim_counter.sim_count(power)
-
         try:
-            power1 = self.client.read_holding_registers(0x2014, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * -4
-            power2 = self.client.read_holding_registers(0x2016, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * -4
-            power3 = self.client.read_holding_registers(0x2018, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * -4
+            irat = self.client.read_holding_registers(0x0006, ModbusDataType.INT_16, unit=self.__modbus_id)
+            urat = self.client.read_holding_registers(0x0007, ModbusDataType.INT_16, unit=self.__modbus_id)
+            power_ratio = urat*0.1*irat*0.1
+            frequency = self.client.read_holding_registers(0x2044, ModbusDataType.FLOAT_32, unit=self.__modbus_id)/100
+            power = self.client.read_holding_registers(0x2012, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * power_ratio
             powers = [
-                power1,
-                power2,
-                power3]
-            power = power1 + power2 + power3
-
+                self.client.read_holding_registers(0x2014, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * power_ratio,
+                self.client.read_holding_registers(0x2016, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * power_ratio,
+                self.client.read_holding_registers(0x2018, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * power_ratio
+            ]
+            voltage_ratio = urat*0.1*0.1
             voltages = [
-                self.client.read_holding_registers(0x2006, ModbusDataType.FLOAT_32, unit=self.__modbus_id) / 10,
-                self.client.read_holding_registers(0x2008, ModbusDataType.FLOAT_32, unit=self.__modbus_id) / 10,
-                self.client.read_holding_registers(0x200A, ModbusDataType.FLOAT_32, unit=self.__modbus_id) / 10
+                self.client.read_holding_registers(0x2006, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * voltage_ratio,
+                self.client.read_holding_registers(0x2008, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * voltage_ratio,
+                self.client.read_holding_registers(0x200A, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * voltage_ratio
             ]
-
+            current_ratio = irat*0.001
             currents = [
-                self.client.read_holding_registers(0x200C, ModbusDataType.FLOAT_32, unit=self.__modbus_id) / 10,
-                self.client.read_holding_registers(0x200E, ModbusDataType.FLOAT_32, unit=self.__modbus_id) / 10,
-                self.client.read_holding_registers(0x2010, ModbusDataType.FLOAT_32, unit=self.__modbus_id) / 10
+                self.client.read_holding_registers(0x200C, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * current_ratio,
+                self.client.read_holding_registers(0x200E, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * current_ratio,
+                self.client.read_holding_registers(0x2010, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * current_ratio
             ]
+            power_factors = [
+                self.client.read_holding_registers(0x202C, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * 0.001,
+                self.client.read_holding_registers(0x202E, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * 0.001,
+                self.client.read_holding_registers(0x2030, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * 0.001
+            ]
+            ep_ratio = irat * urat * 100
+            imported_ep = self.client.read_holding_registers(0x401E, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * ep_ratio
+            exported_ep = self.client.read_holding_registers(0x4028, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * ep_ratio
         except Exception:
-            powers = None
+            powers, currents, voltages, power_factors, power, frequency, imported_ep, exported_ep = None
 
         counter_state = CounterState(
             currents=currents,
-            # imported=imported,
-            # exported=exported,
+            imported=imported_ep,
+            exported=exported_ep,
             power=power,
             frequency=frequency,
-            # power_factors=power_factors,
+            power_factors=power_factors,
             powers=powers,
             voltages=voltages
         )
