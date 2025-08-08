@@ -10,3 +10,12 @@ class ComponentSetup(Generic[T]):
         self.type = type
         self.id = id
         self.configuration = configuration
+        if "counter" in type.lower():
+            self.color = "#dc3545"
+        elif "bat" in type.lower():
+            self.color = "#ffc107"
+        elif "inverter" in type.lower():
+            self.color = "#28a745"
+        else:
+            # Default color for other types
+            self.color = "#000000"
