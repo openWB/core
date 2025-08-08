@@ -10,7 +10,7 @@
     </div>
     <HistoryChartLegend
       v-if="legendDisplay"
-      :chart="chartRef?.chart || null"
+      :chart="chartInstance"
       class="legend-wrapper q-mt-sm"
     />
   </div>
@@ -65,6 +65,10 @@ const props = defineProps<{
 
 const chartRef = ref<ChartComponentRef | null>(null);
 
+const chartInstance = computed(() => {
+  return (chartRef.value?.chart as import('chart.js').Chart) ?? null;
+});
+
 const applyHiddenDatasetsToChart = <TType extends ChartType, TData>(
   chart: Chart<TType, TData>,
 ): void => {
@@ -83,7 +87,7 @@ watch(
   () => chartRef.value?.chart,
   (chart) => {
     if (chart) {
-      applyHiddenDatasetsToChart(chart);
+      applyHiddenDatasetsToChart(chart as Chart);
     }
   },
   { immediate: true },

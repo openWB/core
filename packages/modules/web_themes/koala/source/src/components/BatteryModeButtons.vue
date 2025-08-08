@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { computed } from 'vue';
-import { useBatteryModes } from 'src/composables/useBatteryModes.ts';
+import { useBatteryModes } from 'src/composables/useBatteryModes';
 
 const mqttStore = useMqttStore();
 
