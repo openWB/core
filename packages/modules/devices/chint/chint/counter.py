@@ -5,10 +5,8 @@ from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-# from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.chint.chint.config import CHINTCounterSetup
-from pymodbus.constants import Endian
 
 
 class KwargsDict(TypedDict):
@@ -24,14 +22,14 @@ class CHINTCounter(AbstractCounter):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
+        self.__modbus_id: int = self.kwargs['modbus_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        # self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
         # power = self.client.read_holding_registers(0x2012, ModbusDataType.INT_32, unit=self.__modbus_id)
-        frequency = self.client.read_holding_registers(0x2044, ModbusDataType.FLOAT_32, Endian.Big, Endian.Big, unit=self.__modbus_id)/100
+        frequency = self.client.read_holding_registers(0x2044, ModbusDataType.FLOAT_32, unit=self.__modbus_id)/100
         # imported, exported = self.sim_counter.sim_count(power)
 
         try:

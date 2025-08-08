@@ -7,9 +7,10 @@ from ..vendor import vendor_descriptor
 
 @auto_str
 class CHINTConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: int = 8899):
+    def __init__(self, ip_address: Optional[str] = None, modbus_id: int = 32, port: int = 8899):
         self.ip_address = ip_address
         self.port = port
+        self.modbus_id = modbus_id
 
 
 @auto_str
