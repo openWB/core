@@ -51,8 +51,10 @@ import ManualSocDialog from './ManualSocDialog.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
-const setCardWidth =
-  inject<(width: number | undefined) => void>('setCardWidth');
+const setCardWidth = inject<(width: number | undefined) => void>(
+  'setCardWidth',
+  undefined as unknown as (width: number | undefined) => void,
+);
 
 const props = defineProps<{
   vehicleId: number;

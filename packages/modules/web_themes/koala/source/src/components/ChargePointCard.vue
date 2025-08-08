@@ -103,8 +103,10 @@ import ChargePointPowerData from './ChargePointPowerData.vue';
 import { useQuasar } from 'quasar';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
-const setCardWidth =
-  inject<(width: number | undefined) => void>('setCardWidth');
+const setCardWidth = inject<(width: number | undefined) => void>(
+  'setCardWidth',
+  undefined as unknown as (width: number | undefined) => void,
+);
 
 const mqttStore = useMqttStore();
 
