@@ -30,17 +30,28 @@
       </q-list>
     </q-btn-dropdown>
   </div>
-  <q-btn-group class="full-width q-mt-sm" v-else>
-    <q-btn
-      v-for="mode in chargeModes"
-      :key="mode.value"
-      :color="chargeMode.value === mode.value ? 'primary' : 'grey'"
-      :label="mode.label"
-      size="sm"
-      class="flex-grow"
-      @click="chargeMode.value = mode.value"
-    />
-  </q-btn-group>
+  <div v-else>
+    <q-btn-group spread class="q-mt-sm">
+      <q-btn
+        v-for="mode in chargeModes.slice(0, 3)"
+        :key="mode.value"
+        :color="chargeMode.value === mode.value ? 'primary' : 'grey'"
+        :label="mode.label"
+        size="sm"
+        @click="chargeMode.value = mode.value"
+      />
+    </q-btn-group>
+    <q-btn-group spread>
+      <q-btn
+        v-for="mode in chargeModes.slice(3, 6)"
+        :key="mode.value"
+        :color="chargeMode.value === mode.value ? 'primary' : 'grey'"
+        :label="mode.label"
+        size="sm"
+        @click="chargeMode.value = mode.value"
+      />
+    </q-btn-group>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -75,5 +86,22 @@ const currentModeLabel = computed(
 
 .flex-grow {
   flex-grow: 1;
+}
+
+.q-btn-group:first-of-type .q-btn:first-child {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 0;
+}
+.q-btn-group:first-of-type .q-btn:last-child {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 0;
+}
+.q-btn-group:last-of-type .q-btn:first-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 3px;
+}
+.q-btn-group:last-of-type .q-btn:last-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 3px;
 }
 </style>

@@ -153,7 +153,8 @@ body>.container {
 }
 
 .charge-point-schedule-plan-pill.charge-point-plan-pill-active,
-.charge-point-time-charge-pill.charge-point-plan-pill-active {
+.charge-point-time-charge-pill.charge-point-plan-pill-active,
+.charge-point-bidi-plan-pill.charge-point-plan-pill-active {
 	border-color: #28a745!important;
 	color: #155724;
 	background-color: #d4edda;

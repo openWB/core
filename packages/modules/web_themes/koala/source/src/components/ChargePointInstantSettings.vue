@@ -132,15 +132,3 @@ const limitEnergy = computed(() =>
   ),
 );
 </script>
-
-<style scoped>
-.q-btn-group .q-btn {
-  min-width: 100px !important;
-}
-
-body.mobile .q-btn-group .q-btn {
-  padding: 4px 8px;
-  font-size: 12px !important;
-  min-height: 30px;
-}
-</style>
