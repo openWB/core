@@ -467,6 +467,11 @@ def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
+                # exakte matches haben Priorität
+                if vehicle_id is not None and fnmatch.filter(data.data.ev_data[vehicle].data.tag_id, vehicle_id):
+                    return data.data.ev_data[vehicle].num
+                if fnmatch.filter(data.data.ev_data[vehicle].data.tag_id, rfid):
+                    return data.data.ev_data[vehicle].num
                 for tag_id in data.data.ev_data[vehicle].data.tag_id:
                     if vehicle_id is not None:
                         if fnmatch.fnmatch(vehicle_id, tag_id):
