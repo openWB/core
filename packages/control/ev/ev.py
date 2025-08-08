@@ -9,7 +9,7 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 from dataclasses import dataclass, field
 import logging
 from typing import List, Optional, Tuple
-import fnmatch
+from fnmatch import fnmatch
 
 from control import data
 from control.ev.charge_template import ChargeTemplate
@@ -468,17 +468,24 @@ def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]
         try:
             if "ev" in vehicle:
                 # exakte matches haben Priorität
-                if vehicle_id is not None and fnmatch.filter(data.data.ev_data[vehicle].data.tag_id, vehicle_id):
+                # Vergleiche werden case-insensitive durchgeführt
+                # das vereinfacht die Eingabe, kann aber auch für falsche Treffer sorgen.
+                lowered_vehicle_tags = [tag.lower() for tag in data.data.ev_data[vehicle].data.tag_id]
+                if vehicle_id is not None and vehicle_id.lower() in lowered_vehicle_tags:
+                    log.debug(f"MAC {vehicle_id} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
-                if fnmatch.filter(data.data.ev_data[vehicle].data.tag_id, rfid):
+                if rfid.lower() in lowered_vehicle_tags:
+                    log.debug(f"RFID {rfid} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
+                # Prüfung auf ein passendes Muster
+                # auch 'fnmatch()' ist case-insensitive
                 for tag_id in data.data.ev_data[vehicle].data.tag_id:
                     if vehicle_id is not None:
-                        if fnmatch.fnmatch(vehicle_id, tag_id):
+                        if fnmatch(vehicle_id, tag_id):
                             log.debug(f"MAC {vehicle_id} und gespeicherte Tag_ID {tag_id} stimmen überein. "
                                       f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
                             return data.data.ev_data[vehicle].num
-                    if fnmatch.fnmatch(rfid, tag_id):
+                    if fnmatch(rfid, tag_id):
                         log.debug(f"RFID {rfid}  und gespeicherte Tag_ID {tag_id} stimmen überein. "
                                   f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
                         return data.data.ev_data[vehicle].num
