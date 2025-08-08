@@ -77,7 +77,7 @@
 import { computed, ref, onMounted, inject } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import BatterySettingsDialog from './BatterySettingsDialog.vue';
-import { useBatteryModes } from 'src/composables/useBatteryModes.ts';
+import { useBatteryModes } from 'src/composables/useBatteryModes';
 import SliderDouble from './SliderDouble.vue';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
