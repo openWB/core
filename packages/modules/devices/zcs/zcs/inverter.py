@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 from typing import TypedDict, Any
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -8,6 +9,8 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.zcs.zcs.config import ZCSInverterSetup
+
+log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
@@ -29,18 +32,19 @@ class ZCSInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
+        power = exported = 0
+        currents = None
         try:
             power = self.client.read_holding_registers(0x0485, ModbusDataType.INT_16, unit=self.__modbus_id)*10
             exported = self.client.read_holding_registers(0x0684, ModbusDataType.UINT_32, unit=self.__modbus_id)*10
             currents = [
-                self.client.read_holding_registers(0x48E, ModbusDataType.FLOAT_32, unit=self.__modbus_id)*0.01,
-                self.client.read_holding_registers(0x499, ModbusDataType.FLOAT_32, unit=self.__modbus_id)*0.01,
-                self.client.read_holding_registers(0x4A4, ModbusDataType.FLOAT_32, unit=self.__modbus_id)*0.01
+                self.client.read_holding_registers(0x48E, ModbusDataType.INT_16, unit=self.__modbus_id)*0.01,
+                self.client.read_holding_registers(0x499, ModbusDataType.INT_16, unit=self.__modbus_id)*0.01,
+                self.client.read_holding_registers(0x4A4, ModbusDataType.INT_16, unit=self.__modbus_id)*0.01
             ]
         except Exception:
-            power = None
-            exported = None
-
+            log.debug("Modbus could not be read.")
+        
         inverter_state = InverterState(
             currents=currents,
             power=power,
