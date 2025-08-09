@@ -126,6 +126,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import WBWidget from '../shared/WBWidget.vue'
 import PgSourceGraph from './PgSourceGraph.vue'
 import PgUsageGraph from './PgUsageGraph.vue'
@@ -154,47 +155,79 @@ import PgToolTips from './PgToolTips.vue'
 
 // state
 const stackOrderMax = 2
-const heading = 'Leistung / Ladestand '
-function changeStackOrder() {
-	let newOrder = globalConfig.usageStackOrder + 1
-	if (newOrder > stackOrderMax) {
-		newOrder = 0
+const heading = computed(() => {
+	switch (graphData.graphMode) {
+		case 'year':
+			return 'Jahresübersicht'
+		case 'month':
+			return 'Monatsübersicht'
+		default:
+			return 'Leistung / Ladestand'
 	}
-	globalConfig.usageStackOrder = newOrder
-	setInitializeUsageGraph(true)
+})
+/**
+ * Changes the stack order for usage graph visualization
+ * Cycles through available stack orders (0 to stackOrderMax)
+ * Triggers usage graph reinitialization after change
+ */
+function changeStackOrder() {
+    let newOrder = globalConfig.usageStackOrder + 1
+    if (newOrder > stackOrderMax) {
+        newOrder = 0
+    }
+    globalConfig.usageStackOrder = newOrder
+    setInitializeUsageGraph(true)
 }
+
+/**
+ * Configures zoom behavior for the power graph SVG
+ * @param svg - D3 Selection of the SVG element to apply zoom to
+ */
 function setZoom(svg: Selection<Element, unknown, HTMLElement, unknown>) {
-	const myextent: [[number, number], [number, number]] = [
-		[0, margin.top],
-		[width, height - margin.top],
-	]
-	svg.call(
-		zoom<Element, unknown>()
-			.scaleExtent([1, 8])
-			.translateExtent([
-				[0, 0],
-				[width, height],
-			])
-			.extent(myextent)
-			.filter(filter)
-			.on('zoom', zoomed),
-	)
+    const myextent: [[number, number], [number, number]] = [
+        [0, margin.top],
+        [width, height - margin.top],
+    ]
+    svg.call(
+        zoom<Element, unknown>()
+            .scaleExtent([1, 8])
+            .translateExtent([
+                [0, 0],
+                [width, height],
+            ])
+            .extent(myextent)
+            .filter(filter)
+            .on('zoom', zoomed),
+    )
 }
 
-// callback that is called when the user tries to pan/zoom in the window
+/**
+ * Handles zoom events on the graph
+ * Updates the transform value used for rendering
+ * @param event - D3 zoom event containing transform information
+ */
 function zoomed(event: D3ZoomEvent<SVGGElement, unknown>) {
-	mytransform.value = event.transform
+    mytransform.value = event.transform
 }
 
-// prevent scrolling then apply the default filter
+/**
+ * Filters zoom/pan events to control graph interaction
+ * Prevents default scroll behavior and applies zoom constraints
+ * @param event - Browser pointer or wheel event
+ * @returns boolean indicating if the event should trigger zoom
+ */
 function filter(event: PointerEvent | WheelEvent) {
-	event.preventDefault()
-	return (!event.ctrlKey || event.type === 'wheel') && !event.button
+    event.preventDefault()
+    return (!event.ctrlKey || event.type === 'wheel') && !event.button
 }
 
+/**
+ * Toggles the zoom state of the graph
+ * Sets the current widget as active and toggles zoom mode
+ */
 function zoomGraph() {
-	globalConfig.zoomedWidget = 1
-	globalConfig.zoomGraph = !globalConfig.zoomGraph
+    globalConfig.zoomedWidget = 1
+    globalConfig.zoomGraph = !globalConfig.zoomGraph
 }
 
 onMounted(() => {
@@ -205,24 +238,6 @@ onMounted(() => {
 
 <style scoped>
 .fa-magnifying-glass {
-	color: var(--color-menu);
-}
-
-.dateWbBadge {
-	background-color: var(--color-menu);
-	color: var(--color-bg);
-	font-size: var(--font-medium);
-	font-weight: normal;
-}
-
-.waitsign {
-	text-align: center;
-	font-size: var(--font-medium);
-	color: var(--color-fg);
-	border: 1px solid var(--color-bg);
-	padding: 2em;
-	margin: 2em;
-	margin-top: 4em;
-	background-color: var(--color-bg);
+    color: var(--color-menu);
 }
 </style>
