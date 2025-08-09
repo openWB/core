@@ -171,12 +171,12 @@ const heading = computed(() => {
  * Triggers usage graph reinitialization after change
  */
 function changeStackOrder() {
-    let newOrder = globalConfig.usageStackOrder + 1
-    if (newOrder > stackOrderMax) {
-        newOrder = 0
-    }
-    globalConfig.usageStackOrder = newOrder
-    setInitializeUsageGraph(true)
+	let newOrder = globalConfig.usageStackOrder + 1
+	if (newOrder > stackOrderMax) {
+		newOrder = 0
+	}
+	globalConfig.usageStackOrder = newOrder
+	setInitializeUsageGraph(true)
 }
 
 /**
@@ -184,21 +184,21 @@ function changeStackOrder() {
  * @param svg - D3 Selection of the SVG element to apply zoom to
  */
 function setZoom(svg: Selection<Element, unknown, HTMLElement, unknown>) {
-    const myextent: [[number, number], [number, number]] = [
-        [0, margin.top],
-        [width, height - margin.top],
-    ]
-    svg.call(
-        zoom<Element, unknown>()
-            .scaleExtent([1, 8])
-            .translateExtent([
-                [0, 0],
-                [width, height],
-            ])
-            .extent(myextent)
-            .filter(filter)
-            .on('zoom', zoomed),
-    )
+	const myextent: [[number, number], [number, number]] = [
+		[0, margin.top],
+		[width, height - margin.top],
+	]
+	svg.call(
+		zoom<Element, unknown>()
+			.scaleExtent([1, 8])
+			.translateExtent([
+				[0, 0],
+				[width, height],
+			])
+			.extent(myextent)
+			.filter(filter)
+			.on('zoom', zoomed),
+	)
 }
 
 /**
@@ -207,7 +207,7 @@ function setZoom(svg: Selection<Element, unknown, HTMLElement, unknown>) {
  * @param event - D3 zoom event containing transform information
  */
 function zoomed(event: D3ZoomEvent<SVGGElement, unknown>) {
-    mytransform.value = event.transform
+	mytransform.value = event.transform
 }
 
 /**
@@ -217,8 +217,8 @@ function zoomed(event: D3ZoomEvent<SVGGElement, unknown>) {
  * @returns boolean indicating if the event should trigger zoom
  */
 function filter(event: PointerEvent | WheelEvent) {
-    event.preventDefault()
-    return (!event.ctrlKey || event.type === 'wheel') && !event.button
+	event.preventDefault()
+	return (!event.ctrlKey || event.type === 'wheel') && !event.button
 }
 
 /**
@@ -226,8 +226,8 @@ function filter(event: PointerEvent | WheelEvent) {
  * Sets the current widget as active and toggles zoom mode
  */
 function zoomGraph() {
-    globalConfig.zoomedWidget = 1
-    globalConfig.zoomGraph = !globalConfig.zoomGraph
+	globalConfig.zoomedWidget = 1
+	globalConfig.zoomGraph = !globalConfig.zoomGraph
 }
 
 onMounted(() => {
@@ -238,6 +238,6 @@ onMounted(() => {
 
 <style scoped>
 .fa-magnifying-glass {
-    color: var(--color-menu);
+	color: var(--color-menu);
 }
 </style>
