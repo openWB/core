@@ -84,30 +84,33 @@ class ChargepointModule(AbstractChargepoint):
                 if received_topics:
                     log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")
                     topic_prefix = f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/"
-                    chargepoint_state = ChargepointState(
-                        power=parse_received_topics("power"),
-                        phases_in_use=parse_received_topics("phases_in_use"),
-                        imported=parse_received_topics("imported"),
-                        exported=parse_received_topics("exported"),
-                        serial_number=parse_received_topics("serial_number"),
-                        powers=parse_received_topics("powers"),
-                        voltages=parse_received_topics("voltages"),
-                        currents=parse_received_topics("currents"),
-                        power_factors=parse_received_topics("power_factors"),
-                        plug_state=parse_received_topics("plug_state"),
-                        charge_state=parse_received_topics("charge_state"),
-                        rfid=parse_received_topics("rfid"),
-                        rfid_timestamp=parse_received_topics("rfid_timestamp"),
-                        frequency=parse_received_topics("frequency"),
-                        soc=parse_received_topics("soc"),
-                        soc_timestamp=parse_received_topics("soc_timestamp"),
-                        vehicle_id=parse_received_topics("vehicle_id"),
-                        evse_current=parse_received_topics("evse_current"),
-                        max_evse_current=parse_received_topics("max_evse_current"),
-                        version=parse_received_topics("version"),
-                        current_branch=parse_received_topics("current_branch"),
-                        current_commit=parse_received_topics("current_commit")
-                    )
+                    try:
+                        chargepoint_state = ChargepointState(
+                            power=received_topics["power"],
+                            phases_in_use=received_topics["phases_in_use"],
+                            imported=received_topics["imported"],
+                            exported=received_topics["exported"],
+                            serial_number=parse_received_topics("serial_number"),
+                            powers=parse_received_topics("powers"),
+                            voltages=parse_received_topics("voltages"),
+                            currents=received_topics["currents"],
+                            power_factors=parse_received_topics("power_factors"),
+                            plug_state=received_topics["plug_state"],
+                            charge_state=received_topics["charge_state"],
+                            rfid=parse_received_topics("rfid"),
+                            rfid_timestamp=parse_received_topics("rfid_timestamp"),
+                            frequency=parse_received_topics("frequency"),
+                            soc=parse_received_topics("soc"),
+                            soc_timestamp=parse_received_topics("soc_timestamp"),
+                            vehicle_id=parse_received_topics("vehicle_id"),
+                            evse_current=parse_received_topics("evse_current"),
+                            max_evse_current=parse_received_topics("max_evse_current"),
+                            version=parse_received_topics("version"),
+                            current_branch=parse_received_topics("current_branch"),
+                            current_commit=parse_received_topics("current_commit")
+                        )
+                    except KeyError:
+                        raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
                     self.store.set(chargepoint_state)
                     if parse_received_topics("fault_state") == 2:
                         self.fault_state.error(parse_received_topics("fault_str"))

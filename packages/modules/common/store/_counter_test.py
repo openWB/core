@@ -47,7 +47,10 @@ def add_chargepoint(id: int):
                                                                                             currents=[
                                                                                                 19.36, 19.36, 19.36],
                                                                                             imported=0,
-                                                                                            exported=0)))))
+                                                                                            exported=0,
+                                                                                            phases_in_use=3,
+                                                                                            plug_state=True,
+                                                                                            charge_state=True)))))
 
 
 def mock_data_standard():
