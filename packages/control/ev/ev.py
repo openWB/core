@@ -477,11 +477,7 @@ def get_ev_to_rfid(rfid: Optional[str] = None, vehicle_id: Optional[str] = None)
                 if vehicle_id is not None and vehicle_id.lower() in lowered_vehicle_tags:
                     log.debug(f"MAC {vehicle_id} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
-<<<<<<< HEAD
-                if rfid.lower() in lowered_vehicle_tags:
-=======
                 if rfid is not None and rfid.lower() in lowered_vehicle_tags:
->>>>>>> 59c05aca00a48208fbdd130ad928f01eee6943cc
                     log.debug(f"RFID {rfid} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
                 # Prüfung auf ein passendes Muster
