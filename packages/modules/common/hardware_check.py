@@ -42,8 +42,8 @@ def _check_meter_values(counter_state: CounterState) -> Optional[str]:
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
         return METER_BROKEN_VOLTAGES.format(voltages)
-    if ((sum(counter_state.currents) < 0.5 and counter_state.power > 100) or
-            (sum(counter_state.currents) > 0.5 and counter_state.power < 100)):
+    if ((sum(counter_state.currents) < 0.5 and counter_state.power > 230) or
+            (sum(counter_state.currents) > 1 and counter_state.power < 100)):
         return METER_IMPLAUSIBLE_VALUE.format(counter_state.powers, counter_state.currents, counter_state.voltages)
     return None
 
