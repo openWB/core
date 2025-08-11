@@ -1,4 +1,5 @@
 export interface ThemeConfiguration {
+  hide_standard_vehicle: boolean;
   history_chart_range: number;
   chargePoint_card_view_breakpoint: number;
   vehicle_card_view_breakpoint: number;
