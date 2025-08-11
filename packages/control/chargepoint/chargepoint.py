@@ -600,7 +600,7 @@ class Chargepoint(ChargepointRfidMixin):
             if required_current < 0:
                 required_current = max(self.data.get.max_discharge_power / phases / 230, required_current)
             else:
-                required_current = max(self.data.get.max_charge_power / phases / 230, required_current)
+                required_current = min(self.data.get.max_charge_power / phases / 230, required_current)
             required_current = self.check_cp_min_max_current(abs(required_current), phases) * -1
         else:
             required_current, msg = self.data.set.charging_ev_data.check_min_max_current(
