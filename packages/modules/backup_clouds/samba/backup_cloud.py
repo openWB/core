@@ -34,8 +34,8 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
     host_is_reachable = is_port_open(config.smb_server, 139)
 
     if found_invalid_chars:
-        log.warn("Folgenden ungültige Zeichen im Pfad gefunden: {}".format(found_invalid_chars.group()))
-        log.warn("Sicherung nicht erfolgreich.")
+        log.warning("Folgenden ungültige Zeichen im Pfad gefunden: {}".format(found_invalid_chars.group()))
+        log.warning("Sicherung nicht erfolgreich.")
         send_file = False
     else:
         send_file = True
@@ -51,9 +51,9 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
             log.error("Möglicherweise ist die Freigabe oder ein Unterordner nicht vorhanden.")
         conn.close()
     elif send_file:
-        log.warn("SMB Verbindungsaufbau fehlgeschlagen.")
+        log.warning("SMB Verbindungsaufbau fehlgeschlagen.")
     elif not host_is_reachable:
-        log.warn("Host {} und/oder Port 139 nicht zu erreichen.".format(config.smb_server))
+        log.warning("Host {} und/oder Port 139 nicht zu erreichen.".format(config.smb_server))
 
 
 def create_backup_cloud(config: SambaBackupCloud):

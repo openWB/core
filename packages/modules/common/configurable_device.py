@@ -90,9 +90,10 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
             log.exception(f"Initialisierung von Gerät {self.device_config.name} fehlgeschlagen")
 
     def error_handler(self) -> None:
+        error_timestamp_topic = f"openWB/set/system/device/{self.device_config.id}/error_timestamp"
         if self.error_timestamp is None:
             self.error_timestamp = timecheck.create_timestamp()
-            Pub().pub(f"openWB/set/system/device/{self.device_config.id}/error_timestamp", self.error_timestamp)
+            Pub().pub(error_timestamp_topic, self.error_timestamp)
             log.debug(
                 f"Fehler bei Gerät {self.device_config.name} aufgetreten, Fehlerzeitstempel: {self.error_timestamp}")
         if timecheck.check_timestamp(self.error_timestamp, 60) is False:
@@ -104,7 +105,7 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
                 log.debug(f"Fehlerbehandlung für Gerät {self.device_config.name} wurde durchgeführt.")
 
             self.error_timestamp = None
-            Pub().pub(self.topic, self.error_timestamp)
+            Pub().pub(error_timestamp_topic, self.error_timestamp)
 
     def add_component(self, component_config: T_COMPONENT_CONFIG) -> None:
         with SingleComponentUpdateContext(FaultState(ComponentInfo.from_component_config(component_config))):

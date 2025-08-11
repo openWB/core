@@ -10,14 +10,15 @@
 						:corner-radius="cornerRadius"
 						:circle-gap-size="circleGapSize"
 						:empty-power="emptyPower"
+						:show-labels="globalConfig.showPmLabels"
 					/>
 
 					<PMUsageArc
-						:sh-device="shDevices"
 						:radius="radius"
 						:corner-radius="cornerRadius"
 						:circle-gap-size="circleGapSize"
 						:empty-power="emptyPower"
+						:show-labels="globalConfig.showPmLabels"
 					/>
 
 					<!-- Show the values for the different categories -->
@@ -147,6 +148,18 @@
 					>
 						Peak: {{ maxPowerString }}
 					</text>
+					<text
+						:x="0"
+						:y="((height / 2) * 3.8) / 5"
+						text-anchor="middle"
+						fill="var(--color-menu)"
+						font-size="28"
+						class="fas"
+						type="button"
+						@click="toggleInfo"
+					>
+						{{ '\uf05a' }}
+					</text>
 				</g>
 			</svg>
 		</figure>
@@ -166,7 +179,6 @@ import {
 	usageSummary,
 	masterData,
 } from '@/assets/js/model'
-import { shDevices } from '../smartHome/model'
 import {
 	chargePoints,
 	vehicles,
@@ -183,7 +195,7 @@ import { etData } from '../priceChart/model'
 const width = 500
 const height = width
 const margin = 20
-const cornerRadius = 1
+const cornerRadius = 20
 const circleGapSize = Math.PI / 40
 const schemes = [[4], [4, 6], [1, 4, 6], [0, 2, 4, 6], [0, 2, 3, 5, 6]]
 
@@ -199,7 +211,7 @@ const labelPositions = [
 	{ x: 0, y: ((height / 2) * 3) / 5 },
 ]
 const radius = computed(() => {
-	return width / 2 - margin
+	return width / 2.0 - margin
 })
 const currentConsumptionString = computed(() => {
 	let consumptionLabel = ''
@@ -268,6 +280,10 @@ const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return Math.round(p * 10) / 10
 })
+function toggleInfo() {
+	//showLabels.value = !showLabels.value
+	globalConfig.showPmLabels = !globalConfig.showPmLabels
+}
 </script>
 
 <style></style>

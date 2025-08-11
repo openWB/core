@@ -1,25 +1,36 @@
 <template>
-	<g id="pmSourceArc" :origin="draw" />
+	<PMArc
+		:upper-arc="true"
+		:plotdata="plotdata"
+		:radius="props.radius"
+		:show-labels="props.showLabels"
+		:categories-to-show="categoriesToShow"
+	/>
 </template>
 
 <script setup lang="ts">
 import { globalConfig } from '@/assets/js/themeConfig'
-import type { PowerItem } from '@/assets/js/types'
-import { sourceSummary } from '@/assets/js/model'
-import { pie, arc, select, type PieArcDatum } from 'd3'
+import { PowerItemType } from '@/assets/js/types'
+import { pvSystems, sourceSummary } from '@/assets/js/model'
 import { computed, watchEffect } from 'vue'
+import { batteries } from '../batteryList/model'
+import PMArc from './PMArc.vue'
+
 // props
 const props = defineProps<{
 	radius: number
 	cornerRadius: number
 	circleGapSize: number
 	emptyPower: number
+	showLabels: boolean
 }>()
+const categoriesToShow = [PowerItemType.inverter, PowerItemType.battery]
+
 //  computed:
-const draw = computed(() => {
-	// Draw the arc using d3
-	let emptyPowerItem: PowerItem = {
+const emptyPowerItem = computed(() => {
+	return {
 		name: '',
+		type: PowerItemType.counter,
 		power: props.emptyPower,
 		energy: 0,
 		energyPv: 0,
@@ -29,37 +40,29 @@ const draw = computed(() => {
 		icon: '',
 		showInGraph: true,
 	}
-	let plotdata = sourceSummary
-	plotdata['zz-empty'] = emptyPowerItem
-	const arcCount = Object.values(sourceSummary).length - 1
-
-	const pieGenerator = pie<PowerItem>()
-		.value((record: PowerItem) => record.power)
-		.startAngle(-Math.PI / 2 + props.circleGapSize)
-		.endAngle(Math.PI / 2 - props.circleGapSize)
-		.sort(null)
-	const path = arc<PieArcDatum<PowerItem>>()
-		.innerRadius((props.radius / 6) * 5)
-		.outerRadius(props.radius)
-		.cornerRadius(props.cornerRadius)
-		.padAngle(0)
-	const graph = select('g#pmSourceArc')
-	graph.selectAll('*').remove()
-	graph
-		.selectAll('sources')
-		.data(pieGenerator(Object.values(plotdata)))
-		.enter()
-		.append('path')
-		.attr('d', path)
-		.attr('fill', (d) => d.data.color)
-		.attr('stroke', (d, i) =>
-			i == arcCount
-				? d.data.power > 0
-					? 'var(--color-scale)'
-					: 'null'
-				: d.data.color,
-		)
-	return 'pmSourceArc.vue'
+})
+const plotdata = computed(() => {
+	return [sourceSummary.evuIn].concat(
+		invertersToShow.value,
+		batteriesToShow.value,
+		emptyPowerItem.value,
+	)
+})
+const invertersToShow = computed(() =>
+	pvSystems.value.size > 1
+		? [...pvSystems.value.values()].sort((a, b) => {
+				return a.power - b.power
+			})
+		: [sourceSummary.pv],
+)
+const batteriesToShow = computed(() => {
+	return batteries.value.size > 1
+		? [...batteries.value.values()]
+				.filter((b) => b.power < 0)
+				.sort((a, b) => {
+					return a.power - b.power
+				})
+		: [sourceSummary.batOut]
 })
 
 watchEffect(() => {

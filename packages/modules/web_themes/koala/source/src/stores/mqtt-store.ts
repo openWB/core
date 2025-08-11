@@ -2022,14 +2022,25 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Get a list of all vehicles
    * @returns Vehicle[]
    */
-  const vehicleList = computed(() => {
+  const vehicleList = computed<Vehicle[]>(() => {
     const list = getWildcardValues.value('openWB/vehicle/+/name');
+    const hideStandardFahrzeuge =
+      themeConfiguration.value?.hide_standard_vehicle;
+    // Filter out Standard-Fahrzeug if hideStandardFahrzeuge is true
+    const filteredList = hideStandardFahrzeuge
+      ? Object.fromEntries(
+          Object.entries(list).filter(
+            ([, name]) =>
+              typeof name === 'string' && name !== 'Standard-Fahrzeug',
+          ),
+        )
+      : list;
     // generate an array of objects, containing vehicle index and name
-    return Object.keys(list).map((key) => {
+    return Object.keys(filteredList).map((key) => {
       const vehicleIndex = parseInt(key.split('/')[2]);
       return {
         id: vehicleIndex,
-        name: list[key],
+        name: filteredList[key],
       } as Vehicle;
     });
   });

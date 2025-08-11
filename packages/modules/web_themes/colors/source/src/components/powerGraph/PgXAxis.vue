@@ -132,7 +132,13 @@ const drawAxis1 = computed(() => {
 		.attr('y', 12)
 		.attr('fill', 'var(--color-axis)')
 		.attr('font-size', fontsize)
-		.text(graphData.graphMode == 'year' ? 'MW' : 'kW')
+		.text(
+			graphData.graphMode == 'year'
+				? 'MWh'
+				: graphData.graphMode == 'month'
+					? 'kWh'
+					: 'kW',
+		)
 		.attr('text-anchor', 'start')
 	return 'PGXAxis.vue'
 })

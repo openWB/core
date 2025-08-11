@@ -16,6 +16,7 @@ from control.limiting_value import LimitingValue, LoadmanagementLimit
 from dataclasses import dataclass, field
 import logging
 from typing import List, Optional, Tuple
+from fnmatch import fnmatch
 
 from control import data
 from control.ev.charge_template import ChargeTemplate
@@ -452,13 +453,13 @@ class Ev:
                     str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
 
 
-def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]:
+def get_ev_to_rfid(rfid: Optional[str] = None, vehicle_id: Optional[str] = None) -> Optional[int]:
     """ ermittelt zum übergebenen ID-Tag das Fahrzeug
 
     Parameter
     ---------
     rfid: string
-        ID-Tag
+        ID-Tag vom RFID-Leser oder Display
     vehicle_id: string
         MAC-Adresse des ID-Tags (nur openWB Pro)
 
@@ -467,15 +468,34 @@ def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]
     vehicle: int
         Nummer des EV, das zum Tag gehört
     """
+    if rfid is None and vehicle_id is None:
+        log.debug("Kein Fahrzeug zugeordnet, da weder RFID noch MAC übergeben wurden.")
+        return None
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
-                if vehicle_id is not None and vehicle_id in data.data.ev_data[vehicle].data.tag_id:
+                # exakte matches haben Priorität
+                # Vergleiche werden case-insensitive durchgeführt
+                # das vereinfacht die Eingabe, kann aber auch für falsche Treffer sorgen.
+                lowered_vehicle_tags = [tag.lower() for tag in data.data.ev_data[vehicle].data.tag_id]
+                if vehicle_id is not None and vehicle_id.lower() in lowered_vehicle_tags:
                     log.debug(f"MAC {vehicle_id} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
-                if rfid in data.data.ev_data[vehicle].data.tag_id:
+                if rfid is not None and rfid.lower() in lowered_vehicle_tags:
                     log.debug(f"RFID {rfid} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
+                # Prüfung auf ein passendes Muster
+                # auch 'fnmatch()' ist case-insensitive
+                for tag_id in data.data.ev_data[vehicle].data.tag_id:
+                    if vehicle_id is not None:
+                        if fnmatch(vehicle_id, tag_id):
+                            log.debug(f"MAC {vehicle_id} und gespeicherte Tag_ID {tag_id} stimmen überein. "
+                                      f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
+                            return data.data.ev_data[vehicle].num
+                    if fnmatch(rfid, tag_id):
+                        log.debug(f"RFID {rfid}  und gespeicherte Tag_ID {tag_id} stimmen überein. "
+                                  f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
+                        return data.data.ev_data[vehicle].num
         except Exception:
             log.exception("Fehler im ev-Modul "+vehicle)
             return None

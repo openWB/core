@@ -150,6 +150,16 @@ chmod 666 "$LOGFILE"
 	echo -n "Final group membership: "
 	groups openwb
 
+	# allow apache to restart some services
+	echo "Apache service restart permissions..."
+	if versionMatch "${OPENWBBASEDIR}/data/config/sudoers/apache2" "/etc/sudoers.d/apache2"; then
+		echo "apache2 sudoers already up to date"
+	else
+		echo "updating apache2 sudoers"
+		sudo cp "${OPENWBBASEDIR}/data/config/sudoers/apache2" "/etc/sudoers.d/apache2"
+		sudo chmod 440 /etc/sudoers.d/apache2
+	fi
+
 	# network setup
 	echo "Network..."
 	if "${OPENWBBASEDIR}/runs/setup_network.sh"; then
