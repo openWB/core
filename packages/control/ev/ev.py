@@ -449,13 +449,13 @@ class Ev:
                     str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
 
 
-def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]:
+def get_ev_to_rfid(rfid: Optional[str] = None, vehicle_id: Optional[str] = None) -> Optional[int]:
     """ ermittelt zum übergebenen ID-Tag das Fahrzeug
 
     Parameter
     ---------
     rfid: string
-        ID-Tag
+        ID-Tag vom RFID-Leser oder Display
     vehicle_id: string
         MAC-Adresse des ID-Tags (nur openWB Pro)
 
@@ -464,6 +464,9 @@ def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]
     vehicle: int
         Nummer des EV, das zum Tag gehört
     """
+    if rfid is None and vehicle_id is None:
+        log.debug("Kein Fahrzeug zugeordnet, da weder RFID noch MAC übergeben wurden.")
+        return None
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
@@ -474,7 +477,7 @@ def get_ev_to_rfid(rfid: str, vehicle_id: Optional[str] = None) -> Optional[int]
                 if vehicle_id is not None and vehicle_id.lower() in lowered_vehicle_tags:
                     log.debug(f"MAC {vehicle_id} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
-                if rfid.lower() in lowered_vehicle_tags:
+                if rfid is not None and rfid.lower() in lowered_vehicle_tags:
                     log.debug(f"RFID {rfid} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
                 # Prüfung auf ein passendes Muster
