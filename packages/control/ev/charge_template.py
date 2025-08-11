@@ -381,7 +381,7 @@ class ChargeTemplate:
             bidi_power_plan.current = self.data.chargemode.bidi_charging.power / phases_in_use / 230
             bidi_power_plan.phases_to_use = phases_in_use
             bidi_power_plan.phases_to_use_pv = phases_in_use
-            plan_end_time = timecheck.check_end_time(bidi_power_plan, chargemode_switch_timestamp, False)
+            plan_end_time = timecheck.check_end_time(bidi_power_plan, chargemode_switch_timestamp)
             if plan_end_time is None:
                 plan_data = None
             else:

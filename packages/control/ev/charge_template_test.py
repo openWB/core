@@ -12,6 +12,7 @@ from control.chargepoint.charging_type import ChargingType
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev_template import EvTemplate, EvTemplateData
 from control.general import General
+from control.text import BidiState
 from helpermodules import timecheck
 from helpermodules.abstract_plans import Limit, ScheduledChargingPlan, TimeChargingPlan
 
@@ -305,3 +306,35 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
 
     # evaluation
     assert ret == expected
+
+
+@pytest.mark.parametrize(
+    "bidi,soc,soc_scheduled,expected_submode,expected_current",
+    [
+        (BidiState.EV_NOT_BIDI_CAPABLE, 50.0, 80.0, "instant_charging", 16),
+        (BidiState.BIDI_CAPABLE, 100.0, 80.0, "bidi_charging", 6),
+        (BidiState.BIDI_CAPABLE, 50.0, 80.0, "instant_charging", 16),
+    ]
+)
+def test_bidi_charging_cases(bidi, soc, soc_scheduled, expected_submode, expected_current):
+    ct = ChargeTemplate()
+    ev_template = EvTemplate()
+    phases = 3
+    used_amount = 0.0
+    max_hw_phases = 3
+    phase_switch_supported = True
+    charging_type = "AC"
+    chargemode_switch_timestamp = 0.0
+    control_parameter = ControlParameter()
+    imported_since_plugged = 0.0
+    soc_request_interval_offset = 0.0
+    phases_in_use = 3
+    ct.data.chargemode.bidi_charging.plan.limit.soc_scheduled = soc_scheduled
+
+    current, submode, message, phases_out = ct.bidi_charging(
+        soc, ev_template, phases, used_amount, max_hw_phases, phase_switch_supported,
+        charging_type, chargemode_switch_timestamp, control_parameter, imported_since_plugged,
+        soc_request_interval_offset, bidi, phases_in_use
+    )
+    assert submode == expected_submode
+    assert current == expected_current
