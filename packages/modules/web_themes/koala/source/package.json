@@ -38,7 +38,7 @@
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-vue": "^9.33.0",
     "prettier": "^3.6.2",
-    "typescript": "^5.9.2",
+    "typescript": "^5.5.4",
     "vite-plugin-checker": "^0.10.2",
     "vitest": "^2.1.9",
     "vue-tsc": "^2.2.12",
