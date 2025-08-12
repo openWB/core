@@ -113,7 +113,10 @@ class BatAll:
                 for battery in data.data.bat_data.values():
                     try:
                         if battery.data.get.fault_state < 2:
-                            power += battery.data.get.power
+                            try:
+                                power += battery.data.get.power
+                            except Exception:
+                                log.exception(f"Fehler im Bat-Modul {battery.num}")
                             imported += battery.data.get.imported
                             exported += battery.data.get.exported
                             soc_sum += battery.data.get.soc
