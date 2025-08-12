@@ -69,13 +69,14 @@ class AllChargepoints:
         """
         imported, exported, power = 0, 0, 0
         try:
-            for cp in data.data.cp_data:
+            for cp in data.data.cp_data.values():
                 try:
-                    if "cp" in cp:
-                        chargepoint = data.data.cp_data[cp]
-                        power = power + chargepoint.data.get.power
-                        imported = imported + chargepoint.data.get.imported
-                        exported = exported + chargepoint.data.get.exported
+                    imported = imported + cp.data.get.imported
+                    exported = exported + cp.data.get.exported
+                except Exception:
+                    log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
+                try:
+                    power = power + cp.data.get.power
                 except Exception:
                     log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
             self.data.get.power = power

@@ -33,8 +33,9 @@ class BatteryValueStoreBroker(ValueStore[BatState]):
             pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/currents", self.state.currents, 2)
             pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/power", self.state.power, 2)
             pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/soc", self.state.soc, 0)
-            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/imported", self.state.imported, 2)
-            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/exported", self.state.exported, 2)
+            if self.state.imported is not None and self.state.exported is not None:
+                pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/imported", self.state.imported, 2)
+                pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/exported", self.state.exported, 2)
         except Exception as e:
             raise FaultState.from_exception(e)
 
