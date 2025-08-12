@@ -32,17 +32,15 @@ class AlgodueCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        with self.__tcp_client:
-
-            frequency = self.__tcp_client.read_input_registers(0x1038, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
-            currents = self.__tcp_client.read_input_registers(
-                0x100E, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
-            powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
-            power = sum(powers)
-            voltages = self.__tcp_client.read_input_registers(
-                0x1000, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
-            power_factors = self.__tcp_client.read_input_registers(
-                0x1018, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+        frequency = self.__tcp_client.read_input_registers(0x1038, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+        currents = self.__tcp_client.read_input_registers(
+            0x100E, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+        powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+        power = sum(powers)
+        voltages = self.__tcp_client.read_input_registers(
+            0x1000, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+        power_factors = self.__tcp_client.read_input_registers(
+            0x1018, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
 
         imported, exported = self.sim_counter.sim_count(power)
 

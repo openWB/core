@@ -268,7 +268,7 @@ function refreshChargeTemplate(chargePointIndex) {
 			chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans.length > 0
 		) {
 			chargePoint.find(".charge-point-schedule-plan-missing").addClass("hide");
-			for (const value of chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans) {
+			for (const [index, value] of chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans.entries()) {
 				const key = value.id;
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
@@ -276,6 +276,7 @@ function refreshChargeTemplate(chargePointIndex) {
 					var clonedElement = sourceElement.clone();
 					// update all data referencing the old index in our clone
 					clonedElement.attr('data-plan', key).data('plan', key);
+					clonedElement.attr('data-plan-index', index).data('plan-index', index);
 					// insert after last existing plan to honor sorting from the array
 					target = chargePoint.find('.charge-point-schedule-plan').last();
 					// console.log("target: "+target.data('plan')+" index: "+key);
@@ -360,7 +361,7 @@ function refreshChargeTemplate(chargePointIndex) {
 			chargeTemplate[chargePointIndex].time_charging.plans.length > 0
 		) {
 			chargePoint.find(".charge-point-time-charge-plan-missing").addClass("hide");
-			for (const value of chargeTemplate[chargePointIndex].time_charging.plans) {
+			for (const [index, value] of chargeTemplate[chargePointIndex].time_charging.plans.entries()) {
 				const key = value.id;
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-time-charge-plan[data-plan=' + key + ']').length == 0) {
@@ -368,6 +369,7 @@ function refreshChargeTemplate(chargePointIndex) {
 					var clonedElement = sourceElement.clone();
 					// update all data referencing the old index in our clone
 					clonedElement.attr('data-plan', key).data('plan', key);
+					clonedElement.attr('data-plan-index', index).data('plan-index', index);
 					// insert after last existing plan to honor sorting from the array
 					target = chargePoint.find('.charge-point-time-charge-plan').last();
 					// console.log("target: "+target.data('plan')+" index: "+key);

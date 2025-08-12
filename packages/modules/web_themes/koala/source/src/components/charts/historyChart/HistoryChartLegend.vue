@@ -54,12 +54,22 @@ const legendLarge = computed(() => {
   return legendItems.value.length > 20;
 });
 
+const batteryConfigured = computed(() => {
+  return mqttStore.batteryConfigured;
+});
+
 const updateLegendItems = () => {
   if (!props.chart) return;
-  const items =
+  let items =
     props.chart.options.plugins?.legend?.labels?.generateLabels?.(
       props.chart,
     ) || [];
+  if (!batteryConfigured.value) {
+    items = items.filter(
+      (item: LegendItemWithCategory) =>
+        item.text !== 'Speicher ges.' && item.text !== 'Speicher SoC',
+    );
+  }
   (items as LegendItemWithCategory[]).forEach((item) => {
     if (item.text && localDataStore.isDatasetHidden(item.text)) {
       item.hidden = true;

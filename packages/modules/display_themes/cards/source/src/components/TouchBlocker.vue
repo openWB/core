@@ -165,7 +165,7 @@ export default {
 
 <style scoped>
 .touch-blocker{
-  backdrop-filter: blur(5px);
+  background-color: #000000;
 }
 
 :deep(.modal) {

@@ -22,7 +22,6 @@
 			<span
 				type="button"
 				class="ms-2 ps-1 pt-1"
-				:style="modePillStyle"
 				@click="configmode = !configmode"
 			>
 				<span class="fa-solid fa-lg ps-1 fa-ellipsis-vertical" />
@@ -71,11 +70,7 @@
 		</template>
 
 		<template #buttons>
-			<span
-				class="ms-2 pt-1"
-				:style="modePillStyle"
-				@click="configmode = !configmode"
-			>
+			<span class="ms-2 pt-1" @click="configmode = !configmode">
 				<span class="fa-solid fa-lg ps-1 fa-circle-check" />
 			</span>
 		</template>
@@ -97,7 +92,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { type ChargePoint } from './model'
-import { chargemodes } from '@/assets/js/themeConfig'
 import WBWidget from '@/components/shared/WBWidget.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
 import ChargeConfigPanel from './cpConfig/ChargeConfigPanel.vue'
@@ -145,16 +139,6 @@ const statusIcon = computed(() => {
 		icon = 'fa-plug'
 	}
 	return 'fa ' + icon
-})
-const modePillStyle = computed(() => {
-	switch (props.chargepoint.chargeMode) {
-		case 'stop':
-			return { color: 'var(--fg)' }
-		default:
-			return {
-				color: chargemodes[props.chargepoint.chargeMode].color,
-			}
-	}
 })
 
 const cpNameStyle = computed(() => {

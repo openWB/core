@@ -1,9 +1,11 @@
 import { reactive } from 'vue'
 import { savePrefs } from '@/assets/js/themeConfig'
 import { historicSummary } from '@/assets/js/model'
+import { PowerItemType } from '@/assets/js/types'
 export class ShDevice {
 	id: number
 	name = 'Gerät'
+	type = PowerItemType.device
 	power = 0
 	status = 'off'
 	energy = 0

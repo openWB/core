@@ -11,8 +11,12 @@
 				{{ formatWatt(sourceSummary.pv.power) }}
 			</WbBadge>
 		</template>
-		<div v-for="[key, pvsystem] in pvSystems" :key="key" class="subgrid pb-2">
-			<IlInverter :inverter="pvsystem" />
+		<div
+			v-for="inverter in sortedInverters"
+			:key="inverter.id"
+			class="subgrid pb-2"
+		>
+			<IlInverter :inverter="inverter" />
 		</div>
 	</WBWidgetFlex>
 </template>
@@ -23,6 +27,11 @@ import IlInverter from './IlInverter.vue'
 import WbBadge from '../shared/WbBadge.vue'
 import { pvSystems, sourceSummary } from '@/assets/js/model'
 import { formatWatt } from '@/assets/js/helpers'
+import { computed } from 'vue'
+
+const sortedInverters = computed(() => {
+	return [...pvSystems.value.values()].sort((a, b) => a.id - b.id)
+})
 </script>
 
 <style scoped>

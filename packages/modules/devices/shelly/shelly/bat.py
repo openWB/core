@@ -71,9 +71,10 @@ class ShellyBat(AbstractBat):
             bat_state = BatState(
                 power=power,
                 imported=imported,
-                exported=exported,
-                currents=currents
+                exported=exported
             )
+            if 'currents' in locals():
+                bat_state.currents = currents
             self.store.set(bat_state)
         except KeyError:
             log.exception("unsupported shelly device.")

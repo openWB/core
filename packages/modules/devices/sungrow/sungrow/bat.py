@@ -33,38 +33,54 @@ class SungrowBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
+        self.firmware_check = self.check_firmware_register()
+
+    def check_firmware_register(self) -> bool:
+        if Firmware(self.device_config.configuration.firmware) == Firmware.v1:
+            return False
+        unit = self.device_config.configuration.modbus_id
+        try:
+            self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
+                                                   wordorder=Endian.Little, unit=unit)
+            log.debug("Wechselrichter Firmware ist größer gleich 95.09")
+            return True
+        except Exception:
+            log.debug("Wechselrichter Firmware ist kleiner als 95.09")
+            return False
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
-        soc = int(
-            self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
-        # Es gibt nur einen DC Strom der Batterie, daher Aufteilen auf 3 Phasenströme
-        bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
-        currents = [bat_current / 3] * 3
 
-        if (
-            Firmware(self.device_config.configuration.firmware) == Firmware.v2
-            and self.device_config.configuration.version == Version.SH
-        ):
-            bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
-        else:
+        soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
+        version = Version(self.device_config.configuration.version)
+
+        if Firmware(self.device_config.configuration.firmware) == Firmware.v2:
+            if self.firmware_check:  # Firmware >= 95.09
+                bat_current = self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit) * -0.1
+                bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
+                                                                   wordorder=Endian.Little, unit=unit) * -1
+            else:  # Firmware between 95.03 and 95.09
+                bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
+                if version == Version.SH:
+                    bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit)
+                elif version == Version.SH_winet_dongle:
+                    bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
+                    total_power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
+                                                                         wordorder=Endian.Little, unit=unit)
+                    pv_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
+                                                                      wordorder=Endian.Little, unit=unit)
+                    if total_power > pv_power:
+                        bat_power = bat_power * -1
+        else:  # Firmware.v1 (Firmware < 95.03)
+            bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
-
-            # Beim WiNet S-Dongle fehlt das Register für das Vorzeichen der Speicherleistung
-            if self.device_config.configuration.version == Version.SH_winet_dongle:
-                total_power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
-                                                                     wordorder=Endian.Little, unit=unit)
-                pv_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
-                                                                  wordorder=Endian.Little, unit=unit)
-
-                # Ist die Gesamtleistung des WR größer als die PV-Erzeugung wird der Speicher entladen
-                if total_power > pv_power:
-                    bat_power = bat_power * -1
-            else:
+            if version in (Version.SH, Version.SH_winet_dongle):
                 resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
                 binary = bin(resp.registers[0])[2:].zfill(8)
                 if binary[5] == "1":
                     bat_power = bat_power * -1
+
+        currents = [bat_current / 3] * 3
 
         imported, exported = self.sim_counter.sim_count(bat_power)
         bat_state = BatState(
