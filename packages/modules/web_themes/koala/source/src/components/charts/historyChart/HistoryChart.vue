@@ -66,7 +66,7 @@ const props = defineProps<{
 const chartRef = ref<ChartComponentRef | null>(null);
 
 const chartInstance = computed(() => {
-  return (chartRef.value?.chart as import('chart.js').Chart) ?? null;
+  return (chartRef.value?.chart as Chart) ?? null;
 });
 
 const applyHiddenDatasetsToChart = <TType extends ChartType, TData>(
