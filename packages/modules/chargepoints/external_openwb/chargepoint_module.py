@@ -110,10 +110,10 @@ class ChargepointModule(AbstractChargepoint):
                             current_commit=parse_received_topics("current_commit")
                         )
                         self.store.set(chargepoint_state)
-                        if parse_received_topics("fault_state") == 2:
-                            self.fault_state.error(parse_received_topics("fault_str"))
-                        elif parse_received_topics("fault_state") == 1:
-                            self.fault_state.warning(parse_received_topics("fault_str"))
+                        if received_topics[f"{topic_prefix}fault_state"] == 2:
+                            self.fault_state.error(received_topics[f"{topic_prefix}fault_str"])
+                        elif received_topics[f"{topic_prefix}fault_state"] == 1:
+                            self.fault_state.warning(received_topics[f"{topic_prefix}fault_str"])
                     except KeyError:
                         raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
                 else:
