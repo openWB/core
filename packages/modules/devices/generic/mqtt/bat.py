@@ -2,6 +2,7 @@
 from typing import Any, Dict, Optional, TypedDict
 
 from helpermodules.pub import Pub
+from helpermodules.utils._get_default import get_default
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -26,14 +27,17 @@ class MqttBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:
+        def parse_received_topics(value: str):
+            return received_topics.get(f"{topic_prefix}{value}", get_default(BatState, value))
         # [] für erforderliche Topics, .get() für optionale Topics
-        currents = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/currents")
-        power = received_topics[f"openWB/mqtt/bat/{self.component_config.id}/get/power"]
-        soc = received_topics[f"openWB/mqtt/bat/{self.component_config.id}/get/soc"]
-        if (received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/imported") and
-                received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/exported")):
-            imported = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/imported")
-            exported = received_topics.get(f"openWB/mqtt/bat/{self.component_config.id}/get/exported")
+        topic_prefix = f"openWB/mqtt/bat/{self.component_config.id}/get/"
+        currents = parse_received_topics("currents")
+        power = received_topics[f"{topic_prefix}power"]
+        soc = received_topics[f"{topic_prefix}soc"]
+        if (received_topics.get(f"{topic_prefix}imported") and
+                received_topics.get(f"{topic_prefix}exported")):
+            imported = received_topics[f"{topic_prefix}imported"]
+            exported = received_topics[f"{topic_prefix}exported"]
         else:
             imported, exported = self.sim_counter.sim_count(power)
 

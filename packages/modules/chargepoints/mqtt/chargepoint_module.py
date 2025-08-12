@@ -64,17 +64,17 @@ class ChargepointModule(AbstractChargepoint):
                 topic_prefix = f"openWB/mqtt/chargepoint/{self.config.id}/get/"
                 try:
                     chargepoint_state = ChargepointState(
-                        power=received_topics["power"],
-                        phases_in_use=received_topics["phases_in_use"],
-                        imported=received_topics["imported"],
-                        exported=received_topics["exported"],
+                        power=received_topics[f"{topic_prefix}power"],
+                        phases_in_use=received_topics[f"{topic_prefix}phases_in_use"],
+                        imported=received_topics[f"{topic_prefix}imported"],
+                        exported=received_topics[f"{topic_prefix}exported"],
                         serial_number=parse_received_topics("serial_number"),
                         powers=parse_received_topics("powers"),
                         voltages=parse_received_topics("voltages"),
-                        currents=received_topics["currents"],
+                        currents=received_topics[f"{topic_prefix}currents"],
                         power_factors=parse_received_topics("power_factors"),
-                        plug_state=received_topics["plug_state"],
-                        charge_state=received_topics["charge_state"],
+                        plug_state=received_topics[f"{topic_prefix}plug_state"],
+                        charge_state=received_topics[f"{topic_prefix}charge_state"],
                         rfid=parse_received_topics("rfid"),
                         rfid_timestamp=parse_received_topics("rfid_timestamp"),
                         frequency=parse_received_topics("frequency"),
@@ -87,9 +87,9 @@ class ChargepointModule(AbstractChargepoint):
                         current_branch=parse_received_topics("current_branch"),
                         current_commit=parse_received_topics("current_commit")
                     )
+                    self.store.set(chargepoint_state)
                 except KeyError:
                     raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
-                self.store.set(chargepoint_state)
             else:
                 self.fault_state.warning(f"Keine MQTT-Daten für Ladepunkt {self.config.name} empfangen oder es werden "
                                          "veraltete, abwärtskompatible Topics verwendet. Bitte die Doku in den "
