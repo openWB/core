@@ -289,13 +289,11 @@ class BatAll:
         if self.data.config.bat_control_permitted is False:
             return
         chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
-        power_of_chargepoints_by_chagemodes = sum(
-            [cp.data.get.power for cp in chargepoint_by_chargemodes if cp.data.get.power is not None])
         # Falls aktive Steuerung an und Fahrzeuge laden und kein Überschuss im System ist,
         # dann Speichereistung begrenzen.
         if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value and
             len(chargepoint_by_chargemodes) > 0 and
-                power_of_chargepoints_by_chagemodes > 0 and
+                data.data.cp_all_data.data.get.power > 100 and
                 self.data.get.power_limit_controllable and
                 self.data.get.power <= 0 and
                 data.data.counter_all_data.get_evu_counter().data.get.power >= -100):
@@ -312,7 +310,7 @@ class BatAll:
             if len(chargepoint_by_chargemodes) == 0:
                 log.debug("Speicher-Leistung nicht begrenzen, "
                           "da keine Ladepunkte in einem Lademodus mit Netzbezug sind.")
-            elif power_of_chargepoints_by_chagemodes <= 0:
+            elif data.data.cp_all_data.data.get.power <= 100:
                 log.debug("Speicher-Leistung nicht begrenzen, da kein Ladepunkt mit Netzubezug lädt.")
             elif self.data.get.power_limit_controllable is False:
                 log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
