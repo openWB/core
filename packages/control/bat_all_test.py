@@ -132,7 +132,7 @@ cases = [
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypatch):
+def test_get_charging_power_left(params: Params, caplog, data_, monkeypatch):
     # setup
     b_all = BatAll()
     b_all.data.get.power = params.power
@@ -195,6 +195,7 @@ def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
     b_all.data.get.power = params.bat_power
     data.data.counter_all_data = hierarchy_standard()
     data.data.counter_all_data.data.set.home_consumption = 456
+    data.data.cp_all_data.data.get.power = 1400
     data.data.counter_data["counter0"].data.get.power = params.evu_power
     data.data.bat_all_data = b_all
 
