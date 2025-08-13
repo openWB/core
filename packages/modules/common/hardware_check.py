@@ -17,10 +17,9 @@ LAN_ADAPTER_BROKEN = (f"{RS485_ADAPTER_BROKEN.format('der LAN-Konverter abgestü
                       "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = "Der Zähler konnte nicht ausgelesen werden. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
 METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
-METER_VOLTAGE_TOO_HIGH = ("Die Spannung des Zählers ist zu hoch. Bitte prüfen Sie die Spannungsversorgung. "
-                          "Spannung: {}V.")
-METER_VOLTAGE_TOO_LOW = ("Die Spannung des Zählers ist zu niedrig. Bitte prüfen Sie die Spannungsversorgung. "
-                         "Spannung: {}V.")
+METER_VOLTAGE = "Die Spannung des Zählers ist zu {}. Bitte prüfen Sie die Spannungsversorgung. Spannung: {}V."
+METER_VOLTAGE_TOO_HIGH = METER_VOLTAGE.format("hoch", "{}")
+METER_VOLTAGE_TOO_LOW = METER_VOLTAGE.format("niedrig", "{}")
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
                           "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")

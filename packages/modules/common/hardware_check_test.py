@@ -9,7 +9,8 @@ from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
     EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_IMPLAUSIBLE_VALUE, METER_NO_SERIAL_NUMBER,
-    METER_PROBLEM, METER_VOLTAGE_TOO_HIGH, METER_VOLTAGE_TOO_LOW, OPEN_TICKET, USB_ADAPTER_BROKEN, SeriesHardwareCheckMixin, _check_meter_values)
+    METER_PROBLEM, METER_VOLTAGE_TOO_HIGH, METER_VOLTAGE_TOO_LOW, OPEN_TICKET, USB_ADAPTER_BROKEN,
+    SeriesHardwareCheckMixin, _check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
