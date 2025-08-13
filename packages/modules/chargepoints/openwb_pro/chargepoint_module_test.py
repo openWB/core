@@ -118,10 +118,13 @@ def test_openwb_pro(sample_state: Dict, expected_state: Dict, monkeypatch, reque
 
 @pytest.mark.parametrize("chargepoint_state, expected_exception, expected_message", [
     (ChargepointState(charge_state=False, currents=[0, 2, 0], plug_state=True,
-     power=0), ValueError, chargepoint_module.ChargepointModule.WRONG_CHARGE_STATE),
+     power=0, imported=None, exported=None, phases_in_use=0),
+     ValueError, chargepoint_module.ChargepointModule.WRONG_CHARGE_STATE),
     (ChargepointState(charge_state=True, currents=[0, 0, 0], plug_state=False,
-     power=30), ValueError, chargepoint_module.ChargepointModule.WRONG_PLUG_STATE),
-    (ChargepointState(charge_state=True, currents=[0, 2, 0], plug_state=True, power=30), None, None)
+     power=30, imported=None, exported=None, phases_in_use=0),
+     ValueError, chargepoint_module.ChargepointModule.WRONG_PLUG_STATE),
+    (ChargepointState(charge_state=True, currents=[0, 2, 0], plug_state=True,
+     power=30, imported=None, exported=None, phases_in_use=0), None, None)
 ])
 def test_validate_values(chargepoint_state, expected_exception, expected_message):
     cp = chargepoint_module.ChargepointModule(OpenWBPro(configuration=OpenWBProConfiguration(ip_address=SAMPLE_IP)))

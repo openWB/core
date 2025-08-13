@@ -43,7 +43,13 @@ class ChargepointModule(AbstractChargepoint):
         self.client_error_context.error_timestamp = internal_cp.get.error_timestamp
         self.old_plug_state = False
         self.old_phases_in_use = 0
-        self.old_chargepoint_state = ChargepointState()
+        self.old_chargepoint_state = ChargepointState(plug_state=False,
+                                                      charge_state=False,
+                                                      imported=None,
+                                                      exported=None,
+                                                      currents=None,
+                                                      phases_in_use=0,
+                                                      power=0)
         self._client = client_handler
         version = self._client.evse_client.get_firmware_version()
         with ModifyLoglevelContext(log, logging.DEBUG):
@@ -121,11 +127,13 @@ class ChargepointModule(AbstractChargepoint):
                 current_commit=self.current_commit
             )
         if self.client_error_context.error_counter_exceeded():
-            chargepoint_state = ChargepointState()
-            chargepoint_state.plug_state = False
-            chargepoint_state.charge_state = False
-            chargepoint_state.imported = self.old_chargepoint_state.imported
-            chargepoint_state.exported = self.old_chargepoint_state.exported
+            chargepoint_state = ChargepointState(plug_state=False,
+                                                 charge_state=False,
+                                                 imported=self.old_chargepoint_state.imported,
+                                                 exported=self.old_chargepoint_state.exported,
+                                                 currents=self.old_chargepoint_state.currents,
+                                                 phases_in_use=self.old_chargepoint_state.phases_in_use,
+                                                 power=self.old_chargepoint_state.power)
 
         store_state(chargepoint_state)
         self.old_chargepoint_state = chargepoint_state

@@ -2,6 +2,7 @@ import logging
 
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
+from helpermodules.utils._get_default import get_default
 from helpermodules.utils.topic_parser import decode_payload
 from modules.chargepoints.mqtt.config import Mqtt
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -45,6 +46,8 @@ class ChargepointModule(AbstractChargepoint):
         Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/current", current)
 
     def get_values(self) -> None:
+        def parse_received_topics(value: str):
+            return received_topics.get(f"{topic_prefix}{value}", get_default(ChargepointState, value))
         with SingleComponentUpdateContext(self.fault_state):
             def on_connect(client, userdata, flags, rc):
                 client.subscribe(f"openWB/mqtt/chargepoint/{self.config.id}/get/#")
@@ -59,31 +62,37 @@ class ChargepointModule(AbstractChargepoint):
             if received_topics:
                 log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")
                 topic_prefix = f"openWB/mqtt/chargepoint/{self.config.id}/get/"
-                chargepoint_state = ChargepointState(
-                    power=received_topics.get(f"{topic_prefix}power"),
-                    phases_in_use=received_topics.get(f"{topic_prefix}phases_in_use"),
-                    imported=received_topics.get(f"{topic_prefix}imported"),
-                    exported=received_topics.get(f"{topic_prefix}exported"),
-                    serial_number=received_topics.get(f"{topic_prefix}serial_number"),
-                    powers=received_topics.get(f"{topic_prefix}powers"),
-                    voltages=received_topics.get(f"{topic_prefix}voltages"),
-                    currents=received_topics.get(f"{topic_prefix}currents"),
-                    power_factors=received_topics.get(f"{topic_prefix}power_factors"),
-                    plug_state=received_topics.get(f"{topic_prefix}plug_state"),
-                    charge_state=received_topics.get(f"{topic_prefix}charge_state"),
-                    rfid=received_topics.get(f"{topic_prefix}rfid"),
-                    rfid_timestamp=received_topics.get(f"{topic_prefix}rfid_timestamp"),
-                    frequency=received_topics.get(f"{topic_prefix}frequency"),
-                    soc=received_topics.get(f"{topic_prefix}soc"),
-                    soc_timestamp=received_topics.get(f"{topic_prefix}soc_timestamp"),
-                    vehicle_id=received_topics.get(f"{topic_prefix}vehicle_id"),
-                    evse_current=received_topics.get(f"{topic_prefix}evse_current"),
-                    max_evse_current=received_topics.get(f"{topic_prefix}max_evse_current"),
-                    max_charge_power=received_topics.get(f"{topic_prefix}max_charge_power"),
-                    max_discharge_power=received_topics.get(f"{topic_prefix}max_discharge_power"),
-                    evse_signaling=received_topics.get(f"{topic_prefix}evse_signaling"),
-                )
-                self.store.set(chargepoint_state)
+                try:
+                    chargepoint_state = ChargepointState(
+                        power=received_topics[f"{topic_prefix}power"],
+                        phases_in_use=received_topics[f"{topic_prefix}phases_in_use"],
+                        imported=received_topics[f"{topic_prefix}imported"],
+                        exported=received_topics[f"{topic_prefix}exported"],
+                        serial_number=parse_received_topics("serial_number"),
+                        powers=parse_received_topics("powers"),
+                        voltages=parse_received_topics("voltages"),
+                        currents=received_topics[f"{topic_prefix}currents"],
+                        power_factors=parse_received_topics("power_factors"),
+                        plug_state=received_topics[f"{topic_prefix}plug_state"],
+                        charge_state=received_topics[f"{topic_prefix}charge_state"],
+                        rfid=parse_received_topics("rfid"),
+                        rfid_timestamp=parse_received_topics("rfid_timestamp"),
+                        frequency=parse_received_topics("frequency"),
+                        soc=parse_received_topics("soc"),
+                        soc_timestamp=parse_received_topics("soc_timestamp"),
+                        vehicle_id=parse_received_topics("vehicle_id"),
+                        evse_current=parse_received_topics("evse_current"),
+                        max_evse_current=parse_received_topics("max_evse_current"),
+                        version=parse_received_topics("version"),
+                        current_branch=parse_received_topics("current_branch"),
+                        current_commit=parse_received_topics("current_commit"),
+                        max_charge_power=parse_received_topics("max_charge_power"),
+                        max_discharge_power=parse_received_topics("max_discharge_power"),
+                        evse_signaling=parse_received_topics("evse_signaling"),
+                    )
+                    self.store.set(chargepoint_state)
+                except KeyError:
+                    raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
             else:
                 self.fault_state.warning(f"Keine MQTT-Daten für Ladepunkt {self.config.name} empfangen oder es werden "
                                          "veraltete, abwärtskompatible Topics verwendet. Bitte die Doku in den "

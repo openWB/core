@@ -31,10 +31,22 @@ def init_data() -> None:
             {"id": 3, "type": "cp", "children": []}, {"id": 4, "type": "cp", "children": []}]}]}]
     data.data.cp_data["cp3"] = Chargepoint(3, None)
     data.data.cp_data["cp3"].chargepoint_module = ChargepointModule(Mqtt())
-    data.data.cp_data["cp3"].chargepoint_module.store.delegate.state = ChargepointState(currents=[16, 16, 0])
+    data.data.cp_data["cp3"].chargepoint_module.store.delegate.state = ChargepointState(currents=[16, 16, 0],
+                                                                                        plug_state=False,
+                                                                                        charge_state=False,
+                                                                                        imported=None,
+                                                                                        exported=None,
+                                                                                        phases_in_use=0,
+                                                                                        power=0)
     data.data.cp_data["cp4"] = Chargepoint(4, None)
     data.data.cp_data["cp4"].chargepoint_module = ChargepointModule(Mqtt())
-    data.data.cp_data["cp4"].chargepoint_module.store.delegate.state = ChargepointState(currents=[16, 16, 16])
+    data.data.cp_data["cp4"].chargepoint_module.store.delegate.state = ChargepointState(currents=[16, 16, 16],
+                                                                                        plug_state=False,
+                                                                                        charge_state=False,
+                                                                                        imported=None,
+                                                                                        exported=None,
+                                                                                        phases_in_use=0,
+                                                                                        power=0)
 
 
 def init_twisted_cp() -> None:
