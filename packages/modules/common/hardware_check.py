@@ -17,6 +17,10 @@ LAN_ADAPTER_BROKEN = (f"{RS485_ADAPTER_BROKEN.format('der LAN-Konverter abgestü
                       "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = "Der Zähler konnte nicht ausgelesen werden. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
 METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
+METER_VOLTAGE_TOO_HIGH = ("Die Spannung des Zählers ist zu hoch. Bitte prüfen Sie die Spannungsversorgung. "
+                          "Spannung: {}V.")
+METER_VOLTAGE_TOO_LOW = ("Die Spannung des Zählers ist zu niedrig. Bitte prüfen Sie die Spannungsversorgung. "
+                         "Spannung: {}V.")
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
                           "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
@@ -33,9 +37,18 @@ def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultS
 
 
 def _check_meter_values(counter_state: CounterState) -> Optional[str]:
+    VOLTAGE_HIGH_THRESHOLD = 260
+    VOLTAGE_LOW_THRESHOLD = 200
+    VOLTAGE_DETECTED_THRESHOLD = 50  # Phasenaufall detektieren
+
     def valid_voltage(voltage) -> bool:
-        return 200 < voltage < 260
+        return VOLTAGE_LOW_THRESHOLD < voltage < VOLTAGE_HIGH_THRESHOLD
     voltages = counter_state.voltages
+    # wenn ein Wert in voltages großer VOLTAGE_HIGH_THRESHOLD ist, gebe eine Fehlermeldung zurück
+    if any(v > VOLTAGE_HIGH_THRESHOLD and v > VOLTAGE_DETECTED_THRESHOLD for v in voltages):
+        return METER_VOLTAGE_TOO_HIGH.format(voltages)
+    elif any(v < VOLTAGE_LOW_THRESHOLD and v > VOLTAGE_DETECTED_THRESHOLD for v in voltages):
+        return METER_VOLTAGE_TOO_LOW.format(voltages)
     if not ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
             # Zoe lädt einphasig an einphasiger Wallbox und erzeugt Spannung auf L2 (ca 126V)
             (valid_voltage(voltages[0]) and 115 < voltages[1] < 135 and voltages[2] == 0) or
