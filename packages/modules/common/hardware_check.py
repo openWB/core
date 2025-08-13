@@ -34,7 +34,7 @@ def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultS
 
 def _check_meter_values(counter_state: CounterState) -> Optional[str]:
     def valid_voltage(voltage) -> bool:
-        return 200 < voltage < 250
+        return 200 < voltage < 260
     voltages = counter_state.voltages
     if not ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
             # Zoe lädt einphasig an einphasiger Wallbox und erzeugt Spannung auf L2 (ca 126V)
