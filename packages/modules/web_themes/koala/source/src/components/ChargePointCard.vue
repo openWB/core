@@ -86,7 +86,7 @@
   />
 </template>
 <script setup lang="ts">
-import { computed, ref, onMounted, inject } from 'vue';
+import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderDouble from './SliderDouble.vue';
 import ChargePointLock from './ChargePointLock.vue';
@@ -103,8 +103,6 @@ import ChargePointPowerData from './ChargePointPowerData.vue';
 import { useQuasar } from 'quasar';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
-const setCardWidth =
-  inject<(width: number | undefined) => void>('setCardWidth');
 
 const mqttStore = useMqttStore();
 
@@ -279,11 +277,6 @@ const refreshSoc = () => {
     message: 'SoC Update angefordert.',
   });
 };
-
-onMounted(() => {
-  const cardWidth = cardRef.value?.$el.offsetWidth;
-  setCardWidth?.(cardWidth);
-});
 </script>
 <style lang="scss" scoped>
 .card-width {

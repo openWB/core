@@ -69,4 +69,8 @@ const batteryConfigured = computed(() => {
 .chart-section {
   height: 40vh;
 }
+
+.tab-section :deep(.q-tab-panel) {
+  max-width: 100vw;
+}
 </style>

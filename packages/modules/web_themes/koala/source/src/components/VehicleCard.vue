@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, inject } from 'vue';
+import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import SliderDouble from './SliderDouble.vue';
@@ -51,8 +51,6 @@ import ManualSocDialog from './ManualSocDialog.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
-const setCardWidth =
-  inject<(width: number | undefined) => void>('setCardWidth');
 
 const props = defineProps<{
   vehicleId: number;
@@ -88,11 +86,6 @@ const refreshSoc = () => {
     message: 'SoC Update angefordert.',
   });
 };
-
-onMounted(() => {
-  const cardWidth = cardRef.value?.$el.offsetWidth;
-  setCardWidth?.(cardWidth);
-});
 </script>
 
 <style lang="scss" scoped>
