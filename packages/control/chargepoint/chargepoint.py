@@ -248,7 +248,7 @@ class Chargepoint(ChargepointRfidMixin):
         self._reset_values_at_start()
         self._set_values_at_start()
 
-    def set_control_parameter(self, submode: str, required_current: float):
+    def set_control_parameter(self, submode: str):
         """ setzt die Regel-Parameter, die der Algorithmus verwendet.
 
         Parameter
@@ -264,7 +264,6 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.control_parameter.chargemode = Chargemode(
                     self.data.set.charge_template.data.chargemode.selected)
             self.data.control_parameter.prio = self.data.set.charge_template.data.prio
-            self.data.control_parameter.required_current = required_current
             if self.template.data.charging_type == ChargingType.AC.value:
                 self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.min_current
             else:
@@ -582,32 +581,39 @@ class Chargepoint(ChargepointRfidMixin):
             self.data.control_parameter.phases = phases
         return phases
 
-    def check_cp_min_max_current(self, required_current: float, phases: int) -> float:
+    def check_cp_max_current(self, required_current: float, phases: int) -> float:
+        sign = 1 if required_current >= 0 else -1
+        abs_current = abs(required_current)
         if self.template.data.charging_type == ChargingType.AC.value:
             if phases == 1:
-                required_current = min(required_current, self.template.data.max_current_single_phase)
+                abs_current = min(abs_current, self.template.data.max_current_single_phase)
             else:
-                required_current = min(required_current, self.template.data.max_current_multi_phases)
+                abs_current = min(abs_current, self.template.data.max_current_multi_phases)
         else:
-            required_current = min(required_current, self.template.data.dc_max_current)
-        return required_current
+            abs_current = min(abs_current, self.template.data.dc_max_current)
+        return sign * abs_current
 
     def check_min_max_current(self, required_current: float, phases: int) -> float:
         required_current_prev = required_current
         msg = None
-        if (self.data.control_parameter.chargemode == Chargemode.BIDI_CHARGING and
-                self.data.control_parameter.submode == Chargemode.BIDI_CHARGING):
+        if self.data.control_parameter.submode == Chargemode.BIDI_CHARGING:
             if required_current < 0:
-                required_current = max(self.data.get.max_discharge_power / phases / 230, required_current)
+                if self.data.get.max_discharge_power / phases / 230 > required_current:
+                    required_current = self.data.get.max_discharge_power / phases / 230
+                    msg = f"Die vom Auto übertragene Entladeleistung begrenzt den Strom auf " \
+                        f"maximal {round(required_current, 2)} A."
             else:
-                required_current = min(self.data.get.max_charge_power / phases / 230, required_current)
-            required_current = self.check_cp_min_max_current(abs(required_current), phases) * -1
+                if self.data.get.max_charge_power / phases / 230 < required_current:
+                    required_current = self.data.get.max_charge_power / phases / 230
+                    msg = f"Die vom Auto übertragene Ladeleistung begrenzt den Strom auf " \
+                        f"maximal {round(required_current, 2)} A."
+                required_current = self.check_cp_max_current(required_current, phases)
         else:
             required_current, msg = self.data.set.charging_ev_data.check_min_max_current(
                 required_current,
                 phases,
                 self.template.data.charging_type)
-            required_current = self.check_cp_min_max_current(required_current, phases)
+            required_current = self.check_cp_max_current(required_current, phases)
         if required_current != required_current_prev and msg is None:
             msg = ("Die Einstellungen in dem Ladepunkt-Profil beschränken den Strom auf "
                    f"maximal {round(required_current, 2)} A.")
@@ -615,6 +621,7 @@ class Chargepoint(ChargepointRfidMixin):
         return required_current
 
     def set_required_currents(self, required_current: float) -> None:
+        self.data.control_parameter.required_current = required_current
         control_parameter = self.data.control_parameter
         try:
             for i in range(0, control_parameter.phases):
@@ -694,13 +701,12 @@ class Chargepoint(ChargepointRfidMixin):
                     phases = self.set_phases(phases)
                     self._pub_connected_vehicle(charging_ev)
                     required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
-                    # Einhaltung des Minimal- und Maximalstroms prüfen
-                    required_current = self.check_min_max_current(
-                        required_current, self.data.control_parameter.phases)
-                    required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
                     self.set_chargemode_changed(submode)
                     self.set_submode_changed(submode)
-                    self.set_control_parameter(submode, required_current)
+                    self.set_control_parameter(submode)
+                    # Einhaltung des Minimal- und Maximalstroms prüfen
+                    required_current = self.check_min_max_current(required_current, self.data.control_parameter.phases)
+                    required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
                     self.set_required_currents(required_current)
                     self.check_phase_switch_completed()
 

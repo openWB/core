@@ -532,11 +532,12 @@ class SetData:
                 "/get/charging_power" in msg.topic or
                 "/get/charging_voltage" in msg.topic or
                 "/get/max_charge_power" in msg.topic or
-                "/get/max_discharge_power" in msg.topic or
                 "/get/imported" in msg.topic or
                 "/get/exported" in msg.topic or
                 "/get/soc_timestamp" in msg.topic):
             self._validate_value(msg, float, [(0, float("inf"))])
+        elif "/get/max_discharge_power" in msg.topic:
+            self._validate_value(msg, float, [(float("-inf"), 0)])
         elif "/get/power" in msg.topic:
             self._validate_value(msg, float)
         elif "/get/phases_in_use" in msg.topic:
