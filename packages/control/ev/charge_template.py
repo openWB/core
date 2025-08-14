@@ -421,30 +421,34 @@ class ChargeTemplate:
                              control_parameter_phases: int,
                              soc_request_interval_offset: int,
                              bidi_state: BidiState) -> SelectedPlan:
-        if bidi_state:
+        bidi = BidiState.BIDI_CAPABLE and plan.bidi
+        if bidi:
             duration, missing_amount = self._calculate_duration(
                 plan, soc, ev_template.data.battery_capacity,
-                used_amount, control_parameter_phases, charging_type, ev_template, bidi_state)
+                used_amount, control_parameter_phases, charging_type, ev_template, bidi)
             remaining_time = plan_end_time - duration
             phases = control_parameter_phases
         elif plan.phases_to_use == 0:
             if max_hw_phases == 1:
                 duration, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, 1, charging_type, ev_template, bidi_state)
+                    plan, soc, ev_template.data.battery_capacity,
+                    used_amount, 1, charging_type, ev_template, bidi)
                 remaining_time = plan_end_time - duration
                 phases = 1
             elif phase_switch_supported is False:
                 duration, missing_amount = self._calculate_duration(
                     plan, soc, ev_template.data.battery_capacity, used_amount, control_parameter_phases,
-                    charging_type, ev_template, bidi_state)
+                    charging_type, ev_template, bidi)
                 phases = control_parameter_phases
                 remaining_time = plan_end_time - duration
             else:
                 duration_3p, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, 3, charging_type, ev_template, bidi_state)
+                    plan, soc, ev_template.data.battery_capacity, used_amount, 3,
+                    charging_type, ev_template, bidi)
                 remaining_time_3p = plan_end_time - duration_3p
                 duration_1p, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, 1, charging_type, ev_template, bidi_state)
+                    plan, soc, ev_template.data.battery_capacity, used_amount, 1,
+                    charging_type, ev_template, bidi)
                 remaining_time_1p = plan_end_time - duration_1p
                 # Kurz vor dem nächsten Abfragen des SoC, wenn noch der alte SoC da ist, kann es sein, dass die Zeit
                 # für 1p nicht mehr reicht, weil die Regelung den neuen SoC noch nicht kennt.
@@ -461,7 +465,7 @@ class ChargeTemplate:
         elif plan.phases_to_use == 3 or plan.phases_to_use == 1:
             duration, missing_amount = self._calculate_duration(
                 plan, soc, ev_template.data.battery_capacity,
-                used_amount, plan.phases_to_use, charging_type, ev_template, bidi_state)
+                used_amount, plan.phases_to_use, charging_type, ev_template, bidi)
             remaining_time = plan_end_time - duration
             phases = plan.phases_to_use
 
@@ -476,7 +480,7 @@ class ChargeTemplate:
                             phases: int,
                             charging_type: str,
                             ev_template: EvTemplate,
-                            bidi_state: BidiState) -> Tuple[float, float]:
+                            bidi: bool) -> Tuple[float, float]:
 
         if plan.limit.selected == "soc":
             if soc is not None:
@@ -485,11 +489,8 @@ class ChargeTemplate:
                 raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren.")
         else:
             missing_amount = plan.limit.amount - used_amount
-        if bidi_state == BidiState.BIDI_CAPABLE:
+        if bidi:
             duration = missing_amount/plan.bidi_power * 3600
-            if phases == 0:
-                # nehme an, dass bei Bidi immer 3 Phasen geladen werden, bis die Phasenzahl ermittelt wurde
-                phases = 3
         else:
             current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
             current = max(current, ev_template.data.min_current if charging_type ==

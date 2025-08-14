@@ -12,6 +12,7 @@ from control.chargepoint.charging_type import ChargingType
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev_template import EvTemplate, EvTemplateData
 from control.general import General
+from control.text import BidiState
 from helpermodules import timecheck
 from helpermodules.abstract_plans import Limit, ScheduledChargingPlan, TimeChargingPlan
 
@@ -165,24 +166,24 @@ def test_calc_remaining_time(phases_to_use,
 
 
 @pytest.mark.parametrize(
-    "selected, phases, hw_bidi, expected_duration, expected_missing_amount",
+    "selected, phases, bidi, expected_duration, expected_missing_amount",
     [
         pytest.param("soc", 1, False, 10062.111801242236, 9000, id="soc, one phase"),
         pytest.param("amount", 2, False, 447.2049689440994, 800, id="amount, two phases"),
-        pytest.param("soc", 2, True, 32400, 9000, id="bidi"),
+        pytest.param("soc", 2, True, 3240.0, 9000, id="bidi"),
     ])
 def test_calculate_duration(selected: str,
                             phases: int,
-                            hw_bidi: bool,
+                            bidi: bool,
                             expected_duration: float,
                             expected_missing_amount: float):
     # setup
     ct = ChargeTemplate()
-    plan = ScheduledChargingPlan()
+    plan = ScheduledChargingPlan(bidi=bidi)
     plan.limit.selected = selected
     # execution
     duration, missing_amount = ct._calculate_duration(
-        plan, 60, 45000, 200, phases, ChargingType.AC.value, EvTemplate(), hw_bidi)
+        plan, 60, 45000, 200, phases, ChargingType.AC.value, EvTemplate(), bidi)
 
     # evaluation
     assert duration == expected_duration
@@ -225,7 +226,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
 
 
 @pytest.mark.parametrize(
-    "plan_data, soc, used_amount, selected, hw_bidi, expected",
+    "plan_data, soc, used_amount, selected, bidi, expected",
     [
         pytest.param(None, 0, 0, "none", False, (0, "stop",
                      ChargeTemplate.SCHEDULED_CHARGING_NO_DATE_PENDING, 3), id="no date pending"),
@@ -261,20 +262,21 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          soc: int,
                                          used_amount: float,
                                          selected: str,
-                                         hw_bidi: bool,
+                                         bidi: bool,
                                          expected: Tuple[float, str, str, int]):
     # setup
     ct = ChargeTemplate()
     plan = ScheduledChargingPlan(active=True, id=0)
     plan.limit.selected = selected
-    plan.bidi = hw_bidi
+    plan.bidi = bidi
     # json verwandelt Keys in strings
     ct.data.chargemode.scheduled_charging.plans = [plan]
     if plan_data:
         plan_data.plan = plan
 
     # execution
-    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6, 0, ChargingType.AC.value, EvTemplate())
+    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6,
+                                             0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE)
 
     # evaluation
     assert ret == expected
@@ -285,7 +287,8 @@ def test_scheduled_charging_calc_current_no_plans():
     ct = ChargeTemplate()
 
     # execution
-    ret = ct.scheduled_charging_calc_current(None, 63, 5, 3, 6, 0, ChargingType.AC.value, EvTemplate())
+    ret = ct.scheduled_charging_calc_current(
+        None, 63, 5, 3, 6, 0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE)
 
     # evaluation
     assert ret == (0, "stop", ChargeTemplate.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, 3)
@@ -315,7 +318,8 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
 
     # execution
     ret = ct.scheduled_charging_calc_current(SelectedPlan(
-        plan=plan, remaining_time=301, phases=3, duration=3600), 79, 0, 3, 6, 0, ChargingType.AC.value, EvTemplate())
+        plan=plan, remaining_time=301, phases=3, duration=3600),
+        79, 0, 3, 6, 0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE)
 
     # evaluation
     assert ret == expected
