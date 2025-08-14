@@ -55,7 +55,7 @@
       </q-td>
     </template>
     <!-- mobile view table body slots -->
-    <!-- mobile view chargepoint name and vehicle name displayed in one field -->
+    <!-- mobile view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
         {{ slotProps.row.name }}<br />
@@ -63,7 +63,7 @@
       </q-td>
     </template>
 
-    <!-- mobile view chargepoint chargemode, plug status and time charging displayed in one field -->
+    <!-- mobile view charge point charge mode, plug status and time charging displayed in one field -->
     <template #body-cell-modePluggedTimeCharging="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
         <div class="items-center">
@@ -110,18 +110,10 @@
         v-if="selectedChargePointId !== null"
         :charge-point-id="selectedChargePointId"
       >
-        <template #card-footer>
-          <div class="card-footer">
-            <q-btn
-              color="primary"
-              flat
-              no-caps
-              v-close-popup
-              class="close-button"
-              size="md"
-              >Schließen</q-btn
-            >
-          </div>
+        <template #card-actions>
+          <q-btn color="primary" flat no-caps v-close-popup size="md">
+            Schließen
+          </q-btn>
         </template>
       </ChargePointCard>
     </div>
@@ -237,22 +229,3 @@ const onRowClick = (row: ChargePointRow) => {
   modalChargePointCardVisible.value = true;
 };
 </script>
-
-<style scoped>
-.dialog-content {
-  width: auto;
-  max-width: 24em;
-}
-
-.close-button {
-  position: absolute;
-  bottom: 0.4em;
-  right: 0.4em;
-  z-index: 1;
-  background: transparent;
-}
-
-.card-footer {
-  height: 1.9em;
-}
-</style>
