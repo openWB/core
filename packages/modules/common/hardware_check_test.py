@@ -9,7 +9,8 @@ from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
     EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_IMPLAUSIBLE_VALUE, METER_NO_SERIAL_NUMBER,
-    METER_PROBLEM, OPEN_TICKET, USB_ADAPTER_BROKEN, SeriesHardwareCheckMixin, _check_meter_values)
+    METER_PROBLEM, METER_VOLTAGE_TOO_HIGH, METER_VOLTAGE_TOO_LOW, OPEN_TICKET, USB_ADAPTER_BROKEN,
+    SeriesHardwareCheckMixin, _check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
@@ -97,6 +98,8 @@ def test_hardware_check_succeeds(monkeypatch):
      pytest.param([0, 230, 230], 0, METER_BROKEN_VOLTAGES.format([0, 230, 230]), id="dreiphasig, L1 defekt"),
      pytest.param([230, 0, 230], 0, METER_BROKEN_VOLTAGES.format([230, 0, 230]), id="dreiphasig, L2 defekt"),
      pytest.param([230]*3, 100, METER_PROBLEM, id="Phantom-Leistung"),
+     pytest.param([261, 230, 230], 0, METER_VOLTAGE_TOO_HIGH.format([261, 230, 230]), id="Spannung zu hoch"),
+     pytest.param([230, 230, 199], 0, METER_VOLTAGE_TOO_LOW.format([230, 230, 199]), id="Spannung zu niedrig"),
      ]
 )
 def test_check_meter_values_voltages(voltages, power, expected_msg, monkeypatch):
