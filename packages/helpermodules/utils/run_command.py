@@ -31,7 +31,7 @@ def run_command(command, process_exception: bool = False):
     except subprocess.CalledProcessError as e:
         if process_exception:
             if e.output is not None:
-                log.exception(e.stdout)
+                log.exception(e.output)
             if e.stderr is not None:
                 log.exception(e.stderr)
         else:
