@@ -25,7 +25,10 @@
       />
     </q-card-section>
     <q-card-section>
-      <ChargePointMessage fault-message :charge-point-id="props.chargePointId" />
+      <ChargePointMessage
+        fault-message
+        :charge-point-id="props.chargePointId"
+      />
       <ChargePointMessage :charge-point-id="props.chargePointId" />
     </q-card-section>
     <q-card-section

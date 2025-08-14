@@ -111,14 +111,9 @@
         :charge-point-id="selectedChargePointId"
       >
         <template #card-actions>
-          <q-btn
-            color="primary"
-            flat
-            no-caps
-            v-close-popup
-            size="md"
-            >Schließen</q-btn
-          >
+          <q-btn color="primary" flat no-caps v-close-popup size="md">
+            Schließen
+          </q-btn>
         </template>
       </ChargePointCard>
     </div>

@@ -18,8 +18,8 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { computed, ref } from 'vue';
 
 const props = defineProps<{
-  chargePointId: number
-  faultMessage?: boolean
+  chargePointId: number;
+  faultMessage?: boolean;
 }>();
 
 const mqttStore = useMqttStore();
@@ -36,7 +36,7 @@ const showMessage = computed(() => {
 const state = computed(() =>
   props.faultMessage
     ? mqttStore.chargePointFaultState(props.chargePointId)
-    : -1
+    : -1,
 );
 
 const message = computed(() =>

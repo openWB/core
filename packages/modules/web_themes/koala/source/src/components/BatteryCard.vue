@@ -5,7 +5,7 @@
     :class="{ 'battery-sum': props.batteryId === -1 }"
   >
     <q-card-section class="row items-center justify-between">
-      <div class="text-h6 text-bold  ellipsis" :title="cardTitle">
+      <div class="text-h6 text-bold ellipsis" :title="cardTitle">
         {{ cardTitle }}
       </div>
       <q-icon
@@ -63,11 +63,7 @@
     </q-card-section>
     <q-separator inset class="q-mt-sm" />
     <q-card-section>
-      <SliderDouble
-        :current-value="soc"
-        :readonly="true"
-        limit-mode="none"
-      />
+      <SliderDouble :current-value="soc" :readonly="true" limit-mode="none" />
     </q-card-section>
   </q-card>
   <BatterySettingsDialog :battery-id="props.batteryId" ref="dialog" />

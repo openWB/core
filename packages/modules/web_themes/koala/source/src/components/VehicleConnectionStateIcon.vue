@@ -12,7 +12,8 @@
       v-for="(chargePoint, index) in vehicleState"
       :key="index"
       :icon="chargePoint.plugged ? 'power' : 'power_off'"
-      :class="[{'q-ml-auto': index === 0, 'q-ml-none': index !== 0}, 'ellipsis']"
+      class="ellipsis"
+      :class="[{ 'q-ml-auto': index === 0, 'q-ml-none': index !== 0 }]"
       :color="
         chargePoint.plugged
           ? chargePoint.charging
