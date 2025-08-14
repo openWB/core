@@ -1,38 +1,37 @@
 <template>
-  <div class="col">
-    <div class="text-subtitle2">Status:</div>
+  <div class="row items-center">
+    <div class="text-subtitle2 q-mr-sm">Status:</div>
     <q-chip
       v-if="vehicleState.length < 1"
       label="Nicht zugeordnet"
       color="primary"
+      class="q-ml-auto"
     >
     </q-chip>
-    <div class="row wrap">
-      <q-chip
-        v-for="(chargePoint, index) in vehicleState"
-        :key="index"
-        :icon="chargePoint.plugged ? 'power' : 'power_off'"
-        class="ellipsis"
-        :color="
+    <q-chip
+      v-for="(chargePoint, index) in vehicleState"
+      :key="index"
+      :icon="chargePoint.plugged ? 'power' : 'power_off'"
+      :class="[{'q-ml-auto': index === 0, 'q-ml-none': index !== 0}, 'ellipsis']"
+      :color="
+        chargePoint.plugged
+          ? chargePoint.charging
+            ? 'positive'
+            : 'warning'
+          : 'negative'
+      "
+      :label="chargePoint.name"
+    >
+      <q-tooltip>
+        {{
           chargePoint.plugged
             ? chargePoint.charging
-              ? 'positive'
-              : 'warning'
-            : 'negative'
-        "
-        :label="chargePoint.name"
-      >
-        <q-tooltip>
-          {{
-            chargePoint.plugged
-              ? chargePoint.charging
-                ? 'Lädt'
-                : 'Angesteckt, lädt nicht'
-              : 'Nicht angesteckt'
-          }}
-        </q-tooltip>
-      </q-chip>
-    </div>
+              ? 'Lädt'
+              : 'Angesteckt, lädt nicht'
+            : 'Nicht angesteckt'
+        }}
+      </q-tooltip>
+    </q-chip>
   </div>
 </template>
 
