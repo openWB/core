@@ -963,17 +963,17 @@ class ErrorHandlingContext:
         return None
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        if isinstance(exception, Exception):
-            pub_user_message(self.payload, self.connection_id,
-                             f'Es ist ein interner Fehler aufgetreten: {exception}', MessageType.ERROR)
-            log.error({traceback.format_exc()})
-            return True
-        elif isinstance(exception, subprocess.CalledProcessError):
+        if isinstance(exception, subprocess.CalledProcessError):
             pub_user_message(self.payload, self.connection_id,
                              (f'Fehler-Status: {exception.returncode}<br />Meldung: '
                               f'{exception.stderr if exception.stderr else ""} '
                               f'{exception.output if exception.output else ""}'),
                              MessageType.ERROR)
+            return True
+        elif isinstance(exception, Exception):
+            pub_user_message(self.payload, self.connection_id,
+                             f'Es ist ein interner Fehler aufgetreten: {exception}', MessageType.ERROR)
+            log.error({traceback.format_exc()})
             return True
         else:
             return False
