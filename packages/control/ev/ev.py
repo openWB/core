@@ -162,14 +162,14 @@ class Ev:
                     required_current, submode, tmp_message, phases = charge_template.scheduled_charging(
                         self.data.get.soc,
                         self.ev_template,
-                        control_parameter.phases,
                         imported_since_plugged,
                         max_phases_hw,
                         phase_switch_supported,
                         charging_type,
                         chargemode_switch_timestamp,
                         control_parameter,
-                        soc_request_interval_offset)
+                        soc_request_interval_offset,
+                        bidi != BidiState.BIDI_CAPABLE)
                     message = f"{tmp_message or ''}".strip()
 
                 # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
@@ -199,25 +199,6 @@ class Ev:
                     elif charge_template.data.chargemode.selected == "eco_charging":
                         required_current, submode, tmp_message, phases = charge_template.eco_charging(
                             self.data.get.soc, control_parameter, charging_type, imported_since_plugged, max_phases_hw)
-                    elif charge_template.data.chargemode.selected == "bidi_charging":
-                        if self.soc_module is None:
-                            raise Exception("Für den Lademodis Bidi ist zwingend ein SoC-Modul erforderlich. Soll der "
-                                            "SoC ausschließlich aus dem Fahrzeug ausgelesen werden, bitte auf "
-                                            "manuellen SoC mit Auslesung aus dem Fahrzeug umstellen.")
-                        required_current, submode, tmp_message, phases = charge_template.bidi_charging(
-                            self.data.get.soc,
-                            self.ev_template,
-                            control_parameter.phases,
-                            imported_since_plugged,
-                            max_phases_hw,
-                            phase_switch_supported,
-                            charging_type,
-                            chargemode_switch_timestamp,
-                            control_parameter,
-                            imported_since_plugged,
-                            self.soc_module.general_config.request_interval_charging,
-                            bidi,
-                            phases_in_use)
                     else:
                         tmp_message = None
                     message = f"{message or ''} {tmp_message or ''}".strip()

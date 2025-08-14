@@ -27,9 +27,14 @@ class Bidi:
                                         230 for i in range(0, cp.data.get.phases_in_use)]
                     missing_currents += [0] * (3 - len(missing_currents))
                     if zero_point_adjustment > 0:
-                        for index in range(0, 3):
-                            missing_currents[index] = min(cp.data.control_parameter.required_current,
-                                                          missing_currents[index])
+                        if cp.data.set.charging_ev_data.charge_template.bidi_charging_allowed(
+                                cp.data.control_parameter.current_plan, cp.data.set.charging_ev_data.data.get.soc):
+                            for index in range(0, 3):
+                                missing_currents[index] = min(cp.data.control_parameter.required_current,
+                                                              missing_currents[index])
+                        else:
+                            log.info(f"LP{cp.num}: Nur bidirektional entladen erlaubt, da SoC-Limit erreicht.")
+                            missing_currents = [0, 0, 0]
                     else:
                         for index in range(0, 3):
                             missing_currents[index] = cp.check_min_max_current(missing_currents[index],
