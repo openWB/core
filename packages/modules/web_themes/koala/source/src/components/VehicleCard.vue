@@ -1,9 +1,11 @@
 <template>
   <q-card ref="cardRef" class="full-height card-width">
-    <q-card-section class="text-h6 text-bold ellipsis" :title="vehicle?.name">
-      {{ vehicle?.name }}
+    <q-card-section class="row">
+      <div class="text-h6 text-bold ellipsis" :title="vehicle?.name">
+        {{ vehicle?.name }}
+      </div>
     </q-card-section>
-    <q-separator inset />
+    <q-separator class="q-mt-sm" />
     <q-card-section class="row q-mt-sm">
       <div class="col">
         <div class="text-subtitle2">Hersteller:</div>
@@ -18,20 +20,23 @@
     <q-card-section>
       <VehicleConnectionStateIcon :vehicle-id="vehicleId" class="q-mt-sm" />
     </q-card-section>
-    <q-separator inset class="q-mt-sm" />
-    <q-card-section>
-      <SliderDouble
-        v-if="vehicleSocType"
-        class="q-mt-sm"
-        :current-value="vehicleSocValue"
-        :readonly="true"
-        :limit-mode="'none'"
-        :vehicle-soc-type="vehicleSocType"
-        :on-edit-soc="openSocDialog"
-        :on-refresh-soc="refreshSoc"
-      />
-      <slot name="card-footer"></slot>
-    </q-card-section>
+    <div v-if="vehicleSocType">
+      <q-separator inset class="q-mt-sm" />
+      <q-card-section>
+        <SliderDouble
+          v-if="vehicleSocType"
+          :current-value="vehicleSocValue"
+          :readonly="true"
+          :limit-mode="'none'"
+          :vehicle-soc-type="vehicleSocType"
+          :on-edit-soc="openSocDialog"
+          :on-refresh-soc="refreshSoc"
+        />
+      </q-card-section>
+    </div>
+    <q-card-actions v-if="$slots['card-actions']" align="right">
+      <slot name="card-actions"></slot>
+    </q-card-actions>
     <!-- //////////////////////  modal soc dialog  //////////////////// -->
     <ManualSocDialog
       :vehicleId="props.vehicleId"

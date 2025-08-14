@@ -1,9 +1,11 @@
 <template>
   <q-card ref="cardRef" class="full-height card-width">
-    <q-card-section class="text-h6 text-bold ellipsis" :title="name">
-      {{ name }}
+    <q-card-section class="row">
+      <div class="text-h6 text-bold ellipsis" :title="name">
+        {{ name }}
+      </div>
     </q-card-section>
-    <q-separator inset />
+    <q-separator class="q-mt-sm" />
     <q-card-section class="row flex items-center justify-between">
       <div>
         <ChargePointStateIcon :charge-point-id="Number(props.chargePointId)" />
@@ -23,8 +25,8 @@
       />
     </q-card-section>
     <q-card-section>
-      <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
-      <ChargePointStateMessage :charge-point-id="props.chargePointId" />
+      <ChargePointMessage fault-message :charge-point-id="props.chargePointId" />
+      <ChargePointMessage :charge-point-id="props.chargePointId" />
     </q-card-section>
     <q-card-section
       class="full-width row no-wrap justify-between content-start items-center q-mt-sm"
@@ -71,8 +73,10 @@
         :on-edit-soc="openSocDialog"
         :on-refresh-soc="refreshSoc"
       />
-      <slot name="card-footer"></slot>
     </q-card-section>
+    <q-card-actions v-if="$slots['card-actions']" align="right">
+      <slot name="card-actions"></slot>
+    </q-card-actions>
     <!-- //////////////////////  modal settings dialog   //////////////////// -->
     <ChargePointSettings
       :chargePointId="props.chargePointId"
@@ -94,8 +98,7 @@ import ChargePointLock from './ChargePointLock.vue';
 import ChargePointStateIcon from './ChargePointStateIcon.vue';
 import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
-import ChargePointStateMessage from './ChargePointStateMessage.vue';
-import ChargePointFaultMessage from './ChargePointFaultMessage.vue';
+import ChargePointMessage from './ChargePointMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
 import ManualSocDialog from './ManualSocDialog.vue';

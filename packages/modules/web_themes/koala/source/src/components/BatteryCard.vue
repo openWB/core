@@ -4,22 +4,19 @@
     class="full-height card-width"
     :class="{ 'battery-sum': props.batteryId === -1 }"
   >
-    <q-card-section
-      class="text-h6 items-center text-bold justify-between ellipsis"
-      :title="cardTitle"
-    >
-      {{ cardTitle }}
-    </q-card-section>
-    <q-separator inset />
-    <q-card-section class="row flex justify-end">
+    <q-card-section class="row items-center justify-between">
+      <div class="text-h6 text-bold  ellipsis" :title="cardTitle">
+        {{ cardTitle }}
+      </div>
       <q-icon
-        class="cursor-pointer q-mt-sm"
+        class="cursor-pointer q-ml-auto"
         v-if="showSettings"
         name="settings"
         size="sm"
         @click="dialog?.open()"
       />
     </q-card-section>
+    <q-separator class="q-mt-sm" />
     <q-card-section
       class="row q-mt-sm text-subtitle2 justify-between full-width"
     >
@@ -28,23 +25,27 @@
         {{ power }}
       </div>
     </q-card-section>
-    <q-separator v-if="showSettings" inset class="q-mt-sm" />
-    <q-card-section
-      v-if="showSettings"
-      class="row q-mt-md justify-between text-subtitle2"
-    >
-      <div>Laden mit Überschuss:</div>
-      <div class="q-ml-sm row items-center">
-        <q-icon
-          :name="batteryMode.icon"
-          size="sm"
-          class="q-mr-sm"
-          color="primary"
-        />
-        {{ batteryMode.label }}
-      </div>
-    </q-card-section>
-    <q-separator inset class="q-mt-sm" />
+    <div v-if="showSettings">
+      <q-separator inset class="q-mt-sm" />
+      <q-card-section
+        v-if="showSettings"
+        class="row q-mt-md justify-between text-subtitle2"
+      >
+        <div>Laden mit Überschuss:</div>
+        <div class="q-ml-sm row items-center">
+          <q-icon
+            :name="batteryMode.icon"
+            size="sm"
+            class="q-mr-sm"
+            color="primary"
+          />
+          <div>
+            {{ batteryMode.label }}
+          </div>
+        </div>
+      </q-card-section>
+    </div>
+    <q-separator inset />
     <q-card-section>
       <div class="text-subtitle1 text-weight-bold q-mt-sm">Heute:</div>
       <div class="row q-mt-sm text-subtitle2 justify-between full-width">
@@ -63,7 +64,6 @@
     <q-separator inset class="q-mt-sm" />
     <q-card-section>
       <SliderDouble
-        class="q-mt-sm"
         :current-value="soc"
         :readonly="true"
         limit-mode="none"

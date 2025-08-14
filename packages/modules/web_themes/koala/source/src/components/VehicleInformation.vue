@@ -43,18 +43,15 @@
         v-if="selectedVehicleId !== null"
         :vehicle-id="selectedVehicleId"
       >
-        <template #card-footer>
-          <div class="card-footer">
-            <q-btn
-              color="primary"
-              flat
-              no-caps
-              v-close-popup
-              class="close-button"
-              size="md"
-              >Schließen</q-btn
-            >
-          </div>
+        <template #card-actions>
+          <q-btn
+            color="primary"
+            flat
+            no-caps
+            v-close-popup
+            size="md"
+            >Schließen</q-btn
+          >
         </template>
       </VehicleCard>
     </div>
@@ -130,22 +127,3 @@ const onRowClick = (row: VehicleRow) => {
   modalChargeVehicleCardVisible.value = true;
 };
 </script>
-
-<style scoped>
-.dialog-content {
-  width: auto;
-  max-width: 24em;
-}
-
-.close-button {
-  position: absolute;
-  bottom: 0.4em;
-  right: 0.4em;
-  z-index: 1;
-  background: transparent;
-}
-
-.card-footer {
-  height: 1.9em;
-}
-</style>
