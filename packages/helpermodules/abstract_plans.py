@@ -77,6 +77,8 @@ class TimeframePlan(PlanBase):
 
 @dataclass
 class ScheduledChargingPlan(PlanBase):
+    bidi: bool = False
+    bidi_power: int = 10000
     current: int = 14
     dc_current: float = 145
     et_active: bool = False
