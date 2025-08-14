@@ -73,17 +73,18 @@
       />
       <slot name="card-footer"></slot>
     </q-card-section>
+    <!-- //////////////////////  modal settings dialog   //////////////////// -->
+    <ChargePointSettings
+      :chargePointId="props.chargePointId"
+      v-model="settingsVisible"
+    />
+    <!-- //////////////////////  modal soc dialog   //////////////////// -->
+    <ManualSocDialog
+      :vehicleId="vehicleId"
+      :chargePointId="props.chargePointId"
+      v-model:socDialogVisible="socInputVisible"
+    />
   </q-card>
-  <!-- //////////////////////  Settings popup dialog   //////////////////// -->
-  <ChargePointSettings
-    :chargePointId="props.chargePointId"
-    v-model="settingsVisible"
-  />
-  <ManualSocDialog
-    :vehicleId="vehicleId"
-    :chargePointId="props.chargePointId"
-    v-model:socDialogVisible="socInputVisible"
-  />
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue';

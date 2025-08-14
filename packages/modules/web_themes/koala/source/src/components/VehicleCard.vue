@@ -32,14 +32,12 @@
       />
       <slot name="card-footer"></slot>
     </q-card-section>
+    <!-- //////////////////////  modal soc dialog  //////////////////// -->
+    <ManualSocDialog
+      :vehicleId="props.vehicleId"
+      v-model:socDialogVisible="socInputVisible"
+    />
   </q-card>
-
-  <!-- //////////////////////  input dialog Manual SoC   //////////////////// -->
-
-  <ManualSocDialog
-    :vehicleId="props.vehicleId"
-    v-model:socDialogVisible="socInputVisible"
-  />
 </template>
 
 <script setup lang="ts">
