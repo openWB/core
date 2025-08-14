@@ -2411,4 +2411,4 @@ class UpdateConfig:
                         plan.update({"bidi": False, "bidi_power": 10000})
                 return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        # self.__update_topic("openWB/system/datastore_version", 92)
+        self.__update_topic("openWB/system/datastore_version", 92)

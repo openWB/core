@@ -169,7 +169,7 @@ class Ev:
                         chargemode_switch_timestamp,
                         control_parameter,
                         soc_request_interval_offset,
-                        bidi != BidiState.BIDI_CAPABLE)
+                        bidi)
                     message = f"{tmp_message or ''}".strip()
 
                 # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
