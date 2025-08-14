@@ -969,9 +969,10 @@ class ErrorHandlingContext:
             log.error({traceback.format_exc()})
             return True
         elif isinstance(exception, subprocess.CalledProcessError):
-            log.debug(exception.stdout)
             pub_user_message(self.payload, self.connection_id,
-                             f'Fehler-Status: {exception.returncode}<br />Meldung: {exception.stderr}',
+                             (f'Fehler-Status: {exception.returncode}<br />Meldung: '
+                              f'{exception.stderr if exception.stderr else ""} '
+                              f'{exception.output if exception.output else ""}'),
                              MessageType.ERROR)
             return True
         else:

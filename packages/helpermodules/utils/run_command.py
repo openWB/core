@@ -30,7 +30,9 @@ def run_command(command, process_exception: bool = False):
         return result.stdout
     except subprocess.CalledProcessError as e:
         if process_exception:
-            log.debug(e.stdout)
-            log.exception(e.stderr)
+            if e.output is not None:
+                log.exception(e.stdout)
+            if e.stderr is not None:
+                log.exception(e.stderr)
         else:
             raise e
