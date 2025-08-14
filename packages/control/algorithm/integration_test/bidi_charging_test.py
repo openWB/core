@@ -1,4 +1,6 @@
 import pytest
+from unittest.mock import Mock
+
 from control import data
 from control.algorithm.algorithm import Algorithm
 from control.chargemode import Chargemode
@@ -16,7 +18,7 @@ def bidi_cps():
             control_parameter.phases = 3
             control_parameter.required_currents = [16]*3
             control_parameter.required_current = 16
-            control_parameter.chargemode = Chargemode.BIDI_CHARGING
+            control_parameter.chargemode = Chargemode.SCHEDULED_CHARGING
             control_parameter.submode = Chargemode.BIDI_CHARGING
     return _setup
 
@@ -28,6 +30,9 @@ def test_cp3_bidi(grid_power: float, expected_current: float, bidi_cps, all_cp_n
     # setup
     bidi_cps("cp3")
     data.data.counter_data["counter0"].data.get.power = grid_power
+    return_mock = Mock(reurn_value=True)
+    monkeypatch.setattr(
+        data.data.cp_data["cp3"].data.set.charging_ev_data.charge_template, "bidi_charging_allowed", return_mock)
 
     # execution
     Algorithm().calc_current()

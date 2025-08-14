@@ -1,4 +1,3 @@
-import copy
 from dataclasses import asdict, dataclass, field
 import datetime
 import logging
@@ -10,9 +9,8 @@ from control.chargepoint.chargepoint_state import CHARGING_STATES
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
-from control.text import BidiState
 from dataclass_utils.factories import empty_list_factory
-from helpermodules.abstract_plans import Limit, ScheduledLimit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules import timecheck
 log = logging.getLogger(__name__)
 
@@ -42,16 +40,6 @@ class TimeCharging:
 
 def scheduled_charging_plan_factory() -> ScheduledChargingPlan:
     return ScheduledChargingPlan()
-
-
-def bidi_charging_plan_factory() -> ScheduledChargingPlan:
-    return ScheduledChargingPlan(name="Bidi-Plan", limit=ScheduledLimit(selected="soc"))
-
-
-@dataclass
-class BidiCharging:
-    plan: ScheduledChargingPlan = field(default_factory=bidi_charging_plan_factory)
-    power: int = 9000
 
 
 @dataclass
@@ -100,14 +88,9 @@ def instant_charging_factory() -> InstantCharging:
     return InstantCharging()
 
 
-def bidi_charging_factory() -> BidiCharging:
-    return BidiCharging()
-
-
 @dataclass
 class Chargemode:
     selected: str = "instant_charging"
-    bidi_charging: BidiCharging = field(default_factory=bidi_charging_factory)
     eco_charging: EcoCharging = field(default_factory=eco_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)

@@ -7,6 +7,8 @@ import operator
 from typing import List, Optional, Tuple
 
 from control import data
+from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
+from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.ev.ev import Ev
@@ -523,5 +525,9 @@ def set_raw_surplus_power_left() -> None:
     beim Bidi-Laden den Regelmodus rausrechnen, da sonst zum Regelmodus und nicht zum Nullpunkt geregelt wird.
     """
     grid_counter = data.data.counter_all_data.get_evu_counter()
-    grid_counter.data.set.surplus_power_left = grid_counter.data.get.power * -1
+    bidi_power = 0
+    chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
+    for cp in chargepoint_by_chargemodes:
+        bidi_power += cp.data.get.power
+    grid_counter.data.set.surplus_power_left = grid_counter.data.get.power * -1 + bidi_power
     log.debug(f"Nullpunktanpassung {grid_counter.data.set.surplus_power_left}W")
