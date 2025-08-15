@@ -166,7 +166,7 @@ def test_calc_remaining_time(phases_to_use,
 
 
 @pytest.mark.parametrize(
-    "selected, phases, bidi, expected_duration, expected_missing_amount",
+    "selected, phases, bidi_charging_enabled, expected_duration, expected_missing_amount",
     [
         pytest.param("soc", 1, False, 10062.111801242236, 9000, id="soc, one phase"),
         pytest.param("amount", 2, False, 447.2049689440994, 800, id="amount, two phases"),
@@ -174,16 +174,16 @@ def test_calc_remaining_time(phases_to_use,
     ])
 def test_calculate_duration(selected: str,
                             phases: int,
-                            bidi: bool,
+                            bidi_charging_enabled: bool,
                             expected_duration: float,
                             expected_missing_amount: float):
     # setup
     ct = ChargeTemplate()
-    plan = ScheduledChargingPlan(bidi=bidi)
+    plan = ScheduledChargingPlan(bidi_charging_enabled=bidi_charging_enabled)
     plan.limit.selected = selected
     # execution
     duration, missing_amount = ct._calculate_duration(
-        plan, 60, 45000, 200, phases, ChargingType.AC.value, EvTemplate(), bidi)
+        plan, 60, 45000, 200, phases, ChargingType.AC.value, EvTemplate(), bidi_charging_enabled)
 
     # evaluation
     assert duration == expected_duration
@@ -226,7 +226,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
 
 
 @pytest.mark.parametrize(
-    "plan_data, soc, used_amount, selected, bidi, expected",
+    "plan_data, soc, used_amount, selected, bidi_charging_enabled, expected",
     [
         pytest.param(None, 0, 0, "none", False, (0, "stop",
                      ChargeTemplate.SCHEDULED_CHARGING_NO_DATE_PENDING, 3), id="no date pending"),
@@ -262,13 +262,13 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          soc: int,
                                          used_amount: float,
                                          selected: str,
-                                         bidi: bool,
+                                         bidi_charging_enabled: bool,
                                          expected: Tuple[float, str, str, int]):
     # setup
     ct = ChargeTemplate()
     plan = ScheduledChargingPlan(active=True, id=0)
     plan.limit.selected = selected
-    plan.bidi = bidi
+    plan.bidi_charging_enabled = bidi_charging_enabled
     # json verwandelt Keys in strings
     ct.data.chargemode.scheduled_charging.plans = [plan]
     if plan_data:

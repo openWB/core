@@ -421,7 +421,7 @@ class ChargeTemplate:
                              control_parameter_phases: int,
                              soc_request_interval_offset: int,
                              bidi_state: BidiState) -> SelectedPlan:
-        bidi = BidiState.BIDI_CAPABLE and plan.bidi
+        bidi = BidiState.BIDI_CAPABLE and plan.bidi_charging_enabled
         if bidi:
             duration, missing_amount = self._calculate_duration(
                 plan, soc, ev_template.data.battery_capacity,
@@ -553,14 +553,14 @@ class ChargeTemplate:
         if limit.selected == "soc" and soc >= limit.soc_limit and soc >= limit.soc_scheduled:
             message = self.SCHEDULED_CHARGING_REACHED_LIMIT_SOC
         elif limit.selected == "soc" and limit.soc_scheduled <= soc < limit.soc_limit:
-            if plan.bidi and bidi_state == BidiState.BIDI_CAPABLE:
+            if plan.bidi_charging_enabled and bidi_state == BidiState.BIDI_CAPABLE:
                 message = self.SCHEDULED_CHARGING_BIDI
                 current = min_current
                 submode = "bidi_charging"
                 phases = control_parameter_phases
             else:
                 message = self.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC
-                if plan.bidi and bidi_state != BidiState.BIDI_CAPABLE:
+                if plan.bidi_charging_enabled and bidi_state != BidiState.BIDI_CAPABLE:
                     message += bidi_state.value
                 current = min_current
                 submode = "pv_charging"

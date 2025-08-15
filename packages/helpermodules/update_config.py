@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 92
+    DATASTORE_VERSION = 93
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2412,3 +2412,16 @@ class UpdateConfig:
                 return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 92)
+
+    def upgrade_datastore_92(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
+                    if "bidi" in plan:
+                        bidi_charging_enabled = plan["bidi"]
+                        plan.pop("bidi")
+                        plan.update({"bidi_charging_enabled": bidi_charging_enabled})
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 93)
