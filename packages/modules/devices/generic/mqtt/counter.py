@@ -30,8 +30,8 @@ class MqttCounter(AbstractCounter):
             return received_topics.get(f"{topic_prefix}{value}", get_default(CounterState, value))
         # [] für erforderliche Topics, .get() für optionale Topics
         topic_prefix = f"openWB/mqtt/counter/{self.component_config.id}/get/"
-        currents = received_topics[f"{topic_prefix}currents"]
-        power = parse_received_topics("power")
+        currents = parse_received_topics("currents")
+        power = received_topics[f"{topic_prefix}power"]
         frequency = parse_received_topics("frequency")
         power_factors = parse_received_topics("power_factors")
         powers = parse_received_topics("powers")
