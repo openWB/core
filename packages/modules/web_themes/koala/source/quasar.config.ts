@@ -3,9 +3,9 @@
 // Configuration for your app
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
 
-import { configure } from 'quasar/wrappers';
+import { defineConfig } from '#q-app/wrappers';
 
-export default configure((/* ctx */) => {
+export default defineConfig((/* ctx */) => {
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -206,11 +206,11 @@ export default configure((/* ctx */) => {
     },
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-browser-extensions/configuring-bex
-    bex: {
-      // extendBexScriptsConf (esbuildConf) {},
-      // extendBexManifestJson (json) {},
+    // bex: {
+    //   // extendBexScriptsConf (esbuildConf) {},
+    //   // extendBexManifestJson (json) {},
 
-      contentScripts: ['my-content-script'],
-    },
+    //   contentScripts: ['my-content-script'],
+    // },
   };
 });
