@@ -25,6 +25,7 @@ def sample_chargepoint_state():
         rfid_timestamp=1700839714,
         vehicle_id="98:ED:5C:B4:EE:8D",
         evse_current=6,
+        evse_signaling="fake highlevel + basic iec61851",
         serial_number="823950"
     )
 
@@ -65,6 +66,7 @@ def sample_chargepoint_extended():
         rfid=None,
         frequency=50.2,
         evse_current=6,
+        evse_signaling="unclear\n",
         serial_number="493826"
     )
 

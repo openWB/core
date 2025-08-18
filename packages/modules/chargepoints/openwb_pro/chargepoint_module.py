@@ -17,6 +17,13 @@ from modules.internal_chargepoint_handler.internal_chargepoint_handler_config im
 log = logging.getLogger(__name__)
 
 
+class EvseSignaling:
+    HLC = "HLC"
+    ISO15118 = "ISO15118"
+    FAKE_HIGHLEVEL = "fake_highlevel"
+    PWM = "PWM"
+
+
 class ChargepointModule(AbstractChargepoint):
     WRONG_CHARGE_STATE = "Lade-Status ist nicht aktiv, aber Strom fließt."
     WRONG_PLUG_STATE = "Ladepunkt ist nicht angesteckt, aber es wird geladen."
@@ -77,7 +84,8 @@ class ChargepointModule(AbstractChargepoint):
                 phases_in_use=json_rsp["phases_in_use"],
                 vehicle_id=json_rsp["vehicle_id"],
                 evse_current=json_rsp["offered_current"],
-                serial_number=json_rsp["serial"]
+                serial_number=json_rsp["serial"],
+                evse_signaling=json_rsp["evse_signaling"],
             )
 
             if json_rsp.get("voltages"):
@@ -97,6 +105,10 @@ class ChargepointModule(AbstractChargepoint):
                 chargepoint_state.rfid = json_rsp["rfid_tag"]
             if json_rsp.get("rfid_timestamp"):
                 chargepoint_state.rfid_timestamp = json_rsp["rfid_timestamp"]
+            if json_rsp.get("max_discharge_power"):
+                chargepoint_state.max_discharge_power = json_rsp["max_discharge_power"]
+            if json_rsp.get("max_charge_power"):
+                chargepoint_state.max_charge_power = json_rsp["max_charge_power"]
 
             self.validate_values(chargepoint_state)
             self.client_error_context.reset_error_counter()

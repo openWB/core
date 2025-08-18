@@ -4,10 +4,16 @@
     :maximized="$q.screen.width < 385"
     :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
   >
-    <q-card style="min-width: 24em">
+    <q-card>
       <q-card-section>
-        <div class="text-h6">{{ cardTitle }}</div>
-        <div class="text-subtitle2 q-mt-sm">Laden mit Überschuss Modus:</div>
+        <div class="row">
+          <div class="text-h6 q-pr-sm">Einstellungen:</div>
+          <div class="text-h6 ellipsis" :title="name">{{ name }}</div>
+        </div>
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <div class="text-subtitle2">Laden mit Überschuss Modus:</div>
         <BatteryModeButtons />
       </q-card-section>
       <q-card-actions align="right">
@@ -32,11 +38,11 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-const cardTitle = computed(() => {
-  if (props.batteryId === undefined) {
-    return 'Übergreifende Einstellungen';
+const name = computed(() => {
+  if (props.batteryId === undefined || props.batteryId === -1) {
+    return 'Übergreifend';
   }
-  return `Einstellungen ${mqttStore.batteryName(props.batteryId)}`;
+  return mqttStore.batteryName(props.batteryId);
 });
 
 defineExpose({
