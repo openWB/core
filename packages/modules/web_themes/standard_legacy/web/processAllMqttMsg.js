@@ -289,13 +289,22 @@ function refreshChargeTemplate(chargePointIndex) {
 					// set values from payload
 					schedulePlanElement.find('.charge-point-schedule-name').text(value.name);
 					if (value.limit.selected == "soc") {
-						schedulePlanElement.find('.charge-point-schedule-limit').text(value.limit.soc_scheduled + "%");
 						schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-bolt');
 						schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-car-battery');
+						schedulePlanElement.find('.charge-point-schedule-limit').text(value.limit.soc_scheduled + "%");
+						schedulePlanElement.find('.charge-point-schedule-mode').removeClass('hide');
+						if (value.bidi_charging_enabled == true) {
+							schedulePlanElement.find('.charge-point-schedule-mode').addClass('fa-right-left');
+						} else {
+							schedulePlanElement.find('.charge-point-schedule-mode').addClass('fa-right-long');
+						}
+						schedulePlanElement.find('.charge-point-schedule-soc-limit').removeClass('hide');
+						schedulePlanElement.find('.charge-point-schedule-soc-limit').text(value.limit.soc_limit + "%");
 					} else {
 						schedulePlanElement.find('.charge-point-schedule-limit').text((value.limit.amount / 1000) + "kWh");
 						schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-car-battery');
 						schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-bolt');
+						schedulePlanElement.find('.charge-point-schedule-soc-limit').addClass('hide');
 					}
 					if (value.et_active == true) {
 						schedulePlanElement.find('.charge-point-schedule-et-active-icon').removeClass('hide');
@@ -310,14 +319,12 @@ function refreshChargeTemplate(chargePointIndex) {
 					}
 					switch (value.frequency.selected) {
 						case "once":
-							schedulePlanElement.find('.charge-point-schedule-frequency').addClass('hide');
-							schedulePlanElement.find('.charge-point-schedule-date').removeClass('hide');
+							schedulePlanElement.find('.charge-point-schedule-frequency').addClass('fa-calendar-day');
 							const d = new Date(value.frequency.once);
-							schedulePlanElement.find('.charge-point-schedule-date-value').text(d.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }));
+							schedulePlanElement.find('.charge-point-schedule-frequency-value').text(d.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }));
 							break;
 						case "daily":
-							schedulePlanElement.find('.charge-point-schedule-frequency').removeClass('hide');
-							schedulePlanElement.find('.charge-point-schedule-date').addClass('hide');
+							schedulePlanElement.find('.charge-point-schedule-frequency').addClass('fa-calendar-week');
 							schedulePlanElement.find('.charge-point-schedule-frequency-value').text('täglich');
 							break;
 						case "weekly":
@@ -331,8 +338,7 @@ function refreshChargeTemplate(chargePointIndex) {
 									daysText += days[index];
 								}
 							});
-							schedulePlanElement.find('.charge-point-schedule-frequency').removeClass('hide');
-							schedulePlanElement.find('.charge-point-schedule-date').addClass('hide');
+							schedulePlanElement.find('.charge-point-schedule-frequency').addClass('fa-calendar-alt');
 							schedulePlanElement.find('.charge-point-schedule-frequency-value').text(daysText);
 							break;
 						default:
