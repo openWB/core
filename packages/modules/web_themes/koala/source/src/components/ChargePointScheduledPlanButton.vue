@@ -47,7 +47,9 @@
           <div v-if="plan.limit.selected === 'soc'">
             {{ plan.limit.soc_scheduled }}%
             <q-icon
-              :name="plan.bidi_charging_enabled ? 'sync_alt' : 'arrow_right_alt'"
+              :name="
+                plan.bidi_charging_enabled ? 'sync_alt' : 'arrow_right_alt'
+              "
               size="sm"
             />
             {{ plan.limit.soc_limit }}%
