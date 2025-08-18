@@ -468,12 +468,11 @@ def get_ev_to_rfid(rfid: Optional[str] = None, vehicle_id: Optional[str] = None)
                 # Prüfung auf ein passendes Muster
                 # auch 'fnmatch()' ist case-insensitive
                 for tag_id in data.data.ev_data[vehicle].data.tag_id:
-                    if vehicle_id is not None:
-                        if fnmatch(vehicle_id, tag_id):
-                            log.debug(f"MAC {vehicle_id} und gespeicherte Tag_ID {tag_id} stimmen überein. "
-                                      f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
-                            return data.data.ev_data[vehicle].num
-                    if fnmatch(rfid, tag_id):
+                    if vehicle_id is not None and fnmatch(vehicle_id, tag_id):
+                        log.debug(f"MAC {vehicle_id} und gespeicherte Tag_ID {tag_id} stimmen überein. "
+                                  f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
+                        return data.data.ev_data[vehicle].num
+                    if rfid is not None and fnmatch(rfid, tag_id):
                         log.debug(f"RFID {rfid}  und gespeicherte Tag_ID {tag_id} stimmen überein. "
                                   f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
                         return data.data.ev_data[vehicle].num
