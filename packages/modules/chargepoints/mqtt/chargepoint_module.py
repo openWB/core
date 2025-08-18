@@ -85,7 +85,10 @@ class ChargepointModule(AbstractChargepoint):
                         max_evse_current=parse_received_topics("max_evse_current"),
                         version=parse_received_topics("version"),
                         current_branch=parse_received_topics("current_branch"),
-                        current_commit=parse_received_topics("current_commit")
+                        current_commit=parse_received_topics("current_commit"),
+                        max_charge_power=parse_received_topics("max_charge_power"),
+                        max_discharge_power=parse_received_topics("max_discharge_power"),
+                        evse_signaling=parse_received_topics("evse_signaling"),
                     )
                     self.store.set(chargepoint_state)
                 except KeyError:
