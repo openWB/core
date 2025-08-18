@@ -28,7 +28,7 @@ class KostalPikoCi:
 
 @auto_str
 class KostalPikoCiCounterConfiguration:
-    def __init__(self, modbus_id: int = 247):
+    def __init__(self, modbus_id: int = 75):
         self.modbus_id = modbus_id
 
 
@@ -44,7 +44,7 @@ class KostalPikoCiCounterSetup(ComponentSetup[KostalPikoCiCounterConfiguration])
 
 @auto_str
 class KostalPikoCiInverterConfiguration:
-    def __init__(self, modbus_id: int = 247):
+    def __init__(self, modbus_id: int = 75):
         self.modbus_id = modbus_id
 
 
