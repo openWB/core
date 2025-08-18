@@ -1,4 +1,4 @@
-import threading
+from threading import Lock
 from typing import Callable, TypeVar
 
 T = TypeVar("T")
@@ -8,7 +8,7 @@ def skip_while_unchanged(source: Callable, initial=None):
     """Before each call check if value given by `source` has changed. If it has not, ignore the call"""
     def wrap(function: T) -> T:
         previous = [initial]
-        lock = threading.Lock()
+        lock = Lock()
 
         def wrapper(*args, **kwargs):
             with lock:

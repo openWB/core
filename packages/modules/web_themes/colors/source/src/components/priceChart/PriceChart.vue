@@ -1,5 +1,4 @@
 <template>
-	<p class="settingsheader mt-2 ms-1">Preisbasiertes Laden:</p>
 	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
 	<hr />
 	<div class="container">
@@ -15,13 +14,12 @@
 	</div>
 	<div v-if="chargepoint != undefined" class="p-3">
 		<RangeInput
-			v-if="chargepoint.etActive"
 			id="pricechart_local"
 			v-model="maxPrice"
 			:min="Math.floor(prices[0] - 1)"
 			:max="Math.ceil(prices[prices.length - 1] + 1)"
 			:step="0.1"
-			:decimals="1"
+			:decimals="2"
 			:show-subrange="true"
 			:subrange-min="prices[0]"
 			:subrange-max="prices[prices.length - 1]"
@@ -40,7 +38,7 @@
 		<span class="me-3 pt-0" @click="setMaxPrice">
 			<button
 				type="button"
-				class="btn btn-secondary"
+				class="btn btn-secondary confirmButton"
 				:style="confirmButtonStyle"
 				:disabled="!maxPriceEdited"
 			>
@@ -191,7 +189,7 @@ const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
 		.ticks(yDomain.value[1] - yDomain.value[0])
 		.tickSizeInner(-(width - margin.right - margin.left))
-		.tickFormat((d) => d.toString())
+		.tickFormat((d: number) => (d % 5 != 0 ? '' : d.toString()))
 })
 const draw = computed(() => {
 	if (needsUpdate.value == true) {
@@ -229,6 +227,7 @@ const draw = computed(() => {
 	// Y Axis
 	const yAxis = svg.append('g').attr('class', 'axis').call(yAxisGenerator.value)
 	yAxis.attr('transform', 'translate(' + margin.left + ',' + 0 + ')')
+
 	yAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
@@ -237,7 +236,8 @@ const draw = computed(() => {
 	yAxis
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
-		.attr('stroke-width', '0.5')
+		//.attr('stroke-width', '0.5')
+		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	// zero line
 	if (yDomain.value[0] < 0) {
@@ -319,5 +319,9 @@ onMounted(() => {
 	background-color: var(--color-menu);
 	color: var(--color-bg);
 	border: 0;
+	font-size: var(--font-settings-button);
+}
+.confirmButton {
+	font-size: var(--font-settings-button);
 }
 </style>

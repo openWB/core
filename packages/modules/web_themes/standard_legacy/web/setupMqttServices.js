@@ -12,6 +12,7 @@
 
 // add topics here which should be subscribed before any other topics
 var topicsToSubscribeFirst = [
+	["openWB/general/web_theme", 0], // theme configuration
 	["openWB/counter/get/hierarchy", 0] // hierarchy of all counters and charge points
 ];
 
@@ -62,13 +63,14 @@ var topicsToSubscribe = [
 	["openWB/chargepoint/+/get/connected_vehicle/info", 1], // general info of the vehicle; JSON { "id": int, "name": str }
 	["openWB/chargepoint/+/get/connected_vehicle/config", 1], // general configuration of the vehicle; JSON { "charge_template": int, "ev_template": int, "chargemode": str, "priority": bool, "average_consumption": int (Wh/100km) }
 	["openWB/chargepoint/+/get/connected_vehicle/soc", 1], // soc info of the vehicle; JSON {"soc": float (%), "range_charged": int, "range": float, "range_unit": str, "timestamp": int, "fault_stat": int, "fault_str": str }
+	["openWB/chargepoint/+/set/charge_template", 1], // populate a list of charge templates
+	["openWB/chargepoint/+/set/charge_template/chargemode/scheduled_charging/plans/+", 1], // populate a list of schedule plans
+	["openWB/chargepoint/+/set/charge_template/time_charging/plans/+", 1], // populate a list of time charge plans
 
 	// vehicle topics
 	["openWB/vehicle/+/name", 1], // populate a list of vehicle id/name info
 	["openWB/vehicle/+/soc_module/config", 1], // soc configuration of the vehicle; JSON { "type": text, "configuration": object }
-	["openWB/vehicle/template/charge_template/+", 1], // populate a list of charge templates
-	["openWB/vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/+", 1], // populate a list of schedule plans
-	["openWB/vehicle/template/charge_template/+/time_charging/plans/+", 1], // populate a list of time charge plans
+
 
 	// charge mode config
 	["openWB/general/chargemode_config/pv_charging/bat_mode", 0],
@@ -80,7 +82,6 @@ var topicsToSubscribe = [
 	["openWB/optional/dc_charging", 1], // dc charging is configured
 
 	// graph topics
-	["openWB/graph/config/duration", 1], // maximum duration to display in landing page
 	["openWB/graph/alllivevaluesJson1", 1],
 	["openWB/graph/alllivevaluesJson2", 1],
 	["openWB/graph/alllivevaluesJson3", 1],
@@ -98,7 +99,6 @@ var topicsToSubscribe = [
 	["openWB/graph/alllivevaluesJson15", 1],
 	["openWB/graph/alllivevaluesJson16", 1],
 	["openWB/graph/lastlivevaluesJson", 1],
-
 ];
 
 // holds number of topics flagged 1 initially

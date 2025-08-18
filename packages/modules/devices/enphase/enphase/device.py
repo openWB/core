@@ -8,6 +8,7 @@ from dataclass_utils import asdict
 from helpermodules.pub import Pub
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.enphase.enphase.bat import EnphaseBat
 from modules.devices.enphase.enphase.config import (EnphaseVersion,
@@ -25,13 +26,13 @@ def create_device(device_config: Enphase):
     def create_bat_component(component_config: EnphaseBatSetup):
         nonlocal read_live_data
         read_live_data = True
-        return EnphaseBat(device_config.id, component_config)
+        return EnphaseBat(component_config=component_config, device_id=device_config.id)
 
     def create_counter_component(component_config: EnphaseCounterSetup):
-        return EnphaseCounter(device_config.id, component_config)
+        return EnphaseCounter(component_config=component_config)
 
     def create_inverter_component(component_config: EnphaseInverterSetup):
-        return EnphaseInverter(device_config.id, component_config)
+        return EnphaseInverter(component_config=component_config)
 
     def check_token() -> bool:
         if (device_config.configuration.token is None or
@@ -107,7 +108,7 @@ def create_device(device_config: Enphase):
 
     def update_components(components: Iterable[Union[EnphaseBat, EnphaseCounter, EnphaseInverter]]):
         nonlocal token_fails
-        if device_config.configuration.version == EnphaseVersion.V2.value:
+        if device_config.configuration.version == EnphaseVersion.V2:
             # v2 requires token authentication
             if check_token() is False:
                 log.error("no valid token to connect to envoy")
@@ -115,12 +116,12 @@ def create_device(device_config: Enphase):
         log.debug("Start device reading " + str(components))
         with req.get_http_session() as session:
             json_live_data = None
-            if device_config.configuration.version == EnphaseVersion.V1.value:
+            if device_config.configuration.version == EnphaseVersion.V1:
                 json_response = session.get(
                     'http://'+device_config.configuration.hostname+'/ivp/meters/readings',
                     timeout=5).json()
                 # json_live_data does not exist on older firmware
-            elif device_config.configuration.version == EnphaseVersion.V2.value:
+            elif device_config.configuration.version == EnphaseVersion.V2:
                 response = session.get(
                     'https://'+device_config.configuration.hostname+'/ivp/meters/readings',
                     timeout=5, verify=False,
@@ -143,7 +144,8 @@ def create_device(device_config: Enphase):
                 log.error(f"unknown version: {device_config.configuration.version}")
                 return
             for component in components:
-                component.update(json_response, json_live_data)
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update(json_response, json_live_data)
 
     read_live_data = False
     token_tries = 0

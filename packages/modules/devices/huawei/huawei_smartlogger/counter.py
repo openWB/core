@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from dataclass_utils import dataclass_from_dict
+from typing import TypedDict, Any
 from modules.common import modbus
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -11,26 +11,31 @@ from modules.common.store import get_counter_value_store
 from modules.devices.huawei.huawei_smartlogger.config import Huawei_SmartloggerCounterSetup
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    tcp_client: modbus.ModbusTcpClient_
+
+
 class Huawei_SmartloggerCounter(AbstractCounter):
-    def __init__(self, device_id: int,
-                 component_config: Huawei_SmartloggerCounterSetup,
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(Huawei_SmartloggerCounterSetup, component_config)
-        self.client = tcp_client
+    def __init__(self, component_config: Huawei_SmartloggerCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self):
+    def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
         power = self.client.read_holding_registers(32278, ModbusDataType.INT_32, unit=modbus_id)
-        currents = [val / 100 for val in self.client.read_holding_registers(
+        currents = [val / 10 for val in self.client.read_holding_registers(
             32272, [ModbusDataType.INT_32] * 3, unit=modbus_id)]
         voltages = [val / 100 for val in self.client.read_holding_registers(
             32260, [ModbusDataType.INT_32] * 3, unit=modbus_id)]
-        powers = [val / 1000 for val in self.client.read_holding_registers(
-            32335, [ModbusDataType.INT_32] * 3, unit=modbus_id)]
+        powers = self.client.read_holding_registers(32335, [ModbusDataType.INT_32] * 3, unit=modbus_id)
         imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             currents=currents,

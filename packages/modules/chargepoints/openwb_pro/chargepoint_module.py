@@ -10,10 +10,18 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.hardware_check import check_meter_values
 from modules.common.store import get_chargepoint_value_store
-from modules.common.component_state import ChargepointState
+from modules.common.component_state import ChargepointState, CounterState
 from modules.common import req
+from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
 
 log = logging.getLogger(__name__)
+
+
+class EvseSignaling:
+    HLC = "HLC"
+    ISO15118 = "ISO15118"
+    FAKE_HIGHLEVEL = "fake_highlevel"
+    PWM = "PWM"
 
 
 class ChargepointModule(AbstractChargepoint):
@@ -29,23 +37,21 @@ class ChargepointModule(AbstractChargepoint):
         self.__session = req.get_http_session()
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
-        self.old_chargepoint_state = ChargepointState()
 
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            with self.client_error_context:
-                self.__session.post(
-                    'http://' + self.config.configuration.ip_address + '/connect.php',
-                    data={'heartbeatenabled': '1'})
+            self.__session.post(
+                'http://' + self.config.configuration.ip_address + '/connect.php',
+                data={'heartbeatenabled': '1'})
 
-    def set_internal_context_handlers(self, parent_cp, parent_hostname):
+    def set_internal_context_handlers(self, hierarchy_id: int, internal_cp: InternalChargepoint):
         self.fault_state = FaultState(ComponentInfo(
-            parent_cp,
+            self.config.id,
             "Ladepunkt "+str(self.config.id),
-            "chargepoint",
-            parent_id=parent_cp,
-            parent_hostname=parent_hostname))
+            "internal_chargepoint",
+            hierarchy_id=hierarchy_id))
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/internal_chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
+        self.client_error_context.error_timestamp = internal_cp.get.error_timestamp
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
@@ -58,11 +64,12 @@ class ChargepointModule(AbstractChargepoint):
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             chargepoint_state = self.request_values()
-            self.store.set(chargepoint_state)
+            if chargepoint_state is not None:
+                # bei Fehler, aber Fehlezähler noch nicht abgelaufen, keine Werte mehr publishen.
+                self.store.set(chargepoint_state)
 
     def request_values(self) -> ChargepointState:
         with self.client_error_context:
-            chargepoint_state = self.old_chargepoint_state
             ip_address = self.config.configuration.ip_address
             json_rsp = self.__session.get('http://'+ip_address+'/connect.php').json()
 
@@ -77,13 +84,16 @@ class ChargepointModule(AbstractChargepoint):
                 phases_in_use=json_rsp["phases_in_use"],
                 vehicle_id=json_rsp["vehicle_id"],
                 evse_current=json_rsp["offered_current"],
-                serial_number=json_rsp["serial"]
+                serial_number=json_rsp["serial"],
+                evse_signaling=json_rsp["evse_signaling"],
             )
 
             if json_rsp.get("voltages"):
-                meter_msg = check_meter_values(json_rsp["voltages"])
-                if meter_msg:
-                    self.fault_state.warning(meter_msg)
+                check_meter_values(CounterState(voltages=json_rsp["voltages"],
+                                                currents=json_rsp["currents"],
+                                                powers=json_rsp["powers"],
+                                                power=json_rsp["power_all"]),
+                                   self.fault_state)
                 chargepoint_state.voltages = json_rsp["voltages"]
             if json_rsp.get("soc_value"):
                 chargepoint_state.soc = json_rsp["soc_value"]
@@ -95,17 +105,23 @@ class ChargepointModule(AbstractChargepoint):
                 chargepoint_state.rfid = json_rsp["rfid_tag"]
             if json_rsp.get("rfid_timestamp"):
                 chargepoint_state.rfid_timestamp = json_rsp["rfid_timestamp"]
+            if json_rsp.get("max_discharge_power"):
+                chargepoint_state.max_discharge_power = json_rsp["max_discharge_power"]
+            if json_rsp.get("max_charge_power"):
+                chargepoint_state.max_charge_power = json_rsp["max_charge_power"]
 
             self.validate_values(chargepoint_state)
-            self.old_chargepoint_state = chargepoint_state
             self.client_error_context.reset_error_counter()
+            return chargepoint_state
         if self.client_error_context.error_counter_exceeded():
             chargepoint_state = ChargepointState()
             chargepoint_state.plug_state = False
             chargepoint_state.charge_state = False
-            chargepoint_state.imported = self.old_chargepoint_state.imported
-            chargepoint_state.exported = self.old_chargepoint_state.exported
-        return chargepoint_state
+            chargepoint_state.imported = None  # bei None werden keine Werte gepublished
+            chargepoint_state.exported = None
+            return chargepoint_state
+        else:
+            return None
 
     def validate_values(self, chargepoint_state: ChargepointState) -> None:
         if chargepoint_state.charge_state is False and max(chargepoint_state.currents) > 1:

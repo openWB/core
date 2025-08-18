@@ -1,12 +1,14 @@
 from dataclasses import dataclass, field
-import threading
+from threading import Event
 from typing import Dict, List, Optional, Protocol
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
+from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
 from helpermodules.constants import NO_ERROR
+from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
 from modules.common.abstract_chargepoint import AbstractChargepoint
 
 
@@ -94,19 +96,26 @@ class Get:
     charging_power: Optional[float] = 0
     charging_voltage: Optional[float] = 0
     connected_vehicle: ConnectedVehicle = field(default_factory=connected_vehicle_factory)
+    current_branch: Optional[str] = None
+    current_commit: Optional[str] = None
     currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = 0
     daily_exported: float = 0
     error_timestamp: int = 0
     evse_current: Optional[float] = None
+    # kann auch zur Laufzeit geändert werden
+    evse_signaling: Optional[EvseSignaling] = None
     exported: float = 0
     fault_str: str = NO_ERROR
     fault_state: int = 0
     imported: float = 0
+    max_charge_power: Optional[float] = None
+    max_discharge_power: Optional[float] = None
     max_evse_current: Optional[int] = None
     phases_in_use: int = 0
     plug_state: bool = False
     power: float = 0
+    powers: List[float] = field(default_factory=currents_list_factory)
     rfid_timestamp: Optional[float] = None
     rfid: Optional[int] = None
     serial_number: Optional[str] = None
@@ -114,7 +123,12 @@ class Get:
     soc_timestamp: Optional[int] = None
     state_str: Optional[str] = None
     vehicle_id: Optional[str] = None
+    version: Optional[str] = None
     voltages: List[float] = field(default_factory=voltages_list_factory)
+
+
+def charge_template_factory() -> ChargeTemplate:
+    return ChargeTemplate()
 
 
 def ev_factory() -> Ev:
@@ -129,8 +143,10 @@ def log_factory() -> Log:
 class Set:
     charging_ev: int = -1
     charging_ev_prev: int = -1
+    charge_template: ChargeTemplate = field(default_factory=charge_template_factory)
     current: float = 0
     energy_to_charge: float = 0
+    ev_prev: int = 0
     loadmanagement_available: bool = True
     log: Log = field(default_factory=log_factory)
     manual_lock: bool = False
@@ -145,6 +161,7 @@ class Set:
     target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
     ocpp_transaction_id: Optional[int] = None
+    charge_state_prev: bool = False
 
 
 @dataclass
@@ -162,7 +179,7 @@ class Config:
     ocpp_chargebox_id: Optional[str] = None
 
     def __post_init__(self):
-        self.event_update_state: threading.Event
+        self.event_update_state: Event
 
     @property
     def ev(self) -> int:
@@ -205,7 +222,7 @@ class ChargepointData:
     set: Set = field(default_factory=set_factory)
     config: Config = field(default_factory=config_factory)
 
-    def set_event(self, event: Optional[threading.Event] = None) -> None:
+    def set_event(self, event: Optional[Event] = None) -> None:
         self.event_update_state = event
         if event:
             self.config.event_update_state = event

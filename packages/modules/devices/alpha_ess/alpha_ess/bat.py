@@ -1,33 +1,33 @@
-#!/usr/bin/env python3
 import logging
 import time
-from typing import Dict, Union
-
-from dataclass_utils import dataclass_from_dict
-from modules.devices.alpha_ess.alpha_ess.config import AlphaEssBatSetup, AlphaEssConfiguration
-from modules.common import modbus
+from typing import TypedDict, Any
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.modbus import ModbusDataType
+from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
+from modules.devices.alpha_ess.alpha_ess.config import AlphaEssBatSetup
 
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    tcp_client: ModbusTcpClient_
+    modbus_id: int
+
+
 class AlphaEssBat(AbstractBat):
-    def __init__(self, device_id: int,
-                 component_config: Union[Dict, AlphaEssBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
-                 device_config: AlphaEssConfiguration,
-                 modbus_id: int) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(AlphaEssBatSetup, component_config)
-        self.__tcp_client = tcp_client
-        self.__modbus_id = modbus_id
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+    def __init__(self, component_config: AlphaEssBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__tcp_client: ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__modbus_id: int = self.kwargs['modbus_id']
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

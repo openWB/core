@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from dataclass_utils import dataclass_from_dict
+
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -14,7 +14,9 @@ log = logging.getLogger(__name__)
 
 class RctBat(AbstractBat):
     def __init__(self, component_config: RctBatSetup) -> None:
-        self.component_config = dataclass_from_dict(RctBatSetup, component_config)
+        self.component_config = component_config
+
+    def initialize(self) -> None:
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

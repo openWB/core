@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple, Union
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
                                                          get_previous_entry)
+from helpermodules.messaging import MessageType, pub_system_message
 
 log = logging.getLogger(__name__)
 
@@ -374,9 +375,12 @@ def _collect_yearly_log_data(year: str):
 
 def _analyse_energy_source(data) -> Dict:
     if data and len(data["entries"]) > 0:
-        for i in range(0, len(data["entries"])):
-            data["entries"][i] = analyse_percentage(data["entries"][i])
-        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+        try:
+            for i in range(0, len(data["entries"])):
+                data["entries"][i] = analyse_percentage(data["entries"][i])
+            data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+        except Exception:
+            pub_system_message({}, "Fehler beim Berechnen des Strom-Mix", MessageType.ERROR)
     return data
 
 
@@ -390,6 +394,13 @@ def analyse_percentage(entry):
             raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
         return sum(grid["energy_imported"] for grid in grids), sum(grid["energy_exported"] for grid in grids)
 
+    def calc_energy_imported_by_source(energy_imported, energy_source):
+        value = (Decimal(str(energy_imported)) *
+                 Decimal(str(energy_source))).quantize(Decimal('0.001'))  # limit precision
+        value = f'{value: f}'
+        value = string_to_float(value) if "." in value else string_to_int(value)
+        return value
+
     try:
         bat_imported = entry["bat"]["all"]["energy_imported"] if "all" in entry["bat"].keys() else 0
         bat_exported = entry["bat"]["all"]["energy_exported"] if "all" in entry["bat"].keys() else 0
@@ -397,6 +408,19 @@ def analyse_percentage(entry):
         pv = entry["pv"]["all"]["energy_exported"] if "all" in entry["pv"].keys() else 0
         grid_imported, grid_exported = get_grid_from(entry)
         consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
+        for type in ("bat", "cp"):
+            if entry[type]["all"]["energy_imported"] > consumption:
+                consumption += entry[type]["all"]["energy_imported"] - consumption
+                grid_imported += entry[type]["all"]["energy_imported"] - grid_imported
+                log.debug(f"Angepasste Verbrauchswerte für {type} um "
+                          f"{entry[type]['all']['energy_imported'] - consumption} kWh")
+        for counter in entry["counter"].values():
+            if counter["grid"] is False:
+                if counter["energy_imported"] > consumption:
+                    consumption += counter["energy_imported"] - consumption
+                    grid_imported += counter["energy_imported"] - grid_imported
+                    log.debug(f"Angepasste Verbrauchswerte für {type} um "
+                              f"{entry[type]['all']['energy_imported'] - consumption} kWh")
         try:
             if grid_exported > pv:
                 # Ins Netz eingespeiste Leistung kam nicht von der PV-Anlage sondern aus dem Speicher
@@ -417,17 +441,16 @@ def analyse_percentage(entry):
             entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
         for source in ("grid", "pv", "bat", "cp"):
             if "all" in entry["hc"].keys():
-                value = (Decimal(str(entry["hc"]["all"]["energy_imported"])) *
-                         Decimal(str(entry["energy_source"][source]))).quantize(Decimal('0.001'))  # limit precision
-                value = f'{value: f}'
-                value = string_to_float(value) if "." in value else string_to_int(value)
-                entry["hc"]["all"][f"energy_imported_{source}"] = value
-            if "all" in entry["cp"].keys():
-                value = (Decimal(str(entry["cp"]["all"]["energy_imported"])) *
-                         Decimal(str(entry["energy_source"][source]))).quantize(Decimal('0.001'))  # limit precision
-                value = f'{value: f}'
-                value = string_to_float(value) if "." in value else string_to_int(value)
-                entry["cp"]["all"][f"energy_imported_{source}"] = value
+                entry["hc"]["all"][f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                    entry["hc"]["all"]["energy_imported"], entry["energy_source"][source])
+            for key in entry["cp"].keys():
+                entry["cp"][key][f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                    entry["cp"][key]["energy_imported"], entry["energy_source"][source])
+            for counter in entry["counter"].values():
+                if counter["grid"] is False:
+                    counter[f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                        counter["energy_imported"], entry["energy_source"][source])
+
     except Exception:
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
     finally:
@@ -440,13 +463,20 @@ def analyse_percentage_totals(entries, totals):
             totals[section]["all"] = {}
     for source in ("grid", "pv", "bat", "cp"):
         totals["hc"]["all"].update({f"energy_imported_{source}": 0})
-        totals["cp"]["all"].update({f"energy_imported_{source}": 0})
         for entry in entries:
             if "hc" in entry.keys() and "all" in entry["hc"].keys():
                 totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"].get(
                     f"energy_imported_{source}", 0)*1000
-            if "all" in entry["cp"].keys() and f"energy_imported_{source}" in entry["cp"]["all"].keys():
-                totals["cp"]["all"][f"energy_imported_{source}"] += entry["cp"]["all"][f"energy_imported_{source}"]*1000
+            for key in entry["cp"].keys():
+                if f"energy_imported_{source}" in entry["cp"][key].keys():
+                    if totals["cp"][key].get(f"energy_imported_{source}") is None:
+                        totals["cp"][key].update({f"energy_imported_{source}": 0})
+                    totals["cp"][key][f"energy_imported_{source}"] += entry["cp"][key][f"energy_imported_{source}"]*1000
+            for key, counter in entry["counter"].items():
+                if counter["grid"] is False:
+                    if totals["counter"][key].get(f"energy_imported_{source}") is None:
+                        totals["counter"][key].update({f"energy_imported_{source}": 0})
+                    totals["counter"][key][f"energy_imported_{source}"] += counter[f"energy_imported_{source}"]*1000
     return totals
 
 
@@ -531,10 +561,14 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                     log.exception("Fehler beim Berechnen der Leistung")
             # next_entry may contain new modules, we add them here
             try:
-                for module in next_entry[type].keys():
+                for module, module_data in next_entry[type].items():
                     if module not in entry[type].keys():
                         log.debug(f"adding module {module} from next entry")
-                        entry[type].update({module: {"energy_imported": 0.0, "energy_exported": 0.0}})
+                        if calculation in [CalculationType.POWER, CalculationType.ALL]:
+                            module_data.update({"power_average": 0, "power_imported": 0, "power_exported": 0})
+                        if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
+                            module_data.update({"energy_imported": 0, "energy_exported": 0})
+                        entry[type].update({module: module_data})
             except KeyError:
                 # catch missing "type"
                 pass

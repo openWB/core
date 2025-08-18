@@ -34,10 +34,12 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                  vehicle: int,
                  calc_while_charging: bool = False,
                  general_config: Optional[GeneralVehicleConfig] = None,
-                 calculated_soc_state: Optional[CalculatedSocState] = None) -> None:
+                 calculated_soc_state: Optional[CalculatedSocState] = None,
+                 initializer: Callable = lambda: None) -> None:
         self.__component_updater = component_updater
         self.vehicle_config = vehicle_config
         self.calculated_soc_state = calculated_soc_state
+        self.__initializer = initializer
         if calculated_soc_state is None:
             self.calculated_soc_state = CalculatedSocState()
         else:
@@ -51,19 +53,30 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         self.vehicle = vehicle
         self.store = store.get_car_value_store(self.vehicle)
         self.fault_state = FaultState(ComponentInfo(self.vehicle, self.vehicle_config.name, "vehicle"))
+        # nach Init auf NO_ERROR setzen, damit der Fehlerstatus beim Modulwechsel gelöscht wird
+        self.fault_state.no_error()
+        self.fault_state.store_error()
+
+        try:
+            self.__initializer()
+        except Exception:
+            log.exception(f"Initialisierung von Fahrzeug {self.vehicle_config.name} fehlgeschlagen")
 
     def update(self, vehicle_update_data: VehicleUpdateData):
         log.debug(f"Vehicle Instance {type(self.vehicle_config)}")
         log.debug(f"Calculated SoC-State {self.calculated_soc_state}")
         log.debug(f"Vehicle Update Data {vehicle_update_data}")
         log.debug(f"General Config {self.general_config}")
-        with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state, self.__initializer):
 
             source = self._get_carstate_source(vehicle_update_data)
             if source == SocSource.NO_UPDATE:
                 log.debug("No soc update necessary.")
                 return
             car_state = self._get_carstate_by_source(vehicle_update_data, source)
+            if isinstance(self.vehicle_config, MqttSocSetup) and car_state is None:
+                log.debug("Mqtt uses legacy topics.")
+                return
             log.debug(f"Requested start soc from {source.value}: {car_state.soc}%")
 
             if (source != SocSource.CALCULATION or
@@ -73,8 +86,12 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 self.calculated_soc_state.soc_start = car_state.soc
                 Pub().pub(f"openWB/set/vehicle/{self.vehicle}/soc_module/calculated_soc_state",
                           asdict(self.calculated_soc_state))
-            if vehicle_update_data.soc_timestamp is None or vehicle_update_data.soc_timestamp < car_state.soc_timestamp:
+            if (vehicle_update_data.soc_timestamp is None or
+                    vehicle_update_data.soc_timestamp <= car_state.soc_timestamp + 60):
                 # Nur wenn der SoC neuer ist als der bisherige, diesen setzen.
+                # Manche Fahrzeuge liefern in Ladepausen zwar einen SoC, aber manchmal einen alten.
+                # Die Pro liefert manchmal den SoC nicht, bis nach dem Anstecken das SoC-Update getriggert wird.
+                # Wenn Sie dann doch noch den alten SoC liefert, darf dieser nicht verworfen werden.
                 self.store.set(car_state)
             elif vehicle_update_data.soc_timestamp > 1e10:
                 # car_state ist in ms geschrieben, dieser kann überschrieben werden
@@ -83,15 +100,13 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 log.debug("Not updating SoC, because timestamp is older.")
 
     def _get_carstate_source(self, vehicle_update_data: VehicleUpdateData) -> SocSource:
-        if isinstance(self.vehicle_config, MqttSocSetup):
-            return SocSource.NO_UPDATE
         # Kein SoC vom LP vorhanden oder erwünscht
         if (vehicle_update_data.soc_from_cp is None or self.general_config.use_soc_from_cp is False or
                 # oder aktueller manueller SoC vorhanden (ausgelesenen SoC während der Ladung korrigieren)
-                self.calculated_soc_state.manual_soc):
+                self.calculated_soc_state.manual_soc is not None):
             if isinstance(self.vehicle_config, ManualSoc):
                 # Wenn ein manueller SoC gesetzt wurde, diesen als neuen Start merken.
-                if self.calculated_soc_state.manual_soc or self.calculated_soc_state.imported_start is None:
+                if self.calculated_soc_state.manual_soc is not None or self.calculated_soc_state.imported_start is None:
                     return SocSource.MANUAL
                 else:
                     if vehicle_update_data.plug_state:
@@ -126,7 +141,10 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             return CarState(soc=vehicle_update_data.soc_from_cp,
                             soc_timestamp=vehicle_update_data.timestamp_soc_from_cp)
         elif source == SocSource.MANUAL:
-            soc = self.calculated_soc_state.manual_soc or self.calculated_soc_state.soc_start
+            if self.calculated_soc_state.manual_soc is not None:
+                soc = self.calculated_soc_state.manual_soc
+            else:
+                soc = self.calculated_soc_state.soc_start
             self.calculated_soc_state.manual_soc = None
             return CarState(soc)
 

@@ -1,31 +1,15 @@
 """Allgemeine Einstellungen
 """
 from dataclasses import dataclass, field
-from enum import Enum
 import logging
 import random
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from control import data
 from control.bat_all import BatConsiderationMode
-from control.chargemode import Chargemode
-from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
-from modules.ripple_control_receivers.gpio.config import GpioRcr
-from modules.ripple_control_receivers.gpio.ripple_control_receiver import create_ripple_control_receiver
 
 log = logging.getLogger(__name__)
-
-
-@dataclass
-class InstantCharging:
-    phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/instant_charging/phases_to_use"})
-
-
-def instant_charging_factory() -> InstantCharging:
-    return InstantCharging()
 
 
 def control_range_factory() -> List:
@@ -44,8 +28,6 @@ class PvCharging:
         "topic": "chargemode_config/pv_charging/feed_in_yield"})
     phase_switch_delay: int = field(default=7, metadata={
         "topic": "chargemode_config/pv_charging/phase_switch_delay"})
-    phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/pv_charging/phases_to_use"})
     bat_power_discharge: int = field(default=1500, metadata={
         "topic": "chargemode_config/pv_charging/bat_power_discharge"})
     bat_power_discharge_active: bool = field(default=False, metadata={
@@ -56,7 +38,7 @@ class PvCharging:
         "topic": "chargemode_config/pv_charging/bat_mode"})
     switch_off_delay: int = field(default=60, metadata={
                                   "topic": "chargemode_config/pv_charging/switch_off_delay"})
-    switch_off_threshold: int = field(default=5, metadata={
+    switch_off_threshold: int = field(default=0, metadata={
         "topic": "chargemode_config/pv_charging/switch_off_threshold"})
     switch_on_delay: int = field(default=30, metadata={
         "topic": "chargemode_config/pv_charging/switch_on_delay"})
@@ -69,38 +51,13 @@ def pv_charging_factory() -> PvCharging:
 
 
 @dataclass
-class ScheduledCharging:
-    phases_to_use: int = field(default=0, metadata={
-        "topic": "chargemode_config/scheduled_charging/phases_to_use"})
-    phases_to_use_pv: int = field(default=0, metadata={
-        "topic": "chargemode_config/scheduled_charging/phases_to_use_pv"})
-
-
-def scheduled_charging_factory() -> ScheduledCharging:
-    return ScheduledCharging()
-
-
-@dataclass
-class TimeCharging:
-    phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/time_charging/phases_to_use"})
-
-
-def time_charging_factory() -> TimeCharging:
-    return TimeCharging()
-
-
-@dataclass
 class ChargemodeConfig:
-    instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
     phase_switch_delay: int = field(default=5, metadata={
         "topic": "chargemode_config/phase_switch_delay"})
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     retry_failed_phase_switches: bool = field(
         default=False,
         metadata={"topic": "chargemode_config/retry_failed_phase_switches"})
-    scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
-    time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = field(
         default=18, metadata={"topic": "chargemode_config/unbalanced_load_limit"})
     unbalanced_load: bool = field(default=False, metadata={
@@ -109,42 +66,6 @@ class ChargemodeConfig:
 
 def chargemode_config_factory() -> ChargemodeConfig:
     return ChargemodeConfig()
-
-
-@dataclass
-class RippleControlReceiverGet:
-    fault_state: int = field(default=0, metadata={
-                             "topic": "ripple_control_receiver/get/fault_state"})
-    fault_str: str = field(default=NO_ERROR, metadata={
-                           "topic": "ripple_control_receiver/get/fault_str"})
-    override_value: float = field(default=100, metadata={
-        "topic": "ripple_control_receiver/get/override_value"})
-
-
-def rcr_get_factory() -> RippleControlReceiverGet:
-    return RippleControlReceiverGet()
-
-
-def gpio_rcr_factory() -> ConfigurableRcr:
-    return create_ripple_control_receiver(GpioRcr())
-
-
-class OverrideReference(Enum):
-    EVU = "evu"
-    CHARGEPOINT = "chargepoint"
-
-
-@dataclass
-class RippleControlReceiver:
-    get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
-    module: Optional[Dict] = field(default=None, metadata={
-        "topic": "ripple_control_receiver/module"})
-    override_reference: OverrideReference = field(default=OverrideReference.CHARGEPOINT, metadata={
-        "topic": "ripple_control_receiver/override_reference"})
-
-
-def ripple_control_receiver_factory() -> RippleControlReceiver:
-    return RippleControlReceiver()
 
 
 @dataclass
@@ -181,7 +102,6 @@ class GeneralData:
     mqtt_bridge: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
-    ripple_control_receiver: RippleControlReceiver = field(default_factory=ripple_control_receiver_factory)
 
 
 class General:
@@ -190,26 +110,6 @@ class General:
 
     def __init__(self):
         self.data: GeneralData = GeneralData()
-        self.ripple_control_receiver: ConfigurableRcr = None
-
-    def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
-        """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
-        Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
-        die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
-        """
-        try:
-            if chargemode == "stop" or chargemode == "standby":
-                # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
-                return None
-            elif chargemode == "scheduled_charging" and (submode == "pv_charging" or submode == Chargemode.PV_CHARGING):
-                # todo Lademodus von String auf Enum umstellen
-                # Phasenumschaltung bei PV-Ueberschuss nutzen
-                return getattr(self.data.chargemode_config, chargemode).phases_to_use_pv
-            else:
-                return getattr(self.data.chargemode_config, chargemode).phases_to_use
-        except Exception:
-            log.exception("Fehler im General-Modul")
-            return 1
 
     def grid_protection(self):
         """ Wenn der Netzschutz konfiguriert ist, wird geprüft, ob die Frequenz außerhalb des Normalbereichs liegt

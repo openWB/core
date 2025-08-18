@@ -137,7 +137,7 @@ chmod 666 "$LOGFILE"
 	# check group membership
 	echo "Group membership..."
 	# ToDo: remove sudo group membership if possible
-	for group in "input" "dialout" "gpio" "sudo"; do
+	for group in "input" "dialout" "gpio" "sudo" "video"; do
 		if ! groups openwb | grep --quiet "$group"; then
 			if getent group | cut -d: -f1 | grep --quiet "$group"; then
 				sudo usermod -G "$group" -a openwb
@@ -149,6 +149,16 @@ chmod 666 "$LOGFILE"
 	done
 	echo -n "Final group membership: "
 	groups openwb
+
+	# allow apache to restart some services
+	echo "Apache service restart permissions..."
+	if versionMatch "${OPENWBBASEDIR}/data/config/sudoers/apache2" "/etc/sudoers.d/apache2"; then
+		echo "apache2 sudoers already up to date"
+	else
+		echo "updating apache2 sudoers"
+		sudo cp "${OPENWBBASEDIR}/data/config/sudoers/apache2" "/etc/sudoers.d/apache2"
+		sudo chmod 440 /etc/sudoers.d/apache2
+	fi
 
 	# network setup
 	echo "Network..."
@@ -256,7 +266,22 @@ chmod 666 "$LOGFILE"
 		echo "'tvservice' not found, assuming a display is present"
 	fi
 	echo "displayDetected: $displayDetected"
-	mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+	forceDisplaySetup=0
+	if displayDetected_old=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/detected" -C 1 -W 1); then
+		echo "previous displayDetected value: $displayDetected_old"
+		if [[ $displayDetected_old != "$displayDetected" ]]; then
+			echo "displayDetected value changed, publishing new value"
+			mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+		else
+			echo "no change in displayDetected value, skipping publish"
+		fi
+	else
+		echo "no previous displayDetected value found, assuming initial boot"
+		echo "update of display settings forced"
+		forceDisplaySetup=1
+		mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+		mosquitto_pub -p 1886 -t "openWB/optional/int_display/active" -r -m "true"
+	fi
 
 	# display setup
 	echo "display setup..."
@@ -285,8 +310,8 @@ chmod 666 "$LOGFILE"
 		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
 		displaySetupModified=1
 	fi
-	if ((displaySetupModified == 1)); then
-		"${OPENWBBASEDIR}/runs/update_local_display.sh"
+	if ((displaySetupModified == 1)) || ((forceDisplaySetup == 1)); then
+		"${OPENWBBASEDIR}/runs/update_local_display.sh" $forceDisplaySetup
 	fi
 
 	# check apache configuration
@@ -374,7 +399,7 @@ chmod 666 "$LOGFILE"
 	# check for python dependencies
 	if ((hasInet == 1)); then
 		echo "install required python packages with 'pip3'..."
-		if pip3 install -r "${OPENWBBASEDIR}/requirements.txt"; then
+		if pip3 install --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
 			echo "done"
 		else
 			echo "failed!"
@@ -398,8 +423,8 @@ chmod 666 "$LOGFILE"
 	fi
 
 	# set restore dir permissions to allow file upload for apache
-	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
-	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
+	sudo chgrp -R www-data "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
+	sudo chmod -R g+w "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
 
 	# cleanup some folders
 	folder="${OPENWBBASEDIR}/data/data_migration/var"

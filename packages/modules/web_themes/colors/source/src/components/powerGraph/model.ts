@@ -172,7 +172,7 @@ export const dayGraph = reactive({
 			graphData.waitForData = true
 			sendCommand({
 				command: 'getDailyLog',
-				data: { day: dateString },
+				data: { date: dateString },
 			})
 		}
 	},
@@ -208,7 +208,7 @@ export const monthGraph = reactive({
 		graphData.waitForData = true
 		sendCommand({
 			command: 'getMonthlyLog',
-			data: { month: dateString },
+			data: { date: dateString },
 		})
 	},
 	deactivate() {
@@ -256,7 +256,7 @@ export const yearGraph = reactive({
 		graphData.waitForData = true
 		sendCommand({
 			command: 'getYearlyLog',
-			data: { year: dateString },
+			data: { date: dateString },
 		})
 	},
 	deactivate() {

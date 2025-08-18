@@ -1,3 +1,4 @@
+from modules.devices.elgris.elgris import elgris
 from smarthome.smartbase0 import Sbase0
 from typing import Dict, Tuple
 from modules.common import modbus
@@ -512,15 +513,34 @@ class Slsdm630(Slbase):
         try:
             # neu aus openwb 2.0
             with modbus.ModbusTcpClient_(self._device_measureip, self._device_measureportsdm) as tcp_client:
-                sdm630 = sdm.Sdm630_72(self._device_measureid, tcp_client)
+                sdm630 = sdm.Sdm630_72(self._device_measureid, tcp_client, None)
                 # log.warning(" sdm630 id %s " % ( str(id(sdm630))))
                 _, newwatt = sdm630.get_power()
                 self.newwatt = int(newwatt)
                 self.newwattk = int(sdm630.get_imported())
-        except Exception as e1:
-            log.warning("Leistungsmessung %s %d %s Fehlermeldung: %s "
-                        % ('Sdm630 ', self.device_nummer,
-                           str(self._device_measureip), str(e1)))
+        except Exception:
+            log.exception("Leistungsmessung %s %d %s "
+                          % ('Sdm630 ', self.device_nummer,
+                             str(self._device_measureip)))
+        return self.newwatt, self.newwattk
+
+
+class SlElgris(Slbase):
+    def __init__(self) -> None:
+        # setting
+        super().__init__()
+
+    def sepwattread(self) -> Tuple[int, int]:
+        try:
+            with modbus.ModbusTcpClient_(self._device_measureip, self._device_measureportsdm) as tcp_client:
+                elg = elgris.Elgris(self._device_measureid, tcp_client, None)
+                _, newwatt = elg.get_power()
+                self.newwatt = int(newwatt)
+                self.newwattk = int(elg.get_imported())
+        except Exception:
+            log.exception("Leistungsmessung %s %d %s "
+                          % ('Elgris ', self.device_nummer,
+                             str(self._device_measureip)))
         return self.newwatt, self.newwattk
 
 
@@ -533,12 +553,12 @@ class Slsdm120(Slbase):
         try:
             # neu aus openwb 2.0
             with modbus.ModbusTcpClient_(self._device_measureip, self._device_measureportsdm) as tcp_client:
-                sdm120 = sdm.Sdm120(self._device_measureid, tcp_client)
+                sdm120 = sdm.Sdm120(self._device_measureid, tcp_client, None)
                 _, newwatt = sdm120.get_power()
                 self.newwatt = int(newwatt)
                 self.newwattk = int(sdm120.get_imported())
-        except Exception as e1:
-            log.warning("Leistungsmessung %s %d %s Fehlermeldung: %s "
-                        % ('Sdm120 ', self.device_nummer,
-                           str(self._device_measureip), str(e1)))
+        except Exception:
+            log.exception("Leistungsmessung %s %d %s "
+                          % ('Sdm120 ', self.device_nummer,
+                             str(self._device_measureip)))
         return self.newwatt, self.newwattk

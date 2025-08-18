@@ -100,6 +100,8 @@ function setup_dhcpcd_proplus() {
 		echo "done"
 		echo "restarting dhcpcd"
 		sudo systemctl restart dhcpcd
+		sleep 5
+		sudo dhclient -1 eth0
 	fi
 }
 
@@ -113,6 +115,8 @@ function disable_dhcpcd_proplus() {
 		sudo sed -i "/$pattern_begin/,/$pattern_end/d" "$dhcpcd_config_target"
 		echo "restarting dhcpcd"
 		sudo systemctl restart dhcpcd
+		sleep 5
+		sudo dhclient -1 eth0
 	else
 		echo "no changes required"
 	fi

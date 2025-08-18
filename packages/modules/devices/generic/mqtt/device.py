@@ -2,7 +2,11 @@
 from typing import Iterable, Union
 import logging
 
+from helpermodules.broker import BrokerClient
+from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_type import type_to_topic_mapping
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.generic.mqtt import bat, counter, inverter
 from modules.devices.generic.mqtt.config import Mqtt, MqttBatSetup, MqttCounterSetup, MqttInverterSetup
@@ -12,16 +16,42 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Mqtt):
     def create_bat_component(component_config: MqttBatSetup):
-        return bat.MqttBat(component_config)
+        return bat.MqttBat(component_config, device_id=device_config.id)
 
     def create_counter_component(component_config: MqttCounterSetup):
-        return counter.MqttCounter(component_config)
+        return counter.MqttCounter(component_config, device_id=device_config.id)
 
     def create_inverter_component(component_config: MqttInverterSetup):
-        return inverter.MqttInverter(component_config)
+        return inverter.MqttInverter(component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[Union[bat.MqttBat, counter.MqttCounter, inverter.MqttInverter]]):
-        log.debug("MQTT-Module müssen nicht ausgelesen werden.")
+        def on_connect(client, userdata, flags, rc):
+            for component in components:
+                client.subscribe(f"openWB/mqtt/{type_to_topic_mapping(component.component_config.type)}/"
+                                 f"{component.component_config.id}/#")
+
+        def on_message(client, userdata, message):
+            received_topics.update({message.topic: decode_payload(message.payload)})
+
+        received_topics = {}
+        BrokerClient(f"subscribeMqttDevice{device_config.id}", on_connect, on_message).start_finite_loop()
+
+        if received_topics:
+            log.debug(f"Empfange MQTT Daten für Gerät {device_config.id}: {received_topics}")
+            for component in components:
+                with SingleComponentUpdateContext(component.fault_state):
+                    try:
+                        component.update(received_topics)
+                    except KeyError:
+                        raise KeyError(
+                            "Fehlende MQTT-Daten: Stelle sicher, dass Du Werte an die erforderlichen Topics "
+                            "(beschrieben in den Komponenten-Einstellungen) veröffentlichst (Publish)."
+                        )
+        else:
+            for component in components:
+                component.fault_state.warning(
+                    f"Keine MQTT-Daten für Komponente {component.component_config.name} empfangen oder es werden "
+                    "veraltete, abwärtskompatible Topics verwendet. Bitte die Doku in den Einstellungen beachten.")
 
     return ConfigurableDevice(
         device_config=device_config,

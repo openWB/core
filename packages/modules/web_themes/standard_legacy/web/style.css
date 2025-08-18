@@ -145,6 +145,20 @@ body>.container {
 	text-decoration: line-through;
 }
 
+.charge-point-schedule-plan-pill,
+.charge-point-time-charge-pill {
+	border-color: #dc3545!important;
+	color: #721c24;
+	background-color: #f8d7da;
+}
+
+.charge-point-schedule-plan-pill.charge-point-plan-pill-active,
+.charge-point-time-charge-pill.charge-point-plan-pill-active {
+	border-color: #28a745!important;
+	color: #155724;
+	background-color: #d4edda;
+}
+
 .text-green {
 	color: #006515;
 }
@@ -475,4 +489,79 @@ h3 {
 	-webkit-transition: none;
 	transition: none;
 	display: none;
+}
+
+/* Custom legend container */
+#custom-legend-container {
+    max-height: 120px;
+	margin-bottom: 10px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+	border-radius: 5px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    text-align: left;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Legend item styling */
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 5px;
+    border-radius: 3px;
+	font-size: 14px;
+	color: rgba(0,0,0,0.65);
+}
+
+.legend-item:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.legend-color-box {
+    display: inline-block;
+    width: 16px;
+    height: 4px;
+    margin-right: 4px;  
+}
+
+.legend-item.hidden {
+    opacity: 0.6;
+	text-decoration: line-through;
+}
+
+/* Make the container responsive */
+@media (max-width: 768px) {
+    #custom-legend-container {
+        max-height: 100px;
+    }
+    
+    .legend-item {
+        font-size: 0.8em;
+        margin-right: 5px;
+        margin-bottom: 3px;
+    }
+
+	.legend-color-box {
+		width: 12px;
+		height: 3px;
+		margin-right: 4px;  
+	}
+}
+
+/* For smaller screens */
+@media (max-width: 576px) {
+    #custom-legend-container {
+        max-height: 80px;
+    }
+
+	.legend-color-box {
+		width: 10px;
+		height: 2px;
+		margin-right: 4px;  
+	}
 }

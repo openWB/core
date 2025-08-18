@@ -1,4 +1,6 @@
+import logging
 from operator import add
+from typing import Optional
 
 from control import data
 from helpermodules import compatibility
@@ -6,10 +8,14 @@ from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultState
+from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
 from modules.common.store.ramdisk import files
+from modules.common.utils.component_parser import get_component_obj_by_id
+
+log = logging.getLogger(__name__)
 
 
 class CounterValueStoreRamdisk(ValueStore[CounterState]):
@@ -49,9 +55,13 @@ class CounterValueStoreBroker(ValueStore[CounterState]):
 
 class PurgeCounterState:
 
-    def __init__(self, delegate: LoggingValueStore, add_child_values: bool = False) -> None:
+    def __init__(self,
+                 delegate: LoggingValueStore,
+                 add_child_values: bool = False,
+                 simcounter: Optional[SimCounter] = None) -> None:
         self.delegate = delegate
         self.add_child_values = add_child_values
+        self.sim_counter = simcounter
 
     def set(self, state: CounterState) -> None:
         self.delegate.set(state)
@@ -65,69 +75,60 @@ class PurgeCounterState:
         if self.add_child_values:
             self.currents = state.currents if state.currents else [0.0]*3
             self.power = state.power
-            self.imported = state.imported
-            self.exported = state.exported
             self.incomplete_currents = False
 
             def add_current_power(element):
-                if element.data.get.currents is not None:
-                    if sum(element.data.get.currents) == 0 and element.data.get.power != 0:
+                if hasattr(element, "currents") and element.currents is not None:
+                    if sum(element.currents) == 0 and element.power != 0:
                         self.currents = [0, 0, 0]
                         self.incomplete_currents = True
                     else:
-                        self.currents = list(map(add, self.currents, element.data.get.currents))
+                        self.currents = list(map(add, self.currents, element.currents))
                 else:
                     self.currents = [0, 0, 0]
                     self.incomplete_currents = True
-                self.power += element.data.get.power
-
-            def add_imported_exported(element):
-                self.imported += element.data.get.imported
-                self.exported += element.data.get.exported
-
-            def add_exported(element):
-                self.exported += element.data.get.exported
+                self.power += element.power
 
             counter_all = data.data.counter_all_data
             elements = counter_all.get_elements_for_downstream_calculation(self.delegate.delegate.num)
             for element in elements:
-                if element["type"] == ComponentType.CHARGEPOINT.value:
-                    chargepoint = data.data.cp_data[f"cp{element['id']}"]
-                    try:
-                        self.currents = list(map(add,
-                                                 self.currents,
-                                                 convert_cp_currents_to_evu_currents(
-                                                     chargepoint.data.config.phase_1,
-                                                     chargepoint.data.get.currents)))
-                    except KeyError:
-                        raise KeyError("Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
-                                       f" {chargepoint.data.config.name} an die Phasen des EVU Zählers "
-                                       "angegeben werden.")
-                    self.power += chargepoint.data.get.power
-                    self.imported += chargepoint.data.get.imported
-                elif element["type"] == ComponentType.BAT.value:
-                    add_current_power(data.data.bat_data[f"bat{element['id']}"])
-                    add_imported_exported(data.data.bat_data[f"bat{element['id']}"])
-                elif element["type"] == ComponentType.COUNTER.value:
-                    add_current_power(data.data.counter_data[f"counter{element['id']}"])
-                    add_imported_exported(data.data.counter_data[f"counter{element['id']}"])
-                elif element["type"] == ComponentType.INVERTER.value:
-                    add_current_power(data.data.pv_data[f"pv{element['id']}"])
-                    add_exported(data.data.pv_data[f"pv{element['id']}"])
+                try:
+                    if element["type"] == ComponentType.CHARGEPOINT.value:
+                        chargepoint = data.data.cp_data[f"cp{element['id']}"]
+                        chargepoint_state = chargepoint.chargepoint_module.store.delegate.state
+                        try:
+                            self.currents = list(map(add,
+                                                     self.currents,
+                                                     convert_cp_currents_to_evu_currents(
+                                                         chargepoint.data.config.phase_1,
+                                                         chargepoint_state.currents)))
+                        except KeyError:
+                            raise KeyError("Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
+                                           f" {chargepoint.data.config.name} an die Phasen des EVU Zählers "
+                                           "angegeben werden.")
+                        self.power += chargepoint_state.power
+                    else:
+                        component = get_component_obj_by_id(element['id'])
+                        add_current_power(component.store.delegate.delegate.state)
+                except Exception:
+                    log.exception(f"Fehler beim Hinzufügen der Werte für Element {element}")
 
+            imported, exported = self.sim_counter.sim_count(self.power)
             if self.incomplete_currents:
                 self.currents = None
             return CounterState(currents=self.currents,
                                 power=self.power,
-                                exported=self.exported,
-                                imported=self.imported)
+                                exported=exported,
+                                imported=imported)
         else:
             return state
 
 
-def get_counter_value_store(component_num: int, add_child_values: bool = False) -> PurgeCounterState:
+def get_counter_value_store(component_num: int,
+                            add_child_values: bool = False,
+                            simcounter: Optional[SimCounter] = None) -> PurgeCounterState:
     if compatibility.is_ramdisk_in_use():
         delegate = CounterValueStoreRamdisk()
     else:
         delegate = CounterValueStoreBroker(component_num)
-    return PurgeCounterState(LoggingValueStore(delegate), add_child_values)
+    return PurgeCounterState(LoggingValueStore(delegate), add_child_values, simcounter)

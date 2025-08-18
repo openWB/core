@@ -3,12 +3,10 @@ from typing import List, Optional
 from unittest.mock import Mock
 import pytest
 
-from control.algorithm import additional_current, surplus_controlled
 from control.algorithm.integration_test.conftest import ParamsExpectedSetCurrent, assert_expected_current
 from control.chargemode import Chargemode
-from control import data
+from control import data, loadmanagement
 from control.algorithm.algorithm import Algorithm
-from control.algorithm.algorithm import data as algorithm_data
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory
@@ -117,12 +115,10 @@ def assert_counter_set(params: ParamsExpectedCounterSet):
 def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch):
     # alle 3 im PV-laden, keine Ladung -> bei zwei die Verzögerung starten, für den 3. reicht es nicht
     # setup
-    data.data.counter_data["counter0"].data.set.raw_power_left = 31775
+    data.data.counter_data["counter0"].data.set.raw_power_left = 31975
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16, 12, 14]
     data.data.counter_data["counter0"].data.set.reserved_surplus = 0
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
 
     # execution
     Algorithm().calc_current()
@@ -131,13 +127,13 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
     for i in range(3, 6):
         assert data.data.cp_data[f"cp{i}"].data.set.current == 0
     assert data.data.cp_data[
-        "cp3"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
+        "cp3"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.cp_data[
         "cp4"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
     assert data.data.cp_data[
-        "cp5"].data.control_parameter.timestamp_switch_on_off is None
-    assert data.data.counter_data["counter0"].data.set.raw_power_left == 31775
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9890
+        "cp5"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
+    assert data.data.counter_data["counter0"].data.set.raw_power_left == 31975
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == -690
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 9000
 
 
@@ -159,8 +155,6 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
         "cp4"].data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
     data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off = None
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
 
     # execution
     Algorithm().calc_current()
@@ -176,7 +170,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 24300
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2415
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == -690
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 0
 
 
@@ -190,7 +184,7 @@ cases_limit = [
                   expected_current_cp4=8,
                   expected_current_cp5=8,
                   expected_raw_power_left=34820,
-                  expected_surplus_power_left=6035.0,
+                  expected_surplus_power_left=1090,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
     ParamsSurplus(name="reduce current",
@@ -202,7 +196,7 @@ cases_limit = [
                   expected_current_cp4=7.8731884057971016,
                   expected_current_cp5=7.8731884057971016,
                   expected_raw_power_left=24470,
-                  expected_surplus_power_left=0,
+                  expected_surplus_power_left=1090,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
     ParamsSurplus(name="switch off delay for two of three charging",
@@ -214,7 +208,7 @@ cases_limit = [
                   expected_current_cp4=6,
                   expected_current_cp5=6,
                   expected_raw_power_left=5635,
-                  expected_surplus_power_left=-16250.0,
+                  expected_surplus_power_left=-8200,
                   expected_reserved_surplus=0,
                   expected_released_surplus=11040),
 ]
@@ -227,8 +221,11 @@ def test_surplus(params: ParamsSurplus, all_cp_pv_charging_3p, all_cp_charging_3
     data.data.counter_data["counter0"].data.set.raw_power_left = params.raw_power_left
     data.data.counter_data["counter0"].data.set.raw_currents_left = params.raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = params.raw_currents_left_counter6
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
+    mock_get_component_name_by_id = Mock(return_value="Garage")
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
+    data.data.cp_data["cp3"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
+    data.data.cp_data["cp4"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
+    data.data.cp_data["cp5"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
 
     # execution
     Algorithm().calc_current()
@@ -250,7 +247,7 @@ cases_phase_switch = [
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=17400,
-                      expected_surplus_power_left=-4485,
+                      expected_surplus_power_left=-690,
                       expected_reserved_surplus=0,
                       expected_released_surplus=0),
     ParamsPhaseSwitch(name="phase switch 1p->3p",
@@ -264,7 +261,7 @@ cases_phase_switch = [
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=37520.0,
-                      expected_surplus_power_left=10575.0,
+                      expected_surplus_power_left=3000,
                       expected_reserved_surplus=0,
                       expected_released_surplus=0)
 ]
@@ -275,10 +272,6 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     data.data.counter_data["counter0"].data.set.raw_power_left = cases_phase_switch[0].raw_power_left
     data.data.counter_data["counter0"].data.set.raw_currents_left = cases_phase_switch[0].raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = cases_phase_switch[0].raw_currents_left_counter6
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
-    mockget_get_phases_chargemode = Mock(return_value=0)
-    monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
     data.data.cp_data[
         "cp3"].data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
     data.data.cp_data[
@@ -300,10 +293,6 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     data.data.counter_data["counter0"].data.set.raw_power_left = cases_phase_switch[1].raw_power_left
     data.data.counter_data["counter0"].data.set.raw_currents_left = cases_phase_switch[1].raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = cases_phase_switch[1].raw_currents_left_counter6
-    mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
-    mockget_get_phases_chargemode = Mock(return_value=0)
-    monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
     data.data.cp_data["cp3"].data.get.currents = [32, 0, 0]
     data.data.cp_data["cp3"].data.get.power = 7360
     data.data.cp_data["cp3"].data.control_parameter.timestamp_last_phase_switch = 1652682252

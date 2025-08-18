@@ -3,6 +3,7 @@ from typing import Any, List, Optional
 
 from control import data
 from modules.common.abstract_device import AbstractDevice
+from modules.common.abstract_io import AbstractIoDevice
 from modules.common.component_type import type_to_topic_mapping
 log = logging.getLogger(__name__)
 
@@ -17,7 +18,16 @@ def get_component_name_by_id(id: int):
         raise ValueError(f"Element {id} konnte keinem Gerät zugeordnet werden.")
 
 
-def get_component_obj_by_id(id: int, not_finished_threads: List[str]) -> Optional[Any]:
+def get_io_name_by_id(id: int):
+    for item in data.data.system_data.values():
+        if isinstance(item, AbstractIoDevice):
+            if item.config.id == id:
+                return item.config.name
+    else:
+        raise ValueError(f"Element {id} konnte keinem Gerät zugeordnet werden.")
+
+
+def get_finished_component_obj_by_id(id: int, not_finished_threads: List[str]) -> Optional[Any]:
     for item in data.data.system_data.values():
         if isinstance(item, AbstractDevice):
             for t in not_finished_threads:
@@ -35,6 +45,17 @@ def get_component_obj_by_id(id: int, not_finished_threads: List[str]) -> Optiona
                                 return None
                             else:
                                 return comp
+    else:
+        log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
+        return None
+
+
+def get_component_obj_by_id(id: int) -> Optional[Any]:
+    for item in data.data.system_data.values():
+        if isinstance(item, AbstractDevice):
+            for comp in item.components.values():
+                if comp.component_config.id == id:
+                    return comp
     else:
         log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
         return None
