@@ -328,18 +328,33 @@ function refreshChargeTemplate(chargePointIndex) {
 							schedulePlanElement.find('.charge-point-schedule-frequency-value').text('täglich');
 							break;
 						case "weekly":
-							const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-							var daysText = '';
-							value.frequency.weekly.forEach(function (dayValue, index) {
-								if (dayValue == true) {
-									if (daysText.length > 0) {
-										daysText += ',';
-									}
-									daysText += days[index];
+							const weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+							let planDays = [];
+							let rangeStart = null;
+
+							value.frequency.weekly.forEach((dayValue, index) => {
+								if (dayValue) {
+									if (rangeStart === null) rangeStart = index;
+								} else if (rangeStart !== null) {
+									planDays.push(
+										rangeStart === index - 1
+											? weekdays[rangeStart]
+											: `${weekdays[rangeStart]}-${weekdays[index - 1]}`
+									);
+									rangeStart = null;
 								}
 							});
+
+							// Falls der letzte Bereich bis zum Ende geht
+							if (rangeStart !== null) {
+								planDays.push(
+									rangeStart === value.frequency.weekly.length - 1
+										? weekdays[rangeStart]
+										: `${weekdays[rangeStart]}-${weekdays[value.frequency.weekly.length - 1]}`
+								);
+							}
 							schedulePlanElement.find('.charge-point-schedule-frequency').addClass('fa-calendar-alt');
-							schedulePlanElement.find('.charge-point-schedule-frequency-value').text(daysText);
+							schedulePlanElement.find('.charge-point-schedule-frequency-value').text(planDays.join(', '));
 							break;
 						default:
 							console.error("unknown schedule frequency: " + value.frequency.selected);
