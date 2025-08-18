@@ -214,7 +214,8 @@ class BatAll:
                 # Speicher sollte weder ge- noch entladen werden.
                 charging_power_left = self.data.get.power
             else:
-                if self.data.get.soc < config.min_bat_soc:
+                # Speicher soll geladen werden um min SoC zu erreichen
+                if self.data.get.soc <= config.min_bat_soc:
                     if self.data.get.power < 0:
                         # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge
                         # genutzt werden. Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher
@@ -235,9 +236,11 @@ class BatAll:
                             # Speicher wird geladen
                             charging_power_left = 0
                             self.data.set.regulate_up = True
-                elif int(self.data.get.soc) == config.min_bat_soc:
+                # Speicher zwischen min und max SoC
+                elif int(self.data.get.soc) > config.min_bat_soc and int(self.data.get.soc) < config.max_bat_soc:
                     # Speicher sollte weder ge- noch entladen werden, um den Mindest-SoC zu halten.
                     charging_power_left = self.data.get.power
+                # Speicher oberhalb max SoC. Darf bis min SoC entladen werden.
                 else:
                     if self.data.set.power_limit is None:
                         if config.bat_power_discharge_active:
