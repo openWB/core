@@ -6,6 +6,13 @@ mit denen das EV aktuell in der Regelung berücksichtigt wird. Bei der Ermittlun
 stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Falls ja, muss das EV
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
 """
+from modules.common.configurable_vehicle import ConfigurableVehicle
+from modules.common.abstract_vehicle import VehicleUpdateData
+from helpermodules.constants import NO_ERROR
+from helpermodules import timecheck
+from dataclass_utils.factories import empty_list_factory
+from control.text import BidiState
+from control.limiting_value import LimitingValue, LoadmanagementLimit
 from dataclasses import dataclass, field
 import logging
 from typing import List, Optional, Tuple
@@ -18,12 +25,6 @@ from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
-from control.limiting_value import LimitingValue, LoadmanagementLimit
-from dataclass_utils.factories import empty_list_factory
-from helpermodules import timecheck
-from helpermodules.constants import NO_ERROR
-from modules.common.abstract_vehicle import VehicleUpdateData
-from modules.common.configurable_vehicle import ConfigurableVehicle
 
 log = logging.getLogger(__name__)
 
@@ -120,7 +121,9 @@ class Ev:
                              phase_switch_supported: bool,
                              charging_type: str,
                              chargemode_switch_timestamp: float,
-                             imported_since_plugged: float) -> Tuple[bool, Optional[str], str, float, int]:
+                             imported_since_plugged: float,
+                             bidi: BidiState,
+                             phases_in_use: int) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -156,30 +159,17 @@ class Ev:
                 else:
                     soc_request_interval_offset = 0
                 if charge_template.data.chargemode.selected == "scheduled_charging":
-                    plan_data = charge_template.scheduled_charging_recent_plan(
+                    required_current, submode, tmp_message, phases = charge_template.scheduled_charging(
                         self.data.get.soc,
                         self.ev_template,
-                        control_parameter.phases,
                         imported_since_plugged,
                         max_phases_hw,
                         phase_switch_supported,
                         charging_type,
                         chargemode_switch_timestamp,
                         control_parameter,
-                        soc_request_interval_offset)
-                    if plan_data:
-                        control_parameter.current_plan = plan_data.plan.id
-                    else:
-                        control_parameter.current_plan = None
-                    required_current, submode, tmp_message, phases = charge_template.scheduled_charging_calc_current(
-                        plan_data,
-                        self.data.get.soc,
-                        imported_since_plugged,
-                        control_parameter.phases,
-                        control_parameter.min_current,
                         soc_request_interval_offset,
-                        charging_type,
-                        self.ev_template)
+                        bidi)
                     message = f"{tmp_message or ''}".strip()
 
                 # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
@@ -224,11 +214,9 @@ class Ev:
                     control_parameter.phases)
 
     def check_min_max_current(self,
-                              control_parameter: ControlParameter,
                               required_current: float,
                               phases: int,
-                              charging_type: str,
-                              pv: bool = False,) -> Tuple[float, Optional[str]]:
+                              charging_type: str) -> Tuple[float, Optional[str]]:
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt.
         Falls nicht, wird der Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom des EV gesetzt.
         Wenn PV-Laden aktiv ist, darf die Stromstärke nicht unter den PV-Mindeststrom gesetzt werden.
@@ -239,13 +227,10 @@ class Ev:
         if phases != 0:
             # EV soll/darf nicht laden
             if required_current != 0:
-                if not pv:
-                    if charging_type == ChargingType.AC.value:
-                        min_current = self.ev_template.data.min_current
-                    else:
-                        min_current = self.ev_template.data.dc_min_current
+                if charging_type == ChargingType.AC.value:
+                    min_current = self.ev_template.data.min_current
                 else:
-                    min_current = control_parameter.required_current
+                    min_current = self.ev_template.data.dc_min_current
                 if required_current < min_current:
                     required_current = min_current
                     msg = ("Die Einstellungen in dem Fahrzeug-Profil beschränken den Strom auf "
@@ -483,12 +468,11 @@ def get_ev_to_rfid(rfid: Optional[str] = None, vehicle_id: Optional[str] = None)
                 # Prüfung auf ein passendes Muster
                 # auch 'fnmatch()' ist case-insensitive
                 for tag_id in data.data.ev_data[vehicle].data.tag_id:
-                    if vehicle_id is not None:
-                        if fnmatch(vehicle_id, tag_id):
-                            log.debug(f"MAC {vehicle_id} und gespeicherte Tag_ID {tag_id} stimmen überein. "
-                                      f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
-                            return data.data.ev_data[vehicle].num
-                    if fnmatch(rfid, tag_id):
+                    if vehicle_id is not None and fnmatch(vehicle_id, tag_id):
+                        log.debug(f"MAC {vehicle_id} und gespeicherte Tag_ID {tag_id} stimmen überein. "
+                                  f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
+                        return data.data.ev_data[vehicle].num
+                    if rfid is not None and fnmatch(rfid, tag_id):
                         log.debug(f"RFID {rfid}  und gespeicherte Tag_ID {tag_id} stimmen überein. "
                                   f"EV {data.data.ev_data[vehicle].num} zugeordnet.")
                         return data.data.ev_data[vehicle].num

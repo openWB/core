@@ -81,15 +81,20 @@ class Command:
                 max_id = default
                 for topic, payload in received_topics.items():
                     if re.search(topic_str, topic) is not None:
-                        if id_topic == "autolock_plan":
-                            for plan in payload["autolock"]["plans"]:
-                                max_id = max(plan["id"], max_id)
-                        elif id_topic == "charge_template_scheduled_plan":
-                            for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
-                                max_id = max(plan["id"], max_id)
-                        elif id_topic == "charge_template_time_charging_plan":
-                            for plan in payload["time_charging"]["plans"]:
-                                max_id = max(plan["id"], max_id)
+                        try:
+                            if id_topic == "autolock_plan":
+                                for plan in payload["autolock"]["plans"]:
+                                    max_id = max(plan["id"], max_id)
+                            elif id_topic == "charge_template_scheduled_plan":
+                                for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
+                                    max_id = max(plan["id"], max_id)
+                            elif id_topic == "charge_template_time_charging_plan":
+                                for plan in payload["time_charging"]["plans"]:
+                                    max_id = max(plan["id"], max_id)
+                        except KeyError:
+                            # überspringe Profile, die keinen Eintrag für Pläne haben.
+                            # Da gab es einen Bug beim Kopieren.
+                            pass
                 setattr(self, f'max_id_{id_topic}', max_id)
                 Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
             for id_topic, topic_str, default in self.MAX_IDS["topic"]:
@@ -452,40 +457,27 @@ class Command:
     def addChargeTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Lade-Profil erstellt werden soll.
         """
+        new_id = self.max_id_charge_template + 1
+        self.max_id_charge_template = new_id
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            new_charge_template = asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}'].data).copy()
-            new_charge_template["chargemode"]["scheduled_charging"].pop("plans")
-            new_charge_template["time_charging"].pop("plans")
-            new_charge_template["name"] = f'Kopie von {new_charge_template["name"]}'
-        else:
-            new_charge_template = get_new_charge_template()
-        new_id = self.max_id_charge_template + 1
-        new_charge_template["id"] = new_id
-        Pub().pub("openWB/set/vehicle/template/charge_template/" +
-                  str(new_id), new_charge_template)
-        self.max_id_charge_template = new_id
-        Pub().pub("openWB/set/command/max_id/charge_template", new_id)
-        # if copying a template, also copy schedule plans and time charging plans
-        if "data" in payload and "copy" in payload["data"]:
-            for _, plan in (data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}']
-                            .data.chargemode.scheduled_charging.plans.items()):
-                new_plan = asdict(plan).copy()
-                new_plan["id"] = self.max_id_charge_template_scheduled_plan + 1
-                Pub().pub(f'openWB/set/vehicle/template/charge_template/{new_id}/'
-                          f'chargemode/scheduled_charging/plans/{new_plan["id"]}',
-                          new_plan)
+            new_charge_template = copy.deepcopy(data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}'].data)
+            new_charge_template.name = f'Kopie von {new_charge_template.name}'
+            for plan in new_charge_template.chargemode.scheduled_charging.plans:
+                plan.id = self.max_id_charge_template_scheduled_plan + 1
                 self.max_id_charge_template_scheduled_plan += 1
             Pub().pub("openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
-            for _, plan in (data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}']
-                            .data.time_charging.plans.items()):
-                new_plan = asdict(plan).copy()
-                new_plan["id"] = self.max_id_charge_template_time_charging_plan + 1
-                Pub().pub(f'openWB/set/vehicle/template/charge_template/{new_id}/'
-                          f'time_charging/plans/{new_plan["id"]}',
-                          new_plan)
+            for plan in new_charge_template.time_charging.plans:
+                plan.id = self.max_id_charge_template_time_charging_plan + 1
                 self.max_id_charge_template_time_charging_plan += 1
             Pub().pub("openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
+            new_charge_template = asdict(new_charge_template)
+        else:
+            new_charge_template = get_new_charge_template()
+            new_charge_template["id"] = new_id
+
+        Pub().pub("openWB/set/command/max_id/charge_template", new_id)
+        Pub().pub(f"openWB/set/vehicle/template/charge_template/{new_id}", new_charge_template)
         pub_user_message(payload, connection_id,
                          f'Neues Lade-Profil mit ID \'{new_id}\' hinzugefügt.',
                          MessageType.SUCCESS)
@@ -963,16 +955,17 @@ class ErrorHandlingContext:
         return None
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        if isinstance(exception, Exception):
+        if isinstance(exception, subprocess.CalledProcessError):
+            pub_user_message(self.payload, self.connection_id,
+                             (f'Fehler-Status: {exception.returncode}<br />Meldung: '
+                              f'{exception.stderr if exception.stderr else ""} '
+                              f'{exception.output if exception.output else ""}'),
+                             MessageType.ERROR)
+            return True
+        elif isinstance(exception, Exception):
             pub_user_message(self.payload, self.connection_id,
                              f'Es ist ein interner Fehler aufgetreten: {exception}', MessageType.ERROR)
             log.error({traceback.format_exc()})
-            return True
-        elif isinstance(exception, subprocess.CalledProcessError):
-            log.debug(exception.stdout)
-            pub_user_message(self.payload, self.connection_id,
-                             f'Fehler-Status: {exception.returncode}<br />Meldung: {exception.stderr}',
-                             MessageType.ERROR)
             return True
         else:
             return False
