@@ -354,7 +354,10 @@ class Ev:
                                                           delay)[1])
                     control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
                 elif condition_msg:
-                    log.debug(f"Keine Phasenumschaltung{condition_msg}")
+                    if condition_msg == self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE:
+                        message = f"Keine Phasenumschaltung{condition_msg}"
+                    else:
+                        log.debug(f"Keine Phasenumschaltung{condition_msg}")
             else:
                 if condition:
                     # Timer laufen lassen
