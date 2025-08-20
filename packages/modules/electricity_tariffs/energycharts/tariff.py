@@ -17,9 +17,8 @@ log = logging.getLogger(__name__)
 
 
 def get_tomorrow_last_hour_timestamp() -> int:
-    tomorrow = datetime.now() + timedelta(days=1)
-    last_hour = tomorrow.replace(hour=23, minute=59, second=59, microsecond=0)
-    return int(last_hour.timestamp())
+    tomorrow = datetime.now() + timedelta(days=2)
+    return int(tomorrow.timestamp())
 
 
 def create_request_url(config: EnergyChartsTariffConfiguration) -> str:
