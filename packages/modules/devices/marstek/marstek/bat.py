@@ -32,23 +32,19 @@ class MarstekBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        modbus_id = self.__modbus_id
+        unit = self.__modbus_id
 
         power = self.__tcp_client.read_holding_registers(32202,
-                                                         ModbusDataType.INT_32, unit=modbus_id) * -1
+                                                         ModbusDataType.INT_32, unit=unit) * -1
         soc = self.__tcp_client.read_holding_registers(32104,
-                                                       ModbusDataType.UINT_16, unit=modbus_id) * 0.1
-        imported = self.__tcp_client.read_holding_registers(33000,
-                                                            ModbusDataType.UINT_32, unit=modbus_id) * 0.01
-        exported = self.__tcp_client.read_holding_registers(33002,
-                                                            ModbusDataType.UINT_32, unit=modbus_id) * 0.01
+                                                       ModbusDataType.UINT_16, unit=unit) * 0.1
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,
-            imported=imported_scaled,
-            exported=exported_scaled
+            imported=imported,
+            exported=exported
         )
         self.store.set(bat_state)
 
