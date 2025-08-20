@@ -62,4 +62,3 @@ def create_electricity_tariff(config: EnergyChartsTariff):
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=EnergyChartsTariff)
-
