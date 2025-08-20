@@ -11,7 +11,7 @@ class MarstekConfiguration:
         self.port = port
 
 
-class Saxpower:
+class Marstek:
     def __init__(self,
                  name: str = "marstek",
                  type: str = "marstek",
