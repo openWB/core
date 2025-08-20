@@ -17,10 +17,12 @@ def create_device(device_config: Marstek):
 
     def create_bat_component(component_config: MarstekBatSetup):
         nonlocal client
-        return MarstekBat(component_config,
-                           device_id=device_config.id,
-                           client=client,
-                           modbus_id=device_config.configuration.modbus_id)
+        return MarstekBat(
+            component_config,
+            device_id=device_config.id,
+            client=client,
+            modbus_id=device_config.configuration.modbus_id,
+        )
 
     def update_components(components: Iterable[MarstekBat]):
         nonlocal client
