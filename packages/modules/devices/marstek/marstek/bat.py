@@ -37,7 +37,7 @@ class MarstekBat(AbstractBat):
         power = self.__tcp_client.read_holding_registers(32202,
                                                          ModbusDataType.INT_32, unit=modbus_id) * -1
         soc = self.__tcp_client.read_holding_registers(32104,
-                                                       ModbusDataType.UINT_16, unit=modbus_id)
+                                                       ModbusDataType.UINT_16, unit=modbus_id) * 0.1
         imported = self.__tcp_client.read_holding_registers(33000,
                                                             ModbusDataType.UINT_32, unit=modbus_id) * 0.01
         exported = self.__tcp_client.read_holding_registers(33002,
