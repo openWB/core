@@ -2514,4 +2514,4 @@ class UpdateConfig:
                             max_id += 1
                     self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
                     Pub().pub(f"openWB/set/chargepoint/template/{get_index(topic)}", payload)
-        # self.__update_topic("openWB/system/datastore_version", 94)
+        self.__update_topic("openWB/system/datastore_version", 94)
