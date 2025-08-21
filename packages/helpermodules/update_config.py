@@ -2438,7 +2438,7 @@ class UpdateConfig:
                         try:
                             max_id = max(plan["id"], max_id)
                         except TypeError:
-                            if plan["id"] == None:
+                            if plan["id"] is None:
                                 none_id = True
                             else:
                                 raise TypeError(f"Plan {plan} hat keinen Key 'id' und ist kein NoneType.")
@@ -2451,7 +2451,7 @@ class UpdateConfig:
                 if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
                     payload = decode_payload(payload)
                     for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
-                        if plan["id"] == None:
+                        if plan["id"] is None:
                             plan["id"] = max_id + 1
                             max_id += 1
                     self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -2467,7 +2467,7 @@ class UpdateConfig:
                         try:
                             max_id = max(plan["id"], max_id)
                         except TypeError:
-                            if plan["id"] == None:
+                            if plan["id"] is None:
                                 none_id = True
                             else:
                                 raise TypeError(f"Plan {plan} hat keinen Key 'id' und ist kein NoneType.")
@@ -2480,7 +2480,7 @@ class UpdateConfig:
                 if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
                     payload = decode_payload(payload)
                     for plan in payload["time_charging"]["plans"]:
-                        if plan["id"] == None:
+                        if plan["id"] is None:
                             plan["id"] = max_id + 1
                             max_id += 1
                     self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -2496,7 +2496,7 @@ class UpdateConfig:
                         try:
                             max_id = max(plan["id"], max_id)
                         except TypeError:
-                            if plan["id"] == None:
+                            if plan["id"] is None:
                                 none_id = True
                             else:
                                 raise TypeError(f"Plan {plan} hat keinen Key 'id' und ist kein NoneType.")
@@ -2509,7 +2509,7 @@ class UpdateConfig:
                 if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
                     payload = decode_payload(payload)
                     for plan in payload["autolock"]["plans"]:
-                        if plan["id"] == None:
+                        if plan["id"] is None:
                             plan["id"] = max_id + 1
                             max_id += 1
                     self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
