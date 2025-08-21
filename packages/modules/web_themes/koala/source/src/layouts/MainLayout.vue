@@ -159,14 +159,8 @@ onMounted(() => {
 
 <style scoped>
 .centered-container {
-  max-width: 1000px;
+  max-width: 1500px;
   margin-left: auto;
   margin-right: auto;
-}
-
-@media (min-width: 1400px) {
-  .centered-container {
-    max-width: 1400px;
-  }
 }
 </style>
