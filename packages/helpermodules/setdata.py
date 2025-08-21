@@ -717,7 +717,7 @@ class SetData:
             elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/general/chargemode_config/phase_switch_delay" in msg.topic:
-                self._validate_value(msg, int, [(5, 20)])
+                self._validate_value(msg, int, [(5, 60)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
             elif "openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic:
