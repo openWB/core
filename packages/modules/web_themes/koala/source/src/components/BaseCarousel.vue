@@ -46,36 +46,46 @@ const currentSlide = ref<number>(0);
 const animated = ref<boolean>(true);
 const carouselRef = ref<{ $el: HTMLElement } | null>(null);
 const itemRef = ref<(HTMLElement | null)[]>([]);
-const groupSize = ref<number>(2);
 
-const updateGroupSize = () => {
+const groupSize = computed(() => {
   if (!itemRef.value[0]) {
-    groupSize.value = 1; // Fallback to 1 if no items are available
-    setTimeout(updateGroupSize, 50);
-    return;
+    return; // Fallback if no item is present
   }
-  const carouselSlideWidth =
-    carouselRef.value?.$el.querySelector('.q-carousel__slide')?.clientWidth ??
-    0;
   const itemWidth = itemRef.value[0]?.clientWidth ?? 300; // Fallback
-  // Get computed padding from the carousel slide element
+  let carouselSlideWidth = 0;
   let padding = 0;
   const slideEl = carouselRef.value?.$el.querySelector('.q-carousel__slide');
   if (slideEl) {
+    carouselSlideWidth = slideEl.clientWidth ?? 0;
     const style = window.getComputedStyle(slideEl);
     padding =
       parseFloat(style.paddingLeft || '0') +
       parseFloat(style.paddingRight || '0');
-  }
-  groupSize.value = Math.max(
+    }
+  const maxGroupSize = Math.max(
     1,
     Math.floor((carouselSlideWidth - padding) / itemWidth),
   );
-};
+
+  // Special case: Prevent a second group with only one item,
+  // if all items would fit side by side without navigation arrows
+  if (
+    props.items.length > maxGroupSize &&
+    props.items.length <= maxGroupSize * 2 &&
+    props.items.length - maxGroupSize === 1
+  ) {
+   // Check if all items would fit side by side
+    if (props.items.length * itemWidth <= carouselSlideWidth) {
+      return props.items.length;
+    }
+  }
+  return maxGroupSize;
+});
 
 const groupedItems = computed(() => {
+  const groupSizeValue = groupSize.value ? groupSize.value : props.items.length;
   return props.items.reduce((resultArray, item, index) => {
-    const chunkIndex = Math.floor(index / groupSize.value);
+    const chunkIndex = Math.floor(index / groupSizeValue);
     if (!resultArray[chunkIndex]) {
       resultArray[chunkIndex] = [];
     }
@@ -86,14 +96,19 @@ const groupedItems = computed(() => {
 
 onMounted(async () => {
   await nextTick(() => {
-    updateGroupSize();
-    window.addEventListener('resize', updateGroupSize);
+    window.addEventListener('resize', () => {
+      // Trigger a re-render by resetting itemRef
+      itemRef.value = [...itemRef.value];
+    });
   });
 });
 
 watch(
   () => props.items,
-  () => updateGroupSize(),
+  () => {
+    // Reset itemRef to trigger re-render
+    itemRef.value = [...itemRef.value];
+  },
 );
 
 const handleSlideChange = () => {
