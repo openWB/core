@@ -33,7 +33,15 @@ def get_common_data():
         ip_address = subdata.SubData.system_data["system"].data["ip_address"]
     except Exception:
         ip_address = None
+    try:
+        updateAvailable = subdata.SubData.system_data["system"].data["current_branch_commit"] and \
+                          subdata.SubData.system_data["system"].data["current_branch_commit"] != \
+                          subdata.SubData.system_data["system"].data["current_commit"]
+    except Exception:
+        updateAvailable = False
 
+    with ErrorHandlingContext():
+        parsed_data += f"Firmware_deprecated: {updateAvailable}\n"
     with ErrorHandlingContext():
         parent_file = Path(__file__).resolve().parents[2]
         with open(f"{parent_file}/web/version", "r") as f:
