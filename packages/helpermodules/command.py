@@ -81,20 +81,15 @@ class Command:
                 max_id = default
                 for topic, payload in received_topics.items():
                     if re.search(topic_str, topic) is not None:
-                        try:
-                            if id_topic == "autolock_plan":
-                                for plan in payload["autolock"]["plans"]:
-                                    max_id = max(plan["id"], max_id)
-                            elif id_topic == "charge_template_scheduled_plan":
-                                for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
-                                    max_id = max(plan["id"], max_id)
-                            elif id_topic == "charge_template_time_charging_plan":
-                                for plan in payload["time_charging"]["plans"]:
-                                    max_id = max(plan["id"], max_id)
-                        except KeyError:
-                            # überspringe Profile, die keinen Eintrag für Pläne haben.
-                            # Da gab es einen Bug beim Kopieren.
-                            pass
+                        if id_topic == "autolock_plan":
+                            for plan in payload["autolock"]["plans"]:
+                                max_id = max(plan["id"], max_id)
+                        elif id_topic == "charge_template_scheduled_plan":
+                            for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
+                                max_id = max(plan["id"], max_id)
+                        elif id_topic == "charge_template_time_charging_plan":
+                            for plan in payload["time_charging"]["plans"]:
+                                max_id = max(plan["id"], max_id)
                 setattr(self, f'max_id_{id_topic}', max_id)
                 Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
             for id_topic, topic_str, default in self.MAX_IDS["topic"]:

@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 93
+    DATASTORE_VERSION = 94
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2425,3 +2425,93 @@ class UpdateConfig:
                 return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 93)
+
+    def upgrade_datastore_93(self) -> None:
+        # Pläne die keinen plans Key haben, id=None
+        max_id = -1
+        none_id = False
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                try:
+                    for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
+                        try:
+                            max_id = max(plan["id"], max_id)
+                        except TypeError:
+                            if plan["id"] == None:
+                                none_id = True
+                            else:
+                                raise TypeError(f"Plan {plan} hat keinen Key 'id' und ist kein NoneType.")
+                except KeyError:
+                    payload["chargemode"]["scheduled_charging"].update({"plans": []})
+                    self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                    Pub().pub(f"openWB/set/vehicle/template/charge_template/{get_index(topic)}", payload)
+        if none_id:
+            for topic, payload in self.all_received_topics.items():
+                if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                    payload = decode_payload(payload)
+                    for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
+                        if plan["id"] == None:
+                            plan["id"] = max_id + 1
+                            max_id += 1
+                    self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                    Pub().pub(f"openWB/set/vehicle/template/charge_template/{get_index(topic)}", payload)
+
+        max_id = -1
+        none_id = False
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                try:
+                    for plan in payload["time_charging"]["plans"]:
+                        try:
+                            max_id = max(plan["id"], max_id)
+                        except TypeError:
+                            if plan["id"] == None:
+                                none_id = True
+                            else:
+                                raise TypeError(f"Plan {plan} hat keinen Key 'id' und ist kein NoneType.")
+                except KeyError:
+                    payload["time_charging"].update({"plans": []})
+                    self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                    Pub().pub(f"openWB/set/vehicle/template/charge_template/{get_index(topic)}", payload)
+        if none_id:
+            for topic, payload in self.all_received_topics.items():
+                if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                    payload = decode_payload(payload)
+                    for plan in payload["time_charging"]["plans"]:
+                        if plan["id"] == None:
+                            plan["id"] = max_id + 1
+                            max_id += 1
+                    self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                    Pub().pub(f"openWB/set/vehicle/template/charge_template/{get_index(topic)}", payload)
+
+        max_id = -1
+        none_id = False
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                try:
+                    for plan in payload["autolock"]["plans"]:
+                        try:
+                            max_id = max(plan["id"], max_id)
+                        except TypeError:
+                            if plan["id"] == None:
+                                none_id = True
+                            else:
+                                raise TypeError(f"Plan {plan} hat keinen Key 'id' und ist kein NoneType.")
+                except KeyError:
+                    payload["autolock"].update({"plans": []})
+                    self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                    Pub().pub(f"openWB/set/chargepoint/template/{get_index(topic)}", payload)
+        if none_id:
+            for topic, payload in self.all_received_topics.items():
+                if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
+                    payload = decode_payload(payload)
+                    for plan in payload["autolock"]["plans"]:
+                        if plan["id"] == None:
+                            plan["id"] = max_id + 1
+                            max_id += 1
+                    self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                    Pub().pub(f"openWB/set/chargepoint/template/{get_index(topic)}", payload)
+        # self.__update_topic("openWB/system/datastore_version", 94)
