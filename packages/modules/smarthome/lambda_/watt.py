@@ -53,7 +53,7 @@ if os.path.isfile(file_stringpv):
 # aktuelle Leistung lesen
 with ModbusTcpClient(ipadr, port=502) as client:
     start = 103
-    resp = client.read_holding_registers(start, 2)
+    resp = client.read_holding_registers(start, 2, unit=1)
     #
     value1 = resp.registers[0]
     all = format(value1, '04x')
