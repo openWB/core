@@ -104,7 +104,7 @@ with ModbusTcpClient(ipadr, port=502) as client:
             builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Little)
             builder.add_16bit_int(neupower)
             pay = builder.to_registers()
-            client.write_registers(102, [pay[0]])
+            client.write_registers(102, [pay[0]], unit=1)
             if count1 < 3:
                 log.info(' %d ipadr %s written %6d %#4X' %
                          (devicenumber, ipadr, pay[0], pay[0]))
