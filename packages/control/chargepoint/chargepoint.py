@@ -561,6 +561,7 @@ class Chargepoint(ChargepointRfidMixin):
 
     def set_phases(self, phases: int) -> int:
         charging_ev = self.data.set.charging_ev_data
+        phases = min(phases, self.get_max_phase_hw())
 
         if phases != self.data.get.phases_in_use:
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
