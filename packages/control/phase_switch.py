@@ -38,8 +38,6 @@ def _perform_phase_switch(chargepoint_module: AbstractChargepoint, phases: int, 
             time.sleep(5)
         # Phasenumschaltung entsprechend Modul
         chargepoint_module.switch_phases(phases, ev.ev_template.data.phase_switch_pause)
-        # Die Ladung wird in start_charging wieder gestartet, wenn phase_switch_timestamp wieder auf None gesetzt wird.
-        time.sleep(ev.ev_template.data.keep_charge_active_duration)
     except Exception:
         log.exception("Fehler im Phasenumschaltungs-Modul")
 
