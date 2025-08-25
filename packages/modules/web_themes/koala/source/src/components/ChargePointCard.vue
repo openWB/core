@@ -1,5 +1,5 @@
 <template>
-  <q-card ref="cardRef" class="card-width">
+  <q-card ref="cardRef" class="card-width full-height">
     <q-card-section class="row no-wrap">
       <div class="text-h6 text-bold ellipsis" :title="name">
         {{ name }}
@@ -297,7 +297,7 @@ const refreshSoc = () => {
 </script>
 <style lang="scss" scoped>
 .card-width {
-  max-width: 22em;
+  width: 22em;
 }
 
 .q-card__section {

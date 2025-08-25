@@ -1,7 +1,7 @@
 <template>
   <q-card
     ref="cardRef"
-    class="card-width"
+    class="card-width full-height"
     :class="{ 'battery-sum': props.batteryId === -1 }"
   >
     <q-card-section class="row items-center justify-between">
@@ -149,7 +149,7 @@ const dailyExportedEnergy = computed(() => {
 
 <style scoped lang="scss">
 .card-width {
-  max-width: 22em;
+  width: 22em;
 }
 
 .q-card__section {
