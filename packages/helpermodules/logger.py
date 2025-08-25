@@ -334,12 +334,15 @@ def setup_logging() -> None:
     logging.getLogger("uModbus").setLevel(logging.WARNING)
     logging.getLogger("websockets").setLevel(logging.WARNING)
 
-    thread_errors_path = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"thread_errors.log")
+    thread_errors_path = Path(RAMDISK_PATH+"thread_errors.log")
     with thread_errors_path.open("w") as f:
         f.write("")
 
     def threading_excepthook(args):
-        with open(RAMDISK_PATH+"thread_errors.log", "a") as f:
+        if thread_errors_path.exists() and thread_errors_path.stat().st_size > 10_000:
+            with thread_errors_path.open("w") as f:
+                f.write("")
+        with open(thread_errors_path, "a") as f:
             f.write("Uncaught exception in thread:\n")
             f.write(f"Type: {args.exc_type}\n")
             f.write(f"Value: {args.exc_value}\n")
@@ -348,7 +351,10 @@ def setup_logging() -> None:
     threading.excepthook = threading_excepthook
 
     def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
-        with open(RAMDISK_PATH+"thread_errors.log", "a") as f:
+        if thread_errors_path.exists() and thread_errors_path.stat().st_size > 10_000:
+            with thread_errors_path.open("w") as f:
+                f.write("")
+        with open(thread_errors_path, "a") as f:
             f.write("Uncaught exception:\n")
             f.write(f"Type: {exc_type}\n")
             f.write(f"Value: {exc_value}\n")
