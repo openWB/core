@@ -256,15 +256,7 @@ class Command:
             Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
             charge_template = SubData.ev_charge_template_data[f"ct{SubData.ev_data['ev0'].data.charge_template}"]
-            for time_plan in charge_template.data.time_charging.plans:
-                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/time_charging/plans',
-                          dataclass_utils.asdict(time_plan))
-            for scheduled_plan in charge_template.data.chargemode.scheduled_charging.plans:
-                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/chargemode/scheduled_charging/plans',
-                          scheduled_plan)
             charge_template = dataclass_utils.asdict(charge_template.data)
-            charge_template["chargemode"]["scheduled_charging"]["plans"].clear()
-            charge_template["time_charging"]["plans"].clear()
             Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template', charge_template)
             self.max_id_hierarchy = self.max_id_hierarchy + 1
             Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
@@ -347,7 +339,7 @@ class Command:
         """ löscht ein Ladepunkt.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
-            log.error(
+            pub_user_message(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
