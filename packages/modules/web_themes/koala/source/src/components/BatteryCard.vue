@@ -1,7 +1,7 @@
 <template>
   <q-card
     ref="cardRef"
-    class="full-height card-width"
+    class="card-width"
     :class="{ 'battery-sum': props.batteryId === -1 }"
   >
     <q-card-section class="row items-center justify-between">
@@ -147,26 +147,26 @@ const dailyExportedEnergy = computed(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .card-width {
-  width: 22em;
+  max-width: 22em;
 }
 
 .q-card__section {
-  padding-left: 16px;
-  padding-right: 16px;
+  padding-left: $space-base;
+  padding-right: $space-base;
   padding-top: 0;
   padding-bottom: 0;
 }
 
 .q-card__section:first-of-type {
-  padding-top: 16px;
+  padding-top: $space-base;
   padding-bottom: 0;
 }
 
 .q-card__section:last-of-type {
   padding-top: 0;
-  padding-bottom: 16px;
+  padding-bottom: $space-base;
 }
 
 .q-card__section:not(:first-of-type):not(:last-of-type) {

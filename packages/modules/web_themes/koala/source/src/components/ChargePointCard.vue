@@ -1,9 +1,18 @@
 <template>
-  <q-card ref="cardRef" class="full-height card-width">
-    <q-card-section class="row">
+  <q-card ref="cardRef" class="card-width">
+    <q-card-section class="row no-wrap">
       <div class="text-h6 text-bold ellipsis" :title="name">
         {{ name }}
       </div>
+      <q-space />
+      <q-btn
+        v-if="props.closeButton"
+        icon="close"
+        flat
+        round
+        dense
+        v-close-popup
+      />
     </q-card-section>
     <q-separator class="q-mt-sm" />
     <q-card-section class="row flex items-center justify-between">
@@ -117,6 +126,7 @@ const $q = useQuasar();
 
 const props = defineProps<{
   chargePointId: number;
+  closeButton?: boolean;
 }>();
 
 const vehicleId = computed(() => {
@@ -287,24 +297,24 @@ const refreshSoc = () => {
 </script>
 <style lang="scss" scoped>
 .card-width {
-  width: 22em;
+  max-width: 22em;
 }
 
 .q-card__section {
-  padding-left: 16px;
-  padding-right: 16px;
+  padding-left: $space-base;
+  padding-right: $space-base;
   padding-top: 0;
   padding-bottom: 0;
 }
 
 .q-card__section:first-of-type {
-  padding-top: 16px;
+  padding-top: $space-base;
   padding-bottom: 0;
 }
 
 .q-card__section:last-of-type {
   padding-top: 0;
-  padding-bottom: 16px;
+  padding-bottom: $space-base;
 }
 
 .q-card__section:not(:first-of-type):not(:last-of-type) {
