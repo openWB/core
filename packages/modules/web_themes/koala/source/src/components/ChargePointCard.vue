@@ -8,7 +8,10 @@
       <q-btn
         v-if="props.closeButton"
         icon="close"
-        flat round dense v-close-popup
+        flat
+        round
+        dense
+        v-close-popup
       />
     </q-card-section>
     <q-separator class="q-mt-sm" />

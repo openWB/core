@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="isMobile"
-    class="row q-pt-md full-width"
-  >
+  <div v-if="isMobile" class="row q-pt-md full-width">
     <q-btn-dropdown
       class="col"
       transition-show="scale"
@@ -33,11 +30,7 @@
       </q-list>
     </q-btn-dropdown>
   </div>
-  <q-btn-group
-    v-else
-    class="row col q-mt-sm"
-    spread
-  >
+  <q-btn-group v-else class="row col q-mt-sm" spread>
     <q-btn
       v-for="mode in chargeModes"
       :key="mode.value"

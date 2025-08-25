@@ -10,10 +10,7 @@
           <div class="text-h6 q-pr-sm">Einstellungen:</div>
           <div class="text-h6 ellipsis" :title="name">{{ name }}</div>
           <q-space />
-          <q-btn
-            icon="close"
-            flat round dense v-close-popup
-          />
+          <q-btn icon="close" flat round dense v-close-popup />
         </div>
       </q-card-section>
       <q-separator />

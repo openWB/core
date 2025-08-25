@@ -54,15 +54,15 @@ const showArrows = computed(() => {
 const storeSlideItemWidth = (width: number) => {
   console.log('Storing slide item width:', width);
   slideItemWidth.value = width;
-}
+};
 
 const currentSlide = computed({
-  get:() => {
+  get: () => {
     if (currentSlideItem.value == null) {
       return 0; // Always show the first slide if a specific item is not set
     }
     // Find the index of the slide containing the current item
-    let currentSlide = groupedItems.value.findIndex(group =>
+    let currentSlide = groupedItems.value.findIndex((group) =>
       group.includes(currentSlideItem.value),
     );
     if (currentSlide === -1) {
@@ -71,7 +71,7 @@ const currentSlide = computed({
     // Ensure the index is within bounds
     return Math.min(currentSlide, groupedItems.value.length - 1);
   },
-  set:(value: number) => {
+  set: (value: number) => {
     // Update currentSlideItem to the first item of the new slide
     currentSlideItem.value = groupedItems.value[value][0];
   },
@@ -81,7 +81,10 @@ const groupSize = computed(() => {
   let itemWidth = 300; // Default width
   console.debug('Calculating group size...', itemRef.value);
   if (slideItemWidth.value == null) {
-    if (itemRef.value[0]?.clientWidth && itemRef.value[0].clientWidth != slideItemWidth.value) {
+    if (
+      itemRef.value[0]?.clientWidth &&
+      itemRef.value[0].clientWidth != slideItemWidth.value
+    ) {
       storeSlideItemWidth(itemRef.value[0].clientWidth);
     } else {
       console.warn('Item width is not set, using default:', itemWidth);
@@ -99,7 +102,7 @@ const groupSize = computed(() => {
     padding =
       parseFloat(style.paddingLeft || '0') +
       parseFloat(style.paddingRight || '0');
-    }
+  }
   const maxGroupSize = Math.max(
     1,
     Math.floor((carouselSlideWidth - padding) / itemWidth),
@@ -112,7 +115,7 @@ const groupSize = computed(() => {
     props.items.length <= maxGroupSize * 2 &&
     props.items.length - maxGroupSize === 1
   ) {
-   // Check if all items would fit side by side
+    // Check if all items would fit side by side
     if (props.items.length * itemWidth <= carouselSlideWidth) {
       return props.items.length;
     }
@@ -122,7 +125,9 @@ const groupSize = computed(() => {
 
 const groupedItems = computed(() => {
   return props.items.reduce((resultArray, item, index) => {
-    const chunkIndex = Math.floor(index / (groupSize.value ? groupSize.value : props.items.length));
+    const chunkIndex = Math.floor(
+      index / (groupSize.value ? groupSize.value : props.items.length),
+    );
     if (!resultArray[chunkIndex]) {
       resultArray[chunkIndex] = [];
     }
