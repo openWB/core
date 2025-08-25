@@ -1,8 +1,8 @@
 <template>
   <q-dialog
     v-model="isOpen"
-    :maximized="$q.screen.width < 385"
-    :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
+    :maximized="isSmallScreen"
+    :backdrop-filter="isSmallScreen ? '' : 'blur(4px)'"
   >
     <q-card>
       <q-card-section>
@@ -25,11 +25,10 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useQuasar } from 'quasar';
+import { Screen } from 'quasar';
 import BatteryModeButtons from './BatteryModeButtons.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
-const $q = useQuasar();
 const isOpen = ref(false);
 
 const props = defineProps<{
@@ -37,6 +36,8 @@ const props = defineProps<{
 }>();
 
 const mqttStore = useMqttStore();
+
+const isSmallScreen = computed(() => Screen.lt.sm);
 
 const name = computed(() => {
   if (props.batteryId === undefined || props.batteryId === -1) {

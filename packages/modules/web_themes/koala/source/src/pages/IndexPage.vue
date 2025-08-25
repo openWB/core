@@ -65,12 +65,18 @@ const batteryConfigured = computed(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .chart-section {
   height: 40vh;
 }
 
-.tab-section :deep(.q-tab-panel) {
+.tab-section .q-tab-panel {
   max-width: 100vw;
+}
+
+@media screen and (max-width: $breakpoint-xs-max) {
+  .tab-section .q-tab-panel {
+    padding: 0;
+  }
 }
 </style>

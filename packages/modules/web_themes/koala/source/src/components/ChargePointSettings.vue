@@ -1,8 +1,8 @@
 <template>
   <q-dialog
     v-model="visible"
-    :maximized="$q.platform.is.mobile"
-    :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
+    :maximized="isSmallScreen"
+    :backdrop-filter="isSmallScreen ? '' : 'blur(4px)'"
   >
     <q-card>
       <q-card-section>
@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { useQuasar, QDialog } from 'quasar';
+import { Screen, QDialog } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { computed, ref, watch } from 'vue';
 import ChargePointInstantSettings from './ChargePointInstantSettings.vue';
@@ -87,7 +87,6 @@ import ChargePointLock from './ChargePointLock.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 
-const $q = useQuasar();
 const mqttStore = useMqttStore();
 
 const props = defineProps<{
@@ -98,6 +97,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:model-value': [value: boolean];
 }>();
+
+const isSmallScreen = computed(() => Screen.lt.sm);
 
 const tempValue = ref<boolean>(props.modelValue);
 
