@@ -93,7 +93,7 @@ const refreshSoc = () => {
 
 <style lang="scss" scoped>
 .card-width {
-  width: 22em;
+  max-width: 22em;
 }
 
 .q-card__section {
