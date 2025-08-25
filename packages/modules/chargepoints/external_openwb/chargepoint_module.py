@@ -134,7 +134,7 @@ class ChargepointModule(AbstractChargepoint):
                                                      power=0)
                 self.store.set(chargepoint_state)
 
-    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+    def switch_phases(self, phases_to_use: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 pub.pub_single(
@@ -147,7 +147,6 @@ class ChargepointModule(AbstractChargepoint):
                     self.config.configuration.ip_address)
                 pub.pub_single("openWB/set/isss/U1p3p", phases_to_use,
                                self.config.configuration.ip_address)
-                time.sleep(6+duration-1)
 
     def interrupt_cp(self, duration: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):

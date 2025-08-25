@@ -408,20 +408,7 @@ class Chargepoint(ChargepointRfidMixin):
             charging_ev = self.data.set.charging_ev_data
             # Umschaltung im Gange
             if self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
-                phase_switch_pause = charging_ev.ev_template.data.phase_switch_pause
-                # Umschaltung abgeschlossen
-                try:
-                    timestamp_not_expired = timecheck.check_timestamp(
-                        self.data.control_parameter.timestamp_last_phase_switch,
-                        6 + phase_switch_pause - 1)
-                except TypeError:
-                    # so wird in jedem Fall die erforderliche Zeit abgewartet
-                    self.data.control_parameter.timestamp_last_phase_switch = create_timestamp()
-                    timestamp_not_expired = timecheck.check_timestamp(
-                        self.data.control_parameter.timestamp_last_phase_switch,
-                        6 + phase_switch_pause - 1)
-                if not timestamp_not_expired:
-                    log.debug("phase switch running")
+                if phase_switch.phase_switch_thread_alive(self.num) is False:
                     # Aktuelle Ladeleistung und Differenz wieder freigeben.
                     if self.data.set.phases_to_use == 1:
                         evu_counter.data.set.reserved_surplus -= charging_ev.ev_template. \
