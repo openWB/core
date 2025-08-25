@@ -108,18 +108,11 @@
     :full-width="isSmallScreen"
     :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
   >
-    <div class="dialog-content">
-      <ChargePointCard
-        v-if="selectedChargePointId !== null"
-        :charge-point-id="selectedChargePointId"
-      >
-        <template #card-actions>
-          <q-btn color="primary" flat no-caps v-close-popup size="md">
-            Schließen
-          </q-btn>
-        </template>
-      </ChargePointCard>
-    </div>
+    <ChargePointCard
+      v-if="selectedChargePointId !== null"
+      :charge-point-id="selectedChargePointId"
+      :close-button="true"
+    />
   </q-dialog>
 </template>
 

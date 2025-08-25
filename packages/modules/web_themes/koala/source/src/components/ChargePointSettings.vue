@@ -6,9 +6,14 @@
   >
     <q-card>
       <q-card-section>
-        <div class="row">
+        <div class="row no-wrap">
           <div class="text-h6 q-pr-sm">Einstellungen:</div>
           <div class="text-h6 ellipsis" :title="name">{{ name }}</div>
+          <q-space />
+          <q-btn
+            icon="close"
+            flat round dense v-close-popup
+          />
         </div>
       </q-card-section>
       <q-separator />
@@ -66,9 +71,6 @@
           />
         </div>
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn flat label="OK" color="primary" v-close-popup />
-      </q-card-actions>
     </q-card>
   </q-dialog>
 </template>

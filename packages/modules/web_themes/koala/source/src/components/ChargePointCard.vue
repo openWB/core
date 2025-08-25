@@ -4,6 +4,12 @@
       <div class="text-h6 text-bold ellipsis" :title="name">
         {{ name }}
       </div>
+      <q-space />
+      <q-btn
+        v-if="props.closeButton"
+        icon="close"
+        flat round dense v-close-popup
+      />
     </q-card-section>
     <q-separator class="q-mt-sm" />
     <q-card-section class="row flex items-center justify-between">
@@ -117,6 +123,7 @@ const $q = useQuasar();
 
 const props = defineProps<{
   chargePointId: number;
+  closeButton?: boolean;
 }>();
 
 const vehicleId = computed(() => {
