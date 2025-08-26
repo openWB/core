@@ -34,7 +34,7 @@ class PvCharging:
         "topic": "chargemode_config/pv_charging/bat_power_discharge_active"})
     min_bat_soc: int = field(default=50, metadata={
         "topic": "chargemode_config/pv_charging/min_bat_soc"})
-    max_bat_soc: int = field(default=60, metadata={
+    max_bat_soc: int = field(default=70, metadata={
         "topic": "chargemode_config/pv_charging/max_bat_soc"})
     bat_mode: BatConsiderationMode = field(default=BatConsiderationMode.EV_MODE.value, metadata={
         "topic": "chargemode_config/pv_charging/bat_mode"})
