@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 94
+    DATASTORE_VERSION = 95
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2518,7 +2518,7 @@ class UpdateConfig:
                     Pub().pub(f"openWB/set/chargepoint/template/{get_index(topic)}", payload)
         self.__update_topic("openWB/system/datastore_version", 94)
 
-    def upgrade_datastore_91(self) -> None:
+    def upgrade_datastore_94(self) -> None:
         # bei Aktualisierung den max_bat_soc auf min_bat_soc setzen
         # Regelung verhält sich dadurch wie bisher konfiguriert
         # max_bat_soc kann nicht kleiner als min_bat_soc werden
@@ -2526,4 +2526,4 @@ class UpdateConfig:
             "openWB/general/chargemode_config/pv_charging/min_bat_soc"])
 
         self.__update_topic("openWB/general/chargemode_config/pv_charging/max_bat_soc", min_bat_soc)
-        self.__update_topic("openWB/system/datastore_version", 92)
+        self.__update_topic("openWB/system/datastore_version", 95)
