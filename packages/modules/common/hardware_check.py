@@ -38,7 +38,7 @@ def _check_meter_values(counter_state: CounterState) -> Optional[str]:
     VOLTAGE_LOW_THRESHOLD = 200
     ZOE_VOLTAGE_LOW = 100
     ZOE_VOLTAGE_HIGH = 140
-    VOLTAGE_DETECTED_THRESHOLD = 50  # Phasenaufall detektieren
+    VOLTAGE_DETECTED_THRESHOLD = 50  # Phasenausfall detektieren
 
     def valid_voltage(voltage) -> bool:
         return VOLTAGE_LOW_THRESHOLD < voltage < VOLTAGE_HIGH_THRESHOLD
