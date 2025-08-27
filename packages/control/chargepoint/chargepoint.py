@@ -826,8 +826,9 @@ class Chargepoint(ChargepointRfidMixin):
         if self.data.set.charging_ev_prev != vehicle:
             Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
             log.debug("SoC nach EV-Wechsel")
-            self.update_charge_template(charging_ev.charge_template)
-        if self.data.set.charge_template.data.id != charging_ev.charge_template.data.id:
+        # wenn vorher kein anderes Fahrzeug zugeordnet war, Ladeprofil nicht zurücksetzen
+        if ((self.data.set.charging_ev_prev != vehicle and self.data.set.charging_ev_prev != -1) or
+                (self.data.set.charge_template.data.id != charging_ev.charge_template.data.id)):
             self.update_charge_template(charging_ev.charge_template)
         self.data.set.charging_ev_data = charging_ev
         self.data.set.charging_ev = vehicle
