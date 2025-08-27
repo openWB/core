@@ -391,7 +391,7 @@ class Chargepoint(ChargepointRfidMixin):
                 else:
                     # Umschaltung vor Ladestart zulassen
                     if (self.data.set.log.imported_since_plugged != 0 and
-                            self.data.control_parameter.failed_phase_switches == 0):
+                            self.data.control_parameter.failed_phase_switches > 0):
                         phase_switch_required = False
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
