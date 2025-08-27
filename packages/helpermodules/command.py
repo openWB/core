@@ -81,20 +81,15 @@ class Command:
                 max_id = default
                 for topic, payload in received_topics.items():
                     if re.search(topic_str, topic) is not None:
-                        try:
-                            if id_topic == "autolock_plan":
-                                for plan in payload["autolock"]["plans"]:
-                                    max_id = max(plan["id"], max_id)
-                            elif id_topic == "charge_template_scheduled_plan":
-                                for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
-                                    max_id = max(plan["id"], max_id)
-                            elif id_topic == "charge_template_time_charging_plan":
-                                for plan in payload["time_charging"]["plans"]:
-                                    max_id = max(plan["id"], max_id)
-                        except KeyError:
-                            # überspringe Profile, die keinen Eintrag für Pläne haben.
-                            # Da gab es einen Bug beim Kopieren.
-                            pass
+                        if id_topic == "autolock_plan":
+                            for plan in payload["autolock"]["plans"]:
+                                max_id = max(plan["id"], max_id)
+                        elif id_topic == "charge_template_scheduled_plan":
+                            for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
+                                max_id = max(plan["id"], max_id)
+                        elif id_topic == "charge_template_time_charging_plan":
+                            for plan in payload["time_charging"]["plans"]:
+                                max_id = max(plan["id"], max_id)
                 setattr(self, f'max_id_{id_topic}', max_id)
                 Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
             for id_topic, topic_str, default in self.MAX_IDS["topic"]:
@@ -261,15 +256,7 @@ class Command:
             Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
             charge_template = SubData.ev_charge_template_data[f"ct{SubData.ev_data['ev0'].data.charge_template}"]
-            for time_plan in charge_template.data.time_charging.plans:
-                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/time_charging/plans',
-                          dataclass_utils.asdict(time_plan))
-            for scheduled_plan in charge_template.data.chargemode.scheduled_charging.plans:
-                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/chargemode/scheduled_charging/plans',
-                          scheduled_plan)
             charge_template = dataclass_utils.asdict(charge_template.data)
-            charge_template["chargemode"]["scheduled_charging"]["plans"].clear()
-            charge_template["time_charging"]["plans"].clear()
             Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template', charge_template)
             self.max_id_hierarchy = self.max_id_hierarchy + 1
             Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
@@ -352,7 +339,7 @@ class Command:
         """ löscht ein Ladepunkt.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
-            log.error(
+            pub_user_message(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)

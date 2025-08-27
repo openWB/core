@@ -3,13 +3,13 @@
     ref="carouselRef"
     v-model="currentSlide"
     swipeable
-    :animated="animated"
+    :animated="true"
     control-color="primary"
     infinite
     @update:model-value="handleSlideChange"
     padding
     :navigation="groupedItems.length > 1"
-    :arrows="groupedItems.length > 1 && $q.screen.gt.xs"
+    :arrows="showArrows"
     class="carousel-height"
     transition-next="slide-left"
     transition-prev="slide-right"
@@ -22,10 +22,10 @@
       class="row no-wrap justify-center carousel-slide"
     >
       <div
-        v-for="(item, idx) in group"
+        v-for="item in group"
         :key="item"
         class="item-container"
-        :ref="idx === 0 && index === 0 ? 'itemRef' : undefined"
+        ref="itemRef"
       >
         <slot name="item" :item="item"></slot>
       </div>
@@ -34,89 +34,87 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
-import { useQuasar } from 'quasar';
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
+import { Screen } from 'quasar';
 
-const props = defineProps<{
-  items: number[];
-}>();
+const props = defineProps<{ items: number[] }>();
 
-const $q = useQuasar();
-const currentSlide = ref<number>(0);
-const animated = ref<boolean>(true);
 const carouselRef = ref<{ $el: HTMLElement } | null>(null);
-const itemRef = ref<(HTMLElement | null)[]>([]);
+const itemRef = ref<HTMLElement | null>(null);
+const currentSlide = ref(0);
+
+const itemWidth = ref(100);
+const carouselWidth = ref(0);
+const carouselPadding = ref(0);
+const showArrows = ref(false);
+
+function measure() {
+  nextTick(() => {
+    if (itemRef.value) {
+      itemWidth.value = itemRef.value[0].clientWidth || 300;
+    }
+    showArrows.value = Screen.gt.xs && groupedItems.value.length > 1;
+    if (carouselRef.value?.$el) {
+      carouselWidth.value = carouselRef.value.$el.clientWidth || 0;
+      const slideEl = carouselRef.value.$el.querySelector('.q-carousel__slide');
+      if (slideEl) {
+        const style = window.getComputedStyle(slideEl);
+        carouselPadding.value =
+          parseFloat(style.paddingLeft || '0') +
+          parseFloat(style.paddingRight || '0');
+      } else {
+        console.warn('Could not find .q-carousel__slide element');
+      }
+    }
+  });
+}
+
+
+onMounted(() => {
+  measure();
+  window.addEventListener('resize', measure);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', measure);
+});
+
+watch(() => props.items, measure);
 
 const groupSize = computed(() => {
-  if (!itemRef.value[0]) {
-    return; // Fallback if no item is present
-  }
-  const itemWidth = itemRef.value[0]?.clientWidth ?? 300; // Fallback
-  let carouselSlideWidth = 0;
-  let padding = 0;
-  const slideEl = carouselRef.value?.$el.querySelector('.q-carousel__slide');
-  if (slideEl) {
-    carouselSlideWidth = slideEl.clientWidth ?? 0;
-    const style = window.getComputedStyle(slideEl);
-    padding =
-      parseFloat(style.paddingLeft || '0') +
-      parseFloat(style.paddingRight || '0');
-    }
-  const maxGroupSize = Math.max(
-    1,
-    Math.floor((carouselSlideWidth - padding) / itemWidth),
-  );
-
-  // Special case: Prevent a second group with only one item,
-  // if all items would fit side by side without navigation arrows
+  if (!itemWidth.value || !carouselWidth.value) return 1;
+  const maxGroup = Math.max(1, Math.floor((carouselWidth.value - (showArrows.value ? carouselPadding.value : 50)) / itemWidth.value));
+  // Spezialfall: Alle passen nebeneinander
   if (
-    props.items.length > maxGroupSize &&
-    props.items.length <= maxGroupSize * 2 &&
-    props.items.length - maxGroupSize === 1
+    props.items.length > maxGroup &&
+    props.items.length <= maxGroup * 2 &&
+    props.items.length - maxGroup === 1
   ) {
-   // Check if all items would fit side by side
-    if (props.items.length * itemWidth <= carouselSlideWidth) {
+    if (props.items.length * itemWidth.value <= carouselWidth.value) {
       return props.items.length;
     }
   }
-  return maxGroupSize;
+  return maxGroup;
 });
 
 const groupedItems = computed(() => {
-  const groupSizeValue = groupSize.value ? groupSize.value : props.items.length;
-  return props.items.reduce((resultArray, item, index) => {
-    const chunkIndex = Math.floor(index / groupSizeValue);
-    if (!resultArray[chunkIndex]) {
-      resultArray[chunkIndex] = [];
-    }
-    resultArray[chunkIndex].push(item);
-    return resultArray;
-  }, [] as number[][]);
+  const size = groupSize.value;
+  const result: number[][] = [];
+  for (let i = 0; i < props.items.length; i += size) {
+    result.push(props.items.slice(i, i + size));
+  }
+  return result;
 });
 
-onMounted(async () => {
-  await nextTick(() => {
-    window.addEventListener('resize', () => {
-      // Trigger a re-render by resetting itemRef
-      itemRef.value = [...itemRef.value];
-    });
-  });
+function handleSlideChange(val: number) {
+  currentSlide.value = val;
+}
+
+watch(groupedItems, (groups) => {
+  if (currentSlide.value > groups.length - 1) {
+    currentSlide.value = Math.max(0, groups.length - 1);
+  }
 });
-
-watch(
-  () => props.items,
-  () => {
-    // Reset itemRef to trigger re-render
-    itemRef.value = [...itemRef.value];
-  },
-);
-
-const handleSlideChange = () => {
-  const currentScroll = window.scrollY;
-  nextTick(() => {
-    window.scrollTo(0, currentScroll);
-  });
-};
 </script>
 
 <style scoped>

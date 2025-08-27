@@ -56,7 +56,7 @@ const props = defineProps<{
 	categoriesToShow: PowerItemType[]
 }>()
 
-const cornerRadius = 20
+const cornerRadius = 10
 const circleGapSize = Math.PI / 40
 const arcCount = computed(() => props.plotdata.length - 1)
 const pieGenerator = computed(() =>
@@ -75,7 +75,7 @@ const pieGenerator = computed(() =>
 const path = computed(() =>
 	arc<PieArcDatum<PowerItem>>()
 		//.innerRadius((props.radius / 6) * 5)
-		.innerRadius(props.radius * 0.88)
+		.innerRadius(props.radius * 0.87)
 		.outerRadius(props.radius)
 		.cornerRadius(cornerRadius),
 )
