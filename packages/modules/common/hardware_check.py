@@ -25,8 +25,6 @@ METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann n
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
 EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
                "(Fehlermeldung nur relevant, wenn diese auf der Startseite oder im Status angezeigt wird.)")
-METER_IMPLAUSIBLE_VALUE = ("Der Zähler hat einen unplausiblen Wert zurückgegeben: Leistungen {}W, Ströme {}A, "
-                           "Spannungen {}V.")
 
 
 def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultState] = None) -> None:
@@ -38,15 +36,21 @@ def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultS
 def _check_meter_values(counter_state: CounterState) -> Optional[str]:
     VOLTAGE_HIGH_THRESHOLD = 260
     VOLTAGE_LOW_THRESHOLD = 200
+    ZOE_VOLTAGE_LOW = 100
+    ZOE_VOLTAGE_HIGH = 140
     VOLTAGE_DETECTED_THRESHOLD = 50  # Phasenaufall detektieren
 
     def valid_voltage(voltage) -> bool:
         return VOLTAGE_LOW_THRESHOLD < voltage < VOLTAGE_HIGH_THRESHOLD
     voltages = counter_state.voltages
     # wenn ein Wert in voltages großer VOLTAGE_HIGH_THRESHOLD ist, gebe eine Fehlermeldung zurück
-    if any(v > VOLTAGE_HIGH_THRESHOLD and v > VOLTAGE_DETECTED_THRESHOLD for v in voltages):
+    if any((v > VOLTAGE_HIGH_THRESHOLD and
+            v > VOLTAGE_DETECTED_THRESHOLD and
+            not ZOE_VOLTAGE_LOW < v < ZOE_VOLTAGE_HIGH) for v in voltages):
         return METER_VOLTAGE_TOO_HIGH.format(voltages)
-    elif any(v < VOLTAGE_LOW_THRESHOLD and v > VOLTAGE_DETECTED_THRESHOLD for v in voltages):
+    elif any((v < VOLTAGE_LOW_THRESHOLD and
+              v > VOLTAGE_DETECTED_THRESHOLD and
+              not ZOE_VOLTAGE_LOW < v < ZOE_VOLTAGE_HIGH) for v in voltages):
         return METER_VOLTAGE_TOO_LOW.format(voltages)
     if not ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
             # Zoe lädt einphasig an einphasiger Wallbox und erzeugt Spannung auf L2 (ca 126V)
@@ -54,9 +58,6 @@ def _check_meter_values(counter_state: CounterState) -> Optional[str]:
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
             (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
         return METER_BROKEN_VOLTAGES.format(voltages)
-    if ((sum(counter_state.currents) < 0.5 and counter_state.power > 230) or
-            (sum(counter_state.currents) > 1 and counter_state.power < 100)):
-        return METER_IMPLAUSIBLE_VALUE.format(counter_state.powers, counter_state.currents, counter_state.voltages)
     return None
 
 
