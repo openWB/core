@@ -72,8 +72,8 @@ class BatState:
             currents = [0.0]*3
         else:
             if not (
-                (sum(currents) < 0 and power < 0) or 
-                (sum(currents) > 0 and power > 0) or 
+                (sum(currents) < 0 and power < 0) or
+                (sum(currents) > 0 and power > 0) or
                 (sum(currents) == 0 and power == 0)
             ):
                 log.debug("currents sign wrong "+str(currents))
@@ -136,8 +136,8 @@ class InverterState:
             currents = [0.0]*3
         else:
             if not (
-                (sum(currents) < 0 and power < 0) or 
-                (sum(currents) > 0 and power > 0) or 
+                (sum(currents) < 0 and power < 0) or
+                (sum(currents) > 0 and power > 0) or
                 (sum(currents) == 0 and power == 0)
             ):
                 log.debug("currents sign wrong "+str(currents))
