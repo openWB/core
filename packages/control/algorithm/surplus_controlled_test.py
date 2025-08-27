@@ -5,7 +5,8 @@ import pytest
 from control import data
 from control.algorithm import surplus_controlled
 from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
-from control.algorithm.surplus_controlled import CONSIDERED_CHARGE_MODES_PV_ONLY, SurplusControlled
+from control.algorithm.surplus_controlled import (CONSIDERED_CHARGE_MODES_PV_ONLY, SurplusControlled,
+                                                  limit_adjust_current)
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Get, Set
@@ -66,7 +67,7 @@ def test_limit_adjust_current(new_current: float, expected_current: float, monke
     monkeypatch.setattr(Chargepoint, "set_state_and_log", Mock())
 
     # execution
-    current = SurplusControlled()._limit_adjust_current(cp, new_current)
+    current = limit_adjust_current(cp, new_current)
     # evaluation
     assert current == expected_current
 

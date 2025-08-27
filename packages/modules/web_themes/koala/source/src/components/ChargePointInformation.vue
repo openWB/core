@@ -12,12 +12,12 @@
     v-else
     :items="chargePointIds"
     :row-data="tableRowData"
-    :column-config="isMobile ? tableColumnsMobile : columnConfigDesktop"
+    :column-config="compactTable ? tableColumnsMobile : columnConfigDesktop"
     :search-input-visible="searchInputVisible"
-    :table-height="isMobile ? '35vh' : '45vh'"
+    :table-height="compactTable ? '35vh' : '45vh'"
     v-model:filter="filter"
     :columns-to-search="['vehicle', 'name']"
-    :row-expandable="isMobile"
+    :row-expandable="compactTable"
     @row-click="onRowClick"
   >
     <!-- desktop view table body slots -->
@@ -50,12 +50,12 @@
           :power="slotProps.row.power"
           :phase-number="slotProps.row.phaseNumber"
           :current="slotProps.row.current"
-          :column-display-format="isMobile"
+          :column-display-format="isSmallScreen"
         />
       </q-td>
     </template>
     <!-- mobile view table body slots -->
-    <!-- mobile view chargepoint name and vehicle name displayed in one field -->
+    <!-- mobile view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
         {{ slotProps.row.name }}<br />
@@ -63,7 +63,7 @@
       </q-td>
     </template>
 
-    <!-- mobile view chargepoint chargemode, plug status and time charging displayed in one field -->
+    <!-- mobile view charge point charge mode, plug status and time charging displayed in one field -->
     <template #body-cell-modePluggedTimeCharging="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
         <div class="items-center">
@@ -103,34 +103,22 @@
     v-model="modalChargePointCardVisible"
     transition-show="fade"
     transition-hide="fade"
+    :maximized="isSmallScreen"
+    :full-height="isSmallScreen"
+    :full-width="isSmallScreen"
     :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
   >
-    <div class="dialog-content">
-      <ChargePointCard
-        v-if="selectedChargePointId !== null"
-        :charge-point-id="selectedChargePointId"
-      >
-        <template #card-footer>
-          <div class="card-footer">
-            <q-btn
-              color="primary"
-              flat
-              no-caps
-              v-close-popup
-              class="close-button"
-              size="md"
-              >Schließen</q-btn
-            >
-          </div>
-        </template>
-      </ChargePointCard>
-    </div>
+    <ChargePointCard
+      v-if="selectedChargePointId !== null"
+      :charge-point-id="selectedChargePointId"
+      :close-button="true"
+    />
   </q-dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Platform } from 'quasar';
+import { Screen } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useChargeModes } from 'src/composables/useChargeModes';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
@@ -154,7 +142,8 @@ const cardViewBreakpoint = computed(
 const searchInputVisible = computed(
   () => mqttStore.themeConfiguration?.chargePoint_table_search_input_field,
 );
-const isMobile = computed(() => Platform.is.mobile);
+const isSmallScreen = computed(() => Screen.lt.sm);
+const compactTable = computed(() => Screen.lt.md);
 const selectedChargePointId = ref<number | null>(null);
 const modalChargePointCardVisible = ref(false);
 const filter = ref('');
@@ -237,22 +226,3 @@ const onRowClick = (row: ChargePointRow) => {
   modalChargePointCardVisible.value = true;
 };
 </script>
-
-<style scoped>
-.dialog-content {
-  width: auto;
-  max-width: 24em;
-}
-
-.close-button {
-  position: absolute;
-  bottom: 0.4em;
-  right: 0.4em;
-  z-index: 1;
-  background: transparent;
-}
-
-.card-footer {
-  height: 1.9em;
-}
-</style>

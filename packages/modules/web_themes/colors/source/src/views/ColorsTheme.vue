@@ -81,7 +81,7 @@ Hagen */
 				<span class="d-none d-md-inline ms-2">Fahrzeuge</span>
 			</a>
 			<a
-				v-if="globalData.isBatteryConfigured"
+				v-if="globalData.isBatteryConfigured && batteries.size > 0"
 				class="nav-link"
 				data-bs-toggle="tab"
 				data-bs-target="#batterylist"
@@ -251,6 +251,7 @@ import { ref, computed, onMounted } from 'vue'
 import { globalData } from '../assets/js/model'
 import { shDevices } from '@/components/smartHome/model'
 import { initConfig } from '@/assets/js/themeConfig'
+import { batteries } from '@/components/batteryList/model'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
 import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'

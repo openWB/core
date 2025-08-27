@@ -440,6 +440,9 @@ class SubData:
                             if var["cp"+index].chargepoint.data.set.charging_ev > -1:
                                 Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
                                           '/get/force_soc_update', True)
+                            elif var["cp"+index].chargepoint.data.set.charging_ev_prev > -1:
+                                Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev_prev}'
+                                          '/get/force_soc_update', True)
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/error_timestamp$", msg.topic) is not None and
                               hasattr(var[f"cp{index}"].chargepoint.chargepoint_module, "client_error_context")):

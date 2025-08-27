@@ -7,6 +7,7 @@ from control import data
 from control.bat import Bat
 from control.bat_all import BatAll
 from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_template import CpTemplate
 from control.counter_all import CounterAll
 from control.counter import Counter
 from control.ev.ev import Ev
@@ -24,6 +25,7 @@ def data_() -> None:
         "cp4": Chargepoint(4, None),
         "cp5": Chargepoint(5, None)}
     for i in range(3, 6):
+        data.data.cp_data[f"cp{i}"].template = CpTemplate()
         data.data.cp_data[f"cp{i}"].data.config.phase_1 = i-2
         data.data.cp_data[f"cp{i}"].data.set.charging_ev = i
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data = Ev(i)

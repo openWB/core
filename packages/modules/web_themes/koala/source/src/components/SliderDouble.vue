@@ -48,7 +48,7 @@
             class="q-ml-xs cursor-pointer"
             @click="onEditSoc"
           >
-            <q-tooltip>SoC eingeben</q-tooltip>
+            <q-tooltip>Ladestand eingeben</q-tooltip>
           </q-icon>
           <q-icon
             v-else-if="vehicleSocType !== undefined && limitMode !== 'amount'"
@@ -57,7 +57,7 @@
             class="q-ml-xs cursor-pointer"
             @click="onRefreshSoc"
           >
-            <q-tooltip>SoC aktualisieren</q-tooltip>
+            <q-tooltip>Ladestand aktualisieren</q-tooltip>
           </q-icon>
         </div>
       </div>

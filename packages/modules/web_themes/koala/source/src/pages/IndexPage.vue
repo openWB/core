@@ -18,8 +18,8 @@
           <q-icon name="battery_full" size="md" color="primary" />
         </q-tab>
         <!-- <q-tab name="smart-home" title="SmartHome">
-        <q-icon name="home" size="md" color="primary" />
-      </q-tab> -->
+          <q-icon name="home" size="md" color="primary" />
+        </q-tab> -->
       </q-tabs>
       <!-- Tab Panels -->
       <q-tab-panels v-model="tab" class="col">
@@ -37,8 +37,8 @@
         </q-tab-panel>
         <!-- Smart Home -->
         <!-- <q-tab-panel name="smart-home" class="">
-        <SmartHomeInformation />
-      </q-tab-panel> -->
+          <SmartHomeInformation />
+        </q-tab-panel> -->
       </q-tab-panels>
     </div>
   </q-page>
@@ -65,8 +65,18 @@ const batteryConfigured = computed(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .chart-section {
   height: 40vh;
+}
+
+.tab-section .q-tab-panel {
+  max-width: 100vw;
+}
+
+@media screen and (max-width: $breakpoint-xs-max) {
+  .tab-section .q-tab-panel {
+    padding: 0;
+  }
 }
 </style>

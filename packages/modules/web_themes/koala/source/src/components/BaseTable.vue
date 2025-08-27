@@ -1,132 +1,130 @@
 <template>
-  <div class="q-pa-md">
-    <q-table
-      class="sticky-header-table"
-      :class="{ 'custom-table-height': tableHeight }"
-      :rows="mappedRows"
-      :columns="mappedColumns"
-      row-key="id"
-      v-model:expanded="expanded"
-      :filter="filterModel"
-      :filter-method="customFilterMethod"
-      virtual-scroll
-      :virtual-scroll-item-size="48"
-      :virtual-scroll-sticky-size-start="30"
-      @row-click="onRowClick"
-      binary-state-sort
-      :pagination="{ rowsPerPage: 0 }"
-      hide-bottom
-    >
-      <!-- search field ------------------------------------------------------->
-      <template #top v-if="searchInputVisible">
-        <div class="row full-width items-center q-mb-sm">
-          <div class="col">
-            <q-input
-              v-model="filterModel"
-              dense
-              outlined
-              color="white"
-              placeholder="Suchen..."
-              class="search-field white-outline-input"
-              input-class="text-white"
-            >
-              <template #append>
-                <q-icon name="search" color="white" />
-              </template>
-            </q-input>
-          </div>
-        </div>
-      </template>
-
-      <!-- header ----------------------------------------------------------->
-      <template v-if="props.rowExpandable" #header="header">
-        <q-tr :props="header">
-          <!-- space for arrow column -->
-          <q-th auto-width :props="{ ...header, col: {} }" />
-          <!-- the other columns -->
-          <q-th
-            v-for="column in header.cols"
-            :key="column.name"
-            :props="{ ...header, col: column }"
+  <q-table
+    class="sticky-header-table"
+    :class="{ 'custom-table-height': tableHeight }"
+    :rows="mappedRows"
+    :columns="mappedColumns"
+    row-key="id"
+    v-model:expanded="expanded"
+    :filter="filterModel"
+    :filter-method="customFilterMethod"
+    virtual-scroll
+    :virtual-scroll-item-size="48"
+    :virtual-scroll-sticky-size-start="30"
+    @row-click="onRowClick"
+    binary-state-sort
+    :pagination="{ rowsPerPage: 0 }"
+    hide-bottom
+  >
+    <!-- search field ------------------------------------------------------->
+    <template #top v-if="searchInputVisible">
+      <div class="row full-width items-center q-mb-sm">
+        <div class="col">
+          <q-input
+            v-model="filterModel"
+            dense
+            outlined
+            color="white"
+            placeholder="Suchen..."
+            class="search-field white-outline-input"
+            input-class="text-white"
           >
-            {{ column.label }}
-          </q-th>
-        </q-tr>
-      </template>
-
-      <!-- body ------------------------------------------------------------->
-      <template v-if="props.rowExpandable" #body="rowProps: BodySlotProps<T>">
-        <q-tr
-          :key="`main-${rowProps.key}`"
-          :props="rowProps"
-          @click="onRowClick($event, rowProps.row)"
-          class="clickable"
-        >
-          <q-td auto-width>
-            <q-btn
-              dense
-              flat
-              round
-              size="sm"
-              :icon="
-                rowProps.expand ? 'keyboard_arrow_up' : 'keyboard_arrow_down'
-              "
-              @click.stop="rowProps.expand = !rowProps.expand"
-            />
-          </q-td>
-
-          <template v-for="column in rowProps.cols" :key="column.name">
-            <!-- custom body-cell slot -->
-            <template v-if="$slots[`body-cell-${column.name}`]">
-              <slot
-                :name="`body-cell-${column.name}`"
-                v-bind="{
-                  ...rowProps,
-                  col: column,
-                }"
-              >
-              </slot>
+            <template #append>
+              <q-icon name="search" color="white" />
             </template>
+          </q-input>
+        </div>
+      </div>
+    </template>
 
-            <!-- all other column data -->
-            <q-td
-              v-else
-              :props="{
+    <!-- header ----------------------------------------------------------->
+    <template v-if="props.rowExpandable" #header="header">
+      <q-tr :props="header">
+        <!-- space for arrow column -->
+        <q-th auto-width :props="{ ...header, col: {} }" />
+        <!-- the other columns -->
+        <q-th
+          v-for="column in header.cols"
+          :key="column.name"
+          :props="{ ...header, col: column }"
+        >
+          {{ column.label }}
+        </q-th>
+      </q-tr>
+    </template>
+
+    <!-- body ------------------------------------------------------------->
+    <template v-if="props.rowExpandable" #body="rowProps: BodySlotProps<T>">
+      <q-tr
+        :key="`main-${rowProps.key}`"
+        :props="rowProps"
+        @click="onRowClick($event, rowProps.row)"
+        class="clickable"
+      >
+        <q-td auto-width>
+          <q-btn
+            dense
+            flat
+            round
+            size="sm"
+            :icon="
+              rowProps.expand ? 'keyboard_arrow_up' : 'keyboard_arrow_down'
+            "
+            @click.stop="rowProps.expand = !rowProps.expand"
+          />
+        </q-td>
+
+        <template v-for="column in rowProps.cols" :key="column.name">
+          <!-- custom body-cell slot -->
+          <template v-if="$slots[`body-cell-${column.name}`]">
+            <slot
+              :name="`body-cell-${column.name}`"
+              v-bind="{
                 ...rowProps,
                 col: column,
-                // cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any);
-                value: rowProps.row[column.field as string],
               }"
             >
-              <!-- cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any); -->
-              {{ rowProps.row[column.field as string] }}
-            </q-td>
+            </slot>
           </template>
-        </q-tr>
 
-        <!-- expansion row -->
-        <q-tr
-          v-show="rowProps.expand"
-          :key="`xp-${rowProps.key}`"
-          :props="rowProps"
-          class="q-virtual-scroll--with-prev"
-        >
-          <q-td :colspan="rowProps.cols.length + 1">
-            <slot name="row-expand" v-bind="rowProps"> </slot>
+          <!-- all other column data -->
+          <q-td
+            v-else
+            :props="{
+              ...rowProps,
+              col: column,
+              // cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any);
+              value: rowProps.row[column.field as string],
+            }"
+          >
+            <!-- cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any); -->
+            {{ rowProps.row[column.field as string] }}
           </q-td>
-        </q-tr>
-      </template>
+        </template>
+      </q-tr>
 
-      <!-- forward any other slots not related to table  e.g top search field -------------------->
-      <template
-        v-for="slotName in forwardedSlotNames"
-        :key="slotName"
-        v-slot:[slotName]="slotProps"
+      <!-- expansion row -->
+      <q-tr
+        v-show="rowProps.expand"
+        :key="`xp-${rowProps.key}`"
+        :props="rowProps"
+        class="q-virtual-scroll--with-prev"
       >
-        <slot :name="slotName" v-bind="slotProps"></slot>
-      </template>
-    </q-table>
-  </div>
+        <q-td :colspan="rowProps.cols.length + 1">
+          <slot name="row-expand" v-bind="rowProps"> </slot>
+        </q-td>
+      </q-tr>
+    </template>
+
+    <!-- forward any other slots not related to table  e.g top search field -------------------->
+    <template
+      v-for="slotName in forwardedSlotNames"
+      :key="slotName"
+      v-slot:[slotName]="slotProps"
+    >
+      <slot :name="slotName" v-bind="slotProps"></slot>
+    </template>
+  </q-table>
 </template>
 
 <script setup lang="ts" generic="T extends Record<string, unknown>">

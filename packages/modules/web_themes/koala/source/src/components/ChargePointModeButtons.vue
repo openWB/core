@@ -1,10 +1,10 @@
 <template>
-  <div class="q-pt-md full-width" v-if="isMobile">
+  <div v-if="isMobile" class="row q-pt-md full-width">
     <q-btn-dropdown
+      class="col"
       transition-show="scale"
       transition-hide="scale"
       transition-duration="500"
-      class="full-width"
       color="primary"
       :label="currentModeLabel"
       size="lg"
@@ -30,14 +30,13 @@
       </q-list>
     </q-btn-dropdown>
   </div>
-  <q-btn-group class="full-width q-mt-sm" v-else>
+  <q-btn-group v-else class="row col q-mt-sm" spread>
     <q-btn
       v-for="mode in chargeModes"
       :key="mode.value"
       :color="chargeMode.value === mode.value ? 'primary' : 'grey'"
       :label="mode.label"
       size="sm"
-      class="flex-grow"
       @click="chargeMode.value = mode.value"
     />
   </q-btn-group>
@@ -71,9 +70,5 @@ const currentModeLabel = computed(
 :deep(.q-btn-dropdown__arrow-container) {
   width: 0;
   padding: 0;
-}
-
-.flex-grow {
-  flex-grow: 1;
 }
 </style>

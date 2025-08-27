@@ -10,7 +10,7 @@
         :class="{ 'legend-item-hidden': dataset.hidden }"
         @click="
           dataset.datasetIndex !== undefined &&
-            toggleDataset(dataset.text, dataset.datasetIndex)
+          toggleDataset(dataset.text, dataset.datasetIndex)
         "
       >
         <q-item-section avatar class="q-pr-none">

@@ -134,6 +134,7 @@ export interface ScheduledChargingPlan {
   id: number;
   name: string;
   active: boolean;
+  bidi_charging_enabled: boolean;
   et_active: boolean;
   current: number;
   dc_current: number;

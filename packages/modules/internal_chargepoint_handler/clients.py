@@ -63,16 +63,16 @@ class ClientHandler(SeriesHardwareCheckMixin):
                           client: Union[ModbusSerialClient_, ModbusTcpClient_],
                           fault_state: FaultState) -> METERS:
         for meter_type, modbus_id in meters:
-            meter_client = meter_type(modbus_id, client, fault_state)
-            with client:
-                try:
+            try:
+                with client:
+                    meter_client = meter_type(modbus_id, client, fault_state)
                     if meter_client.get_voltages()[0] > 200:
                         with ModifyLoglevelContext(log, logging.DEBUG):
                             log.debug("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
                         return meter_client
-                except Exception:
-                    log.debug(client)
-                    log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
+            except Exception:
+                log.debug(client)
+                log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
 

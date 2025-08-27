@@ -52,6 +52,3 @@ const connectedVehicle = mqttStore.chargePointConnectedVehicleInfo(
 
 const vehicles = computed(() => mqttStore.vehicleList);
 </script>
-
-<style scoped>
-</style>

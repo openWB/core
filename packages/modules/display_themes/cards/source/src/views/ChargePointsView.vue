@@ -16,6 +16,8 @@ import {
   faCalendarDay as fasCalendarDay,
   faCalendarWeek as fasCalendarWeek,
   faCalendarAlt as fasCalendarAlt,
+  faRightLeft as fasRightLeft,
+  faRightLong as fasRightLong,
   faCoins as fasCoins,
 } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
@@ -24,6 +26,8 @@ library.add(
   fasCalendarDay,
   fasCalendarWeek,
   fasCalendarAlt,
+  fasRightLeft,
+  fasRightLong,
   fasCoins,
 );
 
@@ -1340,6 +1344,10 @@ export default {
                         :icon="['fas', 'car-battery']"
                       />
                       {{ plan.limit.soc_scheduled }}&nbsp;%
+                      <font-awesome-icon
+                        :icon="['fas', plan.bidi_charging_enabled ? 'right-left' : 'right-long']"
+                      />
+                      {{ plan.limit.soc_limit }}&nbsp;%
                     </div>
                     <div v-if="plan.limit.selected == 'amount'">
                       <font-awesome-icon
