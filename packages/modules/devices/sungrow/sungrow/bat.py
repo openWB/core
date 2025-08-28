@@ -10,7 +10,6 @@ from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.sungrow.config import SungrowBatSetup, Sungrow
-from modules.devices.sungrow.sungrow.version import Version
 
 log = logging.getLogger(__name__)
 
