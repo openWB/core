@@ -157,9 +157,9 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .centered-container {
-  max-width: 1500px;
+  max-width: $breakpoint-lg-min;
   margin-left: auto;
   margin-right: auto;
 }

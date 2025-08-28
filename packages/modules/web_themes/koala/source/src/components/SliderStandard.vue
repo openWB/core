@@ -12,7 +12,7 @@
         "
         :step="props.step"
         color="primary"
-        style="width: 75%"
+        class="col"
         track-size="0.5em"
         thumb-size="1.7em"
         @touchstart.stop
@@ -20,7 +20,7 @@
         @touchend.stop
         @change="updateValue"
       />
-      <div class="q-ml-md no-wrap" :class="myClass">
+      <div class="q-ml-sm no-wrap" :class="['col-2', 'text-right', myClass]">
         {{ displayValue }} {{ displayUnit }}
       </div>
     </div>
@@ -174,9 +174,5 @@ const myClass = computed(() => {
 <style lang="scss" scoped>
 .pending {
   color: $red;
-}
-
-.flex-grow {
-  flex-grow: 1;
 }
 </style>
