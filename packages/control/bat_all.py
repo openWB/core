@@ -259,7 +259,6 @@ class BatAll:
                             log.debug("Keine erlaubte Entladeleistung freigeben, da der Speicher mit einer vorgegeben "
                                       "Leistung entladen wird.")
                             charging_power_left = 0
-                        
                 # Speicher oberhalb max SoC. Darf bis min SoC entladen werden.
                 else:
                     self.data.set.hysteresis_discharge = True
