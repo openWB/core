@@ -11,7 +11,6 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.sungrow.config import SungrowBatSetup, Sungrow
 from modules.devices.sungrow.sungrow.version import Version
-from modules.devices.sungrow.sungrow.firmware import Firmware
 
 log = logging.getLogger(__name__)
 
