@@ -34,7 +34,12 @@ class ProPlus(ChargepointModule):
             chargepoint_state = self.request_values()
             if chargepoint_state is not None and last_tag is not None and last_tag != "":
                 chargepoint_state.rfid = last_tag
-            store_state(chargepoint_state)
+            if chargepoint_state is not None:
+                store_state(chargepoint_state)
+                return chargepoint_state
+            else:
+                store_state(self.old_chargepoint_state)
+                return self.old_chargepoint_state
         except Exception as e:
             if self.client_error_context.error_counter_exceeded():
                 chargepoint_state = ChargepointState(plug_state=False, charge_state=False, imported=None,
@@ -50,7 +55,6 @@ class ProPlus(ChargepointModule):
                 return self.old_chargepoint_state
             else:
                 raise Exception(self.NO_DATA_SINCE_BOOT)
-        return chargepoint_state
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:
         super().switch_phases(phases_to_use, duration)
