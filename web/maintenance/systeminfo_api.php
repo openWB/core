@@ -287,16 +287,16 @@ function getPartitionUsage($path, $label)
 			'unit' => '%'
 		],
 		$label . '_total' => [
-			'value' => round($diskTotal / 1024 / 1024 / 1024, 2),
-			'unit' => 'GB'
+			'value' => round($diskTotal / 1024 / 1024, 2),
+			'unit' => 'MB'
 		],
 		$label . '_used' => [
-			'value' => round($diskUsed / 1024 / 1024 / 1024, 2),
-			'unit' => 'GB'
+			'value' => round($diskUsed / 1024 / 1024, 2),
+			'unit' => 'MB'
 		],
 		$label . '_free' => [
-			'value' => round($diskFree / 1024 / 1024 / 1024, 2),
-			'unit' => 'GB'
+			'value' => round($diskFree / 1024 / 1024, 2),
+			'unit' => 'MB'
 		]
 	];
 }
