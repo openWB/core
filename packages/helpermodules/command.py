@@ -366,7 +366,7 @@ class Command:
                   self.max_id_chargepoint_template)
         # if copying a template, copy autolock plans
         if "data" in payload and "copy" in payload["data"]:
-            for _, plan in data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data.autolock.plans.items():
+            for plan in data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data.autolock.plans:
                 new_plan = asdict(plan).copy()
                 new_plan["id"] = self.max_id_autolock_plan + 1
                 Pub().pub(f'openWB/set/chargepoint/template/{new_id}/autolock/{new_plan["id"]}', new_plan)
