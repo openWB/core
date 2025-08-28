@@ -130,25 +130,22 @@ const formattedDateRange = computed(() => {
 });
 </script>
 
-<style scoped>
-.full-width {
-  width: 100%;
-}
+<style scoped lang="scss">
 .plan-name {
   font-weight: bold;
 }
+
 .plan-details {
   display: flex;
   justify-content: center;
 }
+
 .plan-details > div {
   display: flex;
   align-items: center;
 }
+
 .plan-details > div:not(:last-child) {
-  margin-right: 0.5em;
-}
-body.mobile .height {
-  height: 2.5em;
+  margin-right: #{map-get($space-sm, x)};
 }
 </style>

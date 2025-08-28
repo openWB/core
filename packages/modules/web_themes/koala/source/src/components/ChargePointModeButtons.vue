@@ -7,7 +7,7 @@
       transition-duration="500"
       color="primary"
       :label="currentModeLabel"
-      size="lg"
+      size="md"
       dropdown-icon="none"
       cover
       push
@@ -70,5 +70,6 @@ const currentModeLabel = computed(
 :deep(.q-btn-dropdown__arrow-container) {
   width: 0;
   padding: 0;
+  margin: 0;
 }
 </style>

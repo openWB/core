@@ -50,9 +50,3 @@ const timeChargingEnabled = mqttStore.chargePointConnectedVehicleTimeCharging(
   props.chargePointId,
 );
 </script>
-
-<style scoped>
-.full-width {
-  width: 100%;
-}
-</style>
