@@ -193,7 +193,7 @@
 				let chartsHtml = '<div class="card-container">';
 				for (const key in history) {
 					if (!Object.hasOwn(history, key)) continue;
-					if (!chartSections.includes(key)) continue;
+					if (!chartSections.some(section => key.startsWith(section))) continue;
 					const value = history[key];
 					// Prüfe, ob es sich um mehrere Reihen handelt (Objekt mit value/unit) oder Array
 					if (Array.isArray(value)) {
@@ -248,7 +248,7 @@
 				// Diagramme zeichnen
 				for (const key in history) {
 					if (!Object.hasOwn(history, key)) continue;
-					if (!chartSections.includes(key)) continue;
+					if (!chartSections.some(section => key.startsWith(section))) continue;
 					const value = history[key];
 					if (Array.isArray(value)) {
 						const canvas = document.getElementById(`chart_${key}`);
