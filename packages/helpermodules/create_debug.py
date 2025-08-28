@@ -173,7 +173,7 @@ def config_and_state():
                                                     "--| Counter_Max_Currents: "
                                                     f"{component_data.data.config.max_currents}\n")
                                 else:
-                                    parsed_data += ("--| Counter_Type: Sonstiger Zähler\nCOUNTER_MAX_CURRENTS: "
+                                    parsed_data += ("--| Counter_Type: Sonstiger Zähler\n--| Counter_Max_Currents: "
                                                     f"{component_data.data.config.max_currents}\n")
                                 parsed_data += (f"--| Counter_Power: {component_data.data.get.power/1000}kW\n"
                                                 f"--| Counter_Currents: {component_data.data.get.currents}A\n"
