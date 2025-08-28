@@ -10,7 +10,7 @@ class SungrowConfiguration:
                  ip_address: Optional[str] = None,
                  port: int = 502,
                  modbus_id: int = 1,
-                 version: Version = Version.SG:
+                 version: Version = Version.SG):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
