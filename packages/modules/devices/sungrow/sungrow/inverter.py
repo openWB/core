@@ -40,7 +40,7 @@ class SungrowInverter(AbstractInverter):
 
             currents = self.__tcp_client.read_input_registers(13030, [ModbusDataType.INT_16]*3, unit=unit)
             currents = [value * -0.1 for value in currents]
-            
+
         elif self.device_config.configuration.version in (Version.SG, Version.SG_winet_dongle):
             power = self.__tcp_client.read_input_registers(5030, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -1
