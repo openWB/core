@@ -20,6 +20,7 @@ import logging
 from threading import Thread, Event
 import traceback
 from typing import Dict, Optional, Tuple
+from fnmatch import fnmatch
 
 from control.algorithm.utils import get_medium_charging_current
 from control.chargelog import chargelog
@@ -154,11 +155,18 @@ class Chargepoint(ChargepointRfidMixin):
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
         # Die Pro schickt je nach Timing auch nach Abstecken noch ein paar Zyklen den Tag. Dann darf der Ladepunkt
         # nicht wieder entsperrt werden.
-        if (self.data.get.rfid or
-            self.data.get.vehicle_id or
-                self.data.set.rfid) in self.template.data.valid_tags:
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
-        elif self.template.data.disable_after_unplug and self.data.get.plug_state is False:
+
+        # Prüfung auf ein passendes Muster
+        # Vergleiche werden case-insensitive durchgeführt
+        # das vereinfacht die Eingabe, kann aber auch für falsche Treffer sorgen.
+        # 'fnmatch()' ist case-insensitive
+        for tag_id in self.template.data.valid_tags:
+            if ((self.data.get.rfid is not None and fnmatch(self.data.get.rfid, tag_id)) or
+                    (self.data.get.vehicle_id is not None and fnmatch(self.data.get.vehicle_id, tag_id)) or
+                    (self.data.set.rfid is not None and fnmatch(self.data.set.rfid, tag_id))):
+                Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
+        # Wenn der Ladepunkt nach dem Abstecken gesperrt werden soll, und kein Fahrzeug angeschlossen ist wird gesperrt
+        if self.template.data.disable_after_unplug and self.data.get.plug_state is False:
             Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", True)
 
         if self.data.set.manual_lock:
@@ -561,6 +569,7 @@ class Chargepoint(ChargepointRfidMixin):
 
     def set_phases(self, phases: int) -> int:
         charging_ev = self.data.set.charging_ev_data
+        phases = min(phases, self.get_max_phase_hw())
 
         if phases != self.data.get.phases_in_use:
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch

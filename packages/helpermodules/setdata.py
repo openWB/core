@@ -549,7 +549,8 @@ class SetData:
             self._validate_value(msg, int, [(0, 2)])
         elif ("/get/evse_current" in msg.topic or
               "/get/max_evse_current" in msg.topic):
-            self._validate_value(msg, float, [(float("-inf"), 0), (0, 0), (6, 32), (600, 3200)])
+            # AC-EVSE: 0, 6-32, 600-3200, DC-EVSE 0-500
+            self._validate_value(msg, float, [(0, 3200)])
         elif ("/get/version" in msg.topic or
               "/get/current_branch" in msg.topic or
               "/get/current_commit" in msg.topic):
@@ -717,7 +718,7 @@ class SetData:
             elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/general/chargemode_config/phase_switch_delay" in msg.topic:
-                self._validate_value(msg, int, [(5, 20)])
+                self._validate_value(msg, int, [(5, 60)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
             elif "openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic:

@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
+import logging
 from enum import Enum
 from typing import Dict, List, Optional, TypedDict, Union
 from modules.common import req
 from modules.common.component_state import BatState, CounterState, InverterState
 from modules.common.simcount import SimCounter
+
+
+log = logging.getLogger(__name__)
 
 
 class RestApi1():
@@ -351,7 +355,7 @@ class JsonApi():
         # the current is calculated as apparent power / voltage
         battery_ac_voltage = battery_state["Uac"]
         currents = [float(battery_state[f"Sac{phase}"]) / battery_ac_voltage
-                    if battery_state[f"Sac{phase}"] else None
+                    if battery_state.get(f"Sac{phase}") else None
                     for phase in range(1, 4)]
         imported, exported = sim_counter.sim_count(battery_power)
         return BatState(power=battery_power,
@@ -434,11 +438,13 @@ class JsonApi():
         if self.default_operating_mode is None:
             # Store the default operating mode for later restoration
             self.default_operating_mode = self.OperatingMode(configurations["EM_OperatingMode"])
+            log.debug(f"default_operating_mode set to: {self.default_operating_mode}")
+
         operating_mode = self.OperatingMode(configurations["EM_OperatingMode"])
         if power_limit is None:
             # No specific power limit is set, activating default mode to allow the system to optimize energy usage by it
             # self.
-            if operating_mode == self.OperatingMode.MANUAL:
+            if operating_mode == self.OperatingMode.MANUAL and self.default_operating_mode != self.OperatingMode.MANUAL:
                 self.__set_configurations({"EM_OperatingMode": self.default_operating_mode.value})
         else:
             # Activate "Manual" operating mode to allow direct control of the power limit

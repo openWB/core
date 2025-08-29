@@ -157,16 +157,10 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .centered-container {
-  max-width: 1000px;
+  max-width: $breakpoint-lg-min;
   margin-left: auto;
   margin-right: auto;
-}
-
-@media (min-width: 1400px) {
-  .centered-container {
-    max-width: 1400px;
-  }
 }
 </style>

@@ -48,6 +48,15 @@ def _calculate_powers_and_currents(currents: Optional[List[Optional[float]]],
     return currents, powers, voltages
 
 
+def check_currents_power_sign(currents: Optional[List[Optional[float]]], power: float) -> bool:
+    """Check if the sign of the sum of currents matches the power sign or both zero."""
+    return any([
+        sum(currents) < 0 and power < 0,
+        sum(currents) > 0 and power > 0,
+        sum(currents) == 0 and power == 0
+    ])
+
+
 @auto_str
 class BatState:
     def __init__(
@@ -71,7 +80,7 @@ class BatState:
         if _check_none(currents):
             currents = [0.0]*3
         else:
-            if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
+            if not check_currents_power_sign(currents, power):
                 log.debug("currents sign wrong "+str(currents))
         self.currents = currents
 
@@ -131,7 +140,7 @@ class InverterState:
         if _check_none(currents):
             currents = [0.0]*3
         else:
-            if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
+            if not check_currents_power_sign(currents, power):
                 log.debug("currents sign wrong "+str(currents))
         self.currents = currents
         self.power = power

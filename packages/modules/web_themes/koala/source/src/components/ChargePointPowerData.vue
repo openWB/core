@@ -1,7 +1,7 @@
 <template>
   <div
     :class="[
-      'cp-power items-center q-gutter-xs',
+      'text-no-wrap items-center q-gutter-xs',
       columnDisplayFormat ? 'column' : 'row inline',
     ]"
   >
@@ -21,9 +21,3 @@ defineProps<{
   columnDisplayFormat?: boolean;
 }>();
 </script>
-
-<style scoped>
-.cp-power {
-  white-space: nowrap;
-}
-</style>
