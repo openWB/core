@@ -10,6 +10,7 @@ from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.sungrow.config import SungrowBatSetup, Sungrow
+from modules.devices.sungrow.sungrow.registers import RegMode
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class SungrowBat(AbstractBat):
         self.last_mode = 'Undefined'
         self.register_check = self.detect_register_check()
 
-    def detect_register_check(self) -> str:
+    def detect_register_check(self) -> RegMode:
         # Battery register availability test
         unit = self.device_config.configuration.modbus_id
 
@@ -42,32 +43,32 @@ class SungrowBat(AbstractBat):
                                                    wordorder=Endian.Little, unit=unit)
             self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit)
             log.debug("Battery register check: using new_registers (5213/5630).")
-            return 'new_registers'
+            return RegMode.NEW_REGISTERS
         except Exception:
             pass
 
         try:
             self.__tcp_client.read_input_registers(13000, ModbusDataType.UINT_16, unit=unit)
             log.debug("Battery register check: using old_registers (13021 + 13000 bits for sign).")
-            return 'old_registers'
+            return RegMode.OLD_REGISTERS
         except Exception:
             pass
 
         log.debug("Battery register check: using fallback (13021 + total vs PV power).")
-        return 'fallback'
+        return RegMode.FALLBACK
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
         soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
 
         # === Mode 1: new_registers ===
-        if self.register_check == 'new_registers':
+        if self.register_check == RegMode.NEW_REGISTERS:
             bat_current = self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit) * -0.1
             bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
                                                                wordorder=Endian.Little, unit=unit) * -1
 
         # === Mode 2: old_registers ===
-        elif self.register_check == 'old_registers':
+        elif self.register_check == RegMode.OLD_REGISTERS:
             bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
 
