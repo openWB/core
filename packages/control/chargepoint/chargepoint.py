@@ -164,7 +164,7 @@ class Chargepoint(ChargepointRfidMixin):
             if ((self.data.get.rfid is not None and fnmatch(self.data.get.rfid, tag_id)) or
                     (self.data.get.vehicle_id is not None and fnmatch(self.data.get.vehicle_id, tag_id)) or
                     (self.data.set.rfid is not None and fnmatch(self.data.set.rfid, tag_id))):
-                Pub().pub(f"openWB/svet/chargepoint/{self.num}/set/manual_lock", False)
+                Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
         # Wenn der Ladepunkt nach dem Abstecken gesperrt werden soll, und kein Fahrzeug angeschlossen ist wird gesperrt
         if self.template.data.disable_after_unplug and self.data.get.plug_state is False:
             Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", True)
