@@ -1,6 +1,7 @@
-from enum import IntEnum
+from enum import Enum
 
-class RegMode(IntEnum):
+
+class RegMode(Enum):
     NEW_REGISTERS = "new_registers"
     OLD_REGISTERS = "old_registers"
     FALLBACK = "fallback"
