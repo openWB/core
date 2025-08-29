@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 94
+    DATASTORE_VERSION = 95
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -231,6 +231,7 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/phase_switch_delay$",
         "^openWB/general/chargemode_config/pv_charging/control_range$",
         "^openWB/general/chargemode_config/pv_charging/min_bat_soc$",
+        "^openWB/general/chargemode_config/pv_charging/max_bat_soc$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_discharge$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_discharge_active$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_reserve$",
@@ -534,6 +535,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge_active", True),
         ("openWB/general/chargemode_config/pv_charging/min_bat_soc", 50),
+        ("openWB/general/chargemode_config/pv_charging/max_bat_soc", 70),
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve_active", True),
         ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
@@ -2515,3 +2517,13 @@ class UpdateConfig:
                     self.all_received_topics[topic] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
                     Pub().pub(f"openWB/set/chargepoint/template/{get_index(topic)}", payload)
         self.__update_topic("openWB/system/datastore_version", 94)
+
+    def upgrade_datastore_94(self) -> None:
+        # bei Aktualisierung den max_bat_soc auf min_bat_soc setzen
+        # Regelung verhält sich dadurch wie bisher konfiguriert
+        # max_bat_soc kann nicht kleiner als min_bat_soc werden
+        min_bat_soc = decode_payload(self.all_received_topics[
+            "openWB/general/chargemode_config/pv_charging/min_bat_soc"])
+
+        self.__update_topic("openWB/general/chargemode_config/pv_charging/max_bat_soc", min_bat_soc)
+        self.__update_topic("openWB/system/datastore_version", 95)
