@@ -63,10 +63,18 @@ class ChargepointModule(AbstractChargepoint):
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            chargepoint_state = self.request_values()
-            if chargepoint_state is not None:
-                # bei Fehler, aber Fehlezähler noch nicht abgelaufen, keine Werte mehr publishen.
-                self.store.set(chargepoint_state)
+            try:
+                chargepoint_state = self.request_values()
+                if chargepoint_state is not None:
+                    # bei Fehler, aber Fehlezähler noch nicht abgelaufen, keine Werte mehr publishen.
+                    self.store.set(chargepoint_state)
+            except Exception as e:
+                if self.client_error_context.error_counter_exceeded():
+                    chargepoint_state = ChargepointState(plug_state=False, charge_state=False, imported=None,
+                                                         # bei im-/exported None werden keine Werte gepublished
+                                                         exported=None, phases_in_use=0, power=0, currents=[0]*3)
+                    self.store.set(chargepoint_state)
+                    raise e
 
     def request_values(self) -> ChargepointState:
         with self.client_error_context:
@@ -113,15 +121,6 @@ class ChargepointModule(AbstractChargepoint):
             self.validate_values(chargepoint_state)
             self.client_error_context.reset_error_counter()
             return chargepoint_state
-        if self.client_error_context.error_counter_exceeded():
-            chargepoint_state = ChargepointState()
-            chargepoint_state.plug_state = False
-            chargepoint_state.charge_state = False
-            chargepoint_state.imported = None  # bei None werden keine Werte gepublished
-            chargepoint_state.exported = None
-            return chargepoint_state
-        else:
-            return None
 
     def validate_values(self, chargepoint_state: ChargepointState) -> None:
         if chargepoint_state.charge_state is False and max(chargepoint_state.currents) > 1:
