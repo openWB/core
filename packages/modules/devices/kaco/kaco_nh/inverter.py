@@ -25,10 +25,9 @@ class KacoNHInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response: Dict) -> None:
-        id = self.component_config.configuration.id
         response = req.get_http_session().get(
             'http://' + self.device_config.ip_address + ':' + str(self.device_config.port) + '/getdevdata.cgi?device=' +
-            str(id) + '&sn=' + self.device_config.serial_number,
+            str(self.component_config.configuration.id) + '&sn=' + self.device_config.serial_number,
             timeout=5).json()
 
         power = float(response["pac"]) * -1
