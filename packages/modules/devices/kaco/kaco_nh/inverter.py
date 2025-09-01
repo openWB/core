@@ -22,6 +22,7 @@ class KacoNHInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.device_config: KacoNHConfiguration = self.kwargs['device_config']
+        self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response: Dict) -> None:
