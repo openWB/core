@@ -4,7 +4,7 @@
     :items="vehicleIds"
   >
     <template #item="{ item }">
-      <VehicleCard :vehicle-id="item" />
+      <VehicleCard :vehicle-id="item" full-height />
     </template>
   </BaseCarousel>
 
@@ -42,13 +42,8 @@
       <VehicleCard
         v-if="selectedVehicleId !== null"
         :vehicle-id="selectedVehicleId"
-      >
-        <template #card-actions>
-          <q-btn color="primary" flat no-caps v-close-popup size="md">
-            Schließen
-          </q-btn>
-        </template>
-      </VehicleCard>
+        closeButton
+      />
     </div>
   </q-dialog>
 </template>

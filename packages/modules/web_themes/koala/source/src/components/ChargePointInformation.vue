@@ -4,7 +4,7 @@
     :items="chargePointIds"
   >
     <template #item="{ item }">
-      <ChargePointCard :charge-point-id="item" />
+      <ChargePointCard :charge-point-id="item" full-height />
     </template>
   </BaseCarousel>
 

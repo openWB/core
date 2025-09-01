@@ -34,7 +34,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
+import {
+  ref,
+  computed,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+} from 'vue';
 import { Screen } from 'quasar';
 
 const props = defineProps<{ items: number[] }>();
@@ -69,7 +76,6 @@ function measure() {
   });
 }
 
-
 onMounted(() => {
   measure();
   window.addEventListener('resize', measure);
@@ -83,7 +89,13 @@ watch(() => props.items, measure);
 
 const groupSize = computed(() => {
   if (!itemWidth.value || !carouselWidth.value) return 1;
-  const maxGroup = Math.max(1, Math.floor((carouselWidth.value - (showArrows.value ? carouselPadding.value : 50)) / itemWidth.value));
+  const maxGroup = Math.max(
+    1,
+    Math.floor(
+      (carouselWidth.value - (showArrows.value ? carouselPadding.value : 50)) /
+        itemWidth.value,
+    ),
+  );
   // Spezialfall: Alle passen nebeneinander
   if (
     props.items.length > maxGroup &&
