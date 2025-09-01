@@ -4,7 +4,7 @@
     :items="chargePointIds"
   >
     <template #item="{ item }">
-      <ChargePointCard :charge-point-id="item" />
+      <ChargePointCard :charge-point-id="item" full-height />
     </template>
   </BaseCarousel>
 
@@ -12,7 +12,9 @@
     v-else
     :items="chargePointIds"
     :row-data="tableRowData"
-    :column-config="compactTable ? tableColumnsMobile : columnConfigDesktop"
+    :column-config="compactTable ? tableColumnsCompact : columnConfig"
+    :dense="compactTable"
+    :square="compactTable"
     :search-input-visible="searchInputVisible"
     :table-height="compactTable ? '35vh' : '45vh'"
     v-model:filter="filter"
@@ -20,7 +22,7 @@
     :row-expandable="compactTable"
     @row-click="onRowClick"
   >
-    <!-- desktop view table body slots -->
+    <!-- full view table body slots -->
     <template #body-cell-plugged="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
         <ChargePointStateIcon :charge-point-id="slotProps.row.id" />
@@ -54,8 +56,8 @@
         />
       </q-td>
     </template>
-    <!-- mobile view table body slots -->
-    <!-- mobile view charge point name and vehicle name displayed in one field -->
+    <!-- compact view table body slots -->
+    <!-- compact view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
         {{ slotProps.row.name }}<br />
@@ -63,7 +65,7 @@
       </q-td>
     </template>
 
-    <!-- mobile view charge point charge mode, plug status and time charging displayed in one field -->
+    <!-- compact view charge point charge mode, plug status and time charging displayed in one field -->
     <template #body-cell-modePluggedTimeCharging="slotProps">
       <q-td :class="`text-${slotProps.col.align}`">
         <div class="items-center">
@@ -83,7 +85,7 @@
     <template #row-expand="slotProps">
       <div class="q-pa-xs column q-gutter-y-xs">
         <div
-          v-for="column in expansionColumnsMobile"
+          v-for="column in expansionColumnsCompact"
           :key="column.field"
           class="row items-start"
         >
@@ -191,7 +193,7 @@ const tableRowData = computed<(id: number) => ChargePointRow>(() => {
   };
 });
 
-const columnConfigDesktop: ColumnConfiguration[] = [
+const columnConfig: ColumnConfiguration[] = [
   { field: 'name', label: 'Ladepunkt' },
   { field: 'vehicle', label: 'Fahrzeug' },
   { field: 'plugged', label: 'Status', align: 'center' },
@@ -202,7 +204,7 @@ const columnConfigDesktop: ColumnConfiguration[] = [
   { field: 'soc', label: 'Ladestand', align: 'right' },
 ];
 
-const columnConfigMobile: ColumnConfiguration[] = [
+const columnConfigCompact: ColumnConfiguration[] = [
   { field: 'nameAndVehicle', label: 'Ladepunkt' },
   { field: 'modePluggedTimeCharging', label: 'Lademodus', align: 'center' },
   {
@@ -214,10 +216,10 @@ const columnConfigMobile: ColumnConfiguration[] = [
   { field: 'soc', label: 'Ladestand', align: 'right', expandField: true },
 ];
 
-const tableColumnsMobile = columnConfigMobile.filter(
+const tableColumnsCompact = columnConfigCompact.filter(
   (column) => !column.expandField,
 );
-const expansionColumnsMobile = columnConfigMobile.filter(
+const expansionColumnsCompact = columnConfigCompact.filter(
   (column) => column.expandField,
 );
 
