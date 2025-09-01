@@ -2524,13 +2524,14 @@ class UpdateConfig:
                 ids.sort()
                 unique_ids = set(ids)
                 if len(ids) != len(unique_ids):
+                    max_id = decode_payload(
+                        self.all_received_topics["openWB/command/max_id/charge_template_scheduled_plan"])
                     for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
                         try:
                             unique_ids.remove(plan["id"])
                         except KeyError:
-                            self.all_received_topics["openWB/command/max_id/charge_template_scheduled_plan"] += 1
-                            plan["id"] = self.all_received_topics[
-                                "openWB/command/max_id/charge_template_scheduled_plan"]
-                    return {topic: payload}
+                            max_id += 1
+                            plan["id"] = max_id
+                    return {topic: payload, "openWB/command/max_id/charge_template_scheduled_plan": max_id}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 95)
