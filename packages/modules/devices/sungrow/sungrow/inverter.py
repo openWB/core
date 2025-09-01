@@ -50,7 +50,7 @@ class SungrowInverter(AbstractInverter):
             currents = self.__tcp_client.read_input_registers(5021, [ModbusDataType.INT_16]*3, unit=unit)
             currents = [value * -0.1 for value in currents]
 
-        imported, exported = self.sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power, dc_power)
 
         inverter_state = InverterState(
             power=power,
