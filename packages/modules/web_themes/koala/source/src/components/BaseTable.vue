@@ -15,6 +15,7 @@
     binary-state-sort
     :pagination="{ rowsPerPage: 0 }"
     hide-bottom
+    :dense="props.dense"
   >
     <!-- search field ------------------------------------------------------->
     <template #top v-if="searchInputVisible">
@@ -146,6 +147,7 @@ const props = defineProps<{
   filter?: string;
   columnsToSearch?: string[];
   rowExpandable?: boolean;
+  dense?: boolean;
 }>();
 
 /* ------------------------------------------------------------------ state */

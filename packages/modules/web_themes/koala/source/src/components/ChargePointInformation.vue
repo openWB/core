@@ -13,6 +13,7 @@
     :items="chargePointIds"
     :row-data="tableRowData"
     :column-config="compactTable ? tableColumnsCompact : columnConfig"
+    :dense="compactTable"
     :search-input-visible="searchInputVisible"
     :table-height="compactTable ? '35vh' : '45vh'"
     v-model:filter="filter"
