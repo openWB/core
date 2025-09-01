@@ -29,7 +29,7 @@ def create_device(device_config: Sungrow):
         return SungrowInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SungrowBat, SungrowCounter, SungrowInverter]]):
-        pv_power = None
+        pv_power = 0
         nonlocal client
         with client:
             for component in components:
