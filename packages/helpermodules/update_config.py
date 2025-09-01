@@ -2333,8 +2333,8 @@ class UpdateConfig:
 
     def upgrade_datastore_87(self) -> None:
         def upgrade(topic: str, payload) -> None:
-            if (re.search("openWB/vehicle/template/charge_template/[0-9]+", topic) is not None or
-                    re.search("openWB/vehicle/template/ev_template/[0-9]+", topic) is not None):
+            if (re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None or
+                    re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None):
                 payload = decode_payload(payload)
                 index = int(get_index(topic))
                 payload.update({"id": index})
