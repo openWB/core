@@ -14,6 +14,7 @@
     :row-data="tableRowData"
     :column-config="compactTable ? columnConfigCompact : columnConfig"
     :dense="compactTable"
+    :square="compactTable"
     :search-input-visible="searchInputVisible"
     :table-height="compactTable ? '35vh' : '45vh'"
     v-model:filter="filter"

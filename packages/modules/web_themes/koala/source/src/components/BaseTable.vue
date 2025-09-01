@@ -16,6 +16,7 @@
     :pagination="{ rowsPerPage: 0 }"
     hide-bottom
     :dense="props.dense"
+    :square="props.square"
   >
     <!-- search field ------------------------------------------------------->
     <template #top v-if="searchInputVisible">
@@ -148,6 +149,7 @@ const props = defineProps<{
   columnsToSearch?: string[];
   rowExpandable?: boolean;
   dense?: boolean;
+  square?: boolean;
 }>();
 
 /* ------------------------------------------------------------------ state */
