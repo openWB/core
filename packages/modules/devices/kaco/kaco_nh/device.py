@@ -16,17 +16,14 @@ log = logging.getLogger(__name__)
 def create_device(device_config: KacoNH):
     def create_bat_component(component_config: KacoNHBatSetup):
         return KacoNHBat(component_config=component_config,
-                         device_id=device_config.id,
                          device_config=device_config.configuration)
 
     def create_counter_component(component_config: KacoNHCounterSetup):
         return KacoNHCounter(component_config=component_config,
-                             device_id=device_config.id,
                              device_config=device_config.configuration)
 
     def create_inverter_component(component_config: KacoNHInverterSetup):
         return KacoNHInverter(component_config=component_config,
-                              device_id=device_config.id,
                               device_config=device_config.configuration)
 
     def update_components(components: Iterable[Union[KacoNHBat, KacoNHCounter, KacoNHInverter]]):

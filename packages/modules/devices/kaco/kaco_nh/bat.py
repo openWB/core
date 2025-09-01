@@ -13,7 +13,6 @@ from modules.devices.kaco.kaco_nh.config import KacoNHConfiguration
 
 
 class KwargsDict(TypedDict):
-    device_id: int
     device_config: KacoNHConfiguration
 
 
@@ -24,16 +23,15 @@ class KacoNHBat(AbstractBat):
 
     def initialize(self) -> None:
         self.device_config: KacoNHConfiguration = self.kwargs['device_config']
-        self.__device_id: int = self.kwargs['device_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        component_id = self.component_config.configuration.component_id
+        id = self.component_config.configuration.id
         response = req.get_http_session().get(
             'http://' + self.device_config.ip_address + ':' + str(self.device_config.port) + '/getdevdata.cgi?device=' +
-            str(component_id) + '&sn=' + self.device_config.serial,
+            str(id) + '&sn=' + self.device_config.serial_number,
             timeout=5).json()
         power = int(response["pb"]) * -1
         soc = float(response["soc"])

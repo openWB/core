@@ -6,15 +6,17 @@ from ..vendor import vendor_descriptor
 
 
 class KacoNHConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: Optional[int] = None, serial: Optional[str] = None):
+    def __init__(self, ip_address: Optional[str] = None,
+                 port: Optional[int] = None,
+                 serial_number: Optional[str] = None):
         self.ip_address = ip_address
         self.port = port
-        self.serial = serial
+        self.serial = serial_number
 
 
 class KacoNH:
     def __init__(self,
-                 name: str = "KacoNH",
+                 name: str = "Kaco NH",
                  type: str = "kaco_nh",
                  id: int = 0,
                  configuration: KacoNHConfiguration = None) -> None:
@@ -26,8 +28,8 @@ class KacoNH:
 
 
 class KacoNHBatConfiguration:
-    def __init__(self, device_id: int = 0):
-        self.device_id = device_id
+    def __init__(self, id: int = 0):
+        self.id = id
 
 
 class KacoNHBatSetup(ComponentSetup[KacoNHBatConfiguration]):
@@ -40,8 +42,8 @@ class KacoNHBatSetup(ComponentSetup[KacoNHBatConfiguration]):
 
 
 class KacoNHCounterConfiguration:
-    def __init__(self, device_id: int = 0):
-        self.device_id = device_id
+    def __init__(self, id: int = 0):
+        self.id = id
 
 
 class KacoNHCounterSetup(ComponentSetup[KacoNHCounterConfiguration]):
@@ -54,8 +56,8 @@ class KacoNHCounterSetup(ComponentSetup[KacoNHCounterConfiguration]):
 
 
 class KacoNHInverterConfiguration:
-    def __init__(self, device_id: int = 0):
-        self.device_id = device_id
+    def __init__(self, id: int = 0):
+        self.id = id
 
 
 class KacoNHInverterSetup(ComponentSetup[KacoNHInverterConfiguration]):
