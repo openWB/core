@@ -56,8 +56,8 @@ class ProPlus(ChargepointModule):
             else:
                 raise Exception(self.NO_DATA_SINCE_BOOT)
 
-    def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:
-        super().switch_phases(phases_to_use, duration)
+    def perform_phase_switch(self, phases_to_use: int) -> None:
+        super().switch_phases(phases_to_use)
 
     def perform_cp_interruption(self, duration: int) -> None:
         pass
