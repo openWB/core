@@ -291,7 +291,7 @@ class BatAll:
 
     def get_power_limit(self):
         if self.data.config.bat_control_permitted is False:
-            self.data.set.power_limit
+            self.data.set.power_limit = None
         else:
             chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
             # Falls aktive Steuerung an und Fahrzeuge laden und kein Überschuss im System ist,
