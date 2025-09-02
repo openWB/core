@@ -305,6 +305,7 @@ class Chargepoint(ChargepointRfidMixin):
         reset_log.imported_at_mode_switch = self.data.get.imported
         reset_log.imported_at_plugtime = self.data.set.log.imported_at_plugtime
         reset_log.imported_since_plugged = self.data.set.log.imported_since_plugged
+        reset_log.timestamp_mode_switch = self.data.set.log.timestamp_mode_switch
         self.data.set.log = reset_log
         Pub().pub(f"openWB/set/chargepoint/{self.num}/set/log", asdict(self.data.set.log))
 
