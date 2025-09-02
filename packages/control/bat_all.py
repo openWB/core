@@ -322,7 +322,8 @@ class BatAll:
                 elif self.data.get.power > 0:
                     log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")
                 elif data.data.counter_all_data.get_evu_counter().data.get.power < control_range_center + 80:
-                    # Wenn der Regelbereich zB auf Bezug steht, darf auch die Leistung des Regelbereichs entladen werden.
+                    # Wenn der Regelbereich zB auf Bezug steht, darf auch die Leistung des Regelbereichs entladen
+                    # werden.
                     log.debug("Speicher-Leistung nicht begrenzen, da EVU-Überschuss vorhanden ist.")
                 else:
                     log.debug("Speicher-Leistung nicht begrenzen.")
