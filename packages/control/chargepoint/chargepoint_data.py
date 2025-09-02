@@ -73,8 +73,9 @@ class Log:
     imported_since_mode_switch: float = 0
     imported_since_plugged: float = 0
     range_charged: float = 0
-    time_charged: str = "00:00"
+    time_charged: float = 0
     timestamp_start_charging: Optional[float] = None
+    timestamp_mode_switch: Optional[float] = None
     ev: int = -1
     prio: bool = False
     rfid: Optional[str] = None
