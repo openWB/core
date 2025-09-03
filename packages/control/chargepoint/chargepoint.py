@@ -913,7 +913,8 @@ class Chargepoint(ChargepointRfidMixin):
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and
                 self.data.get.evse_signaling != EvseSignaling.HLC and
-                self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False)
+                (self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False or
+                 self.data.set.log.imported_since_plugged == 0))
 
     def chargemode_support_phase_switch(self) -> bool:
         control_parameter = self.data.control_parameter
