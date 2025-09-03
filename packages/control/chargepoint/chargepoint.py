@@ -386,7 +386,7 @@ class Chargepoint(ChargepointRfidMixin):
                         phase_switch_required = False
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. Die "
-                            "aktuelle Phasenzahl wird bis zum Abstecken beibehalten.")
+                            "aktuelle Phasenzahl wird bis zur nächsten Ladeunterbrechung beibehalten.")
                     self.data.control_parameter.failed_phase_switches += 1
                 else:
                     # Umschaltung vor Ladestart zulassen
