@@ -376,7 +376,7 @@ class Chargepoint(ChargepointRfidMixin):
                self.check_deviating_contactor_states(self.data.set.phases_to_use,
                                                      self.data.control_parameter.phases)) and
                 # Wenn der Ladevorgang gestartet wird, muss vor dem ersten Laden umgeschaltet werden.
-                self.data.set.current != 0):
+                self.data.get.charge_state is False):
             phase_switch_required = True
         if phase_switch_required:
             # Umschaltung fehlgeschlagen
