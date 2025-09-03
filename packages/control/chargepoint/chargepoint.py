@@ -779,6 +779,7 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.data.set.charge_state_prev and self.data.get.charge_state is False:
                     Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
                     log.info(f"SoC-Abfrage nach Ladeunterbrechung, cp{self.num}, ev{self.data.config.ev}")
+                    self.reset_control_parameter_at_charge_stop()
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
