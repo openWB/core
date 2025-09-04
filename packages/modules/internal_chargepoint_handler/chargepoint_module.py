@@ -4,6 +4,7 @@ import time
 from helpermodules.broker import BrokerClient
 from helpermodules.logger import ModifyLoglevelContext
 
+from helpermodules.utils import run_command
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -66,18 +67,19 @@ class ChargepointModule(AbstractChargepoint):
         self.current_branch = SubData.system_data["system"].data["current_branch"]
         self.current_commit = SubData.system_data["system"].data["current_commit"]
 
-        def on_connect(client, userdata, flags, rc):
-            client.subscribe(f"openWB/internal_chargepoint/{self.local_charge_point_num}/get/phases_in_use")
-
-        def on_message(client, userdata, message):
-            self.old_phases_in_use = decode_payload(message.payload)
-
-        self.old_phases_in_use = None
-        BrokerClient(f"subscribeInternalCp{self.local_charge_point_num}", on_connect, on_message).start_finite_loop()
-
-        if self.old_phases_in_use == 0 or self.old_phases_in_use is None:
+        if float(run_command.run_command(["cat", "/proc/uptime"]).split(" ")[0]) < 180:
             self.perform_phase_switch(1, 4)
             self.old_phases_in_use = 1
+        else:
+            def on_connect(client, userdata, flags, rc):
+                client.subscribe(f"openWB/internal_chargepoint/{self.local_charge_point_num}/get/phases_in_use")
+
+            def on_message(client, userdata, message):
+                self.old_phases_in_use = decode_payload(message.payload)
+
+            self.old_phases_in_use = None
+            BrokerClient(f"subscribeInternalCp{self.local_charge_point_num}",
+                         on_connect, on_message).start_finite_loop()
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
