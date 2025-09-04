@@ -289,8 +289,32 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
         },
       },
       ticks: {
-        maxTicksLimit: 12,
-        source: 'auto' as const,
+        maxTicksLimit: 40,
+        source: 'data' as const,
+        callback: (value) => {
+          const formatTimestamp = (date: Date): string => {
+            return date.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+          };
+          // value is timestamp in ms
+          const date = new Date(value as number);
+          const minutes = date.getMinutes();
+          const seconds = date.getSeconds();
+          // only display rounded minutes
+          if (seconds < 10) {
+            if (chartRange.value <= 2700)
+              // if chart range is 45min or less, show every minute
+              // is limited by maxTicksLimit if too many points
+              return formatTimestamp(date);
+            if (minutes % 5 === 0) {
+              // show every 5 minutes
+              return formatTimestamp(date);
+            }
+          }
+          return;
+        },
       },
       grid: {
         tickLength: 5,
