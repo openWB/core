@@ -376,7 +376,7 @@ class Chargepoint(ChargepointRfidMixin):
                self.check_deviating_contactor_states(self.data.set.phases_to_use,
                                                      self.data.control_parameter.phases)) and
                 # Wenn der Ladevorgang gestartet wird, muss vor dem ersten Laden umgeschaltet werden.
-                self.data.set.current != 0):
+                self.data.get.charge_state is False):
             phase_switch_required = True
         if phase_switch_required:
             # Umschaltung fehlgeschlagen
@@ -386,17 +386,18 @@ class Chargepoint(ChargepointRfidMixin):
                         phase_switch_required = False
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. Die "
-                            "aktuelle Phasenzahl wird bis zum Abstecken beibehalten.")
+                            "aktuelle Phasenzahl wird bis zur nächsten Ladeunterbrechung beibehalten.")
                     self.data.control_parameter.failed_phase_switches += 1
                 else:
                     # Umschaltung vor Ladestart zulassen
-                    if self.data.set.log.imported_since_plugged != 0:
+                    if (self.data.set.log.imported_since_plugged != 0 and
+                            self.data.control_parameter.failed_phase_switches > 0):
                         phase_switch_required = False
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
                             "Ladeeinstellungen deaktiviert wurde. Die aktuelle "
                             "Phasenzahl wird bis zum Abstecken beibehalten.")
-                        self.data.control_parameter.failed_phase_switches += 1
+                    self.data.control_parameter.failed_phase_switches += 1
         return phase_switch_required
 
     STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
@@ -778,6 +779,7 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.data.set.charge_state_prev and self.data.get.charge_state is False:
                     Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
                     log.info(f"SoC-Abfrage nach Ladeunterbrechung, cp{self.num}, ev{self.data.config.ev}")
+                    self.reset_control_parameter_at_charge_stop()
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
@@ -825,8 +827,9 @@ class Chargepoint(ChargepointRfidMixin):
         if self.data.set.charging_ev_prev != vehicle:
             Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
             log.debug("SoC nach EV-Wechsel")
-            self.update_charge_template(charging_ev.charge_template)
-        if self.data.set.charge_template.data.id != charging_ev.charge_template.data.id:
+        # wenn vorher kein anderes Fahrzeug zugeordnet war, Ladeprofil nicht zurücksetzen
+        if ((self.data.set.charging_ev_prev != vehicle and self.data.set.charging_ev_prev != -1) or
+                (self.data.set.charge_template.data.id != charging_ev.charge_template.data.id)):
             self.update_charge_template(charging_ev.charge_template)
         self.data.set.charging_ev_data = charging_ev
         self.data.set.charging_ev = vehicle
@@ -910,7 +913,8 @@ class Chargepoint(ChargepointRfidMixin):
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and
                 self.data.get.evse_signaling != EvseSignaling.HLC and
-                self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False)
+                (self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False or
+                 self.data.set.log.imported_since_plugged == 0))
 
     def chargemode_support_phase_switch(self) -> bool:
         control_parameter = self.data.control_parameter
