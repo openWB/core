@@ -58,8 +58,8 @@ class ShellyInverter(AbstractInverter):
                 meters = status['emeters']  # shellyEM & shelly3EM
                 # shellyEM has one meter, shelly3EM has three meters
                 for i in range(0, 3):
-                    currents[(i+self.phase-1) % 3] = [float(meters[i]['current'])
-                                                      if meters[i].get('current') else 0]
+                    currents[(i+self.phase-1) % 3] = (float(meters[i]['current']) * self.factor
+                                                      if meters[i].get('current') else 0)
                     power = power + (float(meters[i]['power'] * self.factor))
             # GEN 2+
             # shelly Pro3EM
@@ -67,27 +67,27 @@ class ShellyInverter(AbstractInverter):
                 currents = [0.0, 0.0, 0.0]
                 meters = status['em:0']
                 for i in range(0, 3):
-                    currents[(i+self.phase-1) % 3] = [float(meters[f'{alphabetical_index[i]}_current'])
-                                                      if meters.get(f'{alphabetical_index[i]}_current') else 0]
+                    currents[(i+self.phase-1) % 3] = (float(meters[f'{alphabetical_index[i]}_current']) * self.factor
+                                                      if meters.get(f'{alphabetical_index[i]}_current') else 0)
                 power = float(meters['total_act_power']) * self.factor
             # Shelly MiniPM G3
             elif "pm1:0" in status:
                 log.debug("single phase shelly")
                 currents = [0.0, 0.0, 0.0]
                 meters = status['pm1:0']
-                currents[self.phase-1] = meters['current']
+                currents[self.phase-1] = meters['current'] * self.factor
                 power = meters['apower'] * self.factor
             elif 'switch:0' in status and 'apower' in status['switch:0']:
                 log.debug("single phase shelly")
                 currents = [0.0, 0.0, 0.0]
                 meters = status['switch:0']
-                currents[self.phase-1] = meters['current']
+                currents[self.phase-1] = meters['current'] * self.factor
                 power = meters['apower'] * self.factor
             else:
                 log.debug("single phase shelly")
                 currents = [0.0, 0.0, 0.0]
                 meters = status['em1:0']
-                currents[self.phase-1] = meters['current']
+                currents[self.phase-1] = meters['current'] * self.factor
                 power = meters['act_power'] * self.factor  # shelly Pro EM Gen 2
             _, exported = self.sim_counter.sim_count(power)
 
