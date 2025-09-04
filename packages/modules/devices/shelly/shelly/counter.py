@@ -101,7 +101,7 @@ class ShellyCounter(AbstractCounter):
                 meters = status['pm1:0']
                 powers[self.phase-1] = meters['apower'] * self.factor
                 voltages[self.phase-1] = meters['voltage']
-                currents[self.phase-1] = meters['current']  * self.factor
+                currents[self.phase-1] = meters['current'] * self.factor
                 power_factors[self.phase-1] = meters['pf'] if meters.get('pf') else 0
                 power = meters['apower'] * self.factor
                 frequency = meters['freq']

@@ -134,7 +134,7 @@ DATA_1PM_G4 = {
 
 
 @dataclass
-class Params:
+class CounterParams:
     name: str
     json_data: str
     factor: int = 1
@@ -144,71 +144,86 @@ class Params:
 
 
 cases = [
-    Params(name="G1 - Shelly Plug Counter - Phase 1", json_data=DATA_PLUG_G1, factor=1, phase=1, generation=1,
-           expected_counter_state=CounterState(
-               voltages=[230, 0, 0], power=230, currents=[1, 0, 0],
-               frequency=50, imported=100, exported=200, powers=[230, 0, 0])),
-    Params(name="G1 - Shelly Plug Counter - Phase 2", json_data=DATA_PLUG_G1, factor=1, phase=2, generation=1,
-           expected_counter_state=CounterState(
-               voltages=[0, 230, 0], power=230, currents=[0, 1, 0],
-               frequency=50, imported=100, exported=200, powers=[0, 230, 0])),
-    Params(name="G1 - Shelly Plug Counter - Phase 3, Faktor -1", json_data=DATA_PLUG_G1, factor=-1, phase=3, generation=1,
-           expected_counter_state=CounterState(
-               voltages=[0, 0, 230], power=-230, currents=[0, 0, -1],
-               frequency=50, imported=100, exported=200, powers=[0, 0, -230])),
-    Params(name="G1 - Shelly EM3 Counter - Phase 1, Faktor -1", json_data=DATA_EM_3_G1, factor=1, phase=1, generation=1,
-           expected_counter_state=CounterState(
-               voltages=[220.0, 230.0, 240.0], power=2990.00, currents=[10.0, 2.0, 1.0], frequency=50,
-               imported=100, exported=200, powers=[2300, 460, 230], power_factors=[1.0, 1.0, 1.0])),
-    Params(name="G1 - Shelly EM3 Counter - Phase 2", json_data=DATA_EM_3_G1, factor=-1, phase=2, generation=1,
-           expected_counter_state=CounterState(
-               voltages=[240.0, 220.0, 230.0], power=-2990.00, currents=[-1.0, -10.0, -2.0], frequency=50,
-               imported=100, exported=200, powers=[-230, -2300, -460], power_factors=[1.0, 1.0, 1.0])),
-    Params(name="G1 - Shelly EM3 Counter - Phase 3", json_data=DATA_EM_3_G1, factor=1, phase=3, generation=1,
-           expected_counter_state=CounterState(
-               voltages=[230.0, 240.0, 220.0], power=2990.00, currents=[2.0, 1.0, 10.0], frequency=50,
-               imported=100, exported=200, powers=[460, 230, 2300], power_factors=[1.0, 1.0, 1.0])),
-    Params(name="G2 - Shelly Pro3 EM Counter - Phase 1", json_data=DATA_PRO_3EM_G2, factor=1, phase=1, generation=2,
-           expected_counter_state=CounterState(
-               voltages=[220.0, 230.0, 240.0], power=2990.00, currents=[1.0, 2.0, 10.0], frequency=50,
-               imported=100, exported=200, powers=[230, 460, 2300], power_factors=[0.5, 1.0, 1.5])),
-    Params(name="G2 - Shelly Pro3 EM Counter - Phase 2", json_data=DATA_PRO_3EM_G2, factor=1, phase=2, generation=2,
-           expected_counter_state=CounterState(
-               voltages=[240.0, 220.0, 230.0], power=2990.00, currents=[10.0, 1.0, 2.0], frequency=50,
-               imported=100, exported=200, powers=[2300, 230, 460], power_factors=[1.5, 0.5, 1.0])),
-    Params(name="G2 - Shelly Pro3 EM Counter - Phase 3", json_data=DATA_PRO_3EM_G2, factor=1, phase=3, generation=2,
-           expected_counter_state=CounterState(
-               voltages=[230.0, 240.0, 220.0], power=2990.00, currents=[2.0, 10.0, 1.0], frequency=50,
-               imported=100, exported=200, powers=[460, 2300, 230], power_factors=[1.0, 1.5, 0.5])),
-    Params(name="G3 - Shelly Mini PM Counter - Phase 1", json_data=DATA_MINPM_G3, factor=1, phase=1, generation=3,
-           expected_counter_state=CounterState(
-               voltages=[230.9, 0, 0], power=230, currents=[1, 0, 0], frequency=51,
-               imported=100, exported=200, powers=[230, 0, 0])),
-    Params(name="G3 - Shelly Mini PM Counter - Phase 2", json_data=DATA_MINPM_G3, factor=1, phase=2, generation=3,
-           expected_counter_state=CounterState(
-               voltages=[0, 230.9, 0], power=230, currents=[0, 1, 0], frequency=51,
-               imported=100, exported=200, powers=[0, 230, 0])),
-    Params(name="G3 - Shelly Mini PM Counter - Phase 3", json_data=DATA_MINPM_G3, factor=1, phase=3, generation=3,
-           expected_counter_state=CounterState(
-               voltages=[0, 0, 230.9], power=230, currents=[0, 0, 1], frequency=51,
-               imported=100, exported=200, powers=[0, 0, 230])),
-    Params(name="G4 - Shelly 1PM Counter - Phase 1", json_data=DATA_1PM_G4, factor=1, phase=1, generation=4,
-           expected_counter_state=CounterState(
-               voltages=[227.3, 0, 0], power=117.9, currents=[0.65, 0, 0], frequency=52,
-               imported=100, exported=200, powers=[117.9, 0, 0])),
-    Params(name="G4 - Shelly 1PM Counter - Phase 2", json_data=DATA_1PM_G4, factor=1, phase=2, generation=4,
-           expected_counter_state=CounterState(
-               voltages=[0, 227.3, 0], power=117.9, currents=[0, 0.65, 0], frequency=52,
-               imported=100, exported=200, powers=[0, 117.9, 0])),
-    Params(name="G4 - Shelly 1PM Counter - Phase 3", json_data=DATA_1PM_G4, factor=1, phase=3, generation=4,
-           expected_counter_state=CounterState(
-               voltages=[0, 0, 227.3], power=117.9, currents=[0, 0, 0.65], frequency=52,
-               imported=100, exported=200, powers=[0, 0, 117.9])),
+    CounterParams(name="G1 - Shelly Plug Counter - Phase 1",
+                  json_data=DATA_PLUG_G1, factor=1, phase=1, generation=1,
+                  expected_counter_state=CounterState(
+                      voltages=[230, 0, 0], power=230, currents=[1, 0, 0],
+                      frequency=50, imported=100, exported=200, powers=[230, 0, 0])),
+    CounterParams(name="G1 - Shelly Plug Counter - Phase 2",
+                  json_data=DATA_PLUG_G1, factor=1, phase=2, generation=1,
+                  expected_counter_state=CounterState(
+                      voltages=[0, 230, 0], power=230, currents=[0, 1, 0],
+                      frequency=50, imported=100, exported=200, powers=[0, 230, 0])),
+    CounterParams(name="G1 - Shelly Plug Counter - Phase 3, Faktor -1",
+                  json_data=DATA_PLUG_G1, factor=-1, phase=3, generation=1,
+                  expected_counter_state=CounterState(
+                      voltages=[0, 0, 230], power=-230, currents=[0, 0, -1],
+                      frequency=50, imported=100, exported=200, powers=[0, 0, -230])),
+    CounterParams(name="G1 - Shelly EM3 Counter - Phase 1, Faktor -1",
+                  json_data=DATA_EM_3_G1, factor=1, phase=1, generation=1,
+                  expected_counter_state=CounterState(
+                      voltages=[220.0, 230.0, 240.0], power=2990.00, currents=[10.0, 2.0, 1.0], frequency=50,
+                      imported=100, exported=200, powers=[2300, 460, 230], power_factors=[1.0, 1.0, 1.0])),
+    CounterParams(name="G1 - Shelly EM3 Counter - Phase 2",
+                  json_data=DATA_EM_3_G1, factor=-1, phase=2, generation=1,
+                  expected_counter_state=CounterState(
+                      voltages=[240.0, 220.0, 230.0], power=-2990.00, currents=[-1.0, -10.0, -2.0], frequency=50,
+                      imported=100, exported=200, powers=[-230, -2300, -460], power_factors=[1.0, 1.0, 1.0])),
+    CounterParams(name="G1 - Shelly EM3 Counter - Phase 3",
+                  json_data=DATA_EM_3_G1, factor=1, phase=3, generation=1,
+                  expected_counter_state=CounterState(
+                      voltages=[230.0, 240.0, 220.0], power=2990.00, currents=[2.0, 1.0, 10.0], frequency=50,
+                      imported=100, exported=200, powers=[460, 230, 2300], power_factors=[1.0, 1.0, 1.0])),
+    CounterParams(name="G2 - Shelly Pro3 EM Counter - Phase 1",
+                  json_data=DATA_PRO_3EM_G2, factor=1, phase=1, generation=2,
+                  expected_counter_state=CounterState(
+                      voltages=[220.0, 230.0, 240.0], power=2990.00, currents=[1.0, 2.0, 10.0], frequency=50,
+                      imported=100, exported=200, powers=[230, 460, 2300], power_factors=[0.5, 1.0, 1.5])),
+    CounterParams(name="G2 - Shelly Pro3 EM Counter - Phase 2, Faktor -1",
+                  json_data=DATA_PRO_3EM_G2, factor=-1, phase=2, generation=2,
+                  expected_counter_state=CounterState(
+                      voltages=[240.0, 220.0, 230.0], power=-2990.00, currents=[-10.0, -1.0, -2.0], frequency=50,
+                      imported=100, exported=200, powers=[-2300, -230, -460], power_factors=[1.5, 0.5, 1.0])),
+    CounterParams(name="G2 - Shelly Pro3 EM Counter - Phase 3",
+                  json_data=DATA_PRO_3EM_G2, factor=1, phase=3, generation=2,
+                  expected_counter_state=CounterState(
+                      voltages=[230.0, 240.0, 220.0], power=2990.00, currents=[2.0, 10.0, 1.0], frequency=50,
+                      imported=100, exported=200, powers=[460, 2300, 230], power_factors=[1.0, 1.5, 0.5])),
+    CounterParams(name="G3 - Shelly Mini PM Counter - Phase 1",
+                  json_data=DATA_MINPM_G3, factor=1, phase=1, generation=3,
+                  expected_counter_state=CounterState(
+                      voltages=[230.9, 0, 0], power=230, currents=[1, 0, 0], frequency=51,
+                      imported=100, exported=200, powers=[230, 0, 0])),
+    CounterParams(name="G3 - Shelly Mini PM Counter - Phase 2",
+                  json_data=DATA_MINPM_G3, factor=1, phase=2, generation=3,
+                  expected_counter_state=CounterState(
+                      voltages=[0, 230.9, 0], power=230, currents=[0, 1, 0], frequency=51,
+                      imported=100, exported=200, powers=[0, 230, 0])),
+    CounterParams(name="G3 - Shelly Mini PM Counter - Phase 3",
+                  json_data=DATA_MINPM_G3, factor=1, phase=3, generation=3,
+                  expected_counter_state=CounterState(
+                      voltages=[0, 0, 230.9], power=230, currents=[0, 0, 1], frequency=51,
+                      imported=100, exported=200, powers=[0, 0, 230])),
+    CounterParams(name="G4 - Shelly 1PM Counter - Phase 1",
+                  json_data=DATA_1PM_G4, factor=1, phase=1, generation=4,
+                  expected_counter_state=CounterState(
+                      voltages=[227.3, 0, 0], power=117.9, currents=[0.65, 0, 0], frequency=52,
+                      imported=100, exported=200, powers=[117.9, 0, 0])),
+    CounterParams(name="G4 - Shelly 1PM Counter - Phase 2",
+                  json_data=DATA_1PM_G4, factor=1, phase=2, generation=4,
+                  expected_counter_state=CounterState(
+                      voltages=[0, 227.3, 0], power=117.9, currents=[0, 0.65, 0], frequency=52,
+                      imported=100, exported=200, powers=[0, 117.9, 0])),
+    CounterParams(name="G4 - Shelly 1PM Counter - Phase 3",
+                  json_data=DATA_1PM_G4, factor=1, phase=3, generation=4,
+                  expected_counter_state=CounterState(
+                      voltages=[0, 0, 227.3], power=117.9, currents=[0, 0, 0.65], frequency=52,
+                      imported=100, exported=200, powers=[0, 0, 117.9])),
 ]
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_counter(params: Params, monkeypatch, requests_mock: requests_mock.mock):
+def test_counter(params: CounterParams, monkeypatch, requests_mock: requests_mock.mock):
     mock_counter_value_store = Mock()
     monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
     if params.generation == 1:
