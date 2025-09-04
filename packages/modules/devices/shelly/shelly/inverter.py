@@ -17,6 +17,7 @@ class KwargsDict(TypedDict):
     device_id: int
     ip_address: str
     factor: int
+    phase: int
     generation: Optional[int]
 
 
@@ -29,6 +30,7 @@ class ShellyInverter(AbstractInverter):
         self.__device_id: int = self.kwargs['device_id']
         self.address: str = self.kwargs['ip_address']
         self.factor: int = self.kwargs['factor']
+        self.phase: int = self.kwargs['phase']
         self.generation: Optional[int] = self.kwargs['generation']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
@@ -42,36 +44,58 @@ class ShellyInverter(AbstractInverter):
             status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
         try:
-            if self.generation == 1:
-                if 'meters' in status:
-                    meters = status['meters']  # shelly
-                else:
-                    meters = status['emeters']  # shellyEM & shelly3EM
-                # shellyEM has one meter, shelly3EM has three meters:
-                for meter in meters:
-                    power = power + meter['power']
+            alphabetical_index = ['a', 'b', 'c']
+            # GEN 1
+            if "meters" in status:
+                currents = [0.0, 0.0, 0.0]
+                meters = status['meters']  # einphasiger shelly?
+                for i in range(len(meters)):
+                    currents[(i+self.phase-1) % 3] += ((float(meters[i]['power']) * self.factor) / 230
+                                                       if meters[i].get('power') else 0)
+                    power = power + (float(meters[i]['power'] * self.factor))
+            elif "emeters" in status:
+                currents = [0.0, 0.0, 0.0]
+                meters = status['emeters']  # shellyEM & shelly3EM
+                # shellyEM has one meter, shelly3EM has three meters
+                for i in range(0, 3):
+                    currents[(i+self.phase-1) % 3] = [float(meters[i]['current'])
+                                                      if meters[i].get('current') else 0]
+                    power = power + (float(meters[i]['power'] * self.factor))
+            # GEN 2+
+            # shelly Pro3EM
+            elif "em:0" in status:
+                currents = [0.0, 0.0, 0.0]
+                meters = status['em:0']
+                for i in range(0, 3):
+                    currents[(i+self.phase-1) % 3] = [float(meters[f'{alphabetical_index[i]}_current'])
+                                                      if meters.get(f'{alphabetical_index[i]}_current') else 0]
+                power = float(meters['total_act_power']) * self.factor
+            # Shelly MiniPM G3
+            elif "pm1:0" in status:
+                log.debug("single phase shelly")
+                currents = [0.0, 0.0, 0.0]
+                meters = status['pm1:0']
+                currents[self.phase-1] = meters['current']
+                power = meters['apower'] * self.factor
+            elif 'switch:0' in status and 'apower' in status['switch:0']:
+                log.debug("single phase shelly")
+                currents = [0.0, 0.0, 0.0]
+                meters = status['switch:0']
+                currents[self.phase-1] = meters['current']
+                power = meters['apower'] * self.factor
             else:
-                if 'switch:0' in status and 'apower' in status['switch:0']:
-                    power = status['switch:0']['apower']
-                    currents = [status['switch:0']['current'], 0, 0]
-                elif 'em1:0' in status:
-                    power = status['em1:0']['act_power']  # shelly Pro EM Gen 2
-                    currents = [status['em1:0']['current'], 0, 0]
-                elif 'pm1:0' in status:
-                    power = status['pm1:0']['apower']  # shelly PM Mini Gen 3
-                    currents = [status['pm1:0']['current'], 0, 0]
-                else:
-                    power = status['em:0']['total_act_power']  # shelly Pro3EM
-                    currents = [meter[f'{i}_current'] for i in 'abc']
-
-            power = power * self.factor
+                log.debug("single phase shelly")
+                currents = [0.0, 0.0, 0.0]
+                meters = status['em1:0']
+                currents[self.phase-1] = meters['current']
+                power = meters['act_power'] * self.factor  # shelly Pro EM Gen 2
             _, exported = self.sim_counter.sim_count(power)
+
             inverter_state = InverterState(
                 power=power,
+                currents=currents,
                 exported=exported
             )
-            if 'currents' in locals():
-                inverter_state.currents = currents
             self.store.set(inverter_state)
         except KeyError:
             log.exception("unsupported shelly device.")
