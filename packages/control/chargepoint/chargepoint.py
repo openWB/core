@@ -385,8 +385,7 @@ class Chargepoint(ChargepointRfidMixin):
                     if self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES:
                         phase_switch_required = False
                         self.set_state_and_log(
-                            "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. Die "
-                            "aktuelle Phasenzahl wird bis zur nächsten Ladeunterbrechung beibehalten.")
+                            "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde.")
                     self.data.control_parameter.failed_phase_switches += 1
                 else:
                     # Umschaltung vor Ladestart zulassen
@@ -726,6 +725,8 @@ class Chargepoint(ChargepointRfidMixin):
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                             self, charging_ev)
                         charging_ev.reset_phase_switch(self.data.control_parameter)
+                    if self.chargemode_changed:
+                        self.data.control_parameter.failed_phase_switches = 0
                     message = message_ev if message_ev else message
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
@@ -779,7 +780,6 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.data.set.charge_state_prev and self.data.get.charge_state is False:
                     Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
                     log.info(f"SoC-Abfrage nach Ladeunterbrechung, cp{self.num}, ev{self.data.config.ev}")
-                    self.reset_control_parameter_at_charge_stop()
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
@@ -940,7 +940,7 @@ class Chargepoint(ChargepointRfidMixin):
             (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
              self.data.control_parameter.failed_phase_switches == 1)):
             self.set_state_and_log(
-                "Keine automatische Umschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
+                "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
             return False
         else:
             return True
