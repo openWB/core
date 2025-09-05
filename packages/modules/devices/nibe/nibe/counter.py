@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
+from pymodbus.constants import Endian
+
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -29,7 +31,7 @@ class NibeCounter(AbstractCounter):
 
     def update(self):
         unit = self.component_config.configuration.modbus_id
-        power = self.client.read_input_registers(2166, ModbusDataType.UINT_32, unit=unit) / 10
+        power = self.client.read_input_registers(2166, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
