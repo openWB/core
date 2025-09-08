@@ -246,6 +246,27 @@ const chargePointSumCharging = computed(
   () => Number(chargePointSumPower.value.value) > 0,
 );
 
+///////////////////// Set animation speed and size ///////////////////
+
+const getCurrentCategory = (value: number) => {
+  if (Math.abs(value) >= 5000) return 'large';
+  if (Math.abs(value) >= 1500) return 'medium';
+  return 'small';
+};
+
+const useCurrentCategory = (powerRef: () => ValueObject) => {
+  return computed(() => getCurrentCategory(Number(powerRef().value)));
+}
+
+const pvCurrentCategory = useCurrentCategory(() => pvPower.value);
+const batteryCurrentCategory = useCurrentCategory(() => batteryPower.value);
+const gridCurrentCategory = useCurrentCategory(() => gridPower.value);
+const homeCurrentCategory = useCurrentCategory(() => homePower.value);
+const chargePoint1CurrentCategory = useCurrentCategory(() => chargePoint1Power.value);
+const chargePoint2CurrentCategory = useCurrentCategory(() => chargePoint2Power.value);
+const chargePoint3CurrentCategory = useCurrentCategory(() => chargePoint3Power.value);
+const chargePointSumCurrentCategory = useCurrentCategory(() => chargePointSumPower.value);
+
 ///////////////////////// Diagram components /////////////////////////
 
 const svgComponents = computed((): FlowComponent[] => {
@@ -262,6 +283,7 @@ const svgComponents = computed((): FlowComponent[] => {
           : '',
       animated: gridConsumption.value,
       animatedReverse: gridFeedIn.value,
+      currentCategory: gridCurrentCategory.value,
     },
     position: { row: 0, column: 0 },
     label: ['EVU', absoluteValueObject(gridPower.value).textValue],
@@ -275,6 +297,7 @@ const svgComponents = computed((): FlowComponent[] => {
       valueLabel: '',
       animated: homeProduction.value,
       animatedReverse: homeConsumption.value,
+      currentCategory: homeCurrentCategory.value,
     },
     position: { row: 0, column: 2 },
     label: ['Haus', absoluteValueObject(homePower.value).textValue],
@@ -289,6 +312,7 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: 'fill-success',
         animated: pvProduction.value,
         animatedReverse: pvConsumption.value,
+        currentCategory: pvCurrentCategory.value,
       },
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
@@ -304,6 +328,7 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: '',
         animated: batteryDischarging.value,
         animatedReverse: batteryCharging.value,
+        currentCategory: batteryCurrentCategory.value,
       },
       position: { row: 1, column: 2 },
       label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
@@ -322,6 +347,7 @@ const svgComponents = computed((): FlowComponent[] => {
           valueLabel: '',
           animated: chargePoint1Discharging.value,
           animatedReverse: chargePoint1Charging.value,
+          currentCategory: chargePoint1CurrentCategory.value,
         },
         position: {
           row: 2,
@@ -344,6 +370,7 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint1ConnectedVehicleChargeMode.value.class,
             animated: chargePoint1Discharging.value,
             animatedReverse: chargePoint1Charging.value,
+            currentCategory: chargePoint1CurrentCategory.value,
           },
           position: {
             row: 3,
@@ -367,6 +394,7 @@ const svgComponents = computed((): FlowComponent[] => {
             valueLabel: '',
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
+            currentCategory: chargePoint2CurrentCategory.value,
           },
           position: {
             row: 2,
@@ -390,6 +418,7 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint2ConnectedVehicleChargeMode.value.class,
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
+            currentCategory: chargePoint2CurrentCategory.value,
           },
           position: {
             row: 3,
@@ -413,6 +442,7 @@ const svgComponents = computed((): FlowComponent[] => {
             valueLabel: '',
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
+            currentCategory: chargePoint3CurrentCategory.value,
           },
           position: { row: 2, column: 2 },
           label: [
@@ -433,6 +463,7 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint3ConnectedVehicleChargeMode.value.class,
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
+            currentCategory: chargePoint2CurrentCategory.value,
           },
           position: {
             row: 3,
@@ -455,6 +486,7 @@ const svgComponents = computed((): FlowComponent[] => {
           valueLabel: '',
           animated: chargePointSumDischarging.value,
           animatedReverse: chargePointSumCharging.value,
+          currentCategory: chargePointSumCurrentCategory.value,
         },
         position: { row: 2, column: 1 },
         label: [
@@ -540,6 +572,8 @@ const svgRectWidth = computed(
       svgSize.value.numColumns) /
     svgSize.value.numColumns,
 );
+
+
 </script>
 
 <template>
@@ -558,6 +592,7 @@ const svgRectWidth = computed(
             component.class.base,
             { animated: component.class.animated },
             { animatedReverse: component.class.animatedReverse },
+            component.class.currentCategory
           ]"
           :d="
             component.class.base !== 'vehicle'
@@ -936,5 +971,28 @@ text .fill-dark {
 
 .vehicle circle:not(.soc) {
   fill: color-mix(in srgb, var(--q-accent) 50%, transparent);
+}
+
+/* path.small {
+  stroke-width: 0.5;
+}
+path.medium {
+  stroke-width: 1;
+}
+path.large {
+  stroke-width: 1.5;
+} */
+
+path.small.animated,
+path.small.animatedReverse {
+  animation-duration: 2s;
+}
+path.medium.animated,
+path.medium.animatedReverse {
+  animation-duration: 1.5s;
+}
+path.large.animated,
+path.large.animatedReverse {
+  animation-duration: 0.75s;
 }
 </style>

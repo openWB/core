@@ -15,6 +15,7 @@ export interface ComponentClass {
   valueLabel: string;
   animated?: boolean;
   animatedReverse?: boolean;
+  currentCategory?: string;
 }
 
 export interface ComponentPosition {
