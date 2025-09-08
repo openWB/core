@@ -168,8 +168,34 @@ const vehicleDatasets = computed(() =>
         dataset !== undefined,
     ),
 );
+
+const chartLabels = computed(() => {
+  const minTimestamp = selectedData.value.length
+    ? selectedData.value[0].timestamp
+    : Math.floor(Date.now() / 1000) - chartRange.value;
+  const maxTimestamp = selectedData.value.length
+    ? selectedData.value[selectedData.value.length - 1].timestamp
+    : Math.floor(Date.now() / 1000);
+  const dataRange = maxTimestamp - minTimestamp;
+  let range = 300; // 5 Minuten
+  if (dataRange <= 30 * 60) { // bis 15 Minuten
+    range = 60; // 1 Minute
+  } else if (dataRange <= 60 * 60) { // bis 30 Minuten
+    range = 120; // 2 Minuten
+  }
+
+  const calculatedLabels = <number[]>[];
+  let first = minTimestamp - (minTimestamp % range);
+  if (first < minTimestamp) first += range;
+  for (let t = first; t <= maxTimestamp; t += range) {
+    calculatedLabels.push(t * 1000);
+  }
+  return calculatedLabels;
+});
+
 const lineChartData = computed(() => {
   return {
+    labels: chartLabels.value,
     datasets: [
       {
         label: gridMeterName.value,
@@ -290,31 +316,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
       },
       ticks: {
         maxTicksLimit: 40,
-        source: 'data' as const,
-        callback: (value) => {
-          const formatTimestamp = (date: Date): string => {
-            return date.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-          };
-          // value is timestamp in ms
-          const date = new Date(value as number);
-          const minutes = date.getMinutes();
-          const seconds = date.getSeconds();
-          // only display rounded minutes
-          if (seconds < 10) {
-            if (chartRange.value <= 2700)
-              // if chart range is 45min or less, show every minute
-              // is limited by maxTicksLimit if too many points
-              return formatTimestamp(date);
-            if (minutes % 5 === 0) {
-              // show every 5 minutes
-              return formatTimestamp(date);
-            }
-          }
-          return;
-        },
+        source: 'labels' as const,
       },
       grid: {
         tickLength: 5,
