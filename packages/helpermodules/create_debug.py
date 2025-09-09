@@ -389,8 +389,12 @@ def create_debug_log(input_data):
     try:
         broker = BrokerContent()
         debug_email = input_data.get('email', '')
+        ticketnumber = input_data.get('ticketnumber', '')
+        subject = input_data.get('subject', '')
         header = (f"{input_data['message']}\n{debug_email}\n{input_data['serialNumber']}\n"
                   f"{input_data['installedComponents']}\n{input_data['vehicles']}\n")
+        if ticketnumber is not None and ticketnumber != "":
+            header += f"Ticketnumber: {ticketnumber}\n"
         with open(debug_file, 'w+') as df:
             write_to_file(df, lambda: "# section: form data #")
             write_to_file(df, lambda: header)
@@ -427,9 +431,13 @@ def create_debug_log(input_data):
         log.info("***** uploading debug log...")
         with open(debug_file, 'rb') as f:
             data = f.read()
-            req.get_http_session().put("https://openwb.de/tools/debug2.php",
+            req.get_http_session().put("https://openwb.de/tools/debug3.php",
                                        data=data,
-                                       params={'debugemail': debug_email},
+                                       params={
+                                           'debugemail': debug_email,
+                                           'ticketnumber': ticketnumber,
+                                           'subject': subject
+                                       },
                                        timeout=10)
 
         log.info("***** cleanup...")
