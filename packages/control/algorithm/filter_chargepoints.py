@@ -44,7 +44,7 @@ def get_preferenced_chargepoint_charging(
             log.info(
                 f"LP {cp.num}: Keine Zuteilung des Mindeststroms, daher keine weitere Berücksichtigung")
             preferenced_chargepoints_without_set_current.append(cp)
-        elif max(cp.data.get.currents) == 0:
+        elif cp.data.get.charge_state is False:
             log.info(
                 f"LP {cp.num}: Lädt nicht, daher keine weitere Berücksichtigung")
             preferenced_chargepoints_without_set_current.append(cp)
