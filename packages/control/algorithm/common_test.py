@@ -51,6 +51,7 @@ def test_set_current_counterdiff(diff: float,
     cp.data.control_parameter.required_currents = required_currents
     cp.data.set.charging_ev_data = ev
     cp.data.set.current = 6
+    cp.data.get.charge_state = True
     cp.data.get.currents = [10]*3
     get_counters_to_check_mock = Mock(return_value=["cp0", "cp6"])
     monkeypatch.setattr(CounterAll, "get_counters_to_check", get_counters_to_check_mock)
