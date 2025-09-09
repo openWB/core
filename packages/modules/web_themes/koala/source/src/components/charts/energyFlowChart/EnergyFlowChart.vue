@@ -250,18 +250,27 @@ const getCurrentCategory = (value: number) => {
   return 'small';
 };
 
+// helper function to create a computed property for current category
 const useCurrentCategory = (powerRef: () => ValueObject) => {
   return computed(() => getCurrentCategory(Number(powerRef().value)));
-}
+};
 
 const pvCurrentCategory = useCurrentCategory(() => pvPower.value);
 const batteryCurrentCategory = useCurrentCategory(() => batteryPower.value);
 const gridCurrentCategory = useCurrentCategory(() => gridPower.value);
 const homeCurrentCategory = useCurrentCategory(() => homePower.value);
-const chargePoint1CurrentCategory = useCurrentCategory(() => chargePoint1Power.value);
-const chargePoint2CurrentCategory = useCurrentCategory(() => chargePoint2Power.value);
-const chargePoint3CurrentCategory = useCurrentCategory(() => chargePoint3Power.value);
-const chargePointSumCurrentCategory = useCurrentCategory(() => chargePointSumPower.value);
+const chargePoint1CurrentCategory = useCurrentCategory(
+  () => chargePoint1Power.value,
+);
+const chargePoint2CurrentCategory = useCurrentCategory(
+  () => chargePoint2Power.value,
+);
+const chargePoint3CurrentCategory = useCurrentCategory(
+  () => chargePoint3Power.value,
+);
+const chargePointSumCurrentCategory = useCurrentCategory(
+  () => chargePointSumPower.value,
+);
 
 ///////////////////////// Diagram components /////////////////////////
 
@@ -568,8 +577,6 @@ const svgRectWidth = computed(
       svgSize.value.numColumns) /
     svgSize.value.numColumns,
 );
-
-
 </script>
 
 <template>
@@ -588,7 +595,7 @@ const svgRectWidth = computed(
             component.class.base,
             { animated: component.class.animated },
             { animatedReverse: component.class.animatedReverse },
-            component.class.currentCategory
+            component.class.currentCategory,
           ]"
           :d="
             component.class.base !== 'vehicle'
@@ -773,6 +780,29 @@ path.animatedReverse {
   stroke: var(--q-white);
   stroke-dasharray: 5;
   animation: dashReverse 1s linear infinite;
+}
+
+/* path.small {
+  stroke-width: 0.5;
+}
+path.medium {
+  stroke-width: 1;
+}
+path.large {
+  stroke-width: 1.5;
+} */
+
+path.small.animated,
+path.small.animatedReverse {
+  animation-duration: 2s;
+}
+path.medium.animated,
+path.medium.animatedReverse {
+  animation-duration: 1.5s;
+}
+path.large.animated,
+path.large.animatedReverse {
+  animation-duration: 0.75s;
 }
 
 path.animated.grid {
@@ -967,28 +997,5 @@ text .fill-dark {
 
 .vehicle circle:not(.soc) {
   fill: color-mix(in srgb, var(--q-accent) 50%, transparent);
-}
-
-/* path.small {
-  stroke-width: 0.5;
-}
-path.medium {
-  stroke-width: 1;
-}
-path.large {
-  stroke-width: 1.5;
-} */
-
-path.small.animated,
-path.small.animatedReverse {
-  animation-duration: 2s;
-}
-path.medium.animated,
-path.medium.animatedReverse {
-  animation-duration: 1.5s;
-}
-path.large.animated,
-path.large.animatedReverse {
-  animation-duration: 0.75s;
 }
 </style>
