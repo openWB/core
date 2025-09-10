@@ -281,6 +281,23 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
         except Exception:
             currents = "Keine Daten"
             voltages = "Keine Daten"
+        try:
+            # ev_id = cp.chargepoint_module.config.ev
+            ev_id = cp.data.config.ev
+        except Exception:
+            ev_id = None
+        try:
+            ev = data.data.ev_data.get(f"ev{ev_id}")
+            ev_fn = ev.data.name
+        except Exception:
+            ev_fn = None
+        try:
+            ct_id = cp.data.config.template
+            max_current_single_phase = data.data.cp_template_data.get(f"cpt{ct_id}").data.max_current_single_phase
+            max_current_multi_phases = data.data.cp_template_data.get(f"cpt{ct_id}").data.max_current_multi_phases
+        except Exception:
+            ct_id = None
+            max_current_single_phase = None
 
         parsed_data += (f"### LP{cp.num} ###\n"
                         f"CP_Type: {cp.chargepoint_module.config.type}\n"
@@ -290,6 +307,8 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
                         f"CP_Control_Pilot_HW: {cp.data.config.control_pilot_interruption_hw}\n"
                         f"CP_IP: {ip}\n"
                         f"CP_Set_Current: {cp.data.set.current} A\n"
+                        f"CPT_Max_Current_Single_Phase: {max_current_single_phase} A\n"
+                        f"CPT_Max_Current_Multi_Phases: {max_current_multi_phases} A\n"
                         f"Meter_Power: {cp.data.get.power} W\n"
                         f"Meter_Voltages: {cp.data.get.voltages} V\n"
                         f"Meter_Currents: {cp.data.get.currents} A\n"
@@ -308,6 +327,8 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
                         # CP_SW_VERSION: 2.1.7-Patch.2
                         # CP_FIRMWARE: 1.2.3 (bei Pro bzw. Satellit)
                         # CP_SIGNALING_PRO: basic iec61851 iso11518
+                        f"EV_ID: {ev_id}\n"
+                        f"EV_FN: {ev_fn}\n"
                         f"CP_Error_State: {cp.data.get.fault_str}\n"
                         f"Additional_Meter_Voltages: \n{voltages}"
                         f"Additional_Meter_Currents: \n{currents}\n")
