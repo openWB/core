@@ -66,8 +66,10 @@ class ConnectedVehicle:
 
 @dataclass
 class Log:
+    begin: Optional[float] = None
     chargemode_log_entry: str = "_"
     costs: float = 0
+    end: Optional[float] = None
     imported_at_mode_switch: float = 0
     imported_at_plugtime: float = 0
     imported_since_mode_switch: float = 0

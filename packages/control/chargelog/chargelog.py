@@ -87,6 +87,8 @@ def collect_data(chargepoint):
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
+                if log_data.begin is None:
+                    log_data.begin = timecheck.create_timestamp()
                     if charging_ev.soc_module:
                         log_data.range_at_start = charging_ev.data.get.range
                         log_data.soc_at_start = charging_ev.data.get.soc
@@ -107,6 +109,7 @@ def collect_data(chargepoint):
                 if log_data.timestamp_start_charging is not None:
                     log_data.time_charged += timecheck.create_timestamp() - log_data.timestamp_start_charging
                     log_data.timestamp_start_charging = None
+                    log_data.end = timecheck.create_timestamp()
             Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
