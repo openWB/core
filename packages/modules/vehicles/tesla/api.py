@@ -47,7 +47,7 @@ def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float,
     soc = float(response["response"]["charge_state"]["battery_level"])
     # convert miles to km
     range = int(float(response["response"]["charge_state"]["battery_range"]) * 1.60934)
-    soc_timestamp = float(response["response"]["charge_state"]["timestamp"])
+    soc_timestamp = float(response["response"]["charge_state"]["timestamp"]) / 1000
     return soc, range, soc_timestamp
 
 
