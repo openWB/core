@@ -36,10 +36,10 @@ def _wake_up_car(vehicle_config: TeslaSoc):
             break
         counter = counter+1
         time.sleep(5)
-        log.debug("Loop: "+str(counter)+", State: "+str(state))
-    log.info("Status nach Aufwecken: "+str(state))
+        log.debug(f"Loop: {counter}, State: {state}")
+    log.info(f"Status nach Aufwecken: {state}")
     if state != "online":
-        raise Exception("EV konnte nicht geweckt werden.")
+        raise Exception(f"EV konnte nicht geweckt werden. Status: {state}")
 
 
 def create_vehicle(vehicle_config: TeslaSoc, vehicle: int):
@@ -55,10 +55,10 @@ def read_legacy(id: int,
                 tesla_ev_num: int,
                 charge_state: bool):
 
-    log.debug('SoC-Module tesla num: ' + str(id))
-    log.debug('SoC-Module tesla token_file: ' + str(token_file))
-    log.debug('SoC-Module tesla tesla_ev_num: ' + str(tesla_ev_num))
-    log.debug('SoC-Module tesla charge_state: ' + str(charge_state))
+    log.debug(f"SoC-Module tesla num: {id}")
+    log.debug(f"SoC-Module tesla token_file: {token_file}")
+    log.debug(f"SoC-Module tesla tesla_ev_num: {tesla_ev_num}")
+    log.debug(f"SoC-Module tesla charge_state: {charge_state}")
 
     with open(token_file, "r") as f:
         token = json.load(f)

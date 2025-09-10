@@ -27,26 +27,26 @@ X_TESLA_USER_AGENT = ""
 
 def post_wake_up_command(vehicle: int, token: TeslaSocToken) -> str:
     vehicle_id = __get_vehicle_id(vehicle, token)
-    command = "vehicles/"+str(vehicle_id)+"/wake_up"
-    log.debug("Sending command: \"%s\"" % (command))
+    command = f"vehicles/{vehicle_id}/wake_up"
+    log.debug(f"Sending command: '{command}'")
     headers = {
         "user-agent": UA,
         "x-tesla-user-agent": X_TESLA_USER_AGENT,
         "authorization": "bearer " + token.access_token
     }
     session = req.get_http_session()
-    response = session.post("https://owner-api.teslamotors.com/api/1/" + command, headers=headers, timeout=50).json()
+    response = session.post(f"https://owner-api.teslamotors.com/api/1/{command}", headers=headers, timeout=50).json()
     return response["response"]["state"]
 
 
 def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float, float]:
     vehicle_id = __get_vehicle_id(vehicle, token)
-    data_part = "vehicles/"+str(vehicle_id)+"/vehicle_data"
+    data_part = f"vehicles/{vehicle_id}/vehicle_data"
     response = __request_data(data_part, token)
     response = json.loads(response)
     soc = float(response["response"]["charge_state"]["battery_level"])
     # convert miles to km
-    range = float(response["response"]["charge_state"]["battery_range"]) * 1.60934
+    range = int(float(response["response"]["charge_state"]["battery_range"]) * 1.60934)
     soc_timestamp = float(response["response"]["charge_state"]["timestamp"])
     return soc, range, soc_timestamp
 
@@ -88,20 +88,20 @@ def __get_vehicle_id(index: int, token: TeslaSocToken) -> str:
     products = __request_data('products', token)
     try:
         vehicle_id = str(json.loads(products)["response"][index]["id"])
-        log.debug("vehicle_id for entry %d: %s" % (index, vehicle_id))
+        log.debug(f"vehicle_id for entry {index}: {vehicle_id}")
     except IndexError:
-        raise Exception("Zur Tesla-ID "+str(index)+" konnte kein Fahrzeug im Account gefunden werden.")
+        raise Exception(f"Zur Tesla-ID {index} konnte kein Fahrzeug im Account gefunden werden.")
     return vehicle_id
 
 
 def __request_data(data_part: str, token: TeslaSocToken) -> str:
-    log.debug("Requesting data: \"%s\"" % (data_part))
+    log.debug(f"Requesting data: '{data_part}'")
     headers = {
         "user-agent": UA,
         "x-tesla-user-agent": X_TESLA_USER_AGENT,
         "authorization": "bearer " + token.access_token
     }
-    response = req.get_http_session().get("https://owner-api.teslamotors.com/api/1/" + data_part,
+    response = req.get_http_session().get(f"https://owner-api.teslamotors.com/api/1/{data_part}",
                                           headers=headers,
                                           timeout=50)
     return response.text
