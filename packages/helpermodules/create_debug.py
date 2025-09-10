@@ -287,8 +287,7 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
         except Exception:
             ev_id = None
         try:
-            ev = data.data.ev_data.get(f"ev{ev_id}")
-            ev_fn = ev.data.name
+            ev_fn = data.data.ev_data.get(f"ev{ev_id}").data.name
         except Exception:
             ev_fn = None
         try:
