@@ -19,7 +19,13 @@ log = logging.getLogger(__name__)
 def fetch(vehicle_config: TeslaSoc, vehicle_update_data: VehicleUpdateData) -> CarState:
     vehicle_config.configuration.token = api.validate_token(vehicle_config.configuration.token)
     if vehicle_update_data.charge_state is False:
-        _wake_up_car(vehicle_config)
+        try:
+            _wake_up_car(vehicle_config)
+        except Exception as e:
+            log.warning(
+                f"Fehler beim Aufwecken des Fahrzeugs: {e}\n"
+                "Der abgerufene SoC-Wert ist möglicherweise veraltet."
+            )
     soc, range, soc_timestamp = api.request_soc_range(
         vehicle=vehicle_config.configuration.tesla_ev_num, token=vehicle_config.configuration.token)
     return CarState(soc=soc, range=range, soc_timestamp=soc_timestamp)
