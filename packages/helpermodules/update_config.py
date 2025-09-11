@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 95
+    DATASTORE_VERSION = 96
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2535,3 +2535,21 @@ class UpdateConfig:
                     return {topic: payload, "openWB/command/max_id/charge_template_scheduled_plan": max_id}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 95)
+
+    def upgrade_datastore_95(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # Fix id in charge and ev templates
+            if (
+                re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None
+                or re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None
+            ):
+                payload = decode_payload(payload)
+                topic_index = int(get_index(topic))
+                if "id" not in payload or payload["id"] != topic_index:
+                    log.error(
+                        f"Fixing id in template {topic} from {payload.get('id')} to {topic_index}"
+                    )
+                    payload["id"] = topic_index
+                    return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 96)

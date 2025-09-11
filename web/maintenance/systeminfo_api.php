@@ -312,10 +312,15 @@ function getServiceStatus($services)
 	return $result;
 }
 
-function getTopCpuProcesses($limit)
+function getTopProcesses($order, $limit)
 {
 	// ps gibt: PID, Benutzer, CPU-Auslastung, Speicher, Befehl
-	$cmd = "ps -eo pid,user,%cpu,%mem,comm --sort=-%cpu | head -n " . ($limit + 1);
+	$data = ['comm', 'pid', '%cpu', '%mem'];
+	$index = array_search($order, $data);
+	if ($index === false) {
+		return [];
+	}
+	$cmd = "ps -eo " . join(',', $data) . " --sort=-" . $order . " | head -n " . ($limit + 1);
 	$output = [];
 	exec($cmd, $output);
 
@@ -324,14 +329,24 @@ function getTopCpuProcesses($limit)
 	for ($i = 1; $i < count($output); $i++) {
 		// Spalten trennen (mehrere Leerzeichen)
 		$cols = preg_split('/\s+/', trim($output[$i]), 5);
-		if (count($cols) === 5) {
-			$result[$cols[4] . ' (' . $cols[0] . ')'] = [
-				'value' => (float)$cols[2],
+		if (count($cols) === 4) {
+			$result[$cols[0] . ' (' . $cols[1] . ')'] = [
+				'value' => (float)$cols[$index],
 				'unit' => '%'
 			];
 		}
 	}
 	return $result;
+}
+
+function getTopCpuProcesses($limit)
+{
+	return getTopProcesses('%cpu', $limit);
+}
+
+function getTopMemoryProcesses($limit)
+{
+	return getTopProcesses('%mem', $limit);
 }
 
 // API-Handler
@@ -382,6 +397,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			'cpuLoad' => getCpuLoad(),
 			'memory' => getMemoryUsage(),
 			'top10CpuProcesses' => getTopCpuProcesses($numTopProcesses),
+			'top10MemoryProcesses' => getTopMemoryProcesses($numTopProcesses),
 			'services' => getServiceStatus($serviceList),
 			'storage (root)' => getPartitionUsage('/', 'root'),
 			'storage (boot)' => getPartitionUsage('/boot', 'boot'),
