@@ -246,34 +246,32 @@ const chargePointSumCharging = computed(
   () => Number(chargePointSumPower.value.value) > 0,
 );
 
-///////////////////// Set animation speed and size ///////////////////
+///////////////////// Set animation speed //////////////////////////
 
-const getCurrentCategory = (value: number) => {
-  if (Math.abs(value) >= 5000) return 'large';
-  if (Math.abs(value) >= 1500) return 'medium';
-  return 'small';
+const powerCategory = (powerRef: () => number) => {
+  return computed(() => {
+    const value = powerRef();
+    if (Math.abs(value) >= 5000) return 'large';
+    if (Math.abs(value) >= 1500) return 'medium';
+    return 'small';
+  });
 };
 
-// helper function to create a computed property for current category
-const useCurrentCategory = (powerRef: () => ValueObject) => {
-  return computed(() => getCurrentCategory(Number(powerRef().value)));
-};
-
-const pvCurrentCategory = useCurrentCategory(() => pvPower.value);
-const batteryCurrentCategory = useCurrentCategory(() => batteryPower.value);
-const gridCurrentCategory = useCurrentCategory(() => gridPower.value);
-const homeCurrentCategory = useCurrentCategory(() => homePower.value);
-const chargePoint1CurrentCategory = useCurrentCategory(
-  () => chargePoint1Power.value,
+const pvPowerCategory = powerCategory(() => pvPower.value.value);
+const batteryPowerCategory = powerCategory(() => batteryPower.value.value);
+const gridPowerCategory = powerCategory(() => gridPower.value.value);
+const homePowerCategory = powerCategory(() => homePower.value.value);
+const chargePoint1PowerCategory = powerCategory(
+  () => chargePoint1Power.value.value,
 );
-const chargePoint2CurrentCategory = useCurrentCategory(
-  () => chargePoint2Power.value,
+const chargePoint2PowerCategory = powerCategory(
+  () => chargePoint2Power.value.value,
 );
-const chargePoint3CurrentCategory = useCurrentCategory(
-  () => chargePoint3Power.value,
+const chargePoint3PowerCategory = powerCategory(
+  () => chargePoint3Power.value.value,
 );
-const chargePointSumCurrentCategory = useCurrentCategory(
-  () => chargePointSumPower.value,
+const chargePointSumPowerCategory = powerCategory(
+  () => chargePointSumPower.value.value,
 );
 
 ///////////////////////// Diagram components /////////////////////////
@@ -292,7 +290,7 @@ const svgComponents = computed((): FlowComponent[] => {
           : '',
       animated: gridConsumption.value,
       animatedReverse: gridFeedIn.value,
-      currentCategory: gridCurrentCategory.value,
+      powerCategory: gridPowerCategory.value,
     },
     position: { row: 0, column: 0 },
     label: ['EVU', absoluteValueObject(gridPower.value).textValue],
@@ -306,7 +304,7 @@ const svgComponents = computed((): FlowComponent[] => {
       valueLabel: '',
       animated: homeProduction.value,
       animatedReverse: homeConsumption.value,
-      currentCategory: homeCurrentCategory.value,
+      powerCategory: homePowerCategory.value,
     },
     position: { row: 0, column: 2 },
     label: ['Haus', absoluteValueObject(homePower.value).textValue],
@@ -321,7 +319,7 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: 'fill-success',
         animated: pvProduction.value,
         animatedReverse: pvConsumption.value,
-        currentCategory: pvCurrentCategory.value,
+        powerCategory: pvPowerCategory.value,
       },
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
@@ -337,7 +335,7 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: '',
         animated: batteryDischarging.value,
         animatedReverse: batteryCharging.value,
-        currentCategory: batteryCurrentCategory.value,
+        powerCategory: batteryPowerCategory.value,
       },
       position: { row: 1, column: 2 },
       label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
@@ -356,7 +354,7 @@ const svgComponents = computed((): FlowComponent[] => {
           valueLabel: '',
           animated: chargePoint1Discharging.value,
           animatedReverse: chargePoint1Charging.value,
-          currentCategory: chargePoint1CurrentCategory.value,
+          powerCategory: chargePoint1PowerCategory.value,
         },
         position: {
           row: 2,
@@ -379,7 +377,7 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint1ConnectedVehicleChargeMode.value.class,
             animated: chargePoint1Discharging.value,
             animatedReverse: chargePoint1Charging.value,
-            currentCategory: chargePoint1CurrentCategory.value,
+            powerCategory: chargePoint1PowerCategory.value,
           },
           position: {
             row: 3,
@@ -403,7 +401,7 @@ const svgComponents = computed((): FlowComponent[] => {
             valueLabel: '',
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
-            currentCategory: chargePoint2CurrentCategory.value,
+            powerCategory: chargePoint2PowerCategory.value,
           },
           position: {
             row: 2,
@@ -427,7 +425,7 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint2ConnectedVehicleChargeMode.value.class,
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
-            currentCategory: chargePoint2CurrentCategory.value,
+            powerCategory: chargePoint2PowerCategory.value,
           },
           position: {
             row: 3,
@@ -451,7 +449,7 @@ const svgComponents = computed((): FlowComponent[] => {
             valueLabel: '',
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
-            currentCategory: chargePoint3CurrentCategory.value,
+            powerCategory: chargePoint3PowerCategory.value,
           },
           position: { row: 2, column: 2 },
           label: [
@@ -472,7 +470,7 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint3ConnectedVehicleChargeMode.value.class,
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
-            currentCategory: chargePoint2CurrentCategory.value,
+            powerCategory: chargePoint3PowerCategory.value,
           },
           position: {
             row: 3,
@@ -495,7 +493,7 @@ const svgComponents = computed((): FlowComponent[] => {
           valueLabel: '',
           animated: chargePointSumDischarging.value,
           animatedReverse: chargePointSumCharging.value,
-          currentCategory: chargePointSumCurrentCategory.value,
+          powerCategory: chargePointSumPowerCategory.value,
         },
         position: { row: 2, column: 1 },
         label: [
@@ -599,7 +597,7 @@ const svgRectWidth = computed(
             component.class.base,
             { animated: component.class.animated },
             { animatedReverse: component.class.animatedReverse },
-            component.class.currentCategory,
+            component.class.powerCategory,
           ]"
           :d="
             component.class.base !== 'vehicle'
@@ -786,19 +784,9 @@ path.animatedReverse {
   animation: dashReverse 1s linear infinite;
 }
 
-/* path.small {
-  stroke-width: 0.5;
-}
-path.medium {
-  stroke-width: 1;
-}
-path.large {
-  stroke-width: 1.5;
-} */
-
 path.small.animated,
 path.small.animatedReverse {
-  animation-duration: 2s;
+  animation-duration: 3.5s;
 }
 path.medium.animated,
 path.medium.animatedReverse {
@@ -806,7 +794,7 @@ path.medium.animatedReverse {
 }
 path.large.animated,
 path.large.animatedReverse {
-  animation-duration: 0.75s;
+  animation-duration: 0.6s;
 }
 
 path.animated.grid {
