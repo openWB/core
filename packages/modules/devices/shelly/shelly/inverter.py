@@ -45,16 +45,15 @@ class ShellyInverter(AbstractInverter):
         status = req.get_http_session().get(status_url, timeout=3).json()
         try:
             alphabetical_index = ['a', 'b', 'c']
+            currents = [0.0, 0.0, 0.0]
             # GEN 1
             if "meters" in status:
-                currents = [0.0, 0.0, 0.0]
                 meters = status['meters']  # einphasiger shelly?
                 for i in range(len(meters)):
                     currents[(i+self.phase-1) % 3] += ((float(meters[i]['power']) * self.factor) / 230
                                                        if meters[i].get('power') else 0)
                     power = power + (float(meters[i]['power'] * self.factor))
             elif "emeters" in status:
-                currents = [0.0, 0.0, 0.0]
                 meters = status['emeters']  # shellyEM & shelly3EM
                 # shellyEM has one meter, shelly3EM has three meters
                 for i in range(0, 3):
@@ -64,7 +63,6 @@ class ShellyInverter(AbstractInverter):
             # GEN 2+
             # shelly Pro3EM
             elif "em:0" in status:
-                currents = [0.0, 0.0, 0.0]
                 meters = status['em:0']
                 for i in range(0, 3):
                     currents[(i+self.phase-1) % 3] = (float(meters[f'{alphabetical_index[i]}_current']) * self.factor
@@ -73,19 +71,16 @@ class ShellyInverter(AbstractInverter):
             # Shelly MiniPM G3
             elif "pm1:0" in status:
                 log.debug("single phase shelly")
-                currents = [0.0, 0.0, 0.0]
                 meters = status['pm1:0']
                 currents[self.phase-1] = meters['current'] * self.factor
                 power = meters['apower'] * self.factor
             elif 'switch:0' in status and 'apower' in status['switch:0']:
                 log.debug("single phase shelly")
-                currents = [0.0, 0.0, 0.0]
                 meters = status['switch:0']
                 currents[self.phase-1] = meters['current'] * self.factor
                 power = meters['apower'] * self.factor
             else:
                 log.debug("single phase shelly")
-                currents = [0.0, 0.0, 0.0]
                 meters = status['em1:0']
                 currents[self.phase-1] = meters['current'] * self.factor
                 power = meters['act_power'] * self.factor  # shelly Pro EM Gen 2
