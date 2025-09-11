@@ -461,7 +461,7 @@ class Command:
             new_charge_template = asdict(new_charge_template)
         else:
             new_charge_template = get_new_charge_template()
-            new_charge_template["id"] = new_id
+        new_charge_template["id"] = new_id
 
         Pub().pub("openWB/set/command/max_id/charge_template", new_id)
         Pub().pub(f"openWB/set/vehicle/template/charge_template/{new_id}", new_charge_template)
@@ -648,8 +648,9 @@ class Command:
         else:
             new_ev_template = dataclass_utils.asdict(EvTemplateData())
         new_id = self.max_id_ev_template + 1
-        Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', new_ev_template)
+        new_ev_template["id"] = new_id
         self.max_id_ev_template = new_id
+        Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', new_ev_template)
         Pub().pub("openWB/set/command/max_id/ev_template", new_id)
         pub_user_message(
             payload, connection_id,
