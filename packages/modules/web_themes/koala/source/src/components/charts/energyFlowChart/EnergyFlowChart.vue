@@ -248,30 +248,29 @@ const chargePointSumCharging = computed(
 
 ///////////////////// Set animation speed //////////////////////////
 
-const powerCategory = (powerRef: () => number) => {
-  return computed(() => {
-    const value = powerRef();
-    if (Math.abs(value) >= 5000) return 'large';
-    if (Math.abs(value) >= 1500) return 'medium';
+const powerCategory = (power: number) => {
+    if (Math.abs(power) >= 5000) return 'large';
+    if (Math.abs(power) >= 1500) return 'medium';
     return 'small';
-  });
 };
 
-const pvPowerCategory = powerCategory(() => pvPower.value.value);
-const batteryPowerCategory = powerCategory(() => batteryPower.value.value);
-const gridPowerCategory = powerCategory(() => gridPower.value.value);
-const homePowerCategory = powerCategory(() => homePower.value.value);
-const chargePoint1PowerCategory = powerCategory(
-  () => chargePoint1Power.value.value,
+const pvPowerCategory = computed(() => powerCategory(pvPower.value.value));
+const batteryPowerCategory = computed(() =>
+  powerCategory(batteryPower.value.value),
 );
-const chargePoint2PowerCategory = powerCategory(
-  () => chargePoint2Power.value.value,
+const gridPowerCategory = computed(() => powerCategory(gridPower.value.value));
+const homePowerCategory = computed(() => powerCategory(homePower.value.value));
+const chargePoint1PowerCategory = computed(() =>
+  powerCategory(chargePoint1Power.value.value),
 );
-const chargePoint3PowerCategory = powerCategory(
-  () => chargePoint3Power.value.value,
+const chargePoint2PowerCategory = computed(() =>
+  powerCategory(chargePoint2Power.value.value),
 );
-const chargePointSumPowerCategory = powerCategory(
-  () => chargePointSumPower.value.value,
+const chargePoint3PowerCategory = computed(() =>
+  powerCategory(chargePoint3Power.value.value),
+);
+const chargePointSumPowerCategory = computed(() =>
+  powerCategory(chargePointSumPower.value.value),
 );
 
 ///////////////////////// Diagram components /////////////////////////
