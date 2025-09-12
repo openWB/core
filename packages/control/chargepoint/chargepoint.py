@@ -160,13 +160,15 @@ class Chargepoint(ChargepointRfidMixin):
         # Vergleiche werden case-insensitive durchgeführt
         # das vereinfacht die Eingabe, kann aber auch für falsche Treffer sorgen.
         # 'fnmatch()' ist case-insensitive
+        match = False
         for tag_id in self.template.data.valid_tags:
             if ((self.data.get.rfid is not None and fnmatch(self.data.get.rfid, tag_id)) or
                     (self.data.get.vehicle_id is not None and fnmatch(self.data.get.vehicle_id, tag_id)) or
                     (self.data.set.rfid is not None and fnmatch(self.data.set.rfid, tag_id))):
-                Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
-        # Wenn der Ladepunkt nach dem Abstecken gesperrt werden soll, und kein Fahrzeug angeschlossen ist wird gesperrt
-        if self.template.data.disable_after_unplug and self.data.get.plug_state is False:
+                match = True
+        if match:
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
+        elif self.template.data.disable_after_unplug and self.data.get.plug_state is False:
             Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", True)
 
         if self.data.set.manual_lock:
@@ -374,7 +376,7 @@ class Chargepoint(ChargepointRfidMixin):
                self.check_deviating_contactor_states(self.data.set.phases_to_use,
                                                      self.data.control_parameter.phases)) and
                 # Wenn der Ladevorgang gestartet wird, muss vor dem ersten Laden umgeschaltet werden.
-                self.data.set.current != 0):
+                self.data.set.current != 0 and self.data.get.charge_state is False):
             phase_switch_required = True
         if phase_switch_required:
             # Umschaltung fehlgeschlagen
@@ -383,18 +385,18 @@ class Chargepoint(ChargepointRfidMixin):
                     if self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES:
                         phase_switch_required = False
                         self.set_state_and_log(
-                            "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. Die "
-                            "aktuelle Phasenzahl wird bis zum Abstecken beibehalten.")
+                            "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde.")
                     self.data.control_parameter.failed_phase_switches += 1
                 else:
                     # Umschaltung vor Ladestart zulassen
-                    if self.data.set.log.imported_since_plugged != 0:
+                    if (self.data.set.log.imported_since_plugged != 0 and
+                            self.data.control_parameter.failed_phase_switches > 0):
                         phase_switch_required = False
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
                             "Ladeeinstellungen deaktiviert wurde. Die aktuelle "
                             "Phasenzahl wird bis zum Abstecken beibehalten.")
-                        self.data.control_parameter.failed_phase_switches += 1
+                    self.data.control_parameter.failed_phase_switches += 1
         return phase_switch_required
 
     STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
@@ -723,6 +725,8 @@ class Chargepoint(ChargepointRfidMixin):
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                             self, charging_ev)
                         charging_ev.reset_phase_switch(self.data.control_parameter)
+                    if self.chargemode_changed:
+                        self.data.control_parameter.failed_phase_switches = 0
                     message = message_ev if message_ev else message
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
@@ -823,8 +827,9 @@ class Chargepoint(ChargepointRfidMixin):
         if self.data.set.charging_ev_prev != vehicle:
             Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
             log.debug("SoC nach EV-Wechsel")
-            self.update_charge_template(charging_ev.charge_template)
-        if self.data.set.charge_template.data.id != charging_ev.charge_template.data.id:
+        # wenn vorher kein anderes Fahrzeug zugeordnet war, Ladeprofil nicht zurücksetzen
+        if ((self.data.set.charging_ev_prev != vehicle and self.data.set.charging_ev_prev != -1) or
+                (self.data.set.charge_template.data.id != charging_ev.charge_template.data.id)):
             self.update_charge_template(charging_ev.charge_template)
         self.data.set.charging_ev_data = charging_ev
         self.data.set.charging_ev = vehicle
@@ -908,7 +913,8 @@ class Chargepoint(ChargepointRfidMixin):
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and
                 self.data.get.evse_signaling != EvseSignaling.HLC and
-                self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False)
+                (self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False or
+                 self.data.set.log.imported_since_plugged == 0))
 
     def chargemode_support_phase_switch(self) -> bool:
         control_parameter = self.data.control_parameter
@@ -934,7 +940,7 @@ class Chargepoint(ChargepointRfidMixin):
             (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
              self.data.control_parameter.failed_phase_switches == 1)):
             self.set_state_and_log(
-                "Keine automatische Umschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
+                "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
             return False
         else:
             return True

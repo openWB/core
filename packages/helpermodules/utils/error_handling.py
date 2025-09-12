@@ -11,6 +11,14 @@ log = logging.getLogger(__name__)
 CP_ERROR = ("Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke, Lade- und Stecker-Status wird "
             "zurückgesetzt.")
 
+INTERNAL_ERROR_HINT = ("Liebe Kunden, das Log ist zur Auswertung durch Support-Mitarbeiter der openWB GmbH gedacht. "
+                       "Meldungen, die hier erscheinen können wie Fehlermeldungen aussehen, sind aber oft ganz normal. "
+                       "Beispielsweise führen wir Abfragen der internen Hardware mehrere tausend mal pro Stunde aus "
+                       "(wir gehen bis ans Limit der seriellen Kommunikation um eine möglichst feine Auflösung zu "
+                       "erreichen), eine Abfrage-Fehlerquote von 1-2% ist dabei normal. Wirklich relevante "
+                       "Fehlermeldungen erscheinen in der grafischen Nutzeroberfläche an prominenter Stelle. Bitte "
+                       "belastet unseren Support nicht mit Fragen nach euch unbekannten Log-Meldungen.")
+
 
 class ErrorTimerContext:
     def __init__(self, topic: str, exceeded_msg: str, timeout: int = 60, hide_exception: bool = False):
@@ -28,12 +36,14 @@ class ErrorTimerContext:
             if self.error_timestamp is None:
                 self.error_timestamp = timecheck.create_timestamp()
                 Pub().pub(self.topic, self.error_timestamp)
-            log.error(exception)
             if (self.hide_exception is False or
                     timecheck.check_timestamp(self.error_timestamp, self.timeout + 10) is False):
                 # Fehlermeldung als abgelaufen markieren, bevor die Exception gesetzt wird, mit der Exception werden
                 # keine Werte mehr gepublished.
                 return False
+            else:
+                log.error(f"{exception}\n{INTERNAL_ERROR_HINT}")
+                return True
         return True
 
     def error_counter_exceeded(self) -> bool:

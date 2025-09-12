@@ -353,11 +353,13 @@ class Ev:
                                                           waiting_time,
                                                           delay)[1])
                     control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
-                elif condition_msg:
-                    if condition_msg == self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE:
-                        message = f"Keine Phasenumschaltung{condition_msg}"
-                    else:
-                        log.debug(f"Keine Phasenumschaltung{condition_msg}")
+                else:
+                    if condition_msg:
+                        if condition_msg == self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE:
+                            message = f"Keine Phasenumschaltung{condition_msg}"
+                        else:
+                            log.debug(f"Keine Phasenumschaltung{condition_msg}")
+                    control_parameter.timestamp_phase_switch_buffer_start = None
             else:
                 if condition:
                     # Timer laufen lassen
@@ -379,6 +381,7 @@ class Ev:
                     ).data.set.reserved_surplus -= max(0, required_reserved_power)
                     message = f"Verzögerung für die {direction_str} Phasen abgebrochen{condition_msg}"
                     control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                    control_parameter.timestamp_phase_switch_buffer_start = None
 
         if message:
             log.info(f"LP {cp_num}: {message}")

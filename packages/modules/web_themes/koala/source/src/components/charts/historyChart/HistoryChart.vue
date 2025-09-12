@@ -168,8 +168,34 @@ const vehicleDatasets = computed(() =>
         dataset !== undefined,
     ),
 );
+
+const chartLabels = computed(() => {
+  const minTimestamp = selectedData.value.length
+    ? selectedData.value[0].timestamp
+    : Math.floor(Date.now() / 1000) - chartRange.value;
+  const maxTimestamp = selectedData.value.length
+    ? selectedData.value[selectedData.value.length - 1].timestamp
+    : Math.floor(Date.now() / 1000);
+  const dataRange = maxTimestamp - minTimestamp;
+  let range = 300; // 5 Minuten
+  if (dataRange <= 30 * 60) { // bis 15 Minuten
+    range = 60; // 1 Minute
+  } else if (dataRange <= 60 * 60) { // bis 30 Minuten
+    range = 120; // 2 Minuten
+  }
+
+  const calculatedLabels = <number[]>[];
+  let first = minTimestamp - (minTimestamp % range);
+  if (first < minTimestamp) first += range;
+  for (let t = first; t <= maxTimestamp; t += range) {
+    calculatedLabels.push(t * 1000);
+  }
+  return calculatedLabels;
+});
+
 const lineChartData = computed(() => {
   return {
+    labels: chartLabels.value,
     datasets: [
       {
         label: gridMeterName.value,
@@ -289,8 +315,8 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
         },
       },
       ticks: {
-        maxTicksLimit: 12,
-        source: 'auto' as const,
+        maxTicksLimit: 40,
+        source: 'labels' as const,
       },
       grid: {
         tickLength: 5,

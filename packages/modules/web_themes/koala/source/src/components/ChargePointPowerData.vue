@@ -1,15 +1,17 @@
 <template>
   <div
     :class="[
-      'text-no-wrap items-center q-gutter-xs',
+      'text-no-wrap items-center',
       columnDisplayFormat ? 'column' : 'row inline',
     ]"
   >
     <span>{{ power }}</span>
-    <q-badge rounded color="primary" :label="phaseNumber">
-      <q-tooltip>Phasenanzahl</q-tooltip>
-    </q-badge>
-    <span>{{ current }}</span>
+    <div :class="{ 'q-ml-xs': !columnDisplayFormat }">
+      <q-badge rounded color="primary" :label="phaseNumber" class="q-mr-xs">
+        <q-tooltip>Phasenanzahl</q-tooltip>
+      </q-badge>
+      <span>{{ current }}</span>
+    </div>
   </div>
 </template>
 

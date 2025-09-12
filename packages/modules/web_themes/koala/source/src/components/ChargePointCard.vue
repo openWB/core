@@ -1,5 +1,9 @@
 <template>
-  <q-card ref="cardRef" class="card-width full-height">
+  <q-card
+    ref="cardRef"
+    class="card-width"
+    :class="{ 'full-height': props.fullHeight }"
+  >
     <q-card-section class="row no-wrap">
       <div class="text-h6 text-bold ellipsis" :title="name">
         {{ name }}
@@ -127,6 +131,7 @@ const $q = useQuasar();
 const props = defineProps<{
   chargePointId: number;
   closeButton?: boolean;
+  fullHeight?: boolean;
 }>();
 
 const vehicleId = computed(() => {
