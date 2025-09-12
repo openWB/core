@@ -249,9 +249,9 @@ const chargePointSumCharging = computed(
 ///////////////////// Set animation speed //////////////////////////
 
 const powerCategory = (power: number) => {
-    if (Math.abs(power) >= 5000) return 'large';
-    if (Math.abs(power) >= 1500) return 'medium';
-    return 'small';
+  if (Math.abs(power) >= 5000) return 'large';
+  if (Math.abs(power) >= 1500) return 'medium';
+  return 'small';
 };
 
 const pvPowerCategory = computed(() => powerCategory(pvPower.value.value));
@@ -752,13 +752,11 @@ const svgRectWidth = computed(
   user-select: none;
 }
 
-/* ------ */
 svg {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-/* ------ */
 
 path {
   fill: none;
@@ -774,26 +772,41 @@ path {
 path.animated {
   stroke: var(--q-white);
   stroke-dasharray: 5;
-  animation: dash 1s linear infinite;
+  animation: dash 3.5s linear infinite;
 }
 
 path.animatedReverse {
   stroke: var(--q-white);
   stroke-dasharray: 5;
-  animation: dashReverse 1s linear infinite;
+  animation: dashReverse 3.5s linear infinite;
 }
 
-path.small.animated,
-path.small.animatedReverse {
-  animation-duration: 3.5s;
-}
 path.medium.animated,
 path.medium.animatedReverse {
   animation-duration: 1.5s;
 }
+
 path.large.animated,
 path.large.animatedReverse {
   animation-duration: 0.6s;
+}
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dashReverse {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 10;
+  }
 }
 
 path.animated.grid {
@@ -859,24 +872,6 @@ rect {
 .body--dark {
   image {
     filter: brightness(1); /* white icons in dark theme */
-  }
-}
-
-@keyframes dash {
-  from {
-    stroke-dashoffset: 20;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes dashReverse {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: 20;
   }
 }
 
