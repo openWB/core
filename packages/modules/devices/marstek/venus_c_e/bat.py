@@ -2,7 +2,6 @@
 from typing import Optional, TypedDict, Any, Union
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
-from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
