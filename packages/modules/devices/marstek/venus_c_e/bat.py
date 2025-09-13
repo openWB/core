@@ -70,4 +70,5 @@ class VenusCEBat(AbstractBat):
         # Wenn der Speicher die Steuerung der Ladeleistung unterstützt, muss True zurückgegeben werden.
         return True
 
+
 component_descriptor = ComponentDescriptor(configuration_factory=VenusCEBatSetup)
