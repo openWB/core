@@ -125,18 +125,18 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 
 	values.charging = +data['charging-all']
 	// charge points - we only show a maximum of 10 chargepoints in the graph
-/* 	for (let i = 0; i < 10; i++) {
+	/* 	for (let i = 0; i < 10; i++) {
 		const idx = 'cp' + i
 		values[idx] = +(data[idx + '-power'] ?? 0)
 	} */
-Object.keys(data)
-.filter(key => re_cp.test(key))
-	.forEach((key) => {
-		const found = key.match(re_cp)
-		if (found && found[1]) {
-			values['cp' + found[1]] = +(data[key] ?? 0)
-		}
-	})
+	Object.keys(data)
+		.filter((key) => re_cp.test(key))
+		.forEach((key) => {
+			const found = key.match(re_cp)
+			if (found && found[1]) {
+				values['cp' + found[1]] = +(data[key] ?? 0)
+			}
+		})
 	values.selfUsage = values.pv - values.evuOut
 	if (values.selfUsage < 0) {
 		values.selfUsage = 0
