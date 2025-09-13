@@ -24,7 +24,7 @@ def readApi() -> list[tuple[str, float]]:
     tariff_grid="grid_400D_inclFees"
     utcnow = datetime.now(timezone.utc)
     startDate = quote(utcnow.strftime("%Y-%m-%dT%H:00:00Z"))
-    endDate = quote((utcnow + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00Z")) 
+    endDate = quote((utcnow + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00Z"))
     session=req.get_http_session()
     power_raw = session.get(
         url=endpoint +

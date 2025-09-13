@@ -10,18 +10,19 @@ from modules.electricity_tariffs.groupe_e.config import GroupeETariffConfigurati
 from modules.electricity_tariffs.groupe_e.config import GroupeETariff
 
 # Combine power and grid prices, convert to kWh
-def transformPrices (power: dict) -> tuple[str, float]:
-    timestamp = str(int(datetime.strptime(power['start_timestamp'],"%Y-%m-%dT%H:%M:%S%z")\
+def transformPrices(power: dict) -> tuple[str, float]:
+    timestamp = str(int(datetime.strptime(power['start_timestamp'], "%Y-%m-%dT%H:%M:%S%z")
                     .astimezone(tz.tzutc()).timestamp()))
     power_price = power['vario_plus']
     return (timestamp, power_price/100000)
+
 
 # Read prices from Groupe E API
 def readApi() -> list[tuple[str, float]]:
     endpoint="https://api.tariffs.groupe-e.ch/v1/tariffs"
     utcnow = datetime.now(timezone.utc)
     startDate = quote(utcnow.strftime("%Y-%m-%dT%H:00:00+02:00"))
-    endDate = quote((utcnow + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00+02:00")) 
+    endDate = quote((utcnow + timedelta(days = 2)).strftime("%Y-%m-%dT%H:00:00+02:00"))
     session=req.get_http_session()
     power_raw = session.get(
         url=endpoint +
@@ -29,8 +30,9 @@ def readApi() -> list[tuple[str, float]]:
         ).json()
     return list(map(transformPrices, power_raw))
 
+
 # Aggregate 15min prices to hourly prices by taking the maximum price in each hour
-def aggregatePrices (quarterlyPrices) -> list[tuple[str, float]]:
+def aggregatePrices(quarterlyPrices) -> list[tuple[str, float]]:
     hourlyPrices = []
     currentHourPrices = []
     currentTimestamp = 0
@@ -47,7 +49,7 @@ def aggregatePrices (quarterlyPrices) -> list[tuple[str, float]]:
             hourlyPrices.append((currentTimestamp, max(currentHourPrices)))
     return hourlyPrices
 
-def fetch_prices (config: GroupeETariffConfiguration) -> Dict[str, float]:
+def fetch_prices(config: GroupeETariffConfiguration) -> Dict[str, float]:
     # Fetch electricity prices from EKZ API
     pricelist = readApi()
     hourly_list = aggregatePrices(pricelist)
