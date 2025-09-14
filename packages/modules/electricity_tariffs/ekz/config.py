@@ -1,6 +1,3 @@
-from typing import Optional
-
-
 class EkzTariffConfiguration:
     def __init__(self):
         self.country = "ch"

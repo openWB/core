@@ -11,8 +11,8 @@ from modules.electricity_tariffs.ekz.config import EkzTariff
 
 
 # Combine power and grid prices, convert to kWh
-def addPrices (power: dict, grid: dict) -> tuple[str, float]:
-    timestamp = str(int(datetime.strptime(power['start_timestamp'],"%Y-%m-%dT%H:%M:%S%z")\
+def addPrices(power: dict, grid: dict) -> tuple[str, float]:
+    timestamp = str(int(datetime.strptime(power['start_timestamp'], "%Y-%m-%dT%H:%M:%S%z")
                     .astimezone(tz.tzutc()).timestamp()))
     power_price = power['electricity'][1]['value']
     grid_price = grid['grid'][0]['value']
@@ -30,7 +30,7 @@ def readApi() -> list[tuple[str, float]]:
     session = req.get_http_session()
     power_raw = session.get(
         url=endpoint +
-            f"?tariff_name={tariff_power}&start_timestamp={startDate}&end_timestamp={endDate}",
+        f"?tariff_name={tariff_power}&start_timestamp={startDate}&end_timestamp={endDate}",
         ).json()["prices"]
     grid_raw = session.get(
         url=endpoint +
@@ -40,7 +40,7 @@ def readApi() -> list[tuple[str, float]]:
 
 
 # Aggregate 15min prices to hourly prices by taking the maximum price in each hour
-def aggregatePrices (quarterlyPrices) -> list[tuple[str, float]]:
+def aggregatePrices(quarterlyPrices) -> list[tuple[str, float]]:
     hourlyPrices = []
     currentHourPrices = []
     currentTimestamp = 0
@@ -58,7 +58,7 @@ def aggregatePrices (quarterlyPrices) -> list[tuple[str, float]]:
     return hourlyPrices
 
 
-def fetch_prices (config: EkzTariffConfiguration) -> Dict[str, float]:
+def fetch_prices(config: EkzTariffConfiguration) -> Dict[str, float]:
     # Fetch electricity prices from EKZ API
     # API Reference: https://api.tariffs.ekz.ch/swagger
     pricelist = readApi()
