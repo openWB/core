@@ -34,7 +34,7 @@ def readApi() -> list[tuple[str, float]]:
         ).json()["prices"]
     grid_raw = session.get(
         url=endpoint +
-            f"?tariff_name={tariff_grid}&start_timestamp={startDate}&end_timestamp={endDate}",
+        f"?tariff_name={tariff_grid}&start_timestamp={startDate}&end_timestamp={endDate}",
         ).json()["prices"]
     return list(map(addPrices, power_raw, grid_raw))
 
